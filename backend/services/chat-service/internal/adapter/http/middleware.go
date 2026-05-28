@@ -49,11 +49,11 @@ func authContextMiddleware(cfg *config.Config, next http.Handler) http.Handler {
 		if internalPath {
 			token := strings.TrimSpace(r.Header.Get("X-Internal-Service-Token"))
 			if token == "" {
-				writeError(w, http.StatusUnauthorized, "missing internal service token")
+				writeError(w, r, http.StatusUnauthorized, "missing internal service token")
 				return
 			}
 			if subtle.ConstantTimeCompare([]byte(token), []byte(cfg.Security.InternalServiceToken)) != 1 {
-				writeError(w, http.StatusUnauthorized, "invalid internal service token")
+				writeError(w, r, http.StatusUnauthorized, "invalid internal service token")
 				return
 			}
 			ctx = withInternalCall(ctx)
@@ -76,7 +76,7 @@ func authContextMiddleware(cfg *config.Config, next http.Handler) http.Handler {
 
 		if cfg.Security.RequireAuthenticatedWrites && isWriteMethod(r.Method) {
 			if subject == "" && !InternalCallFromContext(ctx) {
-				writeError(w, http.StatusUnauthorized, "missing authenticated subject")
+				writeError(w, r, http.StatusUnauthorized, "missing authenticated subject")
 				return
 			}
 		}

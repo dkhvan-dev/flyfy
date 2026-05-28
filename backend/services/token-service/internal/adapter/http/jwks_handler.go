@@ -3,6 +3,7 @@ package http
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -46,7 +47,7 @@ func (h *JWKSHandler) handleJWKS(w http.ResponseWriter, r *http.Request) {
 	jwks, err := h.keyManager.GetJWKS(r.Context())
 	if err != nil {
 		h.logger.Error().Err(err).Msg("failed to get JWKS")
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		writeTechnicalError(w, r)
 		return
 	}
 
@@ -70,6 +71,53 @@ func (h *JWKSHandler) handleReady(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"status": "ready"})
+}
+
+type errorResponse struct {
+	Error   string `json:"error"`
+	Message string `json:"message"`
+	Code    string `json:"code"`
+	Kind    string `json:"kind"`
+}
+
+func writeTechnicalError(w http.ResponseWriter, r *http.Request) {
+	title, message := technicalErrorText(tokenLocaleFromRequest(r))
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusInternalServerError)
+	_ = json.NewEncoder(w).Encode(errorResponse{
+		Error:   title,
+		Message: message,
+		Code:    "token.technical",
+		Kind:    "technical",
+	})
+}
+
+func technicalErrorText(locale string) (string, string) {
+	switch locale {
+	case "en":
+		return "Technical error", "A server problem occurred. Please try again later."
+	case "kk":
+		return "Техникалық қате", "Серверде мәселе туындады. Кейінірек қайталап көріңіз."
+	default:
+		return "Техническая ошибка", "На сервере возникла проблема. Попробуйте позже."
+	}
+}
+
+func tokenLocaleFromRequest(r *http.Request) string {
+	if r == nil {
+		return "ru"
+	}
+	for _, part := range strings.Split(r.Header.Get("Accept-Language"), ",") {
+		tag := strings.ToLower(strings.TrimSpace(strings.Split(part, ";")[0]))
+		if idx := strings.IndexByte(tag, '-'); idx >= 0 {
+			tag = tag[:idx]
+		}
+		switch tag {
+		case "ru", "en", "kk":
+			return tag
+		}
+	}
+	return "ru"
 }
 
 // cacheControl sets Cache-Control header.

@@ -8,11 +8,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/dkhvan-dev/flyfy/backend/services/reference-service/data"
 	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/reference-service/internal/adapter/http"
 	"github.com/dkhvan-dev/flyfy/backend/services/reference-service/internal/adapter/repository"
 	"github.com/dkhvan-dev/flyfy/backend/services/reference-service/internal/app"
 	"github.com/dkhvan-dev/flyfy/backend/services/reference-service/internal/config"
-	"github.com/dkhvan-dev/flyfy/backend/services/reference-service/data"
 	"github.com/rs/zerolog/log"
 )
 
@@ -40,7 +40,7 @@ func main() {
 
 	httpServer := &http.Server{
 		Addr:         cfg.HTTP.Address(),
-		Handler:      mux,
+		Handler:      httpadapter.RecoverPanic(mux),
 		ReadTimeout:  cfg.HTTP.ReadTimeout,
 		WriteTimeout: cfg.HTTP.WriteTimeout,
 		IdleTimeout:  cfg.HTTP.IdleTimeout,

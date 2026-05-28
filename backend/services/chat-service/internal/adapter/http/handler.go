@@ -2,7 +2,6 @@ package http
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -69,7 +68,7 @@ func (h *Handler) ListFlaggedChatMessages(w http.ResponseWriter, r *http.Request
 	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
 	items, err := h.messageUC.ListFlaggedMessagesForModeration(r.Context(), limit, offset)
 	if err != nil {
-		h.writeAppError(w, err, "list flagged chat messages failed")
+		h.writeAppError(w, r, err, "list flagged chat messages failed")
 		return
 	}
 	response := dto.ChatMessageModerationListResponse{
@@ -89,18 +88,18 @@ func (h *Handler) handleAdminChatMessageRoutes(w http.ResponseWriter, r *http.Re
 	path = strings.Trim(path, "/")
 	parts := strings.Split(path, "/")
 	if len(parts) == 0 || strings.TrimSpace(parts[0]) == "" {
-		writeError(w, http.StatusNotFound, "not found")
+		writeError(w, r, http.StatusNotFound, "not found")
 		return
 	}
 	messageID, err := uuid.Parse(parts[0])
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid message id")
+		writeError(w, r, http.StatusBadRequest, "invalid message id")
 		return
 	}
 	if len(parts) == 1 && r.Method == http.MethodGet {
 		item, err := h.messageUC.GetMessageForModeration(r.Context(), messageID)
 		if err != nil {
-			h.writeAppError(w, err, "get chat message moderation item failed")
+			h.writeAppError(w, r, err, "get chat message moderation item failed")
 			return
 		}
 		writeJSON(w, http.StatusOK, chatMessageModerationResponseFromModel(item))
@@ -109,7 +108,7 @@ func (h *Handler) handleAdminChatMessageRoutes(w http.ResponseWriter, r *http.Re
 	if len(parts) == 3 && parts[1] == "moderation" && r.Method == http.MethodPost {
 		var req dto.ChatModerationDecisionRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid request body")
+			writeError(w, r, http.StatusBadRequest, "invalid request body")
 			return
 		}
 		actorID, ok := adminActorIDFromRequest(w, r)
@@ -135,23 +134,23 @@ func (h *Handler) handleAdminChatMessageRoutes(w http.ResponseWriter, r *http.Re
 				req.InternalComment,
 			)
 		default:
-			writeError(w, http.StatusNotFound, "not found")
+			writeError(w, r, http.StatusNotFound, "not found")
 			return
 		}
 		if err != nil {
-			h.writeAppError(w, err, "apply chat message moderation decision failed")
+			h.writeAppError(w, r, err, "apply chat message moderation decision failed")
 			return
 		}
 		writeJSON(w, http.StatusOK, chatMessageModerationResponseFromModel(item))
 		return
 	}
-	writeError(w, http.StatusNotFound, "not found")
+	writeError(w, r, http.StatusNotFound, "not found")
 }
 
 func (h *Handler) WebSocketUpgrade(w http.ResponseWriter, r *http.Request) {
 	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "missing authenticated user")
+		writeError(w, r, http.StatusUnauthorized, "missing authenticated user")
 		return
 	}
 	h.wsHandler.HandleUpgrade(w, r, actorUserID)
@@ -160,7 +159,7 @@ func (h *Handler) WebSocketUpgrade(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) ListConversations(w http.ResponseWriter, r *http.Request) {
 	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "missing authenticated user")
+		writeError(w, r, http.StatusUnauthorized, "missing authenticated user")
 		return
 	}
 
@@ -185,7 +184,7 @@ func (h *Handler) ListConversations(w http.ResponseWriter, r *http.Request) {
 	convs, err := h.conversationUC.ListConversations(r.Context(), actorUserID, convType, limit, cursor)
 	if err != nil {
 		log.Error().Err(err).Msg("list conversations")
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, r, http.StatusInternalServerError, "internal error")
 		return
 	}
 
@@ -269,26 +268,26 @@ func (h *Handler) ListConversations(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) CreateConversation(w http.ResponseWriter, r *http.Request) {
 	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "missing authenticated user")
+		writeError(w, r, http.StatusUnauthorized, "missing authenticated user")
 		return
 	}
 
 	var req dto.CreateConversationRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(w, r, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	switch strings.TrimSpace(req.Type) {
 	case "direct":
 		if len(req.ParticipantUserIDs) != 1 {
-			writeError(w, http.StatusBadRequest, "exactly one participant is required for direct chats")
+			writeError(w, r, http.StatusBadRequest, "exactly one participant is required for direct chats")
 			return
 		}
 
 		participantID, err := uuid.Parse(strings.TrimSpace(req.ParticipantUserIDs[0]))
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "invalid participant user id")
+			writeError(w, r, http.StatusBadRequest, "invalid participant user id")
 			return
 		}
 
@@ -297,7 +296,7 @@ func (h *Handler) CreateConversation(w http.ResponseWriter, r *http.Request) {
 			ParticipantUserID: participantID,
 		})
 		if err != nil {
-			h.writeAppError(w, err, "create conversation failed")
+			h.writeAppError(w, r, err, "create conversation failed")
 			return
 		}
 
@@ -306,7 +305,7 @@ func (h *Handler) CreateConversation(w http.ResponseWriter, r *http.Request) {
 	case "activity":
 		activityID, err := uuid.Parse(strings.TrimSpace(req.ActivityID))
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "invalid activity id")
+			writeError(w, r, http.StatusBadRequest, "invalid activity id")
 			return
 		}
 
@@ -316,44 +315,44 @@ func (h *Handler) CreateConversation(w http.ResponseWriter, r *http.Request) {
 			HostUserID: actorUserID,
 		})
 		if err != nil {
-			h.writeAppError(w, err, "create activity conversation failed")
+			h.writeAppError(w, r, err, "create activity conversation failed")
 			return
 		}
 
 		writeJSON(w, http.StatusCreated, map[string]string{"id": conv.ID.String()})
 
 	default:
-		writeError(w, http.StatusBadRequest, "unsupported conversation type")
+		writeError(w, r, http.StatusBadRequest, "unsupported conversation type")
 	}
 }
 
 func (h *Handler) EnsureActivityParticipant(w http.ResponseWriter, r *http.Request) {
 	if !InternalCallFromContext(r.Context()) {
-		writeError(w, http.StatusUnauthorized, "missing internal service token")
+		writeError(w, r, http.StatusUnauthorized, "missing internal service token")
 		return
 	}
 
 	var req dto.EnsureActivityParticipantRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(w, r, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	activityID, err := uuid.Parse(strings.TrimSpace(req.ActivityID))
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid activity id")
+		writeError(w, r, http.StatusBadRequest, "invalid activity id")
 		return
 	}
 
 	hostUserID, err := uuid.Parse(strings.TrimSpace(req.HostUserID))
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid host user id")
+		writeError(w, r, http.StatusBadRequest, "invalid host user id")
 		return
 	}
 
 	userID, err := uuid.Parse(strings.TrimSpace(req.UserID))
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid user id")
+		writeError(w, r, http.StatusBadRequest, "invalid user id")
 		return
 	}
 
@@ -367,7 +366,7 @@ func (h *Handler) EnsureActivityParticipant(w http.ResponseWriter, r *http.Reque
 		DisplayName:             req.DisplayName,
 	})
 	if err != nil {
-		h.writeAppError(w, err, "ensure activity participant failed")
+		h.writeAppError(w, r, err, "ensure activity participant failed")
 		return
 	}
 
@@ -376,19 +375,19 @@ func (h *Handler) EnsureActivityParticipant(w http.ResponseWriter, r *http.Reque
 
 func (h *Handler) SyncActivityConversation(w http.ResponseWriter, r *http.Request) {
 	if !InternalCallFromContext(r.Context()) {
-		writeError(w, http.StatusUnauthorized, "missing internal service token")
+		writeError(w, r, http.StatusUnauthorized, "missing internal service token")
 		return
 	}
 
 	var req dto.SyncActivityConversationRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(w, r, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	activityID, err := uuid.Parse(strings.TrimSpace(req.ActivityID))
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid activity id")
+		writeError(w, r, http.StatusBadRequest, "invalid activity id")
 		return
 	}
 
@@ -399,7 +398,7 @@ func (h *Handler) SyncActivityConversation(w http.ResponseWriter, r *http.Reques
 		MessagingAvailableUntil: parseOptionalTime(req.MessagingAvailableUntil),
 	})
 	if err != nil {
-		h.writeAppError(w, err, "sync activity conversation failed")
+		h.writeAppError(w, r, err, "sync activity conversation failed")
 		return
 	}
 	if conv == nil {
@@ -412,31 +411,31 @@ func (h *Handler) SyncActivityConversation(w http.ResponseWriter, r *http.Reques
 
 func (h *Handler) SyncExcursionScheduleSlotConversation(w http.ResponseWriter, r *http.Request) {
 	if !InternalCallFromContext(r.Context()) {
-		writeError(w, http.StatusUnauthorized, "missing internal service token")
+		writeError(w, r, http.StatusUnauthorized, "missing internal service token")
 		return
 	}
 
 	var req dto.SyncExcursionScheduleSlotConversationRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(w, r, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	slotID, err := uuid.Parse(strings.TrimSpace(req.ScheduleSlotID))
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid schedule slot id")
+		writeError(w, r, http.StatusBadRequest, "invalid schedule slot id")
 		return
 	}
 	guideUserID, err := uuid.Parse(strings.TrimSpace(req.GuideUserID))
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid guide user id")
+		writeError(w, r, http.StatusBadRequest, "invalid guide user id")
 		return
 	}
 	participantUserIDs := make([]uuid.UUID, 0, len(req.ParticipantUserIDs))
 	for _, rawUserID := range req.ParticipantUserIDs {
 		userID, parseErr := uuid.Parse(strings.TrimSpace(rawUserID))
 		if parseErr != nil {
-			writeError(w, http.StatusBadRequest, "invalid participant user id")
+			writeError(w, r, http.StatusBadRequest, "invalid participant user id")
 			return
 		}
 		participantUserIDs = append(participantUserIDs, userID)
@@ -451,7 +450,7 @@ func (h *Handler) SyncExcursionScheduleSlotConversation(w http.ResponseWriter, r
 		ParticipantUserIDs:      participantUserIDs,
 	})
 	if err != nil {
-		h.writeAppError(w, err, "sync excursion schedule slot conversation failed")
+		h.writeAppError(w, r, err, "sync excursion schedule slot conversation failed")
 		return
 	}
 
@@ -462,7 +461,7 @@ func (h *Handler) handleConversationRoutes(w http.ResponseWriter, r *http.Reques
 	path := strings.TrimPrefix(r.URL.Path, "/v1/conversations/")
 	path = strings.Trim(path, "/")
 	if path == "" {
-		writeError(w, http.StatusNotFound, "not found")
+		writeError(w, r, http.StatusNotFound, "not found")
 		return
 	}
 
@@ -471,12 +470,12 @@ func (h *Handler) handleConversationRoutes(w http.ResponseWriter, r *http.Reques
 	// GET /v1/conversations/by-activity/{activityId}
 	if parts[0] == "by-activity" && r.Method == http.MethodGet {
 		if len(parts) < 2 {
-			writeError(w, http.StatusBadRequest, "missing activity id")
+			writeError(w, r, http.StatusBadRequest, "missing activity id")
 			return
 		}
 		activityID, err := uuid.Parse(parts[1])
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "invalid activity id")
+			writeError(w, r, http.StatusBadRequest, "invalid activity id")
 			return
 		}
 		h.GetConversationByActivity(w, r, activityID)
@@ -485,7 +484,7 @@ func (h *Handler) handleConversationRoutes(w http.ResponseWriter, r *http.Reques
 
 	convID, err := uuid.Parse(parts[0])
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid conversation id")
+		writeError(w, r, http.StatusBadRequest, "invalid conversation id")
 		return
 	}
 
@@ -495,10 +494,10 @@ func (h *Handler) handleConversationRoutes(w http.ResponseWriter, r *http.Reques
 			return
 		}
 		if r.Method == http.MethodDelete {
-			writeError(w, http.StatusNotImplemented, "not implemented")
+			writeError(w, r, http.StatusNotImplemented, "not implemented")
 			return
 		}
-		writeError(w, http.StatusNotFound, "not found")
+		writeError(w, r, http.StatusNotFound, "not found")
 		return
 	}
 
@@ -511,14 +510,14 @@ func (h *Handler) handleConversationRoutes(w http.ResponseWriter, r *http.Reques
 			case http.MethodPost:
 				h.SendMessage(w, r, convID)
 			default:
-				writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+				writeError(w, r, http.StatusMethodNotAllowed, "method not allowed")
 			}
 			return
 		}
 		if len(parts) == 3 {
 			msgID, err := uuid.Parse(parts[2])
 			if err != nil {
-				writeError(w, http.StatusBadRequest, "invalid message id")
+				writeError(w, r, http.StatusBadRequest, "invalid message id")
 				return
 			}
 			switch r.Method {
@@ -527,34 +526,34 @@ func (h *Handler) handleConversationRoutes(w http.ResponseWriter, r *http.Reques
 			case http.MethodDelete:
 				h.DeleteMessage(w, r, convID, msgID)
 			default:
-				writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+				writeError(w, r, http.StatusMethodNotAllowed, "method not allowed")
 			}
 			return
 		}
 		if len(parts) == 4 && parts[3] == "reaction" {
 			msgID, err := uuid.Parse(parts[2])
 			if err != nil {
-				writeError(w, http.StatusBadRequest, "invalid message id")
+				writeError(w, r, http.StatusBadRequest, "invalid message id")
 				return
 			}
 			if r.Method == http.MethodPost {
 				h.ReactToMessage(w, r, convID, msgID)
 				return
 			}
-			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+			writeError(w, r, http.StatusMethodNotAllowed, "method not allowed")
 			return
 		}
 		if len(parts) == 4 && parts[3] == "forward" {
 			msgID, err := uuid.Parse(parts[2])
 			if err != nil {
-				writeError(w, http.StatusBadRequest, "invalid message id")
+				writeError(w, r, http.StatusBadRequest, "invalid message id")
 				return
 			}
 			if r.Method == http.MethodPost {
 				h.ForwardMessage(w, r, convID, msgID)
 				return
 			}
-			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+			writeError(w, r, http.StatusMethodNotAllowed, "method not allowed")
 			return
 		}
 	case "read":
@@ -585,7 +584,7 @@ func (h *Handler) handleConversationRoutes(w http.ResponseWriter, r *http.Reques
 		case len(parts) == 3 && r.Method == http.MethodDelete:
 			msgID, err := uuid.Parse(parts[2])
 			if err != nil {
-				writeError(w, http.StatusBadRequest, "invalid message id")
+				writeError(w, r, http.StatusBadRequest, "invalid message id")
 				return
 			}
 			h.UnpinMessage(w, r, convID, msgID)
@@ -593,7 +592,7 @@ func (h *Handler) handleConversationRoutes(w http.ResponseWriter, r *http.Reques
 		case len(parts) == 2 && r.Method == http.MethodDelete:
 			msgID, err := uuid.Parse(strings.TrimSpace(r.URL.Query().Get("messageId")))
 			if err != nil {
-				writeError(w, http.StatusBadRequest, "invalid message id")
+				writeError(w, r, http.StatusBadRequest, "invalid message id")
 				return
 			}
 			h.UnpinMessage(w, r, convID, msgID)
@@ -601,19 +600,19 @@ func (h *Handler) handleConversationRoutes(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	writeError(w, http.StatusNotFound, "not found")
+	writeError(w, r, http.StatusNotFound, "not found")
 }
 
 func (h *Handler) GetConversation(w http.ResponseWriter, r *http.Request, convID uuid.UUID) {
 	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "missing authenticated user")
+		writeError(w, r, http.StatusUnauthorized, "missing authenticated user")
 		return
 	}
 
 	conv, err := h.conversationUC.GetConversationByID(r.Context(), convID, actorUserID)
 	if err != nil {
-		h.writeAppError(w, err, "get conversation failed")
+		h.writeAppError(w, r, err, "get conversation failed")
 		return
 	}
 
@@ -653,13 +652,13 @@ func (h *Handler) GetConversation(w http.ResponseWriter, r *http.Request, convID
 func (h *Handler) GetConversationByActivity(w http.ResponseWriter, r *http.Request, activityID uuid.UUID) {
 	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "missing authenticated user")
+		writeError(w, r, http.StatusUnauthorized, "missing authenticated user")
 		return
 	}
 
 	conv, err := h.conversationUC.GetConversationByActivityID(r.Context(), activityID, actorUserID)
 	if err != nil {
-		h.writeAppError(w, err, "get conversation by activity failed")
+		h.writeAppError(w, r, err, "get conversation by activity failed")
 		return
 	}
 
@@ -699,13 +698,13 @@ func (h *Handler) GetConversationByActivity(w http.ResponseWriter, r *http.Reque
 func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request, convID uuid.UUID) {
 	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "missing authenticated user")
+		writeError(w, r, http.StatusUnauthorized, "missing authenticated user")
 		return
 	}
 
 	var req dto.SendMessageRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(w, r, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
@@ -721,7 +720,7 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request, convID uui
 	if req.StickerID != nil && strings.TrimSpace(*req.StickerID) != "" {
 		parsed, err := uuid.Parse(strings.TrimSpace(*req.StickerID))
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "invalid sticker id")
+			writeError(w, r, http.StatusBadRequest, "invalid sticker id")
 			return
 		}
 		stickerID = &parsed
@@ -729,7 +728,7 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request, convID uui
 		if gatewayUserID := UserIDFromContext(r.Context()); gatewayUserID != "" {
 			parsedGatewayUserID, err := uuid.Parse(gatewayUserID)
 			if err != nil || parsedGatewayUserID == uuid.Nil {
-				writeError(w, http.StatusUnauthorized, "invalid authenticated user")
+				writeError(w, r, http.StatusUnauthorized, "invalid authenticated user")
 				return
 			}
 			stickerAccessUserID = &parsedGatewayUserID
@@ -747,7 +746,7 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request, convID uui
 		ReplyToMessageID:    replyTo,
 	})
 	if err != nil {
-		h.writeAppError(w, err, "send message failed")
+		h.writeAppError(w, r, err, "send message failed")
 		return
 	}
 
@@ -757,7 +756,7 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request, convID uui
 func (h *Handler) ListMessages(w http.ResponseWriter, r *http.Request, convID uuid.UUID) {
 	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "missing authenticated user")
+		writeError(w, r, http.StatusUnauthorized, "missing authenticated user")
 		return
 	}
 
@@ -775,7 +774,7 @@ func (h *Handler) ListMessages(w http.ResponseWriter, r *http.Request, convID uu
 	if c := strings.TrimSpace(r.URL.Query().Get("cursor")); c != "" {
 		parsed, err := uuid.Parse(c)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "invalid message cursor")
+			writeError(w, r, http.StatusBadRequest, "invalid message cursor")
 			return
 		}
 		cursor = &parsed
@@ -783,7 +782,7 @@ func (h *Handler) ListMessages(w http.ResponseWriter, r *http.Request, convID uu
 
 	msgs, err := h.messageUC.ListMessages(r.Context(), convID, actorUserID, limit, cursor, direction)
 	if err != nil {
-		h.writeAppError(w, err, "list messages failed")
+		h.writeAppError(w, r, err, "list messages failed")
 		return
 	}
 
@@ -804,19 +803,19 @@ func (h *Handler) ListMessages(w http.ResponseWriter, r *http.Request, convID uu
 func (h *Handler) EditMessage(w http.ResponseWriter, r *http.Request, convID, msgID uuid.UUID) {
 	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "missing authenticated user")
+		writeError(w, r, http.StatusUnauthorized, "missing authenticated user")
 		return
 	}
 
 	var req dto.EditMessageRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(w, r, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	msg, err := h.messageUC.EditMessage(r.Context(), convID, msgID, actorUserID, req.Content)
 	if err != nil {
-		h.writeAppError(w, err, "edit message failed")
+		h.writeAppError(w, r, err, "edit message failed")
 		return
 	}
 
@@ -826,13 +825,13 @@ func (h *Handler) EditMessage(w http.ResponseWriter, r *http.Request, convID, ms
 func (h *Handler) ReactToMessage(w http.ResponseWriter, r *http.Request, convID, msgID uuid.UUID) {
 	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "missing authenticated user")
+		writeError(w, r, http.StatusUnauthorized, "missing authenticated user")
 		return
 	}
 
 	var req dto.ReactMessageRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(w, r, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
@@ -844,7 +843,7 @@ func (h *Handler) ReactToMessage(w http.ResponseWriter, r *http.Request, convID,
 		req.Emoji,
 	)
 	if err != nil {
-		h.writeAppError(w, err, "toggle message reaction failed")
+		h.writeAppError(w, r, err, "toggle message reaction failed")
 		return
 	}
 
@@ -857,19 +856,19 @@ func (h *Handler) ReactToMessage(w http.ResponseWriter, r *http.Request, convID,
 func (h *Handler) ForwardMessage(w http.ResponseWriter, r *http.Request, convID, msgID uuid.UUID) {
 	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "missing authenticated user")
+		writeError(w, r, http.StatusUnauthorized, "missing authenticated user")
 		return
 	}
 
 	var req dto.ForwardMessageRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(w, r, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	targetConversationID, err := uuid.Parse(strings.TrimSpace(req.TargetConversationID))
 	if err != nil || targetConversationID == uuid.Nil {
-		writeError(w, http.StatusBadRequest, "invalid target conversation id")
+		writeError(w, r, http.StatusBadRequest, "invalid target conversation id")
 		return
 	}
 
@@ -880,7 +879,7 @@ func (h *Handler) ForwardMessage(w http.ResponseWriter, r *http.Request, convID,
 		SenderUserID:         actorUserID,
 	})
 	if err != nil {
-		h.writeAppError(w, err, "forward message failed")
+		h.writeAppError(w, r, err, "forward message failed")
 		return
 	}
 
@@ -890,13 +889,13 @@ func (h *Handler) ForwardMessage(w http.ResponseWriter, r *http.Request, convID,
 func (h *Handler) DeleteMessage(w http.ResponseWriter, r *http.Request, convID, msgID uuid.UUID) {
 	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "missing authenticated user")
+		writeError(w, r, http.StatusUnauthorized, "missing authenticated user")
 		return
 	}
 
 	result, err := h.messageUC.DeleteMessage(r.Context(), convID, msgID, actorUserID)
 	if err != nil {
-		h.writeAppError(w, err, "delete message failed")
+		h.writeAppError(w, r, err, "delete message failed")
 		return
 	}
 
@@ -915,24 +914,24 @@ func (h *Handler) DeleteMessage(w http.ResponseWriter, r *http.Request, convID, 
 func (h *Handler) MarkRead(w http.ResponseWriter, r *http.Request, convID uuid.UUID) {
 	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "missing authenticated user")
+		writeError(w, r, http.StatusUnauthorized, "missing authenticated user")
 		return
 	}
 
 	var req dto.MarkReadRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(w, r, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	msgID, err := uuid.Parse(strings.TrimSpace(req.LastReadMessageID))
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid message id")
+		writeError(w, r, http.StatusBadRequest, "invalid message id")
 		return
 	}
 
 	if err := h.messageUC.MarkRead(r.Context(), convID, actorUserID, msgID); err != nil {
-		h.writeAppError(w, err, "mark read failed")
+		h.writeAppError(w, r, err, "mark read failed")
 		return
 	}
 
@@ -942,7 +941,7 @@ func (h *Handler) MarkRead(w http.ResponseWriter, r *http.Request, convID uuid.U
 func (h *Handler) Typing(w http.ResponseWriter, r *http.Request, convID uuid.UUID) {
 	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "missing authenticated user")
+		writeError(w, r, http.StatusUnauthorized, "missing authenticated user")
 		return
 	}
 
@@ -953,13 +952,13 @@ func (h *Handler) Typing(w http.ResponseWriter, r *http.Request, convID uuid.UUI
 func (h *Handler) MuteConversation(w http.ResponseWriter, r *http.Request, convID uuid.UUID) {
 	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "missing authenticated user")
+		writeError(w, r, http.StatusUnauthorized, "missing authenticated user")
 		return
 	}
 
 	var req dto.MuteRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(w, r, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
@@ -967,7 +966,7 @@ func (h *Handler) MuteConversation(w http.ResponseWriter, r *http.Request, convI
 	if req.Until != nil {
 		parsed, err := time.Parse(time.RFC3339, *req.Until)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "invalid until time")
+			writeError(w, r, http.StatusBadRequest, "invalid until time")
 			return
 		}
 		until = &parsed
@@ -978,7 +977,7 @@ func (h *Handler) MuteConversation(w http.ResponseWriter, r *http.Request, convI
 		ActorUserID:    actorUserID,
 		Until:          until,
 	}); err != nil {
-		h.writeAppError(w, err, "mute conversation failed")
+		h.writeAppError(w, r, err, "mute conversation failed")
 		return
 	}
 
@@ -988,12 +987,12 @@ func (h *Handler) MuteConversation(w http.ResponseWriter, r *http.Request, convI
 func (h *Handler) LeaveConversation(w http.ResponseWriter, r *http.Request, convID uuid.UUID) {
 	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "missing authenticated user")
+		writeError(w, r, http.StatusUnauthorized, "missing authenticated user")
 		return
 	}
 
 	if err := h.conversationUC.LeaveConversation(r.Context(), convID, actorUserID); err != nil {
-		h.writeAppError(w, err, "leave conversation failed")
+		h.writeAppError(w, r, err, "leave conversation failed")
 		return
 	}
 
@@ -1003,25 +1002,25 @@ func (h *Handler) LeaveConversation(w http.ResponseWriter, r *http.Request, conv
 func (h *Handler) PinMessage(w http.ResponseWriter, r *http.Request, convID uuid.UUID) {
 	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "missing authenticated user")
+		writeError(w, r, http.StatusUnauthorized, "missing authenticated user")
 		return
 	}
 
 	var req dto.PinRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(w, r, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	msgID, err := uuid.Parse(strings.TrimSpace(req.MessageID))
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid message id")
+		writeError(w, r, http.StatusBadRequest, "invalid message id")
 		return
 	}
 
 	pins, err := h.conversationUC.PinMessage(r.Context(), convID, msgID, actorUserID)
 	if err != nil {
-		h.writeAppError(w, err, "pin message failed")
+		h.writeAppError(w, r, err, "pin message failed")
 		return
 	}
 
@@ -1033,13 +1032,13 @@ func (h *Handler) PinMessage(w http.ResponseWriter, r *http.Request, convID uuid
 func (h *Handler) UnpinMessage(w http.ResponseWriter, r *http.Request, convID, msgID uuid.UUID) {
 	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "missing authenticated user")
+		writeError(w, r, http.StatusUnauthorized, "missing authenticated user")
 		return
 	}
 
 	pins, err := h.conversationUC.UnpinMessage(r.Context(), convID, msgID, actorUserID)
 	if err != nil {
-		h.writeAppError(w, err, "unpin message failed")
+		h.writeAppError(w, r, err, "unpin message failed")
 		return
 	}
 
@@ -1050,7 +1049,7 @@ func (h *Handler) UnpinMessage(w http.ResponseWriter, r *http.Request, convID, m
 
 func requireChatModerationAccess(w http.ResponseWriter, r *http.Request) bool {
 	if !InternalCallFromContext(r.Context()) {
-		writeError(w, http.StatusUnauthorized, "missing internal service token")
+		writeError(w, r, http.StatusUnauthorized, "missing internal service token")
 		return false
 	}
 	for _, role := range RolesFromContext(r.Context()) {
@@ -1059,14 +1058,14 @@ func requireChatModerationAccess(w http.ResponseWriter, r *http.Request) bool {
 			return true
 		}
 	}
-	writeError(w, http.StatusForbidden, "missing chat moderation role")
+	writeError(w, r, http.StatusForbidden, "missing chat moderation role")
 	return false
 }
 
 func adminActorIDFromRequest(w http.ResponseWriter, r *http.Request) (uuid.UUID, bool) {
 	actorID, err := uuid.Parse(UserIDFromContext(r.Context()))
 	if err != nil || actorID == uuid.Nil {
-		writeError(w, http.StatusUnauthorized, "invalid authenticated admin")
+		writeError(w, r, http.StatusUnauthorized, "invalid authenticated admin")
 		return uuid.Nil, false
 	}
 	return actorID, true
@@ -1291,46 +1290,27 @@ func pinnedMessageInfosFromModel(
 	return items
 }
 
-func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback string) {
-	switch {
-	case errors.Is(err, app.ErrInvalidConversationID),
-		errors.Is(err, app.ErrInvalidActivityID),
-		errors.Is(err, app.ErrInvalidMessageID),
-		errors.Is(err, app.ErrInvalidUserID),
-		errors.Is(err, app.ErrMessageTooLong),
-		errors.Is(err, app.ErrInvalidMessageType),
-		errors.Is(err, app.ErrInvalidStickerID),
-		errors.Is(err, app.ErrInvalidReaction),
-		errors.Is(err, app.ErrTooManyFiles),
-		errors.Is(err, app.ErrDirectChatCannotLeave),
-		errors.Is(err, app.ErrCannotPinInDirectChat),
-		errors.Is(err, app.ErrMessageEditExpired),
-		errors.Is(err, app.ErrMessageAlreadyDeleted),
-		errors.Is(err, app.ErrInvalidModerationDecision):
-		writeError(w, http.StatusBadRequest, err.Error())
-
-	case errors.Is(err, app.ErrConversationNotFound),
-		errors.Is(err, app.ErrMessageNotFound),
-		errors.Is(err, app.ErrParticipantNotFound):
-		writeError(w, http.StatusNotFound, err.Error())
-
-	case errors.Is(err, app.ErrAccessDenied),
-		errors.Is(err, app.ErrNotParticipant),
-		errors.Is(err, app.ErrNotAdmin),
-		errors.Is(err, app.ErrNotMessageAuthor),
-		errors.Is(err, app.ErrConversationMessagingClosed):
-		writeError(w, http.StatusForbidden, err.Error())
-
-	case errors.Is(err, app.ErrStickerNotAvailable):
-		writeError(w, http.StatusForbidden, err.Error())
-
-	case errors.Is(err, app.ErrConversationFull):
-		writeError(w, http.StatusConflict, err.Error())
-
-	default:
-		log.Error().Err(err).Msg(fallback)
-		writeError(w, http.StatusInternalServerError, "internal error")
+func (h *Handler) writeAppError(w http.ResponseWriter, r *http.Request, err error, fallback string) {
+	language := requestErrorLanguage(r)
+	if definition, ok := appHTTPErrorContract(err); ok {
+		writeErrorContract(
+			w,
+			definition.status,
+			localizedBusinessError(definition.code, language),
+			definition.code,
+			errorKindBusiness,
+		)
+		return
 	}
+
+	log.Error().Err(err).Msg(fallback)
+	writeErrorContract(
+		w,
+		http.StatusInternalServerError,
+		localizedTechnicalError(language),
+		errorCodeTechnical,
+		errorKindTechnical,
+	)
 }
 
 func uuidPtrToString(value *uuid.UUID) *string {
@@ -1341,8 +1321,26 @@ func uuidPtrToString(value *uuid.UUID) *string {
 	return &str
 }
 
-func writeError(w http.ResponseWriter, status int, message string) {
-	writeJSON(w, status, map[string]string{"error": message})
+func writeError(w http.ResponseWriter, r *http.Request, status int, message string) {
+	language := requestErrorLanguage(r)
+	if status >= http.StatusInternalServerError {
+		writeErrorContract(
+			w,
+			status,
+			localizedTechnicalError(language),
+			errorCodeTechnical,
+			errorKindTechnical,
+		)
+		return
+	}
+
+	writeErrorContract(
+		w,
+		status,
+		localizedLegacyBusinessError(message, language),
+		legacyErrorCode(status, message),
+		errorKindBusiness,
+	)
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload any) {

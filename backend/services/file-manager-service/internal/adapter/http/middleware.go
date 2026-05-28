@@ -65,7 +65,7 @@ func authContextMiddleware(cfg *config.Config, next http.Handler) http.Handler {
 
 		if cfg.Security.RequireAuthenticatedWrites && isWriteMethod(r.Method) {
 			if userID == "" && !isInternalCall {
-				writeError(w, http.StatusUnauthorized, "missing authenticated user context")
+				writeBusinessError(w, r, http.StatusUnauthorized, errorCodeUnauthorized)
 				return
 			}
 		}
@@ -97,7 +97,7 @@ func auditLoggingMiddleware(next http.Handler) http.Handler {
 func requireUserContext(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if UserIDFromContext(r.Context()) == "" {
-			writeError(w, http.StatusUnauthorized, "missing authenticated user context")
+			writeBusinessError(w, r, http.StatusUnauthorized, errorCodeUnauthorized)
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -108,12 +108,12 @@ func requireInternalToken(cfg *config.Config, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := strings.TrimSpace(r.Header.Get("X-Internal-Service-Token"))
 		if token == "" {
-			writeError(w, http.StatusUnauthorized, "missing internal service token")
+			writeBusinessError(w, r, http.StatusUnauthorized, errorCodeUnauthorized)
 			return
 		}
 
 		if subtle.ConstantTimeCompare([]byte(token), []byte(cfg.Security.InternalServiceToken)) != 1 {
-			writeError(w, http.StatusUnauthorized, "invalid internal service token")
+			writeBusinessError(w, r, http.StatusUnauthorized, errorCodeUnauthorized)
 			return
 		}
 

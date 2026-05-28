@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/google/uuid"
@@ -46,6 +47,31 @@ func TestBindFileReturnsExistingBindingOnExactDuplicate(t *testing.T) {
 	}
 	if binding == nil || binding.ID != existing.ID {
 		t.Fatalf("binding = %+v, want existing %+v", binding, existing)
+	}
+}
+
+func TestBindFileReturnsFileNotReadySentinel(t *testing.T) {
+	fileID := uuid.New()
+	useCase := NewFileBindingUseCase(
+		&fakeFileRepository{
+			file: &model.File{
+				ID:        fileID,
+				Status:    enum.FileStatusUploaded,
+				IsDeleted: false,
+			},
+		},
+		&fakeFileBindingRepository{},
+	)
+
+	_, err := useCase.BindFile(context.Background(), BindFileInput{
+		FileID:    fileID,
+		OwnerType: string(enum.OwnerTypeUser),
+		OwnerID:   uuid.NewString(),
+		Purpose:   string(enum.FilePurposeChatSticker),
+	})
+
+	if !errors.Is(err, ErrFileNotReady) {
+		t.Fatalf("error = %v, want ErrFileNotReady", err)
 	}
 }
 

@@ -60,7 +60,7 @@ func authContextMiddleware(cfg *config.Config, next http.Handler) http.Handler {
 
 		if cfg.Security.RequireAuthenticatedWrites && isWriteMethod(r.Method) {
 			if subject == "" {
-				writeError(w, http.StatusUnauthorized, "missing authenticated subject")
+				writeError(w, r, http.StatusUnauthorized, errorCodeUnauthenticatedWriter)
 				return
 			}
 		}

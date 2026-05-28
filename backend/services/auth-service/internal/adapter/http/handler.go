@@ -70,24 +70,24 @@ type sendOTPRequest struct {
 func (h *AuthHandler) handleSendOTP(w http.ResponseWriter, r *http.Request) {
 	var req sendOTPRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.writeError(w, http.StatusBadRequest, "invalid request body")
+		h.writeError(w, r, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	if req.Phone == "" {
-		h.writeError(w, http.StatusBadRequest, "phone is required")
+		h.writeError(w, r, http.StatusBadRequest, "phone is required")
 		return
 	}
 
 	if err := h.auth.SendOTP(r.Context(), req.Phone); err != nil {
 		switch err {
 		case model.ErrOTPRateLimit:
-			h.writeError(w, http.StatusTooManyRequests, "too many requests, try again later")
+			h.writeError(w, r, http.StatusTooManyRequests, "too many requests, try again later")
 		case model.ErrPhoneRequired:
-			h.writeError(w, http.StatusBadRequest, "phone number is required")
+			h.writeError(w, r, http.StatusBadRequest, "phone number is required")
 		default:
 			h.logger.Error().Err(err).Msg("send OTP failed")
-			h.writeError(w, http.StatusInternalServerError, "failed to send OTP")
+			h.writeError(w, r, http.StatusInternalServerError, "failed to send OTP")
 		}
 		return
 	}
@@ -105,12 +105,12 @@ type verifyOTPRequest struct {
 func (h *AuthHandler) handleVerifyOTP(w http.ResponseWriter, r *http.Request) {
 	var req verifyOTPRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.writeError(w, http.StatusBadRequest, "invalid request body")
+		h.writeError(w, r, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	if req.Phone == "" || req.Code == "" {
-		h.writeError(w, http.StatusBadRequest, "phone and code are required")
+		h.writeError(w, r, http.StatusBadRequest, "phone and code are required")
 		return
 	}
 
@@ -118,14 +118,14 @@ func (h *AuthHandler) handleVerifyOTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch err {
 		case model.ErrInvalidOTP:
-			h.writeError(w, http.StatusUnauthorized, "invalid or expired OTP code")
+			h.writeError(w, r, http.StatusUnauthorized, "invalid or expired OTP code")
 		case model.ErrUserBlocked:
-			h.writeError(w, http.StatusForbidden, "account is blocked")
+			h.writeError(w, r, http.StatusForbidden, "account is blocked")
 		case model.ErrTokenServiceUnavailable:
-			h.writeError(w, http.StatusServiceUnavailable, "service temporarily unavailable")
+			h.writeError(w, r, http.StatusServiceUnavailable, "service temporarily unavailable")
 		default:
 			h.logger.Error().Err(err).Msg("verify OTP failed")
-			h.writeError(w, http.StatusInternalServerError, "verification failed")
+			h.writeError(w, r, http.StatusInternalServerError, "verification failed")
 		}
 		return
 	}
@@ -142,18 +142,18 @@ type oauthLoginRequest struct {
 func (h *AuthHandler) handleGoogleLogin(w http.ResponseWriter, r *http.Request) {
 	var req oauthLoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.writeError(w, http.StatusBadRequest, "invalid request body")
+		h.writeError(w, r, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	if req.IDToken == "" {
-		h.writeError(w, http.StatusBadRequest, "id_token is required")
+		h.writeError(w, r, http.StatusBadRequest, "id_token is required")
 		return
 	}
 
 	result, err := h.auth.GoogleLogin(r.Context(), req.IDToken, deviceFromRequest(r))
 	if err != nil {
-		h.handleOAuthError(w, err)
+		h.handleOAuthError(w, r, err)
 		return
 	}
 
@@ -163,35 +163,35 @@ func (h *AuthHandler) handleGoogleLogin(w http.ResponseWriter, r *http.Request) 
 func (h *AuthHandler) handleAppleLogin(w http.ResponseWriter, r *http.Request) {
 	var req oauthLoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.writeError(w, http.StatusBadRequest, "invalid request body")
+		h.writeError(w, r, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	if req.IDToken == "" {
-		h.writeError(w, http.StatusBadRequest, "id_token is required")
+		h.writeError(w, r, http.StatusBadRequest, "id_token is required")
 		return
 	}
 
 	result, err := h.auth.AppleLogin(r.Context(), req.IDToken, deviceFromRequest(r))
 	if err != nil {
-		h.handleOAuthError(w, err)
+		h.handleOAuthError(w, r, err)
 		return
 	}
 
 	h.writeJSON(w, http.StatusOK, result)
 }
 
-func (h *AuthHandler) handleOAuthError(w http.ResponseWriter, err error) {
+func (h *AuthHandler) handleOAuthError(w http.ResponseWriter, r *http.Request, err error) {
 	switch err {
 	case model.ErrOAuthFailed:
-		h.writeError(w, http.StatusUnauthorized, "invalid OAuth token")
+		h.writeError(w, r, http.StatusUnauthorized, "invalid OAuth token")
 	case model.ErrUserBlocked:
-		h.writeError(w, http.StatusForbidden, "account is blocked")
+		h.writeError(w, r, http.StatusForbidden, "account is blocked")
 	case model.ErrTokenServiceUnavailable:
-		h.writeError(w, http.StatusServiceUnavailable, "service temporarily unavailable")
+		h.writeError(w, r, http.StatusServiceUnavailable, "service temporarily unavailable")
 	default:
 		h.logger.Error().Err(err).Msg("OAuth login failed")
-		h.writeError(w, http.StatusInternalServerError, "authentication failed")
+		h.writeError(w, r, http.StatusInternalServerError, "authentication failed")
 	}
 }
 
@@ -204,12 +204,12 @@ type refreshRequest struct {
 func (h *AuthHandler) handleRefresh(w http.ResponseWriter, r *http.Request) {
 	var req refreshRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.writeError(w, http.StatusBadRequest, "invalid request body")
+		h.writeError(w, r, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	if req.RefreshToken == "" {
-		h.writeError(w, http.StatusBadRequest, "refresh_token is required")
+		h.writeError(w, r, http.StatusBadRequest, "refresh_token is required")
 		return
 	}
 
@@ -217,10 +217,10 @@ func (h *AuthHandler) handleRefresh(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch err {
 		case model.ErrInvalidRefreshToken:
-			h.writeError(w, http.StatusUnauthorized, "invalid or expired refresh token")
+			h.writeError(w, r, http.StatusUnauthorized, "invalid or expired refresh token")
 		default:
 			h.logger.Error().Err(err).Msg("token refresh failed")
-			h.writeError(w, http.StatusInternalServerError, "refresh failed")
+			h.writeError(w, r, http.StatusInternalServerError, "refresh failed")
 		}
 		return
 	}
@@ -236,13 +236,13 @@ type logoutRequest struct {
 func (h *AuthHandler) handleLogout(w http.ResponseWriter, r *http.Request) {
 	var req logoutRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.writeError(w, http.StatusBadRequest, "invalid request body")
+		h.writeError(w, r, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	if err := h.auth.Logout(r.Context(), req.AccessToken, req.RefreshToken); err != nil {
 		h.logger.Error().Err(err).Msg("logout failed")
-		h.writeError(w, http.StatusInternalServerError, "logout failed")
+		h.writeError(w, r, http.StatusInternalServerError, "logout failed")
 		return
 	}
 
@@ -267,7 +267,190 @@ func (h *AuthHandler) handleReady(w http.ResponseWriter, _ *http.Request) {
 // --- Helpers ---
 
 type errorResponse struct {
-	Error string `json:"error"`
+	Error   string `json:"error"`
+	Message string `json:"message"`
+	Code    string `json:"code"`
+	Kind    string `json:"kind"`
+}
+
+type localizedError struct {
+	title   string
+	message string
+	code    string
+}
+
+var authErrorMessages = map[string]map[string]localizedError{
+	"ru": {
+		"invalid request body": {
+			title:   "Некорректный запрос",
+			message: "Проверьте данные запроса и попробуйте снова.",
+			code:    "auth.invalid_request_body",
+		},
+		"phone is required": {
+			title:   "Укажите телефон",
+			message: "Номер телефона обязателен.",
+			code:    "auth.phone_required",
+		},
+		"phone number is required": {
+			title:   "Укажите телефон",
+			message: "Номер телефона обязателен.",
+			code:    "auth.phone_required",
+		},
+		"phone and code are required": {
+			title:   "Укажите телефон и код",
+			message: "Телефон и код подтверждения обязательны.",
+			code:    "auth.phone_code_required",
+		},
+		"id_token is required": {
+			title:   "Токен обязателен",
+			message: "OAuth id_token обязателен.",
+			code:    "auth.id_token_required",
+		},
+		"refresh_token is required": {
+			title:   "Refresh token обязателен",
+			message: "Передайте refresh token и повторите запрос.",
+			code:    "auth.refresh_token_required",
+		},
+		"too many requests, try again later": {
+			title:   "Слишком много запросов",
+			message: "Попробуйте повторить запрос чуть позже.",
+			code:    "auth.rate_limited",
+		},
+		"invalid or expired OTP code": {
+			title:   "Код недействителен",
+			message: "Введите новый код подтверждения.",
+			code:    "auth.invalid_otp",
+		},
+		"invalid OAuth token": {
+			title:   "OAuth токен недействителен",
+			message: "Повторите вход через провайдера.",
+			code:    "auth.invalid_oauth_token",
+		},
+		"invalid or expired refresh token": {
+			title:   "Сессия недействительна",
+			message: "Войдите в аккаунт заново.",
+			code:    "auth.invalid_refresh_token",
+		},
+		"account is blocked": {
+			title:   "Аккаунт заблокирован",
+			message: "Доступ к аккаунту ограничен.",
+			code:    "auth.account_blocked",
+		},
+	},
+	"en": {
+		"invalid request body": {
+			title:   "Invalid request",
+			message: "Check the request data and try again.",
+			code:    "auth.invalid_request_body",
+		},
+		"phone is required": {
+			title:   "Phone is required",
+			message: "Phone number is required.",
+			code:    "auth.phone_required",
+		},
+		"phone number is required": {
+			title:   "Phone is required",
+			message: "Phone number is required.",
+			code:    "auth.phone_required",
+		},
+		"phone and code are required": {
+			title:   "Phone and code are required",
+			message: "Phone and verification code are required.",
+			code:    "auth.phone_code_required",
+		},
+		"id_token is required": {
+			title:   "Token is required",
+			message: "OAuth id_token is required.",
+			code:    "auth.id_token_required",
+		},
+		"refresh_token is required": {
+			title:   "Refresh token is required",
+			message: "Send a refresh token and try again.",
+			code:    "auth.refresh_token_required",
+		},
+		"too many requests, try again later": {
+			title:   "Too many requests",
+			message: "Please try again a little later.",
+			code:    "auth.rate_limited",
+		},
+		"invalid or expired OTP code": {
+			title:   "Code is invalid",
+			message: "Enter a new verification code.",
+			code:    "auth.invalid_otp",
+		},
+		"invalid OAuth token": {
+			title:   "OAuth token is invalid",
+			message: "Sign in with the provider again.",
+			code:    "auth.invalid_oauth_token",
+		},
+		"invalid or expired refresh token": {
+			title:   "Session is invalid",
+			message: "Sign in again.",
+			code:    "auth.invalid_refresh_token",
+		},
+		"account is blocked": {
+			title:   "Account is blocked",
+			message: "Access to this account is restricted.",
+			code:    "auth.account_blocked",
+		},
+	},
+	"kk": {
+		"invalid request body": {
+			title:   "Сұрау қате",
+			message: "Сұрау деректерін тексеріп, қайта көріңіз.",
+			code:    "auth.invalid_request_body",
+		},
+		"phone is required": {
+			title:   "Телефон қажет",
+			message: "Телефон нөмірі міндетті.",
+			code:    "auth.phone_required",
+		},
+		"phone number is required": {
+			title:   "Телефон қажет",
+			message: "Телефон нөмірі міндетті.",
+			code:    "auth.phone_required",
+		},
+		"phone and code are required": {
+			title:   "Телефон мен код қажет",
+			message: "Телефон және растау коды міндетті.",
+			code:    "auth.phone_code_required",
+		},
+		"id_token is required": {
+			title:   "Токен қажет",
+			message: "OAuth id_token міндетті.",
+			code:    "auth.id_token_required",
+		},
+		"refresh_token is required": {
+			title:   "Refresh token қажет",
+			message: "Refresh token жіберіп, сұрауды қайталаңыз.",
+			code:    "auth.refresh_token_required",
+		},
+		"too many requests, try again later": {
+			title:   "Сұраулар тым көп",
+			message: "Сәл кейінірек қайталап көріңіз.",
+			code:    "auth.rate_limited",
+		},
+		"invalid or expired OTP code": {
+			title:   "Код жарамсыз",
+			message: "Жаңа растау кодын енгізіңіз.",
+			code:    "auth.invalid_otp",
+		},
+		"invalid OAuth token": {
+			title:   "OAuth токені жарамсыз",
+			message: "Провайдер арқылы қайта кіріңіз.",
+			code:    "auth.invalid_oauth_token",
+		},
+		"invalid or expired refresh token": {
+			title:   "Сессия жарамсыз",
+			message: "Аккаунтқа қайта кіріңіз.",
+			code:    "auth.invalid_refresh_token",
+		},
+		"account is blocked": {
+			title:   "Аккаунт бұғатталған",
+			message: "Бұл аккаунтқа кіру шектелген.",
+			code:    "auth.account_blocked",
+		},
+	},
 }
 
 func (h *AuthHandler) writeJSON(w http.ResponseWriter, status int, v any) {
@@ -277,8 +460,88 @@ func (h *AuthHandler) writeJSON(w http.ResponseWriter, status int, v any) {
 	}
 }
 
-func (h *AuthHandler) writeError(w http.ResponseWriter, status int, msg string) {
-	h.writeJSON(w, status, errorResponse{Error: msg})
+func (h *AuthHandler) writeError(w http.ResponseWriter, r *http.Request, status int, msg string) {
+	kind := "business"
+	entry := localizedAuthError(r, msg)
+	if status >= http.StatusInternalServerError {
+		kind = "technical"
+		entry = technicalAuthError(r)
+	}
+	h.writeJSON(w, status, errorResponse{
+		Error:   entry.title,
+		Message: entry.message,
+		Code:    entry.code,
+		Kind:    kind,
+	})
+}
+
+func localizedAuthError(r *http.Request, msg string) localizedError {
+	locale := authLocaleFromRequest(r)
+	if messages, ok := authErrorMessages[locale]; ok {
+		if entry, ok := messages[msg]; ok {
+			return entry
+		}
+	}
+	if entry, ok := authErrorMessages["ru"][msg]; ok {
+		return entry
+	}
+	return localizedError{
+		title:   "Некорректный запрос",
+		message: "Проверьте данные запроса и попробуйте снова.",
+		code:    "auth.bad_request",
+	}
+}
+
+func technicalAuthError(r *http.Request) localizedError {
+	switch authLocaleFromRequest(r) {
+	case "en":
+		return localizedError{
+			title:   "Technical error",
+			message: "A server problem occurred. Please try again later.",
+			code:    "auth.technical",
+		}
+	case "kk":
+		return localizedError{
+			title:   "Техникалық қате",
+			message: "Серверде мәселе туындады. Кейінірек қайталап көріңіз.",
+			code:    "auth.technical",
+		}
+	default:
+		return localizedError{
+			title:   "Техническая ошибка",
+			message: "На сервере возникла проблема. Попробуйте позже.",
+			code:    "auth.technical",
+		}
+	}
+}
+
+func authLocaleFromRequest(r *http.Request) string {
+	if r == nil {
+		return "ru"
+	}
+	if locale := supportedAuthLocale(r.URL.Query().Get("lang")); locale != "" {
+		return locale
+	}
+	for _, part := range strings.Split(r.Header.Get("Accept-Language"), ",") {
+		tag := strings.TrimSpace(strings.Split(part, ";")[0])
+		if locale := supportedAuthLocale(tag); locale != "" {
+			return locale
+		}
+	}
+	return "ru"
+}
+
+func supportedAuthLocale(tag string) string {
+	tag = strings.ToLower(strings.TrimSpace(tag))
+	if idx := strings.IndexByte(tag, '-'); idx >= 0 {
+		tag = tag[:idx]
+	}
+	switch tag {
+	case "ru", "en", "kk":
+		return tag
+	default:
+		return ""
+	}
 }
 
 func jsonContentType(next http.Handler) http.Handler {

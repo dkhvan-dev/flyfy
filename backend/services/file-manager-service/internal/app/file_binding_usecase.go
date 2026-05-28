@@ -58,7 +58,7 @@ func (u *FileBindingUseCase) BindFile(ctx context.Context, input BindFileInput) 
 		return nil, ErrFileNotFound
 	}
 	if file.Status != enum.FileStatusReady {
-		return nil, fmt.Errorf("file is not ready for binding")
+		return nil, ErrFileNotReady
 	}
 
 	ownerType := enum.OwnerType(strings.TrimSpace(input.OwnerType))

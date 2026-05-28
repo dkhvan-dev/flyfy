@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -46,7 +47,8 @@ func (s *Server) CreateActivityConversation(ctx context.Context, activityID, tit
 		HostUserID: hID,
 	})
 	if err != nil {
-		return "", status.Error(codes.Internal, err.Error())
+		logTechnicalError(err, "create activity conversation failed")
+		return "", grpcStatusFromAppError(err)
 	}
 
 	return conv.ID.String(), nil
@@ -63,7 +65,11 @@ func (s *Server) AddParticipant(ctx context.Context, conversationID, userID, dis
 		return status.Error(codes.InvalidArgument, "invalid user id")
 	}
 
-	return s.conversationUC.AddParticipant(ctx, cID, uID, displayName)
+	if err := s.conversationUC.AddParticipant(ctx, cID, uID, displayName); err != nil {
+		logTechnicalError(err, "add chat participant failed")
+		return grpcStatusFromAppError(err)
+	}
+	return nil
 }
 
 func (s *Server) RemoveParticipant(ctx context.Context, conversationID, userID string) error {
@@ -77,5 +83,15 @@ func (s *Server) RemoveParticipant(ctx context.Context, conversationID, userID s
 		return status.Error(codes.InvalidArgument, "invalid user id")
 	}
 
-	return s.conversationUC.RemoveParticipant(ctx, cID, uID)
+	if err := s.conversationUC.RemoveParticipant(ctx, cID, uID); err != nil {
+		logTechnicalError(err, "remove chat participant failed")
+		return grpcStatusFromAppError(err)
+	}
+	return nil
+}
+
+func logTechnicalError(err error, message string) {
+	if !isGRPCBusinessError(err) {
+		log.Error().Err(err).Msg(message)
+	}
 }

@@ -56,7 +56,7 @@ func (h *TokenGRPCHandler) GenerateUserTokens(
 ) (*TokenPairResult, error) {
 	uid, err := uuid.Parse(userID)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid user_id: %v", err)
+		return nil, status.Error(codes.InvalidArgument, "invalid user_id")
 	}
 
 	pair, err := h.generator.GenerateUserTokens(ctx, model.UserClaims{
@@ -117,7 +117,7 @@ func (h *TokenGRPCHandler) RevokeToken(ctx context.Context, jti string, exp int6
 func (h *TokenGRPCHandler) ListUserSessions(ctx context.Context, userID string) ([]*UserSessionResult, error) {
 	uid, err := uuid.Parse(userID)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid user_id: %v", err)
+		return nil, status.Error(codes.InvalidArgument, "invalid user_id")
 	}
 	sessions, err := h.sessions.ListUserSessions(ctx, uid)
 	if err != nil {
@@ -133,7 +133,7 @@ func (h *TokenGRPCHandler) ListUserSessions(ctx context.Context, userID string) 
 func (h *TokenGRPCHandler) RevokeSession(ctx context.Context, sessionID, reason string) (bool, error) {
 	sid, err := uuid.Parse(sessionID)
 	if err != nil {
-		return false, status.Errorf(codes.InvalidArgument, "invalid session_id: %v", err)
+		return false, status.Error(codes.InvalidArgument, "invalid session_id")
 	}
 	if reason == "" {
 		reason = model.RevokeReasonUserLogout
@@ -147,7 +147,7 @@ func (h *TokenGRPCHandler) RevokeSession(ctx context.Context, sessionID, reason 
 func (h *TokenGRPCHandler) RevokeAllUserSessions(ctx context.Context, userID, reason string) (int32, error) {
 	uid, err := uuid.Parse(userID)
 	if err != nil {
-		return 0, status.Errorf(codes.InvalidArgument, "invalid user_id: %v", err)
+		return 0, status.Error(codes.InvalidArgument, "invalid user_id")
 	}
 	if reason == "" {
 		reason = model.RevokeReasonAdmin

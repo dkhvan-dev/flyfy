@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/dkhvan-dev/flyfy/backend/services/reference-service/internal/app"
 	"github.com/dkhvan-dev/flyfy/backend/services/reference-service/internal/transport/dto"
@@ -36,10 +35,15 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/currencies/{code}", h.GetCurrency)
 
 	mux.HandleFunc("GET /v1/timezones", h.ListTimezones)
+	mux.HandleFunc("GET /", h.NotFound)
 }
 
 func (h *Handler) Health(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+func (h *Handler) NotFound(w http.ResponseWriter, r *http.Request) {
+	writeBusinessError(w, r, http.StatusNotFound, errorCodeRouteNotFound)
 }
 
 // --- Countries ---
@@ -68,7 +72,7 @@ func (h *Handler) GetCountry(w http.ResponseWriter, r *http.Request) {
 	code := r.PathValue("code")
 	country := h.uc.GetCountry(code)
 	if country == nil {
-		writeError(w, http.StatusNotFound, "country not found")
+		writeBusinessError(w, r, http.StatusNotFound, errorCodeCountryNotFound)
 		return
 	}
 
@@ -92,7 +96,7 @@ func (h *Handler) ListCitiesByCountry(w http.ResponseWriter, r *http.Request) {
 	code := r.PathValue("code")
 	country := h.uc.GetCountry(code)
 	if country == nil {
-		writeError(w, http.StatusNotFound, "country not found")
+		writeBusinessError(w, r, http.StatusNotFound, errorCodeCountryNotFound)
 		return
 	}
 	cities := h.uc.ListCities(code)
@@ -105,7 +109,7 @@ func (h *Handler) GetCurrencyByCountry(w http.ResponseWriter, r *http.Request) {
 	code := r.PathValue("code")
 	currency := h.uc.GetCurrencyByCountry(code)
 	if currency == nil {
-		writeError(w, http.StatusNotFound, "currency not found for country")
+		writeBusinessError(w, r, http.StatusNotFound, errorCodeCurrencyForCountryNotFound)
 		return
 	}
 	setCacheControl(w, 86400)
@@ -140,7 +144,7 @@ func (h *Handler) GetCity(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	city := h.uc.GetCity(id)
 	if city == nil {
-		writeError(w, http.StatusNotFound, "city not found")
+		writeBusinessError(w, r, http.StatusNotFound, errorCodeCityNotFound)
 		return
 	}
 	setCacheControl(w, 86400)
@@ -173,7 +177,7 @@ func (h *Handler) GetCurrency(w http.ResponseWriter, r *http.Request) {
 	code := r.PathValue("code")
 	currency := h.uc.GetCurrency(code)
 	if currency == nil {
-		writeError(w, http.StatusNotFound, "currency not found")
+		writeBusinessError(w, r, http.StatusNotFound, errorCodeCurrencyNotFound)
 		return
 	}
 	setCacheControl(w, 86400)
@@ -192,13 +196,11 @@ func (h *Handler) ListTimezones(w http.ResponseWriter, r *http.Request) {
 // --- Helpers ---
 
 func parseLang(r *http.Request) string {
-	lang := strings.TrimSpace(r.URL.Query().Get("lang"))
-	switch lang {
-	case "ru", "kk":
+	if lang, ok := supportedLang(r.URL.Query().Get("lang")); ok {
 		return lang
-	default:
-		return "en"
 	}
+
+	return "en"
 }
 
 func parseLimit(r *http.Request) int {
@@ -217,8 +219,4 @@ func writeJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(data)
-}
-
-func writeError(w http.ResponseWriter, status int, message string) {
-	writeJSON(w, status, map[string]string{"error": message})
 }

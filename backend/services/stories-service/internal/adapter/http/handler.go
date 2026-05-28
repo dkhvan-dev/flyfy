@@ -49,13 +49,13 @@ func (h *Handler) ListStories(w http.ResponseWriter, r *http.Request) {
 	if raw := strings.TrimSpace(query.Get("authorId")); raw != "" {
 		parsed, err := uuid.Parse(raw)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "invalid authorId")
+			writeError(w, r, http.StatusBadRequest, errorCodeInvalidAuthorID)
 			return
 		}
 		authorID = &parsed
 	}
 
-	limit, offset, ok := parsePagination(w, query.Get("limit"), query.Get("offset"))
+	limit, offset, ok := parsePagination(w, r, query.Get("limit"), query.Get("offset"))
 	if !ok {
 		return
 	}
@@ -72,7 +72,7 @@ func (h *Handler) ListStories(w http.ResponseWriter, r *http.Request) {
 		Offset:      offset,
 	})
 	if err != nil {
-		h.writeUseCaseError(w, err, "failed to list stories")
+		h.writeUseCaseError(w, r, err)
 		return
 	}
 
@@ -88,7 +88,7 @@ func (h *Handler) ListStories(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) ListMyStories(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
-	limit, offset, ok := parsePagination(w, query.Get("limit"), query.Get("offset"))
+	limit, offset, ok := parsePagination(w, r, query.Get("limit"), query.Get("offset"))
 	if !ok {
 		return
 	}
@@ -105,7 +105,7 @@ func (h *Handler) ListMyStories(w http.ResponseWriter, r *http.Request) {
 		IncludeMine: true,
 	})
 	if err != nil {
-		h.writeUseCaseError(w, err, "failed to list my stories")
+		h.writeUseCaseError(w, r, err)
 		return
 	}
 
@@ -122,13 +122,13 @@ func (h *Handler) ListMyStories(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) CreateStory(w http.ResponseWriter, r *http.Request) {
 	var req dto.CreateStoryRequest
 	if err := decodeBody(r, &req); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeError(w, r, http.StatusBadRequest, errorCodeInvalidRequestBody)
 		return
 	}
 
 	coverFileID, err := parseOptionalUUID(req.CoverFileID)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid coverFileId")
+		writeError(w, r, http.StatusBadRequest, errorCodeInvalidCoverFileID)
 		return
 	}
 
@@ -144,7 +144,7 @@ func (h *Handler) CreateStory(w http.ResponseWriter, r *http.Request) {
 		Tags:             req.Tags,
 	})
 	if err != nil {
-		h.writeUseCaseError(w, err, "failed to create story")
+		h.writeUseCaseError(w, r, err)
 		return
 	}
 
@@ -155,13 +155,13 @@ func (h *Handler) GetPublicStoryBySlug(w http.ResponseWriter, r *http.Request) {
 	path := strings.TrimPrefix(r.URL.Path, "/v1/public/stories/")
 	slug := strings.TrimSpace(strings.Trim(path, "/"))
 	if slug == "" {
-		writeError(w, http.StatusNotFound, "not found")
+		writeError(w, r, http.StatusNotFound, errorCodeNotFound)
 		return
 	}
 
 	detail, err := h.useCase.GetStoryBySlug(r.Context(), slug, SubjectFromContext(r.Context()))
 	if err != nil {
-		h.writeUseCaseError(w, err, "failed to get story")
+		h.writeUseCaseError(w, r, err)
 		return
 	}
 
@@ -172,7 +172,7 @@ func (h *Handler) handleStoryActions(w http.ResponseWriter, r *http.Request) {
 	path := strings.TrimPrefix(r.URL.Path, "/v1/stories/")
 	path = strings.Trim(path, "/")
 	if path == "" || path == "mine" {
-		writeError(w, http.StatusNotFound, "not found")
+		writeError(w, r, http.StatusNotFound, errorCodeNotFound)
 		return
 	}
 
@@ -184,7 +184,7 @@ func (h *Handler) handleStoryActions(w http.ResponseWriter, r *http.Request) {
 
 	storyID, err := uuid.Parse(parts[0])
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid story id")
+		writeError(w, r, http.StatusBadRequest, errorCodeInvalidStoryID)
 		return
 	}
 
@@ -220,7 +220,7 @@ func (h *Handler) handleStoryActions(w http.ResponseWriter, r *http.Request) {
 		if len(parts) == 3 {
 			commentID, parseErr := uuid.Parse(parts[2])
 			if parseErr != nil {
-				writeError(w, http.StatusBadRequest, "invalid comment id")
+				writeError(w, r, http.StatusBadRequest, errorCodeInvalidCommentID)
 				return
 			}
 			if r.Method == http.MethodPatch {
@@ -235,7 +235,7 @@ func (h *Handler) handleStoryActions(w http.ResponseWriter, r *http.Request) {
 		if len(parts) == 4 && parts[3] == "likes" {
 			commentID, parseErr := uuid.Parse(parts[2])
 			if parseErr != nil {
-				writeError(w, http.StatusBadRequest, "invalid comment id")
+				writeError(w, r, http.StatusBadRequest, errorCodeInvalidCommentID)
 				return
 			}
 			if r.Method == http.MethodPost {
@@ -254,26 +254,26 @@ func (h *Handler) handleStoryActions(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	writeError(w, http.StatusNotFound, "not found")
+	writeError(w, r, http.StatusNotFound, errorCodeNotFound)
 }
 
 func (h *Handler) handleStoryUserActions(w http.ResponseWriter, r *http.Request, parts []string) {
 	if r.Method != http.MethodGet ||
 		len(parts) != 3 ||
 		parts[2] != "published-count" {
-		writeError(w, http.StatusNotFound, "not found")
+		writeError(w, r, http.StatusNotFound, errorCodeNotFound)
 		return
 	}
 
 	authorID, err := uuid.Parse(parts[1])
 	if err != nil || authorID == uuid.Nil {
-		writeError(w, http.StatusBadRequest, "invalid user id")
+		writeError(w, r, http.StatusBadRequest, errorCodeInvalidUserID)
 		return
 	}
 
 	count, err := h.useCase.CountPublishedStoriesByAuthorID(r.Context(), authorID)
 	if err != nil {
-		h.writeUseCaseError(w, err, "failed to count published stories")
+		h.writeUseCaseError(w, r, err)
 		return
 	}
 
@@ -292,14 +292,14 @@ func (h *Handler) handleStoryRoot(w http.ResponseWriter, r *http.Request, storyI
 	case http.MethodDelete:
 		h.DeleteStory(w, r, storyID)
 	default:
-		writeError(w, http.StatusNotFound, "not found")
+		writeError(w, r, http.StatusNotFound, errorCodeNotFound)
 	}
 }
 
 func (h *Handler) GetStoryByID(w http.ResponseWriter, r *http.Request, storyID uuid.UUID) {
 	item, err := h.useCase.GetStoryByID(r.Context(), SubjectFromContext(r.Context()), storyID)
 	if err != nil {
-		h.writeUseCaseError(w, err, "failed to get story")
+		h.writeUseCaseError(w, r, err)
 		return
 	}
 
@@ -309,13 +309,13 @@ func (h *Handler) GetStoryByID(w http.ResponseWriter, r *http.Request, storyID u
 func (h *Handler) UpdateStory(w http.ResponseWriter, r *http.Request, storyID uuid.UUID) {
 	var req dto.UpdateStoryRequest
 	if err := decodeBody(r, &req); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeError(w, r, http.StatusBadRequest, errorCodeInvalidRequestBody)
 		return
 	}
 
 	coverFileID, err := parseOptionalUUID(req.CoverFileID)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid coverFileId")
+		writeError(w, r, http.StatusBadRequest, errorCodeInvalidCoverFileID)
 		return
 	}
 
@@ -331,7 +331,7 @@ func (h *Handler) UpdateStory(w http.ResponseWriter, r *http.Request, storyID uu
 		Tags:             req.Tags,
 	})
 	if err != nil {
-		h.writeUseCaseError(w, err, "failed to update story")
+		h.writeUseCaseError(w, r, err)
 		return
 	}
 
@@ -340,7 +340,7 @@ func (h *Handler) UpdateStory(w http.ResponseWriter, r *http.Request, storyID uu
 
 func (h *Handler) DeleteStory(w http.ResponseWriter, r *http.Request, storyID uuid.UUID) {
 	if err := h.useCase.DeleteStory(r.Context(), SubjectFromContext(r.Context()), storyID); err != nil {
-		h.writeUseCaseError(w, err, "failed to delete story")
+		h.writeUseCaseError(w, r, err)
 		return
 	}
 
@@ -350,7 +350,7 @@ func (h *Handler) DeleteStory(w http.ResponseWriter, r *http.Request, storyID uu
 func (h *Handler) TrackStoryView(w http.ResponseWriter, r *http.Request, storyID uuid.UUID) {
 	count, err := h.useCase.TrackStoryView(r.Context(), SubjectFromContext(r.Context()), storyID)
 	if err != nil {
-		h.writeUseCaseError(w, err, "failed to track story view")
+		h.writeUseCaseError(w, r, err)
 		return
 	}
 
@@ -360,7 +360,7 @@ func (h *Handler) TrackStoryView(w http.ResponseWriter, r *http.Request, storyID
 func (h *Handler) LikeStory(w http.ResponseWriter, r *http.Request, storyID uuid.UUID) {
 	count, err := h.useCase.LikeStory(r.Context(), SubjectFromContext(r.Context()), storyID)
 	if err != nil {
-		h.writeUseCaseError(w, err, "failed to like story")
+		h.writeUseCaseError(w, r, err)
 		return
 	}
 
@@ -370,7 +370,7 @@ func (h *Handler) LikeStory(w http.ResponseWriter, r *http.Request, storyID uuid
 func (h *Handler) UnlikeStory(w http.ResponseWriter, r *http.Request, storyID uuid.UUID) {
 	count, err := h.useCase.UnlikeStory(r.Context(), SubjectFromContext(r.Context()), storyID)
 	if err != nil {
-		h.writeUseCaseError(w, err, "failed to unlike story")
+		h.writeUseCaseError(w, r, err)
 		return
 	}
 
@@ -379,14 +379,14 @@ func (h *Handler) UnlikeStory(w http.ResponseWriter, r *http.Request, storyID uu
 
 func (h *Handler) ListComments(w http.ResponseWriter, r *http.Request, storyID uuid.UUID) {
 	query := r.URL.Query()
-	limit, offset, ok := parsePagination(w, query.Get("limit"), query.Get("offset"))
+	limit, offset, ok := parsePagination(w, r, query.Get("limit"), query.Get("offset"))
 	if !ok {
 		return
 	}
 
 	items, err := h.useCase.ListComments(r.Context(), SubjectFromContext(r.Context()), storyID, limit, offset)
 	if err != nil {
-		h.writeUseCaseError(w, err, "failed to list comments")
+		h.writeUseCaseError(w, r, err)
 		return
 	}
 
@@ -401,13 +401,13 @@ func (h *Handler) ListComments(w http.ResponseWriter, r *http.Request, storyID u
 func (h *Handler) CreateComment(w http.ResponseWriter, r *http.Request, storyID uuid.UUID) {
 	var req dto.CreateCommentRequest
 	if err := decodeBody(r, &req); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeError(w, r, http.StatusBadRequest, errorCodeInvalidRequestBody)
 		return
 	}
 
 	item, err := h.useCase.CreateComment(r.Context(), SubjectFromContext(r.Context()), storyID, req.Body)
 	if err != nil {
-		h.writeUseCaseError(w, err, "failed to create comment")
+		h.writeUseCaseError(w, r, err)
 		return
 	}
 
@@ -417,13 +417,13 @@ func (h *Handler) CreateComment(w http.ResponseWriter, r *http.Request, storyID 
 func (h *Handler) UpdateComment(w http.ResponseWriter, r *http.Request, storyID uuid.UUID, commentID uuid.UUID) {
 	var req dto.UpdateCommentRequest
 	if err := decodeBody(r, &req); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeError(w, r, http.StatusBadRequest, errorCodeInvalidRequestBody)
 		return
 	}
 
 	item, err := h.useCase.UpdateComment(r.Context(), SubjectFromContext(r.Context()), storyID, commentID, req.Body)
 	if err != nil {
-		h.writeUseCaseError(w, err, "failed to update comment")
+		h.writeUseCaseError(w, r, err)
 		return
 	}
 
@@ -432,7 +432,7 @@ func (h *Handler) UpdateComment(w http.ResponseWriter, r *http.Request, storyID 
 
 func (h *Handler) DeleteComment(w http.ResponseWriter, r *http.Request, storyID uuid.UUID, commentID uuid.UUID) {
 	if err := h.useCase.DeleteComment(r.Context(), SubjectFromContext(r.Context()), storyID, commentID); err != nil {
-		h.writeUseCaseError(w, err, "failed to delete comment")
+		h.writeUseCaseError(w, r, err)
 		return
 	}
 
@@ -442,7 +442,7 @@ func (h *Handler) DeleteComment(w http.ResponseWriter, r *http.Request, storyID 
 func (h *Handler) LikeComment(w http.ResponseWriter, r *http.Request, storyID uuid.UUID, commentID uuid.UUID) {
 	count, likedByMe, err := h.useCase.LikeComment(r.Context(), SubjectFromContext(r.Context()), storyID, commentID)
 	if err != nil {
-		h.writeUseCaseError(w, err, "failed to like comment")
+		h.writeUseCaseError(w, r, err)
 		return
 	}
 
@@ -455,7 +455,7 @@ func (h *Handler) LikeComment(w http.ResponseWriter, r *http.Request, storyID uu
 func (h *Handler) UnlikeComment(w http.ResponseWriter, r *http.Request, storyID uuid.UUID, commentID uuid.UUID) {
 	count, likedByMe, err := h.useCase.UnlikeComment(r.Context(), SubjectFromContext(r.Context()), storyID, commentID)
 	if err != nil {
-		h.writeUseCaseError(w, err, "failed to unlike comment")
+		h.writeUseCaseError(w, r, err)
 		return
 	}
 
@@ -468,7 +468,7 @@ func (h *Handler) UnlikeComment(w http.ResponseWriter, r *http.Request, storyID 
 func (h *Handler) ShareStory(w http.ResponseWriter, r *http.Request, storyID uuid.UUID) {
 	shareURL, count, err := h.useCase.ShareStory(r.Context(), storyID)
 	if err != nil {
-		h.writeUseCaseError(w, err, "failed to share story")
+		h.writeUseCaseError(w, r, err)
 		return
 	}
 
@@ -476,36 +476,6 @@ func (h *Handler) ShareStory(w http.ResponseWriter, r *http.Request, storyID uui
 		ShareURL: shareURL,
 		Shares:   count,
 	})
-}
-
-func (h *Handler) writeUseCaseError(w http.ResponseWriter, err error, fallback string) {
-	switch {
-	case errors.Is(err, app.ErrInvalidStoryID),
-		errors.Is(err, app.ErrInvalidStoryAuthorID),
-		errors.Is(err, app.ErrInvalidCommentID),
-		errors.Is(err, app.ErrInvalidStoryTitle),
-		errors.Is(err, app.ErrInvalidStoryContent),
-		errors.Is(err, app.ErrInvalidStoryCategory),
-		errors.Is(err, app.ErrInvalidStoryStatus),
-		errors.Is(err, app.ErrInvalidStoryTags),
-		errors.Is(err, app.ErrInvalidStoryPlace),
-		errors.Is(err, app.ErrInvalidStoryCover),
-		errors.Is(err, app.ErrInvalidCommentBody),
-		errors.Is(err, app.ErrStoryCommentRateLimited),
-		errors.Is(err, app.ErrCannotLikeOwnStory):
-		writeError(w, http.StatusBadRequest, err.Error())
-	case errors.Is(err, app.ErrUnauthenticatedWriter):
-		writeError(w, http.StatusUnauthorized, err.Error())
-	case errors.Is(err, app.ErrStoryAccessDenied),
-		errors.Is(err, app.ErrStoryCommentAccessDenied):
-		writeError(w, http.StatusForbidden, err.Error())
-	case errors.Is(err, app.ErrStoryNotFound),
-		errors.Is(err, app.ErrStoryCommentNotFound),
-		errors.Is(err, app.ErrUserNotFound):
-		writeError(w, http.StatusNotFound, err.Error())
-	default:
-		writeError(w, http.StatusInternalServerError, fallback)
-	}
 }
 
 func toStoryResponse(item *app.StoryView, includeContent bool) *dto.StoryResponse {
@@ -618,14 +588,14 @@ func toAuthorResponse(author app.StoryAuthor) dto.AuthorResponse {
 	}
 }
 
-func parsePagination(w http.ResponseWriter, rawLimit string, rawOffset string) (int, int, bool) {
+func parsePagination(w http.ResponseWriter, r *http.Request, rawLimit string, rawOffset string) (int, int, bool) {
 	limit := 20
 	offset := 0
 
 	if strings.TrimSpace(rawLimit) != "" {
 		parsed, err := strconv.Atoi(strings.TrimSpace(rawLimit))
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "invalid limit")
+			writeError(w, r, http.StatusBadRequest, errorCodeInvalidLimit)
 			return 0, 0, false
 		}
 		limit = parsed
@@ -634,7 +604,7 @@ func parsePagination(w http.ResponseWriter, rawLimit string, rawOffset string) (
 	if strings.TrimSpace(rawOffset) != "" {
 		parsed, err := strconv.Atoi(strings.TrimSpace(rawOffset))
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "invalid offset")
+			writeError(w, r, http.StatusBadRequest, errorCodeInvalidOffset)
 			return 0, 0, false
 		}
 		offset = parsed
@@ -666,12 +636,6 @@ func decodeBody(r *http.Request, target any) error {
 		return errors.New("invalid request body")
 	}
 	return nil
-}
-
-func writeError(w http.ResponseWriter, status int, message string) {
-	writeJSON(w, status, map[string]string{
-		"error": message,
-	})
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload any) {

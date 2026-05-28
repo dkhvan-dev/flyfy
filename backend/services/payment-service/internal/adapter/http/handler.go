@@ -485,5 +485,70 @@ func writeJSON(w http.ResponseWriter, status int, value any) {
 }
 
 func writeError(w http.ResponseWriter, status int, message string) {
-	writeJSON(w, status, map[string]string{"error": message})
+	writeJSON(w, status, buildErrorResponse("payment", status, message))
+}
+
+type errorResponse struct {
+	Error   string `json:"error"`
+	Message string `json:"message"`
+	Code    string `json:"code"`
+	Kind    string `json:"kind"`
+}
+
+func buildErrorResponse(service string, status int, message string) errorResponse {
+	if status >= http.StatusInternalServerError {
+		return errorResponse{
+			Error:   "Техническая ошибка",
+			Message: "На сервере возникла проблема. Попробуйте позже.",
+			Code:    service + ".technical",
+			Kind:    "technical",
+		}
+	}
+	title, publicMessage := localizedBusinessError(status)
+	return errorResponse{
+		Error:   title,
+		Message: publicMessage,
+		Code:    service + "." + errorCodeFromMessage(message),
+		Kind:    "business",
+	}
+}
+
+func localizedBusinessError(status int) (string, string) {
+	switch status {
+	case http.StatusUnauthorized:
+		return "Требуется авторизация", "Войдите в аккаунт и повторите запрос."
+	case http.StatusForbidden:
+		return "Недостаточно прав", "У вас нет доступа к этому действию."
+	case http.StatusNotFound:
+		return "Данные не найдены", "Запрошенные данные не найдены."
+	case http.StatusConflict:
+		return "Конфликт данных", "Данные уже изменились или действие недоступно в текущем состоянии."
+	case http.StatusTooManyRequests:
+		return "Слишком много запросов", "Попробуйте повторить запрос чуть позже."
+	default:
+		return "Некорректный запрос", "Проверьте данные запроса и попробуйте снова."
+	}
+}
+
+func errorCodeFromMessage(message string) string {
+	message = strings.ToLower(strings.TrimSpace(message))
+	var builder strings.Builder
+	previousUnderscore := false
+	for _, r := range message {
+		isAlphaNumeric := (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9')
+		if isAlphaNumeric {
+			builder.WriteRune(r)
+			previousUnderscore = false
+			continue
+		}
+		if !previousUnderscore && builder.Len() > 0 {
+			builder.WriteByte('_')
+			previousUnderscore = true
+		}
+	}
+	code := strings.Trim(builder.String(), "_")
+	if code == "" {
+		return "business_error"
+	}
+	return code
 }

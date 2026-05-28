@@ -72,7 +72,7 @@ func ServiceAuthInterceptor(
 				Str("method", info.FullMethod).
 				Msg("service token validation failed")
 
-			return nil, status.Errorf(codes.Unauthenticated, "invalid service token: %v", err)
+			return nil, status.Error(codes.Unauthenticated, "invalid service token")
 		}
 
 		// 3. Verify this is indeed a service token
@@ -94,11 +94,7 @@ func ServiceAuthInterceptor(
 				Strs("missing_roles", missing).
 				Msg("service auth denied: insufficient roles")
 
-			return nil, status.Errorf(
-				codes.PermissionDenied,
-				"service %q lacks required roles: %v",
-				claims.Subject, missing,
-			)
+			return nil, status.Error(codes.PermissionDenied, "insufficient service role")
 		}
 
 		// 5. Audit: granted

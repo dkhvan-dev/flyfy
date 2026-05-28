@@ -89,6 +89,7 @@ func TestPublicContentFallsBackToStreamingWhenPublicObjectURLIsDisabled(t *testi
 
 type fakeFileUseCase struct {
 	publicContentURL         *app.PublicContentURLOutput
+	publicContentURLErr      error
 	publicContentBody        string
 	publicContentContentType string
 	openPublicContentCalled  bool
@@ -125,7 +126,7 @@ func (f *fakeFileUseCase) CreatePublicContentURL(
 	context.Context,
 	uuid.UUID,
 ) (*app.PublicContentURLOutput, error) {
-	return f.publicContentURL, nil
+	return f.publicContentURL, f.publicContentURLErr
 }
 
 func (f *fakeFileUseCase) OpenContent(context.Context, uuid.UUID) (io.ReadCloser, string, error) {

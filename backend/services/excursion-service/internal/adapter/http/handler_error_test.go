@@ -19,7 +19,10 @@ func TestWriteUseCaseErrorMapsInvalidExcursionLocationToBadRequest(t *testing.T)
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
 	}
-	if !strings.Contains(rec.Body.String(), model.ErrInvalidExcursionLocation.Error()) {
-		t.Fatalf("body = %s, want invalid location error", rec.Body.String())
+	if !strings.Contains(rec.Body.String(), `"code":"excursion.invalid_excursion_location"`) {
+		t.Fatalf("body = %s, want stable invalid location code", rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), `"kind":"business"`) {
+		t.Fatalf("body = %s, want business error kind", rec.Body.String())
 	}
 }

@@ -1,10 +1,14 @@
 package http
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/rs/zerolog/log"
@@ -151,13 +155,13 @@ func (h *ProxyHandler) Dispatch(w http.ResponseWriter, r *http.Request) {
 		policy = matchRoutePolicy(r.URL.Path, h.cfg.Routes.APIPrefix)
 	}
 	if policy == nil {
-		writeError(w, http.StatusNotFound, "route not found")
+		writeBusinessError(w, r, http.StatusNotFound, errorCodeRouteNotFound)
 		return
 	}
 
 	proxy := h.resolveProxy(policy.Upstream)
 	if proxy == nil {
-		writeError(w, http.StatusBadGateway, "upstream is not configured")
+		writeTechnicalError(w, r, http.StatusBadGateway, errorCodeUpstreamUnavailable)
 		return
 	}
 
@@ -169,7 +173,7 @@ func (h *ProxyHandler) Dispatch(w http.ResponseWriter, r *http.Request) {
 			Str("route", policy.Name).
 			Str("request_id", RequestIDFromContext(r.Context())).
 			Msg("failed to inject trusted auth headers")
-		writeError(w, http.StatusBadGateway, "failed to resolve authenticated user")
+		writeTechnicalError(w, r, http.StatusBadGateway, errorCodeUserResolution)
 		return
 	}
 
@@ -317,6 +321,32 @@ func newSingleHostProxy(upstreamName string, rawTarget string, internalServiceTo
 			r.Header.Set("X-Internal-Service-Token", token)
 		}
 	}
+	proxy.ModifyResponse = func(resp *http.Response) error {
+		if resp.StatusCode < http.StatusInternalServerError {
+			return nil
+		}
+
+		log.Warn().
+			Str("upstream", upstreamName).
+			Int("status", resp.StatusCode).
+			Str("request_id", RequestIDFromContext(resp.Request.Context())).
+			Msg("masking downstream technical error response")
+
+		payload, err := json.Marshal(buildErrorResponse(resp.Request, errorCodeUpstreamUnavailable, errorKindTechnical))
+		if err != nil {
+			return err
+		}
+		payload = append(payload, '\n')
+
+		if resp.Body != nil {
+			_ = resp.Body.Close()
+		}
+		resp.Body = io.NopCloser(bytes.NewReader(payload))
+		resp.ContentLength = int64(len(payload))
+		resp.Header.Set("Content-Type", "application/json")
+		resp.Header.Set("Content-Length", strconv.Itoa(len(payload)))
+		return nil
+	}
 	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 		log.Error().
 			Err(err).
@@ -324,7 +354,7 @@ func newSingleHostProxy(upstreamName string, rawTarget string, internalServiceTo
 			Str("request_id", RequestIDFromContext(r.Context())).
 			Msg("downstream proxy error")
 
-		writeError(w, http.StatusBadGateway, "downstream service unavailable")
+		writeTechnicalError(w, r, http.StatusBadGateway, errorCodeUpstreamUnavailable)
 	}
 
 	return proxy, nil

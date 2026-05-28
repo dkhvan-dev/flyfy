@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/rs/zerolog/log"
+
 	"github.com/dkhvan-dev/flyfy/backend/services/api-gateway/internal/app"
 )
 
@@ -30,8 +32,11 @@ func NewReadinessHandler(
 
 func (h *ReadinessHandler) Ready(w http.ResponseWriter, r *http.Request) {
 	type dependencyStatus struct {
-		Status string `json:"status"`
-		Error  string `json:"error,omitempty"`
+		Status  string `json:"status"`
+		Error   string `json:"error,omitempty"`
+		Message string `json:"message,omitempty"`
+		Code    string `json:"code,omitempty"`
+		Kind    string `json:"kind,omitempty"`
 	}
 
 	deps := make(map[string]dependencyStatus, len(h.checkers))
@@ -43,10 +48,20 @@ func (h *ReadinessHandler) Ready(w http.ResponseWriter, r *http.Request) {
 		cancel()
 
 		if err != nil {
+			log.Warn().
+				Err(err).
+				Str("dependency", name).
+				Str("request_id", RequestIDFromContext(r.Context())).
+				Msg("readiness dependency check failed")
+
+			publicError := buildErrorResponse(r, errorCodeTechnical, errorKindTechnical)
 			overallReady = false
 			deps[name] = dependencyStatus{
-				Status: "down",
-				Error:  err.Error(),
+				Status:  "down",
+				Error:   publicError.Error,
+				Message: publicError.Message,
+				Code:    publicError.Code,
+				Kind:    publicError.Kind,
 			}
 			continue
 		}

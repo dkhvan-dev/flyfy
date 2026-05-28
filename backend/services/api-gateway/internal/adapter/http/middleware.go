@@ -12,6 +12,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/dkhvan-dev/flyfy/backend/services/api-gateway/internal/app"
 	"github.com/dkhvan-dev/flyfy/backend/services/api-gateway/internal/config"
@@ -216,7 +218,7 @@ func rateLimitMiddleware(cfg *config.Config, limiter *rateLimiter, next http.Han
 		key := clientIP(r) + ":" + RouteNameOrDefault(r.Context())
 
 		if !limiter.Allow(key, limit, time.Now().UTC()) {
-			writeError(w, http.StatusTooManyRequests, "rate limit exceeded")
+			writeBusinessError(w, r, http.StatusTooManyRequests, errorCodeRateLimitExceeded)
 			return
 		}
 
@@ -263,7 +265,7 @@ func authMiddleware(cfg *config.Config, verifier app.TokenVerifier, next http.Ha
 
 		policy := RoutePolicyFromContext(r.Context())
 		if policy == nil {
-			writeError(w, http.StatusNotFound, "route not found")
+			writeBusinessError(w, r, http.StatusNotFound, errorCodeRouteNotFound)
 			return
 		}
 
@@ -290,18 +292,27 @@ func authMiddleware(cfg *config.Config, verifier app.TokenVerifier, next http.Ha
 		}
 
 		if token == "" {
-			writeError(w, http.StatusUnauthorized, "missing bearer token")
+			writeBusinessError(w, r, http.StatusUnauthorized, errorCodeAuthRequired)
 			return
 		}
 
 		claims, err := verifier.VerifyAccessToken(r.Context(), token)
 		if err != nil {
-			writeError(w, http.StatusUnauthorized, "invalid access token")
+			log.Warn().
+				Err(err).
+				Str("route", RouteNameOrDefault(r.Context())).
+				Str("request_id", RequestIDFromContext(r.Context())).
+				Msg("access token verification failed")
+			if isTokenAuthFailure(err) {
+				writeBusinessError(w, r, http.StatusUnauthorized, errorCodeInvalidAccessToken)
+				return
+			}
+			writeTechnicalError(w, r, http.StatusServiceUnavailable, errorCodeTechnical)
 			return
 		}
 
 		if policy.AuthMode == RouteAuthRoleBased && !hasAnyRequiredRole(claims.Roles, policy.RequiredRoles) {
-			writeError(w, http.StatusForbidden, "insufficient role")
+			writeBusinessError(w, r, http.StatusForbidden, errorCodeInsufficientRole)
 			return
 		}
 
@@ -353,6 +364,15 @@ func hasAnyRequiredRole(actual []string, required []string) bool {
 	}
 
 	return false
+}
+
+func isTokenAuthFailure(err error) bool {
+	switch status.Code(err) {
+	case codes.Unauthenticated, codes.PermissionDenied, codes.InvalidArgument, codes.NotFound:
+		return true
+	default:
+		return false
+	}
 }
 
 func RequestIDFromContext(ctx context.Context) string {

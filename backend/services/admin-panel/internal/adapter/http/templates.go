@@ -259,7 +259,11 @@ func NewRenderer() (*Renderer, error) {
 func (r *Renderer) Render(w http.ResponseWriter, status int, name string, data any) {
 	var buffer bytes.Buffer
 	if err := r.templates.ExecuteTemplate(&buffer, name, data); err != nil {
-		http.Error(w, "template rendering failed", http.StatusInternalServerError)
+		locale := defaultLocale
+		if page, ok := data.(PageData); ok && strings.TrimSpace(page.Locale) != "" {
+			locale = page.Locale
+		}
+		http.Error(w, translate(locale, "error.generic"), http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

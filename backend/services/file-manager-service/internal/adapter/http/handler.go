@@ -69,7 +69,7 @@ func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) CreateUploadRequest(w http.ResponseWriter, r *http.Request) {
 	var req dto.CreateUploadRequestRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeBusinessError(w, r, http.StatusBadRequest, errorCodeInvalidRequestBody)
 		return
 	}
 
@@ -104,9 +104,11 @@ func (h *Handler) CreateUploadRequest(w http.ResponseWriter, r *http.Request) {
 			errors.Is(err, app.ErrFilenameRequired),
 			errors.Is(err, app.ErrContentTypeRequired),
 			errors.Is(err, app.ErrInvalidFileSize):
-			writeError(w, http.StatusBadRequest, err.Error())
+			writeAppError(w, r, http.StatusBadRequest, err)
+		case errors.Is(err, app.ErrIdempotencyConflict):
+			writeAppError(w, r, http.StatusConflict, err)
 		default:
-			writeError(w, http.StatusInternalServerError, "failed to create upload request")
+			writeTechnicalError(w, r, http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -128,14 +130,14 @@ func (h *Handler) handleFileActions(w http.ResponseWriter, r *http.Request) {
 	path := strings.TrimPrefix(r.URL.Path, "/v1/files/")
 	path = strings.Trim(path, "/")
 	if path == "" {
-		writeError(w, http.StatusNotFound, "not found")
+		writeBusinessError(w, r, http.StatusNotFound, errorCodeNotFound)
 		return
 	}
 
 	parts := strings.Split(path, "/")
 	fileID, err := uuid.Parse(parts[0])
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid file id")
+		writeBusinessError(w, r, http.StatusBadRequest, app.ErrorCodeInvalidFileID)
 		return
 	}
 
@@ -165,7 +167,7 @@ func (h *Handler) handleFileActions(w http.ResponseWriter, r *http.Request) {
 		h.ListBindings(w, r, fileID)
 		return
 	default:
-		writeError(w, http.StatusNotFound, "not found")
+		writeBusinessError(w, r, http.StatusNotFound, errorCodeNotFound)
 		return
 	}
 }
@@ -174,14 +176,14 @@ func (h *Handler) handlePublicFileActions(w http.ResponseWriter, r *http.Request
 	path := strings.TrimPrefix(r.URL.Path, "/v1/public/files/")
 	path = strings.Trim(path, "/")
 	if path == "" {
-		writeError(w, http.StatusNotFound, "not found")
+		writeBusinessError(w, r, http.StatusNotFound, errorCodeNotFound)
 		return
 	}
 
 	parts := strings.Split(path, "/")
 	fileID, err := uuid.Parse(parts[0])
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid file id")
+		writeBusinessError(w, r, http.StatusBadRequest, app.ErrorCodeInvalidFileID)
 		return
 	}
 
@@ -190,21 +192,21 @@ func (h *Handler) handlePublicFileActions(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	writeError(w, http.StatusNotFound, "not found")
+	writeBusinessError(w, r, http.StatusNotFound, errorCodeNotFound)
 }
 
 func (h *Handler) handleInternalFileActions(w http.ResponseWriter, r *http.Request) {
 	path := strings.TrimPrefix(r.URL.Path, "/v1/internal/files/")
 	path = strings.Trim(path, "/")
 	if path == "" {
-		writeError(w, http.StatusNotFound, "not found")
+		writeBusinessError(w, r, http.StatusNotFound, errorCodeNotFound)
 		return
 	}
 
 	parts := strings.Split(path, "/")
 	fileID, err := uuid.Parse(parts[0])
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid file id")
+		writeBusinessError(w, r, http.StatusBadRequest, app.ErrorCodeInvalidFileID)
 		return
 	}
 
@@ -213,7 +215,7 @@ func (h *Handler) handleInternalFileActions(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	writeError(w, http.StatusNotFound, "not found")
+	writeBusinessError(w, r, http.StatusNotFound, errorCodeNotFound)
 }
 
 func (h *Handler) CompleteUpload(w http.ResponseWriter, r *http.Request, fileID uuid.UUID) {
@@ -221,11 +223,11 @@ func (h *Handler) CompleteUpload(w http.ResponseWriter, r *http.Request, fileID 
 	if err != nil {
 		switch {
 		case errors.Is(err, app.ErrFileNotFound):
-			writeError(w, http.StatusNotFound, err.Error())
+			writeAppError(w, r, http.StatusNotFound, err)
 		case errors.Is(err, app.ErrUploadTooLarge):
-			writeError(w, http.StatusBadRequest, err.Error())
+			writeAppError(w, r, http.StatusBadRequest, err)
 		default:
-			writeError(w, http.StatusInternalServerError, "failed to complete upload")
+			writeTechnicalError(w, r, http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -246,25 +248,25 @@ func (h *Handler) UploadBinary(w http.ResponseWriter, r *http.Request, fileID uu
 	if err != nil {
 		var maxBytesErr *http.MaxBytesError
 		if errors.As(err, &maxBytesErr) {
-			writeError(w, http.StatusRequestEntityTooLarge, app.ErrUploadTooLarge.Error())
+			writeAppError(w, r, http.StatusRequestEntityTooLarge, app.ErrUploadTooLarge)
 			return
 		}
-		writeError(w, http.StatusBadRequest, "failed to read upload body")
+		writeBusinessError(w, r, http.StatusBadRequest, errorCodeInvalidRequestBody)
 		return
 	}
 
 	if err = h.useCase.UploadBinary(r.Context(), fileID, r.Header.Get("Content-Type"), body); err != nil {
 		switch {
 		case errors.Is(err, app.ErrFileNotFound):
-			writeError(w, http.StatusNotFound, err.Error())
+			writeAppError(w, r, http.StatusNotFound, err)
 		case errors.Is(err, app.ErrUploadTooLarge):
-			writeError(w, http.StatusRequestEntityTooLarge, err.Error())
+			writeAppError(w, r, http.StatusRequestEntityTooLarge, err)
 		case errors.Is(err, app.ErrInvalidFileID),
 			errors.Is(err, app.ErrInvalidFileSize),
 			errors.Is(err, app.ErrContentTypeRequired):
-			writeError(w, http.StatusBadRequest, err.Error())
+			writeAppError(w, r, http.StatusBadRequest, err)
 		default:
-			writeError(w, http.StatusInternalServerError, "failed to upload file binary")
+			writeTechnicalError(w, r, http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -277,9 +279,9 @@ func (h *Handler) GetFile(w http.ResponseWriter, r *http.Request, fileID uuid.UU
 	if err != nil {
 		switch {
 		case errors.Is(err, app.ErrFileNotFound):
-			writeError(w, http.StatusNotFound, err.Error())
+			writeAppError(w, r, http.StatusNotFound, err)
 		default:
-			writeError(w, http.StatusInternalServerError, "failed to get file")
+			writeTechnicalError(w, r, http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -292,9 +294,9 @@ func (h *Handler) CreateDownloadURL(w http.ResponseWriter, r *http.Request, file
 	if err != nil {
 		switch {
 		case errors.Is(err, app.ErrFileNotFound):
-			writeError(w, http.StatusNotFound, err.Error())
+			writeAppError(w, r, http.StatusNotFound, err)
 		default:
-			writeError(w, http.StatusInternalServerError, "failed to create download url")
+			writeTechnicalError(w, r, http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -323,11 +325,11 @@ func (h *Handler) GetContent(w http.ResponseWriter, r *http.Request, fileID uuid
 	if err != nil {
 		switch {
 		case errors.Is(err, app.ErrFileNotFound):
-			writeError(w, http.StatusNotFound, err.Error())
+			writeAppError(w, r, http.StatusNotFound, err)
 		case errors.Is(err, app.ErrFileNotReady), errors.Is(err, app.ErrFileNotPublic):
-			writeError(w, http.StatusForbidden, err.Error())
+			writeAppError(w, r, http.StatusForbidden, err)
 		default:
-			writeError(w, http.StatusInternalServerError, "failed to load file content")
+			writeTechnicalError(w, r, http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -341,11 +343,11 @@ func (h *Handler) GetPublicContent(w http.ResponseWriter, r *http.Request, fileI
 	if err != nil {
 		switch {
 		case errors.Is(err, app.ErrFileNotFound):
-			writeError(w, http.StatusNotFound, err.Error())
+			writeAppError(w, r, http.StatusNotFound, err)
 		case errors.Is(err, app.ErrFileNotReady), errors.Is(err, app.ErrFileNotPublic):
-			writeError(w, http.StatusForbidden, err.Error())
+			writeAppError(w, r, http.StatusForbidden, err)
 		default:
-			writeError(w, http.StatusInternalServerError, "failed to create public file content url")
+			writeTechnicalError(w, r, http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -358,11 +360,11 @@ func (h *Handler) GetPublicContent(w http.ResponseWriter, r *http.Request, fileI
 	if err != nil {
 		switch {
 		case errors.Is(err, app.ErrFileNotFound):
-			writeError(w, http.StatusNotFound, err.Error())
+			writeAppError(w, r, http.StatusNotFound, err)
 		case errors.Is(err, app.ErrFileNotReady), errors.Is(err, app.ErrFileNotPublic):
-			writeError(w, http.StatusForbidden, err.Error())
+			writeAppError(w, r, http.StatusForbidden, err)
 		default:
-			writeError(w, http.StatusInternalServerError, "failed to load file content")
+			writeTechnicalError(w, r, http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -396,9 +398,9 @@ func (h *Handler) DeleteFile(w http.ResponseWriter, r *http.Request, fileID uuid
 	if err := h.useCase.SoftDelete(r.Context(), fileID); err != nil {
 		switch {
 		case errors.Is(err, app.ErrFileNotFound):
-			writeError(w, http.StatusNotFound, err.Error())
+			writeAppError(w, r, http.StatusNotFound, err)
 		default:
-			writeError(w, http.StatusInternalServerError, "failed to delete file")
+			writeTechnicalError(w, r, http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -471,12 +473,6 @@ func userIDFromHeader(r *http.Request) *string {
 	return &userID
 }
 
-func writeError(w http.ResponseWriter, status int, message string) {
-	writeJSON(w, status, map[string]string{
-		"error": message,
-	})
-}
-
 func writeJSON(w http.ResponseWriter, status int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -497,7 +493,7 @@ func (h *Handler) BindFile(w http.ResponseWriter, r *http.Request, fileID uuid.U
 
 func (h *Handler) BindFileInternal(w http.ResponseWriter, r *http.Request, fileID uuid.UUID) {
 	if !InternalCallFromContext(r.Context()) {
-		writeError(w, http.StatusUnauthorized, "missing internal service token")
+		writeBusinessError(w, r, http.StatusUnauthorized, errorCodeUnauthorized)
 		return
 	}
 
@@ -507,7 +503,7 @@ func (h *Handler) BindFileInternal(w http.ResponseWriter, r *http.Request, fileI
 func (h *Handler) bindFile(w http.ResponseWriter, r *http.Request, fileID uuid.UUID, enforceUserOwner bool) {
 	var req dto.BindFileRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeBusinessError(w, r, http.StatusBadRequest, errorCodeInvalidRequestBody)
 		return
 	}
 
@@ -515,7 +511,7 @@ func (h *Handler) bindFile(w http.ResponseWriter, r *http.Request, fileID uuid.U
 	if enforceUserOwner && strings.EqualFold(strings.TrimSpace(req.OwnerType), "USER") {
 		currentUserID := strings.TrimSpace(UserIDFromContext(r.Context()))
 		if currentUserID == "" || strings.TrimSpace(req.OwnerID) != currentUserID {
-			writeError(w, http.StatusForbidden, "cannot bind file to another user")
+			writeBusinessError(w, r, http.StatusForbidden, errorCodeForbidden)
 			return
 		}
 	}
@@ -534,11 +530,14 @@ func (h *Handler) bindFile(w http.ResponseWriter, r *http.Request, fileID uuid.U
 			errors.Is(err, app.ErrInvalidOwnerID),
 			errors.Is(err, app.ErrForbiddenOwnerType),
 			errors.Is(err, app.ErrForbiddenPurpose):
-			writeError(w, http.StatusBadRequest, err.Error())
+			writeAppError(w, r, http.StatusBadRequest, err)
 		case errors.Is(err, app.ErrFileNotFound):
-			writeError(w, http.StatusNotFound, err.Error())
+			writeAppError(w, r, http.StatusNotFound, err)
+		case errors.Is(err, app.ErrFileNotReady),
+			errors.Is(err, app.ErrIdempotencyConflict):
+			writeAppError(w, r, http.StatusConflict, err)
 		default:
-			writeError(w, http.StatusInternalServerError, "failed to bind file")
+			writeTechnicalError(w, r, http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -579,11 +578,11 @@ func (h *Handler) ListBindings(w http.ResponseWriter, r *http.Request, fileID uu
 	if err != nil {
 		switch {
 		case errors.Is(err, app.ErrInvalidFileID):
-			writeError(w, http.StatusBadRequest, err.Error())
+			writeAppError(w, r, http.StatusBadRequest, err)
 		case errors.Is(err, app.ErrFileNotFound):
-			writeError(w, http.StatusNotFound, err.Error())
+			writeAppError(w, r, http.StatusNotFound, err)
 		default:
-			writeError(w, http.StatusInternalServerError, "failed to list bindings")
+			writeTechnicalError(w, r, http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -601,13 +600,13 @@ func (h *Handler) ListBindings(w http.ResponseWriter, r *http.Request, fileID uu
 func (h *Handler) ListMyBindings(w http.ResponseWriter, r *http.Request) {
 	userID := strings.TrimSpace(UserIDFromContext(r.Context()))
 	if userID == "" {
-		writeError(w, http.StatusUnauthorized, "missing authenticated user context")
+		writeBusinessError(w, r, http.StatusUnauthorized, errorCodeUnauthorized)
 		return
 	}
 
 	purpose := strings.TrimSpace(r.URL.Query().Get("purpose"))
 	if purpose == "" {
-		writeError(w, http.StatusBadRequest, "purpose is required")
+		writeBusinessError(w, r, http.StatusBadRequest, errorCodePurposeRequired)
 		return
 	}
 
@@ -615,7 +614,7 @@ func (h *Handler) ListMyBindings(w http.ResponseWriter, r *http.Request) {
 	if rawLimit := strings.TrimSpace(r.URL.Query().Get("limit")); rawLimit != "" {
 		parsed, err := strconv.Atoi(rawLimit)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "invalid limit")
+			writeBusinessError(w, r, http.StatusBadRequest, errorCodeInvalidLimit)
 			return
 		}
 		limit = parsed
@@ -632,9 +631,9 @@ func (h *Handler) ListMyBindings(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, app.ErrInvalidOwnerID),
 			errors.Is(err, app.ErrForbiddenOwnerType),
 			errors.Is(err, app.ErrForbiddenPurpose):
-			writeError(w, http.StatusBadRequest, err.Error())
+			writeAppError(w, r, http.StatusBadRequest, err)
 		default:
-			writeError(w, http.StatusInternalServerError, "failed to list bindings")
+			writeTechnicalError(w, r, http.StatusInternalServerError, err)
 		}
 		return
 	}

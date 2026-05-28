@@ -304,7 +304,7 @@ func (u *ModerationUseCase) DecideExcursion(ctx context.Context, input Moderatio
 	}
 	if err != nil {
 		_ = u.repo.MarkDecisionFailed(ctx, decision.ID, errorResponseJSON(err), now)
-		u.appendModerationAudit(ctx, input.Actor.ID, "moderation.decision.apply_failed", caseItem.ID, input.RequestMetadata, map[string]any{"decision": input.Decision, "error": err.Error()})
+		u.appendModerationAudit(ctx, input.Actor.ID, "moderation.decision.apply_failed", caseItem.ID, input.RequestMetadata, map[string]any{"decision": input.Decision, "error_code": "downstream_failure"})
 		return nil, err
 	}
 	if err = u.repo.MarkDecisionApplied(ctx, decision.ID, raw, now); err != nil {
@@ -628,7 +628,7 @@ func (u *ModerationUseCase) RevokeActiveGuide(ctx context.Context, input RevokeA
 	}
 	item, _, err := u.guide.RevokeProfile(ctx, clientInput)
 	if err != nil {
-		u.appendGuideProfileAudit(ctx, input.Actor.ID, "guide.status.revoke_failed", input.GuideProfileID, input.RequestMetadata, map[string]any{"reasonCodes": reasonCodes, "error": err.Error()})
+		u.appendGuideProfileAudit(ctx, input.Actor.ID, "guide.status.revoke_failed", input.GuideProfileID, input.RequestMetadata, map[string]any{"reasonCodes": reasonCodes, "error_code": "downstream_failure"})
 		return nil, err
 	}
 	u.appendGuideProfileAudit(ctx, input.Actor.ID, "guide.status.revoked", input.GuideProfileID, input.RequestMetadata, map[string]any{"reasonCodes": reasonCodes, "internalComment": internalComment})
@@ -645,9 +645,12 @@ func errorResponseJSON(err error) []byte {
 	if err == nil {
 		return nil
 	}
-	payload, marshalErr := json.Marshal(map[string]string{"error": err.Error()})
+	payload, marshalErr := json.Marshal(map[string]string{
+		"error":      "technical_error",
+		"error_code": "downstream_failure",
+	})
 	if marshalErr != nil {
-		return []byte(`{"error":"failed to apply decision"}`)
+		return []byte(`{"error":"technical_error","error_code":"downstream_failure"}`)
 	}
 	return payload
 }

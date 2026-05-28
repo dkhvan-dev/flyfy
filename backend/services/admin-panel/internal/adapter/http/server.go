@@ -1324,6 +1324,8 @@ func errorStatus(err error) int {
 		return http.StatusNotFound
 	case errors.Is(err, app.ErrAttractionNotFound):
 		return http.StatusNotFound
+	case errors.Is(err, app.ErrDuplicateDecision):
+		return http.StatusConflict
 	case errors.Is(err, app.ErrModerationCaseConflict):
 		return http.StatusConflict
 	case errors.Is(err, app.ErrInvalidInput):
