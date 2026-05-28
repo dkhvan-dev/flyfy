@@ -158,6 +158,10 @@ type CreateActivityInput struct {
 	MeetingURL  *string
 	CoverFileID *uuid.UUID
 
+	AuthorCountryCode *string
+	AuthorCityID      *string
+	AuthorCityName    *string
+
 	VisibilityPassword *string
 }
 
@@ -316,6 +320,9 @@ func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivi
 		Longitude:                      input.Longitude,
 		MapURL:                         input.MapURL,
 		MeetingURL:                     input.MeetingURL,
+		AuthorCountryCode:              input.AuthorCountryCode,
+		AuthorCityID:                   input.AuthorCityID,
+		AuthorCityName:                 input.AuthorCityName,
 		VisibilityPasswordHash:         visibilityPasswordHash,
 	})
 	if err != nil {

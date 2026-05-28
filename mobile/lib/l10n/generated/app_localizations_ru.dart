@@ -3660,6 +3660,10 @@ class AppLocalizationsRu extends AppLocalizations {
       'Добавьте город или адрес, чтобы участники понимали, где встречаться';
 
   @override
+  String get createAuthorLocationMismatchHint =>
+      'Локация встречи отличается от вашей текущей локации. Оставьте так, если активность запланирована в другом месте.';
+
+  @override
   String get createCountryLabel => 'Страна';
 
   @override

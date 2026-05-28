@@ -1346,6 +1346,7 @@
   "createMapLinkHint": "Вставьте ссылку на карту",
   "createOfflineSection": "МЕСТО ПРОВЕДЕНИЯ",
   "createLocationPreviewHint": "Добавьте город или адрес, чтобы участники понимали, где встречаться",
+  "createAuthorLocationMismatchHint": "Локация встречи отличается от вашей текущей локации. Оставьте так, если активность запланирована в другом месте.",
   "createCountryLabel": "Страна",
   "createCityLabel": "Город",
   "createCityHint": "Например: Алматы",

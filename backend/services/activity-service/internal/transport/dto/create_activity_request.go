@@ -39,5 +39,9 @@ type CreateActivityRequest struct {
 	MeetingURL  *string  `json:"meetingUrl,omitempty"`
 	CoverFileID *string  `json:"coverFileId,omitempty"`
 
+	AuthorCountryCode *string `json:"authorCountryCode,omitempty"`
+	AuthorCityID      *string `json:"authorCityId,omitempty"`
+	AuthorCityName    *string `json:"authorCityName,omitempty"`
+
 	VisibilityPassword *string `json:"visibilityPassword,omitempty"`
 }

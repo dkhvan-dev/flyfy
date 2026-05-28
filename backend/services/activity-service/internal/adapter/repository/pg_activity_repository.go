@@ -39,7 +39,8 @@ const activitySelectColumns = `
 	capacity_type, min_participants, max_participants,
 	price_type, price_amount, currency, price_locked_at,
 	requires_profile_completion, requires_attendance_confirmation, allows_participant_invites, confirmation_deadline,
-	country_code, city_id, city_name, address_text, latitude, longitude, map_url, meeting_url, visibility_password_hash,
+	country_code, city_id, city_name, address_text, latitude, longitude, map_url, meeting_url,
+	author_country_code, author_city_id, author_city_name, author_location_captured_at, visibility_password_hash,
 	cancellation_reason, cancellation_source, cancelled_by_user_id, cancelled_at, started_at, completed_at, completion_reason, published_at,
 	revision, created_at, updated_at
 `
@@ -54,7 +55,8 @@ const qualifiedActivitySelectColumns = `
 	a.capacity_type, a.min_participants, a.max_participants,
 	a.price_type, a.price_amount, a.currency, a.price_locked_at,
 	a.requires_profile_completion, a.requires_attendance_confirmation, a.allows_participant_invites, a.confirmation_deadline,
-	a.country_code, a.city_id, a.city_name, a.address_text, a.latitude, a.longitude, a.map_url, a.meeting_url, a.visibility_password_hash,
+	a.country_code, a.city_id, a.city_name, a.address_text, a.latitude, a.longitude, a.map_url, a.meeting_url,
+	a.author_country_code, a.author_city_id, a.author_city_name, a.author_location_captured_at, a.visibility_password_hash,
 	a.cancellation_reason, a.cancellation_source, a.cancelled_by_user_id, a.cancelled_at, a.started_at, a.completed_at, a.completion_reason, a.published_at,
 	a.revision, a.created_at, a.updated_at
 `
@@ -94,7 +96,8 @@ func (r *PGActivityRepository) CreateActivity(ctx context.Context, item *model.A
 			capacity_type, min_participants, max_participants,
 			price_type, price_amount, currency, price_locked_at,
 			requires_profile_completion, requires_attendance_confirmation, allows_participant_invites, confirmation_deadline,
-			country_code, city_id, city_name, address_text, latitude, longitude, map_url, meeting_url, visibility_password_hash,
+			country_code, city_id, city_name, address_text, latitude, longitude, map_url, meeting_url,
+			author_country_code, author_city_id, author_city_name, author_location_captured_at, visibility_password_hash,
 			cancellation_reason, cancellation_source, cancelled_by_user_id, cancelled_at, started_at, completed_at, completion_reason, published_at,
 			revision, created_at, updated_at
 		) VALUES (
@@ -107,9 +110,10 @@ func (r *PGActivityRepository) CreateActivity(ctx context.Context, item *model.A
 			$22, $23, $24,
 			$25, $26, $27, $28,
 			$29, $30, $31, $32,
-			$33, $34, $35, $36, $37, $38, $39, $40, $41,
-			$42, $43, $44, $45, $46, $47, $48, $49,
-			$50, $51, $52
+			$33, $34, $35, $36, $37, $38, $39, $40,
+			$41, $42, $43, $44, $45,
+			$46, $47, $48, $49, $50, $51, $52, $53,
+			$54, $55, $56
 		)
 	`
 
@@ -125,7 +129,8 @@ func (r *PGActivityRepository) CreateActivity(ctx context.Context, item *model.A
 		string(item.CapacityType), item.MinParticipants, item.MaxParticipants,
 		string(item.PriceType), item.PriceAmount, item.Currency, item.PriceLockedAt,
 		item.RequiresProfileCompletion, item.RequiresAttendanceConfirmation, item.AllowsParticipantInvites, item.ConfirmationDeadline,
-		item.CountryCode, item.CityID, item.CityName, item.AddressText, item.Latitude, item.Longitude, item.MapURL, item.MeetingURL, item.VisibilityPasswordHash,
+		item.CountryCode, item.CityID, item.CityName, item.AddressText, item.Latitude, item.Longitude, item.MapURL, item.MeetingURL,
+		item.AuthorCountryCode, item.AuthorCityID, item.AuthorCityName, item.AuthorLocationCapturedAt, item.VisibilityPasswordHash,
 		item.CancellationReason, optionalActivityCancellationSourceString(item.CancellationSource), item.CancelledByUserID, item.CancelledAt, item.StartedAt, item.CompletedAt, item.CompletionReason, item.PublishedAt,
 		item.Revision, item.CreatedAt, item.UpdatedAt,
 	)
@@ -1877,6 +1882,10 @@ func scanActivity(row activityScanner) (*model.Activity, error) {
 		&item.Longitude,
 		&item.MapURL,
 		&item.MeetingURL,
+		&item.AuthorCountryCode,
+		&item.AuthorCityID,
+		&item.AuthorCityName,
+		&item.AuthorLocationCapturedAt,
 		&item.VisibilityPasswordHash,
 
 		&item.CancellationReason,

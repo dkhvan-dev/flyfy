@@ -1346,6 +1346,7 @@
   "createMapLinkHint": "Paste Maps URL",
   "createOfflineSection": "VENUE",
   "createLocationPreviewHint": "Add a city or address so participants know where to meet",
+  "createAuthorLocationMismatchHint": "Meeting city differs from your current location. Keep it if this activity is planned for another place.",
   "createCountryLabel": "Country",
   "createCityLabel": "City",
   "createCityHint": "e.g. Almaty",

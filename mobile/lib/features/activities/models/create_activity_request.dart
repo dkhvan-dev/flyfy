@@ -26,6 +26,9 @@ class CreateActivityRequest {
     this.longitude,
     this.mapUrl,
     this.meetingUrl,
+    this.authorCountryCode,
+    this.authorCityId,
+    this.authorCityName,
     this.visibilityPassword,
     this.coverFileId,
   });
@@ -56,6 +59,9 @@ class CreateActivityRequest {
   final double? longitude;
   final String? mapUrl;
   final String? meetingUrl;
+  final String? authorCountryCode;
+  final String? authorCityId;
+  final String? authorCityName;
   final String? visibilityPassword;
   final String? coverFileId;
 
@@ -91,6 +97,12 @@ class CreateActivityRequest {
       if (mapUrl != null && mapUrl!.trim().isNotEmpty) 'mapUrl': mapUrl,
       if (meetingUrl != null && meetingUrl!.trim().isNotEmpty)
         'meetingUrl': meetingUrl,
+      if (authorCountryCode != null && authorCountryCode!.trim().isNotEmpty)
+        'authorCountryCode': authorCountryCode,
+      if (authorCityId != null && authorCityId!.trim().isNotEmpty)
+        'authorCityId': authorCityId,
+      if (authorCityName != null && authorCityName!.trim().isNotEmpty)
+        'authorCityName': authorCityName,
       if (visibilityPassword != null && visibilityPassword!.trim().isNotEmpty)
         'visibilityPassword': visibilityPassword,
       if (coverFileId != null && coverFileId!.trim().isNotEmpty)

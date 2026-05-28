@@ -1944,6 +1944,44 @@ func validCreateActivityInput() CreateActivityInput {
 	}
 }
 
+func TestCreateActivityStoresAuthorLocationSnapshotSeparatelyFromActivityLocation(t *testing.T) {
+	t.Parallel()
+
+	authorCountryCode := "KZ"
+	authorCityID := "almaty"
+	authorCityName := "Almaty"
+	input := validCreateActivityInput()
+	input.AuthorCountryCode = &authorCountryCode
+	input.AuthorCityID = &authorCityID
+	input.AuthorCityName = &authorCityName
+
+	repo := &activityRepoStub{
+		createActivity: func(ctx context.Context, item *model.Activity) error {
+			if item.CountryCode != nil || item.CityID != nil || item.CityName != nil {
+				t.Fatalf("online activity location = %v/%v/%v, want nil meeting location", item.CountryCode, item.CityID, item.CityName)
+			}
+			if item.AuthorCountryCode == nil || *item.AuthorCountryCode != authorCountryCode {
+				t.Fatalf("AuthorCountryCode = %v, want %q", item.AuthorCountryCode, authorCountryCode)
+			}
+			if item.AuthorCityID == nil || *item.AuthorCityID != authorCityID {
+				t.Fatalf("AuthorCityID = %v, want %q", item.AuthorCityID, authorCityID)
+			}
+			if item.AuthorCityName == nil || *item.AuthorCityName != authorCityName {
+				t.Fatalf("AuthorCityName = %v, want %q", item.AuthorCityName, authorCityName)
+			}
+			if item.AuthorLocationCapturedAt == nil {
+				t.Fatal("AuthorLocationCapturedAt = nil, want server-side capture timestamp")
+			}
+			return nil
+		},
+	}
+
+	uc := NewActivityUseCase(repo)
+	if _, err := uc.CreateActivity(context.Background(), input); err != nil {
+		t.Fatalf("CreateActivity() error = %v", err)
+	}
+}
+
 func validActivity(t *testing.T, activityID uuid.UUID, actorUserID uuid.UUID) *model.Activity {
 	t.Helper()
 

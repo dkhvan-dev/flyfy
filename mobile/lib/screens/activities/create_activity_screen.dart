@@ -26,6 +26,7 @@ import '../../features/activities/models/create_activity_request.dart';
 import '../../features/activities/models/update_activity_request.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
+import '../../providers/home_location_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../shared/formatters/app_money_formatter.dart';
 import '../../shared/reference/app_location_label_resolver.dart';
@@ -135,7 +136,11 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   double? _selectedLatitude;
   double? _selectedLongitude;
   String? _selectedMapUrl;
+  String? _authorLocationCountryCode;
+  String? _authorLocationCityId;
+  String? _authorLocationCityName;
   bool _isResolvingMapSelection = false;
+  bool _didApplyAuthorLocationSnapshot = false;
 
   static const LatLng _fallbackMapTarget = LatLng(43.238949, 76.889709);
   static const _dateTimeInputFormatter = _DateTimeInputFormatter();
@@ -259,7 +264,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     _minParticipantsCtrl.text = '$_minParticipants';
     _maxParticipantsCtrl.text = '$_maxParticipants';
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       final provider = context.read<ActivityProvider>();
       if (provider.categoryState == ActivitiesState.initial ||
@@ -267,7 +272,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
               provider.categoryItems.isEmpty)) {
         provider.loadActivityCategories();
       }
-      _prefillPricingContext();
+      await _prefillAuthorLocationFromHomeLocation();
+      if (!mounted) return;
+      await _prefillPricingContext();
     });
 
     _cityNameCtrl.addListener(_handleLocationPreviewChanged);
@@ -314,6 +321,68 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     setState(() {});
   }
 
+  Future<void> _prefillAuthorLocationFromHomeLocation() async {
+    if (widget.isEditMode) {
+      return;
+    }
+
+    final sessionProvider = context.read<SessionProvider>();
+    final provider = context.read<HomeLocationProvider>();
+    if (!provider.isLoaded && !provider.isLoading) {
+      try {
+        await provider.load(profile: sessionProvider.profile);
+      } catch (_) {
+        // Keep the form usable if cached location loading fails.
+      }
+    }
+    if (!mounted) return;
+
+    final location =
+        provider.selectedLocation ??
+        (provider.effectiveLocation.source == HomeLocationSource.fallback
+            ? null
+            : provider.effectiveLocation);
+    if (location == null) {
+      return;
+    }
+
+    final countryCode = normalizeAppCountryCode(location.countryCode);
+    final cityId = _normalizeOptionalLocationId(location.cityId);
+    final cityName = location.cityName?.trim() ?? '';
+    if (countryCode == null && cityId == null && cityName.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _authorLocationCountryCode = countryCode;
+      _authorLocationCityId = cityId;
+      _authorLocationCityName = cityName.isEmpty ? null : cityName;
+      _didApplyAuthorLocationSnapshot = true;
+
+      final currentCountryText = _countryCodeCtrl.text.trim().toUpperCase();
+      final canPrefillMeetingLocation =
+          !widget.hasInitialActivity &&
+          (currentCountryText.isEmpty || currentCountryText == 'KZ');
+      final hasUserSelectedMeetingLocation =
+          _cityNameCtrl.text.trim().isNotEmpty ||
+          (_selectedCityId ?? '').trim().isNotEmpty ||
+          _addressTextCtrl.text.trim().isNotEmpty ||
+          _hasSelectedMapPoint ||
+          _mapUrlCtrl.text.trim().isNotEmpty;
+
+      if (canPrefillMeetingLocation && !hasUserSelectedMeetingLocation) {
+        final ccy = _selectedCurrencyCode;
+        _applyCountryAndCurrency(location.countryCode, fallbackCurrency: ccy);
+        _selectedCityId = location.cityId?.trim().isEmpty == true
+            ? null
+            : location.cityId;
+        if (cityName.isNotEmpty) {
+          _cityNameCtrl.text = location.cityName ?? '';
+        }
+      }
+    });
+  }
+
   Future<void> _prefillPricingContext() async {
     final profile = context.read<SessionProvider>().profile;
     final profileCountryCode = normalizeAppCountryCode(profile?.countryCode);
@@ -322,7 +391,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     final currentCurrencyCode = normalizeAppCurrencyCode(_selectedCurrencyCode);
     final initialCountryCode = widget.hasInitialActivity
         ? currentCountryCode
-        : (profileCountryCode ?? currentCountryCode);
+        : (_didApplyAuthorLocationSnapshot
+              ? (currentCountryCode ?? profileCountryCode)
+              : (profileCountryCode ?? currentCountryCode));
     final initialCurrencyCode = widget.hasInitialActivity
         ? (currentCurrencyCode ??
               _currencyForCountryCode(initialCountryCode) ??
@@ -340,7 +411,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       });
     }
 
-    if (widget.hasInitialActivity) {
+    if (widget.hasInitialActivity || _didApplyAuthorLocationSnapshot) {
       return;
     }
 
@@ -1158,6 +1229,55 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   bool get _hasSelectedMapPoint =>
       _selectedLatitude != null && _selectedLongitude != null;
 
+  bool get _meetingLocationDiffersFromAuthorLocation {
+    if (_format == 'ONLINE' || !_didApplyAuthorLocationSnapshot) {
+      return false;
+    }
+
+    final authorCountryCode = normalizeAppCountryCode(
+      _authorLocationCountryCode,
+    );
+    final meetingCountryCode = normalizeAppCountryCode(_countryCodeCtrl.text);
+    if (authorCountryCode != null &&
+        meetingCountryCode != null &&
+        authorCountryCode != meetingCountryCode) {
+      return true;
+    }
+
+    final authorCityId = _normalizeOptionalLocationId(_authorLocationCityId);
+    final meetingCityId = _normalizeOptionalLocationId(_selectedCityId);
+    if (authorCityId != null && meetingCityId != null) {
+      return authorCityId != meetingCityId;
+    }
+
+    final meetingCityName = _normalizedLocationText(_cityNameCtrl.text);
+    final authorCityName = _normalizedLocationText(_authorLocationCityName);
+    if (meetingCityName == null || authorCityName == null) {
+      return false;
+    }
+
+    return meetingCityName != authorCityName;
+  }
+
+  String? _normalizeOptionalLocationId(String? value) {
+    final normalized = value?.trim().toLowerCase();
+    if (normalized == null || normalized.isEmpty) {
+      return null;
+    }
+    return normalized;
+  }
+
+  String? _normalizedLocationText(String? value) {
+    final normalized = value?.trim().toLowerCase().replaceAll(
+      RegExp(r'\s+'),
+      ' ',
+    );
+    if (normalized == null || normalized.isEmpty) {
+      return null;
+    }
+    return normalized;
+  }
+
   LatLng get _selectedMapTarget => _hasSelectedMapPoint
       ? LatLng(_selectedLatitude!, _selectedLongitude!)
       : _fallbackMapTarget;
@@ -1230,6 +1350,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       longitude: _longitudeValue,
       mapUrl: _mapUrlValue,
       meetingUrl: _meetingUrlValue,
+      authorCountryCode: _authorLocationCountryCode,
+      authorCityId: _authorLocationCityId,
+      authorCityName: _authorLocationCityName,
       visibilityPassword: _visibility == 'PRIVATE'
           ? _visibilityPasswordValue
           : null,
@@ -2116,6 +2239,12 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
               cityName: _cityNameCtrl.text,
             ),
           ],
+          if (_meetingLocationDiffersFromAuthorLocation) ...[
+            const SizedBox(height: 10),
+            _Step2LocationMismatchNotice(
+              message: l10n.createAuthorLocationMismatchHint,
+            ),
+          ],
           const SizedBox(height: 18),
         ],
         if (showOnline) ...[
@@ -2961,6 +3090,49 @@ class _Step2LocationPreviewCard extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Step2LocationMismatchNotice extends StatelessWidget {
+  const _Step2LocationMismatchNotice({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF3B2A0E),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: const Color(0xFFFFC857).withValues(alpha: 0.28),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.info_outline_rounded,
+            color: Color(0xFFFFC857),
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 12.5,
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],

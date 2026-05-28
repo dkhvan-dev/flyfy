@@ -1346,6 +1346,7 @@
   "createMapLinkHint": "Карта сілтемесін қойыңыз",
   "createOfflineSection": "ӨТКІЗУ ОРНЫ",
   "createLocationPreviewHint": "Қатысушылар қай жерде кездесетінін түсінуі үшін қала немесе мекенжай қосыңыз",
+  "createAuthorLocationMismatchHint": "Кездесу орны ағымдағы локацияңыздан өзгеше. Белсенділік басқа жерде жоспарланса, осылай қалдырыңыз.",
   "createCountryLabel": "Ел",
   "createCityLabel": "Қала",
   "createCityHint": "Мысалы: Алматы",

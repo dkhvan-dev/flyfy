@@ -3640,6 +3640,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Add a city or address so participants know where to meet';
 
   @override
+  String get createAuthorLocationMismatchHint =>
+      'Meeting city differs from your current location. Keep it if this activity is planned for another place.';
+
+  @override
   String get createCountryLabel => 'Country';
 
   @override

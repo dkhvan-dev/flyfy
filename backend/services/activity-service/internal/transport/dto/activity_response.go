@@ -66,17 +66,21 @@ type ActivityResponse struct {
 type AdminActivityModerationResponse struct {
 	ActivityResponse
 
-	ModerationRiskScore   int      `json:"moderationRiskScore"`
-	ModerationReasonCodes []string `json:"moderationReasonCodes"`
-	ModerationTriggeredAt *string  `json:"moderationTriggeredAt,omitempty"`
-	ModerationReviewedAt  *string  `json:"moderationReviewedAt,omitempty"`
-	HostDisplayName       string   `json:"hostDisplayName,omitempty"`
-	CategoryName          string   `json:"categoryName,omitempty"`
-	CategoryNameRu        string   `json:"categoryNameRu,omitempty"`
-	CategoryNameKk        string   `json:"categoryNameKk,omitempty"`
-	SubcategoryName       string   `json:"subcategoryName,omitempty"`
-	SubcategoryNameRu     string   `json:"subcategoryNameRu,omitempty"`
-	SubcategoryNameKk     string   `json:"subcategoryNameKk,omitempty"`
+	ModerationRiskScore      int      `json:"moderationRiskScore"`
+	ModerationReasonCodes    []string `json:"moderationReasonCodes"`
+	ModerationTriggeredAt    *string  `json:"moderationTriggeredAt,omitempty"`
+	ModerationReviewedAt     *string  `json:"moderationReviewedAt,omitempty"`
+	AuthorCountryCode        *string  `json:"authorCountryCode,omitempty"`
+	AuthorCityID             *string  `json:"authorCityId,omitempty"`
+	AuthorCityName           *string  `json:"authorCityName,omitempty"`
+	AuthorLocationCapturedAt *string  `json:"authorLocationCapturedAt,omitempty"`
+	HostDisplayName          string   `json:"hostDisplayName,omitempty"`
+	CategoryName             string   `json:"categoryName,omitempty"`
+	CategoryNameRu           string   `json:"categoryNameRu,omitempty"`
+	CategoryNameKk           string   `json:"categoryNameKk,omitempty"`
+	SubcategoryName          string   `json:"subcategoryName,omitempty"`
+	SubcategoryNameRu        string   `json:"subcategoryNameRu,omitempty"`
+	SubcategoryNameKk        string   `json:"subcategoryNameKk,omitempty"`
 }
 
 type AdminActivityModerationListResponse struct {

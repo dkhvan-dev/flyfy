@@ -57,11 +57,18 @@ void main() {
       countryCode: 'KZ',
       cityId: 'almaty',
       cityName: 'Almaty',
+      authorCountryCode: 'KZ',
+      authorCityId: 'almaty',
+      authorCityName: 'Almaty',
       allowsParticipantInvites: true,
     ).toJson();
 
     expect(createJson['cityId'], 'almaty');
     expect(createJson['cityName'], 'Almaty');
+    expect(createJson['authorCountryCode'], 'KZ');
+    expect(createJson['authorCityId'], 'almaty');
+    expect(createJson['authorCityName'], 'Almaty');
+    expect(createJson.containsKey('authorLocationCapturedAt'), isFalse);
     expect(createJson['subcategorySlug'], 'social-meetup');
     expect(createJson['allowsParticipantInvites'], isTrue);
 

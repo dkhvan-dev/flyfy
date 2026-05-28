@@ -352,4 +352,58 @@ void main() {
     expect(source, contains('createVisibilityPasswordAsciiValidation'));
     expect(l10nSource, contains('createVisibilityPasswordAsciiValidation'));
   });
+
+  test(
+    'create activity prefills meeting city from selected home location',
+    () async {
+      final source = await File(
+        'lib/screens/activities/create_activity_screen.dart',
+      ).readAsString();
+
+      expect(
+        source,
+        contains("import '../../providers/home_location_provider.dart';"),
+      );
+      expect(source, contains('_prefillAuthorLocationFromHomeLocation'));
+      expect(source, contains('HomeLocationProvider'));
+      expect(source, contains('provider.selectedLocation'));
+      expect(source, contains('_authorLocationCountryCode'));
+      expect(source, contains('_authorLocationCityId'));
+      expect(source, contains('_authorLocationCityName'));
+      expect(source, contains('_applyCountryAndCurrency(location.countryCode'));
+      expect(source, contains('_selectedCityId = location.cityId'));
+      expect(source, contains('_cityNameCtrl.text = location.cityName'));
+      expect(source, contains('_didApplyAuthorLocationSnapshot'));
+      expect(source, contains('authorCountryCode: _authorLocationCountryCode'));
+      expect(source, contains('authorCityId: _authorLocationCityId'));
+      expect(source, contains('authorCityName: _authorLocationCityName'));
+    },
+  );
+
+  test(
+    'create activity warns when meeting city differs from author location',
+    () async {
+      final source = await File(
+        'lib/screens/activities/create_activity_screen.dart',
+      ).readAsString();
+      final enSource = await File('lib/l10n/app_en.arb').readAsString();
+      final ruSource = await File('lib/l10n/app_ru.arb').readAsString();
+      final kkSource = await File('lib/l10n/app_kk.arb').readAsString();
+
+      expect(
+        source,
+        contains('bool get _meetingLocationDiffersFromAuthorLocation'),
+      );
+      expect(source, contains('_normalizedLocationText(_cityNameCtrl.text)'));
+      expect(
+        source,
+        contains('_normalizedLocationText(_authorLocationCityName)'),
+      );
+      expect(source, contains('createAuthorLocationMismatchHint'));
+      expect(source, contains('_Step2LocationMismatchNotice('));
+      expect(enSource, contains('"createAuthorLocationMismatchHint"'));
+      expect(ruSource, contains('"createAuthorLocationMismatchHint"'));
+      expect(kkSource, contains('"createAuthorLocationMismatchHint"'));
+    },
+  );
 }

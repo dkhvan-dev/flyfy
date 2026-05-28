@@ -3665,6 +3665,10 @@ class AppLocalizationsKk extends AppLocalizations {
       'Қатысушылар қай жерде кездесетінін түсінуі үшін қала немесе мекенжай қосыңыз';
 
   @override
+  String get createAuthorLocationMismatchHint =>
+      'Кездесу орны ағымдағы локацияңыздан өзгеше. Белсенділік басқа жерде жоспарланса, осылай қалдырыңыз.';
+
+  @override
   String get createCountryLabel => 'Ел';
 
   @override

@@ -167,18 +167,22 @@ func (h *Handler) toAdminActivityModerationResponse(ctx context.Context, item *m
 	}
 	category, subcategory := activityModerationTaxonomyLabels(item)
 	return dto.AdminActivityModerationResponse{
-		ActivityResponse:      base,
-		ModerationRiskScore:   item.ModerationRiskScore,
-		ModerationReasonCodes: item.ModerationReasonCodes,
-		ModerationTriggeredAt: formatOptionalTime(item.ModerationTriggeredAt),
-		ModerationReviewedAt:  formatOptionalTime(item.ModerationReviewedAt),
-		HostDisplayName:       strings.TrimSpace(hostDisplayName),
-		CategoryName:          category.Name,
-		CategoryNameRu:        category.NameRu,
-		CategoryNameKk:        category.NameKk,
-		SubcategoryName:       subcategory.Name,
-		SubcategoryNameRu:     subcategory.NameRu,
-		SubcategoryNameKk:     subcategory.NameKk,
+		ActivityResponse:         base,
+		ModerationRiskScore:      item.ModerationRiskScore,
+		ModerationReasonCodes:    item.ModerationReasonCodes,
+		ModerationTriggeredAt:    formatOptionalTime(item.ModerationTriggeredAt),
+		ModerationReviewedAt:     formatOptionalTime(item.ModerationReviewedAt),
+		AuthorCountryCode:        item.AuthorCountryCode,
+		AuthorCityID:             item.AuthorCityID,
+		AuthorCityName:           item.AuthorCityName,
+		AuthorLocationCapturedAt: formatOptionalTime(item.AuthorLocationCapturedAt),
+		HostDisplayName:          strings.TrimSpace(hostDisplayName),
+		CategoryName:             category.Name,
+		CategoryNameRu:           category.NameRu,
+		CategoryNameKk:           category.NameKk,
+		SubcategoryName:          subcategory.Name,
+		SubcategoryNameRu:        subcategory.NameRu,
+		SubcategoryNameKk:        subcategory.NameKk,
 	}, nil
 }
 

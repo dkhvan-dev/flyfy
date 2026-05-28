@@ -6700,6 +6700,12 @@ abstract class AppLocalizations {
   /// **'Add a city or address so participants know where to meet'**
   String get createLocationPreviewHint;
 
+  /// No description provided for @createAuthorLocationMismatchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Meeting city differs from your current location. Keep it if this activity is planned for another place.'**
+  String get createAuthorLocationMismatchHint;
+
   /// No description provided for @createCountryLabel.
   ///
   /// In en, this message translates to:

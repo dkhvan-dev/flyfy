@@ -375,6 +375,11 @@ func (h *Handler) CreateActivity(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid cityId")
 		return
 	}
+	authorCityID, err := parseOptionalReferenceCityID(req.AuthorCityID)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid authorCityId")
+		return
+	}
 
 	input := app.CreateActivityInput{
 		HostUserID:                     actorUserID,
@@ -408,6 +413,9 @@ func (h *Handler) CreateActivity(w http.ResponseWriter, r *http.Request) {
 		MapURL:                         req.MapURL,
 		MeetingURL:                     req.MeetingURL,
 		CoverFileID:                    coverFileID,
+		AuthorCountryCode:              req.AuthorCountryCode,
+		AuthorCityID:                   authorCityID,
+		AuthorCityName:                 req.AuthorCityName,
 		VisibilityPassword:             req.VisibilityPassword,
 	}
 

@@ -100,6 +100,11 @@ type Activity struct {
 	MapURL      *string
 	MeetingURL  *string
 
+	AuthorCountryCode        *string
+	AuthorCityID             *string
+	AuthorCityName           *string
+	AuthorLocationCapturedAt *time.Time
+
 	VisibilityPasswordHash *string
 
 	CancellationReason *string
@@ -155,12 +160,25 @@ type NewActivityParams struct {
 	MapURL      *string
 	MeetingURL  *string
 
+	AuthorCountryCode *string
+	AuthorCityID      *string
+	AuthorCityName    *string
+
 	VisibilityPasswordHash *string
 }
 
 func NewActivity(params NewActivityParams) (*Activity, error) {
 	now := time.Now().UTC()
 	publishedAt := now
+
+	authorCountryCode := NormalizeOptionalString(params.AuthorCountryCode)
+	authorCityID := NormalizeOptionalString(params.AuthorCityID)
+	authorCityName := NormalizeOptionalString(params.AuthorCityName)
+	var authorLocationCapturedAt *time.Time
+	if authorCountryCode != nil || authorCityID != nil || authorCityName != nil {
+		capturedAt := now
+		authorLocationCapturedAt = &capturedAt
+	}
 
 	item := &Activity{
 		ID:               uuid.New(),
@@ -207,6 +225,12 @@ func NewActivity(params NewActivityParams) (*Activity, error) {
 		Longitude:   params.Longitude,
 		MapURL:      NormalizeOptionalString(params.MapURL),
 		MeetingURL:  NormalizeOptionalString(params.MeetingURL),
+
+		AuthorCountryCode:        authorCountryCode,
+		AuthorCityID:             authorCityID,
+		AuthorCityName:           authorCityName,
+		AuthorLocationCapturedAt: authorLocationCapturedAt,
+
 		VisibilityPasswordHash: NormalizeOptionalString(
 			params.VisibilityPasswordHash,
 		),
