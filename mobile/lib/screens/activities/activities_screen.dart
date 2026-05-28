@@ -59,43 +59,57 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
   int _currentPage = 1;
   _ActivitySortField _sortField = _ActivitySortField.date;
   bool _sortAscending = true;
-  bool _hasAppliedDefaultCityFilter = false;
+  bool _hasAppliedDefaultLocationFilter = false;
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_handleSearchChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(_initializeDefaultCityFilter());
+      unawaited(_initializeDefaultLocationFilter());
       final provider = context.read<ActivityProvider>();
       provider.loadActivities();
       provider.loadActivityCategories();
     });
   }
 
-  Future<void> _initializeDefaultCityFilter() async {
+  Future<void> _initializeDefaultLocationFilter() async {
     final provider = context.read<HomeLocationProvider>();
     if (!provider.isLoaded && !provider.isLoading) {
       await provider.load();
     }
     if (!mounted) return;
-    _applyDefaultCityFilter(provider);
+    _applyDefaultLocationFilter(provider);
   }
 
-  void _applyDefaultCityFilter(HomeLocationProvider provider) {
-    if (_hasAppliedDefaultCityFilter || _filters.city != null) return;
-    _hasAppliedDefaultCityFilter = true;
-
+  void _applyDefaultLocationFilter(HomeLocationProvider provider) {
+    if (_hasAppliedDefaultLocationFilter ||
+        _filters.country != null ||
+        _filters.city != null) {
+      return;
+    }
     final location = provider.selectedLocation;
-    final city = AppCityFilterValue.fromParts(
-      cityId: location?.cityId,
-      cityName: location?.cityName,
-      countryCode: location?.countryCode,
+    if (location == null) return;
+
+    _hasAppliedDefaultLocationFilter = true;
+
+    final defaultCountry = AppCountryFilterValue.fromParts(
+      countryCode: location.countryCode,
     );
-    if (city == null) return;
+    final defaultCity = defaultCountry == null
+        ? null
+        : AppCityFilterValue.fromParts(
+            cityId: location.cityId,
+            cityName: location.cityName,
+            countryCode: location.countryCode,
+          );
+    if (defaultCountry == null && defaultCity == null) return;
 
     setState(() {
-      _filters = _filters.copyWith(city: city);
+      _filters = _filters.copyWith(
+        country: defaultCountry,
+        city: defaultCity,
+      );
       _currentPage = 1;
     });
   }
@@ -1533,6 +1547,7 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
   late final TextEditingController _endDateController;
   late Set<String> _selectedSlugs;
   late Set<String> _selectedVisibilities;
+  late AppCountryFilterValue? _selectedCountry;
   late AppCityFilterValue? _selectedCity;
   String? _startError;
   String? _endError;
@@ -1544,6 +1559,7 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
     final initial = widget.initialFilters;
     _selectedSlugs = Set<String>.from(initial.categorySlugs);
     _selectedVisibilities = Set<String>.from(initial.visibilities);
+    _selectedCountry = initial.country;
     _selectedCity = initial.city;
     _minPriceController = TextEditingController(
       text: initial.minPrice?.toStringAsFixed(0) ?? '',
@@ -1591,7 +1607,11 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildCitySection(),
+          _buildCountrySection(),
+          if (_selectedCountry != null) ...[
+            _FilterSectionDivider(),
+            _buildCitySection(),
+          ],
           _FilterSectionDivider(),
           _buildCategorySection(context),
           _FilterSectionDivider(),
@@ -1605,6 +1625,17 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
     );
   }
 
+  Widget _buildCountrySection() {
+    return AppCountryFilterSection(
+      title: widget.l10n.activitiesFilterCountrySection,
+      allCountriesLabel: widget.l10n.activitiesFilterCountryAll,
+      searchHint: widget.l10n.activitiesFilterCountrySearchHint,
+      noResultsText: widget.l10n.activitiesFilterCountryNoResults,
+      selectedCountry: _selectedCountry,
+      onChanged: _setCountry,
+    );
+  }
+
   Widget _buildCitySection() {
     return AppCityFilterSection(
       title: widget.l10n.locationFilterCitySection,
@@ -1612,7 +1643,8 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
       searchHint: widget.l10n.locationFilterCitySearchHint,
       noResultsText: widget.l10n.locationFilterCityNoResults,
       selectedCity: _selectedCity,
-      onChanged: (city) => setState(() => _selectedCity = city),
+      onChanged: _setCity,
+      countryCode: _selectedCountry?.countryCode,
     );
   }
 
@@ -1874,10 +1906,22 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
     });
   }
 
+  void _setCountry(AppCountryFilterValue? country) {
+    setState(() {
+      _selectedCountry = country;
+      _selectedCity = null;
+    });
+  }
+
+  void _setCity(AppCityFilterValue? city) {
+    setState(() => _selectedCity = city);
+  }
+
   void _clearAll() {
     setState(() {
       _selectedSlugs.clear();
       _selectedVisibilities.clear();
+      _selectedCountry = null;
       _selectedCity = null;
       _updateControllers(() {
         _minPriceController.clear();
@@ -1930,6 +1974,7 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
 
     Navigator.of(context).pop(
       _DiscoverFilters(
+        country: _selectedCountry,
         city: _selectedCity,
         categorySlugs: Set<String>.unmodifiable(_selectedSlugs),
         visibilities: Set<String>.unmodifiable(
@@ -1945,6 +1990,7 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
 
   _DiscoverFilters _draftFilters() {
     return _DiscoverFilters(
+      country: _selectedCountry,
       city: _selectedCity,
       categorySlugs: _selectedSlugs,
       visibilities: _normalizeVisibilitySelection(_selectedVisibilities),
@@ -2646,6 +2692,7 @@ class _DiscoverFilters {
   static const Object _unset = Object();
 
   const _DiscoverFilters({
+    this.country,
     this.city,
     this.categorySlugs = const {},
     this.visibilities = const {},
@@ -2655,6 +2702,7 @@ class _DiscoverFilters {
     this.maxPrice,
   });
 
+  final AppCountryFilterValue? country;
   final AppCityFilterValue? city;
   final Set<String> categorySlugs;
   final Set<String> visibilities;
@@ -2667,6 +2715,7 @@ class _DiscoverFilters {
   bool get hasPriceRange => minPrice != null || maxPrice != null;
   bool get hasVisibilityFilter => visibilities.isNotEmpty;
   int get activeGroupCount =>
+      (country == null ? 0 : 1) +
       (city == null ? 0 : 1) +
       (categorySlugs.isNotEmpty ? 1 : 0) +
       (hasDateRange ? 1 : 0) +
@@ -2674,12 +2723,14 @@ class _DiscoverFilters {
       (hasVisibilityFilter ? 1 : 0);
   bool get hasAnyValue =>
       categorySlugs.isNotEmpty ||
+      country != null ||
       city != null ||
       hasVisibilityFilter ||
       hasDateRange ||
       hasPriceRange;
 
   _DiscoverFilters copyWith({
+    Object? country = _unset,
     Object? city = _unset,
     Set<String>? categorySlugs,
     Set<String>? visibilities,
@@ -2689,6 +2740,9 @@ class _DiscoverFilters {
     Object? maxPrice = _unset,
   }) {
     return _DiscoverFilters(
+      country: identical(country, _unset)
+          ? this.country
+          : country as AppCountryFilterValue?,
       city: identical(city, _unset) ? this.city : city as AppCityFilterValue?,
       categorySlugs: categorySlugs ?? this.categorySlugs,
       visibilities: visibilities ?? this.visibilities,
@@ -3052,6 +3106,11 @@ List<ActivityListItemVm> _applyDiscoverFilters(
 
     if (filters.visibilities.isNotEmpty &&
         !filters.visibilities.contains(visibility)) {
+      return false;
+    }
+
+    if (filters.country != null &&
+        !filters.country!.matches(countryCode: item.countryCode)) {
       return false;
     }
 

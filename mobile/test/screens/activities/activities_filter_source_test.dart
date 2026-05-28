@@ -49,6 +49,57 @@ void main() {
     expect(scaffoldSource, isNot(contains('_PrimaryPillButton(')));
   });
 
+  test('discover activities filter uses searchable country before city',
+      () async {
+    final source = await File(
+      'lib/screens/activities/activities_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('final AppCountryFilterValue? country'));
+    expect(source, contains('final AppCityFilterValue? city'));
+    expect(source, contains('_initializeDefaultLocationFilter'));
+    expect(source, contains('country: defaultCountry'));
+    expect(source, contains('city: defaultCity'));
+    expect(source, contains('AppCountryFilterSection'));
+    expect(source, contains('activitiesFilterCountrySection'));
+    expect(source, contains('activitiesFilterCountryAll'));
+    expect(source, contains('activitiesFilterCountrySearchHint'));
+    expect(source, contains('activitiesFilterCountryNoResults'));
+    expect(source, contains('if (_selectedCountry != null) ...['));
+    expect(source, contains('countryCode: _selectedCountry?.countryCode'));
+
+    final countrySectionStart = source.indexOf('AppCountryFilterSection(');
+    final citySectionStart = source.indexOf('AppCityFilterSection(');
+    final categorySectionStart = source.indexOf('Widget _buildCategorySection');
+
+    expect(countrySectionStart, isNonNegative);
+    expect(citySectionStart, isNonNegative);
+    expect(citySectionStart, greaterThan(countrySectionStart));
+    expect(categorySectionStart, greaterThan(citySectionStart));
+  });
+
+  test('discover activities country changes reset city to all cities',
+      () async {
+    final source = await File(
+      'lib/screens/activities/activities_screen.dart',
+    ).readAsString();
+
+    expect(
+        source, contains('void _setCountry(AppCountryFilterValue? country)'));
+    expect(source, contains('_selectedCountry = country'));
+    expect(source, contains('_selectedCity = null'));
+  });
+
+  test('discover activities can filter by country without city', () async {
+    final source = await File(
+      'lib/screens/activities/activities_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('filters.country != null'));
+    expect(source, contains('!filters.country!.matches('));
+    expect(source, contains('countryCode: item.countryCode'));
+  });
+
   test('discover activities hides summary bar for empty filtered results',
       () async {
     final source = await File(

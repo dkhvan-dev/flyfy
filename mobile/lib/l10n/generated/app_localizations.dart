@@ -8060,6 +8060,30 @@ abstract class AppLocalizations {
   /// **'Filters'**
   String get activitiesFiltersTitle;
 
+  /// No description provided for @activitiesFilterCountrySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Country'**
+  String get activitiesFilterCountrySection;
+
+  /// No description provided for @activitiesFilterCountryAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All countries'**
+  String get activitiesFilterCountryAll;
+
+  /// No description provided for @activitiesFilterCountrySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search country, code, or phone'**
+  String get activitiesFilterCountrySearchHint;
+
+  /// No description provided for @activitiesFilterCountryNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Country not found'**
+  String get activitiesFilterCountryNoResults;
+
   /// No description provided for @activitiesSortLabel.
   ///
   /// In en, this message translates to:

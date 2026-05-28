@@ -4395,6 +4395,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activitiesFiltersTitle => 'Filters';
 
   @override
+  String get activitiesFilterCountrySection => 'Country';
+
+  @override
+  String get activitiesFilterCountryAll => 'All countries';
+
+  @override
+  String get activitiesFilterCountrySearchHint =>
+      'Search country, code, or phone';
+
+  @override
+  String get activitiesFilterCountryNoResults => 'Country not found';
+
+  @override
   String get activitiesSortLabel => 'Sort by';
 
   @override

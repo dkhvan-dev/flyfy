@@ -4429,6 +4429,19 @@ class AppLocalizationsKk extends AppLocalizations {
   String get activitiesFiltersTitle => 'Сүзгілер';
 
   @override
+  String get activitiesFilterCountrySection => 'Ел';
+
+  @override
+  String get activitiesFilterCountryAll => 'Барлық елдер';
+
+  @override
+  String get activitiesFilterCountrySearchHint =>
+      'Ел, код немесе телефон бойынша іздеу';
+
+  @override
+  String get activitiesFilterCountryNoResults => 'Ел табылмады';
+
+  @override
   String get activitiesSortLabel => 'Сұрыптау';
 
   @override

@@ -4416,6 +4416,19 @@ class AppLocalizationsRu extends AppLocalizations {
   String get activitiesFiltersTitle => 'Фильтры';
 
   @override
+  String get activitiesFilterCountrySection => 'Страна';
+
+  @override
+  String get activitiesFilterCountryAll => 'Все страны';
+
+  @override
+  String get activitiesFilterCountrySearchHint =>
+      'Поиск страны, кода или телефона';
+
+  @override
+  String get activitiesFilterCountryNoResults => 'Страна не найдена';
+
+  @override
   String get activitiesSortLabel => 'Сортировать';
 
   @override
