@@ -261,6 +261,10 @@ func (s *excursionScheduleHTTPRepoStub) UpdateExcursion(context.Context, *model.
 	return nil
 }
 
+func (s *excursionScheduleHTTPRepoStub) DeleteDraftExcursion(context.Context, uuid.UUID, uuid.UUID) error {
+	return nil
+}
+
 func (s *excursionScheduleHTTPRepoStub) GetExcursionByID(context.Context, uuid.UUID) (*model.Excursion, error) {
 	return nil, nil
 }

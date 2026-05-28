@@ -4236,6 +4236,25 @@ class AppLocalizationsKk extends AppLocalizations {
   String get guideDashboardSubmitOffer => 'Тексеруге жіберу';
 
   @override
+  String get guideDashboardDeleteDraftOffer => 'Черновикті жою';
+
+  @override
+  String get guideDashboardDeleteDraftTitle => 'Черновикті жою керек пе?';
+
+  @override
+  String get guideDashboardDeleteDraftMessage =>
+      'Бұл черновик толық жойылады және оны қалпына келтіру мүмкін болмайды.';
+
+  @override
+  String get guideDashboardDeleteDraftConfirm => 'Черновикті жою';
+
+  @override
+  String get guideDashboardDeleteDraftSuccess => 'Черновик жойылды';
+
+  @override
+  String get guideDashboardDeleteDraftFailed => 'Черновикті жою мүмкін болмады';
+
+  @override
   String get guideDashboardArchiveFailed =>
       'Ұсынысты архивке жіберу мүмкін болмады';
 

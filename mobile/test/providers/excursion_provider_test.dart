@@ -149,40 +149,66 @@ void main() {
     },
   );
 
-  test('cancelGuideExcursionSlot cancels related guide dashboard bookings',
-      () async {
-    final api = _FakeExcursionApi(
-      excursionBatches: const [],
-      createdExcursion: _createdDraft,
-      publishedExcursion: _publishedExcursion,
-      myExcursions: const [_publishedProductDetails],
-      guideBookings: [
-        _upcomingGuideBooking,
-        _secondUpcomingGuideBooking,
-      ],
-    );
-    final scheduleApi =
-        _FakeExcursionScheduleApi(cancelledSlot: _cancelledSlot);
-    final provider = ExcursionProvider(
-      excursionApi: api,
-      guideApi: _FakeGuideApi(profile: null),
-      scheduleApi: scheduleApi,
-    );
+  test(
+    'cancelGuideExcursionSlot cancels related guide dashboard bookings',
+    () async {
+      final api = _FakeExcursionApi(
+        excursionBatches: const [],
+        createdExcursion: _createdDraft,
+        publishedExcursion: _publishedExcursion,
+        myExcursions: const [_publishedProductDetails],
+        guideBookings: [_upcomingGuideBooking, _secondUpcomingGuideBooking],
+      );
+      final scheduleApi = _FakeExcursionScheduleApi(
+        cancelledSlot: _cancelledSlot,
+      );
+      final provider = ExcursionProvider(
+        excursionApi: api,
+        guideApi: _FakeGuideApi(profile: null),
+        scheduleApi: scheduleApi,
+      );
 
-    await provider.loadGuideDashboardData();
-    final cancelled = await provider.cancelGuideExcursionSlot(
-      'slot-1',
-      reason: 'Guide is sick',
-    );
+      await provider.loadGuideDashboardData();
+      final cancelled = await provider.cancelGuideExcursionSlot(
+        'slot-1',
+        reason: 'Guide is sick',
+      );
 
-    expect(cancelled, isTrue);
-    expect(scheduleApi.cancelSlotCalls, ['slot-1']);
-    expect(scheduleApi.cancelReasons, ['Guide is sick']);
-    expect(
-      provider.myGuideExcursionBookings.map((booking) => booking.status),
-      ['CANCELLED', 'CANCELLED'],
-    );
-  });
+      expect(cancelled, isTrue);
+      expect(scheduleApi.cancelSlotCalls, ['slot-1']);
+      expect(scheduleApi.cancelReasons, ['Guide is sick']);
+      expect(
+        provider.myGuideExcursionBookings.map((booking) => booking.status),
+        ['CANCELLED', 'CANCELLED'],
+      );
+    },
+  );
+
+  test(
+    'deleteDraftExcursionOffer removes draft from guide dashboard cache',
+    () async {
+      final api = _FakeExcursionApi(
+        excursionBatches: const [],
+        createdExcursion: _createdDraft,
+        publishedExcursion: _publishedExcursion,
+        myExcursions: const [_createdDraft, _otherProductDetails],
+        guideBookings: [_upcomingGuideBooking],
+      );
+      final provider = ExcursionProvider(
+        excursionApi: api,
+        guideApi: _FakeGuideApi(profile: null),
+      );
+
+      await provider.loadGuideDashboardData();
+      final deleted = await provider.deleteDraftExcursionOffer('excursion-new');
+
+      expect(deleted, isTrue);
+      expect(api.deletedExcursionIds, ['excursion-new']);
+      expect(provider.myGuideExcursions.map((excursion) => excursion.id), [
+        'product-other',
+      ]);
+    },
+  );
 
   test('loadExcursionDetails keeps details scoped by excursion id', () async {
     final api = _FakeExcursionApi(
@@ -466,6 +492,7 @@ class _FakeExcursionApi extends ExcursionApi {
   final List<List<String>> getMyExcursionsStatuses = [];
   int getMyGuideExcursionBookingsCallCount = 0;
   final List<String> getExcursionByIdCalls = [];
+  final List<String> deletedExcursionIds = [];
 
   @override
   Future<List<ExcursionVm>> getExcursions({
@@ -518,6 +545,11 @@ class _FakeExcursionApi extends ExcursionApi {
     getMyExcursionsCallCount++;
     getMyExcursionsStatuses.add(List<String>.unmodifiable(statuses));
     return ExcursionsPage(items: myExcursions, hasMore: false);
+  }
+
+  @override
+  Future<void> deleteExcursionOffer(String excursionId) async {
+    deletedExcursionIds.add(excursionId);
   }
 
   @override

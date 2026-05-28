@@ -4205,6 +4205,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guideDashboardSubmitOffer => 'Submit for review';
 
   @override
+  String get guideDashboardDeleteDraftOffer => 'Delete draft';
+
+  @override
+  String get guideDashboardDeleteDraftTitle => 'Delete draft offer?';
+
+  @override
+  String get guideDashboardDeleteDraftMessage =>
+      'This draft will be permanently removed. This action cannot be undone.';
+
+  @override
+  String get guideDashboardDeleteDraftConfirm => 'Delete draft';
+
+  @override
+  String get guideDashboardDeleteDraftSuccess => 'Draft offer deleted';
+
+  @override
+  String get guideDashboardDeleteDraftFailed => 'Failed to delete draft offer';
+
+  @override
   String get guideDashboardArchiveFailed => 'Failed to move offer to archive';
 
   @override

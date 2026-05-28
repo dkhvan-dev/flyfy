@@ -3,92 +3,125 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('guide dashboard screen uses adaptive tabs with a private draft tab',
-      () async {
-    final source = await File(
-      'lib/screens/excursions/guide_dashboard_screen.dart',
-    ).readAsString();
-    final formatterSource = await File(
-      'lib/features/excursions/guide_dashboard_formatters.dart',
-    ).readAsString();
+  test(
+    'guide dashboard screen uses adaptive tabs with a private draft tab',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/guide_dashboard_screen.dart',
+      ).readAsString();
+      final formatterSource = await File(
+        'lib/features/excursions/guide_dashboard_formatters.dart',
+      ).readAsString();
 
-    expect(source, contains('class GuideDashboardScreen'));
-    expect(source, contains('GuideDashboardSection.offers'));
-    expect(source, contains('GuideDashboardSection.bookings'));
-    expect(source, contains('GuideOfferDashboardTab.active'));
-    expect(source, contains('GuideOfferDashboardTab.draft'));
-    expect(source, contains('GuideOfferDashboardTab.archive'));
-    expect(source, contains('GuideOfferDashboardTab.rejected'));
-    expect(source, contains('GuideOfferDashboardTab.review'));
-    expect(source, contains('GuideBookingDashboardTab.active'));
-    expect(source, contains('GuideBookingDashboardTab.cancelled'));
-    expect(source, contains('GuideBookingDashboardTab.completed'));
-    expect(source, contains('_draftOffers'));
-    expect(source, contains('_isDraftOffer'));
-    expect(source, contains('guideDashboardDraftTab'));
-    expect(source, contains('guideDashboardSubmitOffer'));
-    expect(source, contains('guideDashboardStatusDraft'));
-    expect(source, contains('_dashboardOfferAfterMutation'));
-    expect(source, contains('_offerTabForStatus'));
-    expect(source, contains('TextEditingController _searchController'));
-    expect(source, contains('class _GuideDashboardSearchField'));
-    expect(source, contains('AppColors.accent'));
-    expect(source, contains('_matchesSmartQuery'));
-    expect(source, contains('_bookingCountForOffer'));
-    expect(source, contains('_archiveOffer'));
-    expect(source, contains('archiveExcursionOffer'));
-    expect(source, contains('guideDashboardBookingCount'));
-    expect(source, contains('formatLocalizedExcursionMoney'));
-    expect(source, isNot(contains('symbol: excursion.currency')));
-    expect(source, isNot(contains('symbol: booking.currency')));
-    expect(source, contains('guideDashboardArchiveTab'));
-    expect(source, contains('guideDashboardArchiveOffer'));
-    expect(source, contains('statusLabel: l10n.guideDashboardStatusRejected'));
-    expect(source, contains('onSecondaryActionTap: () =>'));
-    expect(
-      source,
-      contains('imageUrl: resolveOwnedExcursionCoverUrl(excursion)'),
-    );
-    expect(source, isNot(contains('guideDashboardHeroTitle')));
-    expect(source, isNot(contains('guideDashboardOfferCount')));
-    expect(source, contains('MediaQuery.sizeOf(context)'));
-    expect(source, contains('LayoutBuilder('));
-    expect(source, contains('Wrap('));
-    expect(source, contains('AspectRatio('));
-    expect(source, contains('RefreshIndicator('));
-    expect(source, contains('FlyfyPaginationBar('));
-    expect(source, contains('guideDashboardReviewsTitle'));
-    expect(
-      source,
-      contains("context.push('/profile/guide-dashboard/reviews')"),
-    );
-    expect(source, contains('class _GuideDashboardQuickActions'));
-    expect(source, contains('class _GuideDashboardActionTile'));
-    expect(source, contains('rating: provider.myGuideProfile?.ratingAvg ?? 0'));
-    expect(source, contains('formatGuideDashboardRevenue'));
-    expect(formatterSource, contains('useExcursionListCurrencyFormat: true'));
-    expect(source, isNot(contains('compact: true')));
-    expect(source, contains('_openBookingDetailsSheet'));
-    expect(source, contains('class _GuideBookingDetailsSheet'));
-    expect(source, contains('class _GuideBookingGuestBreakdown'));
-    expect(source, contains('class _GuideCancelExcursionSheet'));
-    expect(source, contains('cancelGuideExcursionSlot'));
-    expect(source, contains('guideDashboardCancelExcursion'));
-    expect(source, contains('guideDashboardRefundAmount'));
-    expect(source, contains('booking.canBeCancelledByGuide(now)'));
-    expect(
-      source,
-      isNot(contains('_averageRating(provider.myGuideExcursions)')),
-    );
-    expect(
-      source,
-      isNot(contains(
-          "context.push('/excursions/\${Uri.encodeComponent(productId)}')")),
-    );
-    expect(source, isNot(contains('Icons.more_vert_rounded')));
-    expect(source, isNot(contains('bottomNavigationBar:')));
-    expect(source, isNot(contains('CommonBottomNavigationBar')));
-  });
+      expect(source, contains('class GuideDashboardScreen'));
+      expect(source, contains('GuideDashboardSection.offers'));
+      expect(source, contains('GuideDashboardSection.bookings'));
+      expect(source, contains('GuideOfferDashboardTab.active'));
+      expect(source, contains('GuideOfferDashboardTab.draft'));
+      expect(source, contains('GuideOfferDashboardTab.archive'));
+      expect(source, contains('GuideOfferDashboardTab.rejected'));
+      expect(source, contains('GuideOfferDashboardTab.review'));
+      expect(source, contains('GuideBookingDashboardTab.active'));
+      expect(source, contains('GuideBookingDashboardTab.cancelled'));
+      expect(source, contains('GuideBookingDashboardTab.completed'));
+      expect(source, contains('_draftOffers'));
+      expect(source, contains('_isDraftOffer'));
+      expect(source, contains('guideDashboardDraftTab'));
+      expect(source, contains('guideDashboardSubmitOffer'));
+      expect(source, contains('guideDashboardDeleteDraftOffer'));
+      expect(source, contains('guideDashboardDeleteDraftTitle'));
+      expect(source, contains('_deleteDraftOffer'));
+      expect(source, contains('deleteDraftExcursionOffer'));
+      expect(source, contains('guideDashboardStatusDraft'));
+      expect(source, contains('_dashboardOfferAfterMutation'));
+      expect(source, contains('_offerTabForStatus'));
+      expect(source, contains('TextEditingController _searchController'));
+      expect(source, contains('class _GuideDashboardSearchField'));
+      expect(source, contains('AppColors.accent'));
+      expect(source, contains('_matchesSmartQuery'));
+      expect(source, contains('_bookingCountForOffer'));
+      expect(source, contains('_archiveOffer'));
+      expect(source, contains('archiveExcursionOffer'));
+      expect(source, contains('guideDashboardBookingCount'));
+      expect(source, contains('formatLocalizedExcursionMoney'));
+      expect(source, isNot(contains('symbol: excursion.currency')));
+      expect(source, isNot(contains('symbol: booking.currency')));
+      expect(source, contains('guideDashboardArchiveTab'));
+      expect(source, contains('guideDashboardArchiveOffer'));
+      expect(
+        source,
+        contains('statusLabel: l10n.guideDashboardStatusRejected'),
+      );
+      expect(source, contains('onSecondaryActionTap: () =>'));
+      expect(source, contains('destructiveActionLabel:'));
+      expect(source, contains('onDestructiveActionTap:'));
+      final deleteDialogStart =
+          source.indexOf('Future<void> _deleteDraftOffer');
+      final publishOfferStart = source.indexOf('Future<void> _publishOffer');
+      expect(deleteDialogStart, isNonNegative);
+      expect(publishOfferStart, greaterThan(deleteDialogStart));
+      final deleteDialogSource = source.substring(
+        deleteDialogStart,
+        publishOfferStart,
+      );
+      expect(
+        deleteDialogSource,
+        contains('backgroundColor: const Color(0xFF21170D)'),
+      );
+      expect(deleteDialogSource, contains('const Color(0xFF2C2118)'));
+      expect(deleteDialogSource, contains('Color(0xFFFFF7EC)'));
+      expect(deleteDialogSource, contains('AppColors.accent'));
+      expect(
+        source,
+        contains('imageUrl: resolveOwnedExcursionCoverUrl(excursion)'),
+      );
+      expect(source, isNot(contains('guideDashboardHeroTitle')));
+      expect(source, isNot(contains('guideDashboardOfferCount')));
+      expect(source, contains('MediaQuery.sizeOf(context)'));
+      expect(source, contains('LayoutBuilder('));
+      expect(source, contains('Wrap('));
+      expect(source, contains('AspectRatio('));
+      expect(source, contains('RefreshIndicator('));
+      expect(source, contains('FlyfyPaginationBar('));
+      expect(source, contains('guideDashboardReviewsTitle'));
+      expect(
+        source,
+        contains("context.push('/profile/guide-dashboard/reviews')"),
+      );
+      expect(source, contains('class _GuideDashboardQuickActions'));
+      expect(source, contains('class _GuideDashboardActionTile'));
+      expect(
+        source,
+        contains('rating: provider.myGuideProfile?.ratingAvg ?? 0'),
+      );
+      expect(source, contains('formatGuideDashboardRevenue'));
+      expect(formatterSource, contains('useExcursionListCurrencyFormat: true'));
+      expect(source, isNot(contains('compact: true')));
+      expect(source, contains('_openBookingDetailsSheet'));
+      expect(source, contains('class _GuideBookingDetailsSheet'));
+      expect(source, contains('class _GuideBookingGuestBreakdown'));
+      expect(source, contains('class _GuideCancelExcursionSheet'));
+      expect(source, contains('cancelGuideExcursionSlot'));
+      expect(source, contains('guideDashboardCancelExcursion'));
+      expect(source, contains('guideDashboardRefundAmount'));
+      expect(source, contains('booking.canBeCancelledByGuide(now)'));
+      expect(
+        source,
+        isNot(contains('_averageRating(provider.myGuideExcursions)')),
+      );
+      expect(
+        source,
+        isNot(
+          contains(
+            "context.push('/excursions/\${Uri.encodeComponent(productId)}')",
+          ),
+        ),
+      );
+      expect(source, isNot(contains('Icons.more_vert_rounded')));
+      expect(source, isNot(contains('bottomNavigationBar:')));
+      expect(source, isNot(contains('CommonBottomNavigationBar')));
+    },
+  );
 
   test('edit excursion screen keeps the existing cover visible', () async {
     final source = await File(
@@ -148,24 +181,26 @@ void main() {
     expect(bookingCardSource, isNot(contains('imageUrl: null')));
   });
 
-  test('attendance QR opens from bottom sheet instead of inline card',
-      () async {
-    final source = await File(
-      'lib/screens/excursions/guide_dashboard_screen.dart',
-    ).readAsString();
-    final ruSource = await File('lib/l10n/app_ru.arb').readAsString();
+  test(
+    'attendance QR opens from bottom sheet instead of inline card',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/guide_dashboard_screen.dart',
+      ).readAsString();
+      final ruSource = await File('lib/l10n/app_ru.arb').readAsString();
 
-    expect(source, contains('showModalBottomSheet<void>'));
-    expect(source, contains('class _ExcursionAttendanceQrSheet'));
-    expect(source, contains('_ExcursionAttendanceQrSheet('));
-    expect(source, isNot(contains('class _ExcursionAttendanceQrInline')));
-    expect(source, isNot(contains('_isExpanded')));
-    expect(
-      ruSource,
-      contains('"guideDashboardShowAttendanceQr": "QR отметки"'),
-    );
-    expect(ruSource, isNot(contains('Показать QR прихода')));
-  });
+      expect(source, contains('showModalBottomSheet<void>'));
+      expect(source, contains('class _ExcursionAttendanceQrSheet'));
+      expect(source, contains('_ExcursionAttendanceQrSheet('));
+      expect(source, isNot(contains('class _ExcursionAttendanceQrInline')));
+      expect(source, isNot(contains('_isExpanded')));
+      expect(
+        ruSource,
+        contains('"guideDashboardShowAttendanceQr": "QR отметки"'),
+      );
+      expect(ruSource, isNot(contains('Показать QR прихода')));
+    },
+  );
 
   test('attendance QR is time-gated and shows participant statuses', () async {
     final source = await File(
@@ -211,8 +246,9 @@ void main() {
       'lib/screens/excursions/guide_dashboard_screen.dart',
     ).readAsString();
 
-    final sheetStateStart =
-        source.indexOf('class _ExcursionAttendanceQrSheetState');
+    final sheetStateStart = source.indexOf(
+      'class _ExcursionAttendanceQrSheetState',
+    );
     final bookingSheetStart = source.indexOf('class _GuideBookingDetailsSheet');
     expect(sheetStateStart, isNonNegative);
     expect(bookingSheetStart, greaterThan(sheetStateStart));

@@ -89,6 +89,8 @@ type excursionRepoStub struct {
 	loadedRelations                 port.ExcursionRelations
 	hasGuideLandmark                bool
 	createAggregateFn               func(ctx context.Context, item *model.Excursion, relations port.ExcursionRelations) error
+	hardDeletedExcursionID          uuid.UUID
+	hardDeletedGuideUserID          uuid.UUID
 }
 
 func (s *excursionRepoStub) CreateExcursionAggregate(ctx context.Context, item *model.Excursion, relations port.ExcursionRelations) error {
@@ -108,6 +110,12 @@ func (s *excursionRepoStub) UpdateExcursionAggregate(ctx context.Context, item *
 
 func (s *excursionRepoStub) UpdateExcursion(ctx context.Context, item *model.Excursion) error {
 	s.savedExcursion = item
+	return nil
+}
+
+func (s *excursionRepoStub) DeleteDraftExcursion(ctx context.Context, excursionID uuid.UUID, guideUserID uuid.UUID) error {
+	s.hardDeletedExcursionID = excursionID
+	s.hardDeletedGuideUserID = guideUserID
 	return nil
 }
 
@@ -1625,6 +1633,93 @@ func TestArchiveExcursionKeepsOfferVisibleForGuideArchive(t *testing.T) {
 	}
 	if repo.savedExcursion == nil {
 		t.Fatal("archived excursion was not persisted")
+	}
+}
+
+func TestDeleteExcursionHardDeletesDraftOnly(t *testing.T) {
+	ownerID := uuid.New()
+	excursion, err := model.NewExcursion(model.NewExcursionParams{
+		GuideProfileID:  uuid.New(),
+		GuideUserID:     ownerID,
+		LandmarkID:      uuidPtr(uuid.New()),
+		LandmarkName:    stringPtr("Medeu"),
+		Title:           "Almaty Mountain Escape",
+		Summary:         "Private mountain route",
+		Description:     "A guided route through the most scenic mountain stops around Almaty.",
+		CategorySlug:    "nature",
+		Visibility:      enum.ExcursionVisibilityPublic,
+		DurationMinutes: 240,
+		MaxGroupSize:    8,
+		CountryCode:     &testExcursionCountryCode,
+		CityName:        &testExcursionCityName,
+		MeetingPoint:    "Hotel pickup",
+		Latitude:        &testExcursionLatitude,
+		Longitude:       &testExcursionLongitude,
+		PriceAmount:     120,
+		Currency:        "USD",
+	})
+	if err != nil {
+		t.Fatalf("NewExcursion() error = %v", err)
+	}
+
+	repo := &excursionRepoStub{gotExcursion: excursion}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	if err := uc.DeleteExcursion(context.Background(), excursion.ID, ownerID); err != nil {
+		t.Fatalf("DeleteExcursion() error = %v", err)
+	}
+	if repo.hardDeletedExcursionID != excursion.ID {
+		t.Fatalf("hard deleted excursion id = %s, want %s", repo.hardDeletedExcursionID, excursion.ID)
+	}
+	if repo.hardDeletedGuideUserID != ownerID {
+		t.Fatalf("hard deleted guide user id = %s, want %s", repo.hardDeletedGuideUserID, ownerID)
+	}
+	if repo.savedExcursion != nil {
+		t.Fatal("draft excursion was archived instead of hard-deleted")
+	}
+}
+
+func TestDeleteExcursionArchivesNonDraftOffers(t *testing.T) {
+	ownerID := uuid.New()
+	excursion, err := model.NewExcursion(model.NewExcursionParams{
+		GuideProfileID:  uuid.New(),
+		GuideUserID:     ownerID,
+		LandmarkID:      uuidPtr(uuid.New()),
+		LandmarkName:    stringPtr("Medeu"),
+		Title:           "Almaty Mountain Escape",
+		Summary:         "Private mountain route",
+		Description:     "A guided route through the most scenic mountain stops around Almaty.",
+		CategorySlug:    "nature",
+		Visibility:      enum.ExcursionVisibilityPublic,
+		DurationMinutes: 240,
+		MaxGroupSize:    8,
+		CountryCode:     &testExcursionCountryCode,
+		CityName:        &testExcursionCityName,
+		MeetingPoint:    "Hotel pickup",
+		Latitude:        &testExcursionLatitude,
+		Longitude:       &testExcursionLongitude,
+		PriceAmount:     120,
+		Currency:        "USD",
+	})
+	if err != nil {
+		t.Fatalf("NewExcursion() error = %v", err)
+	}
+	excursion.Status = enum.ExcursionStatusPendingReview
+
+	repo := &excursionRepoStub{gotExcursion: excursion}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	if err := uc.DeleteExcursion(context.Background(), excursion.ID, ownerID); err != nil {
+		t.Fatalf("DeleteExcursion() error = %v", err)
+	}
+	if repo.hardDeletedExcursionID != uuid.Nil {
+		t.Fatalf("hard deleted non-draft excursion id = %s", repo.hardDeletedExcursionID)
+	}
+	if repo.savedExcursion == nil {
+		t.Fatal("non-draft excursion was not archived")
+	}
+	if repo.savedExcursion.DeletedAt == nil {
+		t.Fatal("non-draft delete did not keep soft-delete audit state")
 	}
 }
 

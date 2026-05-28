@@ -218,6 +218,10 @@ func (s *excursionOffersRepoStub) UpdateExcursion(context.Context, *model.Excurs
 	return nil
 }
 
+func (s *excursionOffersRepoStub) DeleteDraftExcursion(context.Context, uuid.UUID, uuid.UUID) error {
+	return nil
+}
+
 func (s *excursionOffersRepoStub) GetExcursionByID(context.Context, uuid.UUID) (*model.Excursion, error) {
 	return nil, nil
 }

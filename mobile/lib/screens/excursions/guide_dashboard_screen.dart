@@ -188,9 +188,9 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
     final l10n = AppLocalizations.of(context)!;
     final slotId = (booking.scheduleSlotId ?? '').trim();
     if (slotId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.guideDashboardCancelNoSlot)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.guideDashboardCancelNoSlot)));
       return;
     }
 
@@ -219,9 +219,9 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
         _activeBookingTab = GuideBookingDashboardTab.cancelled;
         _bookingPages[GuideBookingDashboardTab.cancelled] = 1;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.guideDashboardCancelSuccess)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.guideDashboardCancelSuccess)));
       return;
     }
 
@@ -255,6 +255,126 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(l10n.guideDashboardArchiveFailed)));
+  }
+
+  Future<void> _deleteDraftOffer(ExcursionVm excursion) async {
+    final excursionId = _editableExcursionId(excursion);
+    if (excursionId.isEmpty) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF21170D),
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(28),
+          side: const BorderSide(color: Color(0x293A270F)),
+        ),
+        icon: Container(
+          width: 58,
+          height: 58,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color(0xFF2C2118),
+            border: Border.all(
+              color: AppColors.accent.withValues(alpha: 0.24),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.accent.withValues(alpha: 0.14),
+                blurRadius: 22,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.delete_outline_rounded,
+            color: AppColors.accent,
+            size: 27,
+          ),
+        ),
+        title: Text(l10n.guideDashboardDeleteDraftTitle),
+        titleTextStyle: const TextStyle(
+          color: Color(0xFFFFF7EC),
+          fontSize: 23,
+          height: 1.12,
+          fontWeight: FontWeight.w900,
+        ),
+        content: Text(l10n.guideDashboardDeleteDraftMessage),
+        contentTextStyle: TextStyle(
+          color: const Color(0xFFE0D4C6).withValues(alpha: 0.88),
+          fontSize: 15,
+          height: 1.45,
+          fontWeight: FontWeight.w500,
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            style: TextButton.styleFrom(
+              backgroundColor: const Color(0xFF2C2118),
+              foregroundColor: const Color(0xFFD8C7B7),
+              minimumSize: const Size(0, 48),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: const BorderSide(color: Color(0xFF3B260D)),
+              ),
+              textStyle: const TextStyle(
+                fontSize: 15,
+                height: 1.1,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            child: Text(l10n.cancelButton),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.accent,
+              foregroundColor: AppColors.textPrimary,
+              minimumSize: const Size(0, 48),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              textStyle: const TextStyle(
+                fontSize: 15,
+                height: 1.1,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            child: Text(l10n.guideDashboardDeleteDraftConfirm),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true) return;
+
+    final provider = context.read<ExcursionProvider>();
+    final deleted = await provider.deleteDraftExcursionOffer(excursionId);
+    if (!mounted) return;
+
+    if (deleted) {
+      setState(() {
+        _activeSection = GuideDashboardSection.offers;
+        _activeOfferTab = GuideOfferDashboardTab.draft;
+        _offerPages[GuideOfferDashboardTab.draft] = 1;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.guideDashboardDeleteDraftSuccess)),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          provider.actionErrorMessage ?? l10n.guideDashboardDeleteDraftFailed,
+        ),
+      ),
+    );
   }
 
   Future<void> _publishOffer(ExcursionVm excursion) async {
@@ -651,6 +771,8 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
           actionLabel: l10n.guideDashboardEditOffer,
           secondaryActionLabel: l10n.guideDashboardSubmitOffer,
           onSecondaryActionTap: () => _submitOfferForReview(draftOffers[index]),
+          destructiveActionLabel: l10n.guideDashboardDeleteDraftOffer,
+          onDestructiveActionTap: () => _deleteDraftOffer(draftOffers[index]),
           muted: true,
           onTap: () => _openOfferEditor(draftOffers[index]),
         ),
@@ -1647,6 +1769,8 @@ class _GuideOfferCard extends StatelessWidget {
     required this.onTap,
     this.secondaryActionLabel,
     this.onSecondaryActionTap,
+    this.destructiveActionLabel,
+    this.onDestructiveActionTap,
     this.muted = false,
   });
 
@@ -1657,6 +1781,8 @@ class _GuideOfferCard extends StatelessWidget {
   final VoidCallback onTap;
   final String? secondaryActionLabel;
   final VoidCallback? onSecondaryActionTap;
+  final String? destructiveActionLabel;
+  final VoidCallback? onDestructiveActionTap;
   final bool muted;
 
   @override
@@ -1686,6 +1812,8 @@ class _GuideOfferCard extends StatelessWidget {
       onTap: onTap,
       secondaryActionLabel: secondaryActionLabel,
       onSecondaryActionTap: onSecondaryActionTap,
+      destructiveActionLabel: destructiveActionLabel,
+      onDestructiveActionTap: onDestructiveActionTap,
       meta: [
         _GuideMetaData(
           icon: Icons.confirmation_number_outlined,
@@ -1907,8 +2035,9 @@ class _ExcursionAttendanceQrSheetState
     }
 
     try {
-      final qr =
-          await _attendanceApi.getExcursionAttendanceQr(widget.scheduleSlotId);
+      final qr = await _attendanceApi.getExcursionAttendanceQr(
+        widget.scheduleSlotId,
+      );
       if (!mounted) return;
       setState(() {
         _token = qr.token;
@@ -2703,8 +2832,10 @@ class _GuideCancelExcursionSheetState
     final reason = _reasonController.text.trim();
     if (reason.isEmpty) {
       setState(() {
-        _errorText =
-            AppLocalizations.of(context)!.guideDashboardCancelReasonRequired;
+        _errorText = AppLocalizations.of(
+          context,
+        )!
+            .guideDashboardCancelReasonRequired;
       });
       _reasonFocusNode.requestFocus();
       return;
@@ -2853,9 +2984,9 @@ class _GuideCancelExcursionSheetState
                       decoration: InputDecoration(
                         hintText: l10n.guideDashboardCancelReasonPlaceholder,
                         hintStyle: TextStyle(
-                          color: const Color(0xFFD3BFA9).withValues(
-                            alpha: 0.72,
-                          ),
+                          color: const Color(
+                            0xFFD3BFA9,
+                          ).withValues(alpha: 0.72),
                           fontSize: 14,
                         ),
                         border: InputBorder.none,
@@ -2919,11 +3050,7 @@ class _GuideCancelExcursionSheetState
                       if (stack) {
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            keep,
-                            const SizedBox(height: 10),
-                            confirm,
-                          ],
+                          children: [keep, const SizedBox(height: 10), confirm],
                         );
                       }
 
@@ -3189,6 +3316,8 @@ class _GuideJourneyCard extends StatelessWidget {
     this.secondaryActionLabel,
     this.onSecondaryActionTap,
     this.actionFooter,
+    this.destructiveActionLabel,
+    this.onDestructiveActionTap,
     this.subtitle = '',
     this.muted = false,
     this.stackSecondaryAction = false,
@@ -3205,6 +3334,8 @@ class _GuideJourneyCard extends StatelessWidget {
   final String? secondaryActionLabel;
   final VoidCallback? onSecondaryActionTap;
   final Widget? actionFooter;
+  final String? destructiveActionLabel;
+  final VoidCallback? onDestructiveActionTap;
   final String subtitle;
   final bool muted;
   final bool stackSecondaryAction;
@@ -3310,6 +3441,10 @@ class _GuideJourneyCard extends StatelessWidget {
                         final secondary = secondaryActionLabel?.trim() ?? '';
                         final hasSecondary = secondary.isNotEmpty &&
                             onSecondaryActionTap != null;
+                        final destructive =
+                            destructiveActionLabel?.trim() ?? '';
+                        final hasDestructive = destructive.isNotEmpty &&
+                            onDestructiveActionTap != null;
                         final stackActions = constraints.maxWidth < 360;
                         final primaryButton = FilledButton(
                           onPressed: onTap,
@@ -3331,7 +3466,7 @@ class _GuideJourneyCard extends StatelessWidget {
                             ),
                           ),
                         );
-                        if (!hasSecondary) {
+                        if (!hasSecondary && !hasDestructive) {
                           return SizedBox(
                             width: double.infinity,
                             child: primaryButton,
@@ -3363,22 +3498,65 @@ class _GuideJourneyCard extends StatelessWidget {
                           ),
                         );
 
+                        final destructiveButton = OutlinedButton.icon(
+                          onPressed: onDestructiveActionTap,
+                          icon: const Icon(Icons.delete_outline_rounded),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFFFFB4AB),
+                            side: BorderSide(
+                              color: const Color(
+                                0xFFFFB4AB,
+                              ).withValues(alpha: 0.46),
+                            ),
+                            minimumSize: const Size(0, 48),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                          ),
+                          label: Text(
+                            destructive.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.1,
+                            ),
+                          ),
+                        );
+
                         if (stackActions || stackSecondaryAction) {
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               primaryButton,
-                              const SizedBox(height: 10),
-                              secondaryButton,
+                              if (hasSecondary) ...[
+                                const SizedBox(height: 10),
+                                secondaryButton,
+                              ],
+                              if (hasDestructive) ...[
+                                const SizedBox(height: 10),
+                                destructiveButton,
+                              ],
                             ],
                           );
                         }
 
-                        return Row(
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Expanded(child: primaryButton),
-                            const SizedBox(width: 10),
-                            Expanded(child: secondaryButton),
+                            Row(
+                              children: [
+                                Expanded(child: primaryButton),
+                                if (hasSecondary) ...[
+                                  const SizedBox(width: 10),
+                                  Expanded(child: secondaryButton),
+                                ],
+                              ],
+                            ),
+                            if (hasDestructive) ...[
+                              const SizedBox(height: 10),
+                              destructiveButton,
+                            ],
                           ],
                         );
                       },

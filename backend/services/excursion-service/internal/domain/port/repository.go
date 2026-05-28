@@ -145,6 +145,7 @@ type ExcursionRepository interface {
 	CreateExcursionAggregate(ctx context.Context, item *model.Excursion, relations ExcursionRelations) error
 	UpdateExcursionAggregate(ctx context.Context, item *model.Excursion, relations ExcursionRelations) error
 	UpdateExcursion(ctx context.Context, item *model.Excursion) error
+	DeleteDraftExcursion(ctx context.Context, excursionID uuid.UUID, guideUserID uuid.UUID) error
 	GetExcursionByID(ctx context.Context, excursionID uuid.UUID) (*model.Excursion, error)
 	ListExcursions(ctx context.Context, filter ExcursionFilter) ([]*model.Excursion, error)
 	LoadExcursionRelations(ctx context.Context, excursionID uuid.UUID) (ExcursionRelations, error)

@@ -796,6 +796,76 @@ func (r *PGExcursionRepository) UpdateExcursion(ctx context.Context, item *model
 	return updateExcursion(ctx, r.pool, item)
 }
 
+func (r *PGExcursionRepository) DeleteDraftExcursion(ctx context.Context, excursionID uuid.UUID, guideUserID uuid.UUID) error {
+	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return fmt.Errorf("begin delete draft excursion tx: %w", err)
+	}
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
+	var productID uuid.UUID
+	err = tx.QueryRow(ctx, `
+		SELECT product_id
+		FROM excursion_offers
+		WHERE legacy_excursion_id = $1
+		  AND guide_user_id = $2
+		  AND status = 'DRAFT'
+		  AND deleted_at IS NULL
+		LIMIT 1
+	`, excursionID, guideUserID).Scan(&productID)
+	if err != nil && err != pgx.ErrNoRows {
+		return fmt.Errorf("find draft excursion offer product: %w", err)
+	}
+
+	if productID != uuid.Nil {
+		if _, err = tx.Exec(ctx, `
+			DELETE FROM excursion_offers
+			WHERE legacy_excursion_id = $1
+			  AND guide_user_id = $2
+			  AND status = 'DRAFT'
+			  AND deleted_at IS NULL
+		`, excursionID, guideUserID); err != nil {
+			return fmt.Errorf("delete draft excursion offer: %w", err)
+		}
+	}
+
+	tag, err := tx.Exec(ctx, `
+		DELETE FROM excursions
+		WHERE id = $1
+		  AND guide_user_id = $2
+		  AND status = 'DRAFT'
+		  AND deleted_at IS NULL
+	`, excursionID, guideUserID)
+	if err != nil {
+		return fmt.Errorf("delete draft excursion: %w", err)
+	}
+	if tag.RowsAffected() != 1 {
+		return model.ErrInvalidExcursionStatus
+	}
+
+	if productID != uuid.Nil {
+		if err = refreshExcursionProductStats(ctx, tx, productID); err != nil {
+			return err
+		}
+		if _, err = tx.Exec(ctx, `
+			DELETE FROM excursion_products
+			WHERE id = $1
+			  AND status = 'DRAFT'
+			  AND offers_count = 0
+			  AND published_offers_count = 0
+		`, productID); err != nil {
+			return fmt.Errorf("delete orphan draft excursion product: %w", err)
+		}
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit delete draft excursion tx: %w", err)
+	}
+	return nil
+}
+
 func (r *PGExcursionRepository) GetExcursionByID(ctx context.Context, excursionID uuid.UUID) (*model.Excursion, error) {
 	query := `
 		SELECT ` + excursionSelectColumns + `

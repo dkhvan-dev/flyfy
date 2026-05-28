@@ -7726,6 +7726,42 @@ abstract class AppLocalizations {
   /// **'Submit for review'**
   String get guideDashboardSubmitOffer;
 
+  /// No description provided for @guideDashboardDeleteDraftOffer.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete draft'**
+  String get guideDashboardDeleteDraftOffer;
+
+  /// No description provided for @guideDashboardDeleteDraftTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete draft offer?'**
+  String get guideDashboardDeleteDraftTitle;
+
+  /// No description provided for @guideDashboardDeleteDraftMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This draft will be permanently removed. This action cannot be undone.'**
+  String get guideDashboardDeleteDraftMessage;
+
+  /// No description provided for @guideDashboardDeleteDraftConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete draft'**
+  String get guideDashboardDeleteDraftConfirm;
+
+  /// No description provided for @guideDashboardDeleteDraftSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft offer deleted'**
+  String get guideDashboardDeleteDraftSuccess;
+
+  /// No description provided for @guideDashboardDeleteDraftFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete draft offer'**
+  String get guideDashboardDeleteDraftFailed;
+
   /// No description provided for @guideDashboardArchiveFailed.
   ///
   /// In en, this message translates to:

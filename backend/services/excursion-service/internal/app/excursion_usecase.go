@@ -732,6 +732,12 @@ func (u *ExcursionUseCase) DeleteExcursion(ctx context.Context, excursionID uuid
 	if err != nil {
 		return err
 	}
+	if item.Status == enum.ExcursionStatusDraft && item.DeletedAt == nil {
+		if err = u.repo.DeleteDraftExcursion(ctx, item.ID, actorUserID); err != nil {
+			return fmt.Errorf("hard delete draft excursion: %w", err)
+		}
+		return nil
+	}
 	if err = item.Archive(); err != nil {
 		return err
 	}

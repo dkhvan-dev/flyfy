@@ -39,7 +39,8 @@ class ExcursionApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -97,7 +98,8 @@ class ExcursionApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -149,7 +151,8 @@ class ExcursionApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -196,6 +199,11 @@ class ExcursionApi {
     );
 
     return ExcursionVm.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<void> deleteExcursionOffer(String excursionId) async {
+    final encodedExcursionId = Uri.encodeComponent(excursionId);
+    await _apiClient.dio.delete('/me/excursions/$encodedExcursionId');
   }
 
   Future<ExcursionBookingVm> createExcursionBooking(
@@ -246,7 +254,8 @@ class ExcursionApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -270,7 +279,8 @@ class ExcursionApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -336,7 +346,8 @@ class ExcursionApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -381,7 +392,8 @@ class ExcursionApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];

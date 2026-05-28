@@ -4224,6 +4224,25 @@ class AppLocalizationsRu extends AppLocalizations {
   String get guideDashboardSubmitOffer => 'Отправить на проверку';
 
   @override
+  String get guideDashboardDeleteDraftOffer => 'Удалить черновик';
+
+  @override
+  String get guideDashboardDeleteDraftTitle => 'Удалить черновик?';
+
+  @override
+  String get guideDashboardDeleteDraftMessage =>
+      'Черновик будет удален полностью и без возможности восстановления.';
+
+  @override
+  String get guideDashboardDeleteDraftConfirm => 'Удалить черновик';
+
+  @override
+  String get guideDashboardDeleteDraftSuccess => 'Черновик удален';
+
+  @override
+  String get guideDashboardDeleteDraftFailed => 'Не удалось удалить черновик';
+
+  @override
   String get guideDashboardArchiveFailed =>
       'Не удалось перенести предложение в архив';
 

@@ -36,39 +36,41 @@ void main() {
     expect(excursions.single.publishedOffersCount, 2);
   });
 
-  test('getExcursions can narrow public products by landmark and city',
-      () async {
-    final adapter = _ExcursionJsonAdapter({
-      '/excursion-products': {
-        'items': [_productJson()],
-        'hasMore': false,
-      },
-    });
-    final api = ExcursionApi(
-      apiClient: ApiClient(
-        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
-          ..httpClientAdapter = adapter,
-        secureStorage: _FakeSecureStorage(),
-      ),
-    );
+  test(
+    'getExcursions can narrow public products by landmark and city',
+    () async {
+      final adapter = _ExcursionJsonAdapter({
+        '/excursion-products': {
+          'items': [_productJson()],
+          'hasMore': false,
+        },
+      });
+      final api = ExcursionApi(
+        apiClient: ApiClient(
+          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+            ..httpClientAdapter = adapter,
+          secureStorage: _FakeSecureStorage(),
+        ),
+      );
 
-    await api.getExcursions(
-      limit: 1,
-      landmarkId: ' landmark-1 ',
-      cityName: ' Алматы ',
-      departureCityId: ' almaty ',
-    );
+      await api.getExcursions(
+        limit: 1,
+        landmarkId: ' landmark-1 ',
+        cityName: ' Алматы ',
+        departureCityId: ' almaty ',
+      );
 
-    expect(adapter.requests.single.path, '/excursion-products');
-    expect(adapter.requests.single.extra['requiresAuth'], isFalse);
-    expect(adapter.requests.single.queryParameters, {
-      'limit': 1,
-      'offset': 0,
-      'landmarkId': 'landmark-1',
-      'cityName': 'Алматы',
-      'departureCityId': 'almaty',
-    });
-  });
+      expect(adapter.requests.single.path, '/excursion-products');
+      expect(adapter.requests.single.extra['requiresAuth'], isFalse);
+      expect(adapter.requests.single.queryParameters, {
+        'limit': 1,
+        'offset': 0,
+        'landmarkId': 'landmark-1',
+        'cityName': 'Алматы',
+        'departureCityId': 'almaty',
+      });
+    },
+  );
 
   test('getExcursionById loads product details and public offers', () async {
     final adapter = _ExcursionJsonAdapter({
@@ -278,6 +280,27 @@ void main() {
     expect(archived.status, 'ARCHIVED');
   });
 
+  test(
+    'deleteExcursionOffer sends authenticated draft delete request',
+    () async {
+      final adapter = _ExcursionJsonAdapter({
+        '/me/excursions/excursion-1': <String, Object?>{},
+      });
+      final api = ExcursionApi(
+        apiClient: ApiClient(
+          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+            ..httpClientAdapter = adapter,
+          secureStorage: _FakeSecureStorage(),
+        ),
+      );
+
+      await api.deleteExcursionOffer('excursion-1');
+
+      expect(adapter.requests.single.path, '/me/excursions/excursion-1');
+      expect(adapter.lastOptions?.method, 'DELETE');
+    },
+  );
+
   test('publishExcursion submits guide offer for publishing review', () async {
     final adapter = _ExcursionJsonAdapter({
       '/me/excursions/excursion-1/submit-for-publish': {
@@ -332,32 +355,29 @@ void main() {
     },
   );
 
-  test(
-    'updateExcursionBookingGuests patches adults and children',
-    () async {
-      final adapter = _ExcursionJsonAdapter({
-        '/me/excursion-bookings/booking-1': _bookingJson(),
-      });
-      final api = ExcursionApi(
-        apiClient: ApiClient(
-          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
-            ..httpClientAdapter = adapter,
-          secureStorage: _FakeSecureStorage(),
-        ),
-      );
+  test('updateExcursionBookingGuests patches adults and children', () async {
+    final adapter = _ExcursionJsonAdapter({
+      '/me/excursion-bookings/booking-1': _bookingJson(),
+    });
+    final api = ExcursionApi(
+      apiClient: ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+          ..httpClientAdapter = adapter,
+        secureStorage: _FakeSecureStorage(),
+      ),
+    );
 
-      final booking = await api.updateExcursionBookingGuests(
-        'booking-1',
-        adults: 3,
-        children: 1,
-      );
+    final booking = await api.updateExcursionBookingGuests(
+      'booking-1',
+      adults: 3,
+      children: 1,
+    );
 
-      expect(adapter.requests.single.path, '/me/excursion-bookings/booking-1');
-      expect(adapter.lastOptions?.method, 'PATCH');
-      expect(adapter.lastJsonBody, {'adults': 3, 'children': 1});
-      expect(booking.id, 'booking-1');
-    },
-  );
+    expect(adapter.requests.single.path, '/me/excursion-bookings/booking-1');
+    expect(adapter.lastOptions?.method, 'PATCH');
+    expect(adapter.lastJsonBody, {'adults': 3, 'children': 1});
+    expect(booking.id, 'booking-1');
+  });
 
   test(
     'createExcursionReview posts rating and comment for visited booking',
@@ -449,37 +469,39 @@ void main() {
     },
   );
 
-  test('saveBookingReviews can delete direct guide review from booking',
-      () async {
-    final adapter = _ExcursionJsonAdapter({
-      '/me/excursion-bookings/booking-1/reviews': {
-        'excursionReview': _reviewJson(),
-      },
-    });
-    final api = ExcursionApi(
-      apiClient: ApiClient(
-        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
-          ..httpClientAdapter = adapter,
-        secureStorage: _FakeSecureStorage(),
-      ),
-    );
+  test(
+    'saveBookingReviews can delete direct guide review from booking',
+    () async {
+      final adapter = _ExcursionJsonAdapter({
+        '/me/excursion-bookings/booking-1/reviews': {
+          'excursionReview': _reviewJson(),
+        },
+      });
+      final api = ExcursionApi(
+        apiClient: ApiClient(
+          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+            ..httpClientAdapter = adapter,
+          secureStorage: _FakeSecureStorage(),
+        ),
+      );
 
-    final result = await api.saveBookingReviews(
-      'booking-1',
-      const SaveBookingReviewsRequest(
-        guideReview: ReviewMutationRequest.delete(),
-      ),
-    );
+      final result = await api.saveBookingReviews(
+        'booking-1',
+        const SaveBookingReviewsRequest(
+          guideReview: ReviewMutationRequest.delete(),
+        ),
+      );
 
-    expect(
-      adapter.requests.single.path,
-      '/me/excursion-bookings/booking-1/reviews',
-    );
-    expect(adapter.lastOptions?.method, 'PUT');
-    expect(adapter.lastJsonBody?['guideReview'], {'delete': true});
-    expect(result.excursionReview?.id, 'review-1');
-    expect(result.guideReview, isNull);
-  });
+      expect(
+        adapter.requests.single.path,
+        '/me/excursion-bookings/booking-1/reviews',
+      );
+      expect(adapter.lastOptions?.method, 'PUT');
+      expect(adapter.lastJsonBody?['guideReview'], {'delete': true});
+      expect(result.excursionReview?.id, 'review-1');
+      expect(result.guideReview, isNull);
+    },
+  );
 
   test('getGuideReviews reads public direct guide reviews endpoint', () async {
     final adapter = _ExcursionJsonAdapter({
