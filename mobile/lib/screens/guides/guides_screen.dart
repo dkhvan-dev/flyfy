@@ -125,22 +125,27 @@ class _GuidesScreenState extends State<GuidesScreen> {
   }
 
   void _applyDefaultCityFilter(HomeLocationProvider provider) {
-    if (_hasAppliedDefaultCityFilter || _filters.city != null) {
+    if (_hasAppliedDefaultCityFilter ||
+        _filters.country != null ||
+        _filters.city != null) {
       _hasAppliedDefaultCityFilter = true;
       return;
     }
 
     _hasAppliedDefaultCityFilter = true;
     final location = provider.selectedLocation;
+    final country = AppCountryFilterValue.fromParts(
+      countryCode: location?.countryCode,
+    );
     final city = AppCityFilterValue.fromParts(
       cityId: location?.cityId,
       cityName: location?.cityName,
       countryCode: location?.countryCode,
     );
-    if (city == null || !mounted) return;
+    if ((country == null && city == null) || !mounted) return;
 
     setState(() {
-      _filters = _filters.copyWith(city: city);
+      _filters = _filters.copyWith(country: country, city: city);
       _currentPage = 1;
     });
   }
@@ -179,6 +184,7 @@ class _GuidesScreenState extends State<GuidesScreen> {
         cityId: _filters.city?.cityId,
         cityName: _filters.city?.cityName,
         cityCountryCode: _filters.city?.countryCode,
+        countryCodes: _filters.countryCodes,
         languageCodes: _filters.languageCodes,
         specializationCodes: _filters.specializations,
       );
@@ -251,6 +257,7 @@ class _GuidesScreenState extends State<GuidesScreen> {
             cityId: filters.city?.cityId,
             cityName: filters.city?.cityName,
             cityCountryCode: filters.city?.countryCode,
+            countryCodes: filters.countryCodes,
             languageCodes: filters.languageCodes,
             specializationCodes: filters.specializations,
           );
@@ -542,8 +549,8 @@ class _GuidesGrid extends StatelessWidget {
         final columns = constraints.crossAxisExtent < 335
             ? 1
             : constraints.crossAxisExtent >= 680
-                ? 3
-                : 2;
+            ? 3
+            : 2;
         final spacing = constraints.crossAxisExtent < 370 ? 12.0 : 16.0;
         final cardWidth =
             (constraints.crossAxisExtent - spacing * (columns - 1)) / columns;
@@ -590,7 +597,8 @@ double _guideCardBodyHeight(BuildContext context) {
   final textScaler = MediaQuery.textScalerOf(context);
   final nameHeight =
       textScaler.scale(_guideCardNameFontSize) * _guideCardNameLineHeight;
-  final languageHeight = textScaler.scale(_guideCardLanguageFontSize) *
+  final languageHeight =
+      textScaler.scale(_guideCardLanguageFontSize) *
       _guideCardLanguageLineHeight;
   final buttonHeight = math.max(
     _guideCardButtonMinHeight,
@@ -598,7 +606,8 @@ double _guideCardBodyHeight(BuildContext context) {
         _guideCardButtonVerticalPadding * 2,
   );
 
-  final contentHeight = _guideCardBodyVerticalPadding * 2 +
+  final contentHeight =
+      _guideCardBodyVerticalPadding * 2 +
       nameHeight +
       _guideCardLanguageGap +
       languageHeight +
@@ -884,6 +893,7 @@ class _GuidesEmptyState extends StatelessWidget {
 
 class _GuideFilters {
   const _GuideFilters({
+    this.country,
     this.city,
     this.specializations = const <String>{},
     this.languageCodes = const <String>{},
@@ -891,13 +901,24 @@ class _GuideFilters {
     this.minExperienceYears,
   });
 
+  final AppCountryFilterValue? country;
   final AppCityFilterValue? city;
   final Set<String> specializations;
   final Set<String> languageCodes;
   final double? minRating;
   final int? minExperienceYears;
 
+  List<String> get countryCodes {
+    final code = country?.countryCode ?? city?.countryCode;
+    final normalizedCode = code?.trim().toUpperCase();
+    if (normalizedCode == null || normalizedCode.isEmpty) {
+      return const <String>[];
+    }
+    return <String>[normalizedCode];
+  }
+
   _GuideFilters copyWith({
+    Object? country = _unset,
     Object? city = _unset,
     Set<String>? specializations,
     Set<String>? languageCodes,
@@ -907,6 +928,9 @@ class _GuideFilters {
     bool clearMinExperienceYears = false,
   }) {
     return _GuideFilters(
+      country: identical(country, _unset)
+          ? this.country
+          : country as AppCountryFilterValue?,
       city: identical(city, _unset) ? this.city : city as AppCityFilterValue?,
       specializations: specializations ?? this.specializations,
       languageCodes: languageCodes ?? this.languageCodes,
@@ -920,6 +944,7 @@ class _GuideFilters {
   static const Object _unset = Object();
 
   int get activeCount =>
+      (country == null ? 0 : 1) +
       (city == null ? 0 : 1) +
       specializations.length +
       languageCodes.length +
@@ -995,8 +1020,9 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
   void _selectLanguage(String code) {
     final normalized = code.trim().toLowerCase();
     if (normalized.isEmpty) return;
-    final selectedCode =
-        _filters.languageCodes.contains(normalized) ? null : normalized;
+    final selectedCode = _filters.languageCodes.contains(normalized)
+        ? null
+        : normalized;
     _languageSearchController.clear();
     _setFilters(
       _filters.copyWith(
@@ -1025,6 +1051,10 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
 
   void _setCity(AppCityFilterValue? city) {
     _setFilters(_filters.copyWith(city: city));
+  }
+
+  void _setCountry(AppCountryFilterValue? country) {
+    _setFilters(_filters.copyWith(country: country, city: null));
   }
 
   void _setFilters(_GuideFilters filters) {
@@ -1066,10 +1096,10 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
     if (query.isEmpty) return const [];
 
     return _guideLanguageFilterCodes
-        .where((code) => guideSearchMatches(
-              query,
-              _languageSearchHaystack(l10n, code),
-            ))
+        .where(
+          (code) =>
+              guideSearchMatches(query, _languageSearchHaystack(l10n, code)),
+        )
         .toList(growable: false);
   }
 
@@ -1080,11 +1110,7 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
       'kk' || 'kz' => const ['kazakh', 'казахский', 'қазақ'],
       _ => const <String>[],
     };
-    return [
-      code,
-      localizedGuideLanguageLabel(l10n, code),
-      ...aliases,
-    ];
+    return [code, localizedGuideLanguageLabel(l10n, code), ...aliases];
   }
 
   @override
@@ -1125,14 +1151,26 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      AppCityFilterSection(
-                        title: l10n.locationFilterCitySection,
-                        allCitiesLabel: l10n.locationFilterAllCities,
-                        searchHint: l10n.locationFilterCitySearchHint,
-                        noResultsText: l10n.locationFilterCityNoResults,
-                        selectedCity: _filters.city,
-                        onChanged: _setCity,
+                      AppCountryFilterSection(
+                        title: l10n.attractionFilterCountrySection,
+                        allCountriesLabel: l10n.attractionFilterCountryAll,
+                        searchHint: l10n.attractionFilterCountrySearchHint,
+                        noResultsText: l10n.attractionFilterCountryNoResults,
+                        selectedCountry: _filters.country,
+                        onChanged: _setCountry,
                       ),
+                      if (_filters.country != null) ...[
+                        const SizedBox(height: 30),
+                        AppCityFilterSection(
+                          title: l10n.locationFilterCitySection,
+                          allCitiesLabel: l10n.locationFilterAllCities,
+                          searchHint: l10n.locationFilterCitySearchHint,
+                          noResultsText: l10n.locationFilterCityNoResults,
+                          selectedCity: _filters.city,
+                          onChanged: _setCity,
+                          countryCode: _filters.country?.countryCode,
+                        ),
+                      ],
                       const SizedBox(height: 30),
                       _GuideFilterSection(
                         title: l10n.guidesFilterExpertise,
@@ -1278,10 +1316,8 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
                                           code,
                                         ),
                                         code: code.toUpperCase(),
-                                        selected:
-                                            _filters.languageCodes.contains(
-                                          code,
-                                        ),
+                                        selected: _filters.languageCodes
+                                            .contains(code),
                                         onTap: () => _selectLanguage(code),
                                       ),
                                       if (code != visibleLanguages.last)
