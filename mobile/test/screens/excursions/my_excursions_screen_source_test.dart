@@ -230,10 +230,17 @@ void main() {
       expect(source, contains('selectedLocation'));
       expect(source, contains('_initializeDefaultCityFilter'));
       expect(source, contains('_applyDefaultCityFilter'));
+      expect(source, contains('final AppCountryFilterValue? country'));
       expect(source, contains('final AppCityFilterValue? city'));
+      expect(source, contains('AppCountryFilterSection'));
       expect(source, contains('AppCityFilterSection'));
+      expect(source, contains('attractionFilterCountrySection'));
+      expect(source, contains('attractionFilterCountryAll'));
+      expect(source, contains('attractionFilterCountrySearchHint'));
+      expect(source, contains('attractionFilterCountryNoResults'));
       expect(source, contains('locationFilterCitySection'));
       expect(source, contains('filters.city'));
+      expect(source, contains('filters.country'));
       expect(source, contains('booking.cityName'));
       expect(source, contains('countryCode: booking.countryCode'));
       expect(source, isNot(contains('profile?.countryCode')));
@@ -248,17 +255,22 @@ void main() {
       ).readAsString();
 
       expect(source, contains('AppCityFilterSection'));
+      expect(source, contains('_setCountry(AppCountryFilterValue? country)'));
+      expect(source, contains('_city = null'));
       expect(source, contains('locationFilterCitySearchHint'));
       expect(source, contains('locationFilterCityNoResults'));
       expect(source, isNot(contains('_countrySearchController')));
       expect(source, isNot(contains('_selectedCountry()')));
       expect(source, isNot(contains('_visibleCountries')));
 
+      final countrySectionStart = source.indexOf('AppCountryFilterSection(');
       final citySectionStart = source.indexOf('AppCityFilterSection(');
       final statusSectionStart = source.indexOf(
         'widget.l10n.myExcursionsFilterStatus',
       );
+      expect(countrySectionStart, isNonNegative);
       expect(citySectionStart, isNonNegative);
+      expect(citySectionStart, greaterThan(countrySectionStart));
       expect(statusSectionStart, greaterThan(citySectionStart));
 
       final citySection = source.substring(
