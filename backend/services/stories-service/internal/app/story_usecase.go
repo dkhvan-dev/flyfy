@@ -74,6 +74,7 @@ type CreateStoryInput struct {
 	CoverFileID      *uuid.UUID
 	PlaceName        *string
 	PlaceCountryCode *string
+	PlaceCityID      *string
 	Tags             []string
 }
 
@@ -83,6 +84,8 @@ type ListStoriesInput struct {
 	Search      string
 	Category    []string
 	Place       string
+	CountryCode string
+	CityID      string
 	AuthorID    *uuid.UUID
 	Sort        string
 	Limit       int
@@ -166,6 +169,7 @@ func (u *StoryUseCase) UpdateStory(ctx context.Context, subject string, storyID 
 	existing.CoverFileID = next.CoverFileID
 	existing.PlaceName = next.PlaceName
 	existing.PlaceCountryCode = next.PlaceCountryCode
+	existing.PlaceCityID = next.PlaceCityID
 	existing.Tags = next.Tags
 	existing.Slug = buildStorySlug(next.Title, existing.ID)
 	existing.UpdatedAt = time.Now().UTC()
@@ -662,11 +666,15 @@ func (u *StoryUseCase) ShareStory(ctx context.Context, storyID uuid.UUID) (strin
 
 func (u *StoryUseCase) normalizeListInput(input ListStoriesInput, viewerUserID *uuid.UUID) (model.StoryListFilter, error) {
 	placeQuery, placeCountryCode := normalizePlaceFilters(input.Place)
+	if explicitCountryCode := normalizeCountryCode(input.CountryCode); explicitCountryCode != "" {
+		placeCountryCode = explicitCountryCode
+	}
 
 	filter := model.StoryListFilter{
 		Search:           strings.TrimSpace(input.Search),
 		PlaceQuery:       placeQuery,
 		PlaceCountryCode: placeCountryCode,
+		PlaceCityID:      strings.TrimSpace(input.CityID),
 		AuthorUserID:     input.AuthorID,
 		ViewerUserID:     viewerUserID,
 		IncludeDrafts:    false,
@@ -804,8 +812,17 @@ func normalizeStoryInput(input CreateStoryInput) (*model.Story, error) {
 		CoverFileID:      input.CoverFileID,
 		PlaceName:        placeName,
 		PlaceCountryCode: trimOptionalString(input.PlaceCountryCode),
+		PlaceCityID:      trimOptionalString(input.PlaceCityID),
 		Tags:             tags,
 	}, nil
+}
+
+func normalizeCountryCode(raw string) string {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" || !looksLikeCountryCode(trimmed) {
+		return ""
+	}
+	return strings.ToUpper(trimmed)
 }
 
 func sanitizeTags(tags []string) ([]string, error) {

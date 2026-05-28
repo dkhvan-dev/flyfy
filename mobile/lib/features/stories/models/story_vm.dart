@@ -83,10 +83,8 @@ class StoryAuthorVm {
     if (source.isEmpty) {
       return 'F';
     }
-    final parts = source
-        .split(RegExp(r'\s+'))
-        .where((e) => e.isNotEmpty)
-        .toList();
+    final parts =
+        source.split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList();
     if (parts.length >= 2) {
       return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
     }
@@ -121,6 +119,7 @@ class StoryVm {
     this.coverFileId,
     this.placeName,
     this.placeCountryCode,
+    this.placeCityId,
     this.publishedAt,
   });
 
@@ -134,6 +133,7 @@ class StoryVm {
   final String? coverFileId;
   final String? placeName;
   final String? placeCountryCode;
+  final String? placeCityId;
   final List<String> tags;
   final StoryStatsVm stats;
   final StoryAuthorVm author;
@@ -156,11 +156,12 @@ class StoryVm {
       coverFileId: json['coverFileId']?.toString(),
       placeName: json['placeName']?.toString(),
       placeCountryCode: json['placeCountryCode']?.toString(),
+      placeCityId: json['placeCityId']?.toString(),
       tags: rawTags is List
           ? rawTags
-                .map((item) => item.toString())
-                .where((e) => e.trim().isNotEmpty)
-                .toList(growable: false)
+              .map((item) => item.toString())
+              .where((e) => e.trim().isNotEmpty)
+              .toList(growable: false)
           : const [],
       stats: StoryStatsVm.fromJson(
         json['stats'] as Map<String, dynamic>? ?? const {},
@@ -171,11 +172,9 @@ class StoryVm {
       likedByViewer: json['likedByViewer'] == true,
       shareUrl: json['shareUrl']?.toString() ?? '',
       publishedAt: DateTime.tryParse(json['publishedAt']?.toString() ?? ''),
-      createdAt:
-          DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
-      updatedAt:
-          DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
+      updatedAt: DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
@@ -212,6 +211,7 @@ class StoryVm {
     String? coverFileId,
     String? placeName,
     String? placeCountryCode,
+    String? placeCityId,
     List<String>? tags,
     DateTime? publishedAt,
     DateTime? updatedAt,
@@ -227,6 +227,7 @@ class StoryVm {
       coverFileId: coverFileId ?? this.coverFileId,
       placeName: placeName ?? this.placeName,
       placeCountryCode: placeCountryCode ?? this.placeCountryCode,
+      placeCityId: placeCityId ?? this.placeCityId,
       tags: tags ?? this.tags,
       stats: stats ?? this.stats,
       author: author,
@@ -282,11 +283,9 @@ class StoryCommentVm {
       author: StoryAuthorVm.fromJson(
         json['author'] as Map<String, dynamic>? ?? const {},
       ),
-      createdAt:
-          DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
-      updatedAt:
-          DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
+      updatedAt: DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
@@ -341,15 +340,15 @@ class StoryDetailVm {
       ),
       related: rawRelated is List
           ? rawRelated
-                .whereType<Map<String, dynamic>>()
-                .map(StoryVm.fromJson)
-                .toList(growable: false)
+              .whereType<Map<String, dynamic>>()
+              .map(StoryVm.fromJson)
+              .toList(growable: false)
           : const [],
       comments: rawComments is List
           ? rawComments
-                .whereType<Map<String, dynamic>>()
-                .map(StoryCommentVm.fromJson)
-                .toList(growable: false)
+              .whereType<Map<String, dynamic>>()
+              .map(StoryCommentVm.fromJson)
+              .toList(growable: false)
           : const [],
     );
   }

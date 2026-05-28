@@ -61,13 +61,15 @@ func (h *Handler) ListStories(w http.ResponseWriter, r *http.Request) {
 	}
 
 	items, err := h.useCase.ListStories(r.Context(), SubjectFromContext(r.Context()), app.ListStoriesInput{
-		Search:   query.Get("search"),
-		Category: splitCSV(query.Get("category")),
-		Place:    query.Get("place"),
-		AuthorID: authorID,
-		Sort:     query.Get("sort"),
-		Limit:    limit,
-		Offset:   offset,
+		Search:      query.Get("search"),
+		Category:    splitCSV(query.Get("category")),
+		Place:       query.Get("place"),
+		CountryCode: query.Get("countryCode"),
+		CityID:      query.Get("cityId"),
+		AuthorID:    authorID,
+		Sort:        query.Get("sort"),
+		Limit:       limit,
+		Offset:      offset,
 	})
 	if err != nil {
 		h.writeUseCaseError(w, err, "failed to list stories")
@@ -95,6 +97,8 @@ func (h *Handler) ListMyStories(w http.ResponseWriter, r *http.Request) {
 		Search:      query.Get("search"),
 		Category:    splitCSV(query.Get("category")),
 		Place:       query.Get("place"),
+		CountryCode: query.Get("countryCode"),
+		CityID:      query.Get("cityId"),
 		Sort:        query.Get("sort"),
 		Limit:       limit,
 		Offset:      offset,
@@ -136,6 +140,7 @@ func (h *Handler) CreateStory(w http.ResponseWriter, r *http.Request) {
 		CoverFileID:      coverFileID,
 		PlaceName:        req.PlaceName,
 		PlaceCountryCode: req.PlaceCountryCode,
+		PlaceCityID:      req.PlaceCityID,
 		Tags:             req.Tags,
 	})
 	if err != nil {
@@ -322,6 +327,7 @@ func (h *Handler) UpdateStory(w http.ResponseWriter, r *http.Request, storyID uu
 		CoverFileID:      coverFileID,
 		PlaceName:        req.PlaceName,
 		PlaceCountryCode: req.PlaceCountryCode,
+		PlaceCityID:      req.PlaceCityID,
 		Tags:             req.Tags,
 	})
 	if err != nil {
@@ -536,6 +542,7 @@ func toStoryResponse(item *app.StoryView, includeContent bool) *dto.StoryRespons
 		CoverFileID:      coverFileID,
 		PlaceName:        item.Story.PlaceName,
 		PlaceCountryCode: item.Story.PlaceCountryCode,
+		PlaceCityID:      item.Story.PlaceCityID,
 		Tags:             item.Story.Tags,
 		Stats: dto.StoryStatsResponse{
 			Views:    item.Story.ViewCount,

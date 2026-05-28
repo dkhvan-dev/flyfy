@@ -8,6 +8,7 @@ type CreateStoryRequest struct {
 	CoverFileID      *string  `json:"coverFileId"`
 	PlaceName        *string  `json:"placeName"`
 	PlaceCountryCode *string  `json:"placeCountryCode"`
+	PlaceCityID      *string  `json:"placeCityId"`
 	Tags             []string `json:"tags"`
 }
 
@@ -46,6 +47,7 @@ type StoryResponse struct {
 	CoverFileID      *string            `json:"coverFileId,omitempty"`
 	PlaceName        *string            `json:"placeName,omitempty"`
 	PlaceCountryCode *string            `json:"placeCountryCode,omitempty"`
+	PlaceCityID      *string            `json:"placeCityId,omitempty"`
 	Tags             []string           `json:"tags,omitempty"`
 	Stats            StoryStatsResponse `json:"stats"`
 	Author           AuthorResponse     `json:"author"`

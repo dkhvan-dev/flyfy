@@ -7,6 +7,7 @@ class SaveStoryRequest {
     this.coverFileId,
     this.placeName,
     this.placeCountryCode,
+    this.placeCityId,
     this.tags = const [],
   });
 
@@ -17,6 +18,7 @@ class SaveStoryRequest {
   final String? coverFileId;
   final String? placeName;
   final String? placeCountryCode;
+  final String? placeCityId;
   final List<String> tags;
 
   Map<String, dynamic> toJson() {
@@ -31,6 +33,8 @@ class SaveStoryRequest {
       'placeCountryCode': (placeCountryCode ?? '').trim().isEmpty
           ? null
           : placeCountryCode!.trim().toUpperCase(),
+      'placeCityId':
+          (placeCityId ?? '').trim().isEmpty ? null : placeCityId!.trim(),
       'tags': tags
           .map((item) => item.trim())
           .where((item) => item.isNotEmpty)

@@ -35,7 +35,7 @@ void main() {
   });
 
   test(
-      'stories country filter uses localized searchable countries and defaults to all countries',
+      'stories location filter uses shared searchable country and city controls without defaults',
       () async {
     final source = await File(
       'lib/screens/stories/stories_screen.dart',
@@ -50,28 +50,46 @@ void main() {
 
     expect(
       source,
-      contains("import '../../core/reference/country_filter_utils.dart';"),
+      contains("import '../../shared/widgets/app_city_filter_section.dart';"),
     );
-    expect(source, contains('Map<String, Set<String>> _countrySearchAliases'));
-    expect(source, contains('Future<void> _loadCountries()'));
-    expect(source, contains('countrySearchAliasMap(['));
-    expect(source, contains('countrySearchAliases: _countrySearchAliases'));
+    expect(source, contains('AppCountryFilterValue? _selectedCountry'));
+    expect(source, contains('AppCityFilterValue? _selectedCity'));
+    expect(
+        source, contains('void _setCountry(AppCountryFilterValue? country)'));
+    expect(source, contains('_selectedCountry = country'));
+    expect(source, contains('_selectedCity = null'));
+    expect(source, contains('void _setCity(AppCityFilterValue? city)'));
+    expect(source, contains('countryCode: _selectedCountry?.countryCode'));
+    expect(source,
+        contains('String? get _selectedCityId => _selectedCity?.cityId'));
+    expect(source, contains('placeCityId'));
+    expect(source, isNot(contains('HomeLocationProvider')));
+    expect(source, isNot(contains('selectedLocation')));
     expect(source, isNot(contains('_applyDefaultCountryFilter')));
     expect(source, isNot(contains('withDefaultReferenceCountry(')));
 
-    expect(
-        filterSheetSource, contains('final List<ReferenceCountry> countries'));
-    expect(
-      filterSheetSource,
-      contains('final Map<String, Set<String>> countrySearchAliases'),
-    );
-    expect(filterSheetSource, contains('_countrySearchController'));
-    expect(filterSheetSource, contains('_countrySearchQuery'));
-    expect(filterSheetSource, contains('countryFilterSearchHaystack('));
+    expect(filterSheetSource, contains('AppCountryFilterSection('));
+    expect(filterSheetSource, contains('AppCityFilterSection('));
     expect(filterSheetSource, contains('storyFilterCountryAll'));
     expect(filterSheetSource, contains('storyFilterCountrySearchHint'));
     expect(filterSheetSource, contains('storyFilterCountryNoResults'));
-    expect(filterSheetSource, contains('selectedCountry == null'));
-    expect(filterSheetSource, isNot(contains('searchCountries(')));
+    expect(filterSheetSource, contains('locationFilterAllCities'));
+    expect(filterSheetSource, contains('locationFilterCitySearchHint'));
+    expect(filterSheetSource, contains('if (_selectedCountry != null) ...['));
+    expect(filterSheetSource, isNot(contains('_countrySearchController')));
+    expect(filterSheetSource, isNot(contains('countryFilterSearchHaystack(')));
+
+    final countrySectionCall =
+        filterSheetSource.indexOf('_buildCountrySection(l10n, adaptive)');
+    final citySectionCall =
+        filterSheetSource.indexOf('_buildCitySection(l10n, adaptive)');
+    final categoryTitleCall = filterSheetSource
+        .indexOf('_FilterSectionTitle(label: l10n.storyFilterCategory)');
+
+    expect(countrySectionCall, isNonNegative);
+    expect(citySectionCall, isNonNegative);
+    expect(categoryTitleCall, isNonNegative);
+    expect(countrySectionCall, lessThan(categoryTitleCall));
+    expect(citySectionCall, lessThan(categoryTitleCall));
   });
 }

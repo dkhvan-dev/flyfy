@@ -62,6 +62,23 @@ func TestNormalizeListInputMapsSelectedCountryToCountryCodeFilter(t *testing.T) 
 	}
 }
 
+func TestNormalizeListInputMapsSelectedCityToCityIDFilter(t *testing.T) {
+	filter, err := (&StoryUseCase{}).normalizeListInput(
+		ListStoriesInput{CountryCode: " kz ", CityID: " almaty "},
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("normalizeListInput returned error: %v", err)
+	}
+
+	if filter.PlaceCountryCode != "KZ" {
+		t.Fatalf("filter.PlaceCountryCode = %q, want KZ", filter.PlaceCountryCode)
+	}
+	if filter.PlaceCityID != "almaty" {
+		t.Fatalf("filter.PlaceCityID = %q, want almaty", filter.PlaceCityID)
+	}
+}
+
 func TestNormalizeListInputPreservesStorySortDirection(t *testing.T) {
 	tests := map[string]string{
 		"latest_asc":    "latest_asc",

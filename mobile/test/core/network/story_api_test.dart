@@ -99,6 +99,30 @@ void main() {
       expect(adapter.queryParameters['offset'], '0');
     },
   );
+
+  test(
+    'listStoriesPage sends country and city filters as first-class query params',
+    () async {
+      final adapter = _JsonAdapter({
+        'items': [_storyJson('one')],
+        'total': 1,
+      });
+      final api = StoryApi(
+        apiClient: ApiClient(
+          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+            ..httpClientAdapter = adapter,
+          secureStorage: _FakeSecureStorage(),
+        ),
+      );
+
+      await api.listStoriesPage(countryCode: ' kz ', cityId: ' almaty ');
+
+      expect(adapter.requestPath, '/api/v1/stories');
+      expect(adapter.queryParameters['countryCode'], 'KZ');
+      expect(adapter.queryParameters['cityId'], 'almaty');
+      expect(adapter.queryParameters, isNot(containsPair('place', 'KZ')));
+    },
+  );
 }
 
 Map<String, Object?> _storyJson(String id) {

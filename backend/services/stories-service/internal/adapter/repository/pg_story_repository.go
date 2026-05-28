@@ -33,12 +33,12 @@ func (r *PGStoryRepository) CreateStory(ctx context.Context, story *model.Story)
 	const storyQuery = `
 		INSERT INTO stories (
 			id, slug, author_user_id, title, excerpt, content, category, status,
-			cover_file_id, place_name, place_country_code, tags, view_count,
+			cover_file_id, place_name, place_country_code, place_city_id, tags, view_count,
 			like_count, comment_count, share_count, published_at, created_at, updated_at
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8,
-			$9, $10, $11, $12, $13,
-			$14, $15, $16, $17, $18, $19
+			$9, $10, $11, $12, $13, $14,
+			$15, $16, $17, $18, $19, $20
 		)
 	`
 
@@ -56,6 +56,7 @@ func (r *PGStoryRepository) CreateStory(ctx context.Context, story *model.Story)
 		story.CoverFileID,
 		story.PlaceName,
 		story.PlaceCountryCode,
+		story.PlaceCityID,
 		story.Tags,
 		story.ViewCount,
 		story.LikeCount,
@@ -100,9 +101,10 @@ func (r *PGStoryRepository) UpdateStory(ctx context.Context, story *model.Story)
 			cover_file_id = $8,
 			place_name = $9,
 			place_country_code = $10,
-			tags = $11,
-			published_at = $12,
-			updated_at = $13
+			place_city_id = $11,
+			tags = $12,
+			published_at = $13,
+			updated_at = $14
 		WHERE id = $1 AND deleted_at IS NULL
 	`
 
@@ -119,6 +121,7 @@ func (r *PGStoryRepository) UpdateStory(ctx context.Context, story *model.Story)
 		story.CoverFileID,
 		story.PlaceName,
 		story.PlaceCountryCode,
+		story.PlaceCityID,
 		story.Tags,
 		story.PublishedAt,
 		story.UpdatedAt,
@@ -159,7 +162,7 @@ func (r *PGStoryRepository) GetStoryByID(ctx context.Context, storyID uuid.UUID)
 	const query = `
 		SELECT
 			id, slug, author_user_id, title, excerpt, content, category, status,
-			cover_file_id, place_name, place_country_code, tags, view_count,
+			cover_file_id, place_name, place_country_code, place_city_id, tags, view_count,
 			like_count, comment_count, share_count, published_at, created_at, updated_at, deleted_at
 		FROM stories
 		WHERE id = $1
@@ -182,7 +185,7 @@ func (r *PGStoryRepository) GetStoryBySlug(ctx context.Context, slug string) (*m
 	const query = `
 		SELECT
 			id, slug, author_user_id, title, excerpt, content, category, status,
-			cover_file_id, place_name, place_country_code, tags, view_count,
+			cover_file_id, place_name, place_country_code, place_city_id, tags, view_count,
 			like_count, comment_count, share_count, published_at, created_at, updated_at, deleted_at
 		FROM stories
 		WHERE slug = $1 AND deleted_at IS NULL
@@ -242,6 +245,10 @@ func (r *PGStoryRepository) ListStories(ctx context.Context, filter model.StoryL
 		args = append(args, strings.ToUpper(strings.TrimSpace(filter.PlaceCountryCode)))
 		clauses = append(clauses, fmt.Sprintf("UPPER(COALESCE(place_country_code, '')) = $%d", len(args)))
 	}
+	if strings.TrimSpace(filter.PlaceCityID) != "" {
+		args = append(args, strings.TrimSpace(filter.PlaceCityID))
+		clauses = append(clauses, fmt.Sprintf("LOWER(COALESCE(place_city_id, '')) = LOWER($%d)", len(args)))
+	}
 
 	orderBy := storyListOrderBy(filter.Sort)
 
@@ -259,7 +266,7 @@ func (r *PGStoryRepository) ListStories(ctx context.Context, filter model.StoryL
 	query := fmt.Sprintf(`
 		SELECT
 			id, slug, author_user_id, title, excerpt, content, category, status,
-			cover_file_id, place_name, place_country_code, tags, view_count,
+			cover_file_id, place_name, place_country_code, place_city_id, tags, view_count,
 			like_count, comment_count, share_count, published_at, created_at, updated_at, deleted_at
 		FROM stories
 		WHERE %s
@@ -755,6 +762,7 @@ func scanStory(scanner interface{ Scan(dest ...any) error }) (*model.Story, erro
 		coverFileID  *uuid.UUID
 		placeName    *string
 		placeCountry *string
+		placeCityID  *string
 		publishedAt  *time.Time
 		deletedAt    *time.Time
 	)
@@ -771,6 +779,7 @@ func scanStory(scanner interface{ Scan(dest ...any) error }) (*model.Story, erro
 		&coverFileID,
 		&placeName,
 		&placeCountry,
+		&placeCityID,
 		&item.Tags,
 		&item.ViewCount,
 		&item.LikeCount,
@@ -789,6 +798,7 @@ func scanStory(scanner interface{ Scan(dest ...any) error }) (*model.Story, erro
 	item.CoverFileID = coverFileID
 	item.PlaceName = placeName
 	item.PlaceCountryCode = placeCountry
+	item.PlaceCityID = placeCityID
 	item.PublishedAt = publishedAt
 	item.DeletedAt = deletedAt
 

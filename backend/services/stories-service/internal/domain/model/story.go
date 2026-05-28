@@ -20,6 +20,7 @@ type Story struct {
 	CoverFileID      *uuid.UUID
 	PlaceName        *string
 	PlaceCountryCode *string
+	PlaceCityID      *string
 	Tags             []string
 	ViewCount        int
 	LikeCount        int
@@ -50,6 +51,7 @@ type StoryListFilter struct {
 	OnlyPublished    bool
 	PlaceQuery       string
 	PlaceCountryCode string
+	PlaceCityID      string
 	Sort             string
 	Limit            int
 	Offset           int

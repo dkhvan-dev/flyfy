@@ -13,6 +13,8 @@ class StoryApi {
     String? search,
     List<String>? categories,
     String? place,
+    String? countryCode,
+    String? cityId,
     String? sort,
     int limit = 20,
     int offset = 0,
@@ -27,6 +29,9 @@ class StoryApi {
         if (categories != null && categories.isNotEmpty)
           'category': categories.join(','),
         if ((place ?? '').trim().isNotEmpty) 'place': place!.trim(),
+        if (_normalizeCountryCode(countryCode) != null)
+          'countryCode': _normalizeCountryCode(countryCode),
+        if ((cityId ?? '').trim().isNotEmpty) 'cityId': cityId!.trim(),
         if ((sort ?? '').trim().isNotEmpty) 'sort': sort!.trim(),
         if ((authorId ?? '').trim().isNotEmpty) 'authorId': authorId!.trim(),
         'limit': pageLimit + 1,
@@ -57,6 +62,8 @@ class StoryApi {
     String? search,
     List<String>? categories,
     String? place,
+    String? countryCode,
+    String? cityId,
     String? sort,
     int limit = 20,
     int offset = 0,
@@ -66,6 +73,8 @@ class StoryApi {
       search: search,
       categories: categories,
       place: place,
+      countryCode: countryCode,
+      cityId: cityId,
       sort: sort,
       limit: limit,
       offset: offset,
@@ -80,6 +89,8 @@ class StoryApi {
     String? search,
     List<String>? categories,
     String? place,
+    String? countryCode,
+    String? cityId,
     String? sort,
     int limit = 20,
     int offset = 0,
@@ -93,6 +104,8 @@ class StoryApi {
       search: search,
       categories: categories,
       place: place,
+      countryCode: countryCode,
+      cityId: cityId,
       sort: sort,
       limit: limit,
       offset: offset,
@@ -118,6 +131,8 @@ class StoryApi {
     String? search,
     List<String>? categories,
     String? place,
+    String? countryCode,
+    String? cityId,
     String? sort,
     int limit = 20,
     int offset = 0,
@@ -131,6 +146,9 @@ class StoryApi {
         if (categories != null && categories.isNotEmpty)
           'category': categories.join(','),
         if ((place ?? '').trim().isNotEmpty) 'place': place!.trim(),
+        if (_normalizeCountryCode(countryCode) != null)
+          'countryCode': _normalizeCountryCode(countryCode),
+        if ((cityId ?? '').trim().isNotEmpty) 'cityId': cityId!.trim(),
         if ((sort ?? '').trim().isNotEmpty) 'sort': sort!.trim(),
         'limit': pageLimit + 1,
         'offset': pageOffset,
@@ -160,6 +178,8 @@ class StoryApi {
     String? search,
     List<String>? categories,
     String? place,
+    String? countryCode,
+    String? cityId,
     String? sort,
     int limit = 20,
     int offset = 0,
@@ -168,6 +188,8 @@ class StoryApi {
       search: search,
       categories: categories,
       place: place,
+      countryCode: countryCode,
+      cityId: cityId,
       sort: sort,
       limit: limit,
       offset: offset,
@@ -333,4 +355,9 @@ class StoryListPage {
   final List<StoryVm> items;
   final bool hasMore;
   final int total;
+}
+
+String? _normalizeCountryCode(String? value) {
+  final normalized = value?.trim().toUpperCase() ?? '';
+  return normalized.isEmpty ? null : normalized;
 }

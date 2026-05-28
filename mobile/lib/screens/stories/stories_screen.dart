@@ -6,9 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/network/dio_error_mapper.dart';
-import '../../core/network/reference_api.dart';
 import '../../core/network/story_api.dart';
-import '../../core/reference/country_filter_utils.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/app_list_search_field.dart';
@@ -20,6 +18,7 @@ import '../../features/stories/story_ui.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/session_provider.dart';
+import '../../shared/widgets/app_city_filter_section.dart';
 import '../common/app_side_drawer.dart';
 
 enum _StorySortDirection { asc, desc }
@@ -49,27 +48,23 @@ class _StoriesScreenState extends State<StoriesScreen> {
   static const int _pageSize = 8;
 
   final _api = StoryApi();
-  final _referenceApi = ReferenceApi();
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
 
   Timer? _searchDebounce;
   List<StoryVm> _stories = const [];
-  List<ReferenceCountry> _countries = const [];
-  Map<String, Set<String>> _countrySearchAliases = const {};
   bool _isLoading = true;
   bool _isRefreshing = false;
-  bool _isCountriesLoading = false;
   String? _errorMessage;
   int _currentPage = 1;
   int _totalStories = 0;
   bool _hasNextPage = false;
-  Future<void>? _countriesLoadFuture;
 
   String _searchQuery = '';
   String? _selectedCategory;
-  ReferenceCountry? _selectedPlace;
+  AppCountryFilterValue? _selectedCountry;
+  AppCityFilterValue? _selectedCity;
   String _sort = 'latest';
   _StorySortDirection _sortDirection = _StorySortDirection.desc;
 
@@ -83,7 +78,6 @@ class _StoriesScreenState extends State<StoriesScreen> {
   void initState() {
     super.initState();
     _searchController.addListener(_handleSearchChanged);
-    unawaited(_loadCountries());
     _loadStories();
   }
 
@@ -114,68 +108,9 @@ class _StoriesScreenState extends State<StoriesScreen> {
     });
   }
 
-  String? get _selectedPlaceCode {
-    return normalizeReferenceCountryCode(_selectedPlace?.code);
-  }
+  String? get _selectedCountryCode => _selectedCountry?.countryCode;
 
-  Future<void> _loadCountries() {
-    if (_countries.isNotEmpty) return Future.value();
-    final inFlight = _countriesLoadFuture;
-    if (inFlight != null) return inFlight;
-
-    final future = _loadCountriesInner();
-    _countriesLoadFuture = future;
-    return future.whenComplete(() => _countriesLoadFuture = null);
-  }
-
-  Future<void> _loadCountriesInner() async {
-    if (!mounted) return;
-
-    setState(() => _isCountriesLoading = true);
-    final lang = Localizations.localeOf(context).languageCode;
-
-    try {
-      final countries = await _referenceApi.listCountries(lang: lang);
-      final countrySearchAliases = await _loadCountrySearchAliases(
-        countries,
-        lang,
-      );
-      if (!mounted) return;
-      setState(() {
-        _countries = countries;
-        _countrySearchAliases = countrySearchAliases;
-        _isCountriesLoading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _countries = const [];
-        _countrySearchAliases = const {};
-        _isCountriesLoading = false;
-      });
-    }
-  }
-
-  Future<Map<String, Set<String>>> _loadCountrySearchAliases(
-    List<ReferenceCountry> countries,
-    String currentLang,
-  ) async {
-    final languages = {'en', 'ru', 'kk'}..remove(currentLang);
-    final localizedLists = await Future.wait(
-      languages.map((lang) async {
-        try {
-          return await _referenceApi.listCountries(lang: lang);
-        } catch (_) {
-          return const <ReferenceCountry>[];
-        }
-      }),
-    );
-
-    return countrySearchAliasMap([
-      ...countries,
-      for (final localizedCountries in localizedLists) ...localizedCountries,
-    ]);
-  }
+  String? get _selectedCityId => _selectedCity?.cityId;
 
   void _goBack() {
     if (Navigator.of(context).canPop()) {
@@ -208,7 +143,8 @@ class _StoriesScreenState extends State<StoriesScreen> {
               categories: _selectedCategory == null
                   ? null
                   : <String>[_selectedCategory!],
-              place: _selectedPlaceCode,
+              countryCode: _selectedCountryCode,
+              cityId: _selectedCityId,
               sort: _sortQueryParam,
               limit: _pageSize,
               offset: (normalizedPage - 1) * _pageSize,
@@ -218,7 +154,8 @@ class _StoriesScreenState extends State<StoriesScreen> {
               categories: _selectedCategory == null
                   ? null
                   : <String>[_selectedCategory!],
-              place: _selectedPlaceCode,
+              countryCode: _selectedCountryCode,
+              cityId: _selectedCityId,
               sort: _sortQueryParam,
               limit: _pageSize,
               offset: (normalizedPage - 1) * _pageSize,
@@ -261,7 +198,6 @@ class _StoriesScreenState extends State<StoriesScreen> {
 
   Future<void> _openFilters() async {
     FocusScope.of(context).unfocus();
-    await _loadCountries();
     if (!mounted) return;
 
     final selected = await showModalBottomSheet<_StoryFiltersResult>(
@@ -273,13 +209,19 @@ class _StoriesScreenState extends State<StoriesScreen> {
       builder: (context) {
         return _StoryFiltersSheet(
           initialCategory: _selectedCategory,
-          initialPlace: _selectedPlace,
+          initialCountry: _selectedCountry,
+          initialCity: _selectedCity,
           previewCount: _totalStories,
-          countries: _countries,
-          countrySearchAliases: _countrySearchAliases,
-          isCountriesLoading: _isCountriesLoading,
-          previewCountLoader: ({required category, required place}) =>
-              _loadStoriesPreviewCount(category: category, place: place),
+          previewCountLoader: ({
+            required category,
+            required country,
+            required city,
+          }) =>
+              _loadStoriesPreviewCount(
+            category: category,
+            country: country,
+            city: city,
+          ),
         );
       },
     );
@@ -288,21 +230,26 @@ class _StoriesScreenState extends State<StoriesScreen> {
       return;
     }
     final categoryChanged = selected.category != _selectedCategory;
-    final placeChanged = normalizeReferenceCountryCode(selected.place?.code) !=
-        normalizeReferenceCountryCode(_selectedPlace?.code);
-    if (!categoryChanged && !placeChanged) {
+    final countryChanged = !_sameCountryFilter(
+      selected.country,
+      _selectedCountry,
+    );
+    final cityChanged = !_sameCityFilter(selected.city, _selectedCity);
+    if (!categoryChanged && !countryChanged && !cityChanged) {
       return;
     }
     setState(() {
       _selectedCategory = selected.category;
-      _selectedPlace = selected.place;
+      _selectedCountry = selected.country;
+      _selectedCity = selected.city;
     });
     await _loadStories(showLoader: false, page: 1);
   }
 
   Future<int> _loadStoriesPreviewCount({
     required String? category,
-    required ReferenceCountry? place,
+    required AppCountryFilterValue? country,
+    required AppCityFilterValue? city,
   }) async {
     final trimmedCategory = category?.trim() ?? '';
     final categories =
@@ -311,19 +258,34 @@ class _StoriesScreenState extends State<StoriesScreen> {
         ? await _api.listMyStoriesPage(
             search: _searchQuery,
             categories: categories,
-            place: normalizeReferenceCountryCode(place?.code),
+            countryCode: country?.countryCode,
+            cityId: city?.cityId,
             sort: _sortQueryParam,
             limit: 1,
           )
         : await _api.listStoriesPage(
             search: _searchQuery,
             categories: categories,
-            place: normalizeReferenceCountryCode(place?.code),
+            countryCode: country?.countryCode,
+            cityId: city?.cityId,
             sort: _sortQueryParam,
             limit: 1,
             authorId: widget.authorId,
           );
     return page.total;
+  }
+
+  bool _sameCountryFilter(
+    AppCountryFilterValue? left,
+    AppCountryFilterValue? right,
+  ) {
+    return (left?.countryCode ?? '') == (right?.countryCode ?? '');
+  }
+
+  bool _sameCityFilter(AppCityFilterValue? left, AppCityFilterValue? right) {
+    return (left?.cityId ?? '') == (right?.cityId ?? '') &&
+        (left?.cityName ?? '') == (right?.cityName ?? '') &&
+        (left?.countryCode ?? '') == (right?.countryCode ?? '');
   }
 
   Future<void> _refresh() => _loadStories(showLoader: false);
@@ -403,15 +365,29 @@ class _StoriesScreenState extends State<StoriesScreen> {
             _selectedCategory!.trim().toUpperCase()) {
       return false;
     }
-    final selectedCountryCode = normalizeReferenceCountryCode(
-      _selectedPlace?.code,
-    );
-    if (selectedCountryCode != null &&
-        normalizeReferenceCountryCode(story.placeCountryCode) !=
-            selectedCountryCode) {
+    final selectedCountry = _selectedCountry;
+    if (selectedCountry != null &&
+        !selectedCountry.matches(countryCode: story.placeCountryCode)) {
+      return false;
+    }
+    final selectedCity = _selectedCity;
+    if (selectedCity != null &&
+        !selectedCity.matches(
+          cityId: story.placeCityId,
+          cityName: _storyCityName(story.placeName),
+          countryCode: story.placeCountryCode,
+        )) {
       return false;
     }
     return true;
+  }
+
+  String? _storyCityName(String? placeName) {
+    final value = (placeName ?? '').trim();
+    if (value.isEmpty) {
+      return null;
+    }
+    return value.contains(',') ? value.split(',').first.trim() : value;
   }
 
   Future<void> _openStory(StoryVm story) async {
@@ -593,7 +569,8 @@ class _StoriesScreenState extends State<StoriesScreen> {
                               filterTooltip: l10n.storyFiltersTitle,
                               activeFilterCount:
                                   (_selectedCategory == null ? 0 : 1) +
-                                      (_selectedPlace == null ? 0 : 1),
+                                      (_selectedCountry == null ? 0 : 1) +
+                                      (_selectedCity == null ? 0 : 1),
                               onFilterTap: _openFilters,
                             ),
                             SizedBox(height: adaptive.scale(18)),
@@ -1066,34 +1043,36 @@ class _StoriesEmptyState extends StatelessWidget {
 }
 
 class _StoryFiltersResult {
-  const _StoryFiltersResult({required this.category, required this.place});
+  const _StoryFiltersResult({
+    required this.category,
+    required this.country,
+    required this.city,
+  });
 
   final String? category;
-  final ReferenceCountry? place;
+  final AppCountryFilterValue? country;
+  final AppCityFilterValue? city;
 }
 
 typedef _StoryFiltersPreviewCountLoader = Future<int> Function({
   required String? category,
-  required ReferenceCountry? place,
+  required AppCountryFilterValue? country,
+  required AppCityFilterValue? city,
 });
 
 class _StoryFiltersSheet extends StatefulWidget {
   const _StoryFiltersSheet({
     required this.initialCategory,
-    required this.initialPlace,
+    required this.initialCountry,
+    required this.initialCity,
     required this.previewCount,
-    required this.countries,
-    required this.countrySearchAliases,
-    required this.isCountriesLoading,
     required this.previewCountLoader,
   });
 
   final String? initialCategory;
-  final ReferenceCountry? initialPlace;
+  final AppCountryFilterValue? initialCountry;
+  final AppCityFilterValue? initialCity;
   final int previewCount;
-  final List<ReferenceCountry> countries;
-  final Map<String, Set<String>> countrySearchAliases;
-  final bool isCountriesLoading;
   final _StoryFiltersPreviewCountLoader previewCountLoader;
 
   @override
@@ -1109,10 +1088,9 @@ class _StoryFiltersSheetState extends State<_StoryFiltersSheet> {
     'CULINARY',
   ];
 
-  final _countrySearchController = TextEditingController();
-  String _countrySearchQuery = '';
   String? _selectedCategory;
-  ReferenceCountry? _selectedPlace;
+  AppCountryFilterValue? _selectedCountry;
+  AppCityFilterValue? _selectedCity;
   late int _previewCount;
   bool _isPreviewLoading = false;
   int _previewRequestId = 0;
@@ -1121,18 +1099,10 @@ class _StoryFiltersSheetState extends State<_StoryFiltersSheet> {
   void initState() {
     super.initState();
     _selectedCategory = widget.initialCategory;
-    _selectedPlace = widget.initialPlace;
+    _selectedCountry = widget.initialCountry;
+    _selectedCity = widget.initialCity;
     _previewCount = widget.previewCount;
-    _countrySearchController.addListener(_onCountrySearchChanged);
     _loadPreviewCount();
-  }
-
-  @override
-  void dispose() {
-    _countrySearchController
-      ..removeListener(_onCountrySearchChanged)
-      ..dispose();
-    super.dispose();
   }
 
   void _selectCategory(String? category) {
@@ -1143,25 +1113,32 @@ class _StoryFiltersSheetState extends State<_StoryFiltersSheet> {
     _loadPreviewCount();
   }
 
-  void _selectPlace(ReferenceCountry? place) {
-    if (normalizeReferenceCountryCode(_selectedPlace?.code) ==
-        normalizeReferenceCountryCode(place?.code)) {
+  void _setCountry(AppCountryFilterValue? country) {
+    if ((_selectedCountry?.countryCode ?? '') == (country?.countryCode ?? '')) {
       return;
     }
     setState(() {
-      _selectedPlace = place;
-      _countrySearchController.clear();
-      _countrySearchQuery = '';
+      _selectedCountry = country;
+      _selectedCity = null;
     });
     _loadPreviewCount();
   }
 
+  void _setCity(AppCityFilterValue? city) {
+    if ((_selectedCity?.cityId ?? '') == (city?.cityId ?? '') &&
+        (_selectedCity?.cityName ?? '') == (city?.cityName ?? '') &&
+        (_selectedCity?.countryCode ?? '') == (city?.countryCode ?? '')) {
+      return;
+    }
+    setState(() => _selectedCity = city);
+    _loadPreviewCount();
+  }
+
   void _clearAll() {
-    _countrySearchController.clear();
     setState(() {
       _selectedCategory = null;
-      _selectedPlace = null;
-      _countrySearchQuery = '';
+      _selectedCountry = null;
+      _selectedCity = null;
     });
     _loadPreviewCount();
   }
@@ -1172,7 +1149,8 @@ class _StoryFiltersSheetState extends State<_StoryFiltersSheet> {
     try {
       final count = await widget.previewCountLoader(
         category: _selectedCategory,
-        place: _selectedPlace,
+        country: _selectedCountry,
+        city: _selectedCity,
       );
       if (!mounted || requestId != _previewRequestId) {
         return;
@@ -1188,169 +1166,28 @@ class _StoryFiltersSheetState extends State<_StoryFiltersSheet> {
     }
   }
 
-  void _onCountrySearchChanged() {
-    final nextQuery = _countrySearchController.text.trim();
-    if (nextQuery == _countrySearchQuery) return;
-
-    setState(() => _countrySearchQuery = nextQuery);
-  }
-
-  ReferenceCountry? _selectedCountry() {
-    final countryCode = normalizeReferenceCountryCode(_selectedPlace?.code);
-    if (countryCode == null) return null;
-
-    for (final country in widget.countries) {
-      if (normalizeReferenceCountryCode(country.code) == countryCode) {
-        return country;
-      }
-    }
-    return _selectedPlace;
-  }
-
-  String _countryLabel(ReferenceCountry country) {
-    final name = country.name.trim();
-    if (name.isNotEmpty) return name;
-    return normalizeReferenceCountryCode(country.code) ?? country.code.trim();
-  }
-
-  List<ReferenceCountry> _visibleCountries() {
-    final query = normalizeCountrySearchText(_countrySearchQuery);
-    if (query.isEmpty) return const [];
-
-    final tokens = query
-        .split(' ')
-        .where((token) => token.trim().isNotEmpty)
-        .toList(growable: false);
-
-    return widget.countries
-        .where((country) {
-          final haystack = countryFilterSearchHaystack(
-            country,
-            widget.countrySearchAliases,
-          );
-          return tokens.every(haystack.contains);
-        })
-        .take(24)
-        .toList(growable: false);
-  }
-
   Widget _buildCountrySection(AppLocalizations l10n, StoryAdaptive adaptive) {
-    final selectedCountry = _selectedCountry();
-    final visibleCountries = _visibleCountries();
-    final countryCode = normalizeReferenceCountryCode(_selectedPlace?.code);
-    final hasCountryQuery = _countrySearchQuery.trim().isNotEmpty;
+    return AppCountryFilterSection(
+      title: l10n.storyFilterCountry,
+      allCountriesLabel: l10n.storyFilterCountryAll,
+      searchHint: l10n.storyFilterCountrySearchHint,
+      noResultsText: l10n.storyFilterCountryNoResults,
+      selectedCountry: _selectedCountry,
+      onChanged: _setCountry,
+      maxResultsHeight: MediaQuery.sizeOf(context).height * 0.28,
+    );
+  }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _FilterSectionTitle(label: l10n.storyFilterCountry),
-        SizedBox(height: adaptive.scale(12)),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            color: const Color(0xFF2C2118),
-            borderRadius: BorderRadius.circular(adaptive.radius(18)),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-          ),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: adaptive.scale(14),
-              vertical: adaptive.scale(12),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.public_rounded,
-                  color: AppColors.accent,
-                  size: adaptive.scale(21),
-                ),
-                SizedBox(width: adaptive.scale(10)),
-                Expanded(
-                  child: Text(
-                    selectedCountry == null
-                        ? l10n.storyFilterCountryAll
-                        : _countryLabel(selectedCountry),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: adaptive.scale(15),
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                if (countryCode != null)
-                  IconButton(
-                    tooltip: l10n.myActivitiesFilterClear,
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () => _selectPlace(null),
-                    icon: Icon(
-                      Icons.close_rounded,
-                      color: const Color(0xFFBDAA98),
-                      size: adaptive.scale(20),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-        SizedBox(height: adaptive.scale(12)),
-        _FilterSearchField(
-          controller: _countrySearchController,
-          hintText: l10n.storyFilterCountrySearchHint,
-          enabled: widget.countries.isNotEmpty,
-        ),
-        if (widget.isCountriesLoading && widget.countries.isEmpty) ...[
-          SizedBox(height: adaptive.scale(12)),
-          const Align(
-            alignment: Alignment.centerLeft,
-            child: SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.4,
-                color: AppColors.accent,
-              ),
-            ),
-          ),
-        ] else if (hasCountryQuery) ...[
-          SizedBox(height: adaptive.scale(12)),
-          if (visibleCountries.isEmpty)
-            Text(
-              l10n.storyFilterCountryNoResults,
-              style: TextStyle(
-                color: const Color(0xFFBDAA98),
-                fontSize: adaptive.scale(13),
-                fontWeight: FontWeight.w600,
-              ),
-            )
-          else
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.sizeOf(context).height * 0.28,
-              ),
-              child: ListView.separated(
-                shrinkWrap: true,
-                physics: const BouncingScrollPhysics(),
-                itemCount: visibleCountries.length,
-                separatorBuilder: (_, _) => SizedBox(height: adaptive.scale(8)),
-                itemBuilder: (context, index) {
-                  final country = visibleCountries[index];
-                  final normalizedCode =
-                      normalizeReferenceCountryCode(country.code) ??
-                          country.code.trim().toUpperCase();
-                  final selected = countryCode == normalizedCode;
-
-                  return _StoryCountryResultTile(
-                    label: _countryLabel(country),
-                    code: normalizedCode,
-                    selected: selected,
-                    onTap: () => _selectPlace(country),
-                  );
-                },
-              ),
-            ),
-        ],
-      ],
+  Widget _buildCitySection(AppLocalizations l10n, StoryAdaptive adaptive) {
+    return AppCityFilterSection(
+      title: l10n.locationFilterCitySection,
+      allCitiesLabel: l10n.locationFilterAllCities,
+      searchHint: l10n.locationFilterCitySearchHint,
+      noResultsText: l10n.locationFilterCityNoResults,
+      selectedCity: _selectedCity,
+      onChanged: _setCity,
+      countryCode: _selectedCountry?.countryCode,
+      maxResultsHeight: MediaQuery.sizeOf(context).height * 0.28,
     );
   }
 
@@ -1368,7 +1205,8 @@ class _StoryFiltersSheetState extends State<_StoryFiltersSheet> {
         Navigator.of(context).pop(
           _StoryFiltersResult(
             category: _selectedCategory,
-            place: _selectedPlace,
+            country: _selectedCountry,
+            city: _selectedCity,
           ),
         );
       },
@@ -1377,6 +1215,12 @@ class _StoryFiltersSheetState extends State<_StoryFiltersSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildCountrySection(l10n, adaptive),
+          if (_selectedCountry != null) ...[
+            SizedBox(height: adaptive.scale(18)),
+            _buildCitySection(l10n, adaptive),
+          ],
+          SizedBox(height: adaptive.scale(18)),
           _FilterSectionTitle(label: l10n.storyFilterCategory),
           SizedBox(height: adaptive.scale(8)),
           for (final option in _categoryOptions)
@@ -1387,8 +1231,6 @@ class _StoryFiltersSheetState extends State<_StoryFiltersSheet> {
               selected: _selectedCategory == option,
               onTap: () => _selectCategory(option),
             ),
-          SizedBox(height: adaptive.scale(18)),
-          _buildCountrySection(l10n, adaptive),
         ],
       ),
     );
@@ -1552,77 +1394,6 @@ class _FilterOptionTile extends StatelessWidget {
   }
 }
 
-class _StoryCountryResultTile extends StatelessWidget {
-  const _StoryCountryResultTile({
-    required this.label,
-    required this.code,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final String code;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final adaptive = StoryAdaptive.of(context);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(adaptive.radius(14)),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: selected
-                ? AppColors.accent.withValues(alpha: 0.18)
-                : const Color(0xFF2C2118),
-            borderRadius: BorderRadius.circular(adaptive.radius(14)),
-            border: Border.all(
-              color: selected
-                  ? AppColors.accent
-                  : Colors.white.withValues(alpha: 0.07),
-            ),
-          ),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: adaptive.scale(13),
-              vertical: adaptive.scale(11),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: adaptive.scale(14),
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                SizedBox(width: adaptive.scale(10)),
-                Text(
-                  code,
-                  style: TextStyle(
-                    color: const Color(0xFFBDAA98),
-                    fontSize: adaptive.scale(12),
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _FilterSectionTitle extends StatelessWidget {
   const _FilterSectionTitle({required this.label});
 
@@ -1640,63 +1411,6 @@ class _FilterSectionTitle extends StatelessWidget {
         fontSize: adaptive.scale(12),
         fontWeight: FontWeight.w900,
         letterSpacing: 1.2,
-      ),
-    );
-  }
-}
-
-class _FilterSearchField extends StatelessWidget {
-  const _FilterSearchField({
-    required this.controller,
-    required this.hintText,
-    this.enabled = true,
-  });
-
-  final TextEditingController controller;
-  final String hintText;
-  final bool enabled;
-
-  @override
-  Widget build(BuildContext context) {
-    final adaptive = StoryAdaptive.of(context);
-    return Container(
-      constraints: BoxConstraints(minHeight: adaptive.scale(44)),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2A180D),
-        borderRadius: BorderRadius.circular(adaptive.radius(999)),
-      ),
-      child: Row(
-        children: [
-          SizedBox(width: adaptive.scale(14)),
-          Icon(
-            Icons.search_rounded,
-            color: AppColors.accent,
-            size: adaptive.scale(18),
-          ),
-          SizedBox(width: adaptive.scale(8)),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              enabled: enabled,
-              cursorColor: AppColors.accent,
-              style: TextStyle(
-                color: StoryPalette.textSoft,
-                fontSize: adaptive.scale(14),
-                fontWeight: FontWeight.w700,
-              ),
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText: hintText,
-                hintStyle: TextStyle(
-                  color: StoryPalette.textMuted,
-                  fontSize: adaptive.scale(14),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-          SizedBox(width: adaptive.scale(14)),
-        ],
       ),
     );
   }
