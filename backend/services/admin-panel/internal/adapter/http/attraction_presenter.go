@@ -2440,7 +2440,55 @@ func attractionPagination(total int, filters AttractionFilterViewData) Attractio
 		HasNext:       totalPages > 0 && page < totalPages,
 		PreviousQuery: attractionPageQuery(filters.Query, page-1),
 		NextQuery:     attractionPageQuery(filters.Query, page+1),
+		Pages:         attractionPaginationPages(filters.Query, page, totalPages),
 	}
+}
+
+func attractionPaginationPages(baseQuery string, currentPage int, totalPages int) []AttractionPaginationPageViewData {
+	if totalPages <= 1 {
+		return nil
+	}
+	if currentPage < 1 {
+		currentPage = 1
+	}
+	if currentPage > totalPages {
+		currentPage = totalPages
+	}
+
+	pageNumbers := attractionPaginationPageNumbers(currentPage, totalPages)
+	pages := make([]AttractionPaginationPageViewData, 0, len(pageNumbers))
+	for _, page := range pageNumbers {
+		if page == 0 {
+			pages = append(pages, AttractionPaginationPageViewData{IsDots: true})
+			continue
+		}
+		pages = append(pages, AttractionPaginationPageViewData{
+			Page:      page,
+			Query:     attractionPageQuery(baseQuery, page),
+			IsCurrent: page == currentPage,
+		})
+	}
+	return pages
+}
+
+func attractionPaginationPageNumbers(currentPage int, totalPages int) []int {
+	if totalPages <= 7 {
+		pages := make([]int, 0, totalPages)
+		for page := 1; page <= totalPages; page++ {
+			pages = append(pages, page)
+		}
+		return pages
+	}
+
+	if currentPage <= 4 {
+		return []int{1, 2, 3, 4, 5, 0, totalPages}
+	}
+
+	if currentPage >= totalPages-3 {
+		return []int{1, 0, totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages}
+	}
+
+	return []int{1, 0, currentPage - 1, currentPage, currentPage + 1, 0, totalPages}
 }
 
 func attractionPageQuery(baseQuery string, page int) string {

@@ -132,6 +132,14 @@ type AttractionPaginationViewData struct {
 	HasNext       bool
 	PreviousQuery string
 	NextQuery     string
+	Pages         []AttractionPaginationPageViewData
+}
+
+type AttractionPaginationPageViewData struct {
+	Page      int
+	Query     string
+	IsCurrent bool
+	IsDots    bool
 }
 
 type AttractionFormViewData struct {

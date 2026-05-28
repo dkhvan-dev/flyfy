@@ -693,6 +693,49 @@ textarea:focus {
   gap: 10px;
 }
 
+.pagination-pages {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.pagination-page,
+.pagination-dots {
+  min-width: 34px;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.pagination-page {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.pagination-page:hover,
+.pagination-page:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.pagination-page.is-current {
+  border-color: var(--accent);
+  background: rgba(255, 137, 8, 0.16);
+  color: var(--accent);
+}
+
+.pagination-dots {
+  min-width: 22px;
+  color: var(--muted);
+}
+
 .checks {
   display: grid;
   gap: 8px;

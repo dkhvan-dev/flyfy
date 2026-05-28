@@ -110,7 +110,17 @@
           {{else}}
             <button type="button" disabled>{{t .Locale "action.previousPage"}}</button>
           {{end}}
-          <span class="muted">{{t .Locale "pagination.page"}} {{.Data.Pagination.Page}} / {{.Data.Pagination.TotalPages}}</span>
+          <div class="pagination-pages" aria-label="{{t .Locale "pagination.page"}}">
+            {{range .Data.Pagination.Pages}}
+              {{if .IsDots}}
+                <span class="pagination-dots" aria-hidden="true">…</span>
+              {{else if .IsCurrent}}
+                <span class="pagination-page is-current" aria-current="page">{{.Page}}</span>
+              {{else}}
+                <a class="pagination-page" href="/admin/attractions{{urlQuerySuffix .Query}}">{{.Page}}</a>
+              {{end}}
+            {{end}}
+          </div>
           {{if .Data.Pagination.HasNext}}
             <a class="button" href="/admin/attractions{{urlQuerySuffix .Data.Pagination.NextQuery}}">{{t .Locale "action.nextPage"}}</a>
           {{else}}

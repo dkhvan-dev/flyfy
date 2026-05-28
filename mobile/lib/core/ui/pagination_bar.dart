@@ -211,26 +211,30 @@ List<_PaginationSlot> _buildSlots(
     return _buildCompactSlots(currentPage, totalPages);
   }
 
-  if (totalPages <= 5) {
+  if (totalPages <= 7) {
     return [
       for (var page = 1; page <= totalPages; page++) _PaginationSlot.page(page),
     ];
   }
 
-  if (currentPage <= 3) {
+  if (currentPage <= 4) {
     return [
       const _PaginationSlot.page(1),
       const _PaginationSlot.page(2),
       const _PaginationSlot.page(3),
+      const _PaginationSlot.page(4),
+      const _PaginationSlot.page(5),
       const _PaginationSlot.dots(),
       _PaginationSlot.page(totalPages),
     ];
   }
 
-  if (currentPage >= totalPages - 2) {
+  if (currentPage >= totalPages - 3) {
     return [
       const _PaginationSlot.page(1),
       const _PaginationSlot.dots(),
+      _PaginationSlot.page(totalPages - 4),
+      _PaginationSlot.page(totalPages - 3),
       _PaginationSlot.page(totalPages - 2),
       _PaginationSlot.page(totalPages - 1),
       _PaginationSlot.page(totalPages),
@@ -240,7 +244,9 @@ List<_PaginationSlot> _buildSlots(
   return [
     const _PaginationSlot.page(1),
     const _PaginationSlot.dots(),
+    _PaginationSlot.page(currentPage - 1),
     _PaginationSlot.page(currentPage),
+    _PaginationSlot.page(currentPage + 1),
     const _PaginationSlot.dots(),
     _PaginationSlot.page(totalPages),
   ];
@@ -253,34 +259,26 @@ List<_PaginationSlot> _buildCompactSlots(int currentPage, int totalPages) {
     ];
   }
 
-  if (currentPage == 1 || currentPage == totalPages) {
+  if (currentPage <= 2) {
     return [
       const _PaginationSlot.page(1),
-      const _PaginationSlot.dots(),
-      _PaginationSlot.page(totalPages),
+      const _PaginationSlot.page(2),
+      const _PaginationSlot.page(3),
     ];
   }
 
-  if (currentPage == 2 || currentPage == totalPages - 1) {
+  if (currentPage >= totalPages - 1) {
     return [
-      const _PaginationSlot.page(1),
-      _PaginationSlot.page(currentPage),
-      _PaginationSlot.page(totalPages),
-    ];
-  }
-
-  if (currentPage <= totalPages / 2) {
-    return [
-      _PaginationSlot.page(currentPage),
-      const _PaginationSlot.dots(),
+      _PaginationSlot.page(totalPages - 2),
+      _PaginationSlot.page(totalPages - 1),
       _PaginationSlot.page(totalPages),
     ];
   }
 
   return [
-    const _PaginationSlot.page(1),
-    const _PaginationSlot.dots(),
+    _PaginationSlot.page(currentPage - 1),
     _PaginationSlot.page(currentPage),
+    _PaginationSlot.page(currentPage + 1),
   ];
 }
 
@@ -294,7 +292,7 @@ enum _PaginationDensity {
       return _PaginationDensity.minimal;
     }
 
-    if (width < 360) {
+    if (width < 420) {
       return _PaginationDensity.compact;
     }
 

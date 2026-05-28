@@ -6768,6 +6768,9 @@ func TestRendererRendersAttractionListPagination(t *testing.T) {
 		"Показано 26-50 из 60",
 		`href="/admin/attractions?page=1&q=lake"`,
 		`href="/admin/attractions?page=3&q=lake"`,
+		`class="pagination-page" href="/admin/attractions?page=1&q=lake">1</a>`,
+		`class="pagination-page is-current" aria-current="page">2</span>`,
+		`class="pagination-page" href="/admin/attractions?page=3&q=lake">3</a>`,
 		"Назад",
 		"Вперед",
 	} {
