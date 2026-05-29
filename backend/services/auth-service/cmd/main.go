@@ -13,6 +13,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 
+	fraudadapter "github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/adapter/fraud"
 	httpAdapter "github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/adapter/http"
 	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/adapter/oauth"
 	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/adapter/otp"
@@ -20,6 +21,7 @@ import (
 	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/adapter/tokenclient"
 	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/app"
 	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/config"
+	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/domain/port"
 )
 
 func main() {
@@ -101,14 +103,22 @@ func main() {
 		Msg("token-service client initialized")
 
 	// --- Application (use cases) ---
-	authUC := app.NewAuthUseCase(
+	fraudClient, err := newFraudEvaluator(cfg)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("failed to create anti-fraud client")
+	}
+
+	authUC := app.NewAuthUseCaseWithFraud(
 		userRepo,
 		otpStore,
 		otpSender,
 		googleVerifier,
 		appleVerifier,
 		tokenClient,
+		fraudClient,
 		cfg.OTP,
+		cfg.Security,
+		cfg.Env,
 		logger,
 	)
 
@@ -155,4 +165,16 @@ func main() {
 	}
 
 	logger.Info().Msg("auth-service stopped")
+}
+
+func newFraudEvaluator(cfg *config.Config) (port.FraudEvaluator, error) {
+	if cfg == nil || !cfg.AntiFraud.Enabled {
+		return nil, nil
+	}
+	return fraudadapter.NewHTTPClient(
+		cfg.AntiFraud.BaseURL,
+		cfg.AntiFraud.InternalServiceToken,
+		cfg.AntiFraud.SignalHashKey,
+		cfg.AntiFraud.Timeout,
+	)
 }

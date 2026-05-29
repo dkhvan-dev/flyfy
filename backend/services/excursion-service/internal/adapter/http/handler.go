@@ -1982,7 +1982,8 @@ func (h *Handler) writeUseCaseError(w http.ResponseWriter, r *http.Request, err 
 		writeError(w, http.StatusUnauthorized, err.Error())
 	case errors.Is(err, app.ErrExcursionAccessDenied),
 		errors.Is(err, app.ErrExcursionAttendanceAccessDenied),
-		errors.Is(err, app.ErrGuideNotAllowed):
+		errors.Is(err, app.ErrGuideNotAllowed),
+		errors.Is(err, app.ErrFraudRejected):
 		writeError(w, http.StatusForbidden, err.Error())
 	case errors.Is(err, app.ErrExcursionNotFound),
 		errors.Is(err, app.ErrExcursionOfferNotFound),

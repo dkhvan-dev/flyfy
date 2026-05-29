@@ -23,7 +23,10 @@ type AuthUseCase struct {
 	googleVerifier port.OAuthVerifier
 	appleVerifier  port.OAuthVerifier
 	tokenClient    port.TokenClient
+	fraud          port.FraudEvaluator
 	otpCfg         config.OTPConfig
+	securityCfg    config.AuthSecurityConfig
+	env            string
 	logger         zerolog.Logger
 }
 
@@ -37,6 +40,34 @@ func NewAuthUseCase(
 	otpCfg config.OTPConfig,
 	logger zerolog.Logger,
 ) *AuthUseCase {
+	return NewAuthUseCaseWithFraud(
+		userRepo,
+		otpStore,
+		otpSender,
+		googleVerifier,
+		appleVerifier,
+		tokenClient,
+		nil,
+		otpCfg,
+		config.AuthSecurityConfig{},
+		"",
+		logger,
+	)
+}
+
+func NewAuthUseCaseWithFraud(
+	userRepo port.UserRepository,
+	otpStore port.OTPStore,
+	otpSender port.OTPSender,
+	googleVerifier port.OAuthVerifier,
+	appleVerifier port.OAuthVerifier,
+	tokenClient port.TokenClient,
+	fraud port.FraudEvaluator,
+	otpCfg config.OTPConfig,
+	securityCfg config.AuthSecurityConfig,
+	env string,
+	logger zerolog.Logger,
+) *AuthUseCase {
 	return &AuthUseCase{
 		userRepo:       userRepo,
 		otpStore:       otpStore,
@@ -44,7 +75,10 @@ func NewAuthUseCase(
 		googleVerifier: googleVerifier,
 		appleVerifier:  appleVerifier,
 		tokenClient:    tokenClient,
+		fraud:          fraud,
 		otpCfg:         otpCfg,
+		securityCfg:    securityCfg,
+		env:            strings.TrimSpace(env),
 		logger:         logger.With().Str("component", "auth_usecase").Logger(),
 	}
 }
@@ -52,13 +86,21 @@ func NewAuthUseCase(
 // --- Phone OTP Flow ---
 
 // SendOTP generates and sends an OTP to the given phone number.
-func (uc *AuthUseCase) SendOTP(ctx context.Context, phone string) error {
+func (uc *AuthUseCase) SendOTP(ctx context.Context, phone string, device model.DeviceInfo) error {
 	phone = normalizePhone(phone)
 	if phone == "" {
 		return model.ErrPhoneRequired
 	}
 
-	// Check rate limit
+	if err := uc.enforceAuthFraud(ctx, port.FraudAssessmentInput{
+		Action: "AUTH_OTP_REQUEST",
+		Phone:  phone,
+		Device: device,
+	}); err != nil {
+		uc.logger.Warn().Err(err).Str("phone", maskPhone(phone)).Msg("OTP blocked by fraud policy")
+		return model.ErrOTPRateLimit
+	}
+
 	if err := uc.otpStore.CheckRateLimit(ctx, phone); err != nil {
 		uc.logger.Warn().Str("phone", maskPhone(phone)).Msg("OTP rate limited")
 		return model.ErrOTPRateLimit
@@ -92,12 +134,17 @@ func (uc *AuthUseCase) VerifyOTPAndLogin(ctx context.Context, phone, code string
 		return nil, model.ErrPhoneRequired
 	}
 
-	valid, err := true, error(nil) // TODO: delete mock
-	uc.logger.Info().
-		Str("phone_raw", phone).
-		Msg("verify OTP request phone after normalize")
+	if err := uc.enforceAuthFraud(ctx, port.FraudAssessmentInput{
+		Action: "AUTH_OTP_VERIFY",
+		Phone:  phone,
+		Device: device,
+	}); err != nil {
+		uc.logger.Warn().Err(err).Str("phone", maskPhone(phone)).Msg("OTP verify blocked by fraud policy")
+		return nil, model.ErrRateLimited
+	}
 
-	if phone != "+77051698779" && phone != "+77051471066" {
+	valid, err := true, error(nil)
+	if !uc.isTestOTPBypassAllowed(phone, code) {
 		valid, err = uc.otpStore.Verify(ctx, phone, code)
 	}
 	if err != nil {
@@ -220,12 +267,67 @@ func (uc *AuthUseCase) oauthLogin(ctx context.Context, provider model.AuthProvid
 
 // RefreshTokens issues new tokens using a refresh token.
 func (uc *AuthUseCase) RefreshTokens(ctx context.Context, refreshToken string, device model.DeviceInfo) (*model.AuthResult, error) {
+	claims, err := uc.tokenClient.ValidateRefreshToken(ctx, refreshToken)
+	if err != nil {
+		uc.logger.Error().Err(err).Msg("refresh token validation failed")
+		return nil, model.ErrInvalidRefreshToken
+	}
+
+	var actorUserID *uuid.UUID
+	if claims != nil {
+		if parsed, parseErr := uuid.Parse(strings.TrimSpace(claims.Subject)); parseErr == nil {
+			actorUserID = &parsed
+		}
+	}
+	if err = uc.enforceAuthFraud(ctx, port.FraudAssessmentInput{
+		Action:      "AUTH_TOKEN_REFRESH",
+		ActorUserID: actorUserID,
+		Device:      device,
+	}); err != nil {
+		uc.logger.Warn().Err(err).Msg("token refresh blocked by fraud policy")
+		return nil, model.ErrRateLimited
+	}
+
 	result, err := uc.tokenClient.RefreshTokens(ctx, refreshToken, device)
 	if err != nil {
 		uc.logger.Error().Err(err).Msg("token refresh failed")
 		return nil, model.ErrInvalidRefreshToken
 	}
 	return result, nil
+}
+
+func (uc *AuthUseCase) enforceAuthFraud(ctx context.Context, input port.FraudAssessmentInput) error {
+	if uc.fraud == nil {
+		return nil
+	}
+
+	decision, err := uc.fraud.AssessAuth(ctx, input)
+	if err != nil {
+		return fmt.Errorf("assess auth fraud: %w", err)
+	}
+	if decision == nil || decision.ShadowMode || decision.Decision == "" || decision.Decision == port.FraudDecisionAllow {
+		return nil
+	}
+	return model.ErrRateLimited
+}
+
+func (uc *AuthUseCase) isTestOTPBypassAllowed(phone string, code string) bool {
+	if !uc.securityCfg.TestOTPBypassEnabled {
+		return false
+	}
+	if strings.EqualFold(strings.TrimSpace(uc.env), "production") {
+		return false
+	}
+	expectedCode := strings.TrimSpace(uc.securityCfg.TestOTPBypassCode)
+	if expectedCode == "" || strings.TrimSpace(code) != expectedCode {
+		return false
+	}
+	for _, configuredPhone := range strings.Split(uc.securityCfg.TestOTPBypassPhones, ",") {
+		if normalizePhone(configuredPhone) == phone {
+			return true
+		}
+	}
+	return false
 }
 
 // Logout revokes the current session. We extract the session_id from whichever

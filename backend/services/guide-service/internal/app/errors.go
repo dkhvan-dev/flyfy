@@ -20,4 +20,5 @@ var (
 	ErrGuideDocumentFileNotFound   = errors.New("guide document file not found")
 	ErrGuideDocumentFileNotReady   = errors.New("guide document file is not ready")
 	ErrGuideDocumentFileNotAllowed = errors.New("guide document file is not allowed")
+	ErrFraudRejected               = errors.New("operation rejected by fraud policy")
 )

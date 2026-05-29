@@ -1,9 +1,11 @@
 package http
 
 import (
+	"net"
 	"net/http"
 	"strings"
 
+	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/app"
 	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/config"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
@@ -59,7 +61,9 @@ func parseRolesHeader(raw string) []string {
 func Chain(cfg *config.Config, next http.Handler) http.Handler {
 	return requestIDMiddleware(cfg,
 		authContextMiddleware(cfg,
-			auditLoggingMiddleware(next),
+			fraudSignalsMiddleware(
+				auditLoggingMiddleware(next),
+			),
 		),
 	)
 }
@@ -112,6 +116,37 @@ func authContextMiddleware(cfg *config.Config, next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func fraudSignalsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		signals := app.FraudSignals{
+			ClientIP:  clientIPFromRequest(r),
+			DeviceID:  r.Header.Get("X-Device-Id"),
+			UserAgent: r.UserAgent(),
+		}
+		next.ServeHTTP(w, r.WithContext(app.WithFraudSignals(r.Context(), signals)))
+	})
+}
+
+func clientIPFromRequest(r *http.Request) string {
+	if r == nil {
+		return ""
+	}
+	if forwardedFor := strings.TrimSpace(r.Header.Get("X-Forwarded-For")); forwardedFor != "" {
+		parts := strings.Split(forwardedFor, ",")
+		if len(parts) > 0 {
+			return strings.TrimSpace(parts[0])
+		}
+	}
+	if realIP := strings.TrimSpace(r.Header.Get("X-Real-IP")); realIP != "" {
+		return realIP
+	}
+	host, _, err := net.SplitHostPort(strings.TrimSpace(r.RemoteAddr))
+	if err == nil {
+		return host
+	}
+	return strings.TrimSpace(r.RemoteAddr)
 }
 
 func auditLoggingMiddleware(next http.Handler) http.Handler {

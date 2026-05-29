@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	fraudadapter "github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/adapter/fraud"
 	grpcadapter "github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/adapter/grpc"
 	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/adapter/http"
 	"github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/adapter/repository"
@@ -57,8 +58,13 @@ func main() {
 	idempotencyRepo := repository.NewPGIdempotencyRepository(pool)
 	cleanupRepo := repository.NewIdempotencyCleanupRepository(pool)
 
-	fileUseCase := app.NewFileUseCase(fileRepo, storageClient, cfg, idempotencyRepo)
-	bindingUseCase := app.NewFileBindingUseCase(fileRepo, bindingRepo)
+	fraudClient, err := newFraudEvaluator(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to initialize anti-fraud client")
+	}
+
+	fileUseCase := app.NewFileUseCaseWithFraud(fileRepo, storageClient, cfg, idempotencyRepo, fraudClient)
+	bindingUseCase := app.NewFileBindingUseCaseWithFraud(fileRepo, bindingRepo, fraudClient)
 
 	httpHandler := httpadapter.NewHandler(fileUseCase, bindingUseCase)
 	httpMux := http.NewServeMux()
@@ -158,6 +164,18 @@ func newStorageProvider(ctx context.Context, cfg *config.Config) (port.StoragePr
 	default:
 		return nil, fmt.Errorf("unsupported storage provider: %s", cfg.Storage.Provider)
 	}
+}
+
+func newFraudEvaluator(cfg *config.Config) (port.FraudEvaluator, error) {
+	if cfg == nil || !cfg.AntiFraud.Enabled {
+		return nil, nil
+	}
+	return fraudadapter.NewHTTPClient(
+		cfg.AntiFraud.BaseURL,
+		cfg.AntiFraud.InternalServiceToken,
+		cfg.AntiFraud.SignalHashKey,
+		cfg.AntiFraud.Timeout,
+	)
 }
 
 func setupLogger(cfg *config.Config) {

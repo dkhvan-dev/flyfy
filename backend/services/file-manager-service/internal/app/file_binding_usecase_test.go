@@ -25,6 +25,7 @@ func TestBindFileReturnsExistingBindingOnExactDuplicate(t *testing.T) {
 	files := &fakeFileRepository{
 		file: &model.File{
 			ID:        fileID,
+			Purpose:   enum.FilePurposeChatSticker,
 			Status:    enum.FileStatusReady,
 			IsDeleted: false,
 		},
@@ -56,6 +57,7 @@ func TestBindFileReturnsFileNotReadySentinel(t *testing.T) {
 		&fakeFileRepository{
 			file: &model.File{
 				ID:        fileID,
+				Purpose:   enum.FilePurposeChatSticker,
 				Status:    enum.FileStatusUploaded,
 				IsDeleted: false,
 			},
@@ -72,6 +74,32 @@ func TestBindFileReturnsFileNotReadySentinel(t *testing.T) {
 
 	if !errors.Is(err, ErrFileNotReady) {
 		t.Fatalf("error = %v, want ErrFileNotReady", err)
+	}
+}
+
+func TestBindFileRejectsPurposeMismatch(t *testing.T) {
+	fileID := uuid.New()
+	useCase := NewFileBindingUseCase(
+		&fakeFileRepository{
+			file: &model.File{
+				ID:        fileID,
+				Purpose:   enum.FilePurposeChatAttachment,
+				Status:    enum.FileStatusReady,
+				IsDeleted: false,
+			},
+		},
+		&fakeFileBindingRepository{},
+	)
+
+	_, err := useCase.BindFile(context.Background(), BindFileInput{
+		FileID:    fileID,
+		OwnerType: string(enum.OwnerTypeUser),
+		OwnerID:   uuid.NewString(),
+		Purpose:   string(enum.FilePurposeChatSticker),
+	})
+
+	if !errors.Is(err, ErrFilePurposeMismatch) {
+		t.Fatalf("error = %v, want ErrFilePurposeMismatch", err)
 	}
 }
 

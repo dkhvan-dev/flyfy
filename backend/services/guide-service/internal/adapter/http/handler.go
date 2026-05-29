@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -299,6 +300,9 @@ func (h *Handler) SubmitMyGuideApplication(w http.ResponseWriter, r *http.Reques
 		ProfessionalDocumentType:   req.ProfessionalDocumentType,
 		FirstAidCertificateFileID:  firstAidCertificateFileID,
 		LanguageCertificateFileID:  languageCertificateFileID,
+		ClientIP:                   clientIP(r),
+		DeviceID:                   r.Header.Get("X-Device-Id"),
+		UserAgent:                  r.UserAgent(),
 	})
 	if err != nil {
 		switch {
@@ -314,6 +318,8 @@ func (h *Handler) SubmitMyGuideApplication(w http.ResponseWriter, r *http.Reques
 		case errors.Is(err, app.ErrGuideApplicationPending),
 			errors.Is(err, app.ErrGuideProfileAlreadyActive):
 			writeError(w, http.StatusConflict, err.Error())
+		case errors.Is(err, app.ErrFraudRejected):
+			writeError(w, http.StatusForbidden, err.Error())
 		case errors.Is(err, app.ErrUserNotFound):
 			writeError(w, http.StatusNotFound, err.Error())
 		default:
@@ -379,6 +385,9 @@ func (h *Handler) AttachMyGuideDocument(w http.ResponseWriter, r *http.Request) 
 		FileID:                fileID,
 		DocumentType:          req.DocumentType,
 		CreatedByUserID:       &userID,
+		ClientIP:              clientIP(r),
+		DeviceID:              r.Header.Get("X-Device-Id"),
+		UserAgent:             r.UserAgent(),
 	})
 	if err != nil {
 		switch {
@@ -389,6 +398,8 @@ func (h *Handler) AttachMyGuideDocument(w http.ResponseWriter, r *http.Request) 
 			writeError(w, http.StatusBadRequest, err.Error())
 		case errors.Is(err, app.ErrVerificationRequestNotFound):
 			writeError(w, http.StatusNotFound, err.Error())
+		case errors.Is(err, app.ErrFraudRejected):
+			writeError(w, http.StatusForbidden, err.Error())
 		default:
 			writeError(w, http.StatusInternalServerError, "failed to attach guide document")
 		}
@@ -396,6 +407,22 @@ func (h *Handler) AttachMyGuideDocument(w http.ResponseWriter, r *http.Request) 
 	}
 
 	writeJSON(w, http.StatusCreated, toGuideDocumentResponse(doc))
+}
+
+func clientIP(r *http.Request) string {
+	if xff := strings.TrimSpace(r.Header.Get("X-Forwarded-For")); xff != "" {
+		if comma := strings.Index(xff, ","); comma > 0 {
+			return strings.TrimSpace(xff[:comma])
+		}
+		return xff
+	}
+	if xri := strings.TrimSpace(r.Header.Get("X-Real-IP")); xri != "" {
+		return xri
+	}
+	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+		return host
+	}
+	return r.RemoteAddr
 }
 
 func (h *Handler) ListPublicGuides(w http.ResponseWriter, r *http.Request) {

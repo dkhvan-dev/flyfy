@@ -22,11 +22,13 @@ type Config struct {
 	TokenService TokenServiceConfig
 
 	// OTP
-	OTP OTPConfig
+	OTP      OTPConfig
+	Security AuthSecurityConfig
 
 	// OAuth
-	Google GoogleConfig
-	Apple  AppleConfig
+	Google    GoogleConfig
+	Apple     AppleConfig
+	AntiFraud AntiFraudConfig
 
 	// Telemetry
 	OTELEndpoint string `env:"OTEL_ENDPOINT, default=localhost:4317"`
@@ -67,6 +69,12 @@ type OTPConfig struct {
 	MaxAttempts int           `env:"OTP_MAX_ATTEMPTS, default=5"`
 }
 
+type AuthSecurityConfig struct {
+	TestOTPBypassEnabled bool   `env:"AUTH_TEST_OTP_BYPASS_ENABLED, default=false"`
+	TestOTPBypassPhones  string `env:"AUTH_TEST_OTP_BYPASS_PHONES, default="`
+	TestOTPBypassCode    string `env:"AUTH_TEST_OTP_BYPASS_CODE, default="`
+}
+
 type GoogleConfig struct {
 	ClientID string `env:"GOOGLE_CLIENT_ID, default="`
 }
@@ -74,6 +82,14 @@ type GoogleConfig struct {
 type AppleConfig struct {
 	TeamID   string `env:"APPLE_TEAM_ID, default="`
 	BundleID string `env:"APPLE_BUNDLE_ID, default="`
+}
+
+type AntiFraudConfig struct {
+	Enabled              bool          `env:"ANTI_FRAUD_ENABLED, default=false"`
+	BaseURL              string        `env:"ANTI_FRAUD_BASE_URL, default=http://anti-fraud-service:8096"`
+	InternalServiceToken string        `env:"ANTI_FRAUD_INTERNAL_SERVICE_TOKEN"`
+	SignalHashKey        string        `env:"ANTI_FRAUD_SIGNAL_HASH_KEY"`
+	Timeout              time.Duration `env:"ANTI_FRAUD_TIMEOUT, default=800ms"`
 }
 
 func Load(ctx context.Context) (*Config, error) {

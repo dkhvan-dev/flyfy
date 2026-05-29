@@ -20,6 +20,7 @@ type Config struct {
 	FileManager FileManagerConfig
 	ChatService ChatServiceConfig
 	Payment     PaymentServiceConfig
+	AntiFraud   AntiFraudConfig
 }
 
 type AppConfig struct {
@@ -107,6 +108,14 @@ type ChatServiceConfig struct {
 type PaymentServiceConfig struct {
 	HTTPURL        string        `env:"PAYMENT_SERVICE_HTTP_URL, default=http://payment-service:8091"`
 	RequestTimeout time.Duration `env:"PAYMENT_SERVICE_REQUEST_TIMEOUT, default=5s"`
+}
+
+type AntiFraudConfig struct {
+	Enabled              bool          `env:"ANTI_FRAUD_ENABLED, default=false"`
+	BaseURL              string        `env:"ANTI_FRAUD_BASE_URL, default=http://anti-fraud-service:8096"`
+	InternalServiceToken string        `env:"ANTI_FRAUD_INTERNAL_SERVICE_TOKEN"`
+	SignalHashKey        string        `env:"ANTI_FRAUD_SIGNAL_HASH_KEY"`
+	Timeout              time.Duration `env:"ANTI_FRAUD_TIMEOUT, default=800ms"`
 }
 
 func Load(ctx context.Context) (*Config, error) {

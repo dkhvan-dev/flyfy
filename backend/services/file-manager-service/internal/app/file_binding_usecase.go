@@ -17,15 +17,25 @@ import (
 type FileBindingUseCase struct {
 	files    port.FileRepository
 	bindings port.FileBindingRepository
+	fraud    port.FraudEvaluator
 }
 
 func NewFileBindingUseCase(
 	files port.FileRepository,
 	bindings port.FileBindingRepository,
 ) *FileBindingUseCase {
+	return NewFileBindingUseCaseWithFraud(files, bindings, nil)
+}
+
+func NewFileBindingUseCaseWithFraud(
+	files port.FileRepository,
+	bindings port.FileBindingRepository,
+	fraud port.FraudEvaluator,
+) *FileBindingUseCase {
 	return &FileBindingUseCase{
 		files:    files,
 		bindings: bindings,
+		fraud:    fraud,
 	}
 }
 
@@ -36,6 +46,9 @@ type BindFileInput struct {
 	Purpose         string
 	IsPrimary       bool
 	CreatedByUserID *string
+	ClientIP        string
+	DeviceID        string
+	UserAgent       string
 }
 
 type ListFileBindingsInput struct {
@@ -75,6 +88,9 @@ func (u *FileBindingUseCase) BindFile(ctx context.Context, input BindFileInput) 
 	if !purpose.IsValid() {
 		return nil, ErrForbiddenPurpose
 	}
+	if file.Purpose != purpose {
+		return nil, ErrFilePurposeMismatch
+	}
 
 	var createdByUserID *uuid.UUID
 	if input.CreatedByUserID != nil && strings.TrimSpace(*input.CreatedByUserID) != "" {
@@ -83,6 +99,29 @@ func (u *FileBindingUseCase) BindFile(ctx context.Context, input BindFileInput) 
 			return nil, ErrInvalidOwnerID
 		}
 		createdByUserID = &parsed
+	}
+	if createdByUserID != nil && file.UploadedByUserID != nil && *createdByUserID != *file.UploadedByUserID {
+		return nil, ErrFileOwnershipMismatch
+	}
+
+	if err = u.enforceFraud(ctx, port.FraudAssessmentInput{
+		Action:      "FILE_BIND",
+		ActorUserID: createdByUserID,
+		FileID:      &file.ID,
+		OwnerType:   &ownerType,
+		OwnerID:     &ownerID,
+		Purpose:     purpose,
+		ContentType: valueOrEmpty(file.DetectedContentType),
+		SizeBytes:   file.SizeBytes,
+		ClientIP:    input.ClientIP,
+		DeviceID:    input.DeviceID,
+		UserAgent:   input.UserAgent,
+		Metadata: map[string]any{
+			"bindingPurpose": string(purpose),
+			"isPrimary":      input.IsPrimary,
+		},
+	}); err != nil {
+		return nil, err
 	}
 
 	binding, err := model.NewFileBinding(model.NewFileBindingParams{
@@ -113,6 +152,21 @@ func (u *FileBindingUseCase) BindFile(ctx context.Context, input BindFileInput) 
 	}
 
 	return binding, nil
+}
+
+func (u *FileBindingUseCase) enforceFraud(ctx context.Context, input port.FraudAssessmentInput) error {
+	if u.fraud == nil {
+		return nil
+	}
+
+	decision, err := u.fraud.AssessFile(ctx, input)
+	if err != nil {
+		return fmt.Errorf("assess file binding fraud: %w", err)
+	}
+	if decision == nil || decision.ShadowMode || decision.Decision == "" || decision.Decision == port.FraudDecisionAllow {
+		return nil
+	}
+	return ErrFraudRejected
 }
 
 func (u *FileBindingUseCase) findExistingLiveBinding(

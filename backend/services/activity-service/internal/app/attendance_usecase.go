@@ -25,6 +25,7 @@ type AttendanceUseCase struct {
 	qrSigningKey  []byte
 	qrTTL         time.Duration
 	offlineWindow time.Duration
+	fraud         port.FraudEvaluator
 }
 
 func NewAttendanceUseCase(
@@ -427,6 +428,40 @@ func (u *AttendanceUseCase) syncAttendanceProof(
 				CheckedInAt: checkedInAt,
 				SyncedAt:    time.Now().UTC(),
 			}
+			return nil
+		}
+
+		if err = u.enforceActivityFraud(ctx, activityParticipantFraudInput(
+			fraudActionActivityAttendanceCheckIn,
+			actorUserID,
+			activity.ID,
+			activity,
+			input.ScanID.String(),
+			map[string]any{
+				"scanId":          input.ScanID.String(),
+				"qrJti":           decoded.JTI.String(),
+				"installationId":  strings.TrimSpace(input.InstallationID),
+				"scannedAtDevice": input.ScannedAtDevice,
+			},
+		)); err != nil {
+			attempt, attemptErr := buildRejectedAttendanceAttempt(
+				input,
+				actorUserID,
+				decoded,
+				"fraud_rejected",
+				ErrFraudRejected.Error(),
+			)
+			if attemptErr == nil {
+				if createErr := txRepo.CreateAttendanceSyncAttempt(ctx, attempt); createErr != nil {
+					return fmt.Errorf("create fraud rejected attendance attempt: %w", createErr)
+				}
+			}
+			result = rejectedAttendanceResult(
+				input.ScanID,
+				decoded.ActivityID,
+				"fraud_rejected",
+				ErrFraudRejected.Error(),
+			)
 			return nil
 		}
 

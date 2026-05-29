@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	fraudadapter "github.com/dkhvan-dev/flyfy/backend/services/payment-service/internal/adapter/fraud"
 	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/payment-service/internal/adapter/http"
 	mockprovider "github.com/dkhvan-dev/flyfy/backend/services/payment-service/internal/adapter/provider"
 	"github.com/dkhvan-dev/flyfy/backend/services/payment-service/internal/adapter/repository"
@@ -44,7 +45,11 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to initialize payment provider")
 	}
-	useCase := app.NewPaymentUseCase(repo, provider)
+	fraudClient, err := newFraudDecisionPort(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to initialize anti-fraud client")
+	}
+	useCase := app.NewPaymentUseCaseWithFraud(repo, provider, fraudClient)
 
 	handler := httpadapter.NewHandler(useCase)
 	mux := http.NewServeMux()
@@ -111,6 +116,17 @@ func newPaymentProvider(cfg *config.Config) (port.PaymentProvider, error) {
 	default:
 		return nil, fmt.Errorf("unsupported payment provider %q", cfg.Payment.Provider)
 	}
+}
+
+func newFraudDecisionPort(cfg *config.Config) (port.FraudDecisionPort, error) {
+	if cfg == nil || !cfg.AntiFraud.Enabled {
+		return nil, nil
+	}
+	return fraudadapter.NewHTTPClient(
+		cfg.AntiFraud.BaseURL,
+		cfg.AntiFraud.InternalServiceToken,
+		cfg.AntiFraud.Timeout,
+	)
 }
 
 func setupLogger(cfg *config.Config) {

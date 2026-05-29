@@ -11,12 +11,14 @@ import (
 
 	chatadapter "github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/adapter/chat"
 	filemanageradapter "github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/adapter/filemanager"
+	fraudadapter "github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/adapter/fraud"
 	grpcadapter "github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/adapter/grpc"
 	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/adapter/http"
 	paymentadapter "github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/adapter/payment"
 	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/adapter/repository"
 	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/app"
 	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/config"
+	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/domain/port"
 	activityv1 "github.com/dkhvan-dev/flyfy/proto/gen/go/activity/v1"
 	userv1 "github.com/dkhvan-dev/flyfy/proto/gen/go/user/v1"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -74,6 +76,11 @@ func main() {
 	defer fileManagerClient.Close()
 
 	activityUC := app.NewActivityUseCase(repo, fileManagerClient)
+	fraudClient, err := newFraudEvaluator(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed initialize anti-fraud client")
+	}
+	activityUC.SetFraudEvaluator(fraudClient)
 	chatClient := chatadapter.New(
 		cfg.ChatService.HTTPURL,
 		cfg.Security.InternalServiceToken,
@@ -95,8 +102,10 @@ func main() {
 		cfg.Attendance.QRTTL,
 		cfg.Attendance.OfflineWindow,
 	)
+	attendanceUC.SetFraudEvaluator(fraudClient)
 	joinUC := app.NewJoinUseCase(repo, chatClient, actorResolver)
 	joinUC.SetPaymentGateway(paymentClient)
+	joinUC.SetFraudEvaluator(fraudClient)
 	searchUC := app.NewSearchUseCase(repo)
 	moderationUC := app.NewModerationUseCase(activityUC)
 
@@ -201,6 +210,18 @@ func main() {
 	}
 
 	log.Info().Str("service", cfg.App.Name).Msg("service stopped")
+}
+
+func newFraudEvaluator(cfg *config.Config) (port.FraudEvaluator, error) {
+	if cfg == nil || !cfg.AntiFraud.Enabled {
+		return nil, nil
+	}
+	return fraudadapter.NewHTTPClient(
+		cfg.AntiFraud.BaseURL,
+		cfg.AntiFraud.InternalServiceToken,
+		cfg.AntiFraud.SignalHashKey,
+		cfg.AntiFraud.Timeout,
+	)
 }
 
 func runActivityLifecycleTicker(ctx context.Context, activityUC *app.ActivityUseCase) {

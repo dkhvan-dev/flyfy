@@ -12,6 +12,7 @@ import (
 	attractionadapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/attraction"
 	chatadapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/chat"
 	filemanageradapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/filemanager"
+	fraudadapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/fraud"
 	grpcadapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/grpc"
 	guideadapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/guide"
 	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/http"
@@ -20,6 +21,7 @@ import (
 	userserviceadapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/userservice"
 	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/app"
 	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/config"
+	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/port"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -97,10 +99,15 @@ func main() {
 		cfg.Security.InternalServiceToken,
 		cfg.ChatService.RequestTimeout,
 	)
+	fraudClient, err := newFraudEvaluator(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("initialize anti-fraud client")
+	}
 	excursionUC := app.NewExcursionUseCase(repo, guideClient, fileManagerClient, translator).
 		WithUserProfileResolver(userClient).
 		WithAttractionRatingUpdater(attractionRatingClient).
 		WithExcursionChatGateway(chatClient).
+		WithFraudEvaluator(fraudClient).
 		WithAttendanceQRConfig(
 			cfg.Attendance.QRSigningSecret,
 			cfg.Attendance.QRTTL,
@@ -151,6 +158,18 @@ func main() {
 		log.Error().Err(err).Msg("http shutdown failed")
 	}
 	log.Info().Str("service", cfg.App.Name).Msg("service stopped")
+}
+
+func newFraudEvaluator(cfg *config.Config) (port.FraudEvaluator, error) {
+	if cfg == nil || !cfg.AntiFraud.Enabled {
+		return nil, nil
+	}
+	return fraudadapter.NewHTTPClient(
+		cfg.AntiFraud.BaseURL,
+		cfg.AntiFraud.InternalServiceToken,
+		cfg.AntiFraud.SignalHashKey,
+		cfg.AntiFraud.Timeout,
+	)
 }
 
 func runExcursionLifecycleTicker(

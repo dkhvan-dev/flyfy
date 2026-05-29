@@ -19,7 +19,10 @@ var (
 	ErrContentTypeRequired   = errors.New("content type is required")
 	ErrInvalidFileSize       = errors.New("invalid file size")
 
-	ErrIdempotencyConflict = errors.New("idempotency key reuse with different request payload")
+	ErrIdempotencyConflict   = errors.New("idempotency key reuse with different request payload")
+	ErrFilePurposeMismatch   = errors.New("file purpose does not match binding purpose")
+	ErrFileOwnershipMismatch = errors.New("file owner does not match actor")
+	ErrFraudRejected         = errors.New("operation rejected by fraud policy")
 )
 
 const (
@@ -38,6 +41,9 @@ const (
 	ErrorCodeContentTypeRequired   = "content_type_required"
 	ErrorCodeInvalidFileSize       = "invalid_file_size"
 	ErrorCodeIdempotencyConflict   = "idempotency_conflict"
+	ErrorCodeFilePurposeMismatch   = "file_purpose_mismatch"
+	ErrorCodeFileOwnershipMismatch = "file_ownership_mismatch"
+	ErrorCodeFraudRejected         = "fraud_rejected"
 )
 
 func BusinessErrorCode(err error) (string, bool) {
@@ -72,6 +78,12 @@ func BusinessErrorCode(err error) (string, bool) {
 		return ErrorCodeInvalidFileSize, true
 	case errors.Is(err, ErrIdempotencyConflict):
 		return ErrorCodeIdempotencyConflict, true
+	case errors.Is(err, ErrFilePurposeMismatch):
+		return ErrorCodeFilePurposeMismatch, true
+	case errors.Is(err, ErrFileOwnershipMismatch):
+		return ErrorCodeFileOwnershipMismatch, true
+	case errors.Is(err, ErrFraudRejected):
+		return ErrorCodeFraudRejected, true
 	default:
 		return "", false
 	}

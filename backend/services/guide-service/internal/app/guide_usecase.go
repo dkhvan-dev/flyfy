@@ -28,12 +28,23 @@ type GuideUseCase struct {
 	userClient      UserServiceClient
 	fileClient      FileManagerClient
 	excursionClient GuideExcursionCoverageClient
+	fraud           port.FraudEvaluator
 }
 
 func NewGuideUseCase(
 	repo port.GuideRepository,
 	userClient UserServiceClient,
 	fileClient FileManagerClient,
+	excursionClients ...GuideExcursionCoverageClient,
+) *GuideUseCase {
+	return NewGuideUseCaseWithFraud(repo, userClient, fileClient, nil, excursionClients...)
+}
+
+func NewGuideUseCaseWithFraud(
+	repo port.GuideRepository,
+	userClient UserServiceClient,
+	fileClient FileManagerClient,
+	fraud port.FraudEvaluator,
 	excursionClients ...GuideExcursionCoverageClient,
 ) *GuideUseCase {
 	var excursionClient GuideExcursionCoverageClient
@@ -45,6 +56,7 @@ func NewGuideUseCase(
 		userClient:      userClient,
 		fileClient:      fileClient,
 		excursionClient: excursionClient,
+		fraud:           fraud,
 	}
 }
 
@@ -432,6 +444,9 @@ type SubmitGuideApplicationInput struct {
 	ProfessionalDocumentType   string
 	FirstAidCertificateFileID  *uuid.UUID
 	LanguageCertificateFileID  *uuid.UUID
+	ClientIP                   string
+	DeviceID                   string
+	UserAgent                  string
 }
 
 func (u *GuideUseCase) SubmitGuideApplication(
@@ -498,6 +513,29 @@ func (u *GuideUseCase) SubmitGuideApplication(
 		if err = u.fileClient.ValidateGuideDocumentFile(ctx, *input.LanguageCertificateFileID); err != nil {
 			return nil, err
 		}
+	}
+
+	if err = u.enforceGuideFraud(ctx, port.FraudAssessmentInput{
+		Action:      "GUIDE_APPLICATION",
+		ActorUserID: input.UserID,
+		SubjectType: "GUIDE_USER",
+		SubjectID:   &input.UserID,
+		ClientIP:    input.ClientIP,
+		DeviceID:    input.DeviceID,
+		UserAgent:   input.UserAgent,
+		Metadata: map[string]any{
+			"identityDocumentType":       input.IdentityDocumentType,
+			"professionalDocumentType":   input.ProfessionalDocumentType,
+			"hasFirstAidCertificate":     input.FirstAidCertificateFileID != nil && *input.FirstAidCertificateFileID != uuid.Nil,
+			"hasLanguageCertificate":     input.LanguageCertificateFileID != nil && *input.LanguageCertificateFileID != uuid.Nil,
+			"isPrivateGuideAvailable":    valueOrFalse(input.IsPrivateGuideAvailable),
+			"isActivityHostAvailable":    valueOrFalse(input.IsActivityHostAvailable),
+			"isExcursionGuideAvailable":  valueOrFalse(input.IsExcursionGuideAvailable),
+			"identityDocumentFileId":     input.IdentityDocumentFileID.String(),
+			"professionalDocumentFileId": input.ProfessionalDocumentFileID.String(),
+		},
+	}); err != nil {
+		return nil, err
 	}
 
 	if isNewProfile {
@@ -646,6 +684,9 @@ type AttachGuideDocumentInput struct {
 	FileID                uuid.UUID
 	DocumentType          string
 	CreatedByUserID       *uuid.UUID
+	ClientIP              string
+	DeviceID              string
+	UserAgent             string
 }
 
 func (u *GuideUseCase) AttachGuideDocument(
@@ -674,6 +715,26 @@ func (u *GuideUseCase) AttachGuideDocument(
 		return nil, err
 	}
 
+	var actor uuid.UUID
+	if input.CreatedByUserID != nil {
+		actor = *input.CreatedByUserID
+	}
+	if err = u.enforceGuideFraud(ctx, port.FraudAssessmentInput{
+		Action:      "GUIDE_DOCUMENT_ATTACH",
+		ActorUserID: actor,
+		SubjectType: "GUIDE_VERIFICATION_REQUEST",
+		SubjectID:   &input.VerificationRequestID,
+		ClientIP:    input.ClientIP,
+		DeviceID:    input.DeviceID,
+		UserAgent:   input.UserAgent,
+		Metadata: map[string]any{
+			"documentType": input.DocumentType,
+			"fileId":       input.FileID.String(),
+		},
+	}); err != nil {
+		return nil, err
+	}
+
 	doc, err := model.NewGuideDocument(model.NewGuideDocumentParams{
 		VerificationRequestID: input.VerificationRequestID,
 		FileID:                input.FileID,
@@ -697,6 +758,25 @@ func (u *GuideUseCase) AttachGuideDocument(
 	}
 
 	return doc, nil
+}
+
+func (u *GuideUseCase) enforceGuideFraud(ctx context.Context, input port.FraudAssessmentInput) error {
+	if u.fraud == nil {
+		return nil
+	}
+
+	decision, err := u.fraud.AssessGuide(ctx, input)
+	if err != nil {
+		return fmt.Errorf("assess guide fraud: %w", err)
+	}
+	if decision == nil || decision.ShadowMode || decision.Decision == "" || decision.Decision == port.FraudDecisionAllow || decision.Decision == port.FraudDecisionReview {
+		return nil
+	}
+	return ErrFraudRejected
+}
+
+func valueOrFalse(value *bool) bool {
+	return value != nil && *value
 }
 
 type ListPublicGuidesInput struct {

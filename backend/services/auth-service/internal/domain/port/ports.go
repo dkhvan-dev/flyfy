@@ -3,6 +3,8 @@ package port
 import (
 	"context"
 
+	"github.com/google/uuid"
+
 	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/domain/model"
 )
 
@@ -13,7 +15,7 @@ import (
 // metadata; pass an empty struct if the caller doesn't have it.
 type Authenticator interface {
 	// SendOTP sends an OTP code to the given phone number.
-	SendOTP(ctx context.Context, phone string) error
+	SendOTP(ctx context.Context, phone string, device model.DeviceInfo) error
 
 	// VerifyOTPAndLogin verifies the OTP code and returns tokens.
 	VerifyOTPAndLogin(ctx context.Context, phone, code string, device model.DeviceInfo) (*model.AuthResult, error)
@@ -103,4 +105,34 @@ type TokenClaims struct {
 	JTI         string
 	SessionID   string
 	ExpiresAt   int64
+}
+
+type FraudDecision string
+
+const (
+	FraudDecisionAllow     FraudDecision = "ALLOW"
+	FraudDecisionChallenge FraudDecision = "CHALLENGE"
+	FraudDecisionReview    FraudDecision = "REVIEW"
+	FraudDecisionBlock     FraudDecision = "BLOCK"
+)
+
+type FraudAssessmentInput struct {
+	Action      string
+	ActorUserID *uuid.UUID
+	Phone       string
+	Provider    model.AuthProvider
+	ProviderID  string
+	Device      model.DeviceInfo
+	Metadata    map[string]any
+}
+
+type FraudAssessmentResult struct {
+	Decision   FraudDecision
+	RiskScore  int
+	Reasons    []string
+	ShadowMode bool
+}
+
+type FraudEvaluator interface {
+	AssessAuth(ctx context.Context, input FraudAssessmentInput) (*FraudAssessmentResult, error)
 }

@@ -193,6 +193,20 @@ type userProfileResolverStub struct {
 	filterFriendUserIDs  func(ctx context.Context, userID uuid.UUID, candidateUserIDs []uuid.UUID) ([]uuid.UUID, error)
 }
 
+type fraudEvaluatorStub struct {
+	assessActivity func(ctx context.Context, input port.FraudAssessmentInput) (*port.FraudAssessmentResult, error)
+}
+
+func (s fraudEvaluatorStub) AssessActivity(
+	ctx context.Context,
+	input port.FraudAssessmentInput,
+) (*port.FraudAssessmentResult, error) {
+	if s.assessActivity != nil {
+		return s.assessActivity(ctx, input)
+	}
+	return &port.FraudAssessmentResult{Decision: port.FraudDecisionAllow}, nil
+}
+
 func (s userProfileResolverStub) DisplayNameForUserID(ctx context.Context, userID uuid.UUID) (string, error) {
 	if s.displayNameForUserID != nil {
 		return s.displayNameForUserID(ctx, userID)
@@ -599,6 +613,39 @@ func TestCreateActivityFlagsSuspiciousContentWithoutHidingIt(t *testing.T) {
 	}
 	if createdItem.PublishedAt == nil {
 		t.Fatal("CreateActivity() publishedAt is nil")
+	}
+}
+
+func TestCreateActivityRejectsFraudDecision(t *testing.T) {
+	t.Parallel()
+
+	createCalled := false
+	repo := &activityRepoStub{
+		createActivity: func(ctx context.Context, item *model.Activity) error {
+			createCalled = true
+			return nil
+		},
+	}
+
+	uc := NewActivityUseCase(repo)
+	uc.SetFraudEvaluator(fraudEvaluatorStub{
+		assessActivity: func(ctx context.Context, input port.FraudAssessmentInput) (*port.FraudAssessmentResult, error) {
+			if input.Action != fraudActionActivityCreate {
+				t.Fatalf("fraud action = %s, want %s", input.Action, fraudActionActivityCreate)
+			}
+			if input.ActorUserID == uuid.Nil {
+				t.Fatal("fraud actor user id is empty")
+			}
+			return &port.FraudAssessmentResult{Decision: port.FraudDecisionBlock}, nil
+		},
+	})
+
+	_, err := uc.CreateActivity(context.Background(), validCreateActivityInput())
+	if !errors.Is(err, ErrFraudRejected) {
+		t.Fatalf("CreateActivity() error = %v, want %v", err, ErrFraudRejected)
+	}
+	if createCalled {
+		t.Fatal("CreateActivity() persisted item after fraud rejection")
 	}
 }
 

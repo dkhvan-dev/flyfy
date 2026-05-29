@@ -19,6 +19,7 @@ type Config struct {
 	UserService UserServiceConfig
 	FileManager FileManagerConfig
 	Excursion   ExcursionServiceConfig
+	AntiFraud   AntiFraudConfig
 }
 
 type AppConfig struct {
@@ -112,6 +113,14 @@ type FileManagerConfig struct {
 
 type ExcursionServiceConfig struct {
 	BaseURL string `env:"EXCURSION_SERVICE_HTTP_URL, default=http://excursion-service:8093"`
+}
+
+type AntiFraudConfig struct {
+	Enabled              bool          `env:"ANTI_FRAUD_ENABLED, default=false"`
+	BaseURL              string        `env:"ANTI_FRAUD_BASE_URL, default=http://anti-fraud-service:8096"`
+	InternalServiceToken string        `env:"ANTI_FRAUD_INTERNAL_SERVICE_TOKEN"`
+	SignalHashKey        string        `env:"ANTI_FRAUD_SIGNAL_HASH_KEY"`
+	Timeout              time.Duration `env:"ANTI_FRAUD_TIMEOUT, default=800ms"`
 }
 
 func Load(ctx context.Context) (*Config, error) {

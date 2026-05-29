@@ -971,6 +971,7 @@ func (h *Handler) JoinActivity(w http.ResponseWriter, r *http.Request, activityI
 		ActivityID:         activityID,
 		UserID:             actorUserID,
 		VisibilityPassword: req.Password,
+		IdempotencyKey:     req.IdempotencyKey,
 	})
 	if err != nil {
 		h.writeAppError(w, err, "failed to join activity")
@@ -1456,7 +1457,8 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		writeError(w, http.StatusNotFound, err.Error())
 
 	case errors.Is(err, app.ErrAttendanceAccessDenied),
-		errors.Is(err, app.ErrActivityInvitationForbidden):
+		errors.Is(err, app.ErrActivityInvitationForbidden),
+		errors.Is(err, app.ErrFraudRejected):
 		writeError(w, http.StatusForbidden, err.Error())
 
 	case errors.Is(err, app.ErrFriendshipVerificationUnavailable):

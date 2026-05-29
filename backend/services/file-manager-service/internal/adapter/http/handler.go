@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -91,6 +92,9 @@ func (h *Handler) CreateUploadRequest(w http.ResponseWriter, r *http.Request) {
 		OwnerID:          req.OwnerID,
 		UploadedByUserID: uploadedByUserID,
 		IdempotencyKey:   idemPtr,
+		ClientIP:         clientIP(r),
+		DeviceID:         r.Header.Get("X-Device-Id"),
+		UserAgent:        r.UserAgent(),
 	})
 	if err != nil {
 		switch {
@@ -107,6 +111,8 @@ func (h *Handler) CreateUploadRequest(w http.ResponseWriter, r *http.Request) {
 			writeAppError(w, r, http.StatusBadRequest, err)
 		case errors.Is(err, app.ErrIdempotencyConflict):
 			writeAppError(w, r, http.StatusConflict, err)
+		case errors.Is(err, app.ErrFraudRejected):
+			writeAppError(w, r, http.StatusForbidden, err)
 		default:
 			writeTechnicalError(w, r, http.StatusInternalServerError, err)
 		}
@@ -226,6 +232,8 @@ func (h *Handler) CompleteUpload(w http.ResponseWriter, r *http.Request, fileID 
 			writeAppError(w, r, http.StatusNotFound, err)
 		case errors.Is(err, app.ErrUploadTooLarge):
 			writeAppError(w, r, http.StatusBadRequest, err)
+		case errors.Is(err, app.ErrFraudRejected):
+			writeAppError(w, r, http.StatusForbidden, err)
 		default:
 			writeTechnicalError(w, r, http.StatusInternalServerError, err)
 		}
@@ -487,6 +495,22 @@ func userIDFromContext(ctx context.Context) *string {
 	return &userID
 }
 
+func clientIP(r *http.Request) string {
+	if xff := strings.TrimSpace(r.Header.Get("X-Forwarded-For")); xff != "" {
+		if comma := strings.Index(xff, ","); comma > 0 {
+			return strings.TrimSpace(xff[:comma])
+		}
+		return xff
+	}
+	if xri := strings.TrimSpace(r.Header.Get("X-Real-IP")); xri != "" {
+		return xri
+	}
+	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+		return host
+	}
+	return r.RemoteAddr
+}
+
 func (h *Handler) BindFile(w http.ResponseWriter, r *http.Request, fileID uuid.UUID) {
 	h.bindFile(w, r, fileID, true)
 }
@@ -523,6 +547,9 @@ func (h *Handler) bindFile(w http.ResponseWriter, r *http.Request, fileID uuid.U
 		Purpose:         req.Purpose,
 		IsPrimary:       req.IsPrimary,
 		CreatedByUserID: createdByUserID,
+		ClientIP:        clientIP(r),
+		DeviceID:        r.Header.Get("X-Device-Id"),
+		UserAgent:       r.UserAgent(),
 	})
 	if err != nil {
 		switch {
@@ -531,10 +558,14 @@ func (h *Handler) bindFile(w http.ResponseWriter, r *http.Request, fileID uuid.U
 			errors.Is(err, app.ErrForbiddenOwnerType),
 			errors.Is(err, app.ErrForbiddenPurpose):
 			writeAppError(w, r, http.StatusBadRequest, err)
+		case errors.Is(err, app.ErrFraudRejected):
+			writeAppError(w, r, http.StatusForbidden, err)
 		case errors.Is(err, app.ErrFileNotFound):
 			writeAppError(w, r, http.StatusNotFound, err)
 		case errors.Is(err, app.ErrFileNotReady),
-			errors.Is(err, app.ErrIdempotencyConflict):
+			errors.Is(err, app.ErrIdempotencyConflict),
+			errors.Is(err, app.ErrFilePurposeMismatch),
+			errors.Is(err, app.ErrFileOwnershipMismatch):
 			writeAppError(w, r, http.StatusConflict, err)
 		default:
 			writeTechnicalError(w, r, http.StatusInternalServerError, err)

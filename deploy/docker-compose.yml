@@ -568,12 +568,20 @@ services:
       OTP_LENGTH: 6
       OTP_TTL: 5m
       OTP_MAX_ATTEMPTS: 5
+
+      ANTI_FRAUD_ENABLED: "true"
+      ANTI_FRAUD_BASE_URL: http://anti-fraud-service:8096
+      ANTI_FRAUD_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      ANTI_FRAUD_SIGNAL_HASH_KEY: dev-anti-fraud-signal-hash-key-change-me
+      ANTI_FRAUD_TIMEOUT: 800ms
     depends_on:
       auth-postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
       token-service:
+        condition: service_started
+      anti-fraud-service:
         condition: service_started
     restart: unless-stopped
     networks:
@@ -592,6 +600,8 @@ services:
         condition: service_healthy
       file-manager-minio-init:
         condition: service_completed_successfully
+      anti-fraud-service:
+        condition: service_started
     ports:
       - "8083:8083"
       - "9093:9093"
@@ -634,6 +644,12 @@ services:
       TRUSTED_GATEWAY_HEADER_ROLES: X-User-Roles
       TRUSTED_GATEWAY_HEADER_SUB: X-Auth-Subject
       REQUEST_ID_HEADER: X-Request-Id
+
+      ANTI_FRAUD_ENABLED: "true"
+      ANTI_FRAUD_BASE_URL: http://anti-fraud-service:8096
+      ANTI_FRAUD_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      ANTI_FRAUD_SIGNAL_HASH_KEY: dev-anti-fraud-signal-hash-key-change-me
+      ANTI_FRAUD_TIMEOUT: 800ms
     restart: unless-stopped
     networks:
       - flyfy-network
@@ -706,6 +722,8 @@ services:
         condition: service_started
       file-manager-service:
         condition: service_started
+      anti-fraud-service:
+        condition: service_started
     ports:
       - "8085:8085"
       - "9095:9095"
@@ -740,6 +758,12 @@ services:
       USER_SERVICE_GRPC_TARGET: dns:///user-service:9094
       FILE_MANAGER_GRPC_TARGET: dns:///file-manager-service:9093
       EXCURSION_SERVICE_HTTP_URL: http://excursion-service:8093
+
+      ANTI_FRAUD_ENABLED: "true"
+      ANTI_FRAUD_BASE_URL: http://anti-fraud-service:8096
+      ANTI_FRAUD_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      ANTI_FRAUD_SIGNAL_HASH_KEY: dev-anti-fraud-signal-hash-key-change-me
+      ANTI_FRAUD_TIMEOUT: 800ms
     restart: unless-stopped
     networks:
       - flyfy-network
@@ -758,6 +782,8 @@ services:
       activity-postgres-migrator:
         condition: service_completed_successfully
       payment-service:
+        condition: service_started
+      anti-fraud-service:
         condition: service_started
     ports:
       - "8086:8086"
@@ -794,6 +820,12 @@ services:
       CHAT_SERVICE_REQUEST_TIMEOUT: 5s
       PAYMENT_SERVICE_HTTP_URL: http://payment-service:8091
       PAYMENT_SERVICE_REQUEST_TIMEOUT: 5s
+
+      ANTI_FRAUD_ENABLED: "true"
+      ANTI_FRAUD_BASE_URL: http://anti-fraud-service:8096
+      ANTI_FRAUD_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      ANTI_FRAUD_SIGNAL_HASH_KEY: dev-anti-fraud-signal-hash-key-change-me
+      ANTI_FRAUD_TIMEOUT: 800ms
     restart: unless-stopped
     networks:
       - flyfy-network
@@ -846,6 +878,8 @@ services:
         condition: service_started
       translation-service:
         condition: service_healthy
+      anti-fraud-service:
+        condition: service_started
     ports:
       - "8093:8093"
     environment:
@@ -878,6 +912,12 @@ services:
       FILE_MANAGER_GRPC_TARGET: dns:///file-manager-service:9093
       TRANSLATION_SERVICE_URL: http://translation-service:8094
       TRANSLATION_SERVICE_TIMEOUT: 20s
+
+      ANTI_FRAUD_ENABLED: "true"
+      ANTI_FRAUD_BASE_URL: http://anti-fraud-service:8096
+      ANTI_FRAUD_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      ANTI_FRAUD_SIGNAL_HASH_KEY: dev-anti-fraud-signal-hash-key-change-me
+      ANTI_FRAUD_TIMEOUT: 800ms
     restart: unless-stopped
     networks:
       - flyfy-network
@@ -1134,6 +1174,51 @@ services:
       - flyfy-network
 
   # ============================================
+  # Anti-Fraud PostgreSQL
+  # ============================================
+  anti-fraud-postgres:
+    image: postgres:17-alpine
+    container_name: anti-fraud-postgres
+    environment:
+      POSTGRES_DB: anti_fraud_service_db
+      POSTGRES_USER: anti_fraud_service
+      POSTGRES_PASSWORD: anti_fraud_secret_dev
+    ports:
+      - "5446:5432"
+    volumes:
+      - anti_fraud_postgres_data:/var/lib/postgresql/data
+      - ./init-scripts/014_anti_fraud_service.sh:/docker-entrypoint-initdb.d/014_anti_fraud_service.sh
+      - ../backend/services/anti-fraud-service/migrations:/migrations/anti-fraud-service:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U anti_fraud_service -d anti_fraud_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  anti-fraud-postgres-migrator:
+    image: postgres:17-alpine
+    container_name: anti-fraud-postgres-migrator
+    environment:
+      PGHOST: anti-fraud-postgres
+      PGPORT: 5432
+      POSTGRES_DB: anti_fraud_service_db
+      POSTGRES_USER: anti_fraud_service
+      POSTGRES_PASSWORD: anti_fraud_secret_dev
+    volumes:
+      - ./init-scripts/014_anti_fraud_service_migrate.sh:/usr/local/bin/014_anti_fraud_service_migrate.sh:ro
+      - ../backend/services/anti-fraud-service/migrations:/migrations/anti-fraud-service:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/014_anti_fraud_service_migrate.sh"]
+    depends_on:
+      anti-fraud-postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - flyfy-network
+
+  # ============================================
   # Sticker Service PostgreSQL
   # ============================================
   sticker-postgres:
@@ -1248,6 +1333,8 @@ services:
         condition: service_healthy
       payment-postgres-migrator:
         condition: service_completed_successfully
+      anti-fraud-service:
+        condition: service_started
     ports:
       - "8091:8091"
     environment:
@@ -1280,6 +1367,55 @@ services:
       TRUSTED_GATEWAY_HEADER_ROLES: X-User-Roles
       TRUSTED_GATEWAY_HEADER_SUB: X-Auth-Subject
       REQUEST_ID_HEADER: X-Request-Id
+
+      ANTI_FRAUD_ENABLED: "true"
+      ANTI_FRAUD_BASE_URL: http://anti-fraud-service:8096
+      ANTI_FRAUD_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      ANTI_FRAUD_TIMEOUT: 800ms
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  # ============================================
+  # Anti-Fraud Service
+  # ============================================
+  anti-fraud-service:
+    build:
+      context: ..
+      dockerfile: ./backend/services/anti-fraud-service/Dockerfile
+    container_name: anti-fraud-service
+    depends_on:
+      anti-fraud-postgres:
+        condition: service_healthy
+      anti-fraud-postgres-migrator:
+        condition: service_completed_successfully
+    ports:
+      - "8096:8096"
+    environment:
+      APP_NAME: anti-fraud-service
+      APP_ENV: development
+      HTTP_PORT: 8096
+      HTTP_READ_TIMEOUT: 15s
+      HTTP_WRITE_TIMEOUT: 15s
+      HTTP_IDLE_TIMEOUT: 60s
+
+      POSTGRES_HOST: anti-fraud-postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: anti_fraud_service
+      POSTGRES_PASSWORD: anti_fraud_secret_dev
+      POSTGRES_DB: anti_fraud_service_db
+      POSTGRES_SSLMODE: disable
+      POSTGRES_MAX_OPEN_CONNS: 20
+      POSTGRES_MIN_OPEN_CONNS: 2
+      POSTGRES_MAX_CONN_LIFETIME: 1h
+      POSTGRES_MAX_CONN_IDLE_TIME: 30m
+
+      LOG_LEVEL: info
+      INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+
+      FRAUD_SHADOW_MODE: "true"
+      FRAUD_WINDOW: 1h
+      FRAUD_PAYMENT_CURRENCY: KZT
     restart: unless-stopped
     networks:
       - flyfy-network
@@ -1516,6 +1652,7 @@ volumes:
   nats_data:
   attraction_postgres_data:
   payment_postgres_data:
+  anti_fraud_postgres_data:
   sticker_postgres_data:
   token_service_keys:
   translation_hf_cache:

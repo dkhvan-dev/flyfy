@@ -26,6 +26,7 @@ type FileUseCase struct {
 	cfg         *config.Config
 	validator   *FileValidator
 	idempotency *IdempotencyService
+	fraud       port.FraudEvaluator
 }
 
 func NewFileUseCase(
@@ -34,12 +35,23 @@ func NewFileUseCase(
 	cfg *config.Config,
 	idempotencyRepo port.IdempotencyRepository,
 ) *FileUseCase {
+	return NewFileUseCaseWithFraud(repo, storage, cfg, idempotencyRepo, nil)
+}
+
+func NewFileUseCaseWithFraud(
+	repo port.FileRepository,
+	storage port.StorageProvider,
+	cfg *config.Config,
+	idempotencyRepo port.IdempotencyRepository,
+	fraud port.FraudEvaluator,
+) *FileUseCase {
 	return &FileUseCase{
 		repo:        repo,
 		storage:     storage,
 		cfg:         cfg,
 		validator:   NewFileValidator(DefaultUploadPolicies(cfg.Storage.MaxUploadSizeBytes)),
 		idempotency: NewIdempotencyService(idempotencyRepo),
+		fraud:       fraud,
 	}
 }
 
@@ -53,6 +65,9 @@ type CreateUploadRequestInput struct {
 	OwnerID          *string
 	UploadedByUserID *string
 	IdempotencyKey   *string
+	ClientIP         string
+	DeviceID         string
+	UserAgent        string
 }
 
 type CreateUploadRequestOutput struct {
@@ -113,6 +128,25 @@ func (u *FileUseCase) CreateUploadRequest(
 			return nil, ErrInvalidOwnerID
 		}
 		uploadedByUserID = &parsed
+	}
+
+	if err := u.enforceFileFraud(ctx, port.FraudAssessmentInput{
+		Action:      "FILE_UPLOAD_REQUEST",
+		ActorUserID: uploadedByUserID,
+		OwnerType:   ownerType,
+		OwnerID:     ownerID,
+		Purpose:     purpose,
+		ContentType: normalizeContentType(input.ContentType),
+		SizeBytes:   input.SizeBytes,
+		ClientIP:    input.ClientIP,
+		DeviceID:    input.DeviceID,
+		UserAgent:   input.UserAgent,
+		Metadata: map[string]any{
+			"visibility":   string(visibility),
+			"originalName": filepath.Base(input.OriginalName),
+		},
+	}); err != nil {
+		return nil, err
 	}
 
 	var fingerprint string
@@ -266,6 +300,25 @@ func (u *FileUseCase) CompleteUpload(ctx context.Context, fileID uuid.UUID) (*Co
 		return nil, err
 	}
 
+	if err = u.enforceFileFraud(ctx, port.FraudAssessmentInput{
+		Action:      "FILE_UPLOAD_COMPLETE",
+		ActorUserID: file.UploadedByUserID,
+		FileID:      &file.ID,
+		OwnerType:   file.OwnerType,
+		OwnerID:     file.OwnerID,
+		Purpose:     file.Purpose,
+		ContentType: normalizeContentType(meta.ContentType),
+		SizeBytes:   meta.SizeBytes,
+		Metadata: map[string]any{
+			"bucket":    meta.Bucket,
+			"objectKey": meta.ObjectKey,
+		},
+	}); err != nil {
+		_ = file.MarkFailed()
+		_ = u.repo.Update(ctx, file)
+		return nil, err
+	}
+
 	checksum := sha256String(
 		fmt.Sprintf("%s:%s:%d:%s", meta.Bucket, meta.ObjectKey, meta.SizeBytes, meta.ETag),
 	)
@@ -288,6 +341,21 @@ func (u *FileUseCase) CompleteUpload(ctx context.Context, fileID uuid.UUID) (*Co
 		DetectedContentType: valueOrEmpty(file.DetectedContentType),
 		SizeBytes:           file.SizeBytes,
 	}, nil
+}
+
+func (u *FileUseCase) enforceFileFraud(ctx context.Context, input port.FraudAssessmentInput) error {
+	if u.fraud == nil {
+		return nil
+	}
+
+	decision, err := u.fraud.AssessFile(ctx, input)
+	if err != nil {
+		return fmt.Errorf("assess file fraud: %w", err)
+	}
+	if decision == nil || decision.ShadowMode || decision.Decision == "" || decision.Decision == port.FraudDecisionAllow {
+		return nil
+	}
+	return ErrFraudRejected
 }
 
 func (u *FileUseCase) UploadBinary(

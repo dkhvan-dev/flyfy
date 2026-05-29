@@ -11,12 +11,14 @@ import (
 
 	excursionserviceadapter "github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/adapter/excursionservice"
 	filemanageradapter "github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/adapter/filemanager"
+	fraudadapter "github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/adapter/fraud"
 	grpcadapter "github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/adapter/grpc"
 	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/adapter/http"
 	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/adapter/repository"
 	userserviceadapter "github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/adapter/userservice"
 	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/app"
 	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/config"
+	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/domain/port"
 	guidev1 "github.com/dkhvan-dev/flyfy/proto/gen/go/guide/v1"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
@@ -67,7 +69,11 @@ func main() {
 
 	guideRepo := repository.NewPGGuideRepository(pool)
 	excursionClient := excursionserviceadapter.New(cfg.Excursion.BaseURL, cfg.Security.InternalServiceToken, nil)
-	guideUseCase := app.NewGuideUseCase(guideRepo, userClient, fileClient, excursionClient)
+	fraudClient, err := newFraudEvaluator(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to initialize anti-fraud client")
+	}
+	guideUseCase := app.NewGuideUseCaseWithFraud(guideRepo, userClient, fileClient, fraudClient, excursionClient)
 
 	httpHandler := httpadapter.NewHandler(guideUseCase)
 	httpMux := http.NewServeMux()
@@ -153,6 +159,18 @@ func newPostgresPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, er
 	}
 
 	return pool, nil
+}
+
+func newFraudEvaluator(cfg *config.Config) (port.FraudEvaluator, error) {
+	if cfg == nil || !cfg.AntiFraud.Enabled {
+		return nil, nil
+	}
+	return fraudadapter.NewHTTPClient(
+		cfg.AntiFraud.BaseURL,
+		cfg.AntiFraud.InternalServiceToken,
+		cfg.AntiFraud.SignalHashKey,
+		cfg.AntiFraud.Timeout,
+	)
 }
 
 func setupLogger(cfg *config.Config) {

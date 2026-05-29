@@ -10,13 +10,14 @@ import (
 )
 
 type Config struct {
-	App      AppConfig
-	HTTP     HTTPConfig
-	GRPC     GRPCConfig
-	Postgres PostgresConfig
-	Storage  StorageConfig
-	Log      LogConfig
-	Security SecurityConfig
+	App       AppConfig
+	HTTP      HTTPConfig
+	GRPC      GRPCConfig
+	Postgres  PostgresConfig
+	Storage   StorageConfig
+	Log       LogConfig
+	Security  SecurityConfig
+	AntiFraud AntiFraudConfig
 }
 
 type AppConfig struct {
@@ -155,4 +156,12 @@ type SecurityConfig struct {
 	TrustedGatewayHeaderUserID string `env:"TRUSTED_GATEWAY_HEADER_USER_ID, default=X-User-Id"`
 	TrustedGatewayHeaderRoles  string `env:"TRUSTED_GATEWAY_HEADER_ROLES, default=X-User-Roles"`
 	RequestIDHeader            string `env:"REQUEST_ID_HEADER, default=X-Request-Id"`
+}
+
+type AntiFraudConfig struct {
+	Enabled              bool          `env:"ANTI_FRAUD_ENABLED, default=false"`
+	BaseURL              string        `env:"ANTI_FRAUD_BASE_URL, default=http://anti-fraud-service:8096"`
+	InternalServiceToken string        `env:"ANTI_FRAUD_INTERNAL_SERVICE_TOKEN"`
+	SignalHashKey        string        `env:"ANTI_FRAUD_SIGNAL_HASH_KEY"`
+	Timeout              time.Duration `env:"ANTI_FRAUD_TIMEOUT, default=800ms"`
 }

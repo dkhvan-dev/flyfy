@@ -10,12 +10,13 @@ import (
 )
 
 type Config struct {
-	App      AppConfig
-	HTTP     HTTPConfig
-	Postgres PostgresConfig
-	Log      LogConfig
-	Security SecurityConfig
-	Payment  PaymentConfig
+	App       AppConfig
+	HTTP      HTTPConfig
+	Postgres  PostgresConfig
+	Log       LogConfig
+	Security  SecurityConfig
+	Payment   PaymentConfig
+	AntiFraud AntiFraudConfig
 }
 
 type AppConfig struct {
@@ -95,6 +96,13 @@ type SecurityConfig struct {
 
 type PaymentConfig struct {
 	Provider string `env:"PAYMENT_PROVIDER, default=mock"`
+}
+
+type AntiFraudConfig struct {
+	Enabled              bool          `env:"ANTI_FRAUD_ENABLED, default=false"`
+	BaseURL              string        `env:"ANTI_FRAUD_BASE_URL, default=http://anti-fraud-service:8096"`
+	InternalServiceToken string        `env:"ANTI_FRAUD_INTERNAL_SERVICE_TOKEN"`
+	Timeout              time.Duration `env:"ANTI_FRAUD_TIMEOUT, default=800ms"`
 }
 
 func Load(ctx context.Context) (*Config, error) {

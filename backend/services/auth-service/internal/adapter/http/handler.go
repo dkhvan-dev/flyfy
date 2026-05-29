@@ -79,7 +79,7 @@ func (h *AuthHandler) handleSendOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.auth.SendOTP(r.Context(), req.Phone); err != nil {
+	if err := h.auth.SendOTP(r.Context(), req.Phone, deviceFromRequest(r)); err != nil {
 		switch err {
 		case model.ErrOTPRateLimit:
 			h.writeError(w, r, http.StatusTooManyRequests, "too many requests, try again later")
@@ -119,6 +119,8 @@ func (h *AuthHandler) handleVerifyOTP(w http.ResponseWriter, r *http.Request) {
 		switch err {
 		case model.ErrInvalidOTP:
 			h.writeError(w, r, http.StatusUnauthorized, "invalid or expired OTP code")
+		case model.ErrRateLimited:
+			h.writeError(w, r, http.StatusTooManyRequests, "too many requests, try again later")
 		case model.ErrUserBlocked:
 			h.writeError(w, r, http.StatusForbidden, "account is blocked")
 		case model.ErrTokenServiceUnavailable:
@@ -218,6 +220,8 @@ func (h *AuthHandler) handleRefresh(w http.ResponseWriter, r *http.Request) {
 		switch err {
 		case model.ErrInvalidRefreshToken:
 			h.writeError(w, r, http.StatusUnauthorized, "invalid or expired refresh token")
+		case model.ErrRateLimited:
+			h.writeError(w, r, http.StatusTooManyRequests, "too many requests, try again later")
 		default:
 			h.logger.Error().Err(err).Msg("token refresh failed")
 			h.writeError(w, r, http.StatusInternalServerError, "refresh failed")

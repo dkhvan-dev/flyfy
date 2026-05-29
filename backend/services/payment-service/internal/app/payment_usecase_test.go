@@ -157,6 +157,39 @@ func TestPaymentUseCaseCaptureReservesPendingAmount(t *testing.T) {
 	}
 }
 
+func TestPaymentUseCaseDoesNotCallProviderWhenFraudBlocksCharge(t *testing.T) {
+	ctx := context.Background()
+	repo := newMemoryPaymentRepo()
+	provider := &trackingProvider{}
+	useCase := NewPaymentUseCaseWithFraud(repo, provider, staticFraudDecision{
+		decision: port.FraudDecisionBlock,
+		reasons:  []string{"HIGH_PAYMENT_AMOUNT"},
+	})
+
+	transaction, err := useCase.Charge(ctx, CreatePaymentInput{
+		IdempotencyKey: "charge-fraud-block-1",
+		SubjectType:    "ACTIVITY",
+		SubjectID:      uuid.New(),
+		Purpose:        "JOIN_ACTIVITY",
+		PayerUserID:    uuid.New(),
+		AmountMinor:    2_000_000,
+		Currency:       "KZT",
+	})
+	if err != nil {
+		t.Fatalf("charge with fraud block: %v", err)
+	}
+
+	if provider.calls != 0 {
+		t.Fatalf("expected provider not to be called, got %d calls", provider.calls)
+	}
+	if transaction.Status != enum.PaymentStatusFailed {
+		t.Fatalf("expected failed transaction, got %s", transaction.Status)
+	}
+	if transaction.FailureCode == nil || *transaction.FailureCode != "FRAUD_BLOCKED" {
+		t.Fatalf("expected FRAUD_BLOCKED failure code, got %#v", transaction.FailureCode)
+	}
+}
+
 type staticProvider struct {
 	captureStatus enum.PaymentStatus
 }
@@ -195,6 +228,50 @@ func (p staticProvider) result(
 		ProviderTransactionID: fmt.Sprintf("mock_%s_%s", strings.ToLower(string(operationType)), input.TransactionID),
 		Status:                status,
 	}
+}
+
+type trackingProvider struct {
+	calls int
+}
+
+func (p *trackingProvider) Authorize(ctx context.Context, input port.ProviderOperationInput) (*port.ProviderOperationResult, error) {
+	p.calls++
+	return staticProvider{}.Authorize(ctx, input)
+}
+
+func (p *trackingProvider) Charge(ctx context.Context, input port.ProviderOperationInput) (*port.ProviderOperationResult, error) {
+	p.calls++
+	return staticProvider{}.Charge(ctx, input)
+}
+
+func (p *trackingProvider) Capture(ctx context.Context, input port.ProviderOperationInput) (*port.ProviderOperationResult, error) {
+	p.calls++
+	return staticProvider{}.Capture(ctx, input)
+}
+
+func (p *trackingProvider) Refund(ctx context.Context, input port.ProviderOperationInput) (*port.ProviderOperationResult, error) {
+	p.calls++
+	return staticProvider{}.Refund(ctx, input)
+}
+
+func (p *trackingProvider) Void(ctx context.Context, input port.ProviderOperationInput) (*port.ProviderOperationResult, error) {
+	p.calls++
+	return staticProvider{}.Void(ctx, input)
+}
+
+type staticFraudDecision struct {
+	decision port.FraudDecision
+	reasons  []string
+	shadow   bool
+}
+
+func (f staticFraudDecision) AssessPayment(ctx context.Context, input port.FraudAssessmentInput) (*port.FraudAssessmentResult, error) {
+	return &port.FraudAssessmentResult{
+		Decision:   f.decision,
+		RiskScore:  95,
+		Reasons:    f.reasons,
+		ShadowMode: f.shadow,
+	}, nil
 }
 
 type memoryPaymentRepo struct {

@@ -61,6 +61,7 @@ type ExcursionUseCase struct {
 	userProfiles            port.UserProfileResolver
 	attractionRatingUpdater port.AttractionRatingUpdater
 	chatGateway             port.ExcursionChatGateway
+	fraud                   port.FraudEvaluator
 	attendanceQRSigningKey  []byte
 	attendanceQRTTL         time.Duration
 	attendanceOfflineWindow time.Duration
@@ -444,6 +445,18 @@ func (u *ExcursionUseCase) CreateExcursion(ctx context.Context, input CreateExcu
 		return nil, err
 	}
 
+	if err = u.enforceExcursionFraud(ctx, excursionFraudInput(
+		fraudActionExcursionCreate,
+		input.ActorUserID,
+		fraudSubjectExcursion,
+		item.ID,
+		moneyMinorPtr(item.PriceAmount),
+		item.Currency,
+		excursionMetadata(item, &permission),
+	)); err != nil {
+		return nil, err
+	}
+
 	itinerary, err := u.translateItinerary(ctx, input.Itinerary)
 	if err != nil {
 		return nil, err
@@ -486,6 +499,8 @@ func (u *ExcursionUseCase) UpdateExcursion(ctx context.Context, input UpdateExcu
 	if item == nil {
 		return nil, ErrExcursionNotFound
 	}
+	oldPriceAmount := item.PriceAmount
+	oldCurrency := item.Currency
 	if !item.IsOwnedBy(input.ActorUserID) {
 		return nil, ErrExcursionAccessDenied
 	}
@@ -565,6 +580,36 @@ func (u *ExcursionUseCase) UpdateExcursion(ctx context.Context, input UpdateExcu
 		}
 	}
 
+	if err = u.enforceExcursionFraud(ctx, excursionFraudInput(
+		fraudActionExcursionUpdate,
+		input.ActorUserID,
+		fraudSubjectExcursion,
+		item.ID,
+		moneyMinorPtr(item.PriceAmount),
+		item.Currency,
+		excursionMetadata(item, &permission),
+	)); err != nil {
+		return nil, err
+	}
+	if oldPriceAmount != item.PriceAmount || !strings.EqualFold(oldCurrency, item.Currency) {
+		priceChangeMetadata := excursionMetadata(item, &permission)
+		priceChangeMetadata["oldPriceMinor"] = moneyMinor(oldPriceAmount)
+		priceChangeMetadata["newPriceMinor"] = moneyMinor(item.PriceAmount)
+		priceChangeMetadata["oldCurrency"] = oldCurrency
+		priceChangeMetadata["newCurrency"] = item.Currency
+		if err = u.enforceExcursionFraud(ctx, excursionFraudInput(
+			fraudActionExcursionPriceChange,
+			input.ActorUserID,
+			fraudSubjectExcursion,
+			item.ID,
+			moneyMinorPtr(item.PriceAmount),
+			item.Currency,
+			priceChangeMetadata,
+		)); err != nil {
+			return nil, err
+		}
+	}
+
 	if err = u.repo.UpdateExcursionAggregate(ctx, item, relations); err != nil {
 		return nil, fmt.Errorf("update excursion aggregate: %w", err)
 	}
@@ -607,6 +652,17 @@ func (u *ExcursionUseCase) PublishExcursion(ctx context.Context, excursionID uui
 		Itinerary:     relations.Itinerary,
 	}
 	evaluation := evaluateExcursionPublishing(item, permission)
+	if err = u.enforceExcursionFraud(ctx, excursionFraudInput(
+		fraudActionExcursionPublish,
+		actorUserID,
+		fraudSubjectExcursion,
+		item.ID,
+		moneyMinorPtr(item.PriceAmount),
+		item.Currency,
+		excursionMetadata(item, &permission),
+	)); err != nil {
+		return nil, err
+	}
 	if evaluation.Decision == model.ExcursionPublishingDecisionNeedsReview {
 		if err = item.SubmitForReview(model.SubmitExcursionForReviewParams{
 			Publish:    publishParams,
@@ -972,6 +1028,23 @@ func (u *ExcursionUseCase) CreateGuideScheduleSlot(ctx context.Context, input Cr
 		return nil, err
 	}
 	slot.Title = strings.TrimSpace(offer.Title)
+	if err = u.enforceExcursionFraud(ctx, excursionFraudInput(
+		fraudActionExcursionScheduleSlotCreate,
+		input.ActorUserID,
+		fraudSubjectExcursionSchedule,
+		slot.ID,
+		moneyMinorPtr(offer.PriceAmount),
+		offer.Currency,
+		map[string]any{
+			"offerId":     offer.ID.String(),
+			"productId":   offer.ProductID.String(),
+			"guideUserId": offer.GuideUserID.String(),
+			"startAt":     slot.StartAt.UTC().Format(timeRFC3339),
+			"capacity":    slot.Capacity,
+		},
+	)); err != nil {
+		return nil, err
+	}
 	if err = u.repo.CreateExcursionScheduleSlot(ctx, slot); err != nil {
 		if errors.Is(err, port.ErrExcursionScheduleConflict) {
 			return nil, ErrExcursionScheduleConflict
@@ -1076,6 +1149,23 @@ func (u *ExcursionUseCase) CreateGuideScheduleSeries(ctx context.Context, input 
 		}
 		slot.Title = strings.TrimSpace(offer.Title)
 		slots = append(slots, slot)
+	}
+	if err = u.enforceExcursionFraud(ctx, excursionFraudInput(
+		fraudActionExcursionScheduleSlotCreate,
+		input.ActorUserID,
+		fraudSubjectExcursionSchedule,
+		offer.ID,
+		moneyMinorPtr(offer.PriceAmount),
+		offer.Currency,
+		map[string]any{
+			"offerId":         offer.ID.String(),
+			"productId":       offer.ProductID.String(),
+			"guideUserId":     offer.GuideUserID.String(),
+			"occurrenceCount": len(slots),
+			"capacity":        capacity,
+		},
+	)); err != nil {
+		return nil, err
 	}
 	if err = u.repo.CreateExcursionScheduleSeriesWithSlots(ctx, series, slots); err != nil {
 		if errors.Is(err, port.ErrExcursionScheduleConflict) {
@@ -1358,6 +1448,32 @@ func (u *ExcursionUseCase) syncExcursionAttendanceProof(
 			return nil
 		}
 
+		if err = u.enforceExcursionFraud(ctx, excursionFraudInput(
+			fraudActionExcursionAttendanceCheckIn,
+			actorUserID,
+			fraudSubjectExcursionBooking,
+			booking.ID,
+			moneyMinorPtr(booking.TotalPriceAmount),
+			booking.Currency,
+			bookingMetadata(booking, map[string]any{
+				"scanId":         input.ScanID.String(),
+				"qrJti":          decoded.JTI.String(),
+				"installationId": strings.TrimSpace(input.InstallationID),
+				"scheduleSlotId": decoded.ScheduleSlotID.String(),
+			}),
+		)); err != nil {
+			return u.persistRejectedExcursionAttendanceAttempt(
+				ctx,
+				txRepo,
+				input,
+				actorUserID,
+				decoded,
+				"fraud_rejected",
+				ErrFraudRejected.Error(),
+				&result,
+			)
+		}
+
 		checkInTime := time.Now().UTC()
 		if err = booking.MarkCheckedIn(checkInTime); err != nil {
 			return err
@@ -1567,6 +1683,24 @@ func (u *ExcursionUseCase) CloseGuideScheduleSlot(ctx context.Context, actorUser
 func (u *ExcursionUseCase) CancelGuideScheduleSlot(ctx context.Context, actorUserID uuid.UUID, slotID uuid.UUID, reason string) (*model.ExcursionScheduleSlot, error) {
 	slot, err := u.getOwnedScheduleSlot(ctx, actorUserID, slotID)
 	if err != nil {
+		return nil, err
+	}
+	if err = u.enforceExcursionFraud(ctx, excursionFraudInput(
+		fraudActionExcursionScheduleSlotCancel,
+		actorUserID,
+		fraudSubjectExcursionSchedule,
+		slot.ID,
+		nil,
+		"",
+		map[string]any{
+			"offerId":     slot.OfferID.String(),
+			"productId":   slot.ProductID.String(),
+			"guideUserId": slot.GuideUserID.String(),
+			"bookedSeats": slot.BookedSeats,
+			"capacity":    slot.Capacity,
+			"reason":      reason,
+		},
+	)); err != nil {
 		return nil, err
 	}
 	if err = slot.Cancel(reason); err != nil {
@@ -1936,6 +2070,25 @@ func (u *ExcursionUseCase) CreateExcursionBooking(ctx context.Context, input Cre
 	if err != nil {
 		return nil, err
 	}
+	idempotencyKey := ""
+	if booking.IdempotencyKey != nil {
+		idempotencyKey = *booking.IdempotencyKey
+	}
+	fraudInput := excursionFraudInput(
+		fraudActionExcursionBookingCreate,
+		input.ActorUserID,
+		fraudSubjectExcursionBooking,
+		booking.ID,
+		moneyMinorPtr(booking.TotalPriceAmount),
+		booking.Currency,
+		bookingMetadata(booking, map[string]any{
+			"requestedSeats": totalSeats,
+		}),
+	)
+	fraudInput.IdempotencyKey = idempotencyKey
+	if err = u.enforceExcursionFraud(ctx, fraudInput); err != nil {
+		return nil, err
+	}
 	if err = u.repo.CreateExcursionBooking(ctx, booking); err != nil {
 		if errors.Is(err, port.ErrExcursionScheduleUnavailable) {
 			return nil, ErrExcursionScheduleUnavailable
@@ -2088,6 +2241,20 @@ func (u *ExcursionUseCase) UpdateExcursionBookingGuests(ctx context.Context, inp
 	if err := booking.UpdateGuests(input.Adults, input.Children); err != nil {
 		return nil, err
 	}
+	if err = u.enforceExcursionFraud(ctx, excursionFraudInput(
+		fraudActionExcursionBookingGuestsUpdate,
+		input.ActorUserID,
+		fraudSubjectExcursionBooking,
+		booking.ID,
+		moneyMinorPtr(booking.TotalPriceAmount),
+		booking.Currency,
+		bookingMetadata(booking, map[string]any{
+			"oldSeats":  oldSeats,
+			"seatDelta": seatDelta,
+		}),
+	)); err != nil {
+		return nil, err
+	}
 	if err := u.repo.UpdateExcursionBookingGuests(ctx, booking, seatDelta); err != nil {
 		if errors.Is(err, port.ErrExcursionScheduleUnavailable) {
 			return nil, ErrExcursionScheduleUnavailable
@@ -2126,6 +2293,24 @@ func (u *ExcursionUseCase) CancelExcursionBooking(ctx context.Context, input Can
 		booking.ScheduledFor,
 		now,
 	)
+	if err = u.enforceExcursionFraud(ctx, excursionFraudInput(
+		fraudActionExcursionBookingCancel,
+		input.ActorUserID,
+		fraudSubjectExcursionBooking,
+		booking.ID,
+		moneyMinorPtr(booking.TotalPriceAmount),
+		booking.Currency,
+		bookingMetadata(booking, map[string]any{
+			"reason":              input.Reason,
+			"refundPercent":       quote.Percent,
+			"refundAmountMinor":   moneyMinor(quote.Amount),
+			"refundPolicyCode":    quote.PolicyCode,
+			"refundPolicyStatus":  quote.Status,
+			"hoursUntilScheduled": booking.ScheduledFor.Sub(now).Hours(),
+		}),
+	)); err != nil {
+		return nil, err
+	}
 	if err = booking.Cancel(
 		enum.ExcursionBookingCancelledByTourist,
 		input.Reason,

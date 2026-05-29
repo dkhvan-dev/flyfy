@@ -19,6 +19,7 @@ type JoinUseCase struct {
 	chatGateway         port.ActivityChatGateway
 	userProfileResolver port.UserProfileResolver
 	payment             port.ActivityPaymentGateway
+	fraud               port.FraudEvaluator
 }
 
 func NewJoinUseCase(
@@ -45,6 +46,7 @@ type JoinActivityInput struct {
 	ActivityID         uuid.UUID
 	UserID             uuid.UUID
 	VisibilityPassword *string
+	IdempotencyKey     *string
 }
 
 type InviteFriendsInput struct {
@@ -72,12 +74,40 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 		return nil, ErrInvalidParticipantUserID
 	}
 
+	var err error
+	if u.fraud != nil {
+		activityForFraud, err := u.repo.GetActivityByID(ctx, input.ActivityID)
+		if err != nil {
+			return nil, fmt.Errorf("get activity for fraud assessment: %w", err)
+		}
+		if activityForFraud == nil {
+			return nil, ErrActivityNotFound
+		}
+		idempotencyKey := ""
+		if input.IdempotencyKey != nil {
+			idempotencyKey = *input.IdempotencyKey
+		}
+		if err = u.enforceActivityFraud(ctx, activityParticipantFraudInput(
+			fraudActionActivityJoin,
+			input.UserID,
+			input.ActivityID,
+			activityForFraud,
+			idempotencyKey,
+			map[string]any{
+				"visibility": string(activityForFraud.Visibility),
+				"status":     string(activityForFraud.Status),
+			},
+		)); err != nil {
+			return nil, err
+		}
+	}
+
 	var created *model.ActivityParticipant
 	var activityForPostCommit *model.Activity
 	requiresPaymentAuthorization := false
 	var chatInput *port.EnsureActivityParticipantInput
 
-	err := u.repo.WithTx(ctx, func(txRepo port.ActivityTxRepository) error {
+	err = u.repo.WithTx(ctx, func(txRepo port.ActivityTxRepository) error {
 		activity, err := txRepo.GetActivityByIDForUpdate(ctx, input.ActivityID)
 		if err != nil {
 			return fmt.Errorf("get activity by id for update: %w", err)
@@ -320,6 +350,19 @@ func (u *JoinUseCase) InviteFriends(ctx context.Context, input InviteFriendsInpu
 		return nil, err
 	}
 
+	if err = u.enforceActivityFraud(ctx, activityParticipantFraudInput(
+		fraudActionActivityInvite,
+		input.ActorUserID,
+		input.ActivityID,
+		activity,
+		"",
+		map[string]any{
+			"inviteeCount": len(inviteeUserIDs),
+		},
+	)); err != nil {
+		return nil, err
+	}
+
 	friendInviteeUserIDs, skippedNonFriendUserIDs, err := u.filterFriendInviteeUserIDs(
 		ctx,
 		input.ActorUserID,
@@ -521,10 +564,33 @@ func (u *JoinUseCase) LeaveActivity(ctx context.Context, input LeaveActivityInpu
 		return nil, ErrInvalidParticipantUserID
 	}
 
+	var err error
+	if u.fraud != nil {
+		activityForFraud, err := u.repo.GetActivityByID(ctx, input.ActivityID)
+		if err != nil {
+			return nil, fmt.Errorf("get activity for leave fraud assessment: %w", err)
+		}
+		if activityForFraud == nil {
+			return nil, ErrActivityNotFound
+		}
+		if err = u.enforceActivityFraud(ctx, activityParticipantFraudInput(
+			fraudActionActivityLeave,
+			input.UserID,
+			input.ActivityID,
+			activityForFraud,
+			"",
+			map[string]any{
+				"reason": input.Reason,
+			},
+		)); err != nil {
+			return nil, err
+		}
+	}
+
 	var updated *model.ActivityParticipant
 	var paymentTask *participantPaymentTask
 
-	err := u.repo.WithTx(ctx, func(txRepo port.ActivityTxRepository) error {
+	err = u.repo.WithTx(ctx, func(txRepo port.ActivityTxRepository) error {
 		activity, err := txRepo.GetActivityByIDForUpdate(ctx, input.ActivityID)
 		if err != nil {
 			return fmt.Errorf("get activity by id for update: %w", err)

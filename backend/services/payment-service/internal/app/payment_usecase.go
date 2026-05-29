@@ -17,10 +17,19 @@ import (
 type PaymentUseCase struct {
 	repo     port.PaymentRepository
 	provider port.PaymentProvider
+	fraud    port.FraudDecisionPort
 }
 
 func NewPaymentUseCase(repo port.PaymentRepository, provider port.PaymentProvider) *PaymentUseCase {
 	return &PaymentUseCase{repo: repo, provider: provider}
+}
+
+func NewPaymentUseCaseWithFraud(
+	repo port.PaymentRepository,
+	provider port.PaymentProvider,
+	fraud port.FraudDecisionPort,
+) *PaymentUseCase {
+	return &PaymentUseCase{repo: repo, provider: provider, fraud: fraud}
 }
 
 type CreatePaymentInput struct {
@@ -155,6 +164,14 @@ func (u *PaymentUseCase) createRootOperation(
 		return result, nil
 	}
 
+	fraudResult, err := u.enforcePaymentFraudDecision(ctx, created)
+	if err != nil {
+		return nil, err
+	}
+	if fraudResult != nil {
+		return fraudResult, nil
+	}
+
 	providerResult, err := u.runProviderOperation(ctx, operationType, created)
 	if err != nil {
 		return nil, err
@@ -241,6 +258,14 @@ func (u *PaymentUseCase) createChildOperation(
 	}
 	if result != nil {
 		return result, nil
+	}
+
+	fraudResult, err := u.enforcePaymentFraudDecision(ctx, created)
+	if err != nil {
+		return nil, err
+	}
+	if fraudResult != nil {
+		return fraudResult, nil
 	}
 
 	providerResult, err := u.runProviderOperation(ctx, operationType, created)
@@ -396,6 +421,135 @@ func (u *PaymentUseCase) finalizeProviderResult(
 	}
 
 	return result, nil
+}
+
+func (u *PaymentUseCase) enforcePaymentFraudDecision(
+	ctx context.Context,
+	item *model.PaymentTransaction,
+) (*model.PaymentTransaction, error) {
+	if u.fraud == nil || item == nil {
+		return nil, nil
+	}
+
+	actorUserID := item.PayerUserID
+	if item.RequestedByUserID != nil {
+		actorUserID = *item.RequestedByUserID
+	}
+
+	decision, err := u.fraud.AssessPayment(ctx, port.FraudAssessmentInput{
+		Action:         paymentFraudAction(item.OperationType),
+		TransactionID:  item.ID,
+		IdempotencyKey: item.IdempotencyKey,
+		ActorUserID:    actorUserID,
+		SubjectType:    item.SubjectType,
+		SubjectID:      item.SubjectID,
+		Purpose:        item.Purpose,
+		OperationType:  item.OperationType,
+		AmountMinor:    item.AmountMinor,
+		Currency:       item.Currency,
+		Metadata:       item.Metadata,
+	})
+	if err != nil {
+		return u.failPaymentByFraudDecision(ctx, item.ID, "FRAUD_UNAVAILABLE", "fraud assessment unavailable", nil)
+	}
+	if decision == nil || decision.ShadowMode || decision.Decision == "" || decision.Decision == port.FraudDecisionAllow {
+		return nil, nil
+	}
+
+	code := "FRAUD_REVIEW_REQUIRED"
+	message := "payment requires fraud review"
+	if decision.Decision == port.FraudDecisionBlock {
+		code = "FRAUD_BLOCKED"
+		message = "payment blocked by fraud policy"
+	}
+	if decision.Decision == port.FraudDecisionChallenge {
+		code = "FRAUD_CHALLENGE_REQUIRED"
+		message = "payment requires fraud challenge"
+	}
+
+	return u.failPaymentByFraudDecision(ctx, item.ID, code, message, decision)
+}
+
+func (u *PaymentUseCase) failPaymentByFraudDecision(
+	ctx context.Context,
+	transactionID uuid.UUID,
+	code string,
+	message string,
+	decision *port.FraudAssessmentResult,
+) (*model.PaymentTransaction, error) {
+	var result *model.PaymentTransaction
+	now := time.Now().UTC()
+	failureCode := code
+	failureMessage := message
+
+	err := u.repo.WithTx(ctx, func(txRepo port.PaymentTxRepository) error {
+		item, err := txRepo.GetTransactionByIDForUpdate(ctx, transactionID)
+		if err != nil {
+			return fmt.Errorf("get payment transaction for fraud finalize: %w", err)
+		}
+		if item == nil {
+			return ErrPaymentNotFound
+		}
+		if item.Status != enum.PaymentStatusPending {
+			result = item
+			return nil
+		}
+
+		item.Status = enum.PaymentStatusFailed
+		item.FailureCode = &failureCode
+		item.FailureMessage = &failureMessage
+		item.CompletedAt = &now
+		item.UpdatedAt = now
+
+		if err = txRepo.UpdateTransactionResult(ctx, item); err != nil {
+			return fmt.Errorf("update payment fraud failure: %w", err)
+		}
+		if err = txRepo.CreateEvent(ctx, newEventOrPanic(item.ID, string(item.OperationType)+"_"+string(item.Status), map[string]any{
+			"operationType": string(item.OperationType),
+			"status":        string(item.Status),
+			"failureCode":   failureCode,
+			"fraudDecision": fraudEventPayload(decision),
+		})); err != nil {
+			return fmt.Errorf("create payment fraud event: %w", err)
+		}
+
+		result = item
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func paymentFraudAction(operationType enum.PaymentOperationType) string {
+	switch operationType {
+	case enum.PaymentOperationTypeAuthorize:
+		return "PAYMENT_AUTHORIZE"
+	case enum.PaymentOperationTypeCharge:
+		return "PAYMENT_CHARGE"
+	case enum.PaymentOperationTypeCapture:
+		return "PAYMENT_CAPTURE"
+	case enum.PaymentOperationTypeRefund:
+		return "PAYMENT_REFUND"
+	case enum.PaymentOperationTypeVoid:
+		return "PAYMENT_VOID"
+	default:
+		return "PAYMENT_OPERATION"
+	}
+}
+
+func fraudEventPayload(decision *port.FraudAssessmentResult) map[string]any {
+	if decision == nil {
+		return map[string]any{}
+	}
+	return map[string]any{
+		"decision":   string(decision.Decision),
+		"riskScore":  decision.RiskScore,
+		"reasons":    decision.Reasons,
+		"shadowMode": decision.ShadowMode,
+	}
 }
 
 func applyProviderResult(item *model.PaymentTransaction, result *port.ProviderOperationResult) {

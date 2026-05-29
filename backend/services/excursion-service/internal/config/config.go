@@ -21,6 +21,7 @@ type Config struct {
 	ChatService  ChatServiceConfig
 	Translation  TranslationServiceConfig
 	Attendance   AttendanceConfig
+	AntiFraud    AntiFraudConfig
 }
 
 type AppConfig struct {
@@ -126,6 +127,14 @@ type AttendanceConfig struct {
 	OfflineWindow            time.Duration `env:"EXCURSION_ATTENDANCE_OFFLINE_WINDOW, default=4h"`
 	CompletionTickerInterval time.Duration `env:"EXCURSION_SCHEDULE_COMPLETION_TICKER_INTERVAL, default=1m"`
 	CompletionBatchSize      int           `env:"EXCURSION_SCHEDULE_COMPLETION_BATCH_SIZE, default=100"`
+}
+
+type AntiFraudConfig struct {
+	Enabled              bool          `env:"ANTI_FRAUD_ENABLED, default=false"`
+	BaseURL              string        `env:"ANTI_FRAUD_BASE_URL, default=http://anti-fraud-service:8096"`
+	InternalServiceToken string        `env:"ANTI_FRAUD_INTERNAL_SERVICE_TOKEN"`
+	SignalHashKey        string        `env:"ANTI_FRAUD_SIGNAL_HASH_KEY"`
+	Timeout              time.Duration `env:"ANTI_FRAUD_TIMEOUT, default=800ms"`
 }
 
 func Load(ctx context.Context) (*Config, error) {

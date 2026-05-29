@@ -22,6 +22,7 @@ type ActivityUseCase struct {
 	fileManager port.ActivityMediaFileManager
 	chatGateway port.ActivityChatGateway
 	payment     port.ActivityPaymentGateway
+	fraud       port.FraudEvaluator
 }
 
 func NewActivityUseCase(repo port.ActivityRepository, fileManager ...port.ActivityMediaFileManager) *ActivityUseCase {
@@ -331,6 +332,18 @@ func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivi
 
 	if assessment := u.assessCreateModeration(ctx, input); assessment.RiskScore > 0 || len(assessment.ReasonCodes) > 0 {
 		item.FlagForModeration(assessment.RiskScore, assessment.ReasonCodes, time.Now().UTC())
+	}
+
+	if err = u.enforceActivityFraud(ctx, activityFraudInput(
+		fraudActionActivityCreate,
+		input.HostUserID,
+		item.ID,
+		item,
+		map[string]any{
+			"hasCoverFile": input.CoverFileID != nil,
+		},
+	)); err != nil {
+		return nil, err
 	}
 
 	if err = u.repo.CreateActivity(ctx, item); err != nil {
@@ -1049,6 +1062,16 @@ func (u *ActivityUseCase) PublishActivity(
 		return nil, ErrActivityAlreadyPublished
 	}
 
+	if err = u.enforceActivityFraud(ctx, activityFraudInput(
+		fraudActionActivityPublish,
+		actorUserID,
+		item.ID,
+		item,
+		nil,
+	)); err != nil {
+		return nil, err
+	}
+
 	if err = item.Publish(time.Now().UTC()); err != nil {
 		return nil, err
 	}
@@ -1131,6 +1154,19 @@ func (u *ActivityUseCase) DuplicateActivity(
 		VisibilityPasswordHash:         source.VisibilityPasswordHash,
 	})
 	if err != nil {
+		return nil, err
+	}
+
+	if err = u.enforceActivityFraud(ctx, activityFraudInput(
+		fraudActionActivityCreate,
+		actorUserID,
+		dup.ID,
+		dup,
+		map[string]any{
+			"duplicated":       true,
+			"sourceActivityId": source.ID.String(),
+		},
+	)); err != nil {
 		return nil, err
 	}
 
@@ -1286,10 +1322,38 @@ func (u *ActivityUseCase) CancelActivity(
 		return nil, ErrInvalidActorUserID
 	}
 
+	var err error
+	if u.fraud != nil {
+		itemForFraud, lookupErr := u.GetActivityByID(ctx, activityID)
+		if lookupErr != nil {
+			return nil, lookupErr
+		}
+		if actorUserID != itemForFraud.HostUserID {
+			return nil, ErrInvalidActorUserID
+		}
+		if itemForFraud.Status == enum.ActivityStatusCancelled {
+			return nil, ErrActivityAlreadyCancelled
+		}
+		if itemForFraud.Status.IsTerminal() {
+			return nil, ErrActivityNotCancellable
+		}
+		if err = u.enforceActivityFraud(ctx, activityFraudInput(
+			fraudActionActivityCancel,
+			actorUserID,
+			itemForFraud.ID,
+			itemForFraud,
+			map[string]any{
+				"reason": reason,
+			},
+		)); err != nil {
+			return nil, err
+		}
+	}
+
 	var updated *model.Activity
 	paymentTasks := make([]participantPaymentTask, 0)
 
-	err := u.repo.WithTx(ctx, func(txRepo port.ActivityTxRepository) error {
+	err = u.repo.WithTx(ctx, func(txRepo port.ActivityTxRepository) error {
 		item, err := txRepo.GetActivityByIDForUpdate(ctx, activityID)
 		if err != nil {
 			return fmt.Errorf("get activity by id for cancellation: %w", err)
@@ -1599,6 +1663,23 @@ func (u *ActivityUseCase) UpdateActivity(ctx context.Context, input UpdateActivi
 
 	item.Revision++
 	item.UpdatedAt = time.Now().UTC()
+
+	if err = u.enforceActivityFraud(ctx, activityFraudInput(
+		fraudActionActivityUpdate,
+		input.ActorUserID,
+		item.ID,
+		item,
+		map[string]any{
+			"oldPriceMinor": activityPriceAmountMinorFromParts(beforePriceType, beforePriceAmount),
+			"newPriceMinor": activityPriceAmountMinor(item),
+			"oldCurrency":   model.ValueOrEmpty(beforeCurrency),
+			"newCurrency":   model.ValueOrEmpty(item.Currency),
+			"priceChanged":  priceChanged(beforePriceType, beforePriceAmount, beforeCurrency, item),
+			"hasCoverFile":  input.HasCoverFileID && input.CoverFileID != nil,
+		},
+	)); err != nil {
+		return nil, err
+	}
 
 	if err = u.repo.UpdateActivity(ctx, item); err != nil {
 		return nil, fmt.Errorf("update activity: %w", err)
