@@ -74,6 +74,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   bool _isTrackingBackSwipe = false;
   bool _isInitialLoadPending = true;
   double _backSwipeDistance = 0;
+  ActivityProvider? _activityProvider;
 
   @override
   void initState() {
@@ -84,10 +85,16 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _activityProvider = context.read<ActivityProvider>();
+  }
+
+  @override
   void dispose() {
-    final provider = context.read<ActivityProvider>();
-    provider.clearSelectedActivity();
-    provider.resetActionState();
+    final activityProvider = _activityProvider;
+    activityProvider?.clearSelectedActivity();
+    activityProvider?.resetActionState();
     super.dispose();
   }
 

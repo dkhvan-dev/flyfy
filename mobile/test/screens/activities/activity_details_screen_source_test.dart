@@ -100,4 +100,32 @@ void main() {
           isNot(contains('child: Text(\n                showProtectedNotice')));
     },
   );
+
+  test(
+    'details screen does not look up providers from dispose',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activity_details_screen.dart',
+      ).readAsString();
+
+      final stateStart = source.indexOf('class _ActivityDetailsScreenState');
+      final disposeStart = source.indexOf('void dispose()', stateStart);
+      final disposeEnd =
+          source.indexOf('Future<void> _refreshScreen', disposeStart);
+
+      expect(stateStart, isNonNegative);
+      expect(disposeStart, greaterThan(stateStart));
+      expect(disposeEnd, greaterThan(disposeStart));
+
+      final disposeSource = source.substring(disposeStart, disposeEnd);
+      expect(
+        disposeSource,
+        isNot(contains('context.read<ActivityProvider>()')),
+      );
+      expect(source, contains('ActivityProvider? _activityProvider;'));
+      expect(source, contains('void didChangeDependencies()'));
+      expect(source,
+          contains('_activityProvider = context.read<ActivityProvider>();'));
+    },
+  );
 }
