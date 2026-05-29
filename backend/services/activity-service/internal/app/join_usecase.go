@@ -75,6 +75,8 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 	}
 
 	var err error
+	var fraudAssessment *port.FraudAssessmentResult
+	fraudAssessmentUnavailable := false
 	if u.fraud != nil {
 		activityForFraud, err := u.repo.GetActivityByID(ctx, input.ActivityID)
 		if err != nil {
@@ -87,7 +89,7 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 		if input.IdempotencyKey != nil {
 			idempotencyKey = *input.IdempotencyKey
 		}
-		if err = u.enforceActivityFraud(ctx, activityParticipantFraudInput(
+		fraudAssessment, err = u.assessActivityFraud(ctx, activityParticipantFraudInput(
 			fraudActionActivityJoin,
 			input.UserID,
 			input.ActivityID,
@@ -97,7 +99,15 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 				"visibility": string(activityForFraud.Visibility),
 				"status":     string(activityForFraud.Status),
 			},
-		)); err != nil {
+		))
+		if err != nil {
+			fraudAssessmentUnavailable = true
+			log.Warn().
+				Err(err).
+				Str("activity_id", input.ActivityID.String()).
+				Str("user_id", input.UserID.String()).
+				Msg("activity join fraud assessment unavailable; allowing join")
+		} else if err = rejectBlockedActivityFraudDecision(fraudAssessment); err != nil {
 			return nil, err
 		}
 	}
@@ -217,17 +227,22 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 			activity.UpdatedAt = now
 		}
 
+		participantEventPayload := addFraudAssessmentPayload(
+			map[string]any{
+				"status":             string(status),
+				"paymentMode":        paymentModeForParticipant(activity, status),
+				"acceptedInvitation": acceptedInvitation,
+			},
+			fraudAssessment,
+			fraudAssessmentUnavailable,
+		)
 		participantEvent, participantEventErr := model.NewParticipantEvent(model.NewParticipantEventParams{
 			ActivityID:    activity.ID,
 			ParticipantID: participant.ID,
 			UserID:        participant.UserID,
 			EventType:     string(status),
 			ActorUserID:   &input.UserID,
-			PayloadJSON: mustJSON(map[string]any{
-				"status":             string(status),
-				"paymentMode":        paymentModeForParticipant(activity, status),
-				"acceptedInvitation": acceptedInvitation,
-			}),
+			PayloadJSON:   mustJSON(participantEventPayload),
 		})
 		if participantEventErr == nil {
 			if err = txRepo.CreateParticipantEvent(ctx, participantEvent); err != nil {

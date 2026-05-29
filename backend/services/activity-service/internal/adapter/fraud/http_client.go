@@ -104,10 +104,11 @@ func (c *HTTPClient) AssessActivity(ctx context.Context, input port.FraudAssessm
 	}
 
 	return &port.FraudAssessmentResult{
-		Decision:   port.FraudDecision(result.Decision),
-		RiskScore:  result.RiskScore,
-		Reasons:    result.Reasons,
-		ShadowMode: result.ShadowMode,
+		AssessmentID: result.ID,
+		Decision:     port.FraudDecision(result.Decision),
+		RiskScore:    result.RiskScore,
+		Reasons:      result.Reasons,
+		ShadowMode:   result.ShadowMode,
 	}, nil
 }
 
@@ -140,10 +141,11 @@ type assessActionRequest struct {
 }
 
 type assessActionResponse struct {
-	Decision   string   `json:"decision"`
-	RiskScore  int      `json:"riskScore"`
-	Reasons    []string `json:"reasons"`
-	ShadowMode bool     `json:"shadowMode"`
+	ID         uuid.UUID `json:"id"`
+	Decision   string    `json:"decision"`
+	RiskScore  int       `json:"riskScore"`
+	Reasons    []string  `json:"reasons"`
+	ShadowMode bool      `json:"shadowMode"`
 }
 
 var _ port.FraudEvaluator = (*HTTPClient)(nil)

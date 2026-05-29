@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 	"time"
@@ -1556,6 +1557,156 @@ func TestJoinPaidActivityAuthorizesPaymentAndConfirmsParticipant(t *testing.T) {
 	}
 	if !containsString(createdEventTypes, ParticipantEventTypePaymentAuthorizationSucceeded) {
 		t.Fatalf("created event types = %v, want authorization event", createdEventTypes)
+	}
+}
+
+func TestJoinActivityAllowsReviewFraudDecisionAndAuditsIt(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	hostUserID := uuid.New()
+	userID := uuid.New()
+	assessmentID := uuid.New()
+
+	activity := validActivity(t, activityID, hostUserID)
+	activity.Status = enum.ActivityStatusEnrollmentOpen
+
+	var createdParticipant *model.ActivityParticipant
+	var participantEventPayload map[string]any
+	repo := &activityRepoStub{
+		getActivityByID: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+			return activity, nil
+		},
+		withTx: func(ctx context.Context, fn func(repo port.ActivityTxRepository) error) error {
+			txRepo := &activityTxRepoStub{
+				getActivityByIDForUpdate: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+					return activity, nil
+				},
+				getParticipantByActivityAndUserForUpdate: func(ctx context.Context, requestedID uuid.UUID, requestedUserID uuid.UUID) (*model.ActivityParticipant, error) {
+					return nil, nil
+				},
+				countOccupiedSlotsForUpdate: func(ctx context.Context, requestedID uuid.UUID) (int, error) {
+					return 0, nil
+				},
+				createParticipant: func(ctx context.Context, item *model.ActivityParticipant) error {
+					createdParticipant = item
+					return nil
+				},
+				createParticipantEvent: func(ctx context.Context, item *model.ParticipantEvent) error {
+					if item.EventType == string(enum.ParticipantStatusApproved) {
+						if err := json.Unmarshal(item.PayloadJSON, &participantEventPayload); err != nil {
+							t.Fatalf("participant event payload json = %q: %v", string(item.PayloadJSON), err)
+						}
+					}
+					return nil
+				},
+			}
+			return fn(txRepo)
+		},
+	}
+
+	uc := NewJoinUseCase(repo, nil)
+	uc.SetFraudEvaluator(fraudEvaluatorStub{
+		assessActivity: func(ctx context.Context, input port.FraudAssessmentInput) (*port.FraudAssessmentResult, error) {
+			return &port.FraudAssessmentResult{
+				AssessmentID: assessmentID,
+				Decision:     port.FraudDecisionReview,
+				RiskScore:    70,
+				Reasons:      []string{"ACTIVITY_JOIN_VELOCITY"},
+			}, nil
+		},
+	})
+
+	participant, err := uc.JoinActivity(context.Background(), JoinActivityInput{
+		ActivityID: activityID,
+		UserID:     userID,
+	})
+	if err != nil {
+		t.Fatalf("JoinActivity() error = %v", err)
+	}
+	if participant == nil || createdParticipant == nil {
+		t.Fatal("JoinActivity() did not create participant")
+	}
+	if participant.Status != enum.ParticipantStatusApproved {
+		t.Fatalf("participant status = %s, want %s", participant.Status, enum.ParticipantStatusApproved)
+	}
+	if participantEventPayload["fraudDecision"] != string(port.FraudDecisionReview) {
+		t.Fatalf("fraudDecision = %v, want %s", participantEventPayload["fraudDecision"], port.FraudDecisionReview)
+	}
+	if participantEventPayload["fraudAssessmentId"] != assessmentID.String() {
+		t.Fatalf("fraudAssessmentId = %v, want %s", participantEventPayload["fraudAssessmentId"], assessmentID)
+	}
+	if participantEventPayload["fraudRiskScore"] != float64(70) {
+		t.Fatalf("fraudRiskScore = %v, want 70", participantEventPayload["fraudRiskScore"])
+	}
+}
+
+func TestJoinActivityAllowsFraudAssessmentUnavailableAndAuditsIt(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	hostUserID := uuid.New()
+	userID := uuid.New()
+
+	activity := validActivity(t, activityID, hostUserID)
+	activity.Status = enum.ActivityStatusEnrollmentOpen
+
+	var createdParticipant *model.ActivityParticipant
+	var participantEventPayload map[string]any
+	repo := &activityRepoStub{
+		getActivityByID: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+			return activity, nil
+		},
+		withTx: func(ctx context.Context, fn func(repo port.ActivityTxRepository) error) error {
+			txRepo := &activityTxRepoStub{
+				getActivityByIDForUpdate: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+					return activity, nil
+				},
+				getParticipantByActivityAndUserForUpdate: func(ctx context.Context, requestedID uuid.UUID, requestedUserID uuid.UUID) (*model.ActivityParticipant, error) {
+					return nil, nil
+				},
+				countOccupiedSlotsForUpdate: func(ctx context.Context, requestedID uuid.UUID) (int, error) {
+					return 0, nil
+				},
+				createParticipant: func(ctx context.Context, item *model.ActivityParticipant) error {
+					createdParticipant = item
+					return nil
+				},
+				createParticipantEvent: func(ctx context.Context, item *model.ParticipantEvent) error {
+					if item.EventType == string(enum.ParticipantStatusApproved) {
+						if err := json.Unmarshal(item.PayloadJSON, &participantEventPayload); err != nil {
+							t.Fatalf("participant event payload json = %q: %v", string(item.PayloadJSON), err)
+						}
+					}
+					return nil
+				},
+			}
+			return fn(txRepo)
+		},
+	}
+
+	uc := NewJoinUseCase(repo, nil)
+	uc.SetFraudEvaluator(fraudEvaluatorStub{
+		assessActivity: func(ctx context.Context, input port.FraudAssessmentInput) (*port.FraudAssessmentResult, error) {
+			return nil, errors.New("anti-fraud timeout")
+		},
+	})
+
+	participant, err := uc.JoinActivity(context.Background(), JoinActivityInput{
+		ActivityID: activityID,
+		UserID:     userID,
+	})
+	if err != nil {
+		t.Fatalf("JoinActivity() error = %v", err)
+	}
+	if participant == nil || createdParticipant == nil {
+		t.Fatal("JoinActivity() did not create participant")
+	}
+	if participant.Status != enum.ParticipantStatusApproved {
+		t.Fatalf("participant status = %s, want %s", participant.Status, enum.ParticipantStatusApproved)
+	}
+	if participantEventPayload["fraudAssessmentUnavailable"] != true {
+		t.Fatalf("fraudAssessmentUnavailable = %v, want true", participantEventPayload["fraudAssessmentUnavailable"])
 	}
 }
 

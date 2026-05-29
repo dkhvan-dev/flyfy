@@ -30,10 +30,11 @@ type FraudAssessmentInput struct {
 }
 
 type FraudAssessmentResult struct {
-	Decision   FraudDecision
-	RiskScore  int
-	Reasons    []string
-	ShadowMode bool
+	AssessmentID uuid.UUID
+	Decision     FraudDecision
+	RiskScore    int
+	Reasons      []string
+	ShadowMode   bool
 }
 
 type FraudEvaluator interface {

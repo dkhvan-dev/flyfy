@@ -76,6 +76,16 @@ func (u *JoinUseCase) enforceActivityFraud(ctx context.Context, input port.Fraud
 	return enforceActivityFraudDecision(ctx, u.fraud, input)
 }
 
+func (u *JoinUseCase) assessActivityFraud(
+	ctx context.Context,
+	input port.FraudAssessmentInput,
+) (*port.FraudAssessmentResult, error) {
+	if u.fraud == nil {
+		return nil, nil
+	}
+	return assessActivityFraudDecision(ctx, u.fraud, input)
+}
+
 func (u *AttendanceUseCase) enforceActivityFraud(ctx context.Context, input port.FraudAssessmentInput) error {
 	if u.fraud == nil {
 		return nil
@@ -88,6 +98,18 @@ func enforceActivityFraudDecision(
 	fraud port.FraudEvaluator,
 	input port.FraudAssessmentInput,
 ) error {
+	decision, err := assessActivityFraudDecision(ctx, fraud, input)
+	if err != nil {
+		return err
+	}
+	return rejectBlockedActivityFraudDecision(decision)
+}
+
+func assessActivityFraudDecision(
+	ctx context.Context,
+	fraud port.FraudEvaluator,
+	input port.FraudAssessmentInput,
+) (*port.FraudAssessmentResult, error) {
 	signals := FraudSignalsFromContext(ctx)
 	input.ClientIP = signals.ClientIP
 	input.DeviceID = signals.DeviceID
@@ -98,15 +120,49 @@ func enforceActivityFraudDecision(
 
 	decision, err := fraud.AssessActivity(ctx, input)
 	if err != nil {
-		return fmt.Errorf("assess activity fraud: %w", err)
+		return nil, fmt.Errorf("assess activity fraud: %w", err)
 	}
-	if decision == nil ||
-		decision.ShadowMode ||
-		decision.Decision == "" ||
-		decision.Decision == port.FraudDecisionAllow {
+	return decision, nil
+}
+
+func rejectBlockedActivityFraudDecision(decision *port.FraudAssessmentResult) error {
+	if decision == nil || decision.ShadowMode || decision.Decision == "" {
 		return nil
 	}
-	return ErrFraudRejected
+	switch decision.Decision {
+	case port.FraudDecisionAllow,
+		port.FraudDecisionChallenge,
+		port.FraudDecisionReview:
+		return nil
+	case port.FraudDecisionBlock:
+		return ErrFraudRejected
+	default:
+		return ErrFraudRejected
+	}
+}
+
+func addFraudAssessmentPayload(
+	payload map[string]any,
+	assessment *port.FraudAssessmentResult,
+	unavailable bool,
+) map[string]any {
+	if payload == nil {
+		payload = map[string]any{}
+	}
+	if unavailable {
+		payload["fraudAssessmentUnavailable"] = true
+	}
+	if assessment == nil || assessment.Decision == "" || assessment.Decision == port.FraudDecisionAllow {
+		return payload
+	}
+	if assessment.AssessmentID != uuid.Nil {
+		payload["fraudAssessmentId"] = assessment.AssessmentID.String()
+	}
+	payload["fraudDecision"] = string(assessment.Decision)
+	payload["fraudRiskScore"] = assessment.RiskScore
+	payload["fraudReasons"] = append([]string(nil), assessment.Reasons...)
+	payload["fraudShadowMode"] = assessment.ShadowMode
+	return payload
 }
 
 func activityFraudInput(
