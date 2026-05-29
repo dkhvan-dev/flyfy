@@ -1,0 +1,104 @@
+{{define "fraud/blocks"}}
+{{template "pageStart" .}}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "fraud.eyebrow"}}</p>
+      <h1>{{t .Locale "fraud.blocksTitle"}}</h1>
+      <p class="muted">{{t .Locale .Data.TitleKey}}</p>
+    </div>
+    <div class="section-actions">
+      <a class="button" href="{{.Data.QueueURL}}">{{t .Locale "action.backToQueue"}}</a>
+    </div>
+  </div>
+
+  <div class="card subtle">
+    {{t .Locale "fraud.reviewHelp"}}
+  </div>
+
+  {{if .Data.Items}}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>{{t .Locale "table.risk"}}</th>
+            <th>{{t .Locale "table.decision"}}</th>
+            <th>{{t .Locale "table.status"}}</th>
+            <th>{{t .Locale "table.action"}}</th>
+            <th>{{t .Locale "table.subject"}}</th>
+            <th>{{t .Locale "table.user"}}</th>
+            <th>{{t .Locale "table.reasons"}}</th>
+            <th>{{t .Locale "table.created"}}</th>
+            <th>{{t .Locale "table.actions"}}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .Data.Items}}
+          <tr>
+            <td><strong>{{.Item.RiskScore}}</strong></td>
+            <td><span class="{{statusClass .Item.Decision}}">{{statusText $.Locale .Item.Decision}}</span></td>
+            <td><span class="{{statusClass .Item.ReviewStatus}}">{{statusText $.Locale .Item.ReviewStatus}}</span></td>
+            <td>
+              <strong>{{.Item.Action}}</strong>
+              {{if .Item.PolicyVersion}}<span class="muted block">{{t $.Locale "table.policy"}}: {{.Item.PolicyVersion}}</span>{{end}}
+            </td>
+            <td>{{.SubjectText}}</td>
+            <td>{{.ActorText}}</td>
+            <td>
+              {{.ReasonText}}
+              {{if .MetadataText}}<span class="muted block">{{.MetadataText}}</span>{{end}}
+            </td>
+            <td>{{formatTime .Item.CreatedAt (staffTimezone $.Staff)}}</td>
+            <td>
+              {{if hasPermission $.Staff "fraud.review"}}
+                <form class="form compact" method="post" action="{{.ReviewBaseURL}}/{{.Item.ID}}/false-positive">
+                  {{csrfField $.CSRFToken}}
+                  <label>
+                    <span>{{t $.Locale "field.reasonCodes"}}</span>
+                    <input name="reason_codes" placeholder="{{t $.Locale "placeholder.fraudReasonCodes"}}" required>
+                  </label>
+                  <label>
+                    <span>{{t $.Locale "field.internalComment"}}</span>
+                    <textarea name="internal_comment" rows="2" required></textarea>
+                  </label>
+                  <button type="submit">{{t $.Locale "action.falsePositive"}}</button>
+                </form>
+                <form class="form compact" method="post" action="{{.ReviewBaseURL}}/{{.Item.ID}}/escalate">
+                  {{csrfField $.CSRFToken}}
+                  <label>
+                    <span>{{t $.Locale "field.reasonCodes"}}</span>
+                    <input name="reason_codes" placeholder="{{t $.Locale "placeholder.fraudReasonCodes"}}" required>
+                  </label>
+                  <label>
+                    <span>{{t $.Locale "field.internalComment"}}</span>
+                    <textarea name="internal_comment" rows="2" required></textarea>
+                  </label>
+                  <button type="submit">{{t $.Locale "action.escalate"}}</button>
+                </form>
+                <form class="form compact danger-zone" method="post" action="{{.ReviewBaseURL}}/{{.Item.ID}}/confirm">
+                  {{csrfField $.CSRFToken}}
+                  <label>
+                    <span>{{t $.Locale "field.reasonCodes"}}</span>
+                    <input name="reason_codes" placeholder="{{t $.Locale "placeholder.fraudReasonCodes"}}" required>
+                  </label>
+                  <label>
+                    <span>{{t $.Locale "field.internalComment"}}</span>
+                    <textarea name="internal_comment" rows="2" required></textarea>
+                  </label>
+                  <button class="danger" type="submit">{{t $.Locale "action.confirmFraud"}}</button>
+                </form>
+              {{else}}
+                <span class="muted">{{t $.Locale "error.permissionDenied"}}</span>
+              {{end}}
+            </td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  {{else}}
+    <div class="empty card">{{t .Locale .Data.EmptyKey}}</div>
+  {{end}}
+</section>
+{{template "pageEnd" .}}
+{{end}}

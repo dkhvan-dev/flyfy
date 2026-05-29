@@ -13,6 +13,9 @@
       {{if .Data.IsHistory}}
         <a class="button" href="{{.Data.OpenQueueURL}}">{{t .Locale "action.openQueue"}}</a>
       {{else}}
+        {{if .Data.FraudBlocksURL}}
+          <a class="button" href="{{.Data.FraudBlocksURL}}">{{t .Locale "action.openFraudBlocks"}}</a>
+        {{end}}
         <a class="button" href="{{.Data.HistoryURL}}">{{t .Locale "action.openHistory"}}</a>
         <form method="post" action="{{.Data.SyncAction}}{{urlQuerySuffix .Data.Filters.Query}}">
           {{csrfField .CSRFToken}}

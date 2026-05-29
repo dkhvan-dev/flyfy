@@ -50,6 +50,7 @@ type QueueViewData struct {
 	OpenQueueURL         string
 	HistoryURL           string
 	CurrentGuidesURL     string
+	FraudBlocksURL       string
 	SyncAction           string
 	DetailBaseURL        string
 	TitleKey             string
@@ -99,6 +100,24 @@ type GuideListViewData struct {
 	Items      []model.GuideApplicationModerationItem
 	QueueURL   string
 	HistoryURL string
+}
+
+type FraudBlockListViewData struct {
+	Target        model.FraudBlockTarget
+	Items         []FraudBlockView
+	QueueURL      string
+	ReviewBaseURL string
+	TitleKey      string
+	EmptyKey      string
+}
+
+type FraudBlockView struct {
+	Item          model.FraudBlock
+	SubjectText   string
+	ActorText     string
+	ReasonText    string
+	MetadataText  string
+	ReviewBaseURL string
 }
 
 type AttractionListViewData struct {
@@ -277,6 +296,30 @@ func NewGuideListViewData(items []model.GuideApplicationModerationItem) GuideLis
 		Items:      items,
 		QueueURL:   "/admin/moderation/guides",
 		HistoryURL: "/admin/moderation/guides/history",
+	}
+}
+
+func NewFraudBlockListViewData(target model.FraudBlockTarget, blocks []model.FraudBlock) FraudBlockListViewData {
+	target = normalizeFraudBlockViewTarget(target)
+	reviewBaseURL := fraudBlockBaseURL(target)
+	items := make([]FraudBlockView, 0, len(blocks))
+	for _, block := range blocks {
+		items = append(items, FraudBlockView{
+			Item:          block,
+			SubjectText:   fraudBlockSubjectText(block),
+			ActorText:     fraudBlockActorText(block),
+			ReasonText:    fraudBlockReasonsText(block.Reasons),
+			MetadataText:  fraudBlockMetadataText(block.Metadata),
+			ReviewBaseURL: reviewBaseURL,
+		})
+	}
+	return FraudBlockListViewData{
+		Target:        target,
+		Items:         items,
+		QueueURL:      fraudBlockQueueURL(target),
+		ReviewBaseURL: reviewBaseURL,
+		TitleKey:      fraudBlockTitleKey(target),
+		EmptyKey:      fraudBlockEmptyKey(target),
 	}
 }
 
@@ -498,6 +541,8 @@ func auditEntityTitle(locale string, event *model.AuditEvent, before auditStaffS
 			return fmt.Sprintf("%s: %s", translate(locale, "audit.entity.attraction"), title)
 		}
 		return translate(locale, "audit.entity.attraction")
+	case "fraud_assessment":
+		return translate(locale, "audit.entity.fraudAssessment")
 	default:
 		return translate(locale, "audit.entity.unknown")
 	}
@@ -555,6 +600,19 @@ func auditDetails(locale string, event *model.AuditEvent, before auditStaffSnaps
 		}
 		if category := auditMetadataValue(event.Metadata, "category"); category != "" {
 			details = append(details, fmt.Sprintf("%s: %s", translate(locale, "field.category"), attractionCategoryText(locale, category)))
+		}
+	case "fraud.block.confirmed", "fraud.block.false_positive", "fraud.block.escalated", "fraud.block.review_failed":
+		if status := auditMetadataValue(event.Metadata, "status"); status != "" {
+			details = append(details, fmt.Sprintf(translate(locale, "audit.detail.fraudReviewStatus"), translateStatus(locale, status)))
+		}
+		if decision := auditMetadataValue(event.Metadata, "decision"); decision != "" {
+			details = append(details, fmt.Sprintf(translate(locale, "audit.detail.fraudDecision"), translateStatus(locale, decision)))
+		}
+		if riskScore := auditMetadataValue(event.Metadata, "riskScore"); riskScore != "" {
+			details = append(details, fmt.Sprintf(translate(locale, "audit.detail.fraudRiskScore"), riskScore))
+		}
+		if value := auditMetadataValue(event.Metadata, "error"); value != "" {
+			details = append(details, fmt.Sprintf(translate(locale, "audit.detail.error"), value))
 		}
 	}
 	if len(details) == 0 {
@@ -805,6 +863,7 @@ func newQueueViewData(cases []*model.ModerationCase, targetType model.Moderation
 		ResetURL:             queueBaseURL(targetType),
 		OpenQueueURL:         queueBaseURL(targetType),
 		HistoryURL:           queueBaseURL(targetType) + "/history",
+		FraudBlocksURL:       queueFraudBlocksURL(targetType),
 		SyncAction:           queueBaseURL(targetType) + "/sync",
 		DetailBaseURL:        queueBaseURL(targetType),
 		TitleKey:             queueTitleKey(targetType),
@@ -986,6 +1045,13 @@ func queueBaseURL(targetType model.ModerationTargetType) string {
 	return "/admin/moderation/excursions"
 }
 
+func queueFraudBlocksURL(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetChatMessage {
+		return ""
+	}
+	return queueBaseURL(targetType) + "/fraud-blocks"
+}
+
 func queueURLWithQuery(path string, query string) string {
 	query = strings.TrimSpace(query)
 	if query == "" {
@@ -1123,4 +1189,103 @@ func shortString(value string) string {
 		return value[:8]
 	}
 	return value
+}
+
+func normalizeFraudBlockViewTarget(target model.FraudBlockTarget) model.FraudBlockTarget {
+	switch target {
+	case model.FraudBlockTargetActivity, model.FraudBlockTargetGuideApplication:
+		return target
+	default:
+		return model.FraudBlockTargetExcursion
+	}
+}
+
+func fraudBlockBaseURL(target model.FraudBlockTarget) string {
+	return fraudBlockQueueURL(target) + "/fraud-blocks"
+}
+
+func fraudBlockQueueURL(target model.FraudBlockTarget) string {
+	switch normalizeFraudBlockViewTarget(target) {
+	case model.FraudBlockTargetActivity:
+		return "/admin/moderation/activities"
+	case model.FraudBlockTargetGuideApplication:
+		return "/admin/moderation/guides"
+	default:
+		return "/admin/moderation/excursions"
+	}
+}
+
+func fraudBlockTitleKey(target model.FraudBlockTarget) string {
+	switch normalizeFraudBlockViewTarget(target) {
+	case model.FraudBlockTargetActivity:
+		return "fraud.activityBlocks"
+	case model.FraudBlockTargetGuideApplication:
+		return "fraud.guideBlocks"
+	default:
+		return "fraud.excursionBlocks"
+	}
+}
+
+func fraudBlockEmptyKey(target model.FraudBlockTarget) string {
+	switch normalizeFraudBlockViewTarget(target) {
+	case model.FraudBlockTargetActivity:
+		return "fraud.noActivityBlocks"
+	case model.FraudBlockTargetGuideApplication:
+		return "fraud.noGuideBlocks"
+	default:
+		return "fraud.noExcursionBlocks"
+	}
+}
+
+func fraudBlockSubjectText(block model.FraudBlock) string {
+	if block.SubjectID == nil {
+		return strings.TrimSpace(block.SubjectType)
+	}
+	subjectType := strings.TrimSpace(block.SubjectType)
+	if subjectType == "" {
+		subjectType = "subject"
+	}
+	return fmt.Sprintf("%s %s", subjectType, shortString(block.SubjectID.String()))
+}
+
+func fraudBlockActorText(block model.FraudBlock) string {
+	if block.ActorUserID == nil {
+		return "-"
+	}
+	return shortString(block.ActorUserID.String())
+}
+
+func fraudBlockReasonsText(reasons []string) string {
+	clean := make([]string, 0, len(reasons))
+	for _, reason := range reasons {
+		reason = strings.TrimSpace(reason)
+		if reason != "" {
+			clean = append(clean, reason)
+		}
+	}
+	if len(clean) == 0 {
+		return "-"
+	}
+	return strings.Join(clean, ", ")
+}
+
+func fraudBlockMetadataText(metadata map[string]any) string {
+	if len(metadata) == 0 {
+		return ""
+	}
+	keys := make([]string, 0, len(metadata))
+	for key := range metadata {
+		if strings.TrimSpace(key) != "" {
+			keys = append(keys, key)
+		}
+	}
+	sort.Strings(keys)
+	parts := make([]string, 0, len(keys))
+	for _, key := range keys {
+		value := strings.TrimSpace(fmt.Sprint(metadata[key]))
+		if value != "" {
+			parts = append(parts, fmt.Sprintf("%s=%s", key, value))
+		}
+	}
+	return strings.Join(parts, ", ")
 }

@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -290,6 +291,108 @@ func TestRiskUseCaseDoesNotReviewTinyPriceChangeByPercentOnly(t *testing.T) {
 	}
 }
 
+func TestRiskUseCaseListsOpenFraudBlocksByTargetType(t *testing.T) {
+	ctx := context.Background()
+	repo := newMemoryRiskRepository()
+	useCase := NewRiskUseCase(repo, Policy{Version: "test-policy", Window: time.Hour})
+
+	activityID := uuid.New()
+	excursionID := uuid.New()
+	guideApplicationID := uuid.New()
+	repo.assessments = append(repo.assessments,
+		&model.RiskAssessment{
+			ID:           uuid.New(),
+			Action:       ActionActivityCreate,
+			SubjectType:  "ACTIVITY",
+			SubjectID:    &activityID,
+			Decision:     model.RiskDecisionReview,
+			RiskScore:    72,
+			ReviewStatus: model.RiskReviewStatusOpen,
+			CreatedAt:    time.Now().UTC(),
+		},
+		&model.RiskAssessment{
+			ID:           uuid.New(),
+			Action:       ActionExcursionPublish,
+			SubjectType:  "EXCURSION",
+			SubjectID:    &excursionID,
+			Decision:     model.RiskDecisionBlock,
+			RiskScore:    95,
+			ReviewStatus: model.RiskReviewStatusOpen,
+			CreatedAt:    time.Now().UTC().Add(-time.Minute),
+		},
+		&model.RiskAssessment{
+			ID:           uuid.New(),
+			Action:       ActionGuideApplication,
+			SubjectType:  "GUIDE_APPLICATION",
+			SubjectID:    &guideApplicationID,
+			Decision:     model.RiskDecisionReview,
+			RiskScore:    55,
+			ReviewStatus: model.RiskReviewStatusOpen,
+			CreatedAt:    time.Now().UTC().Add(-2 * time.Minute),
+		},
+	)
+
+	items, err := useCase.ListFraudBlocks(ctx, ListFraudBlocksInput{
+		TargetType: FraudBlockTargetActivity,
+		Limit:      100,
+	})
+	if err != nil {
+		t.Fatalf("ListFraudBlocks(activity) error = %v", err)
+	}
+	if len(items) != 1 || items[0].SubjectID == nil || *items[0].SubjectID != activityID {
+		t.Fatalf("activity fraud blocks = %#v, want activity %s", items, activityID)
+	}
+
+	items, err = useCase.ListFraudBlocks(ctx, ListFraudBlocksInput{
+		TargetType: FraudBlockTargetGuideApplication,
+		Limit:      100,
+	})
+	if err != nil {
+		t.Fatalf("ListFraudBlocks(guide_application) error = %v", err)
+	}
+	if len(items) != 0 {
+		t.Fatalf("guide fraud blocks = %#v, want no REVIEW-only guide blocks", items)
+	}
+}
+
+func TestRiskUseCaseReviewsFraudBlockWithAuditMetadata(t *testing.T) {
+	ctx := context.Background()
+	repo := newMemoryRiskRepository()
+	useCase := NewRiskUseCase(repo, Policy{Version: "test-policy", Window: time.Hour})
+
+	assessmentID := uuid.New()
+	staffID := uuid.New()
+	repo.assessments = append(repo.assessments, &model.RiskAssessment{
+		ID:           assessmentID,
+		Action:       ActionActivityCreate,
+		SubjectType:  "ACTIVITY",
+		Decision:     model.RiskDecisionReview,
+		RiskScore:    72,
+		ReviewStatus: model.RiskReviewStatusOpen,
+		CreatedAt:    time.Now().UTC(),
+	})
+
+	updated, err := useCase.ReviewFraudBlock(ctx, ReviewFraudBlockInput{
+		AssessmentID:      assessmentID,
+		Status:            model.RiskReviewStatusFalsePositive,
+		ReviewedByStaffID: staffID,
+		ReasonCodes:       []string{"false_positive"},
+		Comment:           "Manual review confirmed legitimate activity.",
+	})
+	if err != nil {
+		t.Fatalf("ReviewFraudBlock() error = %v", err)
+	}
+	if updated.ReviewStatus != model.RiskReviewStatusFalsePositive {
+		t.Fatalf("ReviewStatus = %s, want %s", updated.ReviewStatus, model.RiskReviewStatusFalsePositive)
+	}
+	if updated.ReviewedByStaffID == nil || *updated.ReviewedByStaffID != staffID {
+		t.Fatalf("ReviewedByStaffID = %#v, want %s", updated.ReviewedByStaffID, staffID)
+	}
+	if updated.ReviewComment != "Manual review confirmed legitimate activity." {
+		t.Fatalf("ReviewComment = %q", updated.ReviewComment)
+	}
+}
+
 type memoryRiskRepository struct {
 	events      []*model.RiskEvent
 	assessments []*model.RiskAssessment
@@ -335,9 +438,72 @@ func (r *memoryRiskRepository) CountEvents(ctx context.Context, filter port.Risk
 func (r *memoryRiskRepository) CreateAssessment(ctx context.Context, assessment *model.RiskAssessment) error {
 	clone := *assessment
 	clone.Reasons = append([]string(nil), assessment.Reasons...)
+	clone.ReviewReasonCodes = append([]string(nil), assessment.ReviewReasonCodes...)
 	clone.Metadata = cloneAnyMap(assessment.Metadata)
 	r.assessments = append(r.assessments, &clone)
 	return nil
+}
+
+func (r *memoryRiskRepository) ListAssessments(ctx context.Context, filter port.RiskAssessmentFilter) ([]*model.RiskAssessment, error) {
+	items := make([]*model.RiskAssessment, 0, len(r.assessments))
+	subjectTypes := make(map[string]struct{}, len(filter.SubjectTypes))
+	for _, value := range filter.SubjectTypes {
+		subjectTypes[model.NormalizeCode(value)] = struct{}{}
+	}
+	decisions := make(map[model.RiskDecision]struct{}, len(filter.Decisions))
+	for _, value := range filter.Decisions {
+		decisions[value] = struct{}{}
+	}
+	statuses := make(map[model.RiskReviewStatus]struct{}, len(filter.ReviewStatuses))
+	for _, value := range filter.ReviewStatuses {
+		statuses[model.NormalizeReviewStatus(value)] = struct{}{}
+	}
+	for _, item := range r.assessments {
+		if len(subjectTypes) > 0 {
+			if _, ok := subjectTypes[model.NormalizeCode(item.SubjectType)]; !ok {
+				continue
+			}
+		}
+		if len(decisions) > 0 {
+			if _, ok := decisions[item.Decision]; !ok {
+				continue
+			}
+		}
+		if len(statuses) > 0 {
+			if _, ok := statuses[model.NormalizeReviewStatus(item.ReviewStatus)]; !ok {
+				continue
+			}
+		}
+		if filter.EnforcedOnly && item.ShadowMode {
+			continue
+		}
+		clone := *item
+		clone.Reasons = append([]string(nil), item.Reasons...)
+		clone.ReviewReasonCodes = append([]string(nil), item.ReviewReasonCodes...)
+		clone.Metadata = cloneAnyMap(item.Metadata)
+		items = append(items, &clone)
+	}
+	return items, nil
+}
+
+func (r *memoryRiskRepository) UpdateAssessmentReview(ctx context.Context, input port.RiskAssessmentReviewInput) (*model.RiskAssessment, error) {
+	for _, item := range r.assessments {
+		if item.ID != input.AssessmentID {
+			continue
+		}
+		item.ReviewStatus = model.NormalizeReviewStatus(input.Status)
+		item.ReviewedByStaffID = &input.ReviewedByStaffID
+		item.ReviewReasonCodes = append([]string(nil), input.ReasonCodes...)
+		item.ReviewComment = input.Comment
+		item.ReviewedAt = &input.ReviewedAt
+		item.UpdatedAt = input.ReviewedAt
+		clone := *item
+		clone.Reasons = append([]string(nil), item.Reasons...)
+		clone.ReviewReasonCodes = append([]string(nil), item.ReviewReasonCodes...)
+		clone.Metadata = cloneAnyMap(item.Metadata)
+		return &clone, nil
+	}
+	return nil, errors.New("assessment not found")
 }
 
 func hasReason(reasons []string, want string) bool {

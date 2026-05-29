@@ -12,6 +12,7 @@ import (
 	_ "time/tzdata"
 
 	activityadapter "github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/activity"
+	antifraudadapter "github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/antifraud"
 	attractionadapter "github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/attraction"
 	chatadapter "github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/chat"
 	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/excursion"
@@ -70,6 +71,11 @@ func main() {
 		cfg.Chat.Timeout,
 		cfg.Security.TrustedInternalToken,
 	)
+	antiFraudClient := antifraudadapter.NewClient(
+		cfg.AntiFraud.BaseURL,
+		cfg.AntiFraud.Timeout,
+		cfg.Security.TrustedInternalToken,
+	)
 	attractionClient := attractionadapter.NewClient(
 		cfg.Attraction.BaseURL,
 		cfg.Attraction.Timeout,
@@ -89,6 +95,7 @@ func main() {
 	})
 	staffUC := app.NewStaffUseCase(staffRepo, auditRepo, sessionRepo)
 	moderationUC := app.NewModerationUseCase(moderationRepo, excursionClient, activityClient, guideClient, chatClient, auditRepo)
+	fraudUC := app.NewFraudUseCase(antiFraudClient, auditRepo)
 	attractionUC := app.NewAttractionContentUseCase(attractionClient, fileManagerClient, auditRepo, app.AttractionContentConfig{
 		MaxImageBytes: cfg.FileManager.MaxAttractionImageBytes,
 	})
@@ -106,7 +113,7 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to initialize renderer")
 	}
-	adminServer := httpadapter.NewServer(cfg, renderer, authUC, staffUC, moderationUC, auditUC, attractionUC)
+	adminServer := httpadapter.NewServer(cfg, renderer, authUC, staffUC, moderationUC, auditUC, attractionUC, fraudUC)
 	adminServer.SetReadinessCheck(pool.Ping)
 
 	server := &http.Server{

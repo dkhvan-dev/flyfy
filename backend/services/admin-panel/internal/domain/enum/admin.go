@@ -65,6 +65,7 @@ const (
 	PermissionGuideModerate     Permission = "guide.moderate"
 	PermissionChatModerate      Permission = "chat.moderate"
 	PermissionAttractionManage  Permission = "attraction.manage"
+	PermissionFraudReview       Permission = "fraud.review"
 )
 
 type ModerationCaseStatus string

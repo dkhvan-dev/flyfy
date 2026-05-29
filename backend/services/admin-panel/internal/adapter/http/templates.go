@@ -229,13 +229,13 @@ func NewRenderer() (*Renderer, error) {
 		},
 		"statusClass": func(status any) string {
 			switch strings.ToUpper(strings.TrimSpace(fmt.Sprint(status))) {
-			case "OPEN", "PENDING_REVIEW", "SUBMITTED", "FLAGGED":
+			case "OPEN", "PENDING_REVIEW", "SUBMITTED", "FLAGGED", "REVIEW", "CHALLENGE", "ESCALATED":
 				return "badge badge-warn"
-			case "IN_REVIEW", "UNDER_REVIEW", "ESCALATED", "DRAFT":
+			case "IN_REVIEW", "UNDER_REVIEW", "DRAFT":
 				return "badge badge-info"
-			case "APPROVED", "PUBLISHED", "ACTIVE", "ENROLLMENT_OPEN", "CLEARED":
+			case "APPROVED", "PUBLISHED", "ACTIVE", "ENROLLMENT_OPEN", "CLEARED", "ALLOW", "FALSE_POSITIVE":
 				return "badge badge-success"
-			case "REJECTED", "REVOKED", "DISABLED", "LOCKED", "HIDDEN_BY_MODERATION":
+			case "REJECTED", "REVOKED", "DISABLED", "LOCKED", "HIDDEN_BY_MODERATION", "BLOCK", "CONFIRMED_FRAUD":
 				return "badge badge-danger"
 			case "SUPERSEDED":
 				return "badge"

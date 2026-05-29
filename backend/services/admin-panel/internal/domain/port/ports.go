@@ -132,6 +132,11 @@ type ChatClient interface {
 	HideMessage(ctx context.Context, input ChatMessageDecisionInput) (*model.ChatMessageModerationItem, []byte, error)
 }
 
+type AntiFraudClient interface {
+	ListFraudBlocks(ctx context.Context, target model.FraudBlockTarget, limit int, offset int) ([]model.FraudBlock, error)
+	ReviewFraudBlock(ctx context.Context, input model.FraudBlockReviewInput) (*model.FraudBlock, error)
+}
+
 type ChatMessageDecisionInput struct {
 	MessageID       uuid.UUID
 	ActorStaffID    uuid.UUID

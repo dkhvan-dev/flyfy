@@ -51,10 +51,18 @@ CREATE TABLE IF NOT EXISTS risk_assessments (
     reasons TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
     policy_version VARCHAR(80) NOT NULL,
     shadow_mode BOOLEAN NOT NULL DEFAULT true,
+    review_status VARCHAR(32) NOT NULL DEFAULT 'OPEN',
+    reviewed_by_staff_id UUID,
+    review_reason_codes TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+    review_comment TEXT NOT NULL DEFAULT '',
+    reviewed_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT risk_assessments_decision_chk
         CHECK (decision IN ('ALLOW', 'CHALLENGE', 'REVIEW', 'BLOCK')),
+    CONSTRAINT risk_assessments_review_status_chk
+        CHECK (review_status IN ('OPEN', 'CONFIRMED_FRAUD', 'FALSE_POSITIVE', 'ESCALATED')),
     CONSTRAINT risk_assessments_score_chk
         CHECK (risk_score >= 0 AND risk_score <= 100)
 );
@@ -65,3 +73,6 @@ CREATE INDEX IF NOT EXISTS idx_risk_assessments_decision_created_at
 CREATE INDEX IF NOT EXISTS idx_risk_assessments_actor_created_at
     ON risk_assessments (actor_user_id, created_at DESC)
     WHERE actor_user_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_risk_assessments_subject_review_created_at
+    ON risk_assessments (subject_type, review_status, created_at DESC);

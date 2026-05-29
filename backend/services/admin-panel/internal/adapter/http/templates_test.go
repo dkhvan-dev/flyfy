@@ -31,6 +31,10 @@ func TestRendererRendersCoreTemplates(t *testing.T) {
 		Email:       "moderator@flyfy.local",
 		DisplayName: "Moderator",
 		Status:      enum.StaffStatusActive,
+		Permissions: []enum.Permission{
+			enum.PermissionModerationRead,
+			enum.PermissionFraudReview,
+		},
 	}
 	caseID := uuid.New()
 	excursionID := uuid.New()
@@ -83,6 +87,19 @@ func TestRendererRendersCoreTemplates(t *testing.T) {
 			Sort:   string(model.ModerationQueueSortRiskDesc),
 			Query:  "status=active&city=Almaty&q=Kok&signal=new_guide&risk=high&sort=risk_desc",
 		}),
+		"fraud/blocks": NewFraudBlockListViewData(model.FraudBlockTargetActivity, []model.FraudBlock{
+			{
+				ID:           uuid.New(),
+				Action:       "ACTIVITY_CREATE",
+				SubjectType:  "ACTIVITY",
+				SubjectID:    &excursionID,
+				Decision:     "REVIEW",
+				RiskScore:    72,
+				Reasons:      []string{"ACTIVITY_CREATE_VELOCITY"},
+				ReviewStatus: "OPEN",
+				CreatedAt:    now,
+			},
+		}),
 		"staff/index": StaffListViewData{Staff: []*model.StaffUser{staff}},
 		"audit/index": AuditViewData{Events: []*model.AuditEvent{}},
 	}
@@ -127,12 +144,31 @@ func TestRendererRendersCoreTemplates(t *testing.T) {
 					`name="signal"`,
 					`name="risk"`,
 					`name="sort"`,
+					`/admin/moderation/excursions/fraud-blocks`,
 					`/admin/moderation/excursions/sync?status=active&amp;city=Almaty&amp;q=Kok&amp;signal=new_guide&amp;risk=high&amp;sort=risk_desc`,
 					`/admin/moderation/excursions`,
 				} {
 					if !strings.Contains(recorder.Body.String(), expected) {
 						t.Fatalf("moderation queue did not render filter control %q: %s", expected, recorder.Body.String())
 					}
+				}
+			}
+			if name == "fraud/blocks" {
+				body := html.UnescapeString(recorder.Body.String())
+				for _, expected := range []string{
+					"Anti-fraud blocks",
+					"ACTIVITY_CREATE",
+					"ACTIVITY_CREATE_VELOCITY",
+					"False positive",
+					"Escalate",
+					"Confirm fraud",
+				} {
+					if !strings.Contains(body, expected) {
+						t.Fatalf("fraud blocks page did not render %q: %s", expected, body)
+					}
+				}
+				if strings.Contains(body, "Approve") {
+					t.Fatalf("fraud blocks page must not render direct publish/approve action: %s", body)
 				}
 			}
 		})

@@ -26,7 +26,7 @@ func TestServerHandlerRegistersAttractionRoutesWithoutConflict(t *testing.T) {
 			RequestIDHeader:   "X-Request-Id",
 		},
 	}
-	server := NewServer(cfg, renderer, nil, nil, nil, nil, nil)
+	server := NewServer(cfg, renderer, nil, nil, nil, nil, nil, nil)
 
 	if handler := server.Handler(); handler == nil {
 		t.Fatal("Handler returned nil")

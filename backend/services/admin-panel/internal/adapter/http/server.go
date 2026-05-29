@@ -26,6 +26,7 @@ type Server struct {
 	moderation  *app.ModerationUseCase
 	audit       *app.AuditUseCase
 	attractions *app.AttractionContentUseCase
+	fraud       *app.FraudUseCase
 	readiness   func(context.Context) error
 }
 
@@ -37,8 +38,9 @@ func NewServer(
 	moderation *app.ModerationUseCase,
 	audit *app.AuditUseCase,
 	attractions *app.AttractionContentUseCase,
+	fraud *app.FraudUseCase,
 ) *Server {
-	return &Server{cfg: cfg, renderer: renderer, auth: auth, staff: staff, moderation: moderation, audit: audit, attractions: attractions}
+	return &Server{cfg: cfg, renderer: renderer, auth: auth, staff: staff, moderation: moderation, audit: audit, attractions: attractions, fraud: fraud}
 }
 
 func (s *Server) SetReadinessCheck(check func(context.Context) error) {
@@ -59,12 +61,20 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /admin/me", s.StaffProfile)
 	mux.HandleFunc("POST /admin/me/timezone", s.UpdateOwnTimezone)
 	mux.HandleFunc("GET /admin/moderation/excursions", s.ExcursionQueue)
+	mux.HandleFunc("GET /admin/moderation/excursions/fraud-blocks", s.ExcursionFraudBlocks)
+	mux.HandleFunc("POST /admin/moderation/excursions/fraud-blocks/{assessmentID}/confirm", s.ConfirmExcursionFraudBlock)
+	mux.HandleFunc("POST /admin/moderation/excursions/fraud-blocks/{assessmentID}/false-positive", s.FalsePositiveExcursionFraudBlock)
+	mux.HandleFunc("POST /admin/moderation/excursions/fraud-blocks/{assessmentID}/escalate", s.EscalateExcursionFraudBlock)
 	mux.HandleFunc("GET /admin/moderation/excursions/history", s.ExcursionHistory)
 	mux.HandleFunc("GET /admin/moderation/excursions/{caseID}", s.ExcursionCase)
 	mux.HandleFunc("POST /admin/moderation/excursions/sync", s.SyncExcursionQueue)
 	mux.HandleFunc("POST /admin/moderation/excursions/{caseID}/approve", s.ApproveExcursion)
 	mux.HandleFunc("POST /admin/moderation/excursions/{caseID}/reject", s.RejectExcursion)
 	mux.HandleFunc("GET /admin/moderation/activities", s.ActivityQueue)
+	mux.HandleFunc("GET /admin/moderation/activities/fraud-blocks", s.ActivityFraudBlocks)
+	mux.HandleFunc("POST /admin/moderation/activities/fraud-blocks/{assessmentID}/confirm", s.ConfirmActivityFraudBlock)
+	mux.HandleFunc("POST /admin/moderation/activities/fraud-blocks/{assessmentID}/false-positive", s.FalsePositiveActivityFraudBlock)
+	mux.HandleFunc("POST /admin/moderation/activities/fraud-blocks/{assessmentID}/escalate", s.EscalateActivityFraudBlock)
 	mux.HandleFunc("GET /admin/moderation/activities/history", s.ActivityHistory)
 	mux.HandleFunc("GET /admin/moderation/activities/{caseID}", s.ActivityCase)
 	mux.HandleFunc("POST /admin/moderation/activities/sync", s.SyncActivityQueue)
@@ -77,6 +87,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /admin/moderation/chats/{caseID}/approve", s.ApproveChatMessage)
 	mux.HandleFunc("POST /admin/moderation/chats/{caseID}/reject", s.RejectChatMessage)
 	mux.HandleFunc("GET /admin/moderation/guides", s.GuideApplicationQueue)
+	mux.HandleFunc("GET /admin/moderation/guides/fraud-blocks", s.GuideFraudBlocks)
+	mux.HandleFunc("POST /admin/moderation/guides/fraud-blocks/{assessmentID}/confirm", s.ConfirmGuideFraudBlock)
+	mux.HandleFunc("POST /admin/moderation/guides/fraud-blocks/{assessmentID}/false-positive", s.FalsePositiveGuideFraudBlock)
+	mux.HandleFunc("POST /admin/moderation/guides/fraud-blocks/{assessmentID}/escalate", s.EscalateGuideFraudBlock)
 	mux.HandleFunc("GET /admin/moderation/guides/current", s.ActiveGuideList)
 	mux.HandleFunc("GET /admin/moderation/guides/history", s.GuideApplicationHistory)
 	mux.HandleFunc("GET /admin/moderation/guides/{caseID}/documents/{documentID}", s.GuideApplicationDocument)
@@ -489,6 +503,87 @@ func (s *Server) GuideApplicationQueue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.renderPage(w, http.StatusOK, r, "moderation/queue", "moderation.guideApplicationQueue", "guides", NewGuideApplicationQueueViewData(cases, viewFilter), "")
+}
+
+func (s *Server) ExcursionFraudBlocks(w http.ResponseWriter, r *http.Request) {
+	s.renderFraudBlocks(w, r, model.FraudBlockTargetExcursion, "moderation")
+}
+
+func (s *Server) ActivityFraudBlocks(w http.ResponseWriter, r *http.Request) {
+	s.renderFraudBlocks(w, r, model.FraudBlockTargetActivity, "activities")
+}
+
+func (s *Server) GuideFraudBlocks(w http.ResponseWriter, r *http.Request) {
+	s.renderFraudBlocks(w, r, model.FraudBlockTargetGuideApplication, "guides")
+}
+
+func (s *Server) ConfirmExcursionFraudBlock(w http.ResponseWriter, r *http.Request) {
+	s.reviewFraudBlock(w, r, model.FraudBlockTargetExcursion, model.FraudBlockReviewStatusConfirmedFraud, "moderation")
+}
+
+func (s *Server) FalsePositiveExcursionFraudBlock(w http.ResponseWriter, r *http.Request) {
+	s.reviewFraudBlock(w, r, model.FraudBlockTargetExcursion, model.FraudBlockReviewStatusFalsePositive, "moderation")
+}
+
+func (s *Server) EscalateExcursionFraudBlock(w http.ResponseWriter, r *http.Request) {
+	s.reviewFraudBlock(w, r, model.FraudBlockTargetExcursion, model.FraudBlockReviewStatusEscalated, "moderation")
+}
+
+func (s *Server) ConfirmActivityFraudBlock(w http.ResponseWriter, r *http.Request) {
+	s.reviewFraudBlock(w, r, model.FraudBlockTargetActivity, model.FraudBlockReviewStatusConfirmedFraud, "activities")
+}
+
+func (s *Server) FalsePositiveActivityFraudBlock(w http.ResponseWriter, r *http.Request) {
+	s.reviewFraudBlock(w, r, model.FraudBlockTargetActivity, model.FraudBlockReviewStatusFalsePositive, "activities")
+}
+
+func (s *Server) EscalateActivityFraudBlock(w http.ResponseWriter, r *http.Request) {
+	s.reviewFraudBlock(w, r, model.FraudBlockTargetActivity, model.FraudBlockReviewStatusEscalated, "activities")
+}
+
+func (s *Server) ConfirmGuideFraudBlock(w http.ResponseWriter, r *http.Request) {
+	s.reviewFraudBlock(w, r, model.FraudBlockTargetGuideApplication, model.FraudBlockReviewStatusConfirmedFraud, "guides")
+}
+
+func (s *Server) FalsePositiveGuideFraudBlock(w http.ResponseWriter, r *http.Request) {
+	s.reviewFraudBlock(w, r, model.FraudBlockTargetGuideApplication, model.FraudBlockReviewStatusFalsePositive, "guides")
+}
+
+func (s *Server) EscalateGuideFraudBlock(w http.ResponseWriter, r *http.Request) {
+	s.reviewFraudBlock(w, r, model.FraudBlockTargetGuideApplication, model.FraudBlockReviewStatusEscalated, "guides")
+}
+
+func (s *Server) renderFraudBlocks(w http.ResponseWriter, r *http.Request, target model.FraudBlockTarget, activeNav string) {
+	staff := staffFromContext(r.Context())
+	blocks, err := s.fraud.ListBlocks(r.Context(), staff, target, 100, 0)
+	data := NewFraudBlockListViewData(target, blocks)
+	if err != nil {
+		s.renderPage(w, errorStatus(err), r, "fraud/blocks", "fraud.blocksTitle", activeNav, data, publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	s.renderPage(w, http.StatusOK, r, "fraud/blocks", "fraud.blocksTitle", activeNav, data, "")
+}
+
+func (s *Server) reviewFraudBlock(w http.ResponseWriter, r *http.Request, target model.FraudBlockTarget, status model.FraudBlockReviewStatus, activeNav string) {
+	assessmentID, ok := parsePathUUID(w, r, "assessmentID")
+	if !ok {
+		return
+	}
+	staff := staffFromContext(r.Context())
+	_, err := s.fraud.ReviewBlock(r.Context(), app.ReviewFraudBlockInput{
+		Actor:           staff,
+		AssessmentID:    assessmentID,
+		Status:          status,
+		ReasonCodes:     splitCSV(r.Form.Get("reason_codes")),
+		InternalComment: r.Form.Get("internal_comment"),
+		RequestMetadata: requestMetadata(r),
+	})
+	if err != nil {
+		blocks, _ := s.fraud.ListBlocks(r.Context(), staff, target, 100, 0)
+		s.renderPage(w, errorStatus(err), r, "fraud/blocks", "fraud.blocksTitle", activeNav, NewFraudBlockListViewData(target, blocks), publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	http.Redirect(w, r, redirectWithFlash(fraudBlockBaseURL(target), "fraud.blockReviewed"), http.StatusSeeOther)
 }
 
 func (s *Server) GuideApplicationHistory(w http.ResponseWriter, r *http.Request) {

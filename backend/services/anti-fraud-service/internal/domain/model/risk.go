@@ -16,6 +16,15 @@ const (
 	RiskDecisionBlock     RiskDecision = "BLOCK"
 )
 
+type RiskReviewStatus string
+
+const (
+	RiskReviewStatusOpen           RiskReviewStatus = "OPEN"
+	RiskReviewStatusConfirmedFraud RiskReviewStatus = "CONFIRMED_FRAUD"
+	RiskReviewStatusFalsePositive  RiskReviewStatus = "FALSE_POSITIVE"
+	RiskReviewStatusEscalated      RiskReviewStatus = "ESCALATED"
+)
+
 type RiskEvent struct {
 	ID          uuid.UUID  `json:"id"`
 	Action      string     `json:"action"`
@@ -40,15 +49,34 @@ type RiskAssessment struct {
 	SubjectType string     `json:"subjectType"`
 	SubjectID   *uuid.UUID `json:"subjectId,omitempty"`
 
-	Decision      RiskDecision   `json:"decision"`
-	RiskScore     int            `json:"riskScore"`
-	Reasons       []string       `json:"reasons"`
-	PolicyVersion string         `json:"policyVersion"`
-	ShadowMode    bool           `json:"shadowMode"`
-	Metadata      map[string]any `json:"metadata"`
-	CreatedAt     time.Time      `json:"createdAt"`
+	Decision          RiskDecision     `json:"decision"`
+	RiskScore         int              `json:"riskScore"`
+	Reasons           []string         `json:"reasons"`
+	PolicyVersion     string           `json:"policyVersion"`
+	ShadowMode        bool             `json:"shadowMode"`
+	ReviewStatus      RiskReviewStatus `json:"reviewStatus"`
+	ReviewedByStaffID *uuid.UUID       `json:"reviewedByStaffId,omitempty"`
+	ReviewReasonCodes []string         `json:"reviewReasonCodes,omitempty"`
+	ReviewComment     string           `json:"reviewComment,omitempty"`
+	ReviewedAt        *time.Time       `json:"reviewedAt,omitempty"`
+	UpdatedAt         time.Time        `json:"updatedAt"`
+	Metadata          map[string]any   `json:"metadata"`
+	CreatedAt         time.Time        `json:"createdAt"`
 }
 
 func NormalizeCode(value string) string {
 	return strings.ToUpper(strings.TrimSpace(value))
+}
+
+func NormalizeReviewStatus(value RiskReviewStatus) RiskReviewStatus {
+	switch RiskReviewStatus(NormalizeCode(string(value))) {
+	case RiskReviewStatusConfirmedFraud:
+		return RiskReviewStatusConfirmedFraud
+	case RiskReviewStatusFalsePositive:
+		return RiskReviewStatusFalsePositive
+	case RiskReviewStatusEscalated:
+		return RiskReviewStatusEscalated
+	default:
+		return RiskReviewStatusOpen
+	}
 }

@@ -77,6 +77,11 @@ const (
 	ReasonUnverifiedGuidePublish   = "UNVERIFIED_GUIDE_PUBLISH"
 )
 
+var (
+	ErrInvalidInput  = errors.New("invalid input")
+	ErrNotConfigured = errors.New("risk use case is not configured")
+)
+
 type Policy struct {
 	Version string
 
@@ -162,6 +167,28 @@ type AssessActionInput struct {
 	Metadata       map[string]any
 }
 
+type FraudBlockTarget string
+
+const (
+	FraudBlockTargetActivity         FraudBlockTarget = "ACTIVITY"
+	FraudBlockTargetExcursion        FraudBlockTarget = "EXCURSION"
+	FraudBlockTargetGuideApplication FraudBlockTarget = "GUIDE_APPLICATION"
+)
+
+type ListFraudBlocksInput struct {
+	TargetType FraudBlockTarget
+	Limit      int
+	Offset     int
+}
+
+type ReviewFraudBlockInput struct {
+	AssessmentID      uuid.UUID
+	Status            model.RiskReviewStatus
+	ReviewedByStaffID uuid.UUID
+	ReasonCodes       []string
+	Comment           string
+}
+
 func NewRiskUseCase(repo port.RiskRepository, policy Policy) *RiskUseCase {
 	return &RiskUseCase{
 		repo:   repo,
@@ -169,15 +196,57 @@ func NewRiskUseCase(repo port.RiskRepository, policy Policy) *RiskUseCase {
 	}
 }
 
+func (u *RiskUseCase) ListFraudBlocks(ctx context.Context, input ListFraudBlocksInput) ([]*model.RiskAssessment, error) {
+	if u == nil || u.repo == nil {
+		return nil, ErrNotConfigured
+	}
+	subjectTypes, decisions, err := fraudBlockFilter(input.TargetType)
+	if err != nil {
+		return nil, err
+	}
+	return u.repo.ListAssessments(ctx, port.RiskAssessmentFilter{
+		SubjectTypes: subjectTypes,
+		Decisions:    decisions,
+		ReviewStatuses: []model.RiskReviewStatus{
+			model.RiskReviewStatusOpen,
+			model.RiskReviewStatusEscalated,
+		},
+		EnforcedOnly: true,
+		Limit:        clampLimit(input.Limit),
+		Offset:       normalizeOffset(input.Offset),
+	})
+}
+
+func (u *RiskUseCase) ReviewFraudBlock(ctx context.Context, input ReviewFraudBlockInput) (*model.RiskAssessment, error) {
+	if u == nil || u.repo == nil {
+		return nil, ErrNotConfigured
+	}
+	status := model.NormalizeReviewStatus(input.Status)
+	if status == model.RiskReviewStatusOpen ||
+		input.AssessmentID == uuid.Nil ||
+		input.ReviewedByStaffID == uuid.Nil ||
+		strings.TrimSpace(input.Comment) == "" {
+		return nil, fmt.Errorf("%w: fraud block review input", ErrInvalidInput)
+	}
+	return u.repo.UpdateAssessmentReview(ctx, port.RiskAssessmentReviewInput{
+		AssessmentID:      input.AssessmentID,
+		Status:            status,
+		ReviewedByStaffID: input.ReviewedByStaffID,
+		ReasonCodes:       normalizeReasonCodes(input.ReasonCodes),
+		Comment:           strings.TrimSpace(input.Comment),
+		ReviewedAt:        time.Now().UTC(),
+	})
+}
+
 func (u *RiskUseCase) AssessAction(ctx context.Context, input AssessActionInput) (*model.RiskAssessment, error) {
 	if u == nil || u.repo == nil {
-		return nil, errors.New("risk use case is not configured")
+		return nil, ErrNotConfigured
 	}
 
 	now := time.Now().UTC()
 	action := model.NormalizeCode(input.Action)
 	if action == "" {
-		return nil, errors.New("risk action is required")
+		return nil, fmt.Errorf("%w: risk action is required", ErrInvalidInput)
 	}
 
 	event := &model.RiskEvent{
@@ -421,6 +490,8 @@ func (u *RiskUseCase) AssessAction(ctx context.Context, input AssessActionInput)
 		Reasons:       reasons,
 		PolicyVersion: u.policy.Version,
 		ShadowMode:    u.policy.ShadowMode,
+		ReviewStatus:  model.RiskReviewStatusOpen,
+		UpdatedAt:     now,
 		Metadata: map[string]any{
 			"sourceService":  event.SourceService,
 			"idempotencyKey": event.IdempotencyKey,
@@ -433,6 +504,64 @@ func (u *RiskUseCase) AssessAction(ctx context.Context, input AssessActionInput)
 	}
 
 	return assessment, nil
+}
+
+func fraudBlockFilter(target FraudBlockTarget) ([]string, []model.RiskDecision, error) {
+	switch target {
+	case FraudBlockTargetActivity:
+		return []string{"ACTIVITY", "ACTIVITY_PARTICIPANT"}, []model.RiskDecision{
+			model.RiskDecisionReview,
+			model.RiskDecisionChallenge,
+			model.RiskDecisionBlock,
+		}, nil
+	case FraudBlockTargetExcursion:
+		return []string{"EXCURSION", "EXCURSION_SCHEDULE", "EXCURSION_BOOKING", "EXCURSION_PRODUCT"}, []model.RiskDecision{
+			model.RiskDecisionReview,
+			model.RiskDecisionChallenge,
+			model.RiskDecisionBlock,
+		}, nil
+	case FraudBlockTargetGuideApplication:
+		return []string{"GUIDE_APPLICATION"}, []model.RiskDecision{
+			model.RiskDecisionChallenge,
+			model.RiskDecisionBlock,
+		}, nil
+	default:
+		return nil, nil, fmt.Errorf("%w: invalid fraud block target type", ErrInvalidInput)
+	}
+}
+
+func clampLimit(limit int) int {
+	if limit <= 0 {
+		return 100
+	}
+	if limit > 500 {
+		return 500
+	}
+	return limit
+}
+
+func normalizeOffset(offset int) int {
+	if offset < 0 {
+		return 0
+	}
+	return offset
+}
+
+func normalizeReasonCodes(values []string) []string {
+	out := make([]string, 0, len(values))
+	seen := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		code := strings.ToLower(strings.TrimSpace(value))
+		if code == "" {
+			continue
+		}
+		if _, ok := seen[code]; ok {
+			continue
+		}
+		seen[code] = struct{}{}
+		out = append(out, code)
+	}
+	return out
 }
 
 func (u *RiskUseCase) countBySignal(ctx context.Context, since time.Time, action, signalKey, signalHash string) (int, error) {
