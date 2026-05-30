@@ -29,6 +29,27 @@ Production push notification service for Inflap.
 
 Use a new `idempotencyKey` for each manual send, otherwise the backend intentionally deduplicates the request.
 
+## User Preferences
+
+Authenticated app traffic goes through the API gateway and uses:
+
+- `GET /api/v1/notifications/preferences`
+- `PUT /api/v1/notifications/preferences`
+
+The preferences are owned by `notification-service` because delivery rules must be enforced centrally, not only in the mobile UI. Disabling push or a category stops provider fanout, but the notification request is still stored for the in-app inbox. Quiet hours suppress normal-priority push notifications and let high-priority service notifications through.
+
+Supported preference fields:
+
+- `pushEnabled`
+- `activityEnabled`
+- `excursionEnabled`
+- `chatEnabled`
+- `marketingEnabled`
+- `quietHoursEnabled`
+- `quietHoursStartMinutes`
+- `quietHoursEndMinutes`
+- `timezone`
+
 ## Secrets
 
 Never store Firebase service account JSON, APNs keys, HMS client secrets, internal tokens, or token encryption keys in git.

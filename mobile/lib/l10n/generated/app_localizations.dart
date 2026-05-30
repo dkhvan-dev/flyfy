@@ -1861,8 +1861,32 @@ abstract class AppLocalizations {
   /// No description provided for @profileNotificationsHeroSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Choose how Inflap keeps you updated about activity changes, participation, and new opportunities.'**
+  /// **'Tune push, quiet hours, and fallback channels so Inflap sends what matters without getting noisy.'**
   String get profileNotificationsHeroSubtitle;
+
+  /// No description provided for @profileNotificationsDeliverySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Push delivery'**
+  String get profileNotificationsDeliverySection;
+
+  /// No description provided for @profileNotificationsCategoriesSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Push categories'**
+  String get profileNotificationsCategoriesSection;
+
+  /// No description provided for @profileNotificationsQuietHoursSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiet hours'**
+  String get profileNotificationsQuietHoursSection;
+
+  /// No description provided for @profileNotificationsChannelsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Fallback channels'**
+  String get profileNotificationsChannelsSection;
 
   /// No description provided for @profileNotificationsActivitySection.
   ///
@@ -1885,8 +1909,32 @@ abstract class AppLocalizations {
   /// No description provided for @profileNotificationsPushSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Instant updates for activities, status changes, and new messages.'**
+  /// **'Master push switch for this device. The in-app inbox will keep saving notifications.'**
   String get profileNotificationsPushSubtitle;
+
+  /// No description provided for @profileNotificationsPushPausedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Push is paused'**
+  String get profileNotificationsPushPausedTitle;
+
+  /// No description provided for @profileNotificationsPushPausedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We will stop sending device push, while important events remain available in the in-app notification center.'**
+  String get profileNotificationsPushPausedSubtitle;
+
+  /// No description provided for @profileNotificationsPushEnabledStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Push enabled'**
+  String get profileNotificationsPushEnabledStatus;
+
+  /// No description provided for @profileNotificationsPushPausedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Push paused'**
+  String get profileNotificationsPushPausedStatus;
 
   /// No description provided for @profileNotificationsEmailTitle.
   ///
@@ -1912,6 +1960,42 @@ abstract class AppLocalizations {
   /// **'Short critical updates and confirmations by text message.'**
   String get profileNotificationsSmsSubtitle;
 
+  /// No description provided for @profileNotificationsActivityPushTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activities'**
+  String get profileNotificationsActivityPushTitle;
+
+  /// No description provided for @profileNotificationsActivityPushSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New participants, status changes, reschedules, and reminders for your activities.'**
+  String get profileNotificationsActivityPushSubtitle;
+
+  /// No description provided for @profileNotificationsExcursionPushTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Excursions'**
+  String get profileNotificationsExcursionPushTitle;
+
+  /// No description provided for @profileNotificationsExcursionPushSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookings, schedule updates, requests, publishing statuses, and excursion events.'**
+  String get profileNotificationsExcursionPushSubtitle;
+
+  /// No description provided for @profileNotificationsChatPushTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages'**
+  String get profileNotificationsChatPushTitle;
+
+  /// No description provided for @profileNotificationsChatPushSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New messages, invitations, and important replies in chats.'**
+  String get profileNotificationsChatPushSubtitle;
+
   /// No description provided for @profileNotificationsMarketingTitle.
   ///
   /// In en, this message translates to:
@@ -1921,8 +2005,74 @@ abstract class AppLocalizations {
   /// No description provided for @profileNotificationsMarketingSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Travel inspiration, place collections, and special Inflap offers.'**
+  /// **'Travel inspiration, place collections, and personal offers. You can turn this off without losing service notifications.'**
   String get profileNotificationsMarketingSubtitle;
+
+  /// No description provided for @profileNotificationsSystemTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'System and security notifications'**
+  String get profileNotificationsSystemTitle;
+
+  /// No description provided for @profileNotificationsSystemSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Important account security, payment, and access messages cannot be disabled in the app.'**
+  String get profileNotificationsSystemSubtitle;
+
+  /// No description provided for @profileNotificationsQuietHoursTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Do not disturb'**
+  String get profileNotificationsQuietHoursTitle;
+
+  /// No description provided for @profileNotificationsQuietHoursSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Regular push will stay quiet from {start} to {end}. Urgent high-priority notifications are delivered immediately.'**
+  String profileNotificationsQuietHoursSubtitle(Object start, Object end);
+
+  /// No description provided for @profileNotificationsQuietHoursStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Starts'**
+  String get profileNotificationsQuietHoursStart;
+
+  /// No description provided for @profileNotificationsQuietHoursEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends'**
+  String get profileNotificationsQuietHoursEnd;
+
+  /// No description provided for @profileNotificationsQuietHoursTimezone.
+  ///
+  /// In en, this message translates to:
+  /// **'Using profile timezone: {timezone}'**
+  String profileNotificationsQuietHoursTimezone(Object timezone);
+
+  /// No description provided for @profileNotificationsQuietHoursEnabledStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiet hours on'**
+  String get profileNotificationsQuietHoursEnabledStatus;
+
+  /// No description provided for @profileNotificationsQuietHoursDisabledStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'No quiet hours'**
+  String get profileNotificationsQuietHoursDisabledStatus;
+
+  /// No description provided for @profileNotificationsPreferencesLoadFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load push settings'**
+  String get profileNotificationsPreferencesLoadFailedTitle;
+
+  /// No description provided for @profileNotificationsPreferencesLoadFailedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection. Email and SMS can still be changed separately, but push settings are temporarily unavailable.'**
+  String get profileNotificationsPreferencesLoadFailedSubtitle;
 
   /// No description provided for @profileNotificationsDarkModeTitle.
   ///

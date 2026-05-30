@@ -983,7 +983,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileNotificationsHeroSubtitle =>
-      'Choose how Inflap keeps you updated about activity changes, participation, and new opportunities.';
+      'Tune push, quiet hours, and fallback channels so Inflap sends what matters without getting noisy.';
+
+  @override
+  String get profileNotificationsDeliverySection => 'Push delivery';
+
+  @override
+  String get profileNotificationsCategoriesSection => 'Push categories';
+
+  @override
+  String get profileNotificationsQuietHoursSection => 'Quiet hours';
+
+  @override
+  String get profileNotificationsChannelsSection => 'Fallback channels';
 
   @override
   String get profileNotificationsActivitySection =>
@@ -997,7 +1009,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileNotificationsPushSubtitle =>
-      'Instant updates for activities, status changes, and new messages.';
+      'Master push switch for this device. The in-app inbox will keep saving notifications.';
+
+  @override
+  String get profileNotificationsPushPausedTitle => 'Push is paused';
+
+  @override
+  String get profileNotificationsPushPausedSubtitle =>
+      'We will stop sending device push, while important events remain available in the in-app notification center.';
+
+  @override
+  String get profileNotificationsPushEnabledStatus => 'Push enabled';
+
+  @override
+  String get profileNotificationsPushPausedStatus => 'Push paused';
 
   @override
   String get profileNotificationsEmailTitle => 'Email notifications';
@@ -1014,11 +1039,73 @@ class AppLocalizationsEn extends AppLocalizations {
       'Short critical updates and confirmations by text message.';
 
   @override
+  String get profileNotificationsActivityPushTitle => 'Activities';
+
+  @override
+  String get profileNotificationsActivityPushSubtitle =>
+      'New participants, status changes, reschedules, and reminders for your activities.';
+
+  @override
+  String get profileNotificationsExcursionPushTitle => 'Excursions';
+
+  @override
+  String get profileNotificationsExcursionPushSubtitle =>
+      'Bookings, schedule updates, requests, publishing statuses, and excursion events.';
+
+  @override
+  String get profileNotificationsChatPushTitle => 'Messages';
+
+  @override
+  String get profileNotificationsChatPushSubtitle =>
+      'New messages, invitations, and important replies in chats.';
+
+  @override
   String get profileNotificationsMarketingTitle => 'Collections & offers';
 
   @override
   String get profileNotificationsMarketingSubtitle =>
-      'Travel inspiration, place collections, and special Inflap offers.';
+      'Travel inspiration, place collections, and personal offers. You can turn this off without losing service notifications.';
+
+  @override
+  String get profileNotificationsSystemTitle =>
+      'System and security notifications';
+
+  @override
+  String get profileNotificationsSystemSubtitle =>
+      'Important account security, payment, and access messages cannot be disabled in the app.';
+
+  @override
+  String get profileNotificationsQuietHoursTitle => 'Do not disturb';
+
+  @override
+  String profileNotificationsQuietHoursSubtitle(Object start, Object end) {
+    return 'Regular push will stay quiet from $start to $end. Urgent high-priority notifications are delivered immediately.';
+  }
+
+  @override
+  String get profileNotificationsQuietHoursStart => 'Starts';
+
+  @override
+  String get profileNotificationsQuietHoursEnd => 'Ends';
+
+  @override
+  String profileNotificationsQuietHoursTimezone(Object timezone) {
+    return 'Using profile timezone: $timezone';
+  }
+
+  @override
+  String get profileNotificationsQuietHoursEnabledStatus => 'Quiet hours on';
+
+  @override
+  String get profileNotificationsQuietHoursDisabledStatus => 'No quiet hours';
+
+  @override
+  String get profileNotificationsPreferencesLoadFailedTitle =>
+      'Could not load push settings';
+
+  @override
+  String get profileNotificationsPreferencesLoadFailedSubtitle =>
+      'Check your connection. Email and SMS can still be changed separately, but push settings are temporarily unavailable.';
 
   @override
   String get profileNotificationsDarkModeTitle => 'Dark mode';

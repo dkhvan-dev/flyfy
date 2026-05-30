@@ -504,6 +504,138 @@ func (r *PGNotificationRepository) MarkUserNotificationsRead(
 	return int(tag.RowsAffected()), nil
 }
 
+func (r *PGNotificationRepository) GetNotificationPreferences(
+	ctx context.Context,
+	userID uuid.UUID,
+) (*model.NotificationPreferences, error) {
+	row := r.pool.QueryRow(ctx, `
+		SELECT
+			user_id,
+			push_enabled,
+			activity_enabled,
+			excursion_enabled,
+			chat_enabled,
+			marketing_enabled,
+			quiet_hours_enabled,
+			quiet_hours_start_minutes,
+			quiet_hours_end_minutes,
+			timezone,
+			created_at,
+			updated_at
+		FROM notification_preferences
+		WHERE user_id = $1
+	`, userID)
+	preferences, err := scanNotificationPreferences(row)
+	if err != nil {
+		if errors.Is(err, model.ErrNotFound) {
+			defaults := model.DefaultNotificationPreferences(userID)
+			return &defaults, nil
+		}
+		return nil, err
+	}
+	return preferences, nil
+}
+
+func (r *PGNotificationRepository) UpsertNotificationPreferences(
+	ctx context.Context,
+	preferences model.NotificationPreferences,
+) (*model.NotificationPreferences, error) {
+	preferences.Normalize()
+	row := r.pool.QueryRow(ctx, `
+		INSERT INTO notification_preferences (
+			user_id,
+			push_enabled,
+			activity_enabled,
+			excursion_enabled,
+			chat_enabled,
+			marketing_enabled,
+			quiet_hours_enabled,
+			quiet_hours_start_minutes,
+			quiet_hours_end_minutes,
+			timezone,
+			created_at,
+			updated_at
+		)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NOW(),NOW())
+		ON CONFLICT (user_id)
+		DO UPDATE SET
+			push_enabled = EXCLUDED.push_enabled,
+			activity_enabled = EXCLUDED.activity_enabled,
+			excursion_enabled = EXCLUDED.excursion_enabled,
+			chat_enabled = EXCLUDED.chat_enabled,
+			marketing_enabled = EXCLUDED.marketing_enabled,
+			quiet_hours_enabled = EXCLUDED.quiet_hours_enabled,
+			quiet_hours_start_minutes = EXCLUDED.quiet_hours_start_minutes,
+			quiet_hours_end_minutes = EXCLUDED.quiet_hours_end_minutes,
+			timezone = EXCLUDED.timezone,
+			updated_at = NOW()
+		RETURNING
+			user_id,
+			push_enabled,
+			activity_enabled,
+			excursion_enabled,
+			chat_enabled,
+			marketing_enabled,
+			quiet_hours_enabled,
+			quiet_hours_start_minutes,
+			quiet_hours_end_minutes,
+			timezone,
+			created_at,
+			updated_at
+	`, preferences.UserID, preferences.PushEnabled, preferences.ActivityEnabled,
+		preferences.ExcursionEnabled, preferences.ChatEnabled, preferences.MarketingEnabled,
+		preferences.QuietHoursEnabled, preferences.QuietHoursStartMinutes,
+		preferences.QuietHoursEndMinutes, preferences.Timezone)
+	return scanNotificationPreferences(row)
+}
+
+func (r *PGNotificationRepository) ListNotificationPreferences(
+	ctx context.Context,
+	userIDs []uuid.UUID,
+) (map[uuid.UUID]model.NotificationPreferences, error) {
+	preferencesByUserID := make(map[uuid.UUID]model.NotificationPreferences, len(userIDs))
+	for _, userID := range userIDs {
+		if userID == uuid.Nil {
+			continue
+		}
+		preferencesByUserID[userID] = model.DefaultNotificationPreferences(userID)
+	}
+	if len(preferencesByUserID) == 0 {
+		return preferencesByUserID, nil
+	}
+
+	rows, err := r.pool.Query(ctx, `
+		SELECT
+			user_id,
+			push_enabled,
+			activity_enabled,
+			excursion_enabled,
+			chat_enabled,
+			marketing_enabled,
+			quiet_hours_enabled,
+			quiet_hours_start_minutes,
+			quiet_hours_end_minutes,
+			timezone,
+			created_at,
+			updated_at
+		FROM notification_preferences
+		WHERE user_id = ANY($1)
+	`, userIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		preferences, err := scanNotificationPreferences(rows)
+		if err != nil {
+			return nil, err
+		}
+		preferencesByUserID[preferences.UserID] = *preferences
+	}
+	return preferencesByUserID, rows.Err()
+}
+
 type scanner interface {
 	Scan(dest ...any) error
 }
@@ -633,6 +765,31 @@ func scanUserNotificationWithExtra(row scanner, extraDest ...any) (model.UserNot
 	}
 	notification.ReadAt = readAt
 	return notification, nil
+}
+
+func scanNotificationPreferences(row scanner) (*model.NotificationPreferences, error) {
+	var preferences model.NotificationPreferences
+	if err := row.Scan(
+		&preferences.UserID,
+		&preferences.PushEnabled,
+		&preferences.ActivityEnabled,
+		&preferences.ExcursionEnabled,
+		&preferences.ChatEnabled,
+		&preferences.MarketingEnabled,
+		&preferences.QuietHoursEnabled,
+		&preferences.QuietHoursStartMinutes,
+		&preferences.QuietHoursEndMinutes,
+		&preferences.Timezone,
+		&preferences.CreatedAt,
+		&preferences.UpdatedAt,
+	); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, model.ErrNotFound
+		}
+		return nil, err
+	}
+	preferences.Normalize()
+	return &preferences, nil
 }
 
 func deliverySelectSQL() string {

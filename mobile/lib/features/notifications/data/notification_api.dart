@@ -164,6 +164,126 @@ class NotificationReadResult {
   final int updatedCount;
 }
 
+class NotificationPreferences {
+  const NotificationPreferences({
+    required this.pushEnabled,
+    required this.activityEnabled,
+    required this.excursionEnabled,
+    required this.chatEnabled,
+    required this.marketingEnabled,
+    required this.quietHoursEnabled,
+    required this.quietHoursStartMinutes,
+    required this.quietHoursEndMinutes,
+    required this.timezone,
+  });
+
+  factory NotificationPreferences.defaults() {
+    return const NotificationPreferences(
+      pushEnabled: true,
+      activityEnabled: true,
+      excursionEnabled: true,
+      chatEnabled: true,
+      marketingEnabled: false,
+      quietHoursEnabled: false,
+      quietHoursStartMinutes: 22 * 60,
+      quietHoursEndMinutes: 8 * 60,
+      timezone: 'UTC',
+    );
+  }
+
+  factory NotificationPreferences.fromJson(Map<String, dynamic> json) {
+    return NotificationPreferences(
+      pushEnabled: json['pushEnabled'] != false,
+      activityEnabled: json['activityEnabled'] != false,
+      excursionEnabled: json['excursionEnabled'] != false,
+      chatEnabled: json['chatEnabled'] != false,
+      marketingEnabled: json['marketingEnabled'] == true,
+      quietHoursEnabled: json['quietHoursEnabled'] == true,
+      quietHoursStartMinutes: _minuteValue(
+        json['quietHoursStartMinutes'],
+        22 * 60,
+      ),
+      quietHoursEndMinutes: _minuteValue(json['quietHoursEndMinutes'], 8 * 60),
+      timezone: _nonEmptyString(json['timezone'], 'UTC'),
+    );
+  }
+
+  final bool pushEnabled;
+  final bool activityEnabled;
+  final bool excursionEnabled;
+  final bool chatEnabled;
+  final bool marketingEnabled;
+  final bool quietHoursEnabled;
+  final int quietHoursStartMinutes;
+  final int quietHoursEndMinutes;
+  final String timezone;
+
+  NotificationPreferences copyWith({
+    bool? pushEnabled,
+    bool? activityEnabled,
+    bool? excursionEnabled,
+    bool? chatEnabled,
+    bool? marketingEnabled,
+    bool? quietHoursEnabled,
+    int? quietHoursStartMinutes,
+    int? quietHoursEndMinutes,
+    String? timezone,
+  }) {
+    return NotificationPreferences(
+      pushEnabled: pushEnabled ?? this.pushEnabled,
+      activityEnabled: activityEnabled ?? this.activityEnabled,
+      excursionEnabled: excursionEnabled ?? this.excursionEnabled,
+      chatEnabled: chatEnabled ?? this.chatEnabled,
+      marketingEnabled: marketingEnabled ?? this.marketingEnabled,
+      quietHoursEnabled: quietHoursEnabled ?? this.quietHoursEnabled,
+      quietHoursStartMinutes:
+          quietHoursStartMinutes ?? this.quietHoursStartMinutes,
+      quietHoursEndMinutes: quietHoursEndMinutes ?? this.quietHoursEndMinutes,
+      timezone: timezone ?? this.timezone,
+    );
+  }
+}
+
+class NotificationPreferencesUpdate {
+  const NotificationPreferencesUpdate({
+    this.pushEnabled,
+    this.activityEnabled,
+    this.excursionEnabled,
+    this.chatEnabled,
+    this.marketingEnabled,
+    this.quietHoursEnabled,
+    this.quietHoursStartMinutes,
+    this.quietHoursEndMinutes,
+    this.timezone,
+  });
+
+  final bool? pushEnabled;
+  final bool? activityEnabled;
+  final bool? excursionEnabled;
+  final bool? chatEnabled;
+  final bool? marketingEnabled;
+  final bool? quietHoursEnabled;
+  final int? quietHoursStartMinutes;
+  final int? quietHoursEndMinutes;
+  final String? timezone;
+
+  Map<String, Object?> toJson() {
+    return <String, Object?>{
+      if (pushEnabled != null) 'pushEnabled': pushEnabled,
+      if (activityEnabled != null) 'activityEnabled': activityEnabled,
+      if (excursionEnabled != null) 'excursionEnabled': excursionEnabled,
+      if (chatEnabled != null) 'chatEnabled': chatEnabled,
+      if (marketingEnabled != null) 'marketingEnabled': marketingEnabled,
+      if (quietHoursEnabled != null) 'quietHoursEnabled': quietHoursEnabled,
+      if (quietHoursStartMinutes != null)
+        'quietHoursStartMinutes': quietHoursStartMinutes,
+      if (quietHoursEndMinutes != null)
+        'quietHoursEndMinutes': quietHoursEndMinutes,
+      if (timezone != null) 'timezone': timezone?.trim(),
+    };
+  }
+}
+
 abstract interface class NotificationDeviceTokenClient {
   Future<RegisteredDeviceToken> registerDeviceToken(
     DeviceTokenRegistration registration,
@@ -186,6 +306,12 @@ abstract interface class NotificationInboxClient {
   Future<NotificationReadResult> markNotificationCategoryRead({
     required String category,
   });
+
+  Future<NotificationPreferences> getNotificationPreferences();
+
+  Future<NotificationPreferences> updateNotificationPreferences(
+    NotificationPreferencesUpdate update,
+  );
 }
 
 class NotificationApi
@@ -267,6 +393,25 @@ class NotificationApi
     );
     return NotificationReadResult.fromJson(response.data ?? {});
   }
+
+  @override
+  Future<NotificationPreferences> getNotificationPreferences() async {
+    final response = await _apiClient.dio.get<Map<String, dynamic>>(
+      '/notifications/preferences',
+    );
+    return NotificationPreferences.fromJson(response.data ?? {});
+  }
+
+  @override
+  Future<NotificationPreferences> updateNotificationPreferences(
+    NotificationPreferencesUpdate update,
+  ) async {
+    final response = await _apiClient.dio.put<Map<String, dynamic>>(
+      '/notifications/preferences',
+      data: update.toJson(),
+    );
+    return NotificationPreferences.fromJson(response.data ?? {});
+  }
 }
 
 Map<String, String> _stringMap(Object? value) {
@@ -298,4 +443,20 @@ int _intValue(Object? value) {
     return value.toInt();
   }
   return int.tryParse(value?.toString() ?? '') ?? 0;
+}
+
+int _minuteValue(Object? value, int fallback) {
+  final parsed = _intValue(value);
+  if (parsed < 0 || parsed >= 24 * 60) {
+    return fallback;
+  }
+  return parsed;
+}
+
+String _nonEmptyString(Object? value, String fallback) {
+  final normalized = value?.toString().trim() ?? '';
+  if (normalized.isEmpty) {
+    return fallback;
+  }
+  return normalized;
 }

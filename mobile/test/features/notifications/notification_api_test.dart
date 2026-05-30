@@ -161,6 +161,87 @@ void main() {
     expect(request.data, {'category': 'activity updates'});
     expect(request.headers['Authorization'], 'Bearer access-token');
   });
+
+  test('getNotificationPreferences parses production delivery settings',
+      () async {
+    final adapter = _RecordingAdapter(
+      response: const _JsonResponse(200, {
+        'pushEnabled': true,
+        'activityEnabled': false,
+        'excursionEnabled': true,
+        'chatEnabled': true,
+        'marketingEnabled': false,
+        'quietHoursEnabled': true,
+        'quietHoursStartMinutes': 1320,
+        'quietHoursEndMinutes': 480,
+        'timezone': 'Asia/Almaty',
+      }),
+    );
+    final api = NotificationApi(
+      apiClient: ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+          ..httpClientAdapter = adapter,
+        secureStorage: _MemorySecureStorage(accessToken: 'access-token'),
+      ),
+    );
+
+    final preferences = await api.getNotificationPreferences();
+
+    expect(preferences.pushEnabled, isTrue);
+    expect(preferences.activityEnabled, isFalse);
+    expect(preferences.quietHoursEnabled, isTrue);
+    expect(preferences.quietHoursStartMinutes, 1320);
+    expect(preferences.timezone, 'Asia/Almaty');
+    final request = adapter.requests.single;
+    expect(request.method, 'GET');
+    expect(request.uri.path, '/api/v1/notifications/preferences');
+    expect(request.headers['Authorization'], 'Bearer access-token');
+  });
+
+  test('updateNotificationPreferences sends partial quiet hours update',
+      () async {
+    final adapter = _RecordingAdapter(
+      response: const _JsonResponse(200, {
+        'pushEnabled': true,
+        'activityEnabled': true,
+        'excursionEnabled': true,
+        'chatEnabled': true,
+        'marketingEnabled': false,
+        'quietHoursEnabled': true,
+        'quietHoursStartMinutes': 1380,
+        'quietHoursEndMinutes': 420,
+        'timezone': 'Asia/Almaty',
+      }),
+    );
+    final api = NotificationApi(
+      apiClient: ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+          ..httpClientAdapter = adapter,
+        secureStorage: _MemorySecureStorage(accessToken: 'access-token'),
+      ),
+    );
+
+    final preferences = await api.updateNotificationPreferences(
+      const NotificationPreferencesUpdate(
+        quietHoursEnabled: true,
+        quietHoursStartMinutes: 1380,
+        quietHoursEndMinutes: 420,
+        timezone: 'Asia/Almaty',
+      ),
+    );
+
+    expect(preferences.quietHoursStartMinutes, 1380);
+    final request = adapter.requests.single;
+    expect(request.method, 'PUT');
+    expect(request.uri.path, '/api/v1/notifications/preferences');
+    expect(request.data, {
+      'quietHoursEnabled': true,
+      'quietHoursStartMinutes': 1380,
+      'quietHoursEndMinutes': 420,
+      'timezone': 'Asia/Almaty',
+    });
+    expect(request.headers['Authorization'], 'Bearer access-token');
+  });
 }
 
 class _MemorySecureStorage extends SecureStorage {

@@ -319,6 +319,112 @@ func TestFanoutRequestCreatesDeliveryForEachActiveDevice(t *testing.T) {
 	}
 }
 
+func TestFanoutRequestSkipsPushForDisabledNotificationCategory(t *testing.T) {
+	uc := newTestUseCase()
+	userID := uuid.New()
+	requestID := uuid.New()
+	deviceID := uuid.New()
+
+	uc.repo.requests[requestID] = &model.NotificationRequest{
+		ID:               requestID,
+		RecipientUserIDs: []uuid.UUID{userID},
+		Category:         "activity",
+		Priority:         model.PriorityHigh,
+		Payload:          model.NotificationPayload{Title: "Activity update"},
+	}
+	uc.repo.devices[deviceID] = &model.DeviceToken{
+		ID:          deviceID,
+		UserID:      userID,
+		Platform:    model.PlatformAndroid,
+		Provider:    model.ProviderFCM,
+		Environment: model.EnvironmentProduction,
+		Token:       "fcm-token",
+		Enabled:     true,
+	}
+	uc.repo.preferences[userID] = model.NotificationPreferences{
+		UserID:           userID,
+		PushEnabled:      true,
+		ActivityEnabled:  false,
+		ExcursionEnabled: true,
+		ChatEnabled:      true,
+		MarketingEnabled: false,
+	}
+
+	created, err := uc.FanoutRequest(context.Background(), requestID)
+	if err != nil {
+		t.Fatalf("FanoutRequest returned error: %v", err)
+	}
+
+	if created != 0 {
+		t.Fatalf("expected no deliveries when activity push is disabled, got %d", created)
+	}
+	if uc.publisher.publishCount != 0 {
+		t.Fatalf("expected no delivery publishes, got %d", uc.publisher.publishCount)
+	}
+}
+
+func TestFanoutRequestQuietHoursSuppressNormalButNotHighPriorityPush(t *testing.T) {
+	uc := newTestUseCase()
+	userID := uuid.New()
+	deviceID := uuid.New()
+	normalRequestID := uuid.New()
+	highRequestID := uuid.New()
+	uc.now = time.Date(2026, 5, 31, 22, 30, 0, 0, time.UTC)
+	uc.NotificationUseCase.now = func() time.Time { return uc.now }
+
+	uc.repo.requests[normalRequestID] = &model.NotificationRequest{
+		ID:               normalRequestID,
+		RecipientUserIDs: []uuid.UUID{userID},
+		Category:         "excursion",
+		Priority:         model.PriorityNormal,
+		Payload:          model.NotificationPayload{Title: "Normal reminder"},
+	}
+	uc.repo.requests[highRequestID] = &model.NotificationRequest{
+		ID:               highRequestID,
+		RecipientUserIDs: []uuid.UUID{userID},
+		Category:         "excursion",
+		Priority:         model.PriorityHigh,
+		Payload:          model.NotificationPayload{Title: "Critical reminder"},
+	}
+	uc.repo.devices[deviceID] = &model.DeviceToken{
+		ID:          deviceID,
+		UserID:      userID,
+		Platform:    model.PlatformAndroid,
+		Provider:    model.ProviderFCM,
+		Environment: model.EnvironmentProduction,
+		Token:       "fcm-token",
+		Enabled:     true,
+	}
+	uc.repo.preferences[userID] = model.NotificationPreferences{
+		UserID:                 userID,
+		PushEnabled:            true,
+		ActivityEnabled:        true,
+		ExcursionEnabled:       true,
+		ChatEnabled:            true,
+		MarketingEnabled:       false,
+		QuietHoursEnabled:      true,
+		QuietHoursStartMinutes: 22 * 60,
+		QuietHoursEndMinutes:   8 * 60,
+		Timezone:               "UTC",
+	}
+
+	normalCreated, err := uc.FanoutRequest(context.Background(), normalRequestID)
+	if err != nil {
+		t.Fatalf("normal FanoutRequest returned error: %v", err)
+	}
+	highCreated, err := uc.FanoutRequest(context.Background(), highRequestID)
+	if err != nil {
+		t.Fatalf("high FanoutRequest returned error: %v", err)
+	}
+
+	if normalCreated != 0 {
+		t.Fatalf("expected quiet hours to suppress normal priority push, got %d", normalCreated)
+	}
+	if highCreated != 1 {
+		t.Fatalf("expected high priority push to bypass quiet hours, got %d", highCreated)
+	}
+}
+
 func TestDeliverDueNotificationInvalidatesDeviceOnInvalidToken(t *testing.T) {
 	uc := newTestUseCase()
 	deliveryID := uuid.New()
@@ -473,6 +579,7 @@ type memoryRepository struct {
 	deliveries  map[uuid.UUID]*model.Delivery
 	invalidated map[uuid.UUID]bool
 	reads       map[uuid.UUID]map[uuid.UUID]time.Time
+	preferences map[uuid.UUID]model.NotificationPreferences
 }
 
 func newMemoryRepository() *memoryRepository {
@@ -483,6 +590,7 @@ func newMemoryRepository() *memoryRepository {
 		deliveries:  make(map[uuid.UUID]*model.Delivery),
 		invalidated: make(map[uuid.UUID]bool),
 		reads:       make(map[uuid.UUID]map[uuid.UUID]time.Time),
+		preferences: make(map[uuid.UUID]model.NotificationPreferences),
 	}
 }
 
@@ -712,6 +820,44 @@ func (r *memoryRepository) MarkUserNotificationsRead(
 		updated++
 	}
 	return updated, nil
+}
+
+func (r *memoryRepository) GetNotificationPreferences(
+	ctx context.Context,
+	userID uuid.UUID,
+) (*model.NotificationPreferences, error) {
+	if preferences, ok := r.preferences[userID]; ok {
+		return &preferences, nil
+	}
+	defaults := model.DefaultNotificationPreferences(userID)
+	return &defaults, nil
+}
+
+func (r *memoryRepository) UpsertNotificationPreferences(
+	ctx context.Context,
+	preferences model.NotificationPreferences,
+) (*model.NotificationPreferences, error) {
+	preferences.Normalize()
+	r.preferences[preferences.UserID] = preferences
+	return &preferences, nil
+}
+
+func (r *memoryRepository) ListNotificationPreferences(
+	ctx context.Context,
+	userIDs []uuid.UUID,
+) (map[uuid.UUID]model.NotificationPreferences, error) {
+	result := make(map[uuid.UUID]model.NotificationPreferences, len(userIDs))
+	for _, userID := range userIDs {
+		if userID == uuid.Nil {
+			continue
+		}
+		preferences, ok := r.preferences[userID]
+		if !ok {
+			preferences = model.DefaultNotificationPreferences(userID)
+		}
+		result[userID] = preferences
+	}
+	return result, nil
 }
 
 func (r *memoryRepository) markRead(userID uuid.UUID, requestID uuid.UUID, readAt time.Time) {

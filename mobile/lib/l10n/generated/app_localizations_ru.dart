@@ -986,7 +986,19 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get profileNotificationsHeroSubtitle =>
-      'Управляйте тем, как Inflap сообщает вам об изменениях в активностях, участии и новых возможностях.';
+      'Настройте push, тихие часы и резервные каналы так, чтобы Inflap сообщал важное вовремя и не отвлекал лишним.';
+
+  @override
+  String get profileNotificationsDeliverySection => 'Push-доставка';
+
+  @override
+  String get profileNotificationsCategoriesSection => 'Категории push';
+
+  @override
+  String get profileNotificationsQuietHoursSection => 'Тихие часы';
+
+  @override
+  String get profileNotificationsChannelsSection => 'Дополнительные каналы';
 
   @override
   String get profileNotificationsActivitySection => 'Активности и участие';
@@ -999,7 +1011,20 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get profileNotificationsPushSubtitle =>
-      'Мгновенные обновления по активностям, изменениям статуса и новым сообщениям.';
+      'Главный переключатель push на этом устройстве. Inbox внутри приложения продолжит сохранять уведомления.';
+
+  @override
+  String get profileNotificationsPushPausedTitle => 'Push приостановлены';
+
+  @override
+  String get profileNotificationsPushPausedSubtitle =>
+      'Мы не будем отправлять push на устройство, но важные события останутся в центре уведомлений приложения.';
+
+  @override
+  String get profileNotificationsPushEnabledStatus => 'Push включены';
+
+  @override
+  String get profileNotificationsPushPausedStatus => 'Push на паузе';
 
   @override
   String get profileNotificationsEmailTitle => 'Email-уведомления';
@@ -1016,11 +1041,74 @@ class AppLocalizationsRu extends AppLocalizations {
       'Короткие сообщения для критичных обновлений и подтверждений.';
 
   @override
+  String get profileNotificationsActivityPushTitle => 'Активности';
+
+  @override
+  String get profileNotificationsActivityPushSubtitle =>
+      'Новые участники, изменения статуса, переносы и напоминания по вашим активностям.';
+
+  @override
+  String get profileNotificationsExcursionPushTitle => 'Экскурсии';
+
+  @override
+  String get profileNotificationsExcursionPushSubtitle =>
+      'Бронирования, расписание, заявки, статусы публикации и события по экскурсиям.';
+
+  @override
+  String get profileNotificationsChatPushTitle => 'Сообщения';
+
+  @override
+  String get profileNotificationsChatPushSubtitle =>
+      'Новые сообщения, приглашения и важные ответы в чатах.';
+
+  @override
   String get profileNotificationsMarketingTitle => 'Подборки и спецпредложения';
 
   @override
   String get profileNotificationsMarketingSubtitle =>
-      'Новые идеи для поездок, подборки мест и специальные предложения Inflap.';
+      'Идеи для поездок, подборки мест и персональные предложения. Можно отключить без потери сервисных уведомлений.';
+
+  @override
+  String get profileNotificationsSystemTitle =>
+      'Системные и безопасностные уведомления';
+
+  @override
+  String get profileNotificationsSystemSubtitle =>
+      'Важные сообщения о безопасности аккаунта, платежах и доступе не отключаются в приложении.';
+
+  @override
+  String get profileNotificationsQuietHoursTitle => 'Не беспокоить';
+
+  @override
+  String profileNotificationsQuietHoursSubtitle(Object start, Object end) {
+    return 'Обычные push будут тихими с $start до $end. Срочные high-priority уведомления доставим сразу.';
+  }
+
+  @override
+  String get profileNotificationsQuietHoursStart => 'Начало';
+
+  @override
+  String get profileNotificationsQuietHoursEnd => 'Конец';
+
+  @override
+  String profileNotificationsQuietHoursTimezone(Object timezone) {
+    return 'Используется часовой пояс профиля: $timezone';
+  }
+
+  @override
+  String get profileNotificationsQuietHoursEnabledStatus =>
+      'Тихие часы включены';
+
+  @override
+  String get profileNotificationsQuietHoursDisabledStatus => 'Без тихих часов';
+
+  @override
+  String get profileNotificationsPreferencesLoadFailedTitle =>
+      'Не удалось загрузить push-настройки';
+
+  @override
+  String get profileNotificationsPreferencesLoadFailedSubtitle =>
+      'Проверьте подключение. Email и SMS можно менять отдельно, но push-настройки временно недоступны.';
 
   @override
   String get profileNotificationsDarkModeTitle => 'Темная тема';

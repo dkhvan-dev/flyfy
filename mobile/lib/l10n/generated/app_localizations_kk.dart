@@ -989,7 +989,19 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get profileNotificationsHeroSubtitle =>
-      'Inflap белсенділіктер, қатысу және жаңа мүмкіндіктер туралы қалай хабарлайтынын басқарыңыз.';
+      'Inflap маңыздысын уақытында жіберіп, артық мазаламауы үшін push, тыныш сағаттар және қосымша арналарды баптаңыз.';
+
+  @override
+  String get profileNotificationsDeliverySection => 'Push жеткізу';
+
+  @override
+  String get profileNotificationsCategoriesSection => 'Push санаттары';
+
+  @override
+  String get profileNotificationsQuietHoursSection => 'Тыныш сағаттар';
+
+  @override
+  String get profileNotificationsChannelsSection => 'Қосымша арналар';
 
   @override
   String get profileNotificationsActivitySection =>
@@ -1003,7 +1015,20 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get profileNotificationsPushSubtitle =>
-      'Белсенділіктер, статус өзгерістері және жаңа хабарламалар туралы жедел жаңартулар.';
+      'Осы құрылғыдағы push үшін негізгі қосқыш. Қолданба ішіндегі inbox хабарландыруларды сақтай береді.';
+
+  @override
+  String get profileNotificationsPushPausedTitle => 'Push уақытша тоқтатылды';
+
+  @override
+  String get profileNotificationsPushPausedSubtitle =>
+      'Құрылғыға push жібермейміз, бірақ маңызды оқиғалар қолданбадағы хабарландыру орталығында қалады.';
+
+  @override
+  String get profileNotificationsPushEnabledStatus => 'Push қосулы';
+
+  @override
+  String get profileNotificationsPushPausedStatus => 'Push үзілісте';
 
   @override
   String get profileNotificationsEmailTitle => 'Email-хабарламалар';
@@ -1020,11 +1045,75 @@ class AppLocalizationsKk extends AppLocalizations {
       'Маңызды жаңартулар мен растаулар қысқа хабарлама арқылы келеді.';
 
   @override
+  String get profileNotificationsActivityPushTitle => 'Белсенділіктер';
+
+  @override
+  String get profileNotificationsActivityPushSubtitle =>
+      'Жаңа қатысушылар, статус өзгерістері, уақыт ауысуы және белсенділік еске салғыштары.';
+
+  @override
+  String get profileNotificationsExcursionPushTitle => 'Экскурсиялар';
+
+  @override
+  String get profileNotificationsExcursionPushSubtitle =>
+      'Брондаулар, кесте, өтінімдер, жариялау статустары және экскурсия оқиғалары.';
+
+  @override
+  String get profileNotificationsChatPushTitle => 'Хабарламалар';
+
+  @override
+  String get profileNotificationsChatPushSubtitle =>
+      'Чаттардағы жаңа хабарламалар, шақырулар және маңызды жауаптар.';
+
+  @override
   String get profileNotificationsMarketingTitle => 'Топтамалар мен ұсыныстар';
 
   @override
   String get profileNotificationsMarketingSubtitle =>
-      'Саяхат идеялары, орындар топтамасы және арнайы Inflap ұсыныстары.';
+      'Саяхат идеялары, орындар топтамасы және жеке ұсыныстар. Мұны өшірсеңіз де, сервистік хабарламалар қалады.';
+
+  @override
+  String get profileNotificationsSystemTitle =>
+      'Жүйелік және қауіпсіздік хабарламалары';
+
+  @override
+  String get profileNotificationsSystemSubtitle =>
+      'Аккаунт қауіпсіздігі, төлемдер және қолжетімділік туралы маңызды хабарламаларды қолданба ішінде өшіруге болмайды.';
+
+  @override
+  String get profileNotificationsQuietHoursTitle => 'Мазаламау';
+
+  @override
+  String profileNotificationsQuietHoursSubtitle(Object start, Object end) {
+    return 'Кәдімгі push $start - $end аралығында тыныш болады. Шұғыл high-priority хабарламалар бірден жеткізіледі.';
+  }
+
+  @override
+  String get profileNotificationsQuietHoursStart => 'Басталуы';
+
+  @override
+  String get profileNotificationsQuietHoursEnd => 'Аяқталуы';
+
+  @override
+  String profileNotificationsQuietHoursTimezone(Object timezone) {
+    return 'Профиль уақыт белдеуі қолданылады: $timezone';
+  }
+
+  @override
+  String get profileNotificationsQuietHoursEnabledStatus =>
+      'Тыныш сағаттар қосулы';
+
+  @override
+  String get profileNotificationsQuietHoursDisabledStatus =>
+      'Тыныш сағаттар жоқ';
+
+  @override
+  String get profileNotificationsPreferencesLoadFailedTitle =>
+      'Push баптауларын жүктеу мүмкін болмады';
+
+  @override
+  String get profileNotificationsPreferencesLoadFailedSubtitle =>
+      'Қосылымды тексеріңіз. Email және SMS бөлек өзгере береді, бірақ push баптаулары уақытша қолжетімсіз.';
 
   @override
   String get profileNotificationsDarkModeTitle => 'Қараңғы режим';

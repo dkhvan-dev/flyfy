@@ -50,6 +50,9 @@ type Repository interface {
 	ListUserNotificationCategorySummaries(ctx context.Context, userID uuid.UUID, limit int) ([]model.NotificationCategorySummary, error)
 	ListUserNotifications(ctx context.Context, userID uuid.UUID, category string, limit int, offset int) ([]model.UserNotification, error)
 	MarkUserNotificationsRead(ctx context.Context, userID uuid.UUID, category string) (int, error)
+	GetNotificationPreferences(ctx context.Context, userID uuid.UUID) (*model.NotificationPreferences, error)
+	UpsertNotificationPreferences(ctx context.Context, preferences model.NotificationPreferences) (*model.NotificationPreferences, error)
+	ListNotificationPreferences(ctx context.Context, userIDs []uuid.UUID) (map[uuid.UUID]model.NotificationPreferences, error)
 }
 
 type Publisher interface {
@@ -251,6 +254,43 @@ func (uc *NotificationUseCase) MarkUserNotificationsRead(
 	return uc.repo.MarkUserNotificationsRead(ctx, userID, normalizedCategory)
 }
 
+func (uc *NotificationUseCase) GetNotificationPreferences(
+	ctx context.Context,
+	userID uuid.UUID,
+) (*model.NotificationPreferences, error) {
+	if uc == nil || uc.repo == nil {
+		return nil, fmt.Errorf("notification use case is not configured")
+	}
+	if userID == uuid.Nil {
+		return nil, fmt.Errorf("%w: user id is required", model.ErrInvalidInput)
+	}
+	return uc.repo.GetNotificationPreferences(ctx, userID)
+}
+
+func (uc *NotificationUseCase) UpdateNotificationPreferences(
+	ctx context.Context,
+	userID uuid.UUID,
+	params model.UpdateNotificationPreferencesParams,
+) (*model.NotificationPreferences, error) {
+	if uc == nil || uc.repo == nil {
+		return nil, fmt.Errorf("notification use case is not configured")
+	}
+	if userID == uuid.Nil {
+		return nil, fmt.Errorf("%w: user id is required", model.ErrInvalidInput)
+	}
+	current, err := uc.repo.GetNotificationPreferences(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	preferences := model.DefaultNotificationPreferences(userID)
+	if current != nil {
+		preferences = *current
+	}
+	preferences = preferences.ApplyUpdate(params)
+	preferences.UserID = userID
+	return uc.repo.UpsertNotificationPreferences(ctx, preferences)
+}
+
 func (uc *NotificationUseCase) SendNotification(
 	ctx context.Context,
 	input SendNotificationInput,
@@ -327,6 +367,10 @@ func (uc *NotificationUseCase) FanoutRequest(ctx context.Context, requestID uuid
 	if err != nil {
 		return 0, err
 	}
+	preferencesByUserID, err := uc.repo.ListNotificationPreferences(ctx, request.RecipientUserIDs)
+	if err != nil {
+		return 0, err
+	}
 
 	createdCount := 0
 	now := uc.now().UTC()
@@ -335,6 +379,13 @@ func (uc *NotificationUseCase) FanoutRequest(ctx context.Context, requestID uuid
 			continue
 		}
 		if !model.IsProviderCompatible(device.Platform, device.Provider) {
+			continue
+		}
+		preferences, ok := preferencesByUserID[device.UserID]
+		if !ok {
+			preferences = model.DefaultNotificationPreferences(device.UserID)
+		}
+		if !preferences.AllowsPush(request.Category, request.Priority, now) {
 			continue
 		}
 		delivery := model.Delivery{

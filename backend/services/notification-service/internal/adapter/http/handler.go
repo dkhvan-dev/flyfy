@@ -23,6 +23,8 @@ type notificationUseCase interface {
 	ListUserNotificationCategories(ctx context.Context, userID uuid.UUID, limit int) ([]model.NotificationCategorySummary, error)
 	ListUserNotifications(ctx context.Context, userID uuid.UUID, category string, limit int, offset int) ([]model.UserNotification, error)
 	MarkUserNotificationsRead(ctx context.Context, userID uuid.UUID, category string) (int, error)
+	GetNotificationPreferences(ctx context.Context, userID uuid.UUID) (*model.NotificationPreferences, error)
+	UpdateNotificationPreferences(ctx context.Context, userID uuid.UUID, params model.UpdateNotificationPreferencesParams) (*model.NotificationPreferences, error)
 	SendNotification(ctx context.Context, input app.SendNotificationInput) (*model.NotificationRequest, error)
 }
 
@@ -45,6 +47,8 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/notifications/categories", h.ListNotificationCategories)
 	mux.HandleFunc("GET /v1/notifications", h.ListNotifications)
 	mux.HandleFunc("POST /v1/notifications/read-all", h.MarkNotificationsRead)
+	mux.HandleFunc("GET /v1/notifications/preferences", h.GetNotificationPreferences)
+	mux.HandleFunc("PUT /v1/notifications/preferences", h.UpdateNotificationPreferences)
 	mux.HandleFunc("POST /internal/v1/notifications/send", h.SendInternalNotification)
 	mux.HandleFunc("POST /v1/internal/notifications/send", h.SendInternalNotification)
 }
@@ -159,6 +163,30 @@ type markNotificationsReadRequest struct {
 	Category string `json:"category"`
 }
 
+type notificationPreferencesResponse struct {
+	PushEnabled            bool   `json:"pushEnabled"`
+	ActivityEnabled        bool   `json:"activityEnabled"`
+	ExcursionEnabled       bool   `json:"excursionEnabled"`
+	ChatEnabled            bool   `json:"chatEnabled"`
+	MarketingEnabled       bool   `json:"marketingEnabled"`
+	QuietHoursEnabled      bool   `json:"quietHoursEnabled"`
+	QuietHoursStartMinutes int    `json:"quietHoursStartMinutes"`
+	QuietHoursEndMinutes   int    `json:"quietHoursEndMinutes"`
+	Timezone               string `json:"timezone"`
+}
+
+type updateNotificationPreferencesRequest struct {
+	PushEnabled            *bool   `json:"pushEnabled,omitempty"`
+	ActivityEnabled        *bool   `json:"activityEnabled,omitempty"`
+	ExcursionEnabled       *bool   `json:"excursionEnabled,omitempty"`
+	ChatEnabled            *bool   `json:"chatEnabled,omitempty"`
+	MarketingEnabled       *bool   `json:"marketingEnabled,omitempty"`
+	QuietHoursEnabled      *bool   `json:"quietHoursEnabled,omitempty"`
+	QuietHoursStartMinutes *int    `json:"quietHoursStartMinutes,omitempty"`
+	QuietHoursEndMinutes   *int    `json:"quietHoursEndMinutes,omitempty"`
+	Timezone               *string `json:"timezone,omitempty"`
+}
+
 func (h *Handler) ListNotificationCategories(w http.ResponseWriter, r *http.Request) {
 	if !h.isInternalRequest(r) {
 		writeError(w, http.StatusUnauthorized, "request must come through trusted gateway")
@@ -239,6 +267,59 @@ func (h *Handler) MarkNotificationsRead(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"updatedCount": updated})
+}
+
+func (h *Handler) GetNotificationPreferences(w http.ResponseWriter, r *http.Request) {
+	if !h.isInternalRequest(r) {
+		writeError(w, http.StatusUnauthorized, "request must come through trusted gateway")
+		return
+	}
+	userID, ok := authenticatedUserID(w, r)
+	if !ok {
+		return
+	}
+	preferences, err := h.useCase.GetNotificationPreferences(r.Context(), userID)
+	if err != nil {
+		writeAppError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, toNotificationPreferencesResponse(preferences))
+}
+
+func (h *Handler) UpdateNotificationPreferences(w http.ResponseWriter, r *http.Request) {
+	if !h.isInternalRequest(r) {
+		writeError(w, http.StatusUnauthorized, "request must come through trusted gateway")
+		return
+	}
+	userID, ok := authenticatedUserID(w, r)
+	if !ok {
+		return
+	}
+	var req updateNotificationPreferencesRequest
+	if err := decodeJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	preferences, err := h.useCase.UpdateNotificationPreferences(
+		r.Context(),
+		userID,
+		model.UpdateNotificationPreferencesParams{
+			PushEnabled:            req.PushEnabled,
+			ActivityEnabled:        req.ActivityEnabled,
+			ExcursionEnabled:       req.ExcursionEnabled,
+			ChatEnabled:            req.ChatEnabled,
+			MarketingEnabled:       req.MarketingEnabled,
+			QuietHoursEnabled:      req.QuietHoursEnabled,
+			QuietHoursStartMinutes: req.QuietHoursStartMinutes,
+			QuietHoursEndMinutes:   req.QuietHoursEndMinutes,
+			Timezone:               req.Timezone,
+		},
+	)
+	if err != nil {
+		writeAppError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, toNotificationPreferencesResponse(preferences))
 }
 
 type sendNotificationRequest struct {
@@ -416,5 +497,24 @@ func toUserNotificationResponse(notification model.UserNotification) userNotific
 		Data:      data,
 		CreatedAt: notification.CreatedAt.UTC().Format(time.RFC3339),
 		ReadAt:    readAt,
+	}
+}
+
+func toNotificationPreferencesResponse(preferences *model.NotificationPreferences) notificationPreferencesResponse {
+	if preferences == nil {
+		value := model.DefaultNotificationPreferences(uuid.Nil)
+		preferences = &value
+	}
+	preferences.Normalize()
+	return notificationPreferencesResponse{
+		PushEnabled:            preferences.PushEnabled,
+		ActivityEnabled:        preferences.ActivityEnabled,
+		ExcursionEnabled:       preferences.ExcursionEnabled,
+		ChatEnabled:            preferences.ChatEnabled,
+		MarketingEnabled:       preferences.MarketingEnabled,
+		QuietHoursEnabled:      preferences.QuietHoursEnabled,
+		QuietHoursStartMinutes: preferences.QuietHoursStartMinutes,
+		QuietHoursEndMinutes:   preferences.QuietHoursEndMinutes,
+		Timezone:               preferences.Timezone,
 	}
 }
