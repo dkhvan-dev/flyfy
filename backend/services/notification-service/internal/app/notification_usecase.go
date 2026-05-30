@@ -38,6 +38,7 @@ const (
 type Repository interface {
 	UpsertDeviceToken(ctx context.Context, device model.DeviceToken) (*model.DeviceToken, error)
 	DeactivateDeviceToken(ctx context.Context, userID uuid.UUID, deviceID uuid.UUID, reason string) error
+	DeactivateDeviceTokensBySession(ctx context.Context, userID uuid.UUID, sessionID string, reason string) (int, error)
 	CreateNotificationRequest(ctx context.Context, request model.NotificationRequest) (*model.NotificationRequest, bool, error)
 	GetNotificationRequest(ctx context.Context, requestID uuid.UUID) (*model.NotificationRequest, error)
 	ListActiveDeviceTokens(ctx context.Context, userIDs []uuid.UUID) ([]*model.DeviceToken, error)
@@ -73,17 +74,19 @@ type DeliveryResultUpdate struct {
 }
 
 type RegisterDeviceInput struct {
-	UserID       uuid.UUID
-	Platform     model.Platform
-	Provider     model.Provider
-	Environment  model.Environment
-	Token        string
-	AppBundleID  string
-	AppVersion   string
-	DeviceModel  string
-	Manufacturer string
-	Locale       string
-	Timezone     string
+	UserID               uuid.UUID
+	Platform             model.Platform
+	Provider             model.Provider
+	Environment          model.Environment
+	SessionID            string
+	DeviceInstallationID string
+	Token                string
+	AppBundleID          string
+	AppVersion           string
+	DeviceModel          string
+	Manufacturer         string
+	Locale               string
+	Timezone             string
 }
 
 type SendNotificationInput struct {
@@ -161,22 +164,24 @@ func (uc *NotificationUseCase) RegisterDevice(ctx context.Context, input Registe
 
 	now := uc.now().UTC()
 	device := model.DeviceToken{
-		ID:           uuid.New(),
-		UserID:       input.UserID,
-		Platform:     input.Platform,
-		Provider:     input.Provider,
-		Environment:  input.Environment,
-		AppBundleID:  strings.TrimSpace(input.AppBundleID),
-		AppVersion:   strings.TrimSpace(input.AppVersion),
-		DeviceModel:  strings.TrimSpace(input.DeviceModel),
-		Manufacturer: strings.TrimSpace(input.Manufacturer),
-		Locale:       model.NormalizeLocale(input.Locale),
-		Timezone:     strings.TrimSpace(input.Timezone),
-		Token:        strings.TrimSpace(input.Token),
-		Enabled:      true,
-		CreatedAt:    now,
-		UpdatedAt:    now,
-		LastSeenAt:   now,
+		ID:                   uuid.New(),
+		UserID:               input.UserID,
+		Platform:             input.Platform,
+		Provider:             input.Provider,
+		Environment:          input.Environment,
+		SessionID:            strings.TrimSpace(input.SessionID),
+		DeviceInstallationID: strings.TrimSpace(input.DeviceInstallationID),
+		AppBundleID:          strings.TrimSpace(input.AppBundleID),
+		AppVersion:           strings.TrimSpace(input.AppVersion),
+		DeviceModel:          strings.TrimSpace(input.DeviceModel),
+		Manufacturer:         strings.TrimSpace(input.Manufacturer),
+		Locale:               model.NormalizeLocale(input.Locale),
+		Timezone:             strings.TrimSpace(input.Timezone),
+		Token:                strings.TrimSpace(input.Token),
+		Enabled:              true,
+		CreatedAt:            now,
+		UpdatedAt:            now,
+		LastSeenAt:           now,
 	}
 
 	return uc.repo.UpsertDeviceToken(ctx, device)
@@ -187,6 +192,29 @@ func (uc *NotificationUseCase) DeactivateDevice(ctx context.Context, userID uuid
 		return fmt.Errorf("%w: user id and device id are required", model.ErrInvalidInput)
 	}
 	return uc.repo.DeactivateDeviceToken(ctx, userID, deviceID, strings.TrimSpace(reason))
+}
+
+func (uc *NotificationUseCase) DeactivateSessionDevices(
+	ctx context.Context,
+	userID uuid.UUID,
+	sessionID string,
+	reason string,
+) (int, error) {
+	if uc == nil || uc.repo == nil {
+		return 0, fmt.Errorf("notification use case is not configured")
+	}
+	normalizedSessionID := strings.TrimSpace(sessionID)
+	if userID == uuid.Nil || normalizedSessionID == "" {
+		return 0, fmt.Errorf("%w: user id and session id are required", model.ErrInvalidInput)
+	}
+	if _, err := uuid.Parse(normalizedSessionID); err != nil {
+		return 0, fmt.Errorf("%w: invalid session id", model.ErrInvalidInput)
+	}
+	normalizedReason := strings.TrimSpace(reason)
+	if normalizedReason == "" {
+		normalizedReason = "session_revoked"
+	}
+	return uc.repo.DeactivateDeviceTokensBySession(ctx, userID, normalizedSessionID, normalizedReason)
 }
 
 func (uc *NotificationUseCase) ListUserNotificationCategories(

@@ -32,85 +32,79 @@ void main() {
     },
   );
 
-  test(
-    'refresh failure deletes tokens and expires session',
-    () async {
-      final events = AuthSessionEvents();
-      var expiredCount = 0;
-      final sub = events.sessionExpired.listen((_) => expiredCount++);
-      final storage = _MemorySecureStorage(
-        accessToken: 'expired-access',
-        refreshToken: 'expired-refresh',
-      );
-      final adapter = _AuthAdapter(
-        responses: {
-          '/api/v1/users/me': _JsonResponse(401, {'error': 'token expired'}),
-          '/api/v1/auth/refresh': _JsonResponse(401, {
-            'error': 'refresh token expired',
-          }),
-        },
-      );
-      final client = ApiClient(
-        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
-          ..httpClientAdapter = adapter,
-        secureStorage: storage,
-        authSessionEvents: events,
-      );
+  test('refresh failure deletes tokens and expires session', () async {
+    final events = AuthSessionEvents();
+    var expiredCount = 0;
+    final sub = events.sessionExpired.listen((_) => expiredCount++);
+    final storage = _MemorySecureStorage(
+      accessToken: 'expired-access',
+      refreshToken: 'expired-refresh',
+    );
+    final adapter = _AuthAdapter(
+      responses: {
+        '/api/v1/users/me': _JsonResponse(401, {'error': 'token expired'}),
+        '/api/v1/auth/refresh': _JsonResponse(401, {
+          'error': 'refresh token expired',
+        }),
+      },
+    );
+    final client = ApiClient(
+      dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+        ..httpClientAdapter = adapter,
+      secureStorage: storage,
+      authSessionEvents: events,
+    );
 
-      await expectLater(client.getMe(), throwsA(isA<DioException>()));
-      await Future<void>.delayed(Duration.zero);
+    await expectLater(client.getMe(), throwsA(isA<DioException>()));
+    await Future<void>.delayed(Duration.zero);
 
-      expect(storage.accessToken, isNull);
-      expect(storage.refreshToken, isNull);
-      expect(expiredCount, 1);
-      expect(adapter.requests.map((item) => item.uri.path), [
-        '/api/v1/users/me',
-        '/api/v1/auth/refresh',
-      ]);
-      await sub.cancel();
-    },
-  );
+    expect(storage.accessToken, isNull);
+    expect(storage.refreshToken, isNull);
+    expect(expiredCount, 1);
+    expect(adapter.requests.map((item) => item.uri.path), [
+      '/api/v1/users/me',
+      '/api/v1/auth/refresh',
+    ]);
+    await sub.cancel();
+  });
 
-  test(
-    'refresh success without access token expires session',
-    () async {
-      final events = AuthSessionEvents();
-      var expiredCount = 0;
-      final sub = events.sessionExpired.listen((_) => expiredCount++);
-      final storage = _MemorySecureStorage(
-        accessToken: 'expired-access',
-        refreshToken: 'refresh-token',
-      );
-      final adapter = _AuthAdapter(
-        responses: {
-          '/api/v1/users/me': _JsonResponse(401, {'error': 'token expired'}),
-          '/api/v1/auth/refresh': _JsonResponse(200, {
-            'access_token': '',
-            'refresh_token': '',
-            'is_new_user': false,
-          }),
-        },
-      );
-      final client = ApiClient(
-        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
-          ..httpClientAdapter = adapter,
-        secureStorage: storage,
-        authSessionEvents: events,
-      );
+  test('refresh success without access token expires session', () async {
+    final events = AuthSessionEvents();
+    var expiredCount = 0;
+    final sub = events.sessionExpired.listen((_) => expiredCount++);
+    final storage = _MemorySecureStorage(
+      accessToken: 'expired-access',
+      refreshToken: 'refresh-token',
+    );
+    final adapter = _AuthAdapter(
+      responses: {
+        '/api/v1/users/me': _JsonResponse(401, {'error': 'token expired'}),
+        '/api/v1/auth/refresh': _JsonResponse(200, {
+          'access_token': '',
+          'refresh_token': '',
+          'is_new_user': false,
+        }),
+      },
+    );
+    final client = ApiClient(
+      dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+        ..httpClientAdapter = adapter,
+      secureStorage: storage,
+      authSessionEvents: events,
+    );
 
-      await expectLater(client.getMe(), throwsA(isA<DioException>()));
-      await Future<void>.delayed(Duration.zero);
+    await expectLater(client.getMe(), throwsA(isA<DioException>()));
+    await Future<void>.delayed(Duration.zero);
 
-      expect(storage.accessToken, isNull);
-      expect(storage.refreshToken, isNull);
-      expect(expiredCount, 1);
-      expect(adapter.requests.map((item) => item.uri.path), [
-        '/api/v1/users/me',
-        '/api/v1/auth/refresh',
-      ]);
-      await sub.cancel();
-    },
-  );
+    expect(storage.accessToken, isNull);
+    expect(storage.refreshToken, isNull);
+    expect(expiredCount, 1);
+    expect(adapter.requests.map((item) => item.uri.path), [
+      '/api/v1/users/me',
+      '/api/v1/auth/refresh',
+    ]);
+    await sub.cancel();
+  });
 }
 
 class _MemorySecureStorage extends SecureStorage {
@@ -129,6 +123,7 @@ class _MemorySecureStorage extends SecureStorage {
   Future<void> saveTokens({
     required String accessToken,
     required String refreshToken,
+    String? sessionId,
   }) async {
     this.accessToken = accessToken;
     this.refreshToken = refreshToken;
@@ -154,7 +149,8 @@ class _AuthAdapter implements HttpClientAdapter {
     Future<void>? cancelFuture,
   ) async {
     requests.add(options);
-    final response = responses[options.uri.path] ??
+    final response =
+        responses[options.uri.path] ??
         const _JsonResponse(200, {
           'user': {'id': 'user-1', 'status': 'ACTIVE'},
           'profile': {'locale': 'ru', 'timezone': 'Asia/Almaty'},

@@ -16,22 +16,23 @@ class AuthProvider extends ChangeNotifier {
     SecureStorage? secureStorage,
     AuthSessionEvents? authSessionEvents,
   }) : this._(
-          apiClient: apiClient,
-          secureStorage: secureStorage ?? SecureStorage(),
-          authSessionEvents: authSessionEvents ?? AuthSessionEvents.instance,
-        );
+         apiClient: apiClient,
+         secureStorage: secureStorage ?? SecureStorage(),
+         authSessionEvents: authSessionEvents ?? AuthSessionEvents.instance,
+       );
 
   AuthProvider._({
     required ApiClient? apiClient,
     required SecureStorage secureStorage,
     required AuthSessionEvents authSessionEvents,
-  })  : _apiClient = apiClient ??
-            ApiClient(
-              secureStorage: secureStorage,
-              authSessionEvents: authSessionEvents,
-            ),
-        _secureStorage = secureStorage,
-        _authSessionEvents = authSessionEvents {
+  }) : _apiClient =
+           apiClient ??
+           ApiClient(
+             secureStorage: secureStorage,
+             authSessionEvents: authSessionEvents,
+           ),
+       _secureStorage = secureStorage,
+       _authSessionEvents = authSessionEvents {
     _sessionExpiredSubscription = _authSessionEvents.sessionExpired.listen((_) {
       unawaited(_handleSessionExpired());
     });
@@ -104,6 +105,7 @@ class AuthProvider extends ChangeNotifier {
       await _secureStorage.saveTokens(
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
+        sessionId: result.sessionId,
       );
 
       _lastPrimaryPhoneHint = result.primaryPhoneHint ?? phone;
@@ -132,6 +134,7 @@ class AuthProvider extends ChangeNotifier {
       await _secureStorage.saveTokens(
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
+        sessionId: result.sessionId,
       );
 
       _lastPrimaryPhoneHint = result.primaryPhoneHint;
@@ -160,6 +163,7 @@ class AuthProvider extends ChangeNotifier {
       await _secureStorage.saveTokens(
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
+        sessionId: result.sessionId,
       );
 
       _lastPrimaryPhoneHint = result.primaryPhoneHint;

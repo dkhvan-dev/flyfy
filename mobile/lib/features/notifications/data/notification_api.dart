@@ -42,6 +42,8 @@ class DeviceTokenRegistration {
     required this.manufacturer,
     required this.locale,
     required this.timezone,
+    this.sessionId = '',
+    this.deviceInstallationId = '',
   });
 
   final PushPlatform platform;
@@ -54,6 +56,8 @@ class DeviceTokenRegistration {
   final String manufacturer;
   final String locale;
   final String timezone;
+  final String sessionId;
+  final String deviceInstallationId;
 
   Map<String, Object?> toJson() {
     return {
@@ -67,6 +71,8 @@ class DeviceTokenRegistration {
       'manufacturer': manufacturer.trim(),
       'locale': locale.trim(),
       'timezone': timezone.trim(),
+      'sessionId': sessionId.trim(),
+      'deviceInstallationId': deviceInstallationId.trim(),
     };
   }
 }
@@ -317,7 +323,7 @@ abstract interface class NotificationInboxClient {
 class NotificationApi
     implements NotificationDeviceTokenClient, NotificationInboxClient {
   NotificationApi({ApiClient? apiClient})
-      : _apiClient = apiClient ?? ApiClient();
+    : _apiClient = apiClient ?? ApiClient();
 
   final ApiClient _apiClient;
 

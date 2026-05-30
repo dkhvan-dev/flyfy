@@ -21,6 +21,7 @@ import (
 	"kz/inflap/backend/services/token-service/internal/adapter/grpc/handler"
 	"kz/inflap/backend/services/token-service/internal/adapter/grpc/interceptor"
 	httpAdapter "kz/inflap/backend/services/token-service/internal/adapter/http"
+	notificationAdapter "kz/inflap/backend/services/token-service/internal/adapter/notification"
 	"kz/inflap/backend/services/token-service/internal/adapter/repository"
 	"kz/inflap/backend/services/token-service/internal/app"
 	"kz/inflap/backend/services/token-service/internal/config"
@@ -98,12 +99,24 @@ func main() {
 	svcStore := repository.NewPgServiceAccountStore(pgPool)
 	passwordVerifier := crypto.NewBcryptVerifier(0) // 0 = use DefaultCost (12)
 	audit := repository.NewZerologAuditLogger(logger)
+	var tokenOptions []app.Option
+	if cfg.Notification.HTTPURL != "" && cfg.Notification.InternalServiceToken != "" {
+		tokenOptions = append(tokenOptions, app.WithSessionRevocationNotifier(
+			notificationAdapter.NewClient(
+				cfg.Notification.HTTPURL,
+				cfg.Notification.InternalServiceToken,
+				cfg.Notification.Timeout,
+			),
+		))
+		logger.Info().Str("url", cfg.Notification.HTTPURL).Msg("notification session revocation notifier enabled")
+	}
 
 	// --- Application (use cases) ---
 	tokenUC := app.NewTokenUseCase(
 		cfg.JWT, cfg.Session,
 		keyStore, revStore, sessionStore, revSessionCache, sessionAudit,
 		svcStore, passwordVerifier, audit, logger,
+		tokenOptions...,
 	)
 
 	// --- Ensure initial key ---

@@ -67,6 +67,16 @@ type SessionManager interface {
 	RevokeAllUserSessions(ctx context.Context, userID uuid.UUID, reason string) (int, error)
 }
 
+type SessionRevocationNotification struct {
+	UserID    uuid.UUID
+	SessionID uuid.UUID
+	Reason    string
+}
+
+type SessionRevocationNotifier interface {
+	NotifySessionRevoked(ctx context.Context, event SessionRevocationNotification) error
+}
+
 // ServiceAuthenticator handles service-to-service authentication.
 type ServiceAuthenticator interface {
 	// AuthenticateService verifies service credentials and returns a service token.

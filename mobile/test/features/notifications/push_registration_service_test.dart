@@ -28,6 +28,10 @@ void main() {
         client: client,
         tokenProvider: provider,
         store: store,
+        sessionBindingProvider: const _FakePushSessionBindingProvider(
+          sessionId: 'session-1',
+          deviceInstallationId: 'installation-1',
+        ),
       );
 
       final first = await service.registerCurrentDevice(userId: 'user-1');
@@ -42,6 +46,8 @@ void main() {
       expect(forced.status, PushRegistrationStatus.registered);
       expect(client.registrations, hasLength(2));
       expect(client.registrations.first.token, 'push-token');
+      expect(client.registrations.first.sessionId, 'session-1');
+      expect(client.registrations.first.deviceInstallationId, 'installation-1');
       expect(store.registeredDeviceTokenId, 'device-token-id-2');
     },
   );
@@ -69,7 +75,7 @@ void main() {
       final client = _FakeNotificationDeviceTokenClient();
       final store = _MemoryPushRegistrationStore()
         ..fingerprints['user-1'] =
-            'user-1|android|fcm|production|push-token|kz.inflap|1.0.0+1|ru|Asia/Almaty';
+            'user-1|session-1|installation-1|android|fcm|production|push-token|kz.inflap|1.0.0+1|ru|Asia/Almaty';
       final service = PushRegistrationService(
         client: client,
         tokenProvider: _FakePushTokenProvider(
@@ -85,6 +91,10 @@ void main() {
             locale: 'ru',
             timezone: 'Asia/Almaty',
           ),
+        ),
+        sessionBindingProvider: const _FakePushSessionBindingProvider(
+          sessionId: 'session-1',
+          deviceInstallationId: 'installation-1',
         ),
         store: store,
       );
@@ -144,6 +154,22 @@ class _FakePushTokenProvider implements PushTokenProvider {
 
   @override
   Future<PushTokenSnapshot?> getCurrentToken() async => snapshot;
+}
+
+class _FakePushSessionBindingProvider implements PushSessionBindingProvider {
+  const _FakePushSessionBindingProvider({
+    required this.sessionId,
+    required this.deviceInstallationId,
+  });
+
+  final String sessionId;
+  final String deviceInstallationId;
+
+  @override
+  Future<String> currentSessionId() async => sessionId;
+
+  @override
+  Future<String> currentDeviceInstallationId() async => deviceInstallationId;
 }
 
 class _MemoryPushRegistrationStore implements PushRegistrationStore {

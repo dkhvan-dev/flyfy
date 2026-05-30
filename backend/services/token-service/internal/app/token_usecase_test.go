@@ -136,6 +136,18 @@ func (m *mockAuditLogger) LogServiceAuth(_ context.Context, callerID, action, re
 	m.events = append(m.events, callerID+":"+action+":"+result)
 }
 
+type mockSessionRevocationNotifier struct {
+	events []port.SessionRevocationNotification
+}
+
+func (m *mockSessionRevocationNotifier) NotifySessionRevoked(
+	_ context.Context,
+	event port.SessionRevocationNotification,
+) error {
+	m.events = append(m.events, event)
+	return nil
+}
+
 // --- Session port mocks ---
 
 type mockSessionStore struct {
@@ -307,7 +319,7 @@ func (m *mockSessionAuditLogger) LogSessionEvent(_ context.Context, _ uuid.UUID,
 
 // --- Test setup ---
 
-func setupUseCase(t *testing.T) (*app.TokenUseCase, *mockKeyStore, *mockRevocationStore, *mockAuditLogger) {
+func setupUseCase(t *testing.T, opts ...app.Option) (*app.TokenUseCase, *mockKeyStore, *mockRevocationStore, *mockAuditLogger) {
 	t.Helper()
 	keyStore := newMockKeyStore(t)
 	revStore := newMockRevocationStore()
@@ -333,7 +345,7 @@ func setupUseCase(t *testing.T) (*app.TokenUseCase, *mockKeyStore, *mockRevocati
 		RevokedCacheTTLBuffer: 10 * time.Minute,
 	}
 
-	uc := app.NewTokenUseCase(cfg, sessionCfg, keyStore, revStore, sessionStore, revSessionCache, sessionAudit, svcStore, pwVerifier, audit, logger)
+	uc := app.NewTokenUseCase(cfg, sessionCfg, keyStore, revStore, sessionStore, revSessionCache, sessionAudit, svcStore, pwVerifier, audit, logger, opts...)
 	return uc, keyStore, revStore, audit
 }
 
@@ -364,6 +376,44 @@ func TestGenerateUserTokens(t *testing.T) {
 	}
 	if pair.ExpiresAt.IsZero() {
 		t.Error("expires_at is zero")
+	}
+}
+
+func TestGenerateUserTokensNotifiesRevokedPriorSession(t *testing.T) {
+	notifier := &mockSessionRevocationNotifier{}
+	uc, _, _, _ := setupUseCase(t, app.WithSessionRevocationNotifier(notifier))
+	ctx := context.Background()
+	userID := uuid.New()
+	claims := model.UserClaims{
+		UserID: userID,
+		Type:   model.TokenTypeUser,
+		Role:   model.RoleTourist,
+	}
+
+	first, err := uc.GenerateUserTokens(ctx, claims, model.DeviceInfo{DeviceID: "first-device"})
+	if err != nil {
+		t.Fatalf("first GenerateUserTokens returned error: %v", err)
+	}
+	second, err := uc.GenerateUserTokens(ctx, claims, model.DeviceInfo{DeviceID: "second-device"})
+	if err != nil {
+		t.Fatalf("second GenerateUserTokens returned error: %v", err)
+	}
+
+	if first.SessionID == second.SessionID {
+		t.Fatalf("expected second login to create a new session")
+	}
+	if len(notifier.events) != 1 {
+		t.Fatalf("expected one prior-session revocation notification, got %d", len(notifier.events))
+	}
+	event := notifier.events[0]
+	if event.UserID != userID {
+		t.Fatalf("expected user id %s, got %s", userID, event.UserID)
+	}
+	if event.SessionID != first.SessionID {
+		t.Fatalf("expected revoked prior session %s, got %s", first.SessionID, event.SessionID)
+	}
+	if event.Reason != model.RevokeReasonNewLogin {
+		t.Fatalf("expected revoke reason %q, got %q", model.RevokeReasonNewLogin, event.Reason)
 	}
 }
 

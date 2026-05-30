@@ -610,6 +610,10 @@ services:
       PG_SSLMODE: disable
 
       REDIS_ADDR: redis:6379
+
+      NOTIFICATION_SERVICE_HTTP_URL: http://notification-service:8097
+      NOTIFICATION_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      NOTIFICATION_SERVICE_TIMEOUT: 2s
     volumes:
       - token_service_keys:/var/lib/inflap/token-service
     depends_on:

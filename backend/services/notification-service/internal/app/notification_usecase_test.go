@@ -319,6 +319,80 @@ func TestFanoutRequestCreatesDeliveryForEachActiveDevice(t *testing.T) {
 	}
 }
 
+func TestDeactivateSessionDevicesStopsFanoutToRevokedSession(t *testing.T) {
+	uc := newTestUseCase()
+	userID := uuid.New()
+	requestID := uuid.New()
+	oldDeviceID := uuid.New()
+	newDeviceID := uuid.New()
+	legacyDeviceID := uuid.New()
+	oldSessionID := uuid.NewString()
+	newSessionID := uuid.NewString()
+
+	uc.repo.requests[requestID] = &model.NotificationRequest{
+		ID:               requestID,
+		RecipientUserIDs: []uuid.UUID{userID},
+		Priority:         model.PriorityHigh,
+		Payload:          model.NotificationPayload{Title: "Session-bound push"},
+	}
+	uc.repo.devices[oldDeviceID] = &model.DeviceToken{
+		ID:          oldDeviceID,
+		UserID:      userID,
+		SessionID:   oldSessionID,
+		Platform:    model.PlatformAndroid,
+		Provider:    model.ProviderFCM,
+		Environment: model.EnvironmentProduction,
+		Token:       "old-fcm-token",
+		Enabled:     true,
+	}
+	uc.repo.devices[newDeviceID] = &model.DeviceToken{
+		ID:          newDeviceID,
+		UserID:      userID,
+		SessionID:   newSessionID,
+		Platform:    model.PlatformAndroid,
+		Provider:    model.ProviderFCM,
+		Environment: model.EnvironmentProduction,
+		Token:       "new-fcm-token",
+		Enabled:     true,
+	}
+	uc.repo.devices[legacyDeviceID] = &model.DeviceToken{
+		ID:          legacyDeviceID,
+		UserID:      userID,
+		Platform:    model.PlatformAndroid,
+		Provider:    model.ProviderFCM,
+		Environment: model.EnvironmentProduction,
+		Token:       "legacy-sessionless-token",
+		Enabled:     true,
+	}
+
+	deactivated, err := uc.DeactivateSessionDevices(
+		context.Background(),
+		userID,
+		oldSessionID,
+		"new_login",
+	)
+	if err != nil {
+		t.Fatalf("DeactivateSessionDevices returned error: %v", err)
+	}
+	if deactivated != 2 {
+		t.Fatalf("expected old-session and legacy sessionless devices to be deactivated, got %d", deactivated)
+	}
+
+	created, err := uc.FanoutRequest(context.Background(), requestID)
+	if err != nil {
+		t.Fatalf("FanoutRequest returned error: %v", err)
+	}
+
+	if created != 1 {
+		t.Fatalf("expected fanout only to the active session device, got %d", created)
+	}
+	for _, delivery := range uc.repo.deliveries {
+		if delivery.DeviceTokenID != newDeviceID {
+			t.Fatalf("expected delivery for new session device %s, got %s", newDeviceID, delivery.DeviceTokenID)
+		}
+	}
+}
+
 func TestFanoutRequestSkipsPushForDisabledNotificationCategory(t *testing.T) {
 	uc := newTestUseCase()
 	userID := uuid.New()
@@ -611,6 +685,27 @@ func (r *memoryRepository) DeactivateDeviceToken(ctx context.Context, userID uui
 	device.Enabled = false
 	device.InvalidationReason = reason
 	return nil
+}
+
+func (r *memoryRepository) DeactivateDeviceTokensBySession(
+	ctx context.Context,
+	userID uuid.UUID,
+	sessionID string,
+	reason string,
+) (int, error) {
+	count := 0
+	for _, device := range r.devices {
+		if device.UserID != userID || !device.Enabled {
+			continue
+		}
+		if device.SessionID != sessionID && device.SessionID != "" {
+			continue
+		}
+		device.Enabled = false
+		device.InvalidationReason = reason
+		count++
+	}
+	return count, nil
 }
 
 func (r *memoryRepository) CreateNotificationRequest(ctx context.Context, request model.NotificationRequest) (*model.NotificationRequest, bool, error) {

@@ -29,6 +29,14 @@ Production push notification service for Inflap.
 
 Use a new `idempotencyKey` for each manual send, otherwise the backend intentionally deduplicates the request.
 
+## Session-Bound Device Tokens
+
+Mobile device token registration includes the current auth `sessionId` and a stable `deviceInstallationId`. When `token-service` replaces or revokes a user session, it calls:
+
+- `POST /internal/v1/notifications/sessions/revoke`
+
+with `userId`, `sessionId`, and `reason`. `notification-service` then disables only tokens bound to that session, so a user who signs in on a new device does not keep receiving push notifications on the previous revoked session.
+
 ## User Preferences
 
 Authenticated app traffic goes through the API gateway and uses:

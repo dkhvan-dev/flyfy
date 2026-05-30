@@ -20,6 +20,7 @@ const maxInternalSendBodyBytes = 1024 * 1024
 type notificationUseCase interface {
 	RegisterDevice(ctx context.Context, input app.RegisterDeviceInput) (*model.DeviceToken, error)
 	DeactivateDevice(ctx context.Context, userID uuid.UUID, deviceID uuid.UUID, reason string) error
+	DeactivateSessionDevices(ctx context.Context, userID uuid.UUID, sessionID string, reason string) (int, error)
 	ListUserNotificationCategories(ctx context.Context, userID uuid.UUID, limit int) ([]model.NotificationCategorySummary, error)
 	ListUserNotifications(ctx context.Context, userID uuid.UUID, category string, limit int, offset int) ([]model.UserNotification, error)
 	MarkUserNotificationsRead(ctx context.Context, userID uuid.UUID, category string) (int, error)
@@ -50,7 +51,9 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/notifications/preferences", h.GetNotificationPreferences)
 	mux.HandleFunc("PUT /v1/notifications/preferences", h.UpdateNotificationPreferences)
 	mux.HandleFunc("POST /internal/v1/notifications/send", h.SendInternalNotification)
+	mux.HandleFunc("POST /internal/v1/notifications/sessions/revoke", h.RevokeSessionDevices)
 	mux.HandleFunc("POST /v1/internal/notifications/send", h.SendInternalNotification)
+	mux.HandleFunc("POST /v1/internal/notifications/sessions/revoke", h.RevokeSessionDevices)
 }
 
 func (h *Handler) Health(w http.ResponseWriter, _ *http.Request) {
@@ -58,16 +61,18 @@ func (h *Handler) Health(w http.ResponseWriter, _ *http.Request) {
 }
 
 type registerDeviceTokenRequest struct {
-	Platform     string `json:"platform"`
-	Provider     string `json:"provider"`
-	Environment  string `json:"environment"`
-	Token        string `json:"token"`
-	AppBundleID  string `json:"appBundleId"`
-	AppVersion   string `json:"appVersion"`
-	DeviceModel  string `json:"deviceModel"`
-	Manufacturer string `json:"manufacturer"`
-	Locale       string `json:"locale"`
-	Timezone     string `json:"timezone"`
+	Platform             string `json:"platform"`
+	Provider             string `json:"provider"`
+	Environment          string `json:"environment"`
+	SessionID            string `json:"sessionId"`
+	DeviceInstallationID string `json:"deviceInstallationId"`
+	Token                string `json:"token"`
+	AppBundleID          string `json:"appBundleId"`
+	AppVersion           string `json:"appVersion"`
+	DeviceModel          string `json:"deviceModel"`
+	Manufacturer         string `json:"manufacturer"`
+	Locale               string `json:"locale"`
+	Timezone             string `json:"timezone"`
 }
 
 type deviceTokenResponse struct {
@@ -98,17 +103,19 @@ func (h *Handler) RegisterDeviceToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	device, err := h.useCase.RegisterDevice(r.Context(), app.RegisterDeviceInput{
-		UserID:       userID,
-		Platform:     model.Platform(strings.TrimSpace(req.Platform)),
-		Provider:     model.Provider(strings.TrimSpace(req.Provider)),
-		Environment:  model.Environment(strings.TrimSpace(req.Environment)),
-		Token:        req.Token,
-		AppBundleID:  req.AppBundleID,
-		AppVersion:   req.AppVersion,
-		DeviceModel:  req.DeviceModel,
-		Manufacturer: req.Manufacturer,
-		Locale:       req.Locale,
-		Timezone:     req.Timezone,
+		UserID:               userID,
+		Platform:             model.Platform(strings.TrimSpace(req.Platform)),
+		Provider:             model.Provider(strings.TrimSpace(req.Provider)),
+		Environment:          model.Environment(strings.TrimSpace(req.Environment)),
+		SessionID:            req.SessionID,
+		DeviceInstallationID: req.DeviceInstallationID,
+		Token:                req.Token,
+		AppBundleID:          req.AppBundleID,
+		AppVersion:           req.AppVersion,
+		DeviceModel:          req.DeviceModel,
+		Manufacturer:         req.Manufacturer,
+		Locale:               req.Locale,
+		Timezone:             req.Timezone,
 	})
 	if err != nil {
 		writeAppError(w, err)
@@ -137,6 +144,45 @@ func (h *Handler) DeactivateDeviceToken(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+type revokeSessionDevicesRequest struct {
+	UserID    string `json:"userId"`
+	SessionID string `json:"sessionId"`
+	Reason    string `json:"reason"`
+}
+
+func (h *Handler) RevokeSessionDevices(w http.ResponseWriter, r *http.Request) {
+	if !h.isInternalRequest(r) {
+		writeError(w, http.StatusUnauthorized, "missing internal service token")
+		return
+	}
+	if strings.TrimSpace(r.Header.Get("X-Service-Name")) == "" {
+		writeError(w, http.StatusUnauthorized, "missing internal service identity")
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, maxInternalSendBodyBytes)
+	var req revokeSessionDevicesRequest
+	if err := decodeJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	userID, err := uuid.Parse(strings.TrimSpace(req.UserID))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+	deactivated, err := h.useCase.DeactivateSessionDevices(
+		r.Context(),
+		userID,
+		req.SessionID,
+		req.Reason,
+	)
+	if err != nil {
+		writeAppError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"deactivatedCount": deactivated})
 }
 
 type userNotificationResponse struct {

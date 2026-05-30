@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'dart:math';
+
+import 'package:jwt_decoder/jwt_decoder.dart';
 
 import '../../../core/storage/secure_storage.dart';
 import 'notification_api.dart';
@@ -29,6 +32,13 @@ class PushTokenSnapshot {
   final String timezone;
 
   DeviceTokenRegistration toRegistration() {
+    return toSessionBoundRegistration(sessionId: '', deviceInstallationId: '');
+  }
+
+  DeviceTokenRegistration toSessionBoundRegistration({
+    required String sessionId,
+    required String deviceInstallationId,
+  }) {
     return DeviceTokenRegistration(
       platform: platform,
       provider: provider,
@@ -40,12 +50,20 @@ class PushTokenSnapshot {
       manufacturer: manufacturer,
       locale: locale,
       timezone: timezone,
+      sessionId: sessionId,
+      deviceInstallationId: deviceInstallationId,
     );
   }
 
-  String fingerprintForUser(String userId) {
+  String fingerprintForUser(
+    String userId, {
+    required String sessionId,
+    required String deviceInstallationId,
+  }) {
     return [
       userId.trim(),
+      sessionId.trim(),
+      deviceInstallationId.trim(),
       platform.wireValue,
       provider.wireValue,
       environment.wireValue,
@@ -74,6 +92,58 @@ class UnavailablePushTokenProvider implements PushTokenProvider {
   Future<PushTokenSnapshot?> getCurrentToken() async => null;
 }
 
+abstract interface class PushSessionBindingProvider {
+  Future<String> currentSessionId();
+
+  Future<String> currentDeviceInstallationId();
+}
+
+class SecurePushSessionBindingProvider implements PushSessionBindingProvider {
+  SecurePushSessionBindingProvider({SecureStorage? secureStorage})
+    : _secureStorage = secureStorage ?? SecureStorage();
+
+  static const _deviceInstallationIdKey = 'notifications.deviceInstallationId';
+
+  final SecureStorage _secureStorage;
+
+  @override
+  Future<String> currentSessionId() async {
+    final stored = (await _secureStorage.getSessionId())?.trim();
+    if (stored != null && stored.isNotEmpty) {
+      return stored;
+    }
+    final accessToken = (await _secureStorage.getAccessToken())?.trim();
+    if (accessToken == null || accessToken.isEmpty) {
+      return '';
+    }
+    try {
+      final claims = JwtDecoder.decode(accessToken);
+      return (claims['sid'] ?? claims['session_id'] ?? claims['sessionId'])
+              ?.toString()
+              .trim() ??
+          '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  @override
+  Future<String> currentDeviceInstallationId() async {
+    final existing = (await _secureStorage.readString(
+      _deviceInstallationIdKey,
+    ))?.trim();
+    if (existing != null && existing.isNotEmpty) {
+      return existing;
+    }
+    final generated = _newUuidV4();
+    await _secureStorage.writeString(
+      key: _deviceInstallationIdKey,
+      value: generated,
+    );
+    return generated;
+  }
+}
+
 abstract interface class PushRegistrationStore {
   Future<String?> readRegisteredDeviceTokenId();
 
@@ -93,7 +163,7 @@ abstract interface class PushRegistrationStore {
 
 class SecurePushRegistrationStore implements PushRegistrationStore {
   SecurePushRegistrationStore({SecureStorage? secureStorage})
-      : _secureStorage = secureStorage ?? SecureStorage();
+    : _secureStorage = secureStorage ?? SecureStorage();
 
   static const _registeredDeviceTokenIdKey =
       'notifications.registeredDeviceTokenId';
@@ -164,13 +234,17 @@ class PushRegistrationService {
   PushRegistrationService({
     NotificationDeviceTokenClient? client,
     PushTokenProvider? tokenProvider,
+    PushSessionBindingProvider? sessionBindingProvider,
     PushRegistrationStore? store,
-  })  : _client = client ?? NotificationApi(),
-        _tokenProvider = tokenProvider ?? const UnavailablePushTokenProvider(),
-        _store = store ?? SecurePushRegistrationStore();
+  }) : _client = client ?? NotificationApi(),
+       _tokenProvider = tokenProvider ?? const UnavailablePushTokenProvider(),
+       _sessionBindingProvider =
+           sessionBindingProvider ?? SecurePushSessionBindingProvider(),
+       _store = store ?? SecurePushRegistrationStore();
 
   final NotificationDeviceTokenClient _client;
   final PushTokenProvider _tokenProvider;
+  final PushSessionBindingProvider _sessionBindingProvider;
   final PushRegistrationStore _store;
 
   Stream<PushTokenSnapshot> get tokenRefreshes => _tokenProvider.tokenRefreshes;
@@ -193,12 +267,20 @@ class PushRegistrationService {
       );
     }
 
-    final fingerprint = snapshot.fingerprintForUser(trimmedUserId);
+    final sessionId = await _sessionBindingProvider.currentSessionId();
+    final deviceInstallationId = await _sessionBindingProvider
+        .currentDeviceInstallationId();
+    final fingerprint = snapshot.fingerprintForUser(
+      trimmedUserId,
+      sessionId: sessionId,
+      deviceInstallationId: deviceInstallationId,
+    );
     if (!force) {
-      final previousFingerprint =
-          await _store.readLastRegistrationFingerprint(trimmedUserId);
-      final registeredDeviceTokenId =
-          await _store.readRegisteredDeviceTokenId();
+      final previousFingerprint = await _store.readLastRegistrationFingerprint(
+        trimmedUserId,
+      );
+      final registeredDeviceTokenId = await _store
+          .readRegisteredDeviceTokenId();
       if (previousFingerprint == fingerprint &&
           registeredDeviceTokenId != null &&
           registeredDeviceTokenId.trim().isNotEmpty) {
@@ -209,7 +291,10 @@ class PushRegistrationService {
     }
 
     final registered = await _client.registerDeviceToken(
-      snapshot.toRegistration(),
+      snapshot.toSessionBoundRegistration(
+        sessionId: sessionId,
+        deviceInstallationId: deviceInstallationId,
+      ),
     );
     await _store.writeRegisteredDeviceTokenId(registered.id);
     await _store.writeLastRegistrationFingerprint(
@@ -231,4 +316,19 @@ class PushRegistrationService {
     await _store.clearRegisteredDeviceTokenId();
     return const PushRegistrationResult(PushRegistrationStatus.unregistered);
   }
+}
+
+String _newUuidV4() {
+  final random = Random.secure();
+  final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+  return [
+    hex.substring(0, 8),
+    hex.substring(8, 12),
+    hex.substring(12, 16),
+    hex.substring(16, 20),
+    hex.substring(20),
+  ].join('-');
 }

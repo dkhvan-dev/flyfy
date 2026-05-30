@@ -92,25 +92,27 @@ const (
 )
 
 type DeviceToken struct {
-	ID                 uuid.UUID
-	UserID             uuid.UUID
-	Platform           Platform
-	Provider           Provider
-	Environment        Environment
-	AppBundleID        string
-	AppVersion         string
-	DeviceModel        string
-	Manufacturer       string
-	Locale             string
-	Timezone           string
-	Token              string
-	TokenHash          string
-	Enabled            bool
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
-	LastSeenAt         time.Time
-	InvalidatedAt      *time.Time
-	InvalidationReason string
+	ID                   uuid.UUID
+	UserID               uuid.UUID
+	Platform             Platform
+	Provider             Provider
+	Environment          Environment
+	SessionID            string
+	DeviceInstallationID string
+	AppBundleID          string
+	AppVersion           string
+	DeviceModel          string
+	Manufacturer         string
+	Locale               string
+	Timezone             string
+	Token                string
+	TokenHash            string
+	Enabled              bool
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
+	LastSeenAt           time.Time
+	InvalidatedAt        *time.Time
+	InvalidationReason   string
 }
 
 type NotificationPayload struct {

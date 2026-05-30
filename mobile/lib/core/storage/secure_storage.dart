@@ -5,13 +5,18 @@ class SecureStorage {
 
   static const _keyAccessToken = 'access_token';
   static const _keyRefreshToken = 'refresh_token';
+  static const _keySessionId = 'session_id';
 
   Future<void> saveTokens({
     required String accessToken,
     required String refreshToken,
+    String? sessionId,
   }) async {
     await _storage.write(key: _keyAccessToken, value: accessToken);
     await _storage.write(key: _keyRefreshToken, value: refreshToken);
+    if (sessionId != null) {
+      await _storage.write(key: _keySessionId, value: sessionId);
+    }
   }
 
   Future<String?> getAccessToken() async {
@@ -22,9 +27,14 @@ class SecureStorage {
     return await _storage.read(key: _keyRefreshToken);
   }
 
+  Future<String?> getSessionId() async {
+    return await _storage.read(key: _keySessionId);
+  }
+
   Future<void> deleteTokens() async {
     await _storage.delete(key: _keyAccessToken);
     await _storage.delete(key: _keyRefreshToken);
+    await _storage.delete(key: _keySessionId);
   }
 
   Future<void> writeString({

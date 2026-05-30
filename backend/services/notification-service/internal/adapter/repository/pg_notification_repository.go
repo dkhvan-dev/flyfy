@@ -41,9 +41,10 @@ func (r *PGNotificationRepository) UpsertDeviceToken(
 		INSERT INTO notification_device_tokens (
 			id, user_id, platform, provider, environment, app_bundle_id,
 			app_version, device_model, manufacturer, locale, timezone,
+			session_id, device_installation_id,
 			token_hash, token_ciphertext, enabled, created_at, updated_at, last_seen_at
 		)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,true,$14,$14,$14)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,true,$16,$16,$16)
 		ON CONFLICT (provider, environment, token_hash)
 		DO UPDATE SET
 			user_id = EXCLUDED.user_id,
@@ -54,6 +55,8 @@ func (r *PGNotificationRepository) UpsertDeviceToken(
 			manufacturer = EXCLUDED.manufacturer,
 			locale = EXCLUDED.locale,
 			timezone = EXCLUDED.timezone,
+			session_id = EXCLUDED.session_id,
+			device_installation_id = EXCLUDED.device_installation_id,
 			token_ciphertext = EXCLUDED.token_ciphertext,
 			enabled = true,
 			updated_at = EXCLUDED.updated_at,
@@ -61,11 +64,13 @@ func (r *PGNotificationRepository) UpsertDeviceToken(
 			invalidated_at = NULL,
 			invalidation_reason = ''
 		RETURNING id, user_id, platform, provider, environment, app_bundle_id,
-			app_version, device_model, manufacturer, locale, timezone, token_hash,
+			app_version, device_model, manufacturer, locale, timezone,
+			session_id, device_installation_id, token_hash,
 			enabled, created_at, updated_at, last_seen_at, invalidated_at, invalidation_reason
 	`, device.ID, device.UserID, device.Platform, device.Provider, device.Environment,
 		device.AppBundleID, device.AppVersion, device.DeviceModel, device.Manufacturer,
-		device.Locale, device.Timezone, tokenHash, tokenCiphertext, device.UpdatedAt)
+		device.Locale, device.Timezone, device.SessionID, device.DeviceInstallationID,
+		tokenHash, tokenCiphertext, device.UpdatedAt)
 
 	return scanDevice(row, nil)
 }
@@ -91,6 +96,29 @@ func (r *PGNotificationRepository) DeactivateDeviceToken(
 		return model.ErrNotFound
 	}
 	return nil
+}
+
+func (r *PGNotificationRepository) DeactivateDeviceTokensBySession(
+	ctx context.Context,
+	userID uuid.UUID,
+	sessionID string,
+	reason string,
+) (int, error) {
+	tag, err := r.pool.Exec(ctx, `
+		UPDATE notification_device_tokens
+		SET enabled = false,
+			invalidated_at = NOW(),
+			invalidation_reason = $3,
+			updated_at = NOW()
+		WHERE user_id = $1
+			AND (session_id = $2 OR session_id = '')
+			AND enabled = true
+			AND invalidated_at IS NULL
+	`, userID, sessionID, reason)
+	if err != nil {
+		return 0, err
+	}
+	return int(tag.RowsAffected()), nil
 }
 
 func (r *PGNotificationRepository) CreateNotificationRequest(
@@ -163,7 +191,8 @@ func (r *PGNotificationRepository) ListActiveDeviceTokens(
 ) ([]*model.DeviceToken, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT id, user_id, platform, provider, environment, app_bundle_id,
-			app_version, device_model, manufacturer, locale, timezone, token_hash,
+			app_version, device_model, manufacturer, locale, timezone,
+			session_id, device_installation_id, token_hash,
 			token_ciphertext, enabled, created_at, updated_at, last_seen_at,
 			invalidated_at, invalidation_reason
 		FROM notification_device_tokens
@@ -656,6 +685,8 @@ func scanDevice(row scanner, tokenCiphertextDest *string) (*model.DeviceToken, e
 		&device.Manufacturer,
 		&device.Locale,
 		&device.Timezone,
+		&device.SessionID,
+		&device.DeviceInstallationID,
 		&device.TokenHash,
 	}
 	if tokenCiphertextDest != nil {

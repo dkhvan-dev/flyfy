@@ -12,19 +12,20 @@ class ApiClient {
     SecureStorage? secureStorage,
     Dio? dio,
     AuthSessionEvents? authSessionEvents,
-  })  : _secureStorage = secureStorage ?? SecureStorage(),
-        _authSessionEvents = authSessionEvents ?? AuthSessionEvents.instance,
-        _dio = dio ??
-            Dio(
-              BaseOptions(
-                baseUrl: baseUrl ?? AppConfig.apiBaseUrl,
-                connectTimeout: const Duration(seconds: 10),
-                receiveTimeout: const Duration(seconds: 10),
-                sendTimeout: const Duration(seconds: 10),
-                contentType: 'application/json',
-                responseType: ResponseType.json,
-              ),
-            ) {
+  }) : _secureStorage = secureStorage ?? SecureStorage(),
+       _authSessionEvents = authSessionEvents ?? AuthSessionEvents.instance,
+       _dio =
+           dio ??
+           Dio(
+             BaseOptions(
+               baseUrl: baseUrl ?? AppConfig.apiBaseUrl,
+               connectTimeout: const Duration(seconds: 10),
+               receiveTimeout: const Duration(seconds: 10),
+               sendTimeout: const Duration(seconds: 10),
+               contentType: 'application/json',
+               responseType: ResponseType.json,
+             ),
+           ) {
     _configureInterceptors();
   }
 
@@ -78,7 +79,8 @@ class ApiClient {
           final request = error.requestOptions;
           final statusCode = error.response?.statusCode;
 
-          final shouldTryRefresh = statusCode == 401 &&
+          final shouldTryRefresh =
+              statusCode == 401 &&
               _requiresAuth(request) &&
               request.extra['retried'] != true;
 
@@ -133,6 +135,7 @@ class ApiClient {
     await _secureStorage.saveTokens(
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
+      sessionId: result.sessionId,
     );
   }
 

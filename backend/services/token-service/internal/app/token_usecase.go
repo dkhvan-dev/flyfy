@@ -40,9 +40,18 @@ type TokenUseCase struct {
 	revSessionCache  port.RevokedSessionCache
 	sessionAudit     port.SessionAuditLogger
 	svcStore         port.ServiceAccountStore
+	sessionNotifier  port.SessionRevocationNotifier
 	passwordVerifier port.PasswordVerifier
 	audit            port.AuditLogger
 	logger           zerolog.Logger
+}
+
+type Option func(*TokenUseCase)
+
+func WithSessionRevocationNotifier(notifier port.SessionRevocationNotifier) Option {
+	return func(uc *TokenUseCase) {
+		uc.sessionNotifier = notifier
+	}
 }
 
 // NewTokenUseCase wires the use case with all required ports.
@@ -58,8 +67,9 @@ func NewTokenUseCase(
 	passwordVerifier port.PasswordVerifier,
 	audit port.AuditLogger,
 	logger zerolog.Logger,
+	opts ...Option,
 ) *TokenUseCase {
-	return &TokenUseCase{
+	uc := &TokenUseCase{
 		cfg:              cfg,
 		sessionCfg:       sessionCfg,
 		keyStore:         keyStore,
@@ -72,6 +82,10 @@ func NewTokenUseCase(
 		audit:            audit,
 		logger:           logger.With().Str("component", "token_usecase").Logger(),
 	}
+	for _, opt := range opts {
+		opt(uc)
+	}
+	return uc
 }
 
 // --- TokenGenerator ---
@@ -144,6 +158,7 @@ func (uc *TokenUseCase) GenerateUserTokens(
 				"new_session_id": sessionID.String(),
 				"prev_device":    replaced.Device.DeviceID,
 			})
+		uc.notifySessionRevoked(ctx, replaced.UserID, replaced.ID, model.RevokeReasonNewLogin)
 	}
 
 	uc.sessionAudit.LogSessionEvent(ctx, claims.UserID, &sessionID, model.SessionEventCreated,
@@ -244,6 +259,7 @@ func (uc *TokenUseCase) RefreshTokens(
 	if histSessionID, found, hErr := uc.sessionStore.FindHistoricalRefreshJTI(ctx, claims.JTI); hErr == nil && found {
 		_ = uc.sessionStore.Revoke(ctx, histSessionID, model.RevokeReasonTokenReuse)
 		uc.markSessionRevokedInCache(ctx, histSessionID)
+		uc.notifySessionRevoked(ctx, parseUserID(claims.Subject), histSessionID, model.RevokeReasonTokenReuse)
 		uc.sessionAudit.LogSessionEvent(ctx, parseUserID(claims.Subject), &histSessionID,
 			model.SessionEventTokenReuseDetected, device.IPAddress, device.UserAgent,
 			map[string]string{"reused_jti": claims.JTI})
@@ -267,6 +283,7 @@ func (uc *TokenUseCase) RefreshTokens(
 	if uc.sessionCfg.InactivityTTL > 0 && time.Since(session.LastUsedAt) > uc.sessionCfg.InactivityTTL {
 		_ = uc.sessionStore.Revoke(ctx, session.ID, model.RevokeReasonInactivityExpired)
 		uc.markSessionRevokedInCache(ctx, session.ID)
+		uc.notifySessionRevoked(ctx, session.UserID, session.ID, model.RevokeReasonInactivityExpired)
 		uc.sessionAudit.LogSessionEvent(ctx, session.UserID, &session.ID, model.SessionEventInactivityExpired,
 			device.IPAddress, device.UserAgent, nil)
 		return nil, model.ErrSessionExpired
@@ -374,6 +391,7 @@ func (uc *TokenUseCase) LogoutSession(ctx context.Context, sessionID uuid.UUID, 
 	}
 
 	uc.markSessionRevokedInCache(ctx, sessionID)
+	uc.notifySessionRevoked(ctx, session.UserID, sessionID, reason)
 
 	event := model.SessionEventLogout
 	if reason == model.RevokeReasonAdmin {
@@ -408,6 +426,7 @@ func (uc *TokenUseCase) RevokeAllUserSessions(ctx context.Context, userID uuid.U
 			uc.logger.Warn().Err(rerr).Str("jti", sess.RefreshJTI).Msg("failed to deny-list refresh in mass revoke")
 		}
 		uc.markSessionRevokedInCache(ctx, sess.ID)
+		uc.notifySessionRevoked(ctx, sess.UserID, sess.ID, reason)
 	}
 
 	uc.sessionAudit.LogSessionEvent(ctx, userID, nil, model.SessionEventAdminRevoke, "", "",
@@ -640,6 +659,32 @@ func (uc *TokenUseCase) checkSessionAlive(ctx context.Context, claims *model.Val
 		return model.ErrTokenRevoked
 	}
 	return nil
+}
+
+func (uc *TokenUseCase) notifySessionRevoked(
+	ctx context.Context,
+	userID uuid.UUID,
+	sessionID uuid.UUID,
+	reason string,
+) {
+	if uc.sessionNotifier == nil || userID == uuid.Nil || sessionID == uuid.Nil {
+		return
+	}
+	if reason == "" {
+		reason = "session_revoked"
+	}
+	if err := uc.sessionNotifier.NotifySessionRevoked(ctx, port.SessionRevocationNotification{
+		UserID:    userID,
+		SessionID: sessionID,
+		Reason:    reason,
+	}); err != nil {
+		uc.logger.Warn().
+			Err(err).
+			Str("user_id", userID.String()).
+			Str("session_id", sessionID.String()).
+			Str("reason", reason).
+			Msg("failed to notify session revocation")
+	}
 }
 
 func (uc *TokenUseCase) markSessionRevokedInCache(ctx context.Context, sessionID uuid.UUID) {

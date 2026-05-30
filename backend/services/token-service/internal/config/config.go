@@ -26,6 +26,9 @@ type Config struct {
 
 	// Telemetry
 	OTELEndpoint string `env:"OTEL_ENDPOINT, default=localhost:4317"`
+
+	// Integrations
+	Notification NotificationConfig
 }
 
 // SessionConfig controls user-session lifecycle:
@@ -75,6 +78,12 @@ type RedisConfig struct {
 	Addr     string `env:"REDIS_ADDR, default=localhost:6379"`
 	Password string `env:"REDIS_PASSWORD, default="`
 	DB       int    `env:"REDIS_DB, default=0"`
+}
+
+type NotificationConfig struct {
+	HTTPURL              string        `env:"NOTIFICATION_SERVICE_HTTP_URL, default="`
+	InternalServiceToken string        `env:"NOTIFICATION_INTERNAL_SERVICE_TOKEN, default="`
+	Timeout              time.Duration `env:"NOTIFICATION_SERVICE_TIMEOUT, default=2s"`
 }
 
 func Load(ctx context.Context) (*Config, error) {
