@@ -43,8 +43,10 @@ import '../../screens/attractions/attractions_screen.dart';
 import '../../screens/attractions/attraction_details_screen.dart';
 import '../../features/attractions/models/attraction_vm.dart';
 import '../../features/excursions/models/excursion_vm.dart';
+import '../../features/notifications/data/notification_api.dart';
 import '../../screens/common/feature_stub_screen.dart';
 import '../../screens/map/map_screen.dart';
+import '../../screens/notifications/notifications_screen.dart';
 
 class AppRouter {
   static GoRouter router(AuthProvider authProvider) {
@@ -457,8 +459,25 @@ class AppRouter {
         GoRoute(
           path: '/notifications',
           builder: (context, state) => _withAndroidBackSwipe(
-            const FeatureStubScreen(title: 'Notifications'),
+            const NotificationsOverviewScreen(),
           ),
+        ),
+        GoRoute(
+          path: '/notifications/:category',
+          builder: (context, state) {
+            final category = Uri.decodeComponent(
+              state.pathParameters['category'] ?? 'general',
+            );
+            final initialSummary = state.extra is NotificationCategorySummary
+                ? state.extra! as NotificationCategorySummary
+                : null;
+            return _withAndroidBackSwipe(
+              NotificationCategoryScreen(
+                category: category,
+                initialSummary: initialSummary,
+              ),
+            );
+          },
         ),
         GoRoute(
           path: '/services',
@@ -537,7 +556,6 @@ class AppRouter {
         location == '/stories' ||
         location == '/menu' ||
         location == '/map' ||
-        location == '/notifications' ||
         location == '/services' ||
         location == '/chats' ||
         location == '/yandex-go' ||

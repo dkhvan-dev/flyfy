@@ -5658,4 +5658,86 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideCalendarSaveSlot => 'Save';
+
+  @override
+  String get notificationsTitle => 'Notifications';
+
+  @override
+  String get notificationsSubtitle =>
+      'Important updates for trips, activities, and excursions';
+
+  @override
+  String get notificationsCategoriesEmptyTitle => 'All quiet for now';
+
+  @override
+  String get notificationsCategoriesEmptySubtitle =>
+      'The latest updates for your categories will appear here.';
+
+  @override
+  String get notificationsLoadFailedTitle => 'Could not load notifications';
+
+  @override
+  String get notificationsLoadFailedSubtitle =>
+      'Check your connection and try again.';
+
+  @override
+  String get notificationsCategoryEmptyTitle =>
+      'No notifications in this category yet';
+
+  @override
+  String get notificationsCategoryEmptySubtitle =>
+      'New events will appear here automatically.';
+
+  @override
+  String get notificationsReadAll => 'Mark all as read';
+
+  @override
+  String get notificationsReadAllDone =>
+      'All notifications in this category are read';
+
+  @override
+  String notificationsUnreadCount(Object count) {
+    return '$count new';
+  }
+
+  @override
+  String get notificationsCategoryActivity => 'Activities';
+
+  @override
+  String get notificationsCategoryExcursion => 'Excursions';
+
+  @override
+  String get notificationsCategoryBooking => 'Bookings';
+
+  @override
+  String get notificationsCategoryChat => 'Messages';
+
+  @override
+  String get notificationsCategorySystem => 'System';
+
+  @override
+  String get notificationsCategoryGeneral => 'General';
+
+  @override
+  String notificationsCategoryFallback(Object category) {
+    return 'Category $category';
+  }
+
+  @override
+  String get notificationsJustNow => 'just now';
+
+  @override
+  String notificationsMinutesAgo(Object minutes) {
+    return '$minutes min ago';
+  }
+
+  @override
+  String notificationsHoursAgo(Object hours) {
+    return '$hours h ago';
+  }
+
+  @override
+  String notificationsDaysAgo(Object days) {
+    return '$days d ago';
+  }
 }

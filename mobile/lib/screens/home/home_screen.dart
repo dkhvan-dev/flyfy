@@ -867,7 +867,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     currentLocationLabel: l10n.homeCurrentLocationLabel,
                     onLocationTap: _openLocationSheet,
                     onMenuTap: _openDrawer,
-                    onNotificationsTap: () {},
+                    onNotificationsTap: () => context.push('/notifications'),
                   ),
                   Expanded(
                     child: RefreshIndicator(

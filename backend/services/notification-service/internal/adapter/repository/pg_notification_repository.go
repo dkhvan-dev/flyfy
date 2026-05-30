@@ -365,6 +365,145 @@ func (r *PGNotificationRepository) ListDueDeliveries(
 	return deliveries, rows.Err()
 }
 
+func (r *PGNotificationRepository) ListUserNotificationCategorySummaries(
+	ctx context.Context,
+	userID uuid.UUID,
+	limit int,
+) ([]model.NotificationCategorySummary, error) {
+	rows, err := r.pool.Query(ctx, `
+		WITH user_requests AS (
+			SELECT
+				r.id,
+				COALESCE(NULLIF(BTRIM(r.category), ''), 'general') AS category,
+				r.priority,
+				r.title,
+				r.body,
+				r.image_url,
+				r.deep_link,
+				r.data,
+				r.created_at,
+				ur.read_at
+			FROM notification_requests r
+			LEFT JOIN notification_user_reads ur
+				ON ur.request_id = r.id AND ur.user_id = $1
+			WHERE r.recipient_user_ids @> ARRAY[$1]::uuid[]
+				AND r.scheduled_at <= NOW()
+		),
+		ranked AS (
+			SELECT
+				*,
+				ROW_NUMBER() OVER (PARTITION BY category ORDER BY created_at DESC, id DESC) AS rn,
+				COUNT(*) FILTER (WHERE read_at IS NULL) OVER (PARTITION BY category) AS unread_count,
+				COUNT(*) OVER (PARTITION BY category) AS total_count
+			FROM user_requests
+		)
+		SELECT
+			id,
+			category,
+			priority,
+			title,
+			body,
+			image_url,
+			deep_link,
+			data,
+			created_at,
+			read_at,
+			unread_count,
+			total_count
+		FROM ranked
+		WHERE rn = 1
+		ORDER BY created_at DESC, id DESC
+		LIMIT $2
+	`, userID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	summaries := make([]model.NotificationCategorySummary, 0, limit)
+	for rows.Next() {
+		notification, unreadCount, totalCount, err := scanCategorySummary(rows)
+		if err != nil {
+			return nil, err
+		}
+		summaries = append(summaries, model.NotificationCategorySummary{
+			Category:    notification.Category,
+			Latest:      notification,
+			UnreadCount: unreadCount,
+			TotalCount:  totalCount,
+		})
+	}
+	return summaries, rows.Err()
+}
+
+func (r *PGNotificationRepository) ListUserNotifications(
+	ctx context.Context,
+	userID uuid.UUID,
+	category string,
+	limit int,
+	offset int,
+) ([]model.UserNotification, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT
+			r.id,
+			COALESCE(NULLIF(BTRIM(r.category), ''), 'general') AS category,
+			r.priority,
+			r.title,
+			r.body,
+			r.image_url,
+			r.deep_link,
+			r.data,
+			r.created_at,
+			ur.read_at
+		FROM notification_requests r
+		LEFT JOIN notification_user_reads ur
+			ON ur.request_id = r.id AND ur.user_id = $1
+		WHERE r.recipient_user_ids @> ARRAY[$1]::uuid[]
+			AND COALESCE(NULLIF(BTRIM(r.category), ''), 'general') = $2
+			AND r.scheduled_at <= NOW()
+		ORDER BY r.created_at DESC, r.id DESC
+		LIMIT $3 OFFSET $4
+	`, userID, category, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	notifications := make([]model.UserNotification, 0, limit)
+	for rows.Next() {
+		notification, err := scanUserNotification(rows)
+		if err != nil {
+			return nil, err
+		}
+		notifications = append(notifications, notification)
+	}
+	return notifications, rows.Err()
+}
+
+func (r *PGNotificationRepository) MarkUserNotificationsRead(
+	ctx context.Context,
+	userID uuid.UUID,
+	category string,
+) (int, error) {
+	tag, err := r.pool.Exec(ctx, `
+		WITH target_requests AS (
+			SELECT r.id
+			FROM notification_requests r
+			WHERE r.recipient_user_ids @> ARRAY[$1]::uuid[]
+				AND COALESCE(NULLIF(BTRIM(r.category), ''), 'general') = $2
+				AND r.scheduled_at <= NOW()
+		)
+		INSERT INTO notification_user_reads (user_id, request_id, read_at)
+		SELECT $1, id, NOW()
+		FROM target_requests
+		ON CONFLICT (user_id, request_id) DO NOTHING
+	`, userID, category)
+	if err != nil {
+		return 0, err
+	}
+	return int(tag.RowsAffected()), nil
+}
+
 type scanner interface {
 	Scan(dest ...any) error
 }
@@ -445,6 +584,55 @@ func scanRequest(row scanner) (*model.NotificationRequest, error) {
 	}
 	request.Payload.TTL = time.Duration(ttlSeconds) * time.Second
 	return &request, nil
+}
+
+func scanCategorySummary(row scanner) (model.UserNotification, int, int, error) {
+	var unreadCount int64
+	var totalCount int64
+	notification, err := scanUserNotificationWithExtra(row, &unreadCount, &totalCount)
+	if err != nil {
+		return model.UserNotification{}, 0, 0, err
+	}
+	return notification, int(unreadCount), int(totalCount), nil
+}
+
+func scanUserNotification(row scanner) (model.UserNotification, error) {
+	return scanUserNotificationWithExtra(row)
+}
+
+func scanUserNotificationWithExtra(row scanner, extraDest ...any) (model.UserNotification, error) {
+	var notification model.UserNotification
+	var dataBytes []byte
+	var readAt *time.Time
+	dest := []any{
+		&notification.ID,
+		&notification.Category,
+		&notification.Priority,
+		&notification.Payload.Title,
+		&notification.Payload.Body,
+		&notification.Payload.ImageURL,
+		&notification.Payload.DeepLink,
+		&dataBytes,
+		&notification.CreatedAt,
+		&readAt,
+	}
+	dest = append(dest, extraDest...)
+	if err := row.Scan(dest...); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return model.UserNotification{}, model.ErrNotFound
+		}
+		return model.UserNotification{}, err
+	}
+	if len(dataBytes) > 0 {
+		if err := json.Unmarshal(dataBytes, &notification.Payload.Data); err != nil {
+			return model.UserNotification{}, fmt.Errorf("unmarshal user notification data: %w", err)
+		}
+	}
+	if notification.Payload.Data == nil {
+		notification.Payload.Data = map[string]string{}
+	}
+	notification.ReadAt = readAt
+	return notification, nil
 }
 
 func deliverySelectSQL() string {

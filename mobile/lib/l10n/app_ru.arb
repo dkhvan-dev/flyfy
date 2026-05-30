@@ -2150,5 +2150,52 @@
     }
   },
   "guideCalendarSlotLeadTimeTooSoon": "Выберите дату и время минимум за 3 часа до начала.",
-  "guideCalendarSaveSlot": "Сохранить"
+  "guideCalendarSaveSlot": "Сохранить",
+  "notificationsTitle": "Уведомления",
+  "notificationsSubtitle": "Важные обновления по поездкам, активностям и экскурсиям",
+  "notificationsCategoriesEmptyTitle": "Пока тихо",
+  "notificationsCategoriesEmptySubtitle": "Здесь появятся последние обновления по вашим категориям.",
+  "notificationsLoadFailedTitle": "Не удалось загрузить уведомления",
+  "notificationsLoadFailedSubtitle": "Проверьте подключение и попробуйте снова.",
+  "notificationsCategoryEmptyTitle": "В этой категории пока нет уведомлений",
+  "notificationsCategoryEmptySubtitle": "Новые события появятся здесь автоматически.",
+  "notificationsReadAll": "Прочитать все",
+  "notificationsReadAllDone": "Все уведомления в категории прочитаны",
+  "notificationsUnreadCount": "{count} новых",
+  "@notificationsUnreadCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "notificationsCategoryActivity": "Активности",
+  "notificationsCategoryExcursion": "Экскурсии",
+  "notificationsCategoryBooking": "Бронирования",
+  "notificationsCategoryChat": "Сообщения",
+  "notificationsCategorySystem": "Система",
+  "notificationsCategoryGeneral": "Общее",
+  "notificationsCategoryFallback": "Категория {category}",
+  "@notificationsCategoryFallback": {
+    "placeholders": {
+      "category": {}
+    }
+  },
+  "notificationsJustNow": "только что",
+  "notificationsMinutesAgo": "{minutes} мин назад",
+  "@notificationsMinutesAgo": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
+  "notificationsHoursAgo": "{hours} ч назад",
+  "@notificationsHoursAgo": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "notificationsDaysAgo": "{days} дн назад",
+  "@notificationsDaysAgo": {
+    "placeholders": {
+      "days": {}
+    }
+  }
 }

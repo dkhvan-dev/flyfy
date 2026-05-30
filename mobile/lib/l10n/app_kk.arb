@@ -2150,5 +2150,52 @@
     }
   },
   "guideCalendarSlotLeadTimeTooSoon": "Басталуына кемінде 3 сағат қалатындай күн мен уақытты таңдаңыз.",
-  "guideCalendarSaveSlot": "Сақтау"
+  "guideCalendarSaveSlot": "Сақтау",
+  "notificationsTitle": "Хабарландырулар",
+  "notificationsSubtitle": "Сапарлар, белсенділіктер және экскурсиялар бойынша маңызды жаңартулар",
+  "notificationsCategoriesEmptyTitle": "Әзірге тыныш",
+  "notificationsCategoriesEmptySubtitle": "Санаттар бойынша соңғы жаңартулар осы жерде пайда болады.",
+  "notificationsLoadFailedTitle": "Хабарландыруларды жүктеу мүмкін болмады",
+  "notificationsLoadFailedSubtitle": "Қосылымды тексеріп, қайта көріңіз.",
+  "notificationsCategoryEmptyTitle": "Бұл санатта әзірге хабарландыру жоқ",
+  "notificationsCategoryEmptySubtitle": "Жаңа оқиғалар осы жерде автоматты түрде пайда болады.",
+  "notificationsReadAll": "Барлығын оқылған деп белгілеу",
+  "notificationsReadAllDone": "Осы санаттағы барлық хабарландыру оқылды",
+  "notificationsUnreadCount": "{count} жаңа",
+  "@notificationsUnreadCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "notificationsCategoryActivity": "Белсенділіктер",
+  "notificationsCategoryExcursion": "Экскурсиялар",
+  "notificationsCategoryBooking": "Брондаулар",
+  "notificationsCategoryChat": "Хабарламалар",
+  "notificationsCategorySystem": "Жүйе",
+  "notificationsCategoryGeneral": "Жалпы",
+  "notificationsCategoryFallback": "{category} санаты",
+  "@notificationsCategoryFallback": {
+    "placeholders": {
+      "category": {}
+    }
+  },
+  "notificationsJustNow": "жаңа ғана",
+  "notificationsMinutesAgo": "{minutes} мин бұрын",
+  "@notificationsMinutesAgo": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
+  "notificationsHoursAgo": "{hours} сағ бұрын",
+  "@notificationsHoursAgo": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "notificationsDaysAgo": "{days} күн бұрын",
+  "@notificationsDaysAgo": {
+    "placeholders": {
+      "days": {}
+    }
+  }
 }

@@ -5695,4 +5695,87 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get guideCalendarSaveSlot => 'Сақтау';
+
+  @override
+  String get notificationsTitle => 'Хабарландырулар';
+
+  @override
+  String get notificationsSubtitle =>
+      'Сапарлар, белсенділіктер және экскурсиялар бойынша маңызды жаңартулар';
+
+  @override
+  String get notificationsCategoriesEmptyTitle => 'Әзірге тыныш';
+
+  @override
+  String get notificationsCategoriesEmptySubtitle =>
+      'Санаттар бойынша соңғы жаңартулар осы жерде пайда болады.';
+
+  @override
+  String get notificationsLoadFailedTitle =>
+      'Хабарландыруларды жүктеу мүмкін болмады';
+
+  @override
+  String get notificationsLoadFailedSubtitle =>
+      'Қосылымды тексеріп, қайта көріңіз.';
+
+  @override
+  String get notificationsCategoryEmptyTitle =>
+      'Бұл санатта әзірге хабарландыру жоқ';
+
+  @override
+  String get notificationsCategoryEmptySubtitle =>
+      'Жаңа оқиғалар осы жерде автоматты түрде пайда болады.';
+
+  @override
+  String get notificationsReadAll => 'Барлығын оқылған деп белгілеу';
+
+  @override
+  String get notificationsReadAllDone =>
+      'Осы санаттағы барлық хабарландыру оқылды';
+
+  @override
+  String notificationsUnreadCount(Object count) {
+    return '$count жаңа';
+  }
+
+  @override
+  String get notificationsCategoryActivity => 'Белсенділіктер';
+
+  @override
+  String get notificationsCategoryExcursion => 'Экскурсиялар';
+
+  @override
+  String get notificationsCategoryBooking => 'Брондаулар';
+
+  @override
+  String get notificationsCategoryChat => 'Хабарламалар';
+
+  @override
+  String get notificationsCategorySystem => 'Жүйе';
+
+  @override
+  String get notificationsCategoryGeneral => 'Жалпы';
+
+  @override
+  String notificationsCategoryFallback(Object category) {
+    return '$category санаты';
+  }
+
+  @override
+  String get notificationsJustNow => 'жаңа ғана';
+
+  @override
+  String notificationsMinutesAgo(Object minutes) {
+    return '$minutes мин бұрын';
+  }
+
+  @override
+  String notificationsHoursAgo(Object hours) {
+    return '$hours сағ бұрын';
+  }
+
+  @override
+  String notificationsDaysAgo(Object days) {
+    return '$days күн бұрын';
+  }
 }

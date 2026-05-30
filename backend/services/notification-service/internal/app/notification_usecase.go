@@ -28,6 +28,11 @@ const (
 	MaxCollapseKeyLength    = 128
 	MaxDeepLinkLength       = 2048
 	MaxTTL                  = 30 * 24 * time.Hour
+
+	DefaultNotificationCategoryLimit = 20
+	MaxNotificationCategoryLimit     = 50
+	DefaultNotificationListLimit     = 30
+	MaxNotificationListLimit         = 100
 )
 
 type Repository interface {
@@ -42,6 +47,9 @@ type Repository interface {
 	DeactivateDeviceTokenByID(ctx context.Context, deviceID uuid.UUID, reason string) error
 	MarkRequestFanoutCompleted(ctx context.Context, requestID uuid.UUID, totalDeliveries int) error
 	ListDueDeliveries(ctx context.Context, now time.Time, limit int) ([]model.Delivery, error)
+	ListUserNotificationCategorySummaries(ctx context.Context, userID uuid.UUID, limit int) ([]model.NotificationCategorySummary, error)
+	ListUserNotifications(ctx context.Context, userID uuid.UUID, category string, limit int, offset int) ([]model.UserNotification, error)
+	MarkUserNotificationsRead(ctx context.Context, userID uuid.UUID, category string) (int, error)
 }
 
 type Publisher interface {
@@ -176,6 +184,71 @@ func (uc *NotificationUseCase) DeactivateDevice(ctx context.Context, userID uuid
 		return fmt.Errorf("%w: user id and device id are required", model.ErrInvalidInput)
 	}
 	return uc.repo.DeactivateDeviceToken(ctx, userID, deviceID, strings.TrimSpace(reason))
+}
+
+func (uc *NotificationUseCase) ListUserNotificationCategories(
+	ctx context.Context,
+	userID uuid.UUID,
+	limit int,
+) ([]model.NotificationCategorySummary, error) {
+	if uc == nil || uc.repo == nil {
+		return nil, fmt.Errorf("notification use case is not configured")
+	}
+	if userID == uuid.Nil {
+		return nil, fmt.Errorf("%w: user id is required", model.ErrInvalidInput)
+	}
+	return uc.repo.ListUserNotificationCategorySummaries(ctx, userID, clampLimit(
+		limit,
+		DefaultNotificationCategoryLimit,
+		MaxNotificationCategoryLimit,
+	))
+}
+
+func (uc *NotificationUseCase) ListUserNotifications(
+	ctx context.Context,
+	userID uuid.UUID,
+	category string,
+	limit int,
+	offset int,
+) ([]model.UserNotification, error) {
+	if uc == nil || uc.repo == nil {
+		return nil, fmt.Errorf("notification use case is not configured")
+	}
+	if userID == uuid.Nil {
+		return nil, fmt.Errorf("%w: user id is required", model.ErrInvalidInput)
+	}
+	if offset < 0 {
+		return nil, fmt.Errorf("%w: offset must be non-negative", model.ErrInvalidInput)
+	}
+	normalizedCategory := normalizeCategory(category)
+	if normalizedCategory == "" {
+		return nil, fmt.Errorf("%w: category is required", model.ErrInvalidInput)
+	}
+	return uc.repo.ListUserNotifications(
+		ctx,
+		userID,
+		normalizedCategory,
+		clampLimit(limit, DefaultNotificationListLimit, MaxNotificationListLimit),
+		offset,
+	)
+}
+
+func (uc *NotificationUseCase) MarkUserNotificationsRead(
+	ctx context.Context,
+	userID uuid.UUID,
+	category string,
+) (int, error) {
+	if uc == nil || uc.repo == nil {
+		return 0, fmt.Errorf("notification use case is not configured")
+	}
+	if userID == uuid.Nil {
+		return 0, fmt.Errorf("%w: user id is required", model.ErrInvalidInput)
+	}
+	normalizedCategory := normalizeCategory(category)
+	if normalizedCategory == "" {
+		return 0, fmt.Errorf("%w: category is required", model.ErrInvalidInput)
+	}
+	return uc.repo.MarkUserNotificationsRead(ctx, userID, normalizedCategory)
 }
 
 func (uc *NotificationUseCase) SendNotification(
@@ -411,6 +484,24 @@ func dedupeUUIDs(values []uuid.UUID) []uuid.UUID {
 		result = append(result, value)
 	}
 	return result
+}
+
+func normalizeCategory(category string) string {
+	category = strings.TrimSpace(category)
+	if category == "" {
+		return "general"
+	}
+	return category
+}
+
+func clampLimit(value int, defaultValue int, maxValue int) int {
+	if value <= 0 {
+		return defaultValue
+	}
+	if value > maxValue {
+		return maxValue
+	}
+	return value
 }
 
 func normalizePayload(payload model.NotificationPayload) model.NotificationPayload {

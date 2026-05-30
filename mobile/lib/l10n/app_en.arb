@@ -2150,5 +2150,52 @@
     }
   },
   "guideCalendarSlotLeadTimeTooSoon": "Choose a date and time at least 3 hours before the start.",
-  "guideCalendarSaveSlot": "Save"
+  "guideCalendarSaveSlot": "Save",
+  "notificationsTitle": "Notifications",
+  "notificationsSubtitle": "Important updates for trips, activities, and excursions",
+  "notificationsCategoriesEmptyTitle": "All quiet for now",
+  "notificationsCategoriesEmptySubtitle": "The latest updates for your categories will appear here.",
+  "notificationsLoadFailedTitle": "Could not load notifications",
+  "notificationsLoadFailedSubtitle": "Check your connection and try again.",
+  "notificationsCategoryEmptyTitle": "No notifications in this category yet",
+  "notificationsCategoryEmptySubtitle": "New events will appear here automatically.",
+  "notificationsReadAll": "Mark all as read",
+  "notificationsReadAllDone": "All notifications in this category are read",
+  "notificationsUnreadCount": "{count} new",
+  "@notificationsUnreadCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "notificationsCategoryActivity": "Activities",
+  "notificationsCategoryExcursion": "Excursions",
+  "notificationsCategoryBooking": "Bookings",
+  "notificationsCategoryChat": "Messages",
+  "notificationsCategorySystem": "System",
+  "notificationsCategoryGeneral": "General",
+  "notificationsCategoryFallback": "Category {category}",
+  "@notificationsCategoryFallback": {
+    "placeholders": {
+      "category": {}
+    }
+  },
+  "notificationsJustNow": "just now",
+  "notificationsMinutesAgo": "{minutes} min ago",
+  "@notificationsMinutesAgo": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
+  "notificationsHoursAgo": "{hours} h ago",
+  "@notificationsHoursAgo": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "notificationsDaysAgo": "{days} d ago",
+  "@notificationsDaysAgo": {
+    "placeholders": {
+      "days": {}
+    }
+  }
 }

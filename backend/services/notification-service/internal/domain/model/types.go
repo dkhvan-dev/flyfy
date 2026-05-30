@@ -136,6 +136,22 @@ type NotificationRequest struct {
 	CreatedAt        time.Time
 }
 
+type UserNotification struct {
+	ID        uuid.UUID
+	Category  string
+	Priority  Priority
+	Payload   NotificationPayload
+	CreatedAt time.Time
+	ReadAt    *time.Time
+}
+
+type NotificationCategorySummary struct {
+	Category    string
+	Latest      UserNotification
+	UnreadCount int
+	TotalCount  int
+}
+
 type Delivery struct {
 	ID            uuid.UUID
 	RequestID     uuid.UUID

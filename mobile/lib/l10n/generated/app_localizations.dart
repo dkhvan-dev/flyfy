@@ -10255,6 +10255,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save'**
   String get guideCalendarSaveSlot;
+
+  /// No description provided for @notificationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notificationsTitle;
+
+  /// No description provided for @notificationsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Important updates for trips, activities, and excursions'**
+  String get notificationsSubtitle;
+
+  /// No description provided for @notificationsCategoriesEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'All quiet for now'**
+  String get notificationsCategoriesEmptyTitle;
+
+  /// No description provided for @notificationsCategoriesEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The latest updates for your categories will appear here.'**
+  String get notificationsCategoriesEmptySubtitle;
+
+  /// No description provided for @notificationsLoadFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load notifications'**
+  String get notificationsLoadFailedTitle;
+
+  /// No description provided for @notificationsLoadFailedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and try again.'**
+  String get notificationsLoadFailedSubtitle;
+
+  /// No description provided for @notificationsCategoryEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No notifications in this category yet'**
+  String get notificationsCategoryEmptyTitle;
+
+  /// No description provided for @notificationsCategoryEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New events will appear here automatically.'**
+  String get notificationsCategoryEmptySubtitle;
+
+  /// No description provided for @notificationsReadAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark all as read'**
+  String get notificationsReadAll;
+
+  /// No description provided for @notificationsReadAllDone.
+  ///
+  /// In en, this message translates to:
+  /// **'All notifications in this category are read'**
+  String get notificationsReadAllDone;
+
+  /// No description provided for @notificationsUnreadCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} new'**
+  String notificationsUnreadCount(Object count);
+
+  /// No description provided for @notificationsCategoryActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Activities'**
+  String get notificationsCategoryActivity;
+
+  /// No description provided for @notificationsCategoryExcursion.
+  ///
+  /// In en, this message translates to:
+  /// **'Excursions'**
+  String get notificationsCategoryExcursion;
+
+  /// No description provided for @notificationsCategoryBooking.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookings'**
+  String get notificationsCategoryBooking;
+
+  /// No description provided for @notificationsCategoryChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages'**
+  String get notificationsCategoryChat;
+
+  /// No description provided for @notificationsCategorySystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get notificationsCategorySystem;
+
+  /// No description provided for @notificationsCategoryGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get notificationsCategoryGeneral;
+
+  /// No description provided for @notificationsCategoryFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Category {category}'**
+  String notificationsCategoryFallback(Object category);
+
+  /// No description provided for @notificationsJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'just now'**
+  String get notificationsJustNow;
+
+  /// No description provided for @notificationsMinutesAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min ago'**
+  String notificationsMinutesAgo(Object minutes);
+
+  /// No description provided for @notificationsHoursAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h ago'**
+  String notificationsHoursAgo(Object hours);
+
+  /// No description provided for @notificationsDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{days} d ago'**
+  String notificationsDaysAgo(Object days);
 }
 
 class _AppLocalizationsDelegate

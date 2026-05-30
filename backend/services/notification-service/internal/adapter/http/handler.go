@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -19,6 +20,9 @@ const maxInternalSendBodyBytes = 1024 * 1024
 type notificationUseCase interface {
 	RegisterDevice(ctx context.Context, input app.RegisterDeviceInput) (*model.DeviceToken, error)
 	DeactivateDevice(ctx context.Context, userID uuid.UUID, deviceID uuid.UUID, reason string) error
+	ListUserNotificationCategories(ctx context.Context, userID uuid.UUID, limit int) ([]model.NotificationCategorySummary, error)
+	ListUserNotifications(ctx context.Context, userID uuid.UUID, category string, limit int, offset int) ([]model.UserNotification, error)
+	MarkUserNotificationsRead(ctx context.Context, userID uuid.UUID, category string) (int, error)
 	SendNotification(ctx context.Context, input app.SendNotificationInput) (*model.NotificationRequest, error)
 }
 
@@ -38,6 +42,9 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /health", h.Health)
 	mux.HandleFunc("POST /v1/notifications/device-tokens", h.RegisterDeviceToken)
 	mux.HandleFunc("DELETE /v1/notifications/device-tokens/{deviceID}", h.DeactivateDeviceToken)
+	mux.HandleFunc("GET /v1/notifications/categories", h.ListNotificationCategories)
+	mux.HandleFunc("GET /v1/notifications", h.ListNotifications)
+	mux.HandleFunc("POST /v1/notifications/read-all", h.MarkNotificationsRead)
 	mux.HandleFunc("POST /internal/v1/notifications/send", h.SendInternalNotification)
 	mux.HandleFunc("POST /v1/internal/notifications/send", h.SendInternalNotification)
 }
@@ -126,6 +133,112 @@ func (h *Handler) DeactivateDeviceToken(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+type userNotificationResponse struct {
+	ID        string            `json:"id"`
+	Category  string            `json:"category"`
+	Priority  string            `json:"priority"`
+	Title     string            `json:"title"`
+	Body      string            `json:"body"`
+	ImageURL  string            `json:"imageUrl"`
+	DeepLink  string            `json:"deepLink"`
+	Data      map[string]string `json:"data"`
+	CreatedAt string            `json:"createdAt"`
+	ReadAt    *string           `json:"readAt"`
+}
+
+type notificationCategorySummaryResponse struct {
+	Category    string                   `json:"category"`
+	UnreadCount int                      `json:"unreadCount"`
+	TotalCount  int                      `json:"totalCount"`
+	Latest      userNotificationResponse `json:"latest"`
+}
+
+type markNotificationsReadRequest struct {
+	Category string `json:"category"`
+}
+
+func (h *Handler) ListNotificationCategories(w http.ResponseWriter, r *http.Request) {
+	if !h.isInternalRequest(r) {
+		writeError(w, http.StatusUnauthorized, "request must come through trusted gateway")
+		return
+	}
+	userID, ok := authenticatedUserID(w, r)
+	if !ok {
+		return
+	}
+	limit, ok := parseIntQuery(w, r, "limit")
+	if !ok {
+		return
+	}
+	categories, err := h.useCase.ListUserNotificationCategories(r.Context(), userID, limit)
+	if err != nil {
+		writeAppError(w, err)
+		return
+	}
+	response := make([]notificationCategorySummaryResponse, 0, len(categories))
+	for _, category := range categories {
+		response = append(response, toNotificationCategorySummaryResponse(category))
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"categories": response})
+}
+
+func (h *Handler) ListNotifications(w http.ResponseWriter, r *http.Request) {
+	if !h.isInternalRequest(r) {
+		writeError(w, http.StatusUnauthorized, "request must come through trusted gateway")
+		return
+	}
+	userID, ok := authenticatedUserID(w, r)
+	if !ok {
+		return
+	}
+	limit, ok := parseIntQuery(w, r, "limit")
+	if !ok {
+		return
+	}
+	offset, ok := parseIntQuery(w, r, "offset")
+	if !ok {
+		return
+	}
+	notifications, err := h.useCase.ListUserNotifications(
+		r.Context(),
+		userID,
+		r.URL.Query().Get("category"),
+		limit,
+		offset,
+	)
+	if err != nil {
+		writeAppError(w, err)
+		return
+	}
+	response := make([]userNotificationResponse, 0, len(notifications))
+	for _, notification := range notifications {
+		response = append(response, toUserNotificationResponse(notification))
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"notifications": response})
+}
+
+func (h *Handler) MarkNotificationsRead(w http.ResponseWriter, r *http.Request) {
+	if !h.isInternalRequest(r) {
+		writeError(w, http.StatusUnauthorized, "request must come through trusted gateway")
+		return
+	}
+	userID, ok := authenticatedUserID(w, r)
+	if !ok {
+		return
+	}
+	var req markNotificationsReadRequest
+	if err := decodeJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	updated, err := h.useCase.MarkUserNotificationsRead(r.Context(), userID, req.Category)
+	if err != nil {
+		writeAppError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"updatedCount": updated})
 }
 
 type sendNotificationRequest struct {
@@ -223,6 +336,19 @@ func decodeJSON(r *http.Request, dest any) error {
 	return decoder.Decode(dest)
 }
 
+func parseIntQuery(w http.ResponseWriter, r *http.Request, key string) (int, bool) {
+	raw := strings.TrimSpace(r.URL.Query().Get(key))
+	if raw == "" {
+		return 0, true
+	}
+	value, err := strconv.Atoi(raw)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid "+key)
+		return 0, false
+	}
+	return value, true
+}
+
 func writeJSON(w http.ResponseWriter, status int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -257,5 +383,38 @@ func toDeviceTokenResponse(device *model.DeviceToken) deviceTokenResponse {
 		Enabled:      device.Enabled,
 		LastSeenAt:   device.LastSeenAt.Format(time.RFC3339),
 		RegisteredAt: device.CreatedAt.Format(time.RFC3339),
+	}
+}
+
+func toNotificationCategorySummaryResponse(category model.NotificationCategorySummary) notificationCategorySummaryResponse {
+	return notificationCategorySummaryResponse{
+		Category:    category.Category,
+		UnreadCount: category.UnreadCount,
+		TotalCount:  category.TotalCount,
+		Latest:      toUserNotificationResponse(category.Latest),
+	}
+}
+
+func toUserNotificationResponse(notification model.UserNotification) userNotificationResponse {
+	var readAt *string
+	if notification.ReadAt != nil {
+		value := notification.ReadAt.UTC().Format(time.RFC3339)
+		readAt = &value
+	}
+	data := notification.Payload.Data
+	if data == nil {
+		data = map[string]string{}
+	}
+	return userNotificationResponse{
+		ID:        notification.ID.String(),
+		Category:  notification.Category,
+		Priority:  string(notification.Priority.Normalize()),
+		Title:     notification.Payload.Title,
+		Body:      notification.Payload.Body,
+		ImageURL:  notification.Payload.ImageURL,
+		DeepLink:  notification.Payload.DeepLink,
+		Data:      data,
+		CreatedAt: notification.CreatedAt.UTC().Format(time.RFC3339),
+		ReadAt:    readAt,
 	}
 }

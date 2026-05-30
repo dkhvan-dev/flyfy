@@ -5700,4 +5700,86 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get guideCalendarSaveSlot => 'Сохранить';
+
+  @override
+  String get notificationsTitle => 'Уведомления';
+
+  @override
+  String get notificationsSubtitle =>
+      'Важные обновления по поездкам, активностям и экскурсиям';
+
+  @override
+  String get notificationsCategoriesEmptyTitle => 'Пока тихо';
+
+  @override
+  String get notificationsCategoriesEmptySubtitle =>
+      'Здесь появятся последние обновления по вашим категориям.';
+
+  @override
+  String get notificationsLoadFailedTitle => 'Не удалось загрузить уведомления';
+
+  @override
+  String get notificationsLoadFailedSubtitle =>
+      'Проверьте подключение и попробуйте снова.';
+
+  @override
+  String get notificationsCategoryEmptyTitle =>
+      'В этой категории пока нет уведомлений';
+
+  @override
+  String get notificationsCategoryEmptySubtitle =>
+      'Новые события появятся здесь автоматически.';
+
+  @override
+  String get notificationsReadAll => 'Прочитать все';
+
+  @override
+  String get notificationsReadAllDone =>
+      'Все уведомления в категории прочитаны';
+
+  @override
+  String notificationsUnreadCount(Object count) {
+    return '$count новых';
+  }
+
+  @override
+  String get notificationsCategoryActivity => 'Активности';
+
+  @override
+  String get notificationsCategoryExcursion => 'Экскурсии';
+
+  @override
+  String get notificationsCategoryBooking => 'Бронирования';
+
+  @override
+  String get notificationsCategoryChat => 'Сообщения';
+
+  @override
+  String get notificationsCategorySystem => 'Система';
+
+  @override
+  String get notificationsCategoryGeneral => 'Общее';
+
+  @override
+  String notificationsCategoryFallback(Object category) {
+    return 'Категория $category';
+  }
+
+  @override
+  String get notificationsJustNow => 'только что';
+
+  @override
+  String notificationsMinutesAgo(Object minutes) {
+    return '$minutes мин назад';
+  }
+
+  @override
+  String notificationsHoursAgo(Object hours) {
+    return '$hours ч назад';
+  }
+
+  @override
+  String notificationsDaysAgo(Object days) {
+    return '$days дн назад';
+  }
 }

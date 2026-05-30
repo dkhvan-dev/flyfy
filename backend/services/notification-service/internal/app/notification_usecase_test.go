@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -122,6 +123,116 @@ func TestSendNotificationScopesIdempotencyBySourceService(t *testing.T) {
 	}
 	if uc.publisher.publishCount != 2 {
 		t.Fatalf("expected two publishes, got %d", uc.publisher.publishCount)
+	}
+}
+
+func TestListUserNotificationCategoriesReturnsLatestPerCategory(t *testing.T) {
+	uc := newTestUseCase()
+	userID := uuid.New()
+	olderActivityID := uuid.New()
+	latestActivityID := uuid.New()
+	excursionID := uuid.New()
+	otherUserID := uuid.New()
+
+	uc.repo.requests[olderActivityID] = &model.NotificationRequest{
+		ID:               olderActivityID,
+		RecipientUserIDs: []uuid.UUID{userID},
+		Category:         "activity",
+		Priority:         model.PriorityNormal,
+		Payload: model.NotificationPayload{
+			Title: "Older activity update",
+			Body:  "This should not be the category preview",
+		},
+		CreatedAt: uc.now.Add(-2 * time.Hour),
+	}
+	uc.repo.requests[latestActivityID] = &model.NotificationRequest{
+		ID:               latestActivityID,
+		RecipientUserIDs: []uuid.UUID{userID},
+		Category:         "activity",
+		Priority:         model.PriorityHigh,
+		Payload: model.NotificationPayload{
+			Title:    "Latest activity update",
+			DeepLink: "/activities/activity-1",
+			Data:     map[string]string{"activityId": "activity-1"},
+		},
+		CreatedAt: uc.now.Add(-time.Hour),
+	}
+	uc.repo.requests[excursionID] = &model.NotificationRequest{
+		ID:               excursionID,
+		RecipientUserIDs: []uuid.UUID{userID},
+		Category:         "excursion",
+		Payload:          model.NotificationPayload{Title: "Excursion approved"},
+		CreatedAt:        uc.now,
+	}
+	otherUserRequestID := uuid.New()
+	uc.repo.requests[otherUserRequestID] = &model.NotificationRequest{
+		ID:               otherUserRequestID,
+		RecipientUserIDs: []uuid.UUID{otherUserID},
+		Category:         "activity",
+		Payload:          model.NotificationPayload{Title: "Other user's notification"},
+		CreatedAt:        uc.now.Add(time.Hour),
+	}
+	uc.repo.markRead(userID, olderActivityID, uc.now.Add(-30*time.Minute))
+
+	categories, err := uc.ListUserNotificationCategories(context.Background(), userID, 10)
+	if err != nil {
+		t.Fatalf("ListUserNotificationCategories returned error: %v", err)
+	}
+
+	if len(categories) != 2 {
+		t.Fatalf("expected 2 categories, got %d", len(categories))
+	}
+	if categories[0].Category != "excursion" {
+		t.Fatalf("expected newest category first, got %q", categories[0].Category)
+	}
+	if categories[1].Category != "activity" {
+		t.Fatalf("expected activity category second, got %q", categories[1].Category)
+	}
+	if categories[1].Latest.ID != latestActivityID {
+		t.Fatalf("expected latest activity request in preview")
+	}
+	if categories[1].UnreadCount != 1 {
+		t.Fatalf("expected one unread activity notification, got %d", categories[1].UnreadCount)
+	}
+	if categories[1].TotalCount != 2 {
+		t.Fatalf("expected two activity notifications, got %d", categories[1].TotalCount)
+	}
+}
+
+func TestMarkUserNotificationsReadMarksOnlySelectedCategory(t *testing.T) {
+	uc := newTestUseCase()
+	userID := uuid.New()
+	activityID := uuid.New()
+	excursionID := uuid.New()
+
+	uc.repo.requests[activityID] = &model.NotificationRequest{
+		ID:               activityID,
+		RecipientUserIDs: []uuid.UUID{userID},
+		Category:         "activity",
+		Payload:          model.NotificationPayload{Title: "Activity"},
+		CreatedAt:        uc.now,
+	}
+	uc.repo.requests[excursionID] = &model.NotificationRequest{
+		ID:               excursionID,
+		RecipientUserIDs: []uuid.UUID{userID},
+		Category:         "excursion",
+		Payload:          model.NotificationPayload{Title: "Excursion"},
+		CreatedAt:        uc.now,
+	}
+
+	updated, err := uc.MarkUserNotificationsRead(context.Background(), userID, "activity")
+	if err != nil {
+		t.Fatalf("MarkUserNotificationsRead returned error: %v", err)
+	}
+
+	if updated != 1 {
+		t.Fatalf("expected one updated notification, got %d", updated)
+	}
+	if !uc.repo.isRead(userID, activityID) {
+		t.Fatalf("expected activity notification to be read")
+	}
+	if uc.repo.isRead(userID, excursionID) {
+		t.Fatalf("did not expect excursion notification to be read")
 	}
 }
 
@@ -361,6 +472,7 @@ type memoryRepository struct {
 	idempotency map[string]uuid.UUID
 	deliveries  map[uuid.UUID]*model.Delivery
 	invalidated map[uuid.UUID]bool
+	reads       map[uuid.UUID]map[uuid.UUID]time.Time
 }
 
 func newMemoryRepository() *memoryRepository {
@@ -370,6 +482,7 @@ func newMemoryRepository() *memoryRepository {
 		idempotency: make(map[string]uuid.UUID),
 		deliveries:  make(map[uuid.UUID]*model.Delivery),
 		invalidated: make(map[uuid.UUID]bool),
+		reads:       make(map[uuid.UUID]map[uuid.UUID]time.Time),
 	}
 }
 
@@ -491,4 +604,160 @@ func (r *memoryRepository) ListDueDeliveries(ctx context.Context, now time.Time,
 		}
 	}
 	return deliveries, nil
+}
+
+func (r *memoryRepository) ListUserNotificationCategorySummaries(
+	ctx context.Context,
+	userID uuid.UUID,
+	limit int,
+) ([]model.NotificationCategorySummary, error) {
+	byCategory := make(map[string]*model.NotificationCategorySummary)
+	for _, request := range r.requests {
+		if !requestRecipientContains(request, userID) {
+			continue
+		}
+		category := normalizeCategory(request.Category)
+		readAt, hasReadAt := r.readAt(userID, request.ID)
+		notification := userNotificationFromRequest(request, readAt, hasReadAt)
+		summary, ok := byCategory[category]
+		if !ok {
+			byCategory[category] = &model.NotificationCategorySummary{
+				Category: category,
+				Latest:   notification,
+			}
+			summary = byCategory[category]
+		}
+		summary.TotalCount++
+		if notification.ReadAt == nil {
+			summary.UnreadCount++
+		}
+		if notification.CreatedAt.After(summary.Latest.CreatedAt) ||
+			(notification.CreatedAt.Equal(summary.Latest.CreatedAt) && notification.ID.String() > summary.Latest.ID.String()) {
+			summary.Latest = notification
+		}
+	}
+
+	summaries := make([]model.NotificationCategorySummary, 0, len(byCategory))
+	for _, summary := range byCategory {
+		summaries = append(summaries, *summary)
+	}
+	sort.Slice(summaries, func(i, j int) bool {
+		left := summaries[i].Latest
+		right := summaries[j].Latest
+		if left.CreatedAt.Equal(right.CreatedAt) {
+			return left.ID.String() > right.ID.String()
+		}
+		return left.CreatedAt.After(right.CreatedAt)
+	})
+	if limit > 0 && len(summaries) > limit {
+		summaries = summaries[:limit]
+	}
+	return summaries, nil
+}
+
+func (r *memoryRepository) ListUserNotifications(
+	ctx context.Context,
+	userID uuid.UUID,
+	category string,
+	limit int,
+	offset int,
+) ([]model.UserNotification, error) {
+	notifications := make([]model.UserNotification, 0)
+	for _, request := range r.requests {
+		if !requestRecipientContains(request, userID) {
+			continue
+		}
+		if normalizeCategory(request.Category) != category {
+			continue
+		}
+		readAt, hasReadAt := r.readAt(userID, request.ID)
+		notifications = append(
+			notifications,
+			userNotificationFromRequest(request, readAt, hasReadAt),
+		)
+	}
+	sort.Slice(notifications, func(i, j int) bool {
+		if notifications[i].CreatedAt.Equal(notifications[j].CreatedAt) {
+			return notifications[i].ID.String() > notifications[j].ID.String()
+		}
+		return notifications[i].CreatedAt.After(notifications[j].CreatedAt)
+	})
+	if offset >= len(notifications) {
+		return []model.UserNotification{}, nil
+	}
+	notifications = notifications[offset:]
+	if limit > 0 && len(notifications) > limit {
+		notifications = notifications[:limit]
+	}
+	return notifications, nil
+}
+
+func (r *memoryRepository) MarkUserNotificationsRead(
+	ctx context.Context,
+	userID uuid.UUID,
+	category string,
+) (int, error) {
+	updated := 0
+	for _, request := range r.requests {
+		if !requestRecipientContains(request, userID) {
+			continue
+		}
+		if normalizeCategory(request.Category) != category {
+			continue
+		}
+		if r.isRead(userID, request.ID) {
+			continue
+		}
+		r.markRead(userID, request.ID, time.Now().UTC())
+		updated++
+	}
+	return updated, nil
+}
+
+func (r *memoryRepository) markRead(userID uuid.UUID, requestID uuid.UUID, readAt time.Time) {
+	if r.reads[userID] == nil {
+		r.reads[userID] = make(map[uuid.UUID]time.Time)
+	}
+	r.reads[userID][requestID] = readAt
+}
+
+func (r *memoryRepository) isRead(userID uuid.UUID, requestID uuid.UUID) bool {
+	_, ok := r.readAt(userID, requestID)
+	return ok
+}
+
+func (r *memoryRepository) readAt(userID uuid.UUID, requestID uuid.UUID) (*time.Time, bool) {
+	userReads := r.reads[userID]
+	if userReads == nil {
+		return nil, false
+	}
+	readAt, ok := userReads[requestID]
+	if !ok {
+		return nil, false
+	}
+	return &readAt, true
+}
+
+func requestRecipientContains(request *model.NotificationRequest, userID uuid.UUID) bool {
+	for _, recipientID := range request.RecipientUserIDs {
+		if recipientID == userID {
+			return true
+		}
+	}
+	return false
+}
+
+func userNotificationFromRequest(
+	request *model.NotificationRequest,
+	readAt *time.Time,
+	_ bool,
+) model.UserNotification {
+	return model.UserNotification{
+		ID:        request.ID,
+		Category:  normalizeCategory(request.Category),
+		Priority:  request.Priority.Normalize(),
+		Payload:   request.Payload,
+		CreatedAt: request.CreatedAt,
+		ReadAt:    readAt,
+	}
 }
