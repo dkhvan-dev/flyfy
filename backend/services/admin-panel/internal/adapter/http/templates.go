@@ -48,6 +48,9 @@ func NewRenderer() (*Renderer, error) {
 		"roleText": func(locale any, role any) string {
 			return translateRole(fmt.Sprint(locale), role)
 		},
+		"userRoleText": func(locale any, role any) string {
+			return translateUserRole(fmt.Sprint(locale), role)
+		},
 		"hasStaffRole": func(staff *model.StaffUser, role enum.StaffRole) bool {
 			return staff != nil && staff.HasRole(role)
 		},

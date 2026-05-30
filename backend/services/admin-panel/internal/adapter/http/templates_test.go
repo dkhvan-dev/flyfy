@@ -272,7 +272,7 @@ func TestRendererRendersUserModerationViews(t *testing.T) {
 				},
 			},
 			NextPageToken: "cursor-2",
-		}, AdminUsersFilterViewData{Search: "aru", Status: "ACTIVE", PageSize: 25}, staff),
+		}, AdminUsersFilterViewData{Search: "aru", Status: "ACTIVE", Role: "GUIDE", CountryCode: "KZ", PageSize: 25}, staff),
 	}
 
 	recorder := httptest.NewRecorder()
@@ -287,12 +287,27 @@ func TestRendererRendersUserModerationViews(t *testing.T) {
 		"a***@***",
 		"Open cases",
 		"Restrictions",
+		`data-country-filter-form`,
+		`type="hidden" name="country" value="KZ" data-country-filter-value`,
+		`type="search" data-country-filter-input value="Kazakhstan"`,
+		`data-country-filter-suggestions role="listbox" hidden`,
+		`type="button" class="filter-suggestion" data-country-filter-option`,
+		`<select name="role">`,
+		`<option value="GUIDE" selected>Guide</option>`,
 		`href="/admin/users/` + userID.String() + `"`,
+		`country=KZ`,
+		`role=GUIDE`,
 		`page_token=cursor-2`,
 	} {
 		if !strings.Contains(body, expected) {
 			t.Fatalf("users list did not render %q: %s", expected, body)
 		}
+	}
+	if strings.Contains(body, `name="role" value="GUIDE"`) {
+		t.Fatalf("users list still renders manual role input: %s", body)
+	}
+	if strings.Contains(body, `name="city"`) {
+		t.Fatalf("users list country filter must not render city filter controls: %s", body)
 	}
 	if strings.Contains(body, "+77001234567") || strings.Contains(body, "aruzhan@example.com") {
 		t.Fatalf("users list rendered unmasked identity data: %s", body)

@@ -250,6 +250,8 @@ type AdminUsersFilterViewData struct {
 type AdminUsersListViewData struct {
 	Items       []AdminUserListItemView
 	Filters     AdminUsersFilterViewData
+	Countries   []AttractionOptionView
+	RoleOptions []AttractionOptionView
 	NextPageURL string
 	ResetURL    string
 	CanModerate bool
@@ -366,6 +368,8 @@ func NewAdminUsersListViewData(
 	return AdminUsersListViewData{
 		Items:       items,
 		Filters:     filters,
+		Countries:   attractionCountryFilterOptions(filters.CountryCode),
+		RoleOptions: adminUserRoleFilterOptions(filters.Role),
 		NextPageURL: nextPageURL,
 		ResetURL:    "/admin/users",
 		CanModerate: staff != nil && staff.HasPermission(enum.PermissionUsersModerate),
@@ -861,7 +865,7 @@ func auditRoleList(locale string, roles []enum.StaffRole) string {
 func normalizeAdminUsersFilter(filters AdminUsersFilterViewData) AdminUsersFilterViewData {
 	filters.Search = strings.TrimSpace(filters.Search)
 	filters.Status = strings.ToUpper(strings.TrimSpace(filters.Status))
-	filters.Role = strings.TrimSpace(filters.Role)
+	filters.Role = strings.ToUpper(strings.TrimSpace(filters.Role))
 	filters.CountryCode = strings.ToUpper(strings.TrimSpace(filters.CountryCode))
 	filters.PageToken = strings.TrimSpace(filters.PageToken)
 	if filters.PageSize <= 0 {
@@ -900,6 +904,32 @@ func adminUsersQuery(filters AdminUsersFilterViewData) string {
 		values.Set("page_size", strconv.Itoa(filters.PageSize))
 	}
 	return values.Encode()
+}
+
+func adminUserRoleFilterOptions(selected string) []AttractionOptionView {
+	selected = strings.ToUpper(strings.TrimSpace(selected))
+	values := []string{"USER", "GUIDE", "ADMIN", "MODERATOR", "SUPPORT"}
+	out := make([]AttractionOptionView, 0, len(values)+1)
+	var found bool
+	for _, value := range values {
+		option := AttractionOptionView{
+			Value:    value,
+			LabelKey: value,
+			Selected: selected == value,
+		}
+		if option.Selected {
+			found = true
+		}
+		out = append(out, option)
+	}
+	if selected != "" && !found {
+		out = append(out, AttractionOptionView{
+			Value:    selected,
+			LabelKey: selected,
+			Selected: true,
+		})
+	}
+	return out
 }
 
 func adminUserTrustText(band string, score *int) string {

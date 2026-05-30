@@ -1363,7 +1363,7 @@ func parseAdminUsersListFilter(r *http.Request) (model.AdminUserListFilter, Admi
 	viewFilter := AdminUsersFilterViewData{
 		Search:      strings.TrimSpace(query.Get("q")),
 		Status:      strings.ToUpper(strings.TrimSpace(query.Get("status"))),
-		Role:        strings.TrimSpace(query.Get("role")),
+		Role:        strings.ToUpper(strings.TrimSpace(query.Get("role"))),
 		CountryCode: strings.ToUpper(strings.TrimSpace(countryCode)),
 		PageToken:   strings.TrimSpace(query.Get("page_token")),
 		PageSize:    pageSize,

@@ -8,7 +8,7 @@
     </div>
   </div>
 
-  <form class="filter-bar" method="get" action="/admin/users">
+  <form class="filter-bar" method="get" action="/admin/users" data-country-filter-form>
     <div class="filter-grid">
       <label>
         <span>{{t .Locale "field.search"}}</span>
@@ -25,12 +25,27 @@
       </label>
       <label>
         <span>{{t .Locale "field.role"}}</span>
-        <input type="search" name="role" value="{{.Data.Filters.Role}}" placeholder="{{t .Locale "placeholder.userRole"}}">
+        <select name="role">
+          <option value="" {{if eq .Data.Filters.Role ""}}selected{{end}}>{{t .Locale "filter.role.all"}}</option>
+          {{range .Data.RoleOptions}}
+            <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{userRoleText $.Locale .Value}}</option>
+          {{end}}
+        </select>
       </label>
-      <label>
+      <div class="filter-field">
         <span>{{t .Locale "field.country"}}</span>
-        <input type="search" name="country" value="{{.Data.Filters.CountryCode}}" placeholder="KZ" maxlength="2">
-      </label>
+        <input type="hidden" name="country" value="{{.Data.Filters.CountryCode}}" data-country-filter-value>
+        <div class="filter-combobox" data-filter-combobox>
+          <input type="search" data-country-filter-input value="{{if .Data.Filters.CountryCode}}{{attractionCountry .Locale .Data.Filters.CountryCode}}{{end}}" placeholder="{{t .Locale "filter.country.all"}}" autocomplete="off" autocorrect="off" spellcheck="false" aria-autocomplete="none" aria-expanded="false" aria-controls="users-country-filter-suggestions">
+          <div class="filter-suggestions" id="users-country-filter-suggestions" data-country-filter-suggestions role="listbox" hidden>
+            {{range .Data.Countries}}
+              <button type="button" class="filter-suggestion" data-country-filter-option data-value="{{.Value}}" data-label="{{attractionCountry $.Locale .Value}}" data-search="{{attractionCountrySearch .Value}}" role="option">
+                <span>{{attractionCountry $.Locale .Value}}</span>
+              </button>
+            {{end}}
+          </div>
+        </div>
+      </div>
       <label>
         <span>{{t .Locale "field.pageSize"}}</span>
         <select name="page_size">

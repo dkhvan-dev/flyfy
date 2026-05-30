@@ -168,6 +168,12 @@ var translations = map[string]map[string]string{
 		"filter.category.all":  "All categories",
 		"filter.country.all":   "All countries",
 		"filter.city.all":      "All cities",
+		"filter.role.all":      "All roles",
+		"user.role.USER":       "User",
+		"user.role.GUIDE":      "Guide",
+		"user.role.ADMIN":      "Admin",
+		"user.role.MODERATOR":  "Moderator",
+		"user.role.SUPPORT":    "Support",
 		"pagination.label":     "Pagination",
 		"pagination.page":      "Page",
 
@@ -776,6 +782,12 @@ var translations = map[string]map[string]string{
 		"filter.category.all":  "Все категории",
 		"filter.country.all":   "Все страны",
 		"filter.city.all":      "Все города",
+		"filter.role.all":      "Все роли",
+		"user.role.USER":       "Пользователь",
+		"user.role.GUIDE":      "Гид",
+		"user.role.ADMIN":      "Администратор",
+		"user.role.MODERATOR":  "Модератор",
+		"user.role.SUPPORT":    "Поддержка",
 		"pagination.label":     "Пагинация",
 		"pagination.page":      "Страница",
 
@@ -1305,6 +1317,19 @@ func translateRole(locale string, value any) string {
 		return "-"
 	}
 	key := "staff.role." + raw
+	translated := translate(locale, key)
+	if translated == key {
+		return raw
+	}
+	return translated
+}
+
+func translateUserRole(locale string, value any) string {
+	raw := strings.ToUpper(strings.TrimSpace(toString(value)))
+	if raw == "" {
+		return "-"
+	}
+	key := "user.role." + raw
 	translated := translate(locale, key)
 	if translated == key {
 		return raw
