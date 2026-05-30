@@ -9,19 +9,20 @@ import (
 )
 
 type Config struct {
-	App         AppConfig
-	HTTP        HTTPConfig
-	GRPC        GRPCConfig
-	DB          DBConfig
-	Log         LogConfig
-	Security    SecurityConfig
-	Attendance  AttendanceConfig
-	UserService UserServiceConfig
-	FileManager FileManagerConfig
-	ChatService ChatServiceConfig
-	Payment     PaymentServiceConfig
-	AntiFraud   AntiFraudConfig
-	Trust       TrustServiceConfig
+	App          AppConfig
+	HTTP         HTTPConfig
+	GRPC         GRPCConfig
+	DB           DBConfig
+	Log          LogConfig
+	Security     SecurityConfig
+	Attendance   AttendanceConfig
+	UserService  UserServiceConfig
+	FileManager  FileManagerConfig
+	ChatService  ChatServiceConfig
+	Notification NotificationServiceConfig
+	Payment      PaymentServiceConfig
+	AntiFraud    AntiFraudConfig
+	Trust        TrustServiceConfig
 }
 
 type AppConfig struct {
@@ -104,6 +105,11 @@ type FileManagerConfig struct {
 type ChatServiceConfig struct {
 	HTTPURL        string        `env:"CHAT_SERVICE_HTTP_URL, default=http://chat-service:8088"`
 	RequestTimeout time.Duration `env:"CHAT_SERVICE_REQUEST_TIMEOUT, default=5s"`
+}
+
+type NotificationServiceConfig struct {
+	HTTPURL        string        `env:"NOTIFICATION_SERVICE_HTTP_URL, default=http://notification-service:8097"`
+	RequestTimeout time.Duration `env:"NOTIFICATION_SERVICE_REQUEST_TIMEOUT, default=3s"`
 }
 
 type PaymentServiceConfig struct {

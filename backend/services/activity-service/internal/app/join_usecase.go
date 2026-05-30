@@ -17,6 +17,7 @@ import (
 type JoinUseCase struct {
 	repo                port.ActivityRepository
 	chatGateway         port.ActivityChatGateway
+	notificationGateway port.ActivityNotificationGateway
 	userProfileResolver port.UserProfileResolver
 	payment             port.ActivityPaymentGateway
 	fraud               port.FraudEvaluator
@@ -336,6 +337,8 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 		}
 	}
 
+	u.notifyParticipantJoined(ctx, activityForPostCommit, created)
+
 	return created, nil
 }
 
@@ -580,6 +583,8 @@ func (u *JoinUseCase) LeaveActivity(ctx context.Context, input LeaveActivityInpu
 	}
 
 	var err error
+	var activityForNotification *model.Activity
+	lateCancellationForNotification := false
 	if u.fraud != nil {
 		activityForFraud, err := u.repo.GetActivityByID(ctx, input.ActivityID)
 		if err != nil {
@@ -613,6 +618,7 @@ func (u *JoinUseCase) LeaveActivity(ctx context.Context, input LeaveActivityInpu
 		if activity == nil {
 			return ErrActivityNotFound
 		}
+		activityForNotification = activity
 
 		participant, err := txRepo.GetParticipantByActivityAndUserForUpdate(ctx, input.ActivityID, input.UserID)
 		if err != nil {
@@ -636,6 +642,7 @@ func (u *JoinUseCase) LeaveActivity(ctx context.Context, input LeaveActivityInpu
 		}
 
 		lateCancellation := isLateParticipantCancellation(activity, now)
+		lateCancellationForNotification = lateCancellation
 		nextStatus := enum.ParticipantStatusCancelled
 		cancelPolicy := "free_cancellation_before_registration_deadline"
 		if lateCancellation {
@@ -779,6 +786,7 @@ func (u *JoinUseCase) LeaveActivity(ctx context.Context, input LeaveActivityInpu
 			return nil, err
 		}
 	}
+	u.notifyParticipantLeft(ctx, activityForNotification, updated, lateCancellationForNotification)
 
 	return updated, nil
 }

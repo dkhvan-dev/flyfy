@@ -17,13 +17,14 @@ import (
 )
 
 type ActivityUseCase struct {
-	repo        port.ActivityRepository
-	policy      *PolicyService
-	fileManager port.ActivityMediaFileManager
-	chatGateway port.ActivityChatGateway
-	payment     port.ActivityPaymentGateway
-	fraud       port.FraudEvaluator
-	trustPolicy port.TrustPolicyClient
+	repo                port.ActivityRepository
+	policy              *PolicyService
+	fileManager         port.ActivityMediaFileManager
+	chatGateway         port.ActivityChatGateway
+	notificationGateway port.ActivityNotificationGateway
+	payment             port.ActivityPaymentGateway
+	fraud               port.FraudEvaluator
+	trustPolicy         port.TrustPolicyClient
 }
 
 func NewActivityUseCase(repo port.ActivityRepository, fileManager ...port.ActivityMediaFileManager) *ActivityUseCase {
@@ -716,6 +717,7 @@ func (u *ActivityUseCase) finalizeRegistrationInternal(
 	changed := false
 	captureTasks := make([]participantPaymentTask, 0)
 	cancellationPaymentTasks := make([]participantPaymentTask, 0)
+	var participantsForNotification []*model.ActivityParticipant
 
 	err := u.repo.WithTx(ctx, func(txRepo port.ActivityTxRepository) error {
 		item, err := txRepo.GetActivityByIDForUpdate(ctx, activityID)
@@ -737,6 +739,7 @@ func (u *ActivityUseCase) finalizeRegistrationInternal(
 		if err != nil {
 			return fmt.Errorf("list participants for registration finalization: %w", err)
 		}
+		participantsForNotification = cloneActivityParticipants(participants)
 
 		eligibleCount := countEligibleParticipantsForMinimum(item, participants)
 		minParticipants := minimumParticipants(item)
@@ -848,6 +851,18 @@ func (u *ActivityUseCase) finalizeRegistrationInternal(
 
 	if changed {
 		u.syncActivityChat(ctx, updated)
+		if updated != nil {
+			switch updated.Status {
+			case enum.ActivityStatusCancelled:
+				source := enum.ActivityCancellationSourceSystem
+				if updated.CancellationSource != nil {
+					source = *updated.CancellationSource
+				}
+				u.notifyActivityCancelled(ctx, updated, participantsForNotification, nil, source)
+			case enum.ActivityStatusConfirmed:
+				u.notifyActivityConfirmed(ctx, updated, participantsForNotification)
+			}
+		}
 	}
 
 	return updated, changed, nil
@@ -1070,6 +1085,7 @@ func (u *ActivityUseCase) completeActivityInternal(
 	}
 
 	u.syncActivityChat(ctx, item)
+	u.notifyActivityCompleted(ctx, item, actorUserID)
 
 	return item, nil
 }
@@ -1380,6 +1396,7 @@ func (u *ActivityUseCase) CancelActivity(
 
 	var updated *model.Activity
 	paymentTasks := make([]participantPaymentTask, 0)
+	var participantsForNotification []*model.ActivityParticipant
 
 	err = u.repo.WithTx(ctx, func(txRepo port.ActivityTxRepository) error {
 		item, err := txRepo.GetActivityByIDForUpdate(ctx, activityID)
@@ -1403,6 +1420,7 @@ func (u *ActivityUseCase) CancelActivity(
 		if err != nil {
 			return fmt.Errorf("list participants for cancellation: %w", err)
 		}
+		participantsForNotification = cloneActivityParticipants(participants)
 
 		if err = u.cancelActivityInTx(
 			ctx,
@@ -1428,6 +1446,13 @@ func (u *ActivityUseCase) CancelActivity(
 	}
 
 	u.syncActivityChat(ctx, updated)
+	u.notifyActivityCancelled(
+		ctx,
+		updated,
+		participantsForNotification,
+		&actorUserID,
+		enum.ActivityCancellationSourceHost,
+	)
 	for _, task := range paymentTasks {
 		if err = executeParticipantPaymentTask(ctx, u.repo, u.payment, task); err != nil {
 			return nil, err

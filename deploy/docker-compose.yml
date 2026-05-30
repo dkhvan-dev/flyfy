@@ -881,6 +881,8 @@ services:
         condition: service_started
       trust-service:
         condition: service_started
+      notification-service:
+        condition: service_started
     ports:
       - "8086:8086"
       - "9096:9096"
@@ -914,6 +916,8 @@ services:
       USER_SERVICE_GRPC_ADDR: dns:///user-service:9094
       CHAT_SERVICE_HTTP_URL: http://chat-service:8088
       CHAT_SERVICE_REQUEST_TIMEOUT: 5s
+      NOTIFICATION_SERVICE_HTTP_URL: http://notification-service:8097
+      NOTIFICATION_SERVICE_REQUEST_TIMEOUT: 3s
       PAYMENT_SERVICE_HTTP_URL: http://payment-service:8091
       PAYMENT_SERVICE_REQUEST_TIMEOUT: 5s
 

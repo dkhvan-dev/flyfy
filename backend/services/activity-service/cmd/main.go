@@ -19,6 +19,7 @@ import (
 	fraudadapter "kz/inflap/backend/services/activity-service/internal/adapter/fraud"
 	grpcadapter "kz/inflap/backend/services/activity-service/internal/adapter/grpc"
 	httpadapter "kz/inflap/backend/services/activity-service/internal/adapter/http"
+	notificationadapter "kz/inflap/backend/services/activity-service/internal/adapter/notification"
 	paymentadapter "kz/inflap/backend/services/activity-service/internal/adapter/payment"
 	"kz/inflap/backend/services/activity-service/internal/adapter/repository"
 	"kz/inflap/backend/services/activity-service/internal/app"
@@ -102,6 +103,13 @@ func main() {
 		cfg.ChatService.RequestTimeout,
 	)
 	activityUC.SetChatGateway(chatClient)
+	notificationClient := notificationadapter.New(
+		cfg.Notification.HTTPURL,
+		cfg.Security.InternalServiceToken,
+		cfg.App.Name,
+		cfg.Notification.RequestTimeout,
+	)
+	activityUC.SetNotificationGateway(notificationClient)
 	paymentClient, err := paymentadapter.New(
 		cfg.Payment.HTTPURL,
 		cfg.Security.InternalServiceToken,
@@ -121,6 +129,7 @@ func main() {
 	joinUC := app.NewJoinUseCase(repo, chatClient, actorResolver)
 	joinUC.SetPaymentGateway(paymentClient)
 	joinUC.SetFraudEvaluator(fraudClient)
+	joinUC.SetNotificationGateway(notificationClient)
 	searchUC := app.NewSearchUseCase(repo)
 	moderationUC := app.NewModerationUseCase(activityUC)
 
