@@ -22,6 +22,7 @@ import (
 	grpcadapter "kz/inflap/backend/services/excursion-service/internal/adapter/grpc"
 	guideadapter "kz/inflap/backend/services/excursion-service/internal/adapter/guide"
 	httpadapter "kz/inflap/backend/services/excursion-service/internal/adapter/http"
+	notificationadapter "kz/inflap/backend/services/excursion-service/internal/adapter/notification"
 	"kz/inflap/backend/services/excursion-service/internal/adapter/repository"
 	translationadapter "kz/inflap/backend/services/excursion-service/internal/adapter/translation"
 	userserviceadapter "kz/inflap/backend/services/excursion-service/internal/adapter/userservice"
@@ -100,6 +101,12 @@ func main() {
 		cfg.Security.InternalServiceToken,
 		cfg.ChatService.RequestTimeout,
 	)
+	notificationClient := notificationadapter.New(
+		cfg.Notification.HTTPURL,
+		cfg.Security.InternalServiceToken,
+		cfg.App.Name,
+		cfg.Notification.RequestTimeout,
+	)
 	fraudClient, err := newFraudEvaluator(cfg)
 	if err != nil {
 		log.Fatal().Err(err).Msg("initialize anti-fraud client")
@@ -121,6 +128,7 @@ func main() {
 		WithUserProfileResolver(userClient).
 		WithAttractionRatingUpdater(attractionRatingClient).
 		WithExcursionChatGateway(chatClient).
+		WithNotificationGateway(notificationClient).
 		WithFraudEvaluator(fraudClient).
 		WithTrustPolicyClient(trustClient).
 		WithAttendanceQRConfig(

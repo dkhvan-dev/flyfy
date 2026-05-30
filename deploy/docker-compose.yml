@@ -986,6 +986,8 @@ services:
         condition: service_started
       trust-service:
         condition: service_started
+      notification-service:
+        condition: service_started
     ports:
       - "8093:8093"
     environment:
@@ -1028,6 +1030,9 @@ services:
       TRUST_POLICY_ENABLED: "true"
       TRUST_SERVICE_GRPC_TARGET: dns:///trust-service:9096
       TRUST_SERVICE_TIMEOUT: 250ms
+
+      NOTIFICATION_SERVICE_HTTP_URL: http://notification-service:8097
+      NOTIFICATION_SERVICE_REQUEST_TIMEOUT: 3s
     restart: unless-stopped
     networks:
       - inflap-network

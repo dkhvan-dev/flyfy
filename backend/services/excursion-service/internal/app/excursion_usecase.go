@@ -61,6 +61,7 @@ type ExcursionUseCase struct {
 	userProfiles            port.UserProfileResolver
 	attractionRatingUpdater port.AttractionRatingUpdater
 	chatGateway             port.ExcursionChatGateway
+	notificationGateway     port.ExcursionNotificationGateway
 	fraud                   port.FraudEvaluator
 	trustPolicy             port.TrustPolicyClient
 	attendanceQRSigningKey  []byte
@@ -746,6 +747,7 @@ func (u *ExcursionUseCase) ApproveExcursionModeration(ctx context.Context, excur
 		return nil, fmt.Errorf("approve excursion moderation: %w", err)
 	}
 	u.recordEvent(ctx, item.ID, enum.ExcursionEventTypeModerationApproved, moderatorUserID, map[string]any{"publishedAt": item.PublishedAt})
+	u.notifyExcursionModerationApproved(ctx, item)
 
 	return newExcursionAggregate(item, relations), nil
 }
@@ -775,6 +777,7 @@ func (u *ExcursionUseCase) RejectExcursionModeration(ctx context.Context, excurs
 		return nil, fmt.Errorf("reject excursion moderation: %w", err)
 	}
 	u.recordEvent(ctx, item.ID, enum.ExcursionEventTypeModerationRejected, moderatorUserID, map[string]any{"reasonCodes": item.ModerationReasonCodes})
+	u.notifyExcursionModerationRejected(ctx, item)
 
 	return newExcursionAggregate(item, relations), nil
 }
@@ -1265,7 +1268,7 @@ func (u *ExcursionUseCase) AutoCompleteDueExcursionScheduleSlots(ctx context.Con
 	if limit <= 0 {
 		limit = 100
 	}
-	count, err := u.repo.CompleteDueExcursionScheduleSlots(
+	slots, err := u.repo.CompleteDueExcursionScheduleSlots(
 		ctx,
 		time.Now().UTC(),
 		excursionScheduleAutoCompleteReasonEnded,
@@ -1274,7 +1277,10 @@ func (u *ExcursionUseCase) AutoCompleteDueExcursionScheduleSlots(ctx context.Con
 	if err != nil {
 		return 0, fmt.Errorf("complete due excursion schedule slots: %w", err)
 	}
-	return count, nil
+	for _, slot := range slots {
+		u.notifyExcursionScheduleSlotCompleted(ctx, slot)
+	}
+	return len(slots), nil
 }
 
 func (u *ExcursionUseCase) AutoCloseBookedExcursionScheduleSlots(ctx context.Context, limit int) (int, error) {
@@ -1296,6 +1302,7 @@ func (u *ExcursionUseCase) AutoCloseBookedExcursionScheduleSlots(ctx context.Con
 				Str("schedule_slot_id", slot.ID.String()).
 				Msg("failed to sync excursion schedule slot chat after auto-close")
 		}
+		u.notifyExcursionScheduleSlotClosed(ctx, slot)
 	}
 	return len(slots), nil
 }
@@ -1375,6 +1382,7 @@ func (u *ExcursionUseCase) syncExcursionAttendanceProof(
 	input ExcursionAttendanceProofInput,
 ) ExcursionAttendanceSyncItemResult {
 	now := time.Now().UTC()
+	var checkedInBooking *model.ExcursionBooking
 	if input.ScanID == uuid.Nil {
 		return excursionAttendanceRejectedResult(input.ScanID, nil, "invalid_scan_id", "invalid attendance scan id")
 	}
@@ -1500,6 +1508,8 @@ func (u *ExcursionUseCase) syncExcursionAttendanceProof(
 		if err = booking.MarkCheckedIn(checkInTime); err != nil {
 			return err
 		}
+		bookingCopy := *booking
+		checkedInBooking = &bookingCopy
 		if err = txRepo.UpdateExcursionBookingAttendance(ctx, booking); err != nil {
 			return fmt.Errorf("update excursion booking attendance: %w", err)
 		}
@@ -1539,6 +1549,9 @@ func (u *ExcursionUseCase) syncExcursionAttendanceProof(
 			Message:        "attendance sync failed",
 			SyncedAt:       time.Now().UTC(),
 		}
+	}
+	if result.Status == AttendanceSyncStatusSynced {
+		u.notifyExcursionAttendanceCheckedIn(ctx, checkedInBooking)
 	}
 	return result
 }
@@ -1699,6 +1712,7 @@ func (u *ExcursionUseCase) CloseGuideScheduleSlot(ctx context.Context, actorUser
 	if err = u.syncExcursionScheduleSlotChat(ctx, slot); err != nil {
 		return nil, fmt.Errorf("sync excursion schedule slot chat: %w", err)
 	}
+	u.notifyExcursionScheduleSlotClosed(ctx, slot)
 	return slot, nil
 }
 
@@ -1734,6 +1748,7 @@ func (u *ExcursionUseCase) CancelGuideScheduleSlot(ctx context.Context, actorUse
 	if err = u.syncExcursionScheduleSlotChat(ctx, slot); err != nil {
 		return nil, fmt.Errorf("sync cancelled excursion schedule slot chat: %w", err)
 	}
+	u.notifyExcursionScheduleSlotCancelled(ctx, slot)
 	return slot, nil
 }
 
@@ -2126,6 +2141,7 @@ func (u *ExcursionUseCase) CreateExcursionBooking(ctx context.Context, input Cre
 		}
 		return nil, fmt.Errorf("create excursion booking: %w", err)
 	}
+	u.notifyExcursionBookingCreated(ctx, booking, offer)
 	return booking, nil
 }
 
@@ -2283,6 +2299,7 @@ func (u *ExcursionUseCase) UpdateExcursionBookingGuests(ctx context.Context, inp
 		}
 		return nil, fmt.Errorf("update excursion booking guests: %w", err)
 	}
+	u.notifyExcursionBookingGuestsUpdated(ctx, booking, oldSeats)
 	return booking, nil
 }
 
@@ -2354,6 +2371,7 @@ func (u *ExcursionUseCase) CancelExcursionBooking(ctx context.Context, input Can
 		}
 		return nil, fmt.Errorf("cancel excursion booking: %w", err)
 	}
+	u.notifyExcursionBookingCancelled(ctx, booking)
 	return booking, nil
 }
 

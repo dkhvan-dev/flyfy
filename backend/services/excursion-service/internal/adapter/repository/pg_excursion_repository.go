@@ -2194,7 +2194,7 @@ func (r *PGExcursionRepository) CloseBookedExcursionScheduleSlots(ctx context.Co
 	return closeBookedExcursionScheduleSlots(ctx, r.pool, cutoff, limit)
 }
 
-func (r *PGExcursionRepository) CompleteDueExcursionScheduleSlots(ctx context.Context, before time.Time, reason string, limit int) (int, error) {
+func (r *PGExcursionRepository) CompleteDueExcursionScheduleSlots(ctx context.Context, before time.Time, reason string, limit int) ([]*model.ExcursionScheduleSlot, error) {
 	return completeDueExcursionScheduleSlots(ctx, r.pool, before, reason, limit)
 }
 
@@ -2898,7 +2898,7 @@ func closeBookedExcursionScheduleSlots(
 	return slots, nil
 }
 
-func completeDueExcursionScheduleSlots(ctx context.Context, exec dbExecutor, before time.Time, reason string, limit int) (int, error) {
+func completeDueExcursionScheduleSlots(ctx context.Context, exec dbQueryExecutor, before time.Time, reason string, limit int) ([]*model.ExcursionScheduleSlot, error) {
 	reason = strings.TrimSpace(reason)
 	if reason == "" {
 		reason = "SLOT_END_REACHED"
@@ -2916,21 +2916,59 @@ func completeDueExcursionScheduleSlots(ctx context.Context, exec dbExecutor, bef
 			ORDER BY end_at ASC
 			LIMIT $3
 			FOR UPDATE SKIP LOCKED
+		),
+		updated_slots AS (
+			UPDATE excursion_schedule_slots s
+			SET
+				status = 'COMPLETED',
+				completed_at = NOW(),
+				completion_reason = $2,
+				updated_at = NOW()
+			FROM due_slots
+			WHERE s.id = due_slots.id
+			RETURNING
+				s.id, s.series_id,
+				s.guide_profile_id, s.guide_user_id,
+				s.offer_id, s.product_id, s.legacy_excursion_id,
+				s.start_at, s.end_at, s.timezone,
+				s.capacity, s.booked_seats,
+				s.status, s.cancel_reason, s.closed_at, s.cancelled_at,
+				s.completed_at, s.completion_reason,
+				s.created_at, s.updated_at
 		)
-		UPDATE excursion_schedule_slots s
-		SET
-			status = 'COMPLETED',
-			completed_at = NOW(),
-			completion_reason = $2,
-			updated_at = NOW()
-		FROM due_slots
-		WHERE s.id = due_slots.id
+		SELECT
+			us.id, us.series_id,
+			us.guide_profile_id, us.guide_user_id,
+			us.offer_id, us.product_id, us.legacy_excursion_id,
+			us.start_at, us.end_at, us.timezone,
+			us.capacity, us.booked_seats,
+			us.status, us.cancel_reason, us.closed_at, us.cancelled_at,
+			us.completed_at, us.completion_reason,
+			us.created_at, us.updated_at,
+			COALESCE(NULLIF(o.title, ''), NULLIF(p.title, ''), '')
+		FROM updated_slots us
+		JOIN excursion_offers o ON o.id = us.offer_id
+		JOIN excursion_products p ON p.id = us.product_id
+		ORDER BY us.end_at ASC
 	`
-	tag, err := exec.Exec(ctx, query, before.UTC(), reason, limit)
+	rows, err := exec.Query(ctx, query, before.UTC(), reason, limit)
 	if err != nil {
-		return 0, fmt.Errorf("complete due excursion schedule slots: %w", err)
+		return nil, fmt.Errorf("complete due excursion schedule slots: %w", err)
 	}
-	return int(tag.RowsAffected()), nil
+	defer rows.Close()
+
+	slots := make([]*model.ExcursionScheduleSlot, 0)
+	for rows.Next() {
+		slot, scanErr := scanExcursionScheduleSlotWithTitle(rows)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		slots = append(slots, slot)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate completed excursion schedule slots: %w", err)
+	}
+	return slots, nil
 }
 
 func updateExcursionBookingGuests(ctx context.Context, exec dbExecutor, item *model.ExcursionBooking) error {

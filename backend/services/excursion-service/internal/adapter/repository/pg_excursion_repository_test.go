@@ -1004,6 +1004,49 @@ func (placeholderCheckingExecutor) QueryRow(context.Context, string, ...any) pgx
 	return nil
 }
 
+func (placeholderCheckingExecutor) Query(_ context.Context, query string, arguments ...any) (pgx.Rows, error) {
+	if err := validateContiguousPlaceholders(query, len(arguments)); err != nil {
+		return nil, err
+	}
+	return emptyRows{}, nil
+}
+
+type emptyRows struct{}
+
+func (emptyRows) Close() {}
+
+func (emptyRows) Err() error {
+	return nil
+}
+
+func (emptyRows) CommandTag() pgconn.CommandTag {
+	return pgconn.CommandTag{}
+}
+
+func (emptyRows) FieldDescriptions() []pgconn.FieldDescription {
+	return nil
+}
+
+func (emptyRows) Next() bool {
+	return false
+}
+
+func (emptyRows) Scan(...any) error {
+	return nil
+}
+
+func (emptyRows) Values() ([]any, error) {
+	return nil, nil
+}
+
+func (emptyRows) RawValues() [][]byte {
+	return nil
+}
+
+func (emptyRows) Conn() *pgx.Conn {
+	return nil
+}
+
 type uniqueViolationExecutor struct {
 	constraintName string
 }

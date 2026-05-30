@@ -19,6 +19,7 @@ type Config struct {
 	Attraction   AttractionServiceConfig
 	FileManager  FileManagerConfig
 	ChatService  ChatServiceConfig
+	Notification NotificationServiceConfig
 	Translation  TranslationServiceConfig
 	Attendance   AttendanceConfig
 	AntiFraud    AntiFraudConfig
@@ -115,6 +116,11 @@ type FileManagerConfig struct {
 type ChatServiceConfig struct {
 	HTTPURL        string        `env:"CHAT_SERVICE_HTTP_URL, default=http://chat-service:8088"`
 	RequestTimeout time.Duration `env:"CHAT_SERVICE_REQUEST_TIMEOUT, default=5s"`
+}
+
+type NotificationServiceConfig struct {
+	HTTPURL        string        `env:"NOTIFICATION_SERVICE_HTTP_URL, default=http://notification-service:8097"`
+	RequestTimeout time.Duration `env:"NOTIFICATION_SERVICE_REQUEST_TIMEOUT, default=3s"`
 }
 
 type TranslationServiceConfig struct {

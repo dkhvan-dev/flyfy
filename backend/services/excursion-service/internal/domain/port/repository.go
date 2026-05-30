@@ -186,7 +186,7 @@ type ExcursionRepository interface {
 	ReserveExcursionScheduleSlotSeats(ctx context.Context, slotID uuid.UUID, seats int) error
 	ExpireUnbookedExcursionScheduleSlots(ctx context.Context, cutoff time.Time, reason string) error
 	CloseBookedExcursionScheduleSlots(ctx context.Context, cutoff time.Time, limit int) ([]*model.ExcursionScheduleSlot, error)
-	CompleteDueExcursionScheduleSlots(ctx context.Context, before time.Time, reason string, limit int) (int, error)
+	CompleteDueExcursionScheduleSlots(ctx context.Context, before time.Time, reason string, limit int) ([]*model.ExcursionScheduleSlot, error)
 	CreateExcursionAttendanceQRIssue(ctx context.Context, item *model.ExcursionAttendanceQRIssue) error
 	WithTx(ctx context.Context, fn func(repo ExcursionTxRepository) error) error
 }

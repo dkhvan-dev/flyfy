@@ -50,6 +50,7 @@ type excursionRepoStub struct {
 	completedScheduleReason         string
 	completedScheduleLimit          int
 	completedScheduleCount          int
+	completedScheduleSlots          []*model.ExcursionScheduleSlot
 	createdAttendanceIssue          *model.ExcursionAttendanceQRIssue
 	gotAttendanceIssue              *model.ExcursionAttendanceQRIssue
 	gotAttendanceAttempt            *model.ExcursionAttendanceSyncAttempt
@@ -239,11 +240,17 @@ func (s *excursionRepoStub) CloseBookedExcursionScheduleSlots(ctx context.Contex
 	return s.closedScheduleSlots, s.closeScheduleErr
 }
 
-func (s *excursionRepoStub) CompleteDueExcursionScheduleSlots(ctx context.Context, before time.Time, reason string, limit int) (int, error) {
+func (s *excursionRepoStub) CompleteDueExcursionScheduleSlots(ctx context.Context, before time.Time, reason string, limit int) ([]*model.ExcursionScheduleSlot, error) {
 	s.completedScheduleBefore = before
 	s.completedScheduleReason = reason
 	s.completedScheduleLimit = limit
-	return s.completedScheduleCount, nil
+	if s.completedScheduleSlots != nil {
+		return s.completedScheduleSlots, nil
+	}
+	if s.completedScheduleCount <= 0 {
+		return nil, nil
+	}
+	return make([]*model.ExcursionScheduleSlot, s.completedScheduleCount), nil
 }
 
 func (s *excursionRepoStub) CreateExcursionAttendanceQRIssue(ctx context.Context, item *model.ExcursionAttendanceQRIssue) error {

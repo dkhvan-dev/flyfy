@@ -393,8 +393,8 @@ func (s *excursionOffersRepoStub) CloseBookedExcursionScheduleSlots(context.Cont
 	return nil, nil
 }
 
-func (s *excursionOffersRepoStub) CompleteDueExcursionScheduleSlots(context.Context, time.Time, string, int) (int, error) {
-	return 0, nil
+func (s *excursionOffersRepoStub) CompleteDueExcursionScheduleSlots(context.Context, time.Time, string, int) ([]*model.ExcursionScheduleSlot, error) {
+	return nil, nil
 }
 
 func (s *excursionOffersRepoStub) CreateExcursionAttendanceQRIssue(context.Context, *model.ExcursionAttendanceQRIssue) error {
