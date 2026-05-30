@@ -21,6 +21,7 @@ type ModerationUseCase struct {
 	guide     port.GuideApplicationClient
 	chat      port.ChatClient
 	audit     port.AuditRepository
+	notify    port.UserNotificationGateway
 }
 
 type ModerationDashboard struct {
@@ -321,6 +322,7 @@ func (u *ModerationUseCase) DecideExcursion(ctx context.Context, input Moderatio
 		return nil, err
 	}
 	u.appendModerationAudit(ctx, input.Actor.ID, "moderation.decision.applied", caseItem.ID, input.RequestMetadata, map[string]any{"decision": input.Decision, "targetId": caseItem.TargetID})
+	u.notifyExcursionModerationDecision(ctx, caseItem, input.Decision, decision.ReasonCodes, idempotencyKey, updated)
 	detail, err := u.GetCaseDetail(ctx, input.Actor, caseItem.ID)
 	if err != nil {
 		return nil, err
@@ -407,6 +409,7 @@ func (u *ModerationUseCase) DecideActivity(ctx context.Context, input Moderation
 		return nil, err
 	}
 	u.appendModerationAudit(ctx, input.Actor.ID, "moderation.decision.applied", caseItem.ID, input.RequestMetadata, map[string]any{"decision": input.Decision, "targetId": caseItem.TargetID, "targetType": caseItem.TargetType})
+	u.notifyActivityModerationDecision(ctx, caseItem, input.Decision, decision.ReasonCodes, idempotencyKey, updated)
 	detail, err := u.GetCaseDetail(ctx, input.Actor, caseItem.ID)
 	if err != nil {
 		return nil, err
@@ -500,6 +503,7 @@ func (u *ModerationUseCase) DecideChatMessage(ctx context.Context, input Moderat
 		return nil, err
 	}
 	u.appendModerationAudit(ctx, input.Actor.ID, "moderation.decision.applied", caseItem.ID, input.RequestMetadata, map[string]any{"decision": input.Decision, "targetId": caseItem.TargetID, "targetType": caseItem.TargetType})
+	u.notifyChatMessageModerationDecision(ctx, caseItem, input.Decision, decision.ReasonCodes, idempotencyKey, updated)
 	detail, err := u.GetCaseDetail(ctx, input.Actor, caseItem.ID)
 	if err != nil {
 		return nil, err
@@ -593,6 +597,7 @@ func (u *ModerationUseCase) DecideGuideApplication(ctx context.Context, input Mo
 		return nil, err
 	}
 	u.appendModerationAudit(ctx, input.Actor.ID, "moderation.decision.applied", caseItem.ID, input.RequestMetadata, map[string]any{"decision": input.Decision, "targetId": caseItem.TargetID, "targetType": caseItem.TargetType})
+	u.notifyGuideApplicationModerationDecision(ctx, caseItem, input.Decision, decision.ReasonCodes, idempotencyKey, updated)
 	detail, err := u.GetCaseDetail(ctx, input.Actor, caseItem.ID)
 	if err != nil {
 		return nil, err
@@ -632,6 +637,7 @@ func (u *ModerationUseCase) RevokeActiveGuide(ctx context.Context, input RevokeA
 		return nil, err
 	}
 	u.appendGuideProfileAudit(ctx, input.Actor.ID, "guide.status.revoked", input.GuideProfileID, input.RequestMetadata, map[string]any{"reasonCodes": reasonCodes, "internalComment": internalComment})
+	u.notifyGuideStatusRevoked(ctx, input.GuideProfileID, reasonCodes, idempotencyKey, item)
 	return item, nil
 }
 

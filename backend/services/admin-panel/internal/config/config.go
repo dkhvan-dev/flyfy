@@ -10,21 +10,22 @@ import (
 )
 
 type Config struct {
-	App         AppConfig
-	HTTP        HTTPConfig
-	DB          DBConfig
-	Log         LogConfig
-	Security    SecurityConfig
-	Excursion   ExcursionServiceConfig
-	Activity    ActivityServiceConfig
-	Guide       GuideServiceConfig
-	Chat        ChatServiceConfig
-	User        UserServiceConfig
-	Trust       TrustServiceConfig
-	AntiFraud   AntiFraudServiceConfig
-	Attraction  AttractionServiceConfig
-	FileManager FileManagerServiceConfig
-	Bootstrap   BootstrapConfig
+	App          AppConfig
+	HTTP         HTTPConfig
+	DB           DBConfig
+	Log          LogConfig
+	Security     SecurityConfig
+	Excursion    ExcursionServiceConfig
+	Activity     ActivityServiceConfig
+	Guide        GuideServiceConfig
+	Chat         ChatServiceConfig
+	User         UserServiceConfig
+	Trust        TrustServiceConfig
+	AntiFraud    AntiFraudServiceConfig
+	Notification NotificationServiceConfig
+	Attraction   AttractionServiceConfig
+	FileManager  FileManagerServiceConfig
+	Bootstrap    BootstrapConfig
 }
 
 type AppConfig struct {
@@ -144,6 +145,11 @@ type TrustServiceConfig struct {
 type AntiFraudServiceConfig struct {
 	BaseURL string        `env:"ANTI_FRAUD_SERVICE_URL, default=http://anti-fraud-service:8096"`
 	Timeout time.Duration `env:"ANTI_FRAUD_SERVICE_TIMEOUT, default=5s"`
+}
+
+type NotificationServiceConfig struct {
+	HTTPURL        string        `env:"NOTIFICATION_SERVICE_HTTP_URL, default=http://notification-service:8097"`
+	RequestTimeout time.Duration `env:"NOTIFICATION_SERVICE_REQUEST_TIMEOUT, default=3s"`
 }
 
 type AttractionServiceConfig struct {

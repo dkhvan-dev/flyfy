@@ -46,6 +46,23 @@ type AuditRepository interface {
 	List(ctx context.Context, filter model.AuditFilter) ([]*model.AuditEvent, error)
 }
 
+type UserNotificationInput struct {
+	IdempotencyKey   string
+	RecipientUserIDs []uuid.UUID
+	Category         string
+	Priority         string
+	Title            string
+	Body             string
+	DeepLink         string
+	Data             map[string]string
+	CollapseKey      string
+	TTL              time.Duration
+}
+
+type UserNotificationGateway interface {
+	SendUserNotification(ctx context.Context, input UserNotificationInput) error
+}
+
 type UserAdminClient interface {
 	ListAdminUsers(ctx context.Context, filter model.AdminUserListFilter) (model.AdminUserListPage, error)
 	GetAdminUserDetail(ctx context.Context, userID uuid.UUID) (model.AdminUserDetail, error)

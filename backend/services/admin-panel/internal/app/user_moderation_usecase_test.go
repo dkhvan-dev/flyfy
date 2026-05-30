@@ -10,6 +10,7 @@ import (
 
 	"kz/inflap/backend/services/admin-panel/internal/domain/enum"
 	"kz/inflap/backend/services/admin-panel/internal/domain/model"
+	"kz/inflap/backend/services/admin-panel/internal/domain/port"
 )
 
 func TestCreateUserModerationCaseRequiresPermission(t *testing.T) {
@@ -82,6 +83,56 @@ func TestCreateUserRestrictionRequiresReasonAndComment(t *testing.T) {
 
 	if !errors.Is(err, ErrInvalidInput) {
 		t.Fatalf("error = %v, want %v", err, ErrInvalidInput)
+	}
+}
+
+func TestCreateUserRestrictionNotifiesUser(t *testing.T) {
+	ctx := context.Background()
+	actor := &model.StaffUser{
+		ID:          uuid.New(),
+		Permissions: []enum.Permission{enum.PermissionUsersRestrict},
+	}
+	targetUserID := uuid.New()
+	repo := &userModerationRepoStub{}
+	notifications := make(chan port.UserNotificationInput, 1)
+	uc := NewUserModerationUseCase(&userAdminClientStub{}, repo, &userModerationAuditRepoStub{})
+	uc.SetNotificationGateway(adminNotificationGatewayStub{
+		send: func(ctx context.Context, input port.UserNotificationInput) error {
+			notifications <- input
+			return nil
+		},
+	})
+
+	item, err := uc.CreateUserRestriction(ctx, actor, model.CreateUserRestrictionParams{
+		UserID:          targetUserID,
+		RestrictionCode: model.UserRestrictionChat,
+		ReasonCode:      "spam",
+		StaffComment:    "Repeated spam reports.",
+	}, RequestMetadata{RequestID: "req-restrict"})
+
+	if err != nil {
+		t.Fatalf("CreateUserRestriction() error = %v", err)
+	}
+	got := waitAdminNotification(t, notifications)
+	if len(got.RecipientUserIDs) != 1 || got.RecipientUserIDs[0] != targetUserID {
+		t.Fatalf("recipient user ids = %v, want user %s", got.RecipientUserIDs, targetUserID)
+	}
+	if got.Category != "account" || got.Priority != "high" {
+		t.Fatalf("category/priority = %q/%q, want account/high", got.Category, got.Priority)
+	}
+	if got.DeepLink != "/notifications/account" {
+		t.Fatalf("deep link = %q", got.DeepLink)
+	}
+	if got.IdempotencyKey == "" {
+		t.Fatal("idempotency key must be set for restriction notification")
+	}
+	if got.Data["adminEvent"] != "user_restriction_created" ||
+		got.Data["targetType"] != "USER" ||
+		got.Data["targetId"] != targetUserID.String() ||
+		got.Data["restrictionId"] != item.ID.String() ||
+		got.Data["restrictionCode"] != string(model.UserRestrictionChat) ||
+		got.Data["reasonCode"] != "spam" {
+		t.Fatalf("notification data = %#v", got.Data)
 	}
 }
 

@@ -446,6 +446,88 @@ func TestDecideActivityApproveKeepsCaseAuditedAndApplied(t *testing.T) {
 	}
 }
 
+func TestDecideActivityApproveNotifiesHost(t *testing.T) {
+	t.Parallel()
+
+	actor := &model.StaffUser{
+		ID:          uuid.New(),
+		Email:       "activity-moderator@inflap.local",
+		DisplayName: "Activity Moderator",
+		Status:      enum.StaffStatusActive,
+		Permissions: []enum.Permission{
+			enum.PermissionModerationRead,
+			enum.PermissionActivityModerate,
+		},
+	}
+	caseID := uuid.New()
+	activityID := uuid.New()
+	hostUserID := uuid.New()
+	repo := &moderationRepoStub{
+		item: &model.ModerationCase{
+			ID:             caseID,
+			TargetType:     model.ModerationTargetActivity,
+			TargetID:       activityID,
+			SourceRevision: 3,
+			Status:         enum.ModerationCaseStatusOpen,
+			CreatedAt:      time.Now().UTC(),
+			UpdatedAt:      time.Now().UTC(),
+		},
+	}
+	activity := &moderationActivityClientStub{
+		item: &model.ActivityModerationItem{
+			ID:               activityID,
+			HostUserID:       hostUserID,
+			Title:            "Medeu sunset walk",
+			Revision:         3,
+			Status:           "ENROLLMENT_OPEN",
+			ModerationStatus: "APPROVED",
+		},
+	}
+	notifications := make(chan port.UserNotificationInput, 1)
+	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, activity, &moderationGuideClientStub{}, &moderationChatClientStub{}, &moderationAuditRepoStub{})
+	uc.SetNotificationGateway(adminNotificationGatewayStub{
+		send: func(ctx context.Context, input port.UserNotificationInput) error {
+			notifications <- input
+			return nil
+		},
+	})
+
+	_, err := uc.DecideActivity(context.Background(), ModerationDecisionInput{
+		Actor:           actor,
+		CaseID:          caseID,
+		Decision:        enum.ModerationDecisionApprove,
+		InternalComment: "Signals reviewed.",
+		IdempotencyKey:  "activity-approve",
+	})
+
+	if err != nil {
+		t.Fatalf("DecideActivity() error = %v", err)
+	}
+	got := waitAdminNotification(t, notifications)
+	if len(got.RecipientUserIDs) != 1 || got.RecipientUserIDs[0] != hostUserID {
+		t.Fatalf("recipient user ids = %v, want host %s", got.RecipientUserIDs, hostUserID)
+	}
+	if got.IdempotencyKey != "admin:moderation:activity-approve:activity_approved" {
+		t.Fatalf("idempotency key = %q", got.IdempotencyKey)
+	}
+	if got.Category != "activity" || got.Priority != "normal" {
+		t.Fatalf("category/priority = %q/%q, want activity/normal", got.Category, got.Priority)
+	}
+	if got.DeepLink != "/activities/"+activityID.String() {
+		t.Fatalf("deep link = %q", got.DeepLink)
+	}
+	if got.CollapseKey != "admin:moderation:activity:"+activityID.String() {
+		t.Fatalf("collapse key = %q", got.CollapseKey)
+	}
+	if got.Data["adminEvent"] != "activity_approved" ||
+		got.Data["caseId"] != caseID.String() ||
+		got.Data["targetType"] != string(model.ModerationTargetActivity) ||
+		got.Data["targetId"] != activityID.String() ||
+		got.Data["decision"] != string(enum.ModerationDecisionApprove) {
+		t.Fatalf("notification data = %#v", got.Data)
+	}
+}
+
 func TestDecideActivityRejectRequiresPublicAndInternalComments(t *testing.T) {
 	t.Parallel()
 
@@ -885,6 +967,35 @@ func TestRevokeActiveGuideUsesGuideProfileIDAndAudit(t *testing.T) {
 	if audit.lastAction != "guide.status.revoked" {
 		t.Fatalf("audit action = %q, want guide.status.revoked", audit.lastAction)
 	}
+}
+
+type adminNotificationGatewayStub struct {
+	send func(ctx context.Context, input port.UserNotificationInput) error
+}
+
+func (s adminNotificationGatewayStub) SendUserNotification(
+	ctx context.Context,
+	input port.UserNotificationInput,
+) error {
+	if s.send != nil {
+		return s.send(ctx, input)
+	}
+	return nil
+}
+
+func waitAdminNotification(
+	t *testing.T,
+	ch <-chan port.UserNotificationInput,
+) port.UserNotificationInput {
+	t.Helper()
+
+	select {
+	case got := <-ch:
+		return got
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for admin notification")
+	}
+	return port.UserNotificationInput{}
 }
 
 type moderationRepoStub struct {

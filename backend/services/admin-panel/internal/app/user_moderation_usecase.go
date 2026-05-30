@@ -14,9 +14,10 @@ import (
 )
 
 type UserModerationUseCase struct {
-	users port.UserAdminClient
-	repo  port.UserModerationRepository
-	audit port.AuditRepository
+	users  port.UserAdminClient
+	repo   port.UserModerationRepository
+	audit  port.AuditRepository
+	notify port.UserNotificationGateway
 }
 
 func NewUserModerationUseCase(
@@ -151,6 +152,14 @@ func (u *UserModerationUseCase) ResolveUserModerationCase(
 		"decision":   params.Decision,
 		"reasonCode": params.ReasonCode,
 	})
+	notificationCase := item
+	if notificationCase.TargetUserID == uuid.Nil {
+		notificationCase.TargetUserID = existing.TargetUserID
+	}
+	if notificationCase.ID == uuid.Nil {
+		notificationCase.ID = existing.ID
+	}
+	u.notifyUserModerationDecision(ctx, notificationCase, params)
 	return item, nil
 }
 
@@ -182,6 +191,7 @@ func (u *UserModerationUseCase) CreateUserRestriction(
 		"restrictionCode": params.RestrictionCode,
 		"reasonCode":      params.ReasonCode,
 	})
+	u.notifyUserRestrictionCreated(ctx, item)
 	return item, nil
 }
 
@@ -211,6 +221,7 @@ func (u *UserModerationUseCase) LiftUserRestriction(
 		"restrictionId": params.RestrictionID,
 		"reasonCode":    params.ReasonCode,
 	})
+	u.notifyUserRestrictionLifted(ctx, item)
 	return item, nil
 }
 

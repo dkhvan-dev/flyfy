@@ -22,6 +22,7 @@ import (
 	filemanageradapter "kz/inflap/backend/services/admin-panel/internal/adapter/filemanager"
 	guideadapter "kz/inflap/backend/services/admin-panel/internal/adapter/guide"
 	httpadapter "kz/inflap/backend/services/admin-panel/internal/adapter/http"
+	notificationadapter "kz/inflap/backend/services/admin-panel/internal/adapter/notification"
 	"kz/inflap/backend/services/admin-panel/internal/adapter/repository"
 	trustadapter "kz/inflap/backend/services/admin-panel/internal/adapter/trust"
 	useradapter "kz/inflap/backend/services/admin-panel/internal/adapter/user"
@@ -110,6 +111,19 @@ func main() {
 		cfg.FileManager.Timeout,
 		cfg.Security.TrustedInternalToken,
 	)
+	var notificationClient *notificationadapter.Client
+	if strings.TrimSpace(cfg.Notification.HTTPURL) != "" &&
+		strings.TrimSpace(cfg.Security.TrustedInternalToken) != "" {
+		notificationClient = notificationadapter.New(
+			cfg.Notification.HTTPURL,
+			cfg.Security.TrustedInternalToken,
+			cfg.App.Name,
+			cfg.Notification.RequestTimeout,
+		)
+		log.Info().
+			Str("url", cfg.Notification.HTTPURL).
+			Msg("admin-panel user notification client enabled")
+	}
 
 	authUC := app.NewAuthUseCase(staffRepo, sessionRepo, loginAttemptRepo, auditRepo, app.AuthConfig{
 		IdleTimeout:      cfg.Security.SessionIdleTimeout,
@@ -120,6 +134,10 @@ func main() {
 	staffUC := app.NewStaffUseCase(staffRepo, auditRepo, sessionRepo)
 	moderationUC := app.NewModerationUseCase(moderationRepo, excursionClient, activityClient, guideClient, chatClient, auditRepo)
 	userModerationUC := app.NewUserModerationUseCase(userClient, userModerationRepo, auditRepo)
+	if notificationClient != nil {
+		moderationUC.SetNotificationGateway(notificationClient)
+		userModerationUC.SetNotificationGateway(notificationClient)
+	}
 	restrictionOutboxWorker := app.NewRestrictionOutboxWorker(
 		restrictionOutboxRepo,
 		trustClient,
