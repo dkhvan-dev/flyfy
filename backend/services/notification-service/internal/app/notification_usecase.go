@@ -272,6 +272,7 @@ func (uc *NotificationUseCase) FanoutRequest(ctx context.Context, requestID uuid
 			Platform:      device.Platform,
 			Provider:      device.Provider,
 			Environment:   device.Environment,
+			Category:      request.Category,
 			Token:         device.Token,
 			Payload:       request.Payload,
 			Priority:      request.Priority.Normalize(),

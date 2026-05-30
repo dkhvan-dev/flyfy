@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class PushNotificationEnvelope {
@@ -76,6 +77,26 @@ abstract interface class PushNotificationPresenter {
   Future<void> show(PushNotificationDisplay display);
 }
 
+class CompositePushNotificationPresenter implements PushNotificationPresenter {
+  const CompositePushNotificationPresenter(this.presenters);
+
+  final List<PushNotificationPresenter> presenters;
+
+  @override
+  Future<void> initialize({required void Function(String route) onTap}) async {
+    for (final presenter in presenters) {
+      await presenter.initialize(onTap: onTap);
+    }
+  }
+
+  @override
+  Future<void> show(PushNotificationDisplay display) async {
+    for (final presenter in presenters) {
+      await presenter.show(display);
+    }
+  }
+}
+
 typedef PushNotificationRouteHandler = void Function(String route);
 
 class PushNotificationCoordinator {
@@ -85,10 +106,10 @@ class PushNotificationCoordinator {
     required PushNotificationRouteHandler routeHandler,
     PushNotificationDeepLinkResolver resolver =
         const PushNotificationDeepLinkResolver(),
-  })  : _source = source,
-        _presenter = presenter,
-        _routeHandler = routeHandler,
-        _resolver = resolver;
+  }) : _source = source,
+       _presenter = presenter,
+       _routeHandler = routeHandler,
+       _resolver = resolver;
 
   final PushNotificationSource _source;
   final PushNotificationPresenter _presenter;
@@ -120,9 +141,7 @@ class PushNotificationCoordinator {
     _subscriptions.clear();
   }
 
-  Future<void> _showForegroundMessage(
-    PushNotificationEnvelope envelope,
-  ) async {
+  Future<void> _showForegroundMessage(PushNotificationEnvelope envelope) async {
     final title = envelope.title.trim().isEmpty ? 'Inflap' : envelope.title;
     await _presenter.show(
       PushNotificationDisplay(
@@ -166,7 +185,7 @@ class PushNotificationCoordinator {
 
 class FirebasePushNotificationSource implements PushNotificationSource {
   FirebasePushNotificationSource({FirebaseMessaging? messaging})
-      : _messaging = messaging ?? FirebaseMessaging.instance;
+    : _messaging = messaging ?? FirebaseMessaging.instance;
 
   final FirebaseMessaging _messaging;
 
@@ -189,16 +208,24 @@ class FirebasePushNotificationSource implements PushNotificationSource {
 class LocalPushNotificationPresenter implements PushNotificationPresenter {
   LocalPushNotificationPresenter({
     FlutterLocalNotificationsPlugin? plugin,
-  }) : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
+    bool showForegroundNotification = true,
+  }) : _plugin = plugin ?? FlutterLocalNotificationsPlugin(),
+       _showForegroundNotification = showForegroundNotification;
+
+  static const _notificationIcon = 'ic_stat_inflap_notification';
+  static const _notificationColor = Color(0xFF00BCD4);
 
   final FlutterLocalNotificationsPlugin _plugin;
+  final bool _showForegroundNotification;
   bool _initialized = false;
 
   @override
   Future<void> initialize({required void Function(String route) onTap}) async {
     if (_initialized) return;
 
-    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const android = AndroidInitializationSettings(
+      '@drawable/$_notificationIcon',
+    );
     const darwin = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
@@ -213,8 +240,10 @@ class LocalPushNotificationPresenter implements PushNotificationPresenter {
       },
     );
 
-    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
+    final androidPlugin = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     if (androidPlugin != null) {
       await androidPlugin.requestNotificationsPermission();
       for (final channel in PushNotificationChannel.values) {
@@ -224,6 +253,8 @@ class LocalPushNotificationPresenter implements PushNotificationPresenter {
             channel.name,
             description: channel.description,
             importance: Importance.high,
+            enableVibration: true,
+            showBadge: true,
           ),
         );
       }
@@ -234,7 +265,7 @@ class LocalPushNotificationPresenter implements PushNotificationPresenter {
 
   @override
   Future<void> show(PushNotificationDisplay display) async {
-    if (kIsWeb) return;
+    if (kIsWeb || !_showForegroundNotification) return;
     await _plugin.show(
       id: _notificationId(display.id),
       title: display.title,
@@ -244,9 +275,19 @@ class LocalPushNotificationPresenter implements PushNotificationPresenter {
           display.channel.id,
           display.channel.name,
           channelDescription: display.channel.description,
+          icon: _notificationIcon,
           importance: Importance.high,
           priority: Priority.high,
           category: _androidCategory(display.channel),
+          visibility: NotificationVisibility.public,
+          channelShowBadge: true,
+          color: _notificationColor,
+          ticker: display.title,
+          subText: display.channel.name,
+          styleInformation: BigTextStyleInformation(
+            display.body,
+            contentTitle: display.title,
+          ),
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,
@@ -273,10 +314,7 @@ class LocalPushNotificationPresenter implements PushNotificationPresenter {
         ? DateTime.now().microsecondsSinceEpoch.toString()
         : id.trim();
     return value.codeUnits
-        .fold<int>(
-          0,
-          (hash, unit) => (hash * 31 + unit) & 0x7fffffff,
-        )
+        .fold<int>(0, (hash, unit) => (hash * 31 + unit) & 0x7fffffff)
         .clamp(1, maxSigned32Bit);
   }
 }
@@ -363,7 +401,8 @@ PushNotificationEnvelope _envelopeFromRemoteMessage(RemoteMessage message) {
   };
   final notification = message.notification;
   return PushNotificationEnvelope(
-    id: message.messageId ??
+    id:
+        message.messageId ??
         message.sentTime?.microsecondsSinceEpoch.toString() ??
         DateTime.now().microsecondsSinceEpoch.toString(),
     title: notification?.title ?? _value(data, 'title'),

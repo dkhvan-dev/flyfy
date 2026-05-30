@@ -101,11 +101,14 @@ func (p *FCMProvider) Send(
 		"message": map[string]any{
 			"token":        token,
 			"notification": notificationObject(delivery.Payload),
-			"data":         delivery.Payload.Data,
+			"data":         notificationData(delivery),
 			"android": map[string]any{
 				"priority":     fcmAndroidPriority(delivery.Priority),
 				"ttl":          fmt.Sprintf("%ds", int(delivery.Payload.TTL.Seconds())),
 				"collapse_key": delivery.Payload.CollapseKey,
+				"notification": map[string]any{
+					"channel_id": androidChannelID(delivery),
+				},
 			},
 		},
 	}
@@ -249,6 +252,41 @@ func notificationObject(payload model.NotificationPayload) map[string]string {
 		notification["image"] = payload.ImageURL
 	}
 	return notification
+}
+
+func notificationData(delivery model.Delivery) map[string]string {
+	data := make(map[string]string, len(delivery.Payload.Data)+4)
+	for key, value := range delivery.Payload.Data {
+		data[key] = value
+	}
+	if strings.TrimSpace(delivery.Category) != "" {
+		data["category"] = strings.TrimSpace(delivery.Category)
+	}
+	if strings.TrimSpace(delivery.Payload.DeepLink) != "" {
+		data["deepLink"] = strings.TrimSpace(delivery.Payload.DeepLink)
+	}
+	if strings.TrimSpace(delivery.Payload.Title) != "" {
+		data["title"] = strings.TrimSpace(delivery.Payload.Title)
+	}
+	if strings.TrimSpace(delivery.Payload.Body) != "" {
+		data["body"] = strings.TrimSpace(delivery.Payload.Body)
+	}
+	return data
+}
+
+func androidChannelID(delivery model.Delivery) string {
+	category := strings.ToLower(strings.TrimSpace(delivery.Category))
+	if strings.Contains(category, "chat") || delivery.Payload.Data["conversationId"] != "" {
+		return "inflap_messages"
+	}
+	if strings.Contains(category, "activity") ||
+		strings.Contains(category, "excursion") ||
+		strings.Contains(category, "booking") ||
+		delivery.Payload.Data["activityId"] != "" ||
+		delivery.Payload.Data["excursionId"] != "" {
+		return "inflap_activity"
+	}
+	return "inflap_system"
 }
 
 func fcmAndroidPriority(priority model.Priority) string {

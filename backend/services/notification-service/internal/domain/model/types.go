@@ -144,6 +144,7 @@ type Delivery struct {
 	Platform      Platform
 	Provider      Provider
 	Environment   Environment
+	Category      string
 	Token         string
 	Payload       NotificationPayload
 	Priority      Priority

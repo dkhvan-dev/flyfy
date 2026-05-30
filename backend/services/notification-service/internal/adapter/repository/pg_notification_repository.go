@@ -451,7 +451,7 @@ func deliverySelectSQL() string {
 	return `
 		SELECT d.id, d.request_id, d.device_token_id, d.user_id,
 			d.platform, d.provider, d.environment, t.token_ciphertext,
-			r.title, r.body, r.image_url, r.deep_link, r.data,
+			r.category, r.title, r.body, r.image_url, r.deep_link, r.data,
 			r.collapse_key, r.ttl_seconds, d.priority, d.status,
 			d.attempt_count, d.max_attempts, COALESCE(d.next_attempt_at, NOW()),
 			COALESCE(d.last_error_code, ''), COALESCE(d.last_error, '')
@@ -475,6 +475,7 @@ func (r *PGNotificationRepository) scanDelivery(row scanner) (*model.Delivery, e
 		&delivery.Provider,
 		&delivery.Environment,
 		&tokenCiphertext,
+		&delivery.Category,
 		&delivery.Payload.Title,
 		&delivery.Payload.Body,
 		&delivery.Payload.ImageURL,

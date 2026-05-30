@@ -15,6 +15,7 @@ import 'features/attendance/attendance_sync_manager.dart';
 import 'features/notifications/data/firebase_messaging_push_token_provider.dart';
 import 'features/notifications/data/notification_api.dart';
 import 'features/notifications/data/push_registration_service.dart';
+import 'features/notifications/presentation/push_notification_banner.dart';
 import 'features/notifications/presentation/push_notification_coordinator.dart';
 import 'providers/auth_provider.dart';
 import 'providers/home_location_provider.dart';
@@ -31,18 +32,14 @@ import 'providers/excursion_schedule_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   runApp(const SuperApp());
 }
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 }
 
 class SuperApp extends StatefulWidget {
@@ -58,6 +55,7 @@ class _SuperAppState extends State<SuperApp> {
   late final SessionProvider _sessionProvider;
   late final LocaleProvider _localeProvider;
   late final PushRegistrationService _pushRegistrationService;
+  late final PushNotificationBannerController _pushNotificationBannerController;
   late final PushNotificationCoordinator _pushNotificationCoordinator;
   late final GoRouter _router;
 
@@ -75,10 +73,16 @@ class _SuperAppState extends State<SuperApp> {
       ),
       tokenProvider: FirebaseMessagingPushTokenProvider(),
     );
+    _pushNotificationBannerController = PushNotificationBannerController();
     _router = AppRouter.router(_authProvider);
     _pushNotificationCoordinator = PushNotificationCoordinator(
       source: FirebasePushNotificationSource(),
-      presenter: LocalPushNotificationPresenter(),
+      presenter: CompositePushNotificationPresenter([
+        LocalPushNotificationPresenter(showForegroundNotification: false),
+        InAppPushNotificationPresenter(
+          controller: _pushNotificationBannerController,
+        ),
+      ]),
       routeHandler: _router.go,
     );
 
@@ -92,6 +96,7 @@ class _SuperAppState extends State<SuperApp> {
     _sessionProvider.dispose();
     _localeProvider.dispose();
     unawaited(_pushNotificationCoordinator.dispose());
+    unawaited(_pushNotificationBannerController.dispose());
     super.dispose();
   }
 
@@ -117,13 +122,16 @@ class _SuperAppState extends State<SuperApp> {
             routerConfig: _router,
             locale: localeProvider.locale,
             builder: (context, child) {
-              return _DismissKeyboardOnTap(
-                child: AppKeyboardDismissOnScroll(
-                  child: _PushRegistrationBridge(
-                    registrationService: _pushRegistrationService,
-                    child: _PresenceHeartbeatBridge(
-                      child: _AttendanceSyncBridge(
-                        child: child ?? const SizedBox.shrink(),
+              return PushNotificationBannerHost(
+                controller: _pushNotificationBannerController,
+                child: _DismissKeyboardOnTap(
+                  child: AppKeyboardDismissOnScroll(
+                    child: _PushRegistrationBridge(
+                      registrationService: _pushRegistrationService,
+                      child: _PresenceHeartbeatBridge(
+                        child: _AttendanceSyncBridge(
+                          child: child ?? const SizedBox.shrink(),
+                        ),
                       ),
                     ),
                   ),
@@ -186,10 +194,8 @@ class _PushRegistrationBridgeState extends State<_PushRegistrationBridge>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _tokenRefreshSubscription =
-        widget.registrationService.tokenRefreshes.listen(
-      (_) => _scheduleRegistration(force: true),
-    );
+    _tokenRefreshSubscription = widget.registrationService.tokenRefreshes
+        .listen((_) => _scheduleRegistration(force: true));
   }
 
   @override
