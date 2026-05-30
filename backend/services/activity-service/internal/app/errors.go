@@ -45,6 +45,7 @@ var (
 	ErrBlockedURLDetected          = errors.New("blocked url detected")
 	ErrActivityCreationRateLimited = errors.New("activity creation rate limited")
 	ErrFraudRejected               = errors.New("activity action rejected by fraud policy")
+	ErrTrustPolicyRejected         = errors.New("activity action rejected by trust policy")
 
 	ErrActivityLocationIncomplete             = errors.New("activity location is incomplete")
 	ErrActivityLocationCoordinatesRequired    = errors.New("activity location coordinates are required")

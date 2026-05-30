@@ -20,6 +20,7 @@ func scanFile(row rowScanner) (*model.File, error) {
 		visibility       string
 		purpose          string
 		status           string
+		policyStatus     string
 		ownerType        *string
 		ownerID          *uuid.UUID
 		uploadedByUserID *uuid.UUID
@@ -44,6 +45,9 @@ func scanFile(row rowScanner) (*model.File, error) {
 		&ownerID,
 		&uploadedByUserID,
 		&file.UploadExpiresAt,
+		&policyStatus,
+		&file.PolicyReasonCode,
+		&file.PolicyDecisionID,
 		&file.IsDeleted,
 		&file.DeletedAt,
 		&file.CreatedAt,
@@ -59,6 +63,10 @@ func scanFile(row rowScanner) (*model.File, error) {
 	file.Visibility = enum.FileVisibility(visibility)
 	file.Purpose = enum.FilePurpose(purpose)
 	file.Status = enum.FileStatus(status)
+	file.PolicyStatus = model.FilePolicyStatus(policyStatus)
+	if file.PolicyStatus == "" {
+		file.PolicyStatus = model.FilePolicyAllowed
+	}
 	file.OwnerID = ownerID
 	file.UploadedByUserID = uploadedByUserID
 

@@ -1,0 +1,113 @@
+syntax = "proto3";
+
+package trust.v1;
+
+option go_package = "github.com/dkhvan-dev/flyfy/proto/gen/go/trust/v1;trustv1";
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+service TrustService {
+  rpc CheckActionPolicy(CheckActionPolicyRequest) returns (CheckActionPolicyResponse);
+  rpc ApplyUserRestrictionEvent(ApplyUserRestrictionEventRequest) returns (ApplyUserRestrictionEventResponse);
+  rpc GetTrustProfile(GetTrustProfileRequest) returns (GetTrustProfileResponse);
+}
+
+enum PolicyAction {
+  POLICY_ACTION_UNSPECIFIED = 0;
+  POLICY_ACTION_ACTIVITY_CREATE = 1;
+  POLICY_ACTION_TOUR_PUBLISH = 2;
+  POLICY_ACTION_CHAT_SEND = 3;
+  POLICY_ACTION_FILE_UPLOAD = 4;
+  POLICY_ACTION_FILE_BIND = 5;
+  POLICY_ACTION_PAYOUT_REQUEST = 6;
+  POLICY_ACTION_GUIDE_APPLICATION_SUBMIT = 7;
+}
+
+enum PolicyDecision {
+  POLICY_DECISION_UNSPECIFIED = 0;
+  POLICY_DECISION_ALLOW = 1;
+  POLICY_DECISION_DENY = 2;
+  POLICY_DECISION_REVIEW = 3;
+  POLICY_DECISION_QUARANTINE = 4;
+  POLICY_DECISION_PENDING = 5;
+}
+
+enum TrustBand {
+  TRUST_BAND_UNSPECIFIED = 0;
+  TRUST_BAND_NEW = 1;
+  TRUST_BAND_LOW = 2;
+  TRUST_BAND_NORMAL = 3;
+  TRUST_BAND_TRUSTED = 4;
+  TRUST_BAND_RISKY = 5;
+  TRUST_BAND_BLOCKED = 6;
+}
+
+enum TrustStatus {
+  TRUST_STATUS_UNSPECIFIED = 0;
+  TRUST_STATUS_ACTIVE = 1;
+  TRUST_STATUS_UNDER_REVIEW = 2;
+  TRUST_STATUS_RESTRICTED = 3;
+}
+
+enum RestrictionEventType {
+  RESTRICTION_EVENT_TYPE_UNSPECIFIED = 0;
+  RESTRICTION_EVENT_TYPE_CREATED = 1;
+  RESTRICTION_EVENT_TYPE_LIFTED = 2;
+}
+
+message CheckActionPolicyRequest {
+  string user_id = 1;
+  PolicyAction action = 2;
+  string resource_type = 3;
+  string resource_id = 4;
+  string idempotency_key = 5;
+  google.protobuf.Struct metadata = 6;
+  google.protobuf.Timestamp requested_at = 7;
+}
+
+message CheckActionPolicyResponse {
+  string decision_id = 1;
+  PolicyDecision decision = 2;
+  string reason_code = 3;
+  string public_message_key = 4;
+  string internal_message = 5;
+  TrustBand trust_band = 6;
+  int32 score = 7;
+  repeated string restriction_ids = 8;
+}
+
+message ApplyUserRestrictionEventRequest {
+  string event_id = 1;
+  RestrictionEventType event_type = 2;
+  string restriction_id = 3;
+  string user_id = 4;
+  string case_id = 5;
+  string restriction_code = 6;
+  string reason_code = 7;
+  string created_by_staff_id = 8;
+  string lifted_by_staff_id = 9;
+  google.protobuf.Timestamp expires_at = 10;
+  google.protobuf.Timestamp occurred_at = 11;
+}
+
+message ApplyUserRestrictionEventResponse {
+  bool applied = 1;
+}
+
+message GetTrustProfileRequest {
+  string user_id = 1;
+}
+
+message TrustProfile {
+  string user_id = 1;
+  int32 score = 2;
+  TrustBand band = 3;
+  TrustStatus status = 4;
+  google.protobuf.Timestamp calculated_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message GetTrustProfileResponse {
+  TrustProfile profile = 1;
+}

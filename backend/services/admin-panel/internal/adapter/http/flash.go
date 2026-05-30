@@ -18,6 +18,10 @@ var flashTranslationKeys = map[string]string{
 	"attraction.updated":        "flash.attractionUpdated",
 	"attraction.mediaUpdated":   "flash.attractionMediaUpdated",
 	"fraud.blockReviewed":       "flash.fraudBlockReviewed",
+	"users.caseCreated":         "flash.userCaseCreated",
+	"users.caseResolved":        "flash.userCaseResolved",
+	"users.restrictionCreated":  "flash.userRestrictionCreated",
+	"users.restrictionLifted":   "flash.userRestrictionLifted",
 }
 
 func flashMessageFromRequest(locale string, r *http.Request) string {

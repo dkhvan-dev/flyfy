@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package user.v1;
 
+import "google/protobuf/timestamp.proto";
+
 option go_package = "github.com/dkhvan-dev/flyfy/proto/gen/go/user/v1;userv1";
 
 service UserService {
@@ -17,6 +19,8 @@ service UserService {
   rpc ListPublicUserIdsByCountryCodes(ListPublicUserIdsByCountryCodesRequest) returns (ListPublicUserIdsByCountryCodesResponse);
   rpc FilterFriendUserIds(FilterFriendUserIdsRequest) returns (FilterFriendUserIdsResponse);
   rpc GetUserBySubject(GetUserBySubjectRequest) returns (GetUserBySubjectResponse);
+  rpc ListAdminUsers(ListAdminUsersRequest) returns (ListAdminUsersResponse);
+  rpc GetAdminUserDetail(GetAdminUserDetailRequest) returns (GetAdminUserDetailResponse);
 }
 
 message GetOrCreateUserBySubjectRequest {
@@ -219,4 +223,57 @@ message GetUserBySubjectRequest {
 
 message GetUserBySubjectResponse {
   UserAggregate aggregate = 1;
+}
+
+message ListAdminUsersRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  string query = 3;
+  string status = 4;
+  string role = 5;
+  string country_code = 6;
+  google.protobuf.Timestamp created_from = 7;
+  google.protobuf.Timestamp created_to = 8;
+  google.protobuf.Timestamp last_active_from = 9;
+  google.protobuf.Timestamp last_active_to = 10;
+}
+
+message AdminUserListItem {
+  string user_id = 1;
+  string display_name = 2;
+  string masked_phone = 3;
+  string masked_email = 4;
+  string country_code = 5;
+  repeated string roles = 6;
+  string account_status = 7;
+  string guide_status = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp last_active_at = 10;
+}
+
+message ListAdminUsersResponse {
+  repeated AdminUserListItem users = 1;
+  string next_page_token = 2;
+}
+
+message GetAdminUserDetailRequest {
+  string user_id = 1;
+}
+
+message AdminUserDetail {
+  string user_id = 1;
+  string display_name = 2;
+  string masked_phone = 3;
+  string masked_email = 4;
+  string country_code = 5;
+  repeated string roles = 6;
+  string account_status = 7;
+  string guide_status = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+  google.protobuf.Timestamp last_active_at = 11;
+}
+
+message GetAdminUserDetailResponse {
+  AdminUserDetail user = 1;
 }

@@ -2675,7 +2675,7 @@ func TestUpdateGuideScheduleSlotReschedulesWithSelectedOffer(t *testing.T) {
 	newOfferID := uuid.New()
 	newProductID := uuid.New()
 	newLegacyExcursionID := uuid.New()
-	startAt := time.Date(2026, 5, 29, 9, 30, 0, 0, time.UTC)
+	startAt := time.Now().UTC().Add(24 * time.Hour).Truncate(time.Minute)
 	repo := &excursionRepoStub{
 		gotScheduleSlot: &model.ExcursionScheduleSlot{
 			ID:             slotID,

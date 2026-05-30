@@ -10,6 +10,7 @@ var (
 
 	ErrInvalidUserID      = errors.New("invalid user id")
 	ErrInvalidSubjectID   = errors.New("invalid auth subject id")
+	ErrInvalidPageToken   = errors.New("invalid page token")
 	ErrUserAlreadyExists  = errors.New("user already exists")
 	ErrRoleAlreadyGranted = errors.New("role already granted")
 

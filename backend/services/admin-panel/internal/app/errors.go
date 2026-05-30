@@ -18,5 +18,6 @@ var (
 	ErrDuplicateDecision      = port.ErrDuplicateDecision
 	ErrModerationCaseConflict = port.ErrModerationCaseConflict
 	ErrModerationCaseNotFound = errors.New("moderation case not found")
+	ErrUserNotFound           = errors.New("user not found")
 	ErrAttractionNotFound     = errors.New("attraction not found")
 )

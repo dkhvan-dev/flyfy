@@ -1,6 +1,7 @@
 FROM golang:1.26-alpine AS build
 
 WORKDIR /src
+COPY proto /proto
 COPY backend/services/admin-panel/go.mod backend/services/admin-panel/go.sum* ./
 RUN go mod download
 

@@ -183,6 +183,9 @@ func NewRenderer() (*Renderer, error) {
 		"attractionCountry": func(locale any, countryCode string) string {
 			return countryText(fmt.Sprint(locale), countryCode)
 		},
+		"countryWithCode": func(locale any, countryCode string) string {
+			return countryTextWithCode(fmt.Sprint(locale), countryCode)
+		},
 		"attractionCityName": func(locale any, cityID string) string {
 			return attractionCityNameText(fmt.Sprint(locale), cityID)
 		},
@@ -210,6 +213,9 @@ func NewRenderer() (*Renderer, error) {
 		"moderationReasonOptions": func(locale any) []moderationReasonOption {
 			return moderationReasonCodeOptions(fmt.Sprint(locale))
 		},
+		"selectedModerationReasonOptions": func(locale any, selected any) []moderationReasonOption {
+			return moderationReasonCodeOptionsWithSelected(fmt.Sprint(locale), fmt.Sprint(selected))
+		},
 		"itineraryTitle": func(locale any, item model.ExcursionItineraryItem) string {
 			return itineraryTitleText(fmt.Sprint(locale), item)
 		},
@@ -229,15 +235,15 @@ func NewRenderer() (*Renderer, error) {
 		},
 		"statusClass": func(status any) string {
 			switch strings.ToUpper(strings.TrimSpace(fmt.Sprint(status))) {
-			case "OPEN", "PENDING_REVIEW", "SUBMITTED", "FLAGGED", "REVIEW", "CHALLENGE", "ESCALATED":
+			case "OPEN", "PENDING_REVIEW", "SUBMITTED", "FLAGGED", "REVIEW", "CHALLENGE", "ESCALATED", "WAITING_USER", "WARNING", "REQUEST_VERIFICATION":
 				return "badge badge-warn"
 			case "IN_REVIEW", "UNDER_REVIEW", "DRAFT":
 				return "badge badge-info"
-			case "APPROVED", "PUBLISHED", "ACTIVE", "ENROLLMENT_OPEN", "CLEARED", "ALLOW", "FALSE_POSITIVE":
+			case "APPROVED", "PUBLISHED", "ACTIVE", "ENROLLMENT_OPEN", "CLEARED", "ALLOW", "FALSE_POSITIVE", "RESOLVED", "NO_ACTION", "REMOVE_RESTRICTION":
 				return "badge badge-success"
-			case "REJECTED", "REVOKED", "DISABLED", "LOCKED", "HIDDEN_BY_MODERATION", "BLOCK", "CONFIRMED_FRAUD":
+			case "REJECTED", "REVOKED", "DISABLED", "LOCKED", "HIDDEN_BY_MODERATION", "BLOCK", "CONFIRMED_FRAUD", "SUSPEND", "PERMANENT_BLOCK":
 				return "badge badge-danger"
-			case "SUPERSEDED":
+			case "SUPERSEDED", "DISMISSED", "INTERNAL_NOTE":
 				return "badge"
 			default:
 				return "badge"

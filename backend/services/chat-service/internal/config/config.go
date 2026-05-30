@@ -21,6 +21,7 @@ type Config struct {
 	UserService     UserServiceConfig
 	ActivityService ActivityServiceConfig
 	StickerService  StickerServiceConfig
+	Trust           TrustServiceConfig
 }
 
 type AppConfig struct {
@@ -117,6 +118,12 @@ type StickerServiceConfig struct {
 	HTTPURL              string        `env:"STICKER_SERVICE_HTTP_URL, default=http://sticker-service:8092"`
 	Timeout              time.Duration `env:"STICKER_SERVICE_TIMEOUT, default=5s"`
 	InternalServiceToken string        `env:"STICKER_SERVICE_INTERNAL_SERVICE_TOKEN"`
+}
+
+type TrustServiceConfig struct {
+	Enabled bool          `env:"TRUST_POLICY_ENABLED, default=true"`
+	Target  string        `env:"TRUST_SERVICE_GRPC_TARGET, default=trust-service:9096"`
+	Timeout time.Duration `env:"TRUST_SERVICE_TIMEOUT, default=250ms"`
 }
 
 func (s StickerServiceConfig) EffectiveInternalServiceToken(fallback string) string {

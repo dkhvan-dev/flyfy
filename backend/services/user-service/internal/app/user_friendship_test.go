@@ -435,6 +435,20 @@ func (r *friendshipTestRepository) GetUserBySubject(_ context.Context, subject s
 	return r.users[userID], nil
 }
 
+func (r *friendshipTestRepository) ListAdminUsers(
+	context.Context,
+	model.AdminUserListFilter,
+) ([]model.AdminUserListItem, string, error) {
+	return nil, "", nil
+}
+
+func (r *friendshipTestRepository) GetAdminUserDetail(
+	context.Context,
+	uuid.UUID,
+) (model.AdminUserDetail, error) {
+	return model.AdminUserDetail{}, ErrUserNotFound
+}
+
 func (r *friendshipTestRepository) GetProfileByUserID(_ context.Context, userID uuid.UUID) (*model.UserProfile, error) {
 	return r.profileForUserID(userID), nil
 }

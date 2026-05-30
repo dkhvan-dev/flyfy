@@ -320,6 +320,50 @@ services:
       - flyfy-network
 
   # ============================================
+  # Trust Service PostgreSQL
+  # ============================================
+  trust-postgres:
+    image: postgres:17-alpine
+    container_name: trust-postgres
+    environment:
+      POSTGRES_DB: trust_service
+      POSTGRES_USER: trust_service
+      POSTGRES_PASSWORD: trust_secret_dev
+    ports:
+      - "5447:5432"
+    volumes:
+      - trust_postgres_data:/var/lib/postgresql/data
+      - ../backend/services/trust-service/migrations:/migrations/trust-service:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trust_service -d trust_service"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  trust-postgres-migrator:
+    image: postgres:17-alpine
+    container_name: trust-postgres-migrator
+    environment:
+      PGHOST: trust-postgres
+      PGPORT: 5432
+      POSTGRES_DB: trust_service
+      POSTGRES_USER: trust_service
+      POSTGRES_PASSWORD: trust_secret_dev
+    volumes:
+      - ./init-scripts/015_trust_service_migrate.sh:/usr/local/bin/015_trust_service_migrate.sh:ro
+      - ../backend/services/trust-service/migrations:/migrations/trust-service:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/015_trust_service_migrate.sh"]
+    depends_on:
+      trust-postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - flyfy-network
+
+  # ============================================
   # Stories PostgreSQL
   # ============================================
   stories-postgres:
@@ -602,6 +646,8 @@ services:
         condition: service_completed_successfully
       anti-fraud-service:
         condition: service_started
+      trust-service:
+        condition: service_started
     ports:
       - "8083:8083"
       - "9093:9093"
@@ -650,6 +696,10 @@ services:
       ANTI_FRAUD_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       ANTI_FRAUD_SIGNAL_HASH_KEY: dev-anti-fraud-signal-hash-key-change-me
       ANTI_FRAUD_TIMEOUT: 800ms
+
+      TRUST_POLICY_ENABLED: "true"
+      TRUST_SERVICE_GRPC_TARGET: dns:///trust-service:9096
+      TRUST_SERVICE_TIMEOUT: 250ms
     restart: unless-stopped
     networks:
       - flyfy-network
@@ -785,6 +835,8 @@ services:
         condition: service_started
       anti-fraud-service:
         condition: service_started
+      trust-service:
+        condition: service_started
     ports:
       - "8086:8086"
       - "9096:9096"
@@ -826,6 +878,10 @@ services:
       ANTI_FRAUD_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       ANTI_FRAUD_SIGNAL_HASH_KEY: dev-anti-fraud-signal-hash-key-change-me
       ANTI_FRAUD_TIMEOUT: 800ms
+
+      TRUST_POLICY_ENABLED: "true"
+      TRUST_SERVICE_GRPC_TARGET: dns:///trust-service:9096
+      TRUST_SERVICE_TIMEOUT: 250ms
     restart: unless-stopped
     networks:
       - flyfy-network
@@ -880,6 +936,8 @@ services:
         condition: service_healthy
       anti-fraud-service:
         condition: service_started
+      trust-service:
+        condition: service_started
     ports:
       - "8093:8093"
     environment:
@@ -918,6 +976,10 @@ services:
       ANTI_FRAUD_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       ANTI_FRAUD_SIGNAL_HASH_KEY: dev-anti-fraud-signal-hash-key-change-me
       ANTI_FRAUD_TIMEOUT: 800ms
+
+      TRUST_POLICY_ENABLED: "true"
+      TRUST_SERVICE_GRPC_TARGET: dns:///trust-service:9096
+      TRUST_SERVICE_TIMEOUT: 250ms
     restart: unless-stopped
     networks:
       - flyfy-network
@@ -943,6 +1005,8 @@ services:
         condition: service_started
       anti-fraud-service:
         condition: service_started
+      trust-service:
+        condition: service_started
     ports:
       - "8095:8095"
     environment:
@@ -962,6 +1026,12 @@ services:
       ACTIVITY_SERVICE_URL: http://activity-service:8086
       GUIDE_SERVICE_URL: http://guide-service:8085
       CHAT_SERVICE_URL: http://chat-service:8088
+      TRUST_SERVICE_GRPC_TARGET: dns:///trust-service:9096
+      TRUST_SERVICE_TIMEOUT: 3s
+      TRUST_OUTBOX_POLL_INTERVAL: 5s
+      TRUST_OUTBOX_BATCH_SIZE: 50
+      TRUST_OUTBOX_MAX_ATTEMPTS: 20
+      TRUST_OUTBOX_BASE_BACKOFF: 1s
       ANTI_FRAUD_SERVICE_URL: http://anti-fraud-service:8096
       ANTI_FRAUD_SERVICE_TIMEOUT: 5s
       BOOTSTRAP_SUPERADMIN_EMAIL: admin@flyfy.local
@@ -1044,6 +1114,8 @@ services:
         condition: service_started
       sticker-service:
         condition: service_started
+      trust-service:
+        condition: service_started
     ports:
       - "8088:8088"
       - "9097:9097"
@@ -1085,6 +1157,10 @@ services:
       STICKER_SERVICE_HTTP_URL: http://sticker-service:8092
       STICKER_SERVICE_TIMEOUT: 5s
       STICKER_SERVICE_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+
+      TRUST_POLICY_ENABLED: "true"
+      TRUST_SERVICE_GRPC_TARGET: dns:///trust-service:9096
+      TRUST_SERVICE_TIMEOUT: 250ms
     restart: unless-stopped
     networks:
       - flyfy-network
@@ -1427,6 +1503,42 @@ services:
       - flyfy-network
 
   # ============================================
+  # Trust Service
+  # ============================================
+  trust-service:
+    build:
+      context: ..
+      dockerfile: ./backend/services/trust-service/Dockerfile
+    container_name: trust-service
+    depends_on:
+      trust-postgres:
+        condition: service_healthy
+      trust-postgres-migrator:
+        condition: service_completed_successfully
+    ports:
+      - "9098:9096"
+    environment:
+      APP_ENV: development
+      GRPC_PORT: 9096
+      LOG_LEVEL: debug
+
+      POSTGRES_HOST: trust-postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: trust_service
+      POSTGRES_PASSWORD: trust_secret_dev
+      POSTGRES_DB: trust_service
+      POSTGRES_SSLMODE: disable
+      POSTGRES_MAX_OPEN_CONNS: 10
+      POSTGRES_MIN_OPEN_CONNS: 2
+      POSTGRES_MAX_CONN_LIFETIME: 1h
+      POSTGRES_MAX_CONN_IDLE_TIME: 30m
+
+      INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  # ============================================
   # Sticker Service
   # ============================================
   sticker-service:
@@ -1653,6 +1765,7 @@ volumes:
   activity_postgres_data:
   excursion_postgres_data:
   admin_postgres_data:
+  trust_postgres_data:
   stories_postgres_data:
   chat_postgres_data:
   nats_data:

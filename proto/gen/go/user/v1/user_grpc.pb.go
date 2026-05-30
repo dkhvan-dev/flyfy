@@ -31,6 +31,8 @@ const (
 	UserService_ListPublicUserIdsByCountryCodes_FullMethodName = "/user.v1.UserService/ListPublicUserIdsByCountryCodes"
 	UserService_FilterFriendUserIds_FullMethodName             = "/user.v1.UserService/FilterFriendUserIds"
 	UserService_GetUserBySubject_FullMethodName                = "/user.v1.UserService/GetUserBySubject"
+	UserService_ListAdminUsers_FullMethodName                  = "/user.v1.UserService/ListAdminUsers"
+	UserService_GetAdminUserDetail_FullMethodName              = "/user.v1.UserService/GetAdminUserDetail"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -49,6 +51,8 @@ type UserServiceClient interface {
 	ListPublicUserIdsByCountryCodes(ctx context.Context, in *ListPublicUserIdsByCountryCodesRequest, opts ...grpc.CallOption) (*ListPublicUserIdsByCountryCodesResponse, error)
 	FilterFriendUserIds(ctx context.Context, in *FilterFriendUserIdsRequest, opts ...grpc.CallOption) (*FilterFriendUserIdsResponse, error)
 	GetUserBySubject(ctx context.Context, in *GetUserBySubjectRequest, opts ...grpc.CallOption) (*GetUserBySubjectResponse, error)
+	ListAdminUsers(ctx context.Context, in *ListAdminUsersRequest, opts ...grpc.CallOption) (*ListAdminUsersResponse, error)
+	GetAdminUserDetail(ctx context.Context, in *GetAdminUserDetailRequest, opts ...grpc.CallOption) (*GetAdminUserDetailResponse, error)
 }
 
 type userServiceClient struct {
@@ -179,6 +183,26 @@ func (c *userServiceClient) GetUserBySubject(ctx context.Context, in *GetUserByS
 	return out, nil
 }
 
+func (c *userServiceClient) ListAdminUsers(ctx context.Context, in *ListAdminUsersRequest, opts ...grpc.CallOption) (*ListAdminUsersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAdminUsersResponse)
+	err := c.cc.Invoke(ctx, UserService_ListAdminUsers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) GetAdminUserDetail(ctx context.Context, in *GetAdminUserDetailRequest, opts ...grpc.CallOption) (*GetAdminUserDetailResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAdminUserDetailResponse)
+	err := c.cc.Invoke(ctx, UserService_GetAdminUserDetail_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility.
@@ -195,6 +219,8 @@ type UserServiceServer interface {
 	ListPublicUserIdsByCountryCodes(context.Context, *ListPublicUserIdsByCountryCodesRequest) (*ListPublicUserIdsByCountryCodesResponse, error)
 	FilterFriendUserIds(context.Context, *FilterFriendUserIdsRequest) (*FilterFriendUserIdsResponse, error)
 	GetUserBySubject(context.Context, *GetUserBySubjectRequest) (*GetUserBySubjectResponse, error)
+	ListAdminUsers(context.Context, *ListAdminUsersRequest) (*ListAdminUsersResponse, error)
+	GetAdminUserDetail(context.Context, *GetAdminUserDetailRequest) (*GetAdminUserDetailResponse, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -240,6 +266,12 @@ func (UnimplementedUserServiceServer) FilterFriendUserIds(context.Context, *Filt
 }
 func (UnimplementedUserServiceServer) GetUserBySubject(context.Context, *GetUserBySubjectRequest) (*GetUserBySubjectResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetUserBySubject not implemented")
+}
+func (UnimplementedUserServiceServer) ListAdminUsers(context.Context, *ListAdminUsersRequest) (*ListAdminUsersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListAdminUsers not implemented")
+}
+func (UnimplementedUserServiceServer) GetAdminUserDetail(context.Context, *GetAdminUserDetailRequest) (*GetAdminUserDetailResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetAdminUserDetail not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 func (UnimplementedUserServiceServer) testEmbeddedByValue()                     {}
@@ -478,6 +510,42 @@ func _UserService_GetUserBySubject_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_ListAdminUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAdminUsersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ListAdminUsers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ListAdminUsers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ListAdminUsers(ctx, req.(*ListAdminUsersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_GetAdminUserDetail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAdminUserDetailRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetAdminUserDetail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetAdminUserDetail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetAdminUserDetail(ctx, req.(*GetAdminUserDetailRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -532,6 +600,14 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUserBySubject",
 			Handler:    _UserService_GetUserBySubject_Handler,
+		},
+		{
+			MethodName: "ListAdminUsers",
+			Handler:    _UserService_ListAdminUsers_Handler,
+		},
+		{
+			MethodName: "GetAdminUserDetail",
+			Handler:    _UserService_GetAdminUserDetail_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

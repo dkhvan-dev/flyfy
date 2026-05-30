@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/dkhvan-dev/flyfy/backend/pkg/trustpolicy/grpcclient"
 	grpcadapter "github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/adapter/grpc"
 	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/adapter/http"
 	natsadapter "github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/adapter/nats"
@@ -103,6 +104,20 @@ func main() {
 		stickerResolver,
 		activityResolver,
 	)
+	var trustClient *grpcclient.Client
+	if cfg.Trust.Enabled {
+		trustClient, err = grpcclient.New(
+			cfg.Trust.Target,
+			cfg.Security.InternalServiceToken,
+			cfg.App.Name,
+			cfg.Trust.Timeout,
+		)
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to initialize trust-service client")
+		}
+		defer trustClient.Close()
+		messageUC.SetTrustPolicyClient(trustClient)
+	}
 
 	// WebSocket hub
 	hub := ws.NewHub()

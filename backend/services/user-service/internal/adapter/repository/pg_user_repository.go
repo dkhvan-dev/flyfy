@@ -232,6 +232,216 @@ func (r *PGUserRepository) GetUserBySubject(ctx context.Context, subject string)
 	return &item, nil
 }
 
+func (r *PGUserRepository) ListAdminUsers(
+	ctx context.Context,
+	filter model.AdminUserListFilter,
+) ([]model.AdminUserListItem, string, error) {
+	if filter.PageSize <= 0 {
+		filter.PageSize = 50
+	}
+	if filter.PageSize > 100 {
+		filter.PageSize = 100
+	}
+
+	cursor, err := model.DecodeAdminUserPageToken(filter.PageToken)
+	if err != nil {
+		return nil, "", app.ErrInvalidPageToken
+	}
+
+	query, args := buildAdminUsersQuery(filter, cursor, filter.PageSize+1)
+	rows, err := r.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, "", fmt.Errorf("query admin users: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]model.AdminUserListItem, 0, filter.PageSize)
+	for rows.Next() {
+		item, scanErr := scanAdminUserListItem(rows)
+		if scanErr != nil {
+			return nil, "", scanErr
+		}
+		items = append(items, item)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, "", err
+	}
+
+	nextToken := ""
+	if len(items) > filter.PageSize {
+		nextCursorItem := items[filter.PageSize-1]
+		items = items[:filter.PageSize]
+		nextToken, err = model.EncodeAdminUserPageToken(model.AdminUserPageToken{
+			CreatedAt: nextCursorItem.CreatedAt,
+			ID:        nextCursorItem.UserID,
+		})
+		if err != nil {
+			return nil, "", fmt.Errorf("encode admin users page token: %w", err)
+		}
+	}
+
+	return items, nextToken, nil
+}
+
+func (r *PGUserRepository) GetAdminUserDetail(
+	ctx context.Context,
+	userID uuid.UUID,
+) (model.AdminUserDetail, error) {
+	const query = `
+		SELECT
+			u.id,
+			COALESCE(
+				NULLIF(BTRIM(p.display_name), ''),
+				NULLIF(BTRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''),
+				u.id::text
+			) AS display_name,
+			COALESCE(u.primary_phone, '') AS primary_phone,
+			COALESCE(u.primary_email, '') AS primary_email,
+			COALESCE(p.country_code, '') AS country_code,
+			COALESCE(array_remove(array_agg(DISTINCT r.role), NULL), ARRAY[]::text[]) AS roles,
+			u.status,
+			'' AS guide_status,
+			u.created_at,
+			u.updated_at,
+			u.last_seen_at
+		FROM users u
+		LEFT JOIN user_profiles p ON p.user_id = u.id
+		LEFT JOIN user_system_roles r ON r.user_id = u.id
+		WHERE u.id = $1
+		  AND u.is_deleted = FALSE
+		GROUP BY u.id, p.display_name, p.first_name, p.last_name, p.country_code
+		LIMIT 1
+	`
+
+	row := r.pool.QueryRow(ctx, query, userID)
+
+	var item model.AdminUserDetail
+	err := row.Scan(
+		&item.UserID,
+		&item.DisplayName,
+		&item.MaskedPhone,
+		&item.MaskedEmail,
+		&item.CountryCode,
+		&item.Roles,
+		&item.AccountStatus,
+		&item.GuideStatus,
+		&item.CreatedAt,
+		&item.UpdatedAt,
+		&item.LastActiveAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return model.AdminUserDetail{}, app.ErrUserNotFound
+		}
+		return model.AdminUserDetail{}, fmt.Errorf("select admin user detail: %w", err)
+	}
+
+	return item, nil
+}
+
+func buildAdminUsersQuery(
+	filter model.AdminUserListFilter,
+	cursor model.AdminUserPageToken,
+	limit int,
+) (string, []any) {
+	args := make([]any, 0, 10)
+	where := []string{"u.is_deleted = FALSE"}
+	addArg := func(value any) string {
+		args = append(args, value)
+		return fmt.Sprintf("$%d", len(args))
+	}
+
+	if q := strings.TrimSpace(filter.Query); q != "" {
+		placeholder := addArg(q)
+		where = append(where, fmt.Sprintf(`(
+			u.id::text = %s
+			OR COALESCE(u.primary_phone, '') ILIKE '%%' || %s || '%%'
+			OR COALESCE(u.primary_email, '') ILIKE '%%' || %s || '%%'
+			OR COALESCE(p.display_name, '') ILIKE '%%' || %s || '%%'
+			OR COALESCE(p.first_name, '') ILIKE '%%' || %s || '%%'
+			OR COALESCE(p.last_name, '') ILIKE '%%' || %s || '%%'
+			OR BTRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')) ILIKE '%%' || %s || '%%'
+		)`, placeholder, placeholder, placeholder, placeholder, placeholder, placeholder, placeholder))
+	}
+
+	if status := strings.TrimSpace(filter.Status); status != "" {
+		where = append(where, "u.status = "+addArg(status))
+	}
+	if role := strings.TrimSpace(filter.Role); role != "" {
+		where = append(where, "EXISTS (SELECT 1 FROM user_system_roles rr WHERE rr.user_id = u.id AND rr.role = "+addArg(role)+")")
+	}
+	if countryCode := strings.ToUpper(strings.TrimSpace(filter.CountryCode)); countryCode != "" {
+		where = append(where, "UPPER(COALESCE(p.country_code, '')) = "+addArg(countryCode))
+	}
+	if filter.CreatedFrom != nil {
+		where = append(where, "u.created_at >= "+addArg(*filter.CreatedFrom))
+	}
+	if filter.CreatedTo != nil {
+		where = append(where, "u.created_at <= "+addArg(*filter.CreatedTo))
+	}
+	if filter.LastActiveFrom != nil {
+		where = append(where, "u.last_seen_at >= "+addArg(*filter.LastActiveFrom))
+	}
+	if filter.LastActiveTo != nil {
+		where = append(where, "u.last_seen_at <= "+addArg(*filter.LastActiveTo))
+	}
+	if cursor.ID != uuid.Nil && !cursor.CreatedAt.IsZero() {
+		createdAtPlaceholder := addArg(cursor.CreatedAt)
+		idPlaceholder := addArg(cursor.ID)
+		where = append(where, fmt.Sprintf("(u.created_at, u.id) < (%s, %s)", createdAtPlaceholder, idPlaceholder))
+	}
+
+	limitPlaceholder := addArg(limit)
+	query := `
+		SELECT
+			u.id,
+			COALESCE(
+				NULLIF(BTRIM(p.display_name), ''),
+				NULLIF(BTRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''),
+				u.id::text
+			) AS display_name,
+			COALESCE(u.primary_phone, '') AS primary_phone,
+			COALESCE(u.primary_email, '') AS primary_email,
+			COALESCE(p.country_code, '') AS country_code,
+			COALESCE(array_remove(array_agg(DISTINCT r.role), NULL), ARRAY[]::text[]) AS roles,
+			u.status,
+			'' AS guide_status,
+			u.created_at,
+			u.last_seen_at
+		FROM users u
+		LEFT JOIN user_profiles p ON p.user_id = u.id
+		LEFT JOIN user_system_roles r ON r.user_id = u.id
+		WHERE ` + strings.Join(where, "\n\t\t  AND ") + `
+		GROUP BY u.id, p.display_name, p.first_name, p.last_name, p.country_code
+		ORDER BY u.created_at DESC, u.id DESC
+		LIMIT ` + limitPlaceholder
+
+	return query, args
+}
+
+type adminUserListScanner interface {
+	Scan(dest ...any) error
+}
+
+func scanAdminUserListItem(row adminUserListScanner) (model.AdminUserListItem, error) {
+	var item model.AdminUserListItem
+	if err := row.Scan(
+		&item.UserID,
+		&item.DisplayName,
+		&item.MaskedPhone,
+		&item.MaskedEmail,
+		&item.CountryCode,
+		&item.Roles,
+		&item.AccountStatus,
+		&item.GuideStatus,
+		&item.CreatedAt,
+		&item.LastActiveAt,
+	); err != nil {
+		return model.AdminUserListItem{}, fmt.Errorf("scan admin user list item: %w", err)
+	}
+	return item, nil
+}
+
 func (r *PGUserRepository) IsDisplayNameTaken(
 	ctx context.Context,
 	displayName string,

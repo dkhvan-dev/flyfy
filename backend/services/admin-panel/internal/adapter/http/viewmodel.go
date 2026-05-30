@@ -3,7 +3,9 @@ package http
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -235,6 +237,55 @@ type AuditEventView struct {
 	RequestText    string
 }
 
+type AdminUsersFilterViewData struct {
+	Search      string
+	Status      string
+	Role        string
+	CountryCode string
+	PageToken   string
+	PageSize    int
+	Query       string
+}
+
+type AdminUsersListViewData struct {
+	Items       []AdminUserListItemView
+	Filters     AdminUsersFilterViewData
+	NextPageURL string
+	ResetURL    string
+	CanModerate bool
+	CanRestrict bool
+}
+
+type AdminUserListItemView struct {
+	Item      model.AdminUserListItem
+	DetailURL string
+	RolesText string
+	TrustText string
+}
+
+type AdminUserDetailViewData struct {
+	User               model.AdminUserDetail
+	Cases              []UserModerationCaseView
+	ActiveRestrictions []UserManualRestrictionView
+	CanModerate        bool
+	CanRestrict        bool
+	CaseActionURL      string
+	RestrictionURL     string
+	PriorityOptions    []string
+	DecisionOptions    []string
+	RestrictionOptions []string
+}
+
+type UserModerationCaseView struct {
+	Item       model.UserModerationCase
+	ResolveURL string
+}
+
+type UserManualRestrictionView struct {
+	Item    model.UserManualRestriction
+	LiftURL string
+}
+
 func NewStaffListViewData(actor *model.StaffUser, staff []*model.StaffUser, temporaryPassword ...string) StaffListViewData {
 	value := ""
 	if len(temporaryPassword) > 0 {
@@ -289,6 +340,68 @@ func NewAuditViewData(locale string, events []*model.AuditEvent) AuditViewData {
 		items = append(items, newAuditEventView(locale, event))
 	}
 	return AuditViewData{Events: events, Items: items}
+}
+
+func NewAdminUsersListViewData(
+	page model.AdminUserListPage,
+	filters AdminUsersFilterViewData,
+	staff *model.StaffUser,
+) AdminUsersListViewData {
+	filters = normalizeAdminUsersFilter(filters)
+	items := make([]AdminUserListItemView, 0, len(page.Items))
+	for _, item := range page.Items {
+		items = append(items, AdminUserListItemView{
+			Item:      item,
+			DetailURL: "/admin/users/" + item.UserID.String(),
+			RolesText: strings.Join(item.Roles, ", "),
+			TrustText: adminUserTrustText(item.TrustBand, item.TrustScore),
+		})
+	}
+	nextPageURL := ""
+	if strings.TrimSpace(page.NextPageToken) != "" {
+		nextFilters := filters
+		nextFilters.PageToken = page.NextPageToken
+		nextPageURL = adminUsersListURL(nextFilters)
+	}
+	return AdminUsersListViewData{
+		Items:       items,
+		Filters:     filters,
+		NextPageURL: nextPageURL,
+		ResetURL:    "/admin/users",
+		CanModerate: staff != nil && staff.HasPermission(enum.PermissionUsersModerate),
+		CanRestrict: staff != nil && staff.HasPermission(enum.PermissionUsersRestrict),
+	}
+}
+
+func NewAdminUserDetailViewData(page model.AdminUserDetailPage, staff *model.StaffUser) AdminUserDetailViewData {
+	userID := page.User.UserID.String()
+	baseURL := "/admin/users/" + userID
+	cases := make([]UserModerationCaseView, 0, len(page.ModerationCases))
+	for _, item := range page.ModerationCases {
+		cases = append(cases, UserModerationCaseView{
+			Item:       item,
+			ResolveURL: baseURL + "/moderation-cases/" + item.ID.String() + "/resolve",
+		})
+	}
+	restrictions := make([]UserManualRestrictionView, 0, len(page.ActiveRestrictions))
+	for _, item := range page.ActiveRestrictions {
+		restrictions = append(restrictions, UserManualRestrictionView{
+			Item:    item,
+			LiftURL: baseURL + "/restrictions/" + item.ID.String() + "/lift",
+		})
+	}
+	return AdminUserDetailViewData{
+		User:               page.User,
+		Cases:              cases,
+		ActiveRestrictions: restrictions,
+		CanModerate:        staff != nil && staff.HasPermission(enum.PermissionUsersModerate),
+		CanRestrict:        staff != nil && staff.HasPermission(enum.PermissionUsersRestrict),
+		CaseActionURL:      baseURL + "/moderation-cases",
+		RestrictionURL:     baseURL + "/restrictions",
+		PriorityOptions:    []string{"NORMAL", "HIGH", "CRITICAL", "LOW"},
+		DecisionOptions:    []string{"NO_ACTION", "INTERNAL_NOTE", "WARNING", "REQUEST_VERIFICATION", "RESTRICT", "SUSPEND", "ESCALATE", "PERMANENT_BLOCK"},
+		RestrictionOptions: []string{"CHAT", "ACTIVITY_CREATION", "TOUR_PUBLISHING", "FILE_UPLOAD", "PAYOUT", "GUIDE_APPLICATION", "ACCOUNT_SUSPENSION"},
+	}
 }
 
 func NewGuideListViewData(items []model.GuideApplicationModerationItem) GuideListViewData {
@@ -543,6 +656,11 @@ func auditEntityTitle(locale string, event *model.AuditEvent, before auditStaffS
 		return translate(locale, "audit.entity.attraction")
 	case "fraud_assessment":
 		return translate(locale, "audit.entity.fraudAssessment")
+	case "user":
+		if event.EntityID != nil {
+			return fmt.Sprintf("%s %s", translate(locale, "audit.entity.user"), shortTemplateID(event.EntityID))
+		}
+		return translate(locale, "audit.entity.user")
 	default:
 		return translate(locale, "audit.entity.unknown")
 	}
@@ -613,6 +731,15 @@ func auditDetails(locale string, event *model.AuditEvent, before auditStaffSnaps
 		}
 		if value := auditMetadataValue(event.Metadata, "error"); value != "" {
 			details = append(details, fmt.Sprintf(translate(locale, "audit.detail.error"), value))
+		}
+	case "user.detail.viewed":
+		details = append(details, translate(locale, "audit.detail.userViewed"))
+	case "user_moderation.case.created", "user_moderation.case.resolved", "user_moderation.restriction.created", "user_moderation.restriction.lifted":
+		if reason := auditMetadataValue(event.Metadata, "reasonCode"); reason != "" {
+			details = append(details, fmt.Sprintf(translate(locale, "audit.detail.reason"), reason))
+		}
+		if decision := auditMetadataValue(event.Metadata, "decision"); decision != "" {
+			details = append(details, fmt.Sprintf(translate(locale, "audit.detail.moderationDecision"), translateStatus(locale, decision)))
 		}
 	}
 	if len(details) == 0 {
@@ -729,6 +856,64 @@ func auditRoleList(locale string, roles []enum.StaffRole) string {
 		labels = append(labels, translateRole(locale, role))
 	}
 	return strings.Join(labels, ", ")
+}
+
+func normalizeAdminUsersFilter(filters AdminUsersFilterViewData) AdminUsersFilterViewData {
+	filters.Search = strings.TrimSpace(filters.Search)
+	filters.Status = strings.ToUpper(strings.TrimSpace(filters.Status))
+	filters.Role = strings.TrimSpace(filters.Role)
+	filters.CountryCode = strings.ToUpper(strings.TrimSpace(filters.CountryCode))
+	filters.PageToken = strings.TrimSpace(filters.PageToken)
+	if filters.PageSize <= 0 {
+		filters.PageSize = 50
+	}
+	filters.Query = adminUsersQuery(filters)
+	return filters
+}
+
+func adminUsersListURL(filters AdminUsersFilterViewData) string {
+	query := adminUsersQuery(filters)
+	if query == "" {
+		return "/admin/users"
+	}
+	return "/admin/users?" + query
+}
+
+func adminUsersQuery(filters AdminUsersFilterViewData) string {
+	values := url.Values{}
+	if filters.Search != "" {
+		values.Set("q", filters.Search)
+	}
+	if filters.Status != "" {
+		values.Set("status", filters.Status)
+	}
+	if filters.Role != "" {
+		values.Set("role", filters.Role)
+	}
+	if filters.CountryCode != "" {
+		values.Set("country", filters.CountryCode)
+	}
+	if filters.PageToken != "" {
+		values.Set("page_token", filters.PageToken)
+	}
+	if filters.PageSize > 0 && filters.PageSize != 50 {
+		values.Set("page_size", strconv.Itoa(filters.PageSize))
+	}
+	return values.Encode()
+}
+
+func adminUserTrustText(band string, score *int) string {
+	band = strings.TrimSpace(band)
+	if score == nil {
+		if band == "" {
+			return "-"
+		}
+		return band
+	}
+	if band == "" {
+		return strconv.Itoa(*score)
+	}
+	return fmt.Sprintf("%s · %d", band, *score)
 }
 
 func sameRoleList(left []enum.StaffRole, right []enum.StaffRole) bool {

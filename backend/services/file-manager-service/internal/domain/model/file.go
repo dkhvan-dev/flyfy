@@ -29,7 +29,26 @@ var (
 	ErrOwnerTypeWithoutID    = errors.New("owner type provided without owner id")
 	ErrDeletedFileMutation   = errors.New("cannot mutate deleted file")
 	ErrEmptyUploadedByUserID = errors.New("uploaded_by_user_id cannot be empty uuid")
+	ErrInvalidPolicyStatus   = errors.New("invalid policy status")
 )
+
+type FilePolicyStatus string
+
+const (
+	FilePolicyAllowed     FilePolicyStatus = "ALLOWED"
+	FilePolicyQuarantined FilePolicyStatus = "QUARANTINED"
+	FilePolicyDenied      FilePolicyStatus = "DENIED"
+	FilePolicyPending     FilePolicyStatus = "PENDING"
+)
+
+func (s FilePolicyStatus) IsValid() bool {
+	switch s {
+	case FilePolicyAllowed, FilePolicyQuarantined, FilePolicyDenied, FilePolicyPending:
+		return true
+	default:
+		return false
+	}
+}
 
 type File struct {
 	ID                  uuid.UUID
@@ -50,6 +69,9 @@ type File struct {
 	OwnerID             *uuid.UUID
 	UploadedByUserID    *uuid.UUID
 	UploadExpiresAt     *time.Time
+	PolicyStatus        FilePolicyStatus
+	PolicyReasonCode    string
+	PolicyDecisionID    string
 	IsDeleted           bool
 	DeletedAt           *time.Time
 	CreatedAt           time.Time
@@ -95,6 +117,7 @@ func NewFile(params NewFileParams) (*File, error) {
 		OwnerID:          params.OwnerID,
 		UploadedByUserID: params.UploadedByUserID,
 		UploadExpiresAt:  params.UploadExpiresAt,
+		PolicyStatus:     FilePolicyAllowed,
 		IsDeleted:        false,
 		CreatedAt:        now,
 		UpdatedAt:        now,
@@ -154,7 +177,30 @@ func (f *File) Validate() error {
 	if f.UploadedByUserID != nil && *f.UploadedByUserID == uuid.Nil {
 		return ErrEmptyUploadedByUserID
 	}
+	if f.PolicyStatus == "" {
+		f.PolicyStatus = FilePolicyAllowed
+	}
+	if !f.PolicyStatus.IsValid() {
+		return ErrInvalidPolicyStatus
+	}
 
+	return nil
+}
+
+func (f *File) ApplyPolicyDecision(status FilePolicyStatus, reasonCode string, decisionID string) error {
+	if f.IsDeleted {
+		return ErrDeletedFileMutation
+	}
+	if status == "" {
+		status = FilePolicyAllowed
+	}
+	if !status.IsValid() {
+		return ErrInvalidPolicyStatus
+	}
+	f.PolicyStatus = status
+	f.PolicyReasonCode = strings.TrimSpace(reasonCode)
+	f.PolicyDecisionID = strings.TrimSpace(decisionID)
+	f.UpdatedAt = time.Now().UTC()
 	return nil
 }
 

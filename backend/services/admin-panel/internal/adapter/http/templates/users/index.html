@@ -1,0 +1,105 @@
+{{define "users/index"}}
+{{template "pageStart" .}}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "users.eyebrow"}}</p>
+      <h1>{{t .Locale "users.title"}}</h1>
+    </div>
+  </div>
+
+  <form class="filter-bar" method="get" action="/admin/users">
+    <div class="filter-grid">
+      <label>
+        <span>{{t .Locale "field.search"}}</span>
+        <input type="search" name="q" value="{{.Data.Filters.Search}}" placeholder="{{t .Locale "placeholder.searchUsers"}}">
+      </label>
+      <label>
+        <span>{{t .Locale "field.status"}}</span>
+        <select name="status">
+          <option value="">{{t .Locale "filter.status.all"}}</option>
+          <option value="ACTIVE" {{if eq .Data.Filters.Status "ACTIVE"}}selected{{end}}>{{statusText .Locale "ACTIVE"}}</option>
+          <option value="LOCKED" {{if eq .Data.Filters.Status "LOCKED"}}selected{{end}}>{{statusText .Locale "LOCKED"}}</option>
+          <option value="DISABLED" {{if eq .Data.Filters.Status "DISABLED"}}selected{{end}}>{{statusText .Locale "DISABLED"}}</option>
+        </select>
+      </label>
+      <label>
+        <span>{{t .Locale "field.role"}}</span>
+        <input type="search" name="role" value="{{.Data.Filters.Role}}" placeholder="{{t .Locale "placeholder.userRole"}}">
+      </label>
+      <label>
+        <span>{{t .Locale "field.country"}}</span>
+        <input type="search" name="country" value="{{.Data.Filters.CountryCode}}" placeholder="KZ" maxlength="2">
+      </label>
+      <label>
+        <span>{{t .Locale "field.pageSize"}}</span>
+        <select name="page_size">
+          <option value="25" {{if eq .Data.Filters.PageSize 25}}selected{{end}}>25</option>
+          <option value="50" {{if eq .Data.Filters.PageSize 50}}selected{{end}}>50</option>
+          <option value="100" {{if eq .Data.Filters.PageSize 100}}selected{{end}}>100</option>
+        </select>
+      </label>
+    </div>
+    <div class="filter-actions">
+      <button class="primary" type="submit">{{t .Locale "action.applyFilters"}}</button>
+      <a class="button" href="{{.Data.ResetURL}}">{{t .Locale "action.resetFilters"}}</a>
+    </div>
+  </form>
+
+  {{if .Data.Items}}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>{{t .Locale "table.user"}}</th>
+            <th>{{t .Locale "table.contact"}}</th>
+            <th>{{t .Locale "table.roles"}}</th>
+            <th>{{t .Locale "table.status"}}</th>
+            <th>{{t .Locale "users.openCases"}}</th>
+            <th>{{t .Locale "users.restrictions"}}</th>
+            <th>{{t .Locale "table.created"}}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .Data.Items}}
+            <tr>
+              <td>
+                <strong>{{if .Item.DisplayName}}{{.Item.DisplayName}}{{else}}{{t $.Locale "label.user"}}{{end}}</strong>
+                <span class="muted block"><code>{{shortID .Item.UserID}}</code> · {{.Item.CountryCode}}</span>
+                <span class="muted block">{{t $.Locale "label.trust"}}: {{.TrustText}}</span>
+              </td>
+              <td>
+                {{if .Item.MaskedPhone}}<span class="block">{{.Item.MaskedPhone}}</span>{{end}}
+                {{if .Item.MaskedEmail}}<span class="muted block">{{.Item.MaskedEmail}}</span>{{end}}
+                {{if and (not .Item.MaskedPhone) (not .Item.MaskedEmail)}}-{{end}}
+              </td>
+              <td>{{if .RolesText}}{{.RolesText}}{{else}}-{{end}}</td>
+              <td>
+                <span class="{{statusClass .Item.AccountStatus}}">{{statusText $.Locale .Item.AccountStatus}}</span>
+                {{if .Item.GuideStatus}}<span class="muted block">{{t $.Locale "label.guideStatus"}}: {{statusText $.Locale .Item.GuideStatus}}</span>{{end}}
+              </td>
+              <td>{{.Item.OpenModerationCaseCount}}</td>
+              <td>{{.Item.ActiveRestrictionCount}}</td>
+              <td>
+                {{formatTime .Item.CreatedAt (staffTimezone $.Staff)}}
+                {{if .Item.LastActiveAt}}<span class="muted block">{{t $.Locale "users.lastActive"}} {{formatTime .Item.LastActiveAt (staffTimezone $.Staff)}}</span>{{end}}
+              </td>
+              <td class="right"><a class="button" href="{{.DetailURL}}">{{t $.Locale "action.review"}}</a></td>
+            </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+    {{if .Data.NextPageURL}}
+      <nav class="pagination" aria-label="{{t .Locale "pagination.label"}}">
+        <span class="muted">{{t .Locale "users.nextPageHint"}}</span>
+        <a class="button" href="{{.Data.NextPageURL}}">{{t .Locale "action.nextPage"}}</a>
+      </nav>
+    {{end}}
+  {{else}}
+    <div class="empty card">{{t .Locale "users.empty"}}</div>
+  {{end}}
+</section>
+{{template "pageEnd" .}}
+{{end}}

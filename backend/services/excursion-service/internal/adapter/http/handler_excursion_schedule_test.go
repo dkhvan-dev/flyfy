@@ -70,7 +70,7 @@ func TestUpdateGuideScheduleSlotParsesRequest(t *testing.T) {
 	actorUserID := uuid.New()
 	slotID := uuid.New()
 	offerID := uuid.New()
-	startAt := time.Date(2026, 5, 29, 9, 30, 0, 0, time.UTC)
+	startAt := time.Now().UTC().Add(24 * time.Hour).Truncate(time.Minute)
 	repo := &excursionScheduleHTTPRepoStub{
 		offer: &model.ExcursionOffer{
 			ID:              offerID,

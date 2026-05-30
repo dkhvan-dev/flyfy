@@ -17,6 +17,7 @@ func mapError(err error) error {
 
 	case errors.Is(err, app.ErrInvalidUserID),
 		errors.Is(err, app.ErrInvalidSubjectID),
+		errors.Is(err, app.ErrInvalidPageToken),
 		errors.Is(err, model.ErrInvalidLocale),
 		errors.Is(err, model.ErrInvalidTimezone),
 		errors.Is(err, model.ErrInvalidCurrency),

@@ -23,6 +23,7 @@ type ActivityUseCase struct {
 	chatGateway port.ActivityChatGateway
 	payment     port.ActivityPaymentGateway
 	fraud       port.FraudEvaluator
+	trustPolicy port.TrustPolicyClient
 }
 
 func NewActivityUseCase(repo port.ActivityRepository, fileManager ...port.ActivityMediaFileManager) *ActivityUseCase {
@@ -332,6 +333,33 @@ func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivi
 
 	if assessment := u.assessCreateModeration(ctx, input); assessment.RiskScore > 0 || len(assessment.ReasonCodes) > 0 {
 		item.FlagForModeration(assessment.RiskScore, assessment.ReasonCodes, time.Now().UTC())
+	}
+
+	trustResult, trustErr := checkTrustPolicy(ctx, u.trustPolicy, port.TrustPolicyCheck{
+		UserID:       input.HostUserID,
+		Action:       trustActionActivityCreate,
+		ResourceType: "activity",
+		ResourceID:   item.ID.String(),
+		Metadata: map[string]any{
+			"startAt":     input.StartAt.UTC().Format(time.RFC3339),
+			"cityId":      trustPolicyOptionalString(input.CityID),
+			"countryCode": input.CountryCode,
+			"format":      string(input.Format),
+		},
+	})
+	if trustErr != nil {
+		item.FlagForModeration(item.ModerationRiskScore, []string{"TRUST_POLICY_UNAVAILABLE"}, trustPolicyNow())
+	} else {
+		switch trustResult.Decision {
+		case port.TrustPolicyDeny:
+			return nil, activityTrustPolicyError(trustResult)
+		case port.TrustPolicyReview, port.TrustPolicyPending, port.TrustPolicyQuarantine:
+			item.FlagForModeration(
+				item.ModerationRiskScore,
+				activityTrustModerationReasons(trustResult, "TRUST_POLICY_REVIEW"),
+				trustPolicyNow(),
+			)
+		}
 	}
 
 	if err = u.enforceActivityFraud(ctx, activityFraudInput(

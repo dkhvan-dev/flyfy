@@ -7,6 +7,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,6 +25,7 @@ type Server struct {
 	auth        *app.AuthUseCase
 	staff       *app.StaffUseCase
 	moderation  *app.ModerationUseCase
+	users       *app.UserModerationUseCase
 	audit       *app.AuditUseCase
 	attractions *app.AttractionContentUseCase
 	fraud       *app.FraudUseCase
@@ -36,11 +38,22 @@ func NewServer(
 	auth *app.AuthUseCase,
 	staff *app.StaffUseCase,
 	moderation *app.ModerationUseCase,
+	users *app.UserModerationUseCase,
 	audit *app.AuditUseCase,
 	attractions *app.AttractionContentUseCase,
 	fraud *app.FraudUseCase,
 ) *Server {
-	return &Server{cfg: cfg, renderer: renderer, auth: auth, staff: staff, moderation: moderation, audit: audit, attractions: attractions, fraud: fraud}
+	return &Server{
+		cfg:         cfg,
+		renderer:    renderer,
+		auth:        auth,
+		staff:       staff,
+		moderation:  moderation,
+		users:       users,
+		audit:       audit,
+		attractions: attractions,
+		fraud:       fraud,
+	}
 }
 
 func (s *Server) SetReadinessCheck(check func(context.Context) error) {
@@ -60,6 +73,12 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /admin", s.Dashboard)
 	mux.HandleFunc("GET /admin/me", s.StaffProfile)
 	mux.HandleFunc("POST /admin/me/timezone", s.UpdateOwnTimezone)
+	mux.HandleFunc("GET /admin/users", s.AdminUserList)
+	mux.HandleFunc("GET /admin/users/{userID}", s.AdminUserDetail)
+	mux.HandleFunc("POST /admin/users/{userID}/moderation-cases", s.CreateUserModerationCase)
+	mux.HandleFunc("POST /admin/users/{userID}/moderation-cases/{caseID}/resolve", s.ResolveUserModerationCase)
+	mux.HandleFunc("POST /admin/users/{userID}/restrictions", s.CreateUserRestriction)
+	mux.HandleFunc("POST /admin/users/{userID}/restrictions/{restrictionID}/lift", s.LiftUserRestriction)
 	mux.HandleFunc("GET /admin/moderation/excursions", s.ExcursionQueue)
 	mux.HandleFunc("GET /admin/moderation/excursions/fraud-blocks", s.ExcursionFraudBlocks)
 	mux.HandleFunc("POST /admin/moderation/excursions/fraud-blocks/{assessmentID}/confirm", s.ConfirmExcursionFraudBlock)
@@ -152,13 +171,14 @@ func (s *Server) LoginPage(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-		s.renderLoginError(w, r, "error.invalidLoginForm", "")
+		s.renderLoginError(w, http.StatusBadRequest, r, "error.invalidLoginForm", "")
 		return
 	}
 	email := strings.TrimSpace(r.Form.Get("email"))
 	result, err := s.auth.Login(r.Context(), email, r.Form.Get("password"), requestMetadata(r))
 	if err != nil {
-		s.renderLoginError(w, r, "error.invalidCredentials", email)
+		status, messageKey := loginErrorResponse(err)
+		s.renderLoginError(w, status, r, messageKey, email)
 		return
 	}
 	s.setSessionCookies(w, result.SessionToken, result.CSRFToken)
@@ -208,6 +228,142 @@ func (s *Server) Dashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.renderPage(w, http.StatusOK, r, "dashboard/index", "dashboard.title", "dashboard", data, "")
+}
+
+func (s *Server) AdminUserList(w http.ResponseWriter, r *http.Request) {
+	staff := staffFromContext(r.Context())
+	filter, viewFilter, err := parseAdminUsersListFilter(r)
+	if err != nil {
+		s.renderPage(w, http.StatusBadRequest, r, "users/index", "users.title", "users", NewAdminUsersListViewData(model.AdminUserListPage{}, viewFilter, staff), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
+		return
+	}
+	page, err := s.users.ListAdminUsers(r.Context(), staff, filter)
+	if err != nil {
+		s.renderPage(w, errorStatus(err), r, "users/index", "users.title", "users", NewAdminUsersListViewData(model.AdminUserListPage{}, viewFilter, staff), publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	s.renderPage(w, http.StatusOK, r, "users/index", "users.title", "users", NewAdminUsersListViewData(page, viewFilter, staff), "")
+}
+
+func (s *Server) AdminUserDetail(w http.ResponseWriter, r *http.Request) {
+	userID, ok := parsePathUUID(w, r, "userID")
+	if !ok {
+		return
+	}
+	staff := staffFromContext(r.Context())
+	page, err := s.users.GetAdminUserDetail(r.Context(), staff, userID, requestMetadata(r))
+	if err != nil {
+		s.renderPage(w, errorStatus(err), r, "users/detail", "users.detailTitle", "users", NewAdminUserDetailViewData(model.AdminUserDetailPage{}, staff), publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	s.renderPage(w, http.StatusOK, r, "users/detail", "users.detailTitle", "users", NewAdminUserDetailViewData(page, staff), "")
+}
+
+func (s *Server) CreateUserModerationCase(w http.ResponseWriter, r *http.Request) {
+	userID, ok := parsePathUUID(w, r, "userID")
+	if !ok {
+		return
+	}
+	staff := staffFromContext(r.Context())
+	_, err := s.users.CreateUserModerationCase(r.Context(), staff, model.CreateUserModerationCaseParams{
+		TargetUserID: userID,
+		Source:       model.UserModerationSourceStaff,
+		ReasonCode:   r.Form.Get("reason_code"),
+		Priority:     model.UserModerationPriority(strings.ToUpper(strings.TrimSpace(r.Form.Get("priority")))),
+		StaffComment: r.Form.Get("staff_comment"),
+	}, requestMetadata(r))
+	if err != nil {
+		s.renderUserDetailError(w, r, userID, err)
+		return
+	}
+	http.Redirect(w, r, redirectWithFlash(adminUserDetailURL(userID), "users.caseCreated"), http.StatusSeeOther)
+}
+
+func (s *Server) ResolveUserModerationCase(w http.ResponseWriter, r *http.Request) {
+	userID, ok := parsePathUUID(w, r, "userID")
+	if !ok {
+		return
+	}
+	caseID, ok := parsePathUUID(w, r, "caseID")
+	if !ok {
+		return
+	}
+	staff := staffFromContext(r.Context())
+	_, err := s.users.ResolveUserModerationCase(r.Context(), staff, model.ResolveUserModerationCaseParams{
+		CaseID:       caseID,
+		Decision:     model.UserModerationDecision(strings.ToUpper(strings.TrimSpace(r.Form.Get("decision")))),
+		ReasonCode:   r.Form.Get("reason_code"),
+		StaffComment: r.Form.Get("staff_comment"),
+	}, requestMetadata(r))
+	if err != nil {
+		s.renderUserDetailError(w, r, userID, err)
+		return
+	}
+	http.Redirect(w, r, redirectWithFlash(adminUserDetailURL(userID), "users.caseResolved"), http.StatusSeeOther)
+}
+
+func (s *Server) CreateUserRestriction(w http.ResponseWriter, r *http.Request) {
+	userID, ok := parsePathUUID(w, r, "userID")
+	if !ok {
+		return
+	}
+	caseID, err := parseOptionalUUIDForm(r, "case_id")
+	if err != nil {
+		s.renderUserDetailError(w, r, userID, app.ErrInvalidInput)
+		return
+	}
+	expiresAt, err := parseOptionalTimeForm(r, "expires_at")
+	if err != nil {
+		s.renderUserDetailError(w, r, userID, app.ErrInvalidInput)
+		return
+	}
+	staff := staffFromContext(r.Context())
+	_, err = s.users.CreateUserRestriction(r.Context(), staff, model.CreateUserRestrictionParams{
+		UserID:          userID,
+		CaseID:          caseID,
+		RestrictionCode: model.UserRestrictionCode(strings.ToUpper(strings.TrimSpace(r.Form.Get("restriction_code")))),
+		ReasonCode:      r.Form.Get("reason_code"),
+		StaffComment:    r.Form.Get("staff_comment"),
+		ExpiresAt:       expiresAt,
+	}, requestMetadata(r))
+	if err != nil {
+		s.renderUserDetailError(w, r, userID, err)
+		return
+	}
+	http.Redirect(w, r, redirectWithFlash(adminUserDetailURL(userID), "users.restrictionCreated"), http.StatusSeeOther)
+}
+
+func (s *Server) LiftUserRestriction(w http.ResponseWriter, r *http.Request) {
+	userID, ok := parsePathUUID(w, r, "userID")
+	if !ok {
+		return
+	}
+	restrictionID, ok := parsePathUUID(w, r, "restrictionID")
+	if !ok {
+		return
+	}
+	staff := staffFromContext(r.Context())
+	_, err := s.users.LiftUserRestriction(r.Context(), staff, model.LiftUserRestrictionParams{
+		RestrictionID: restrictionID,
+		ReasonCode:    r.Form.Get("reason_code"),
+		StaffComment:  r.Form.Get("staff_comment"),
+	}, requestMetadata(r))
+	if err != nil {
+		s.renderUserDetailError(w, r, userID, err)
+		return
+	}
+	http.Redirect(w, r, redirectWithFlash(adminUserDetailURL(userID), "users.restrictionLifted"), http.StatusSeeOther)
+}
+
+func (s *Server) renderUserDetailError(w http.ResponseWriter, r *http.Request, userID uuid.UUID, err error) {
+	staff := staffFromContext(r.Context())
+	viewData := NewAdminUserDetailViewData(model.AdminUserDetailPage{}, staff)
+	if userID != uuid.Nil {
+		if page, detailErr := s.users.GetAdminUserDetail(r.Context(), staff, userID, requestMetadata(r)); detailErr == nil {
+			viewData = NewAdminUserDetailViewData(page, staff)
+		}
+	}
+	s.renderPage(w, errorStatus(err), r, "users/detail", "users.detailTitle", "users", viewData, publicError(localeFromContext(r.Context()), err))
 }
 
 func (s *Server) StaffProfile(w http.ResponseWriter, r *http.Request) {
@@ -1082,15 +1238,26 @@ func (s *Server) AuditLog(w http.ResponseWriter, r *http.Request) {
 	s.renderPage(w, http.StatusOK, r, "audit/index", "audit.title", "audit", NewAuditViewData(localeFromContext(r.Context()), events), "")
 }
 
-func (s *Server) renderLoginError(w http.ResponseWriter, r *http.Request, messageKey string, email string) {
+func (s *Server) renderLoginError(w http.ResponseWriter, status int, r *http.Request, messageKey string, email string) {
 	locale := localeFromContext(r.Context())
-	s.render(w, http.StatusUnauthorized, "auth/login", PageData{
+	s.render(w, status, "auth/login", PageData{
 		Title:  translate(locale, "login.title"),
 		Locale: locale,
 		Path:   r.URL.Path,
 		Error:  translate(locale, messageKey),
 		Data:   LoginViewData{Email: email},
 	})
+}
+
+func loginErrorResponse(err error) (int, string) {
+	switch {
+	case errors.Is(err, app.ErrInvalidCredentials),
+		errors.Is(err, app.ErrStaffDisabled),
+		errors.Is(err, app.ErrStaffLocked):
+		return http.StatusUnauthorized, "error.invalidCredentials"
+	default:
+		return http.StatusInternalServerError, "error.generic"
+	}
 }
 
 func (s *Server) renderPage(w http.ResponseWriter, status int, r *http.Request, templateName string, titleKey string, activeNav string, data any, message string) {
@@ -1179,6 +1346,108 @@ func parseRoles(values []string) []enum.StaffRole {
 		}
 	}
 	return out
+}
+
+func parseAdminUsersListFilter(r *http.Request) (model.AdminUserListFilter, AdminUsersFilterViewData, error) {
+	query := r.URL.Query()
+	pageSize := 0
+	if raw := strings.TrimSpace(query.Get("page_size")); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil {
+			return model.AdminUserListFilter{}, AdminUsersFilterViewData{}, err
+		}
+		pageSize = parsed
+	}
+
+	countryCode := firstNonEmpty(query.Get("country"), query.Get("country_code"))
+	viewFilter := AdminUsersFilterViewData{
+		Search:      strings.TrimSpace(query.Get("q")),
+		Status:      strings.ToUpper(strings.TrimSpace(query.Get("status"))),
+		Role:        strings.TrimSpace(query.Get("role")),
+		CountryCode: strings.ToUpper(strings.TrimSpace(countryCode)),
+		PageToken:   strings.TrimSpace(query.Get("page_token")),
+		PageSize:    pageSize,
+	}
+	createdFrom, err := parseOptionalQueryDate(query.Get("created_from"), false)
+	if err != nil {
+		return model.AdminUserListFilter{}, viewFilter, err
+	}
+	createdTo, err := parseOptionalQueryDate(query.Get("created_to"), true)
+	if err != nil {
+		return model.AdminUserListFilter{}, viewFilter, err
+	}
+	lastActiveFrom, err := parseOptionalQueryDate(query.Get("last_active_from"), false)
+	if err != nil {
+		return model.AdminUserListFilter{}, viewFilter, err
+	}
+	lastActiveTo, err := parseOptionalQueryDate(query.Get("last_active_to"), true)
+	if err != nil {
+		return model.AdminUserListFilter{}, viewFilter, err
+	}
+	return model.AdminUserListFilter{
+		PageSize:       pageSize,
+		PageToken:      viewFilter.PageToken,
+		Query:          viewFilter.Search,
+		Status:         viewFilter.Status,
+		Role:           viewFilter.Role,
+		CountryCode:    viewFilter.CountryCode,
+		CreatedFrom:    createdFrom,
+		CreatedTo:      createdTo,
+		LastActiveFrom: lastActiveFrom,
+		LastActiveTo:   lastActiveTo,
+	}, viewFilter, nil
+}
+
+func parseOptionalUUIDForm(r *http.Request, name string) (*uuid.UUID, error) {
+	raw := strings.TrimSpace(r.Form.Get(name))
+	if raw == "" {
+		return nil, nil
+	}
+	value, err := uuid.Parse(raw)
+	if err != nil {
+		return nil, err
+	}
+	return &value, nil
+}
+
+func parseOptionalTimeForm(r *http.Request, name string) (*time.Time, error) {
+	raw := strings.TrimSpace(r.Form.Get(name))
+	if raw == "" {
+		return nil, nil
+	}
+	value, err := parseFlexibleTime(raw)
+	if err != nil {
+		return nil, err
+	}
+	return &value, nil
+}
+
+func parseOptionalQueryDate(raw string, endOfDay bool) (*time.Time, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil, nil
+	}
+	value, err := parseFlexibleTime(raw)
+	if err != nil {
+		return nil, err
+	}
+	if endOfDay && len(raw) == len("2006-01-02") {
+		value = value.Add(24*time.Hour - time.Nanosecond)
+	}
+	return &value, nil
+}
+
+func parseFlexibleTime(raw string) (time.Time, error) {
+	for _, layout := range []string{time.RFC3339, "2006-01-02T15:04", "2006-01-02"} {
+		if value, err := time.Parse(layout, raw); err == nil {
+			return value.UTC(), nil
+		}
+	}
+	return time.Time{}, app.ErrInvalidInput
+}
+
+func adminUserDetailURL(userID uuid.UUID) string {
+	return "/admin/users/" + userID.String()
 }
 
 func parseAttractionForm(r *http.Request) (model.AttractionInput, []app.AttractionImageUploadInput, error) {
@@ -1394,6 +1663,9 @@ func publicError(locale string, err error) string {
 	if errors.Is(err, app.ErrStaffNotFound) {
 		return translate(locale, "error.staffNotFound")
 	}
+	if errors.Is(err, app.ErrUserNotFound) {
+		return translate(locale, "error.userNotFound")
+	}
 	if errors.Is(err, app.ErrAttractionNotFound) {
 		return translate(locale, "error.attractionNotFound")
 	}
@@ -1416,6 +1688,8 @@ func errorStatus(err error) int {
 	case errors.Is(err, app.ErrModerationCaseNotFound):
 		return http.StatusNotFound
 	case errors.Is(err, app.ErrStaffNotFound):
+		return http.StatusNotFound
+	case errors.Is(err, app.ErrUserNotFound):
 		return http.StatusNotFound
 	case errors.Is(err, app.ErrAttractionNotFound):
 		return http.StatusNotFound

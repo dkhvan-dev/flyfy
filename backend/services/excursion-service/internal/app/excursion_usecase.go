@@ -62,6 +62,7 @@ type ExcursionUseCase struct {
 	attractionRatingUpdater port.AttractionRatingUpdater
 	chatGateway             port.ExcursionChatGateway
 	fraud                   port.FraudEvaluator
+	trustPolicy             port.TrustPolicyClient
 	attendanceQRSigningKey  []byte
 	attendanceQRTTL         time.Duration
 	attendanceOfflineWindow time.Duration
@@ -652,6 +653,27 @@ func (u *ExcursionUseCase) PublishExcursion(ctx context.Context, excursionID uui
 		Itinerary:     relations.Itinerary,
 	}
 	evaluation := evaluateExcursionPublishing(item, permission)
+	trustResult, trustErr := checkTrustPolicy(ctx, u.trustPolicy, port.TrustPolicyCheck{
+		UserID:       actorUserID,
+		Action:       trustActionTourPublish,
+		ResourceType: "excursion",
+		ResourceID:   item.ID.String(),
+		Metadata: map[string]any{
+			"priceAmount": item.PriceAmount,
+			"currency":    item.Currency,
+			"guideScore":  evaluation.GuideTrustScore,
+		},
+	})
+	if trustErr != nil {
+		evaluation = applyTrustReviewDecision(evaluation, port.TrustPolicyResult{ReasonCode: "TRUST_POLICY_UNAVAILABLE"}, "TRUST_POLICY_UNAVAILABLE")
+	} else {
+		switch trustResult.Decision {
+		case port.TrustPolicyDeny:
+			return nil, ErrTrustPolicyRejected
+		case port.TrustPolicyReview, port.TrustPolicyQuarantine, port.TrustPolicyPending:
+			evaluation = applyTrustReviewDecision(evaluation, trustResult, "TRUST_POLICY_REVIEW")
+		}
+	}
 	if err = u.enforceExcursionFraud(ctx, excursionFraudInput(
 		fraudActionExcursionPublish,
 		actorUserID,

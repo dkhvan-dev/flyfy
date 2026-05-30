@@ -15,9 +15,10 @@ import (
 )
 
 type FileBindingUseCase struct {
-	files    port.FileRepository
-	bindings port.FileBindingRepository
-	fraud    port.FraudEvaluator
+	files       port.FileRepository
+	bindings    port.FileBindingRepository
+	fraud       port.FraudEvaluator
+	trustPolicy port.TrustPolicyClient
 }
 
 func NewFileBindingUseCase(
@@ -73,6 +74,9 @@ func (u *FileBindingUseCase) BindFile(ctx context.Context, input BindFileInput) 
 	if file.Status != enum.FileStatusReady {
 		return nil, ErrFileNotReady
 	}
+	if file.PolicyStatus != "" && file.PolicyStatus != model.FilePolicyAllowed {
+		return nil, ErrTrustPolicyRejected
+	}
 
 	ownerType := enum.OwnerType(strings.TrimSpace(input.OwnerType))
 	if !ownerType.IsValid() {
@@ -102,6 +106,23 @@ func (u *FileBindingUseCase) BindFile(ctx context.Context, input BindFileInput) 
 	}
 	if createdByUserID != nil && file.UploadedByUserID != nil && *createdByUserID != *file.UploadedByUserID {
 		return nil, ErrFileOwnershipMismatch
+	}
+
+	trustResult, trustErr := checkTrustPolicy(ctx, u.trustPolicy, port.TrustPolicyCheck{
+		UserID:       valueOrNilUUID(createdByUserID),
+		Action:       trustActionFileBind,
+		ResourceType: "file",
+		ResourceID:   file.ID.String(),
+		Metadata: map[string]any{
+			"ownerType":       string(ownerType),
+			"ownerId":         ownerID.String(),
+			"purpose":         string(purpose),
+			"filePolicy":      string(file.PolicyStatus),
+			"uploadExpiresAt": trustPolicyTimeString(valueOrZeroTime(file.UploadExpiresAt)),
+		},
+	})
+	if trustErr != nil || trustResult.Decision != port.TrustPolicyAllow {
+		return nil, ErrTrustPolicyRejected
 	}
 
 	if err = u.enforceFraud(ctx, port.FraudAssessmentInput{

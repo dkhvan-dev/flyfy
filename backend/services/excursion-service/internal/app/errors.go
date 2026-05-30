@@ -36,4 +36,5 @@ var (
 	ErrExcursionCoverFileNotReady   = errors.New("excursion cover file is not ready")
 	ErrExcursionCoverFileNotAllowed = errors.New("excursion cover file is not allowed")
 	ErrFraudRejected                = errors.New("excursion action rejected by fraud policy")
+	ErrTrustPolicyRejected          = errors.New("excursion action rejected by trust policy")
 )

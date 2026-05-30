@@ -206,6 +206,10 @@ code {
   max-width: 560px;
 }
 
+.subsection-title {
+  margin-top: 28px;
+}
+
 .section-head {
   display: flex;
   align-items: end;

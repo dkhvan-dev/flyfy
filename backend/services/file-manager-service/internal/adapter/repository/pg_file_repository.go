@@ -41,13 +41,16 @@ func (r *PGFileRepository) Create(ctx context.Context, file *model.File) error {
 			owner_id,
 			uploaded_by_user_id,
 			upload_expires_at,
+			policy_status,
+			policy_reason_code,
+			policy_decision_id,
 			is_deleted,
 			deleted_at,
 			created_at,
 			updated_at
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
-			$12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22
+			$12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25
 		)
 	`
 
@@ -72,6 +75,9 @@ func (r *PGFileRepository) Create(ctx context.Context, file *model.File) error {
 		file.OwnerID,
 		file.UploadedByUserID,
 		file.UploadExpiresAt,
+		string(file.PolicyStatus),
+		file.PolicyReasonCode,
+		file.PolicyDecisionID,
 		file.IsDeleted,
 		file.DeletedAt,
 		file.CreatedAt,
@@ -105,6 +111,9 @@ func (r *PGFileRepository) GetByID(ctx context.Context, id uuid.UUID) (*model.Fi
 			owner_id,
 			uploaded_by_user_id,
 			upload_expires_at,
+			policy_status,
+			policy_reason_code,
+			policy_decision_id,
 			is_deleted,
 			deleted_at,
 			created_at,
@@ -146,6 +155,9 @@ func (r *PGFileRepository) GetByObjectKey(ctx context.Context, objectKey string)
 			owner_id,
 			uploaded_by_user_id,
 			upload_expires_at,
+			policy_status,
+			policy_reason_code,
+			policy_decision_id,
 			is_deleted,
 			deleted_at,
 			created_at,
@@ -187,9 +199,12 @@ func (r *PGFileRepository) Update(ctx context.Context, file *model.File) error {
 			owner_id = $16,
 			uploaded_by_user_id = $17,
 			upload_expires_at = $18,
-			is_deleted = $19,
-			deleted_at = $20,
-			updated_at = $21
+			policy_status = $19,
+			policy_reason_code = $20,
+			policy_decision_id = $21,
+			is_deleted = $22,
+			deleted_at = $23,
+			updated_at = $24
 		WHERE id = $1
 	`
 
@@ -214,6 +229,9 @@ func (r *PGFileRepository) Update(ctx context.Context, file *model.File) error {
 		file.OwnerID,
 		file.UploadedByUserID,
 		file.UploadExpiresAt,
+		string(file.PolicyStatus),
+		file.PolicyReasonCode,
+		file.PolicyDecisionID,
 		file.IsDeleted,
 		file.DeletedAt,
 		file.UpdatedAt,

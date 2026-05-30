@@ -55,17 +55,21 @@ func (r StaffRole) IsValid() bool {
 type Permission string
 
 const (
-	PermissionDashboardRead     Permission = "dashboard.read"
-	PermissionStaffManage       Permission = "staff.manage"
-	PermissionAuditRead         Permission = "audit.read"
-	PermissionModerationRead    Permission = "moderation.read"
-	PermissionModerationAssign  Permission = "moderation.assign"
-	PermissionExcursionModerate Permission = "excursion.moderate"
-	PermissionActivityModerate  Permission = "activity.moderate"
-	PermissionGuideModerate     Permission = "guide.moderate"
-	PermissionChatModerate      Permission = "chat.moderate"
-	PermissionAttractionManage  Permission = "attraction.manage"
-	PermissionFraudReview       Permission = "fraud.review"
+	PermissionDashboardRead      Permission = "dashboard.read"
+	PermissionStaffManage        Permission = "staff.manage"
+	PermissionAuditRead          Permission = "audit.read"
+	PermissionModerationRead     Permission = "moderation.read"
+	PermissionModerationAssign   Permission = "moderation.assign"
+	PermissionExcursionModerate  Permission = "excursion.moderate"
+	PermissionActivityModerate   Permission = "activity.moderate"
+	PermissionGuideModerate      Permission = "guide.moderate"
+	PermissionChatModerate       Permission = "chat.moderate"
+	PermissionAttractionManage   Permission = "attraction.manage"
+	PermissionFraudReview        Permission = "fraud.review"
+	PermissionUsersRead          Permission = "users.read"
+	PermissionUsersModerate      Permission = "users.moderate"
+	PermissionUsersRestrict      Permission = "users.restrict"
+	PermissionUsersSensitiveRead Permission = "users.sensitive.read"
 )
 
 type ModerationCaseStatus string

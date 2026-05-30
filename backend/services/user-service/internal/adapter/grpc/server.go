@@ -12,6 +12,7 @@ import (
 	"github.com/dkhvan-dev/flyfy/backend/services/user-service/internal/domain/enum"
 	"github.com/dkhvan-dev/flyfy/backend/services/user-service/internal/domain/model"
 	userv1 "github.com/dkhvan-dev/flyfy/proto/gen/go/user/v1"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type Server struct {
@@ -331,6 +332,60 @@ func (s *Server) GetUserBySubject(
 	}, nil
 }
 
+func (s *Server) ListAdminUsers(
+	ctx context.Context,
+	req *userv1.ListAdminUsersRequest,
+) (*userv1.ListAdminUsersResponse, error) {
+	page, err := s.useCase.ListAdminUsers(ctx, adminFilterFromProto(req))
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	resp := &userv1.ListAdminUsersResponse{
+		Users:         make([]*userv1.AdminUserListItem, 0, len(page.Items)),
+		NextPageToken: page.NextPageToken,
+	}
+	for _, item := range page.Items {
+		resp.Users = append(resp.Users, toProtoAdminUserListItem(item))
+	}
+
+	return resp, nil
+}
+
+func (s *Server) GetAdminUserDetail(
+	ctx context.Context,
+	req *userv1.GetAdminUserDetailRequest,
+) (*userv1.GetAdminUserDetailResponse, error) {
+	userID, err := uuid.Parse(strings.TrimSpace(req.GetUserId()))
+	if err != nil {
+		return nil, mapError(app.ErrInvalidUserID)
+	}
+
+	detail, err := s.useCase.GetAdminUserDetail(ctx, userID)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	return &userv1.GetAdminUserDetailResponse{
+		User: toProtoAdminUserDetail(detail),
+	}, nil
+}
+
+func adminFilterFromProto(req *userv1.ListAdminUsersRequest) model.AdminUserListFilter {
+	return model.AdminUserListFilter{
+		PageSize:       int(req.GetPageSize()),
+		PageToken:      req.GetPageToken(),
+		Query:          req.GetQuery(),
+		Status:         req.GetStatus(),
+		Role:           req.GetRole(),
+		CountryCode:    req.GetCountryCode(),
+		CreatedFrom:    timePtrFromProto(req.GetCreatedFrom()),
+		CreatedTo:      timePtrFromProto(req.GetCreatedTo()),
+		LastActiveFrom: timePtrFromProto(req.GetLastActiveFrom()),
+		LastActiveTo:   timePtrFromProto(req.GetLastActiveTo()),
+	}
+}
+
 func toProtoAggregate(aggregate *app.UserAggregate) *userv1.UserAggregate {
 	roles := make([]string, 0, len(aggregate.Roles))
 	for _, role := range aggregate.Roles {
@@ -465,6 +520,37 @@ func toProtoPublicProfile(profile *model.UserProfile) *userv1.PublicProfile {
 	}
 }
 
+func toProtoAdminUserListItem(item model.AdminUserListItem) *userv1.AdminUserListItem {
+	return &userv1.AdminUserListItem{
+		UserId:        item.UserID.String(),
+		DisplayName:   item.DisplayName,
+		MaskedPhone:   item.MaskedPhone,
+		MaskedEmail:   item.MaskedEmail,
+		CountryCode:   item.CountryCode,
+		Roles:         item.Roles,
+		AccountStatus: item.AccountStatus,
+		GuideStatus:   item.GuideStatus,
+		CreatedAt:     timestamppb.New(item.CreatedAt),
+		LastActiveAt:  timestampPtr(item.LastActiveAt),
+	}
+}
+
+func toProtoAdminUserDetail(item model.AdminUserDetail) *userv1.AdminUserDetail {
+	return &userv1.AdminUserDetail{
+		UserId:        item.UserID.String(),
+		DisplayName:   item.DisplayName,
+		MaskedPhone:   item.MaskedPhone,
+		MaskedEmail:   item.MaskedEmail,
+		CountryCode:   item.CountryCode,
+		Roles:         item.Roles,
+		AccountStatus: item.AccountStatus,
+		GuideStatus:   item.GuideStatus,
+		CreatedAt:     timestamppb.New(item.CreatedAt),
+		UpdatedAt:     timestamppb.New(item.UpdatedAt),
+		LastActiveAt:  timestampPtr(item.LastActiveAt),
+	}
+}
+
 func stringPtrOrNil(v string) *string {
 	v = strings.TrimSpace(v)
 	if v == "" {
@@ -491,6 +577,21 @@ func parseOptionalUUIDProto(v string) (*uuid.UUID, error) {
 		return nil, app.ErrInvalidUserID
 	}
 	return &parsed, nil
+}
+
+func timePtrFromProto(v *timestamppb.Timestamp) *time.Time {
+	if v == nil {
+		return nil
+	}
+	t := v.AsTime()
+	return &t
+}
+
+func timestampPtr(v *time.Time) *timestamppb.Timestamp {
+	if v == nil {
+		return nil
+	}
+	return timestamppb.New(*v)
 }
 
 func parseOptionalDateProto(v string) (*time.Time, error) {

@@ -1,0 +1,29 @@
+FROM golang:1.26-alpine AS builder
+
+RUN apk add --no-cache git ca-certificates tzdata
+
+WORKDIR /app
+
+COPY proto ./proto
+COPY backend/services/trust-service ./backend/services/trust-service
+
+WORKDIR /app/backend/services/trust-service
+
+RUN go mod download
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o /bin/trust-service ./cmd
+
+FROM alpine:3.22
+
+RUN apk add --no-cache ca-certificates tzdata \
+    && addgroup -g 1001 appgroup \
+    && adduser -u 1001 -G appgroup -D appuser
+
+WORKDIR /app
+
+COPY --from=builder /bin/trust-service /app/trust-service
+
+USER appuser
+
+EXPOSE 9096
+
+ENTRYPOINT ["/app/trust-service"]

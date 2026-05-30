@@ -1,6 +1,7 @@
 package http
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/app"
 	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/config"
 )
 
@@ -26,7 +28,7 @@ func TestServerHandlerRegistersAttractionRoutesWithoutConflict(t *testing.T) {
 			RequestIDHeader:   "X-Request-Id",
 		},
 	}
-	server := NewServer(cfg, renderer, nil, nil, nil, nil, nil, nil)
+	server := NewServer(cfg, renderer, nil, nil, nil, nil, nil, nil, nil)
 
 	if handler := server.Handler(); handler == nil {
 		t.Fatal("Handler returned nil")
@@ -65,5 +67,19 @@ func TestSecurityHeadersAllowTrustedWikimediaAttractionImages(t *testing.T) {
 		if !strings.Contains(csp, expected) {
 			t.Fatalf("Content-Security-Policy = %q, want trusted Wikimedia image source %q", csp, expected)
 		}
+	}
+}
+
+func TestLoginErrorResponseSeparatesAuthenticationAndServerErrors(t *testing.T) {
+	t.Parallel()
+
+	status, key := loginErrorResponse(app.ErrInvalidCredentials)
+	if status != http.StatusUnauthorized || key != "error.invalidCredentials" {
+		t.Fatalf("invalid credentials response = (%d, %q), want (%d, %q)", status, key, http.StatusUnauthorized, "error.invalidCredentials")
+	}
+
+	status, key = loginErrorResponse(errors.New("postgres is unavailable"))
+	if status != http.StatusInternalServerError || key != "error.generic" {
+		t.Fatalf("internal login error response = (%d, %q), want (%d, %q)", status, key, http.StatusInternalServerError, "error.generic")
 	}
 }

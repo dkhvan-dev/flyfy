@@ -3,6 +3,7 @@ module github.com/dkhvan-dev/flyfy/backend/services/excursion-service
 go 1.26
 
 require (
+	github.com/dkhvan-dev/flyfy/backend/pkg/trustpolicy v0.0.0
 	github.com/dkhvan-dev/flyfy/proto v0.0.0
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.5
@@ -27,3 +28,5 @@ require (
 )
 
 replace github.com/dkhvan-dev/flyfy/proto => ../../../proto
+
+replace github.com/dkhvan-dev/flyfy/backend/pkg/trustpolicy => ../../pkg/trustpolicy

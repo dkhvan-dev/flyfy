@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/dkhvan-dev/flyfy/backend/pkg/trustpolicy/grpcclient"
 	fraudadapter "github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/adapter/fraud"
 	grpcadapter "github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/adapter/grpc"
 	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/adapter/http"
@@ -65,6 +66,21 @@ func main() {
 
 	fileUseCase := app.NewFileUseCaseWithFraud(fileRepo, storageClient, cfg, idempotencyRepo, fraudClient)
 	bindingUseCase := app.NewFileBindingUseCaseWithFraud(fileRepo, bindingRepo, fraudClient)
+	var trustClient *grpcclient.Client
+	if cfg.Trust.Enabled {
+		trustClient, err = grpcclient.New(
+			cfg.Trust.Target,
+			cfg.Security.InternalServiceToken,
+			"file-manager-service",
+			cfg.Trust.Timeout,
+		)
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to initialize trust-service client")
+		}
+		defer trustClient.Close()
+		fileUseCase.SetTrustPolicyClient(trustClient)
+		bindingUseCase.SetTrustPolicyClient(trustClient)
+	}
 
 	httpHandler := httpadapter.NewHandler(fileUseCase, bindingUseCase)
 	httpMux := http.NewServeMux()

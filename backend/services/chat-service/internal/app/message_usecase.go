@@ -44,6 +44,7 @@ type MessageUseCase struct {
 	profileResolver  port.UserProfileResolver
 	activityResolver port.ActivityLifecycleResolver
 	stickerResolver  port.StickerResolver
+	trustPolicy      port.TrustPolicyClient
 }
 
 func NewMessageUseCase(
@@ -222,6 +223,29 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 	}
 	if participant == nil || participant.LeftAt != nil {
 		return nil, ErrNotParticipant
+	}
+
+	trustResult, trustErr := checkTrustPolicy(ctx, u.trustPolicy, port.TrustPolicyCheck{
+		UserID:       input.SenderUserID,
+		Action:       trustActionChatSend,
+		ResourceType: "conversation",
+		ResourceID:   input.ConversationID.String(),
+		Metadata: map[string]any{
+			"messageType":     messageType,
+			"attachmentCount": len(fileIDs),
+			"hasSticker":      stickerID != nil,
+		},
+	})
+	if trustErr != nil {
+		return nil, ErrTrustPolicyRejected
+	}
+	switch trustResult.Decision {
+	case port.TrustPolicyDeny:
+		return nil, ErrTrustPolicyRejected
+	case port.TrustPolicyReview, port.TrustPolicyQuarantine, port.TrustPolicyPending:
+		moderationStatus = model.MessageModerationStatusFlagged
+		moderationReasonCodes = append(moderationReasonCodes, chatTrustReason(trustResult, "TRUST_POLICY_REVIEW"))
+		moderationTriggeredAt = &now
 	}
 
 	msg := &model.Message{

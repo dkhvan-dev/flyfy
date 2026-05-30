@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/dkhvan-dev/flyfy/backend/pkg/trustpolicy/grpcclient"
 	attractionadapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/attraction"
 	chatadapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/chat"
 	filemanageradapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/filemanager"
@@ -103,11 +104,25 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("initialize anti-fraud client")
 	}
+	var trustClient *grpcclient.Client
+	if cfg.Trust.Enabled {
+		trustClient, err = grpcclient.New(
+			cfg.Trust.Target,
+			cfg.Security.InternalServiceToken,
+			cfg.App.Name,
+			cfg.Trust.Timeout,
+		)
+		if err != nil {
+			log.Fatal().Err(err).Msg("initialize trust-service client")
+		}
+		defer trustClient.Close()
+	}
 	excursionUC := app.NewExcursionUseCase(repo, guideClient, fileManagerClient, translator).
 		WithUserProfileResolver(userClient).
 		WithAttractionRatingUpdater(attractionRatingClient).
 		WithExcursionChatGateway(chatClient).
 		WithFraudEvaluator(fraudClient).
+		WithTrustPolicyClient(trustClient).
 		WithAttendanceQRConfig(
 			cfg.Attendance.QRSigningSecret,
 			cfg.Attendance.QRTTL,

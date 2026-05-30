@@ -19,6 +19,8 @@ type Config struct {
 	Activity    ActivityServiceConfig
 	Guide       GuideServiceConfig
 	Chat        ChatServiceConfig
+	User        UserServiceConfig
+	Trust       TrustServiceConfig
 	AntiFraud   AntiFraudServiceConfig
 	Attraction  AttractionServiceConfig
 	FileManager FileManagerServiceConfig
@@ -123,6 +125,20 @@ type GuideServiceConfig struct {
 type ChatServiceConfig struct {
 	BaseURL string        `env:"CHAT_SERVICE_URL, default=http://chat-service:8088"`
 	Timeout time.Duration `env:"CHAT_SERVICE_TIMEOUT, default=5s"`
+}
+
+type UserServiceConfig struct {
+	Target  string        `env:"USER_SERVICE_GRPC_TARGET, default=user-service:9094"`
+	Timeout time.Duration `env:"USER_SERVICE_TIMEOUT, default=3s"`
+}
+
+type TrustServiceConfig struct {
+	Target             string        `env:"TRUST_SERVICE_GRPC_TARGET, default=trust-service:9096"`
+	Timeout            time.Duration `env:"TRUST_SERVICE_TIMEOUT, default=3s"`
+	OutboxPollInterval time.Duration `env:"TRUST_OUTBOX_POLL_INTERVAL, default=5s"`
+	OutboxBatchSize    int           `env:"TRUST_OUTBOX_BATCH_SIZE, default=50"`
+	OutboxMaxAttempts  int           `env:"TRUST_OUTBOX_MAX_ATTEMPTS, default=20"`
+	OutboxBaseBackoff  time.Duration `env:"TRUST_OUTBOX_BASE_BACKOFF, default=1s"`
 }
 
 type AntiFraudServiceConfig struct {

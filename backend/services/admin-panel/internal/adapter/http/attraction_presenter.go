@@ -1765,6 +1765,18 @@ func countryText(locale string, countryCode string) string {
 	return displayCountryName(locale, countryCode)
 }
 
+func countryTextWithCode(locale string, countryCode string) string {
+	code := strings.ToUpper(strings.TrimSpace(countryCode))
+	if code == "" {
+		return ""
+	}
+	name := displayCountryName(locale, code)
+	if name == "" || strings.EqualFold(name, code) {
+		return code
+	}
+	return fmt.Sprintf("%s (%s)", name, code)
+}
+
 func attractionCityNameText(locale string, cityID string) string {
 	return displayReferenceCityName(locale, cityID)
 }

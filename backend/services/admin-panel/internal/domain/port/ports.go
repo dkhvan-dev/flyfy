@@ -46,6 +46,31 @@ type AuditRepository interface {
 	List(ctx context.Context, filter model.AuditFilter) ([]*model.AuditEvent, error)
 }
 
+type UserAdminClient interface {
+	ListAdminUsers(ctx context.Context, filter model.AdminUserListFilter) (model.AdminUserListPage, error)
+	GetAdminUserDetail(ctx context.Context, userID uuid.UUID) (model.AdminUserDetail, error)
+}
+
+type UserModerationRepository interface {
+	CreateUserModerationCase(ctx context.Context, params model.CreateUserModerationCaseParams) (model.UserModerationCase, error)
+	GetUserModerationCase(ctx context.Context, id uuid.UUID) (model.UserModerationCase, error)
+	ListUserModerationCases(ctx context.Context, userID uuid.UUID) ([]model.UserModerationCase, error)
+	ResolveUserModerationCase(ctx context.Context, params model.ResolveUserModerationCaseParams) (model.UserModerationCase, error)
+	CreateUserRestriction(ctx context.Context, params model.CreateUserRestrictionParams) (model.UserManualRestriction, error)
+	LiftUserRestriction(ctx context.Context, params model.LiftUserRestrictionParams) (model.UserManualRestriction, error)
+	ListActiveUserRestrictions(ctx context.Context, userID uuid.UUID) ([]model.UserManualRestriction, error)
+}
+
+type UserRestrictionOutboxRepository interface {
+	ListDueUserRestrictionEvents(ctx context.Context, limit int, now time.Time) ([]model.UserRestrictionOutboxEvent, error)
+	MarkUserRestrictionEventDelivered(ctx context.Context, eventID uuid.UUID, deliveredAt time.Time) error
+	MarkUserRestrictionEventFailed(ctx context.Context, eventID uuid.UUID, reason string, nextAttemptAt time.Time) error
+}
+
+type TrustRestrictionEventClient interface {
+	ApplyUserRestrictionEvent(ctx context.Context, event model.UserRestrictionOutboxEvent) (bool, error)
+}
+
 type ModerationRepository interface {
 	UpsertExcursionCase(ctx context.Context, item model.ExcursionModerationItem) (*model.ModerationCase, error)
 	CancelStaleExcursionCases(ctx context.Context, activeTargetIDs []uuid.UUID, now time.Time) error

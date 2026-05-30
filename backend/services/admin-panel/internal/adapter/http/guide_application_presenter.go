@@ -328,8 +328,9 @@ func guideApplicationCanRevoke(item *model.GuideApplicationModerationItem) bool 
 }
 
 type moderationReasonOption struct {
-	Code  string
-	Label string
+	Code     string
+	Label    string
+	Selected bool
 }
 
 func moderationReasonCodeOptions(locale string) []moderationReasonOption {
@@ -352,6 +353,30 @@ func moderationReasonCodeOptions(locale string) []moderationReasonOption {
 		})
 	}
 	return out
+}
+
+func moderationReasonCodeOptionsWithSelected(locale string, selected string) []moderationReasonOption {
+	selected = strings.TrimSpace(selected)
+	options := moderationReasonCodeOptions(locale)
+	if selected == "" {
+		return options
+	}
+	found := false
+	for i := range options {
+		if options[i].Code == selected {
+			options[i].Selected = true
+			found = true
+			break
+		}
+	}
+	if !found {
+		options = append([]moderationReasonOption{{
+			Code:     selected,
+			Label:    selected,
+			Selected: true,
+		}}, options...)
+	}
+	return options
 }
 
 func uuidFromTemplateValue(value any) uuid.UUID {

@@ -31,4 +31,5 @@ var (
 	ErrTooManyFiles                = errors.New("maximum 10 files per message")
 	ErrConversationFull            = errors.New("conversation has reached maximum participants")
 	ErrConversationMessagingClosed = errors.New("conversation messaging is closed")
+	ErrTrustPolicyRejected         = errors.New("message rejected by trust policy")
 )

@@ -202,6 +202,9 @@ func TestRendererTopbarHidesAuditWithoutPermissionAndLinksOwnProfile(t *testing.
 	if strings.Contains(body, `href="/admin/audit"`) {
 		t.Fatalf("audit nav link rendered without audit.read permission: %s", body)
 	}
+	if strings.Contains(body, `href="/admin/users"`) {
+		t.Fatalf("users nav link rendered without users.read permission: %s", body)
+	}
 	if !strings.Contains(body, `href="/admin/me"`) {
 		t.Fatalf("own profile link is missing from topbar: %s", body)
 	}
@@ -214,6 +217,160 @@ func TestRendererTopbarHidesAuditWithoutPermissionAndLinksOwnProfile(t *testing.
 	}
 	if !strings.Contains(recorder.Body.String(), `href="/admin/audit"`) {
 		t.Fatalf("audit nav link missing for staff with audit.read permission: %s", recorder.Body.String())
+	}
+
+	staff.Permissions = append(staff.Permissions, enum.PermissionUsersRead)
+	recorder = httptest.NewRecorder()
+	renderer.Render(recorder, http.StatusOK, "dashboard/index", pageData)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("unexpected status: %d", recorder.Code)
+	}
+	if !strings.Contains(recorder.Body.String(), `href="/admin/users"`) {
+		t.Fatalf("users nav link missing for staff with users.read permission: %s", recorder.Body.String())
+	}
+}
+
+func TestRendererRendersUserModerationViews(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	now := time.Date(2026, 5, 30, 8, 0, 0, 0, time.UTC)
+	userID := uuid.New()
+	caseID := uuid.New()
+	restrictionID := uuid.New()
+	staff := adminTemplateActor()
+	staff.Permissions = append(staff.Permissions,
+		enum.PermissionUsersRead,
+		enum.PermissionUsersModerate,
+		enum.PermissionUsersRestrict,
+	)
+	pageData := PageData{
+		Title:     "Users",
+		Locale:    localeEN,
+		Path:      "/admin/users",
+		Staff:     staff,
+		CSRFToken: "csrf-token",
+		Data: NewAdminUsersListViewData(model.AdminUserListPage{
+			Items: []model.AdminUserListItem{
+				{
+					UserID:                  userID,
+					DisplayName:             "Aruzhan Traveler",
+					MaskedPhone:             "+7******67",
+					MaskedEmail:             "a***@***",
+					CountryCode:             "KZ",
+					Roles:                   []string{"traveler", "guide"},
+					AccountStatus:           "ACTIVE",
+					GuideStatus:             "VERIFIED",
+					OpenModerationCaseCount: 1,
+					ActiveRestrictionCount:  1,
+					CreatedAt:               now,
+					LastActiveAt:            &now,
+				},
+			},
+			NextPageToken: "cursor-2",
+		}, AdminUsersFilterViewData{Search: "aru", Status: "ACTIVE", PageSize: 25}, staff),
+	}
+
+	recorder := httptest.NewRecorder()
+	renderer.Render(recorder, http.StatusOK, "users/index", pageData)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("unexpected status: %d", recorder.Code)
+	}
+	body := html.UnescapeString(recorder.Body.String())
+	for _, expected := range []string{
+		"Aruzhan Traveler",
+		"+7******67",
+		"a***@***",
+		"Open cases",
+		"Restrictions",
+		`href="/admin/users/` + userID.String() + `"`,
+		`page_token=cursor-2`,
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("users list did not render %q: %s", expected, body)
+		}
+	}
+	if strings.Contains(body, "+77001234567") || strings.Contains(body, "aruzhan@example.com") {
+		t.Fatalf("users list rendered unmasked identity data: %s", body)
+	}
+
+	pageData.Title = "User detail"
+	pageData.Path = "/admin/users/" + userID.String()
+	pageData.Data = NewAdminUserDetailViewData(model.AdminUserDetailPage{
+		User: model.AdminUserDetail{
+			UserID:                  userID,
+			DisplayName:             "Aruzhan Traveler",
+			MaskedPhone:             "+7******67",
+			MaskedEmail:             "a***@***",
+			CountryCode:             "KZ",
+			Roles:                   []string{"traveler", "guide"},
+			AccountStatus:           "ACTIVE",
+			GuideStatus:             "VERIFIED",
+			OpenModerationCaseCount: 1,
+			ActiveRestrictionCount:  1,
+			CreatedAt:               now,
+			UpdatedAt:               now,
+			LastActiveAt:            &now,
+		},
+		ModerationCases: []model.UserModerationCase{
+			{
+				ID:           caseID,
+				TargetUserID: userID,
+				Source:       model.UserModerationSourceStaff,
+				ReasonCode:   "policy_violation",
+				Priority:     model.UserModerationPriorityHigh,
+				Status:       model.UserModerationStatusOpen,
+				StaffComment: "Needs manual review",
+				CreatedAt:    now,
+				UpdatedAt:    now,
+			},
+		},
+		ActiveRestrictions: []model.UserManualRestriction{
+			{
+				ID:               restrictionID,
+				UserID:           userID,
+				RestrictionCode:  model.UserRestrictionActivityCreation,
+				Status:           model.UserRestrictionStatusActive,
+				ReasonCode:       "policy_violation",
+				StaffComment:     "Temporary hold",
+				CreatedByStaffID: staff.ID,
+				CreatedAt:        now,
+			},
+		},
+	}, staff)
+
+	recorder = httptest.NewRecorder()
+	renderer.Render(recorder, http.StatusOK, "users/detail", pageData)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("unexpected status: %d", recorder.Code)
+	}
+	body = html.UnescapeString(recorder.Body.String())
+	for _, expected := range []string{
+		"Aruzhan Traveler",
+		"Kazakhstan (KZ)",
+		"policy_violation",
+		"Needs manual review",
+		"Temporary hold",
+		`action="/admin/users/` + userID.String() + `/moderation-cases"`,
+		`<select name="reason_code" required>`,
+		`value="unsafe_behavior"`,
+		`action="/admin/users/` + userID.String() + `/moderation-cases/` + caseID.String() + `/resolve"`,
+		`action="/admin/users/` + userID.String() + `/restrictions"`,
+		`action="/admin/users/` + userID.String() + `/restrictions/` + restrictionID.String() + `/lift"`,
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("user detail did not render %q: %s", expected, body)
+		}
+	}
+	if strings.Contains(body, "+77001234567") || strings.Contains(body, "aruzhan@example.com") {
+		t.Fatalf("user detail rendered unmasked identity data: %s", body)
+	}
+	if strings.Contains(body, `name="reason_code" required placeholder`) {
+		t.Fatalf("user detail rendered manual reason input for moderation case: %s", body)
 	}
 }
 

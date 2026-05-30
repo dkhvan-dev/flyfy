@@ -9,6 +9,7 @@ package userv1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -1949,11 +1950,507 @@ func (x *GetUserBySubjectResponse) GetAggregate() *UserAggregate {
 	return nil
 }
 
+type ListAdminUsersRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	PageSize       int32                  `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken      string                 `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	Query          string                 `protobuf:"bytes,3,opt,name=query,proto3" json:"query,omitempty"`
+	Status         string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
+	Role           string                 `protobuf:"bytes,5,opt,name=role,proto3" json:"role,omitempty"`
+	CountryCode    string                 `protobuf:"bytes,6,opt,name=country_code,json=countryCode,proto3" json:"country_code,omitempty"`
+	CreatedFrom    *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created_from,json=createdFrom,proto3" json:"created_from,omitempty"`
+	CreatedTo      *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=created_to,json=createdTo,proto3" json:"created_to,omitempty"`
+	LastActiveFrom *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=last_active_from,json=lastActiveFrom,proto3" json:"last_active_from,omitempty"`
+	LastActiveTo   *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=last_active_to,json=lastActiveTo,proto3" json:"last_active_to,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *ListAdminUsersRequest) Reset() {
+	*x = ListAdminUsersRequest{}
+	mi := &file_user_v1_user_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAdminUsersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAdminUsersRequest) ProtoMessage() {}
+
+func (x *ListAdminUsersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAdminUsersRequest.ProtoReflect.Descriptor instead.
+func (*ListAdminUsersRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *ListAdminUsersRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListAdminUsersRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
+func (x *ListAdminUsersRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+func (x *ListAdminUsersRequest) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *ListAdminUsersRequest) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+func (x *ListAdminUsersRequest) GetCountryCode() string {
+	if x != nil {
+		return x.CountryCode
+	}
+	return ""
+}
+
+func (x *ListAdminUsersRequest) GetCreatedFrom() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedFrom
+	}
+	return nil
+}
+
+func (x *ListAdminUsersRequest) GetCreatedTo() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedTo
+	}
+	return nil
+}
+
+func (x *ListAdminUsersRequest) GetLastActiveFrom() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastActiveFrom
+	}
+	return nil
+}
+
+func (x *ListAdminUsersRequest) GetLastActiveTo() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastActiveTo
+	}
+	return nil
+}
+
+type AdminUserListItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	DisplayName   string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	MaskedPhone   string                 `protobuf:"bytes,3,opt,name=masked_phone,json=maskedPhone,proto3" json:"masked_phone,omitempty"`
+	MaskedEmail   string                 `protobuf:"bytes,4,opt,name=masked_email,json=maskedEmail,proto3" json:"masked_email,omitempty"`
+	CountryCode   string                 `protobuf:"bytes,5,opt,name=country_code,json=countryCode,proto3" json:"country_code,omitempty"`
+	Roles         []string               `protobuf:"bytes,6,rep,name=roles,proto3" json:"roles,omitempty"`
+	AccountStatus string                 `protobuf:"bytes,7,opt,name=account_status,json=accountStatus,proto3" json:"account_status,omitempty"`
+	GuideStatus   string                 `protobuf:"bytes,8,opt,name=guide_status,json=guideStatus,proto3" json:"guide_status,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	LastActiveAt  *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=last_active_at,json=lastActiveAt,proto3" json:"last_active_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminUserListItem) Reset() {
+	*x = AdminUserListItem{}
+	mi := &file_user_v1_user_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminUserListItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminUserListItem) ProtoMessage() {}
+
+func (x *AdminUserListItem) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminUserListItem.ProtoReflect.Descriptor instead.
+func (*AdminUserListItem) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *AdminUserListItem) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *AdminUserListItem) GetDisplayName() string {
+	if x != nil {
+		return x.DisplayName
+	}
+	return ""
+}
+
+func (x *AdminUserListItem) GetMaskedPhone() string {
+	if x != nil {
+		return x.MaskedPhone
+	}
+	return ""
+}
+
+func (x *AdminUserListItem) GetMaskedEmail() string {
+	if x != nil {
+		return x.MaskedEmail
+	}
+	return ""
+}
+
+func (x *AdminUserListItem) GetCountryCode() string {
+	if x != nil {
+		return x.CountryCode
+	}
+	return ""
+}
+
+func (x *AdminUserListItem) GetRoles() []string {
+	if x != nil {
+		return x.Roles
+	}
+	return nil
+}
+
+func (x *AdminUserListItem) GetAccountStatus() string {
+	if x != nil {
+		return x.AccountStatus
+	}
+	return ""
+}
+
+func (x *AdminUserListItem) GetGuideStatus() string {
+	if x != nil {
+		return x.GuideStatus
+	}
+	return ""
+}
+
+func (x *AdminUserListItem) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *AdminUserListItem) GetLastActiveAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastActiveAt
+	}
+	return nil
+}
+
+type ListAdminUsersResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Users         []*AdminUserListItem   `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`
+	NextPageToken string                 `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAdminUsersResponse) Reset() {
+	*x = ListAdminUsersResponse{}
+	mi := &file_user_v1_user_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAdminUsersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAdminUsersResponse) ProtoMessage() {}
+
+func (x *ListAdminUsersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAdminUsersResponse.ProtoReflect.Descriptor instead.
+func (*ListAdminUsersResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *ListAdminUsersResponse) GetUsers() []*AdminUserListItem {
+	if x != nil {
+		return x.Users
+	}
+	return nil
+}
+
+func (x *ListAdminUsersResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
+}
+
+type GetAdminUserDetailRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAdminUserDetailRequest) Reset() {
+	*x = GetAdminUserDetailRequest{}
+	mi := &file_user_v1_user_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAdminUserDetailRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAdminUserDetailRequest) ProtoMessage() {}
+
+func (x *GetAdminUserDetailRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAdminUserDetailRequest.ProtoReflect.Descriptor instead.
+func (*GetAdminUserDetailRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *GetAdminUserDetailRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type AdminUserDetail struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	DisplayName   string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	MaskedPhone   string                 `protobuf:"bytes,3,opt,name=masked_phone,json=maskedPhone,proto3" json:"masked_phone,omitempty"`
+	MaskedEmail   string                 `protobuf:"bytes,4,opt,name=masked_email,json=maskedEmail,proto3" json:"masked_email,omitempty"`
+	CountryCode   string                 `protobuf:"bytes,5,opt,name=country_code,json=countryCode,proto3" json:"country_code,omitempty"`
+	Roles         []string               `protobuf:"bytes,6,rep,name=roles,proto3" json:"roles,omitempty"`
+	AccountStatus string                 `protobuf:"bytes,7,opt,name=account_status,json=accountStatus,proto3" json:"account_status,omitempty"`
+	GuideStatus   string                 `protobuf:"bytes,8,opt,name=guide_status,json=guideStatus,proto3" json:"guide_status,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	LastActiveAt  *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=last_active_at,json=lastActiveAt,proto3" json:"last_active_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminUserDetail) Reset() {
+	*x = AdminUserDetail{}
+	mi := &file_user_v1_user_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminUserDetail) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminUserDetail) ProtoMessage() {}
+
+func (x *AdminUserDetail) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminUserDetail.ProtoReflect.Descriptor instead.
+func (*AdminUserDetail) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *AdminUserDetail) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *AdminUserDetail) GetDisplayName() string {
+	if x != nil {
+		return x.DisplayName
+	}
+	return ""
+}
+
+func (x *AdminUserDetail) GetMaskedPhone() string {
+	if x != nil {
+		return x.MaskedPhone
+	}
+	return ""
+}
+
+func (x *AdminUserDetail) GetMaskedEmail() string {
+	if x != nil {
+		return x.MaskedEmail
+	}
+	return ""
+}
+
+func (x *AdminUserDetail) GetCountryCode() string {
+	if x != nil {
+		return x.CountryCode
+	}
+	return ""
+}
+
+func (x *AdminUserDetail) GetRoles() []string {
+	if x != nil {
+		return x.Roles
+	}
+	return nil
+}
+
+func (x *AdminUserDetail) GetAccountStatus() string {
+	if x != nil {
+		return x.AccountStatus
+	}
+	return ""
+}
+
+func (x *AdminUserDetail) GetGuideStatus() string {
+	if x != nil {
+		return x.GuideStatus
+	}
+	return ""
+}
+
+func (x *AdminUserDetail) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *AdminUserDetail) GetUpdatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return nil
+}
+
+func (x *AdminUserDetail) GetLastActiveAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastActiveAt
+	}
+	return nil
+}
+
+type GetAdminUserDetailResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	User          *AdminUserDetail       `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAdminUserDetailResponse) Reset() {
+	*x = GetAdminUserDetailResponse{}
+	mi := &file_user_v1_user_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAdminUserDetailResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAdminUserDetailResponse) ProtoMessage() {}
+
+func (x *GetAdminUserDetailResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAdminUserDetailResponse.ProtoReflect.Descriptor instead.
+func (*GetAdminUserDetailResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *GetAdminUserDetailResponse) GetUser() *AdminUserDetail {
+	if x != nil {
+		return x.User
+	}
+	return nil
+}
+
 var File_user_v1_user_proto protoreflect.FileDescriptor
 
 const file_user_v1_user_proto_rawDesc = "" +
 	"\n" +
-	"\x12user/v1/user.proto\x12\auser.v1\"\x8a\x01\n" +
+	"\x12user/v1/user.proto\x12\auser.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x8a\x01\n" +
 	"\x1fGetOrCreateUserBySubjectRequest\x12\x1d\n" +
 	"\n" +
 	"subject_id\x18\x01 \x01(\tR\tsubjectId\x12#\n" +
@@ -2123,7 +2620,57 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\n" +
 	"subject_id\x18\x01 \x01(\tR\tsubjectId\"P\n" +
 	"\x18GetUserBySubjectResponse\x124\n" +
-	"\taggregate\x18\x01 \x01(\v2\x16.user.v1.UserAggregateR\taggregate2\x91\t\n" +
+	"\taggregate\x18\x01 \x01(\v2\x16.user.v1.UserAggregateR\taggregate\"\xba\x03\n" +
+	"\x15ListAdminUsersRequest\x12\x1b\n" +
+	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x02 \x01(\tR\tpageToken\x12\x14\n" +
+	"\x05query\x18\x03 \x01(\tR\x05query\x12\x16\n" +
+	"\x06status\x18\x04 \x01(\tR\x06status\x12\x12\n" +
+	"\x04role\x18\x05 \x01(\tR\x04role\x12!\n" +
+	"\fcountry_code\x18\x06 \x01(\tR\vcountryCode\x12=\n" +
+	"\fcreated_from\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\vcreatedFrom\x129\n" +
+	"\n" +
+	"created_to\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedTo\x12D\n" +
+	"\x10last_active_from\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\x0elastActiveFrom\x12@\n" +
+	"\x0elast_active_to\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\flastActiveTo\"\x95\x03\n" +
+	"\x11AdminUserListItem\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12!\n" +
+	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12!\n" +
+	"\fmasked_phone\x18\x03 \x01(\tR\vmaskedPhone\x12!\n" +
+	"\fmasked_email\x18\x04 \x01(\tR\vmaskedEmail\x12!\n" +
+	"\fcountry_code\x18\x05 \x01(\tR\vcountryCode\x12\x14\n" +
+	"\x05roles\x18\x06 \x03(\tR\x05roles\x12%\n" +
+	"\x0eaccount_status\x18\a \x01(\tR\raccountStatus\x12!\n" +
+	"\fguide_status\x18\b \x01(\tR\vguideStatus\x129\n" +
+	"\n" +
+	"created_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12@\n" +
+	"\x0elast_active_at\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\flastActiveAt\"r\n" +
+	"\x16ListAdminUsersResponse\x120\n" +
+	"\x05users\x18\x01 \x03(\v2\x1a.user.v1.AdminUserListItemR\x05users\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"4\n" +
+	"\x19GetAdminUserDetailRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"\xce\x03\n" +
+	"\x0fAdminUserDetail\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12!\n" +
+	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12!\n" +
+	"\fmasked_phone\x18\x03 \x01(\tR\vmaskedPhone\x12!\n" +
+	"\fmasked_email\x18\x04 \x01(\tR\vmaskedEmail\x12!\n" +
+	"\fcountry_code\x18\x05 \x01(\tR\vcountryCode\x12\x14\n" +
+	"\x05roles\x18\x06 \x03(\tR\x05roles\x12%\n" +
+	"\x0eaccount_status\x18\a \x01(\tR\raccountStatus\x12!\n" +
+	"\fguide_status\x18\b \x01(\tR\vguideStatus\x129\n" +
+	"\n" +
+	"created_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
+	"\n" +
+	"updated_at\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12@\n" +
+	"\x0elast_active_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\flastActiveAt\"J\n" +
+	"\x1aGetAdminUserDetailResponse\x12,\n" +
+	"\x04user\x18\x01 \x01(\v2\x18.user.v1.AdminUserDetailR\x04user2\xc3\n" +
+	"\n" +
 	"\vUserService\x12o\n" +
 	"\x18GetOrCreateUserBySubject\x12(.user.v1.GetOrCreateUserBySubjectRequest\x1a).user.v1.GetOrCreateUserBySubjectResponse\x12H\n" +
 	"\vGetUserById\x12\x1b.user.v1.GetUserByIdRequest\x1a\x1c.user.v1.GetUserByIdResponse\x12Q\n" +
@@ -2136,7 +2683,9 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\x1aGetPublicProfilesByUserIds\x12*.user.v1.GetPublicProfilesByUserIdsRequest\x1a+.user.v1.GetPublicProfilesByUserIdsResponse\x12\x84\x01\n" +
 	"\x1fListPublicUserIdsByCountryCodes\x12/.user.v1.ListPublicUserIdsByCountryCodesRequest\x1a0.user.v1.ListPublicUserIdsByCountryCodesResponse\x12`\n" +
 	"\x13FilterFriendUserIds\x12#.user.v1.FilterFriendUserIdsRequest\x1a$.user.v1.FilterFriendUserIdsResponse\x12W\n" +
-	"\x10GetUserBySubject\x12 .user.v1.GetUserBySubjectRequest\x1a!.user.v1.GetUserBySubjectResponseB9Z7github.com/dkhvan-dev/flyfy/proto/gen/go/user/v1;userv1b\x06proto3"
+	"\x10GetUserBySubject\x12 .user.v1.GetUserBySubjectRequest\x1a!.user.v1.GetUserBySubjectResponse\x12Q\n" +
+	"\x0eListAdminUsers\x12\x1e.user.v1.ListAdminUsersRequest\x1a\x1f.user.v1.ListAdminUsersResponse\x12]\n" +
+	"\x12GetAdminUserDetail\x12\".user.v1.GetAdminUserDetailRequest\x1a#.user.v1.GetAdminUserDetailResponseB9Z7github.com/dkhvan-dev/flyfy/proto/gen/go/user/v1;userv1b\x06proto3"
 
 var (
 	file_user_v1_user_proto_rawDescOnce sync.Once
@@ -2150,7 +2699,7 @@ func file_user_v1_user_proto_rawDescGZIP() []byte {
 	return file_user_v1_user_proto_rawDescData
 }
 
-var file_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
+var file_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
 var file_user_v1_user_proto_goTypes = []any{
 	(*GetOrCreateUserBySubjectRequest)(nil),         // 0: user.v1.GetOrCreateUserBySubjectRequest
 	(*GetOrCreateUserBySubjectResponse)(nil),        // 1: user.v1.GetOrCreateUserBySubjectResponse
@@ -2182,6 +2731,13 @@ var file_user_v1_user_proto_goTypes = []any{
 	(*FilterFriendUserIdsResponse)(nil),             // 27: user.v1.FilterFriendUserIdsResponse
 	(*GetUserBySubjectRequest)(nil),                 // 28: user.v1.GetUserBySubjectRequest
 	(*GetUserBySubjectResponse)(nil),                // 29: user.v1.GetUserBySubjectResponse
+	(*ListAdminUsersRequest)(nil),                   // 30: user.v1.ListAdminUsersRequest
+	(*AdminUserListItem)(nil),                       // 31: user.v1.AdminUserListItem
+	(*ListAdminUsersResponse)(nil),                  // 32: user.v1.ListAdminUsersResponse
+	(*GetAdminUserDetailRequest)(nil),               // 33: user.v1.GetAdminUserDetailRequest
+	(*AdminUserDetail)(nil),                         // 34: user.v1.AdminUserDetail
+	(*GetAdminUserDetailResponse)(nil),              // 35: user.v1.GetAdminUserDetailResponse
+	(*timestamppb.Timestamp)(nil),                   // 36: google.protobuf.Timestamp
 }
 var file_user_v1_user_proto_depIdxs = []int32{
 	8,  // 0: user.v1.GetOrCreateUserBySubjectResponse.aggregate:type_name -> user.v1.UserAggregate
@@ -2196,35 +2752,50 @@ var file_user_v1_user_proto_depIdxs = []int32{
 	21, // 9: user.v1.ListPublicProfilesResponse.items:type_name -> user.v1.PublicProfile
 	21, // 10: user.v1.GetPublicProfilesByUserIdsResponse.items:type_name -> user.v1.PublicProfile
 	8,  // 11: user.v1.GetUserBySubjectResponse.aggregate:type_name -> user.v1.UserAggregate
-	0,  // 12: user.v1.UserService.GetOrCreateUserBySubject:input_type -> user.v1.GetOrCreateUserBySubjectRequest
-	2,  // 13: user.v1.UserService.GetUserById:input_type -> user.v1.GetUserByIdRequest
-	4,  // 14: user.v1.UserService.GetUserProfile:input_type -> user.v1.GetUserProfileRequest
-	6,  // 15: user.v1.UserService.UpdateUserProfile:input_type -> user.v1.UpdateUserProfileRequest
-	13, // 16: user.v1.UserService.UpdateUserSettings:input_type -> user.v1.UpdateUserSettingsRequest
-	15, // 17: user.v1.UserService.GrantUserRole:input_type -> user.v1.GrantUserRoleRequest
-	17, // 18: user.v1.UserService.RevokeUserRole:input_type -> user.v1.RevokeUserRoleRequest
-	19, // 19: user.v1.UserService.ListPublicProfiles:input_type -> user.v1.ListPublicProfilesRequest
-	22, // 20: user.v1.UserService.GetPublicProfilesByUserIds:input_type -> user.v1.GetPublicProfilesByUserIdsRequest
-	24, // 21: user.v1.UserService.ListPublicUserIdsByCountryCodes:input_type -> user.v1.ListPublicUserIdsByCountryCodesRequest
-	26, // 22: user.v1.UserService.FilterFriendUserIds:input_type -> user.v1.FilterFriendUserIdsRequest
-	28, // 23: user.v1.UserService.GetUserBySubject:input_type -> user.v1.GetUserBySubjectRequest
-	1,  // 24: user.v1.UserService.GetOrCreateUserBySubject:output_type -> user.v1.GetOrCreateUserBySubjectResponse
-	3,  // 25: user.v1.UserService.GetUserById:output_type -> user.v1.GetUserByIdResponse
-	5,  // 26: user.v1.UserService.GetUserProfile:output_type -> user.v1.GetUserProfileResponse
-	7,  // 27: user.v1.UserService.UpdateUserProfile:output_type -> user.v1.UpdateUserProfileResponse
-	14, // 28: user.v1.UserService.UpdateUserSettings:output_type -> user.v1.UpdateUserSettingsResponse
-	16, // 29: user.v1.UserService.GrantUserRole:output_type -> user.v1.GrantUserRoleResponse
-	18, // 30: user.v1.UserService.RevokeUserRole:output_type -> user.v1.RevokeUserRoleResponse
-	20, // 31: user.v1.UserService.ListPublicProfiles:output_type -> user.v1.ListPublicProfilesResponse
-	23, // 32: user.v1.UserService.GetPublicProfilesByUserIds:output_type -> user.v1.GetPublicProfilesByUserIdsResponse
-	25, // 33: user.v1.UserService.ListPublicUserIdsByCountryCodes:output_type -> user.v1.ListPublicUserIdsByCountryCodesResponse
-	27, // 34: user.v1.UserService.FilterFriendUserIds:output_type -> user.v1.FilterFriendUserIdsResponse
-	29, // 35: user.v1.UserService.GetUserBySubject:output_type -> user.v1.GetUserBySubjectResponse
-	24, // [24:36] is the sub-list for method output_type
-	12, // [12:24] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	36, // 12: user.v1.ListAdminUsersRequest.created_from:type_name -> google.protobuf.Timestamp
+	36, // 13: user.v1.ListAdminUsersRequest.created_to:type_name -> google.protobuf.Timestamp
+	36, // 14: user.v1.ListAdminUsersRequest.last_active_from:type_name -> google.protobuf.Timestamp
+	36, // 15: user.v1.ListAdminUsersRequest.last_active_to:type_name -> google.protobuf.Timestamp
+	36, // 16: user.v1.AdminUserListItem.created_at:type_name -> google.protobuf.Timestamp
+	36, // 17: user.v1.AdminUserListItem.last_active_at:type_name -> google.protobuf.Timestamp
+	31, // 18: user.v1.ListAdminUsersResponse.users:type_name -> user.v1.AdminUserListItem
+	36, // 19: user.v1.AdminUserDetail.created_at:type_name -> google.protobuf.Timestamp
+	36, // 20: user.v1.AdminUserDetail.updated_at:type_name -> google.protobuf.Timestamp
+	36, // 21: user.v1.AdminUserDetail.last_active_at:type_name -> google.protobuf.Timestamp
+	34, // 22: user.v1.GetAdminUserDetailResponse.user:type_name -> user.v1.AdminUserDetail
+	0,  // 23: user.v1.UserService.GetOrCreateUserBySubject:input_type -> user.v1.GetOrCreateUserBySubjectRequest
+	2,  // 24: user.v1.UserService.GetUserById:input_type -> user.v1.GetUserByIdRequest
+	4,  // 25: user.v1.UserService.GetUserProfile:input_type -> user.v1.GetUserProfileRequest
+	6,  // 26: user.v1.UserService.UpdateUserProfile:input_type -> user.v1.UpdateUserProfileRequest
+	13, // 27: user.v1.UserService.UpdateUserSettings:input_type -> user.v1.UpdateUserSettingsRequest
+	15, // 28: user.v1.UserService.GrantUserRole:input_type -> user.v1.GrantUserRoleRequest
+	17, // 29: user.v1.UserService.RevokeUserRole:input_type -> user.v1.RevokeUserRoleRequest
+	19, // 30: user.v1.UserService.ListPublicProfiles:input_type -> user.v1.ListPublicProfilesRequest
+	22, // 31: user.v1.UserService.GetPublicProfilesByUserIds:input_type -> user.v1.GetPublicProfilesByUserIdsRequest
+	24, // 32: user.v1.UserService.ListPublicUserIdsByCountryCodes:input_type -> user.v1.ListPublicUserIdsByCountryCodesRequest
+	26, // 33: user.v1.UserService.FilterFriendUserIds:input_type -> user.v1.FilterFriendUserIdsRequest
+	28, // 34: user.v1.UserService.GetUserBySubject:input_type -> user.v1.GetUserBySubjectRequest
+	30, // 35: user.v1.UserService.ListAdminUsers:input_type -> user.v1.ListAdminUsersRequest
+	33, // 36: user.v1.UserService.GetAdminUserDetail:input_type -> user.v1.GetAdminUserDetailRequest
+	1,  // 37: user.v1.UserService.GetOrCreateUserBySubject:output_type -> user.v1.GetOrCreateUserBySubjectResponse
+	3,  // 38: user.v1.UserService.GetUserById:output_type -> user.v1.GetUserByIdResponse
+	5,  // 39: user.v1.UserService.GetUserProfile:output_type -> user.v1.GetUserProfileResponse
+	7,  // 40: user.v1.UserService.UpdateUserProfile:output_type -> user.v1.UpdateUserProfileResponse
+	14, // 41: user.v1.UserService.UpdateUserSettings:output_type -> user.v1.UpdateUserSettingsResponse
+	16, // 42: user.v1.UserService.GrantUserRole:output_type -> user.v1.GrantUserRoleResponse
+	18, // 43: user.v1.UserService.RevokeUserRole:output_type -> user.v1.RevokeUserRoleResponse
+	20, // 44: user.v1.UserService.ListPublicProfiles:output_type -> user.v1.ListPublicProfilesResponse
+	23, // 45: user.v1.UserService.GetPublicProfilesByUserIds:output_type -> user.v1.GetPublicProfilesByUserIdsResponse
+	25, // 46: user.v1.UserService.ListPublicUserIdsByCountryCodes:output_type -> user.v1.ListPublicUserIdsByCountryCodesResponse
+	27, // 47: user.v1.UserService.FilterFriendUserIds:output_type -> user.v1.FilterFriendUserIdsResponse
+	29, // 48: user.v1.UserService.GetUserBySubject:output_type -> user.v1.GetUserBySubjectResponse
+	32, // 49: user.v1.UserService.ListAdminUsers:output_type -> user.v1.ListAdminUsersResponse
+	35, // 50: user.v1.UserService.GetAdminUserDetail:output_type -> user.v1.GetAdminUserDetailResponse
+	37, // [37:51] is the sub-list for method output_type
+	23, // [23:37] is the sub-list for method input_type
+	23, // [23:23] is the sub-list for extension type_name
+	23, // [23:23] is the sub-list for extension extendee
+	0,  // [0:23] is the sub-list for field type_name
 }
 
 func init() { file_user_v1_user_proto_init() }
@@ -2239,7 +2810,7 @@ func file_user_v1_user_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_v1_user_proto_rawDesc), len(file_user_v1_user_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   30,
+			NumMessages:   36,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -731,6 +731,104 @@ func (u *UserUseCase) ListPublicProfiles(
 	return items, nil
 }
 
+func (u *UserUseCase) ListAdminUsers(
+	ctx context.Context,
+	filter model.AdminUserListFilter,
+) (model.AdminUserListPage, error) {
+	filter.PageSize = normalizeAdminPageSize(filter.PageSize)
+	filter.PageToken = strings.TrimSpace(filter.PageToken)
+	filter.Query = strings.TrimSpace(filter.Query)
+	filter.Status = strings.TrimSpace(filter.Status)
+	filter.Role = strings.TrimSpace(filter.Role)
+	filter.CountryCode = strings.ToUpper(strings.TrimSpace(filter.CountryCode))
+
+	if filter.PageToken != "" {
+		if _, err := model.DecodeAdminUserPageToken(filter.PageToken); err != nil {
+			return model.AdminUserListPage{}, ErrInvalidPageToken
+		}
+	}
+
+	items, nextToken, err := u.repo.ListAdminUsers(ctx, filter)
+	if err != nil {
+		return model.AdminUserListPage{}, fmt.Errorf("list admin users: %w", err)
+	}
+
+	for i := range items {
+		items[i].MaskedPhone = maskAdminPhone(items[i].MaskedPhone)
+		items[i].MaskedEmail = maskAdminEmail(items[i].MaskedEmail)
+	}
+
+	return model.AdminUserListPage{
+		Items:         items,
+		NextPageToken: nextToken,
+	}, nil
+}
+
+func (u *UserUseCase) GetAdminUserDetail(
+	ctx context.Context,
+	userID uuid.UUID,
+) (model.AdminUserDetail, error) {
+	if userID == uuid.Nil {
+		return model.AdminUserDetail{}, ErrInvalidUserID
+	}
+
+	detail, err := u.repo.GetAdminUserDetail(ctx, userID)
+	if err != nil {
+		return model.AdminUserDetail{}, fmt.Errorf("get admin user detail: %w", err)
+	}
+	if detail.UserID == uuid.Nil {
+		return model.AdminUserDetail{}, ErrUserNotFound
+	}
+
+	detail.MaskedPhone = maskAdminPhone(detail.MaskedPhone)
+	detail.MaskedEmail = maskAdminEmail(detail.MaskedEmail)
+
+	return detail, nil
+}
+
+func normalizeAdminPageSize(pageSize int) int {
+	if pageSize <= 0 {
+		return 50
+	}
+	if pageSize > 100 {
+		return 100
+	}
+	return pageSize
+}
+
+func maskAdminPhone(phone string) string {
+	phone = strings.TrimSpace(phone)
+	if phone == "" {
+		return ""
+	}
+	if len([]rune(phone)) <= 4 {
+		return "***"
+	}
+
+	runes := []rune(phone)
+	prefixLen := 2
+	suffixLen := 2
+	if len(runes) < prefixLen+suffixLen {
+		return "***"
+	}
+
+	return string(runes[:prefixLen]) + "******" + string(runes[len(runes)-suffixLen:])
+}
+
+func maskAdminEmail(email string) string {
+	email = strings.TrimSpace(email)
+	if email == "" {
+		return ""
+	}
+
+	local, _, ok := strings.Cut(email, "@")
+	if !ok || local == "" {
+		return "***"
+	}
+
+	return string([]rune(local)[0]) + "***@***"
+}
+
 func (u *UserUseCase) GetPublicProfilesByUserIDs(
 	ctx context.Context,
 	userIDs []uuid.UUID,

@@ -21,6 +21,7 @@ type Config struct {
 	ChatService ChatServiceConfig
 	Payment     PaymentServiceConfig
 	AntiFraud   AntiFraudConfig
+	Trust       TrustServiceConfig
 }
 
 type AppConfig struct {
@@ -116,6 +117,12 @@ type AntiFraudConfig struct {
 	InternalServiceToken string        `env:"ANTI_FRAUD_INTERNAL_SERVICE_TOKEN"`
 	SignalHashKey        string        `env:"ANTI_FRAUD_SIGNAL_HASH_KEY"`
 	Timeout              time.Duration `env:"ANTI_FRAUD_TIMEOUT, default=800ms"`
+}
+
+type TrustServiceConfig struct {
+	Enabled bool          `env:"TRUST_POLICY_ENABLED, default=true"`
+	Target  string        `env:"TRUST_SERVICE_GRPC_TARGET, default=trust-service:9096"`
+	Timeout time.Duration `env:"TRUST_SERVICE_TIMEOUT, default=250ms"`
 }
 
 func Load(ctx context.Context) (*Config, error) {

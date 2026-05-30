@@ -30,6 +30,11 @@ type UserRepository interface {
 
 	GetUserByID(ctx context.Context, userID uuid.UUID) (*model.User, error)
 	GetUserBySubject(ctx context.Context, subject string) (*model.User, error)
+	ListAdminUsers(
+		ctx context.Context,
+		filter model.AdminUserListFilter,
+	) ([]model.AdminUserListItem, string, error)
+	GetAdminUserDetail(ctx context.Context, userID uuid.UUID) (model.AdminUserDetail, error)
 
 	GetProfileByUserID(ctx context.Context, userID uuid.UUID) (*model.UserProfile, error)
 	IsDisplayNameTaken(ctx context.Context, displayName string, excludeUserID uuid.UUID) (bool, error)

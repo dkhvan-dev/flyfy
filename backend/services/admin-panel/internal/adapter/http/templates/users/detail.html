@@ -1,0 +1,227 @@
+{{define "users/detail"}}
+{{template "pageStart" .}}
+{{if .Data.User.UserID}}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "users.detailEyebrow"}} <code>{{shortID .Data.User.UserID}}</code></p>
+      <h1>{{if .Data.User.DisplayName}}{{.Data.User.DisplayName}}{{else}}{{t .Locale "label.user"}}{{end}}</h1>
+    </div>
+    <a class="button" href="/admin/users">{{t .Locale "users.backToList"}}</a>
+  </div>
+
+  <div class="split">
+    <article class="card detail">
+      <div class="meta-row">
+        <span class="{{statusClass .Data.User.AccountStatus}}">{{statusText .Locale .Data.User.AccountStatus}}</span>
+        {{if .Data.User.GuideStatus}}<span>{{t .Locale "label.guideStatus"}} {{statusText .Locale .Data.User.GuideStatus}}</span>{{end}}
+        <span>{{t .Locale "users.openCases"}} {{.Data.User.OpenModerationCaseCount}}</span>
+        <span>{{t .Locale "users.restrictions"}} {{.Data.User.ActiveRestrictionCount}}</span>
+      </div>
+      <dl class="facts">
+        <div><dt>{{t .Locale "table.contact"}}</dt><dd>{{if .Data.User.MaskedPhone}}{{.Data.User.MaskedPhone}}{{else}}-{{end}}{{if .Data.User.MaskedEmail}}<span class="muted block">{{.Data.User.MaskedEmail}}</span>{{end}}</dd></div>
+        <div><dt>{{t .Locale "field.country"}}</dt><dd>{{if .Data.User.CountryCode}}{{countryWithCode .Locale .Data.User.CountryCode}}{{else}}-{{end}}</dd></div>
+        <div><dt>{{t .Locale "table.roles"}}</dt><dd>{{if .Data.User.Roles}}{{join .Data.User.Roles ", "}}{{else}}-{{end}}</dd></div>
+        <div><dt>{{t .Locale "label.trust"}}</dt><dd>{{if .Data.User.TrustBand}}{{.Data.User.TrustBand}}{{else}}-{{end}}{{if .Data.User.TrustScore}}<span class="muted block">{{.Data.User.TrustScore}}</span>{{end}}</dd></div>
+        <div><dt>{{t .Locale "table.created"}}</dt><dd>{{formatTime .Data.User.CreatedAt (staffTimezone .Staff)}}</dd></div>
+        <div><dt>{{t .Locale "table.updated"}}</dt><dd>{{formatTime .Data.User.UpdatedAt (staffTimezone .Staff)}}</dd></div>
+        <div><dt>{{t .Locale "users.lastActive"}}</dt><dd>{{if .Data.User.LastActiveAt}}{{formatTime .Data.User.LastActiveAt (staffTimezone .Staff)}}{{else}}-{{end}}</dd></div>
+      </dl>
+    </article>
+
+    <aside class="card">
+      <h2>{{t .Locale "users.createCase"}}</h2>
+      {{if .Data.CanModerate}}
+        <form method="post" action="{{.Data.CaseActionURL}}" class="form compact">
+          {{csrfField .CSRFToken}}
+          <label>
+            <span>{{t .Locale "field.reason"}}</span>
+            <select name="reason_code" required>
+              <option value="">{{t .Locale "placeholder.selectReasonCode"}}</option>
+              {{range moderationReasonOptions .Locale}}
+                <option value="{{.Code}}">{{.Label}}</option>
+              {{end}}
+            </select>
+          </label>
+          <label>
+            <span>{{t .Locale "label.priority"}}</span>
+            <select name="priority" required>
+              {{range .Data.PriorityOptions}}<option value="{{.}}">{{statusText $.Locale .}}</option>{{end}}
+            </select>
+          </label>
+          <label>
+            <span>{{t .Locale "field.internalComment"}}</span>
+            <textarea name="staff_comment" rows="3" required></textarea>
+          </label>
+          <button class="primary" type="submit">{{t .Locale "users.createCase"}}</button>
+        </form>
+      {{else}}
+        <p class="empty">{{t .Locale "users.noModeratePermission"}}</p>
+      {{end}}
+
+      <h2 class="subsection-title">{{t .Locale "users.createRestriction"}}</h2>
+      {{if .Data.CanRestrict}}
+        <form method="post" action="{{.Data.RestrictionURL}}" class="form compact danger-zone">
+          {{csrfField .CSRFToken}}
+          <label>
+            <span>{{t .Locale "users.restrictionCode"}}</span>
+            <select name="restriction_code" required>
+              <option value="">{{t .Locale "common.select"}}</option>
+              {{range .Data.RestrictionOptions}}<option value="{{.}}">{{statusText $.Locale .}}</option>{{end}}
+            </select>
+          </label>
+          <label>
+            <span>{{t .Locale "table.case"}}</span>
+            <select name="case_id">
+              <option value="">{{t .Locale "users.noLinkedCase"}}</option>
+              {{range .Data.Cases}}<option value="{{.Item.ID}}">{{shortID .Item.ID}} · {{.Item.ReasonCode}}</option>{{end}}
+            </select>
+          </label>
+          <label>
+            <span>{{t .Locale "field.reason"}}</span>
+            <select name="reason_code" required>
+              <option value="">{{t .Locale "placeholder.selectReasonCode"}}</option>
+              {{range moderationReasonOptions .Locale}}
+                <option value="{{.Code}}">{{.Label}}</option>
+              {{end}}
+            </select>
+          </label>
+          <label>
+            <span>{{t .Locale "users.expiresAt"}}</span>
+            <input type="datetime-local" name="expires_at">
+          </label>
+          <label>
+            <span>{{t .Locale "field.internalComment"}}</span>
+            <textarea name="staff_comment" rows="3" required></textarea>
+          </label>
+          <button class="danger" type="submit">{{t .Locale "users.createRestriction"}}</button>
+        </form>
+      {{else}}
+        <p class="empty">{{t .Locale "users.noRestrictPermission"}}</p>
+      {{end}}
+    </aside>
+  </div>
+
+  <section class="section flush">
+    <h2>{{t .Locale "users.caseHistory"}}</h2>
+    {{if .Data.Cases}}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>{{t .Locale "table.case"}}</th>
+              <th>{{t .Locale "table.status"}}</th>
+              <th>{{t .Locale "table.reasons"}}</th>
+              <th>{{t .Locale "table.comment"}}</th>
+              <th>{{t .Locale "table.created"}}</th>
+              <th>{{t .Locale "table.actions"}}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{range .Data.Cases}}
+              <tr>
+                <td><code>{{shortID .Item.ID}}</code><span class="muted block">{{.Item.Source}}</span></td>
+                <td><span class="{{statusClass .Item.Status}}">{{statusText $.Locale .Item.Status}}</span><span class="muted block">{{statusText $.Locale .Item.Priority}}</span></td>
+                <td>{{.Item.ReasonCode}}</td>
+                <td class="preline">{{if .Item.StaffComment}}{{.Item.StaffComment}}{{else}}-{{end}}</td>
+                <td>{{formatTime .Item.CreatedAt (staffTimezone $.Staff)}}</td>
+                <td>
+                  {{if and $.Data.CanModerate (not (or (eq .Item.Status "RESOLVED") (eq .Item.Status "DISMISSED")))}}
+                    <form method="post" action="{{.ResolveURL}}" class="form compact">
+                      {{csrfField $.CSRFToken}}
+                      <label>
+                        <span>{{t $.Locale "table.decision"}}</span>
+                        <select name="decision" required>
+                          {{range $.Data.DecisionOptions}}<option value="{{.}}">{{statusText $.Locale .}}</option>{{end}}
+                        </select>
+                      </label>
+                      <label>
+                        <span>{{t $.Locale "field.reason"}}</span>
+                        <select name="reason_code" required>
+                          {{range selectedModerationReasonOptions $.Locale .Item.ReasonCode}}
+                            <option value="{{.Code}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>
+                          {{end}}
+                        </select>
+                      </label>
+                      <label>
+                        <span>{{t $.Locale "field.internalComment"}}</span>
+                        <textarea name="staff_comment" rows="2" required></textarea>
+                      </label>
+                      <button class="primary" type="submit">{{t $.Locale "users.resolveCase"}}</button>
+                    </form>
+                  {{else}}
+                    <span class="muted">{{t $.Locale "users.noActionAvailable"}}</span>
+                  {{end}}
+                </td>
+              </tr>
+            {{end}}
+          </tbody>
+        </table>
+      </div>
+    {{else}}
+      <div class="empty card">{{t .Locale "users.noCases"}}</div>
+    {{end}}
+  </section>
+
+  <section class="section flush">
+    <h2>{{t .Locale "users.activeRestrictions"}}</h2>
+    {{if .Data.ActiveRestrictions}}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>{{t .Locale "users.restrictionCode"}}</th>
+              <th>{{t .Locale "table.status"}}</th>
+              <th>{{t .Locale "table.reasons"}}</th>
+              <th>{{t .Locale "table.comment"}}</th>
+              <th>{{t .Locale "users.expiresAt"}}</th>
+              <th>{{t .Locale "table.actions"}}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{range .Data.ActiveRestrictions}}
+              <tr>
+                <td>{{statusText $.Locale .Item.RestrictionCode}}</td>
+                <td><span class="{{statusClass .Item.Status}}">{{statusText $.Locale .Item.Status}}</span></td>
+                <td>{{.Item.ReasonCode}}</td>
+                <td class="preline">{{.Item.StaffComment}}</td>
+                <td>{{if .Item.ExpiresAt}}{{formatTime .Item.ExpiresAt (staffTimezone $.Staff)}}{{else}}-{{end}}</td>
+                <td>
+                  {{if $.Data.CanRestrict}}
+                    <form method="post" action="{{.LiftURL}}" class="form compact">
+                      {{csrfField $.CSRFToken}}
+                      <label>
+                        <span>{{t $.Locale "field.reason"}}</span>
+                        <select name="reason_code" required>
+                          {{range selectedModerationReasonOptions $.Locale .Item.ReasonCode}}
+                            <option value="{{.Code}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>
+                          {{end}}
+                        </select>
+                      </label>
+                      <label>
+                        <span>{{t $.Locale "field.internalComment"}}</span>
+                        <textarea name="staff_comment" rows="2" required></textarea>
+                      </label>
+                      <button type="submit">{{t $.Locale "users.liftRestriction"}}</button>
+                    </form>
+                  {{else}}
+                    <span class="muted">{{t $.Locale "users.noActionAvailable"}}</span>
+                  {{end}}
+                </td>
+              </tr>
+            {{end}}
+          </tbody>
+        </table>
+      </div>
+    {{else}}
+      <div class="empty card">{{t .Locale "users.noRestrictions"}}</div>
+    {{end}}
+  </section>
+</section>
+{{else}}
+<section class="section">
+  <a class="button" href="/admin/users">{{t .Locale "users.backToList"}}</a>
+</section>
+{{end}}
+{{template "pageEnd" .}}
+{{end}}

@@ -20,6 +20,8 @@ import (
 	guideadapter "github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/guide"
 	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/http"
 	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/repository"
+	trustadapter "github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/trust"
+	useradapter "github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/user"
 	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/app"
 	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/config"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -51,6 +53,8 @@ func main() {
 	loginAttemptRepo := repository.NewPGLoginAttemptRepository(pool)
 	auditRepo := repository.NewPGAuditRepository(pool)
 	moderationRepo := repository.NewPGModerationRepository(pool)
+	userModerationRepo := repository.NewPGUserModerationRepository(pool)
+	restrictionOutboxRepo := repository.NewPGUserRestrictionOutboxRepository(pool)
 	excursionClient := excursion.NewClient(
 		cfg.Excursion.BaseURL,
 		cfg.Excursion.Timeout,
@@ -71,6 +75,26 @@ func main() {
 		cfg.Chat.Timeout,
 		cfg.Security.TrustedInternalToken,
 	)
+	userClient, err := useradapter.New(
+		cfg.User.Target,
+		cfg.Security.TrustedInternalToken,
+		cfg.App.Name,
+		cfg.User.Timeout,
+	)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to initialize user-service client")
+	}
+	defer userClient.Close()
+	trustClient, err := trustadapter.New(
+		cfg.Trust.Target,
+		cfg.Security.TrustedInternalToken,
+		cfg.App.Name,
+		cfg.Trust.Timeout,
+	)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to initialize trust-service client")
+	}
+	defer trustClient.Close()
 	antiFraudClient := antifraudadapter.NewClient(
 		cfg.AntiFraud.BaseURL,
 		cfg.AntiFraud.Timeout,
@@ -95,6 +119,17 @@ func main() {
 	})
 	staffUC := app.NewStaffUseCase(staffRepo, auditRepo, sessionRepo)
 	moderationUC := app.NewModerationUseCase(moderationRepo, excursionClient, activityClient, guideClient, chatClient, auditRepo)
+	userModerationUC := app.NewUserModerationUseCase(userClient, userModerationRepo, auditRepo)
+	restrictionOutboxWorker := app.NewRestrictionOutboxWorker(
+		restrictionOutboxRepo,
+		trustClient,
+		app.RestrictionOutboxWorkerConfig{
+			PollInterval: cfg.Trust.OutboxPollInterval,
+			BatchSize:    cfg.Trust.OutboxBatchSize,
+			MaxAttempts:  cfg.Trust.OutboxMaxAttempts,
+			BaseBackoff:  cfg.Trust.OutboxBaseBackoff,
+		},
+	)
 	fraudUC := app.NewFraudUseCase(antiFraudClient, auditRepo)
 	attractionUC := app.NewAttractionContentUseCase(attractionClient, fileManagerClient, auditRepo, app.AttractionContentConfig{
 		MaxImageBytes: cfg.FileManager.MaxAttractionImageBytes,
@@ -113,8 +148,10 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to initialize renderer")
 	}
-	adminServer := httpadapter.NewServer(cfg, renderer, authUC, staffUC, moderationUC, auditUC, attractionUC, fraudUC)
+	adminServer := httpadapter.NewServer(cfg, renderer, authUC, staffUC, moderationUC, userModerationUC, auditUC, attractionUC, fraudUC)
 	adminServer.SetReadinessCheck(pool.Ping)
+
+	go restrictionOutboxWorker.Start(ctx)
 
 	server := &http.Server{
 		Addr:              cfg.HTTP.Address(),

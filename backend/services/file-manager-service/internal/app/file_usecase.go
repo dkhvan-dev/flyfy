@@ -27,6 +27,7 @@ type FileUseCase struct {
 	validator   *FileValidator
 	idempotency *IdempotencyService
 	fraud       port.FraudEvaluator
+	trustPolicy port.TrustPolicyClient
 }
 
 func NewFileUseCase(
@@ -154,6 +155,27 @@ func (u *FileUseCase) CreateUploadRequest(
 	if input.IdempotencyKey != nil {
 		idempotencyKey = strings.TrimSpace(*input.IdempotencyKey)
 	}
+
+	trustResult, trustErr := checkTrustPolicy(ctx, u.trustPolicy, port.TrustPolicyCheck{
+		UserID:         valueOrNilUUID(uploadedByUserID),
+		Action:         trustActionFileUpload,
+		ResourceType:   "file",
+		IdempotencyKey: idempotencyKey,
+		Metadata: map[string]any{
+			"purpose":      string(purpose),
+			"visibility":   string(visibility),
+			"contentType":  normalizeContentType(input.ContentType),
+			"sizeBytes":    input.SizeBytes,
+			"originalName": filepath.Base(input.OriginalName),
+		},
+	})
+	if trustErr != nil {
+		trustResult = quarantinedPolicyResult("TRUST_POLICY_UNAVAILABLE")
+	}
+	if trustResult.Decision == port.TrustPolicyDeny {
+		return nil, ErrTrustPolicyRejected
+	}
+
 	if idempotencyKey != "" {
 		var err error
 		fingerprint, err = u.idempotency.BuildFingerprint(map[string]any{
@@ -212,6 +234,13 @@ func (u *FileUseCase) CreateUploadRequest(
 	})
 	if err != nil {
 		return nil, fmt.Errorf("new file: %w", err)
+	}
+	if err = file.ApplyPolicyDecision(
+		filePolicyStatusFromDecision(trustResult),
+		trustResult.ReasonCode,
+		trustResult.DecisionID,
+	); err != nil {
+		return nil, err
 	}
 
 	if err = u.repo.Create(ctx, file); err != nil {

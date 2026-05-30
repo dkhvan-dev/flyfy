@@ -23,6 +23,7 @@ var (
 	ErrFilePurposeMismatch   = errors.New("file purpose does not match binding purpose")
 	ErrFileOwnershipMismatch = errors.New("file owner does not match actor")
 	ErrFraudRejected         = errors.New("operation rejected by fraud policy")
+	ErrTrustPolicyRejected   = errors.New("operation rejected by trust policy")
 )
 
 const (
@@ -44,6 +45,7 @@ const (
 	ErrorCodeFilePurposeMismatch   = "file_purpose_mismatch"
 	ErrorCodeFileOwnershipMismatch = "file_ownership_mismatch"
 	ErrorCodeFraudRejected         = "fraud_rejected"
+	ErrorCodeTrustPolicyRejected   = "trust_policy_rejected"
 )
 
 func BusinessErrorCode(err error) (string, bool) {
@@ -84,6 +86,8 @@ func BusinessErrorCode(err error) (string, bool) {
 		return ErrorCodeFileOwnershipMismatch, true
 	case errors.Is(err, ErrFraudRejected):
 		return ErrorCodeFraudRejected, true
+	case errors.Is(err, ErrTrustPolicyRejected):
+		return ErrorCodeTrustPolicyRejected, true
 	default:
 		return "", false
 	}

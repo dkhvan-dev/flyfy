@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/dkhvan-dev/flyfy/backend/pkg/trustpolicy/grpcclient"
 	chatadapter "github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/adapter/chat"
 	filemanageradapter "github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/adapter/filemanager"
 	fraudadapter "github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/adapter/fraud"
@@ -76,6 +77,20 @@ func main() {
 	defer fileManagerClient.Close()
 
 	activityUC := app.NewActivityUseCase(repo, fileManagerClient)
+	var trustClient *grpcclient.Client
+	if cfg.Trust.Enabled {
+		trustClient, err = grpcclient.New(
+			cfg.Trust.Target,
+			cfg.Security.InternalServiceToken,
+			cfg.App.Name,
+			cfg.Trust.Timeout,
+		)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Failed initialize trust-service client")
+		}
+		defer trustClient.Close()
+		activityUC.SetTrustPolicyClient(trustClient)
+	}
 	fraudClient, err := newFraudEvaluator(cfg)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed initialize anti-fraud client")
