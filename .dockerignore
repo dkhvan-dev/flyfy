@@ -33,3 +33,7 @@ node_modules/
 *.log
 tmp/
 temp/
+
+# Local secrets must never enter Docker build contexts.
+**/run/secrets/
+**/*service-account*.json

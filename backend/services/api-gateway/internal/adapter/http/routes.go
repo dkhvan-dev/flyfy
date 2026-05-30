@@ -38,6 +38,7 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 	paymentLimit := 180
 	stickerLimit := 180
 	excursionLimit := 180
+	notificationLimit := 300
 
 	return []RoutePolicy{
 		{
@@ -285,6 +286,14 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			AuthMode:      RouteAuthAuthenticated,
 			Upstream:      "chat",
 			RewritePrefix: "/v1/ws",
+		},
+		{
+			Name:               "notifications",
+			Prefix:             apiPrefix + "/notifications",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "notification",
+			RateLimitPerMinute: &notificationLimit,
+			RewritePrefix:      "/v1/notifications",
 		},
 		{
 			Name:          "reference-countries",

@@ -18,22 +18,23 @@ import (
 )
 
 type ProxyHandler struct {
-	cfg              *config.Config
-	readiness        *ReadinessHandler
-	authProxy        *httputil.ReverseProxy
-	userProxy        *httputil.ReverseProxy
-	guideProxy       *httputil.ReverseProxy
-	fileManagerProxy *httputil.ReverseProxy
-	activityProxy    *httputil.ReverseProxy
-	excursionProxy   *httputil.ReverseProxy
-	storiesProxy     *httputil.ReverseProxy
-	chatProxy        *httputil.ReverseProxy
-	referenceProxy   *httputil.ReverseProxy
-	attractionProxy  *httputil.ReverseProxy
-	paymentProxy     *httputil.ReverseProxy
-	stickerProxy     *httputil.ReverseProxy
-	adminPanelProxy  *httputil.ReverseProxy
-	userIDResolver   userIDResolver
+	cfg               *config.Config
+	readiness         *ReadinessHandler
+	authProxy         *httputil.ReverseProxy
+	userProxy         *httputil.ReverseProxy
+	guideProxy        *httputil.ReverseProxy
+	fileManagerProxy  *httputil.ReverseProxy
+	activityProxy     *httputil.ReverseProxy
+	excursionProxy    *httputil.ReverseProxy
+	storiesProxy      *httputil.ReverseProxy
+	chatProxy         *httputil.ReverseProxy
+	referenceProxy    *httputil.ReverseProxy
+	attractionProxy   *httputil.ReverseProxy
+	paymentProxy      *httputil.ReverseProxy
+	stickerProxy      *httputil.ReverseProxy
+	notificationProxy *httputil.ReverseProxy
+	adminPanelProxy   *httputil.ReverseProxy
+	userIDResolver    userIDResolver
 }
 
 func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHandler, error) {
@@ -97,6 +98,11 @@ func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHan
 		return nil, err
 	}
 
+	notificationProxy, err := newSingleHostProxy("notification", cfg.Downstreams.NotificationService, cfg.Security.InternalServiceToken)
+	if err != nil {
+		return nil, err
+	}
+
 	adminPanelProxy, err := newSingleHostProxy("admin-panel", cfg.Downstreams.AdminPanelService, cfg.Security.InternalServiceToken)
 	if err != nil {
 		return nil, err
@@ -108,22 +114,23 @@ func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHan
 	}
 
 	return &ProxyHandler{
-		cfg:              cfg,
-		readiness:        readiness,
-		authProxy:        authProxy,
-		userProxy:        userProxy,
-		guideProxy:       guideProxy,
-		fileManagerProxy: fileManagerProxy,
-		activityProxy:    activityProxy,
-		excursionProxy:   excursionProxy,
-		storiesProxy:     storiesProxy,
-		chatProxy:        chatProxy,
-		referenceProxy:   referenceProxy,
-		attractionProxy:  attractionProxy,
-		paymentProxy:     paymentProxy,
-		stickerProxy:     stickerProxy,
-		adminPanelProxy:  adminPanelProxy,
-		userIDResolver:   userIDResolver,
+		cfg:               cfg,
+		readiness:         readiness,
+		authProxy:         authProxy,
+		userProxy:         userProxy,
+		guideProxy:        guideProxy,
+		fileManagerProxy:  fileManagerProxy,
+		activityProxy:     activityProxy,
+		excursionProxy:    excursionProxy,
+		storiesProxy:      storiesProxy,
+		chatProxy:         chatProxy,
+		referenceProxy:    referenceProxy,
+		attractionProxy:   attractionProxy,
+		paymentProxy:      paymentProxy,
+		stickerProxy:      stickerProxy,
+		notificationProxy: notificationProxy,
+		adminPanelProxy:   adminPanelProxy,
+		userIDResolver:    userIDResolver,
 	}, nil
 }
 
@@ -214,6 +221,8 @@ func (h *ProxyHandler) resolveProxy(upstream string) *httputil.ReverseProxy {
 		return h.paymentProxy
 	case "sticker":
 		return h.stickerProxy
+	case "notification":
+		return h.notificationProxy
 	case "admin-panel":
 		return h.adminPanelProxy
 	default:

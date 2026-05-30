@@ -58,19 +58,20 @@ type RoutesConfig struct {
 }
 
 type DownstreamsConfig struct {
-	AuthService        string `env:"AUTH_SERVICE_HTTP_URL, default=http://auth-service:8081"`
-	UserService        string `env:"USER_SERVICE_HTTP_URL, default=http://user-service:8084"`
-	GuideService       string `env:"GUIDE_SERVICE_HTTP_URL, default=http://guide-service:8085"`
-	FileManagerService string `env:"FILE_MANAGER_HTTP_URL, default=http://file-manager-service:8083"`
-	ActivityService    string `env:"ACTIVITY_SERVICE_HTTP_URL, default=http://activity-service:8086"`
-	ExcursionService   string `env:"EXCURSION_SERVICE_HTTP_URL, default=http://excursion-service:8093"`
-	StoriesService     string `env:"STORIES_SERVICE_HTTP_URL, default=http://stories-service:8087"`
-	ChatService        string `env:"CHAT_SERVICE_HTTP_URL, default=http://chat-service:8088"`
-	ReferenceService   string `env:"REFERENCE_SERVICE_HTTP_URL, default=http://reference-service:8089"`
-	AttractionService  string `env:"ATTRACTION_SERVICE_HTTP_URL, default=http://attraction-service:8090"`
-	PaymentService     string `env:"PAYMENT_SERVICE_HTTP_URL, default=http://payment-service:8091"`
-	StickerService     string `env:"STICKER_SERVICE_HTTP_URL, default=http://sticker-service:8092"`
-	AdminPanelService  string `env:"ADMIN_PANEL_SERVICE_HTTP_URL, default=http://admin-panel:8095"`
+	AuthService         string `env:"AUTH_SERVICE_HTTP_URL, default=http://auth-service:8081"`
+	UserService         string `env:"USER_SERVICE_HTTP_URL, default=http://user-service:8084"`
+	GuideService        string `env:"GUIDE_SERVICE_HTTP_URL, default=http://guide-service:8085"`
+	FileManagerService  string `env:"FILE_MANAGER_HTTP_URL, default=http://file-manager-service:8083"`
+	ActivityService     string `env:"ACTIVITY_SERVICE_HTTP_URL, default=http://activity-service:8086"`
+	ExcursionService    string `env:"EXCURSION_SERVICE_HTTP_URL, default=http://excursion-service:8093"`
+	StoriesService      string `env:"STORIES_SERVICE_HTTP_URL, default=http://stories-service:8087"`
+	ChatService         string `env:"CHAT_SERVICE_HTTP_URL, default=http://chat-service:8088"`
+	ReferenceService    string `env:"REFERENCE_SERVICE_HTTP_URL, default=http://reference-service:8089"`
+	AttractionService   string `env:"ATTRACTION_SERVICE_HTTP_URL, default=http://attraction-service:8090"`
+	PaymentService      string `env:"PAYMENT_SERVICE_HTTP_URL, default=http://payment-service:8091"`
+	StickerService      string `env:"STICKER_SERVICE_HTTP_URL, default=http://sticker-service:8092"`
+	NotificationService string `env:"NOTIFICATION_SERVICE_HTTP_URL, default=http://notification-service:8097"`
+	AdminPanelService   string `env:"ADMIN_PANEL_SERVICE_HTTP_URL, default=http://admin-panel:8095"`
 }
 
 type RedisConfig struct {

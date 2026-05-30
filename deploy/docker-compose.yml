@@ -454,6 +454,50 @@ services:
       - inflap-network
 
   # ============================================
+  # Notification Service PostgreSQL
+  # ============================================
+  notification-postgres:
+    image: postgres:17-alpine
+    container_name: notification-postgres
+    environment:
+      POSTGRES_DB: notification_service_db
+      POSTGRES_USER: notification_service
+      POSTGRES_PASSWORD: notification_secret_dev
+    ports:
+      - "5448:5432"
+    volumes:
+      - notification_postgres_data:/var/lib/postgresql/data
+      - ../backend/services/notification-service/migrations:/migrations/notification-service:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notification_service -d notification_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - inflap-network
+
+  notification-postgres-migrator:
+    image: postgres:17-alpine
+    container_name: notification-postgres-migrator
+    environment:
+      PGHOST: notification-postgres
+      PGPORT: 5432
+      POSTGRES_DB: notification_service_db
+      POSTGRES_USER: notification_service
+      POSTGRES_PASSWORD: notification_secret_dev
+    volumes:
+      - ./init-scripts/016_notification_service_migrate.sh:/usr/local/bin/016_notification_service_migrate.sh:ro
+      - ../backend/services/notification-service/migrations:/migrations/notification-service:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/016_notification_service_migrate.sh"]
+    depends_on:
+      notification-postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - inflap-network
+
+  # ============================================
   # NATS
   # ============================================
   nats:
@@ -1166,6 +1210,99 @@ services:
       - inflap-network
 
   # ============================================
+  # Notification Service
+  # ============================================
+  notification-service:
+    build:
+      context: ..
+      dockerfile: ./backend/services/notification-service/Dockerfile
+    container_name: notification-service
+    depends_on:
+      notification-postgres:
+        condition: service_healthy
+      notification-postgres-migrator:
+        condition: service_completed_successfully
+      nats:
+        condition: service_healthy
+    expose:
+      - "8097"
+    environment:
+      APP_NAME: notification-service
+      APP_ENV: development
+
+      HTTP_PORT: 8097
+      HTTP_READ_TIMEOUT: 10s
+      HTTP_WRITE_TIMEOUT: 15s
+      HTTP_IDLE_TIMEOUT: 60s
+
+      DB_HOST: notification-postgres
+      DB_PORT: 5432
+      DB_NAME: notification_service_db
+      DB_USER: notification_service
+      DB_PASSWORD: notification_secret_dev
+      DB_PASSWORD_FILE: ${NOTIFICATION_DB_PASSWORD_FILE:-}
+      DB_SSLMODE: disable
+      DB_MAX_CONNS: 60
+      DB_MIN_CONNS: 5
+      DB_MAX_CONN_IDLE: 5m
+      DB_MAX_CONN_LIFETIME: 1h
+
+      LOG_LEVEL: debug
+
+      INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      INTERNAL_SERVICE_TOKEN_FILE: ${NOTIFICATION_INTERNAL_SERVICE_TOKEN_FILE:-}
+      TRUSTED_GATEWAY_HEADER_USER_ID: X-User-Id
+      TRUSTED_GATEWAY_HEADER_ROLES: X-User-Roles
+      TRUSTED_GATEWAY_HEADER_SUB: X-Auth-Subject
+      REQUEST_ID_HEADER: X-Request-Id
+      NOTIFICATION_TOKEN_ENCRYPTION_KEY_BASE64: ${NOTIFICATION_TOKEN_ENCRYPTION_KEY_BASE64:-}
+      NOTIFICATION_TOKEN_ENCRYPTION_KEY_BASE64_FILE: ${NOTIFICATION_TOKEN_ENCRYPTION_KEY_BASE64_FILE:-/run/secrets/notification-token-encryption-key-base64}
+      NOTIFICATION_TOKEN_HASH_KEY_BASE64: ${NOTIFICATION_TOKEN_HASH_KEY_BASE64:-}
+      NOTIFICATION_TOKEN_HASH_KEY_BASE64_FILE: ${NOTIFICATION_TOKEN_HASH_KEY_BASE64_FILE:-/run/secrets/notification-token-hash-key-base64}
+
+      NATS_URL: nats://nats:4222
+      NATS_BATCH_SIZE: ${NATS_BATCH_SIZE:-500}
+      NATS_FANOUT_CONCURRENCY: ${NATS_FANOUT_CONCURRENCY:-8}
+      NATS_DELIVERY_CONCURRENCY: ${NATS_DELIVERY_CONCURRENCY:-64}
+      NATS_MAX_DELIVER: ${NATS_MAX_DELIVER:-10}
+      NATS_MAX_ACK_PENDING: ${NATS_MAX_ACK_PENDING:-8192}
+      NATS_STREAM_MAX_BYTES: ${NATS_STREAM_MAX_BYTES:-536870912}
+      NATS_ACK_WAIT: ${NATS_ACK_WAIT:-30s}
+      NATS_NAK_DELAY: ${NATS_NAK_DELAY:-1s}
+      NATS_FETCH_MAX_WAIT: ${NATS_FETCH_MAX_WAIT:-500ms}
+      NOTIFICATION_WORKERS_ENABLED: "true"
+      NOTIFICATION_RETRY_SCAN_INTERVAL: 5s
+      NOTIFICATION_RETRY_SCAN_BATCH_SIZE: 500
+
+      FCM_ENABLED: ${FCM_ENABLED:-true}
+      FCM_PROJECT_ID: ${FCM_PROJECT_ID:-}
+      FCM_SERVICE_ACCOUNT_JSON_PATH: ${FCM_SERVICE_ACCOUNT_JSON_PATH:-/run/secrets/firebase-service-account.json}
+      FCM_TOKEN_URL: ${FCM_TOKEN_URL:-https://oauth2.googleapis.com/token}
+      FCM_TIMEOUT: 5s
+
+      APNS_ENABLED: ${APNS_ENABLED:-false}
+      APNS_ENV: ${APNS_ENV:-sandbox}
+      APNS_TEAM_ID: ${APNS_TEAM_ID:-}
+      APNS_KEY_ID: ${APNS_KEY_ID:-}
+      APNS_BUNDLE_ID: ${APNS_BUNDLE_ID:-kz.inflap}
+      APNS_AUTH_KEY_PATH: ${APNS_AUTH_KEY_PATH:-}
+      APNS_TIMEOUT: 5s
+
+      HMS_ENABLED: ${HMS_ENABLED:-false}
+      HMS_APP_ID: ${HMS_APP_ID:-}
+      HMS_CLIENT_ID: ${HMS_CLIENT_ID:-}
+      HMS_CLIENT_SECRET: ${HMS_CLIENT_SECRET:-}
+      HMS_CLIENT_SECRET_FILE: ${HMS_CLIENT_SECRET_FILE:-}
+      HMS_TIMEOUT: 5s
+    volumes:
+      - ../backend/services/notification-service/run/secrets/firebase-service-account.json:/run/secrets/firebase-service-account.json:ro
+      - ../backend/services/notification-service/run/secrets/notification-token-encryption-key-base64:/run/secrets/notification-token-encryption-key-base64:ro
+      - ../backend/services/notification-service/run/secrets/notification-token-hash-key-base64:/run/secrets/notification-token-hash-key-base64:ro
+    restart: unless-stopped
+    networks:
+      - inflap-network
+
+  # ============================================
   # Attraction PostgreSQL
   # ============================================
   attraction-postgres:
@@ -1684,6 +1821,8 @@ services:
         condition: service_started
       chat-service:
         condition: service_started
+      notification-service:
+        condition: service_started
       sticker-service:
         condition: service_started
       reference-service:
@@ -1722,6 +1861,7 @@ services:
       ACTIVITY_SERVICE_HTTP_URL: http://activity-service:8086
       STORIES_SERVICE_HTTP_URL: http://stories-service:8087
       CHAT_SERVICE_HTTP_URL: http://chat-service:8088
+      NOTIFICATION_SERVICE_HTTP_URL: http://notification-service:8097
       STICKER_SERVICE_HTTP_URL: http://sticker-service:8092
       REFERENCE_SERVICE_HTTP_URL: http://reference-service:8089
       ATTRACTION_SERVICE_HTTP_URL: http://attraction-service:8090
@@ -1768,6 +1908,7 @@ volumes:
   trust_postgres_data:
   stories_postgres_data:
   chat_postgres_data:
+  notification_postgres_data:
   nats_data:
   attraction_postgres_data:
   payment_postgres_data:

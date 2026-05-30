@@ -27,6 +27,10 @@ go.work.sum
 # env file
 .env
 
+# Local secrets
+**/run/secrets/
+**/*service-account*.json
+
 # Editor/IDE
 # .idea/
 # .vscode/

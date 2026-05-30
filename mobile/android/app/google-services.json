@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "461146893801",
+    "project_id": "inflap-develop",
+    "storage_bucket": "inflap-develop.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:461146893801:android:10e34ee4459cc9fcbc2f78",
+        "android_client_info": {
+          "package_name": "kz.inflap"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyATHMUo4NG2av6aHG-AnwxZGfr-DpA3R2U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

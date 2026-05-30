@@ -1,13 +1,21 @@
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import 'core/auth/auth_session_events.dart';
+import 'core/network/api_client.dart';
+import 'firebase_options.dart';
 import 'features/attendance/attendance_sync_manager.dart';
+import 'features/notifications/data/firebase_messaging_push_token_provider.dart';
+import 'features/notifications/data/notification_api.dart';
+import 'features/notifications/data/push_registration_service.dart';
+import 'features/notifications/presentation/push_notification_coordinator.dart';
 import 'providers/auth_provider.dart';
 import 'providers/home_location_provider.dart';
 import 'providers/session_provider.dart';
@@ -21,9 +29,20 @@ import 'providers/sticker_catalog_provider.dart';
 import 'providers/excursion_provider.dart';
 import 'providers/excursion_schedule_provider.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   runApp(const SuperApp());
+}
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 }
 
 class SuperApp extends StatefulWidget {
@@ -38,6 +57,8 @@ class _SuperAppState extends State<SuperApp> {
   late final AuthProvider _authProvider;
   late final SessionProvider _sessionProvider;
   late final LocaleProvider _localeProvider;
+  late final PushRegistrationService _pushRegistrationService;
+  late final PushNotificationCoordinator _pushNotificationCoordinator;
   late final GoRouter _router;
 
   @override
@@ -48,9 +69,21 @@ class _SuperAppState extends State<SuperApp> {
     _authProvider = AuthProvider(authSessionEvents: _authSessionEvents);
     _sessionProvider = SessionProvider(authSessionEvents: _authSessionEvents);
     _localeProvider = LocaleProvider()..load();
+    _pushRegistrationService = PushRegistrationService(
+      client: NotificationApi(
+        apiClient: ApiClient(authSessionEvents: _authSessionEvents),
+      ),
+      tokenProvider: FirebaseMessagingPushTokenProvider(),
+    );
     _router = AppRouter.router(_authProvider);
+    _pushNotificationCoordinator = PushNotificationCoordinator(
+      source: FirebasePushNotificationSource(),
+      presenter: LocalPushNotificationPresenter(),
+      routeHandler: _router.go,
+    );
 
     _bootstrapAuth();
+    unawaited(_pushNotificationCoordinator.start());
   }
 
   @override
@@ -58,6 +91,7 @@ class _SuperAppState extends State<SuperApp> {
     _authProvider.dispose();
     _sessionProvider.dispose();
     _localeProvider.dispose();
+    unawaited(_pushNotificationCoordinator.dispose());
     super.dispose();
   }
 
@@ -85,9 +119,12 @@ class _SuperAppState extends State<SuperApp> {
             builder: (context, child) {
               return _DismissKeyboardOnTap(
                 child: AppKeyboardDismissOnScroll(
-                  child: _PresenceHeartbeatBridge(
-                    child: _AttendanceSyncBridge(
-                      child: child ?? const SizedBox.shrink(),
+                  child: _PushRegistrationBridge(
+                    registrationService: _pushRegistrationService,
+                    child: _PresenceHeartbeatBridge(
+                      child: _AttendanceSyncBridge(
+                        child: child ?? const SizedBox.shrink(),
+                      ),
                     ),
                   ),
                 ),
@@ -120,6 +157,116 @@ class _SuperAppState extends State<SuperApp> {
     if (_authProvider.state == AuthState.authenticated) {
       await _sessionProvider.restoreSession();
       await _authProvider.checkAuthStatus();
+    }
+  }
+}
+
+class _PushRegistrationBridge extends StatefulWidget {
+  const _PushRegistrationBridge({
+    required this.registrationService,
+    required this.child,
+  });
+
+  final PushRegistrationService registrationService;
+  final Widget child;
+
+  @override
+  State<_PushRegistrationBridge> createState() =>
+      _PushRegistrationBridgeState();
+}
+
+class _PushRegistrationBridgeState extends State<_PushRegistrationBridge>
+    with WidgetsBindingObserver {
+  StreamSubscription<PushTokenSnapshot>? _tokenRefreshSubscription;
+  String? _activeUserId;
+  bool _registrationInFlight = false;
+  bool _unregistrationInFlight = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _tokenRefreshSubscription =
+        widget.registrationService.tokenRefreshes.listen(
+      (_) => _scheduleRegistration(force: true),
+    );
+  }
+
+  @override
+  void dispose() {
+    _tokenRefreshSubscription?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _scheduleRegistration();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final session = context.watch<SessionProvider>();
+    final userId = session.profile?.userId ?? '';
+
+    if (session.isAuthenticated && userId.isNotEmpty) {
+      if (_activeUserId != userId) {
+        _activeUserId = userId;
+        _scheduleRegistration(force: true);
+      }
+    } else if (_activeUserId != null) {
+      _activeUserId = null;
+      _scheduleUnregistration();
+    }
+
+    return widget.child;
+  }
+
+  void _scheduleRegistration({bool force = false}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_registerCurrentDevice(force: force));
+    });
+  }
+
+  Future<void> _registerCurrentDevice({required bool force}) async {
+    final session = context.read<SessionProvider>();
+    final userId = session.profile?.userId ?? '';
+    if (!session.isAuthenticated || userId.isEmpty) return;
+    if (_registrationInFlight) return;
+
+    _registrationInFlight = true;
+    try {
+      await widget.registrationService.registerCurrentDevice(
+        userId: userId,
+        force: force,
+      );
+    } catch (_) {
+      // Push registration should never block sign-in or navigation.
+    } finally {
+      _registrationInFlight = false;
+    }
+  }
+
+  void _scheduleUnregistration() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_unregisterCurrentDevice());
+    });
+  }
+
+  Future<void> _unregisterCurrentDevice() async {
+    if (_unregistrationInFlight) return;
+
+    _unregistrationInFlight = true;
+    try {
+      await widget.registrationService.unregisterCurrentDevice();
+    } catch (_) {
+      // Best-effort cleanup: expired sessions may no longer have a valid token.
+    } finally {
+      _unregistrationInFlight = false;
     }
   }
 }
