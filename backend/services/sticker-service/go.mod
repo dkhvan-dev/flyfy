@@ -1,10 +1,12 @@
-module github.com/dkhvan-dev/flyfy/backend/services/sticker-service
+module kz/inflap/backend/services/sticker-service
 
 go 1.26
 
 require (
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.9.2
+	github.com/rs/zerolog v1.35.0
+	github.com/sethvargo/go-envconfig v1.3.0
 )
 
 require (
@@ -13,8 +15,6 @@ require (
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/rs/zerolog v1.35.0 // indirect
-	github.com/sethvargo/go-envconfig v1.3.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/text v0.29.0 // indirect

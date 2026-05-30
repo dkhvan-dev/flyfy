@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/features/profile/models/user_profile_vm.dart';
+import 'package:inflap/features/profile/models/user_profile_vm.dart';
 
 void main() {
   Map<String, dynamic> profileJson({Map<String, dynamic>? friendship}) {

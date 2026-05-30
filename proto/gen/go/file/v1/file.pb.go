@@ -1137,7 +1137,7 @@ const file_files_file_proto_rawDesc = "" +
 	"\x11CreateDownloadUrl\x12!.file.v1.CreateDownloadUrlRequest\x1a\".file.v1.CreateDownloadUrlResponse\x12Q\n" +
 	"\x0eSoftDeleteFile\x12\x1e.file.v1.SoftDeleteFileRequest\x1a\x1f.file.v1.SoftDeleteFileResponse\x12?\n" +
 	"\bBindFile\x12\x18.file.v1.BindFileRequest\x1a\x19.file.v1.BindFileResponse\x12W\n" +
-	"\x10ListFileBindings\x12 .file.v1.ListFileBindingsRequest\x1a!.file.v1.ListFileBindingsResponseB9Z7github.com/dkhvan-dev/flyfy/proto/gen/go/file/v1;filev1b\x06proto3"
+	"\x10ListFileBindings\x12 .file.v1.ListFileBindingsRequest\x1a!.file.v1.ListFileBindingsResponseB'Z%kz/inflap/proto/gen/go/file/v1;filev1b\x06proto3"
 
 var (
 	file_files_file_proto_rawDescOnce sync.Once

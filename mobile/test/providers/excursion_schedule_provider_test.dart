@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/core/network/excursion_schedule_api.dart';
-import 'package:superapp/features/excursions/models/excursion_schedule_vm.dart';
-import 'package:superapp/providers/excursion_schedule_provider.dart';
+import 'package:inflap/core/network/excursion_schedule_api.dart';
+import 'package:inflap/features/excursions/models/excursion_schedule_vm.dart';
+import 'package:inflap/providers/excursion_schedule_provider.dart';
 
 void main() {
   test('loadWeek requests Monday-start week and exposes slots for selected day',

@@ -10,8 +10,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/domain/port"
+	"kz/inflap/backend/services/token-service/internal/domain/model"
+	"kz/inflap/backend/services/token-service/internal/domain/port"
 )
 
 // TokenGRPCHandler bridges the gRPC TokenService surface to the use case ports.

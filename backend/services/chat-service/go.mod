@@ -1,10 +1,8 @@
-module github.com/dkhvan-dev/flyfy/backend/services/chat-service
+module kz/inflap/backend/services/chat-service
 
 go 1.26
 
 require (
-	github.com/dkhvan-dev/flyfy/backend/pkg/trustpolicy v0.0.0
-	github.com/dkhvan-dev/flyfy/proto v0.0.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/jackc/pgx/v5 v5.9.1
@@ -12,6 +10,8 @@ require (
 	github.com/rs/zerolog v1.35.0
 	github.com/sethvargo/go-envconfig v1.3.0
 	google.golang.org/grpc v1.80.0
+	kz/inflap/backend/pkg/trustpolicy v0.0.0
+	kz/inflap/proto v0.0.0
 )
 
 require (
@@ -32,6 +32,6 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 )
 
-replace github.com/dkhvan-dev/flyfy/proto => ../../../proto
+replace kz/inflap/proto => ../../../proto
 
-replace github.com/dkhvan-dev/flyfy/backend/pkg/trustpolicy => ../../pkg/trustpolicy
+replace kz/inflap/backend/pkg/trustpolicy => ../../pkg/trustpolicy

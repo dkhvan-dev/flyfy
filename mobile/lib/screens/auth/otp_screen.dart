@@ -365,7 +365,7 @@ class _OtpScreenState extends State<OtpScreen> {
                                             ),
                                           ),
                                           child: Text(
-                                            'FlyFy',
+                                            'Inflap',
                                             style: TextStyle(
                                               fontSize: authScaled(
                                                 context,

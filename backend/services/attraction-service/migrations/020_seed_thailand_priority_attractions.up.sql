@@ -1,5 +1,5 @@
 -- Priority Thailand attractions seed.
--- Texts are original FlyFy editorial summaries localized for ru, en, kk.
+-- Texts are original Inflap editorial summaries localized for ru, en, kk.
 -- Sources audited in May 2026:
 -- - Tourism Authority of Thailand, Tripadvisor and Klook for tourist-demand signals.
 -- - Official attraction/operator pages where available.

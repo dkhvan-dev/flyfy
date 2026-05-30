@@ -3,10 +3,10 @@ package grpc
 import (
 	"errors"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/app"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"kz/inflap/backend/services/file-manager-service/internal/app"
 )
 
 func mapError(err error) error {

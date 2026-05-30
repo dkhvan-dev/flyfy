@@ -1,5 +1,5 @@
 -- Priority Philippines attractions seed.
--- Texts are original FlyFy editorial summaries localized for ru, en, kk.
+-- Texts are original Inflap editorial summaries localized for ru, en, kk.
 -- Sources audited in May 2026:
 -- - Love Philippines / official local tourism pages where available.
 -- - Klook and Tripadvisor for tourist-demand signals.

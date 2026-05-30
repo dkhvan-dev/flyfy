@@ -1,7 +1,7 @@
 {
     "openapi": "3.0.3",
     "info": {
-        "title": "FlyFy File Manager Service API",
+        "title": "Inflap File Manager Service API",
         "description": "Коллекция запросов для file-manager-service",
         "version": "1.0.0"
     },

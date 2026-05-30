@@ -7,8 +7,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/domain/model"
 	"github.com/go-jose/go-jose/v4"
+	"kz/inflap/backend/services/token-service/internal/domain/model"
 )
 
 // --- Primary Ports (driven by incoming requests) ---

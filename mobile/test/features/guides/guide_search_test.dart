@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/features/guides/guide_search.dart';
+import 'package:inflap/features/guides/guide_search.dart';
 
 void main() {
   test('guide search requires every query token to match localized fields', () {

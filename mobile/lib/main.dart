@@ -78,7 +78,7 @@ class _SuperAppState extends State<SuperApp> {
       child: Consumer<LocaleProvider>(
         builder: (context, localeProvider, _) {
           return MaterialApp.router(
-            title: 'FlyFy',
+            title: 'Inflap',
             debugShowCheckedModeBanner: false,
             routerConfig: _router,
             locale: localeProvider.locale,

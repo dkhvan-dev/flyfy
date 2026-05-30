@@ -4,7 +4,7 @@ package user.v1;
 
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/dkhvan-dev/flyfy/proto/gen/go/user/v1;userv1";
+option go_package = "kz/inflap/proto/gen/go/user/v1;userv1";
 
 service UserService {
   rpc GetOrCreateUserBySubject(GetOrCreateUserBySubjectRequest) returns (GetOrCreateUserBySubjectResponse);

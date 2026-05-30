@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package trust.v1;
 
-option go_package = "github.com/dkhvan-dev/flyfy/proto/gen/go/trust/v1;trustv1";
+option go_package = "kz/inflap/proto/gen/go/trust/v1;trustv1";
 
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";

@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/reference-service/data"
-	"github.com/dkhvan-dev/flyfy/backend/services/reference-service/internal/adapter/repository"
-	"github.com/dkhvan-dev/flyfy/backend/services/reference-service/internal/app"
+	"kz/inflap/backend/services/reference-service/data"
+	"kz/inflap/backend/services/reference-service/internal/adapter/repository"
+	"kz/inflap/backend/services/reference-service/internal/app"
 )
 
 type errorContractResponse struct {

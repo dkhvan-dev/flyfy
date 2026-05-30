@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/features/guides/models/public_guide_vm.dart';
+import 'package:inflap/features/guides/models/public_guide_vm.dart';
 
 void main() {
   test(

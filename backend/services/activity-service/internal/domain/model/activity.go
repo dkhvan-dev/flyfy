@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/domain/enum"
+	"kz/inflap/backend/services/activity-service/internal/domain/enum"
 )
 
 var (

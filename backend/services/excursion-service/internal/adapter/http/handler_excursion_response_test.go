@@ -7,10 +7,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/transport/dto"
+	"kz/inflap/backend/services/excursion-service/internal/app"
+	"kz/inflap/backend/services/excursion-service/internal/domain/enum"
+	"kz/inflap/backend/services/excursion-service/internal/domain/model"
+	"kz/inflap/backend/services/excursion-service/internal/transport/dto"
 )
 
 func TestExcursionResponseUsesProductCoverWhenOfferCoverIsMissing(t *testing.T) {

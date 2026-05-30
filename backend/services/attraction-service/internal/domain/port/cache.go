@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/attraction-service/internal/domain/model"
+	"kz/inflap/backend/services/attraction-service/internal/domain/model"
 )
 
 type AttractionCache interface {

@@ -886,7 +886,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return fullName;
     }
 
-    return profile?.preferredName ?? 'FlyFy';
+    return profile?.preferredName ?? 'Inflap';
   }
 
   String _previewInitials(UserProfileVm? profile) {

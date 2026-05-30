@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/user-service/internal/domain/model"
+	"kz/inflap/backend/services/user-service/internal/domain/model"
 )
 
 func TestUpdateProfileInputDoesNotAcceptVisibilityFlag(t *testing.T) {

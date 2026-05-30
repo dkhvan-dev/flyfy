@@ -10,8 +10,8 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/domain/port"
+	"kz/inflap/backend/services/token-service/internal/domain/model"
+	"kz/inflap/backend/services/token-service/internal/domain/port"
 )
 
 type contextKey string

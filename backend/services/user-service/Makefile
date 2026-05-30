@@ -1,5 +1,5 @@
 SERVICE_NAME=user-service
-PROTO_MODULE=github.com/dkhvan-dev/flyfy/proto
+PROTO_MODULE=kz/inflap/proto
 
 .PHONY: run build test tidy fmt vet docker-build
 

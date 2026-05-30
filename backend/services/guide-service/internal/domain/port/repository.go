@@ -5,8 +5,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/domain/model"
+	"kz/inflap/backend/services/guide-service/internal/domain/enum"
+	"kz/inflap/backend/services/guide-service/internal/domain/model"
 )
 
 type PublicGuideSort string

@@ -723,7 +723,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
       final dir = await getTemporaryDirectory();
       final path =
-          '${dir.path}/flyfy_voice_${DateTime.now().microsecondsSinceEpoch}.m4a';
+          '${dir.path}/inflap_voice_${DateTime.now().microsecondsSinceEpoch}.m4a';
       await _voiceRecorder.start(
         const RecordConfig(
           encoder: AudioEncoder.aacLc,
@@ -5834,7 +5834,7 @@ class _PendingVoiceAttachmentChipState
     final dot = widget.attachment.name.lastIndexOf('.');
     final ext = dot >= 0 ? widget.attachment.name.substring(dot + 1) : 'm4a';
     final path =
-        '${dir.path}/flyfy_voice_preview_${widget.attachment.localId}.$ext';
+        '${dir.path}/inflap_voice_preview_${widget.attachment.localId}.$ext';
     await File(path).writeAsBytes(widget.attachment.bytes, flush: true);
     _ownsPreviewFile = true;
     return path;

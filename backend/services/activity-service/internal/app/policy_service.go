@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/domain/port"
 	"github.com/google/uuid"
+	"kz/inflap/backend/services/activity-service/internal/domain/enum"
+	"kz/inflap/backend/services/activity-service/internal/domain/model"
+	"kz/inflap/backend/services/activity-service/internal/domain/port"
 )
 
 type PolicyService struct {

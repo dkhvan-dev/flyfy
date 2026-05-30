@@ -6,7 +6,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/app"
+	"kz/inflap/backend/services/chat-service/internal/app"
 )
 
 type appGRPCErrorDefinition struct {

@@ -3,8 +3,8 @@ package app
 import (
 	"testing"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/reference-service/data"
-	"github.com/dkhvan-dev/flyfy/backend/services/reference-service/internal/adapter/repository"
+	"kz/inflap/backend/services/reference-service/data"
+	"kz/inflap/backend/services/reference-service/internal/adapter/repository"
 )
 
 func TestReferenceUseCaseListsTimezones(t *testing.T) {

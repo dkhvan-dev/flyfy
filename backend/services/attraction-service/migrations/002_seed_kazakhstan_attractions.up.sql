@@ -1,5 +1,5 @@
 -- Initial curated Kazakhstan attractions/destinations seed.
--- Texts are original FlyFy editorial summaries localized for en, ru, kk.
+-- Texts are original Inflap editorial summaries localized for en, ru, kk.
 -- Sources audited in April 2026:
 -- - Visit Almaty: Charyn, Kolsai, Kaindy, Big Almaty Lake, Medeu, Shymbulak.
 -- - Official Altyn-Emel National Park site.

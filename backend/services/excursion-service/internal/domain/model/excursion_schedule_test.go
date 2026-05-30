@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/enum"
+	"kz/inflap/backend/services/excursion-service/internal/domain/enum"
 )
 
 func TestNewExcursionScheduleSlotCreatesAvailableBookableSlot(t *testing.T) {

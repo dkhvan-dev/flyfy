@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/sticker-service/internal/domain/enum"
+	"kz/inflap/backend/services/sticker-service/internal/domain/enum"
 )
 
 func TestNewStickerPackRejectsUserCustomPackWithoutOwner(t *testing.T) {
@@ -24,11 +24,11 @@ func TestNewStickerPackRejectsUserCustomPackWithoutOwner(t *testing.T) {
 
 func TestNewStickerPackAcceptsActiveSystemPack(t *testing.T) {
 	pack, err := NewStickerPack(NewStickerPackParams{
-		Slug:       "flyfy-default",
+		Slug:       "inflap-default",
 		Type:       enum.PackTypeSystem,
 		Visibility: enum.PackVisibilityPublic,
 		Status:     enum.PackStatusActive,
-		Title:      map[string]string{"en": "FlyFy"},
+		Title:      map[string]string{"en": "Inflap"},
 	})
 
 	if err != nil {

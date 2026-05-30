@@ -207,7 +207,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                           ),
                                         ),
                                         Text(
-                                          'FlyFy',
+                                          'Inflap',
                                           style: TextStyle(
                                             fontSize: authScaled(
                                               context,

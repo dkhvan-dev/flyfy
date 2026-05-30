@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/l10n/generated/app_localizations.dart';
-import 'package:superapp/screens/excursions/excursions_screen.dart';
+import 'package:inflap/l10n/generated/app_localizations.dart';
+import 'package:inflap/screens/excursions/excursions_screen.dart';
 
 void main() {
   testWidgets('shows create action in footer only for guide users', (

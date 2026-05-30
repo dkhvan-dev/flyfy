@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "Flyfy Token-Service",
+    "name": "Inflap Token-Service",
     "description": "Коллекция запросов (HTTP и тела для gRPC) для тестирования token-service",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },

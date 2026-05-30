@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/shared/reference/app_location_label_resolver.dart';
-import 'package:superapp/shared/widgets/app_localized_location_text.dart';
+import 'package:inflap/shared/reference/app_location_label_resolver.dart';
+import 'package:inflap/shared/widgets/app_localized_location_text.dart';
 
 void main() {
   testWidgets(

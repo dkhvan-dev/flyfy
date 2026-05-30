@@ -1,13 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/core/network/excursion_api.dart';
-import 'package:superapp/core/network/excursion_schedule_api.dart';
-import 'package:superapp/features/excursions/models/create_excursion_request.dart';
-import 'package:superapp/features/excursions/models/excursion_booking_vm.dart';
-import 'package:superapp/features/excursions/models/excursion_schedule_vm.dart';
-import 'package:superapp/features/excursions/models/excursion_vm.dart';
-import 'package:superapp/features/profile/data/guide_api.dart';
-import 'package:superapp/features/profile/models/guide_profile_vm.dart';
-import 'package:superapp/providers/excursion_provider.dart';
+import 'package:inflap/core/network/excursion_api.dart';
+import 'package:inflap/core/network/excursion_schedule_api.dart';
+import 'package:inflap/features/excursions/models/create_excursion_request.dart';
+import 'package:inflap/features/excursions/models/excursion_booking_vm.dart';
+import 'package:inflap/features/excursions/models/excursion_schedule_vm.dart';
+import 'package:inflap/features/excursions/models/excursion_vm.dart';
+import 'package:inflap/features/profile/data/guide_api.dart';
+import 'package:inflap/features/profile/models/guide_profile_vm.dart';
+import 'package:inflap/providers/excursion_provider.dart';
 
 void main() {
   test(

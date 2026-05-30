@@ -15,9 +15,9 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/port"
+	"kz/inflap/backend/services/excursion-service/internal/domain/enum"
+	"kz/inflap/backend/services/excursion-service/internal/domain/model"
+	"kz/inflap/backend/services/excursion-service/internal/domain/port"
 )
 
 type PGExcursionRepository struct {
@@ -3736,7 +3736,7 @@ func toInt16Slice(values []int) []int16 {
 
 func marketplaceProductTitle(item *model.Excursion) string {
 	if item == nil {
-		return "FlyFy excursions"
+		return "Inflap excursions"
 	}
 	if landmark := strings.TrimSpace(optionalStringValue(item.LandmarkName)); landmark != "" {
 		return landmark
@@ -3744,12 +3744,12 @@ func marketplaceProductTitle(item *model.Excursion) string {
 	if title := strings.TrimSpace(item.Title); title != "" {
 		return title
 	}
-	return "FlyFy excursions"
+	return "Inflap excursions"
 }
 
 func marketplaceProductSummary(item *model.Excursion) string {
 	if item == nil {
-		return "Compare guide offers from local FlyFy guides."
+		return "Compare guide offers from local Inflap guides."
 	}
 	if landmark := strings.TrimSpace(optionalStringValue(item.LandmarkName)); landmark != "" {
 		return "Compare guide offers for " + landmark + "."
@@ -3757,7 +3757,7 @@ func marketplaceProductSummary(item *model.Excursion) string {
 	if summary := strings.TrimSpace(item.Summary); summary != "" {
 		return summary
 	}
-	return "Compare guide offers from local FlyFy guides."
+	return "Compare guide offers from local Inflap guides."
 }
 
 func marketplaceProductDescription(item *model.Excursion) string {

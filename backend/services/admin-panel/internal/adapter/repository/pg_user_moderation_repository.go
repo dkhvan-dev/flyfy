@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/model"
+	"kz/inflap/backend/services/admin-panel/internal/domain/model"
 )
 
 type PGUserModerationRepository struct {

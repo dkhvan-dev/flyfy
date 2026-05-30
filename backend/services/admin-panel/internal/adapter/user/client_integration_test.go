@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/model"
+	"kz/inflap/backend/services/admin-panel/internal/domain/model"
 )
 
 func TestClientListAdminUsersAgainstLiveUserService(t *testing.T) {

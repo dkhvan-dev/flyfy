@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:superapp/core/network/excursion_api.dart';
-import 'package:superapp/features/excursions/models/create_excursion_request.dart';
-import 'package:superapp/features/excursions/models/excursion_vm.dart';
-import 'package:superapp/l10n/generated/app_localizations.dart';
-import 'package:superapp/providers/excursion_provider.dart';
-import 'package:superapp/providers/home_location_provider.dart';
-import 'package:superapp/screens/excursions/create_excursion_screen.dart';
+import 'package:inflap/core/network/excursion_api.dart';
+import 'package:inflap/features/excursions/models/create_excursion_request.dart';
+import 'package:inflap/features/excursions/models/excursion_vm.dart';
+import 'package:inflap/l10n/generated/app_localizations.dart';
+import 'package:inflap/providers/excursion_provider.dart';
+import 'package:inflap/providers/home_location_provider.dart';
+import 'package:inflap/screens/excursions/create_excursion_screen.dart';
 
 void main() {
   testWidgets('renders the create excursion landmark step', (tester) async {

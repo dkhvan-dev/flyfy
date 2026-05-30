@@ -9,9 +9,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/domain/port"
+	"kz/inflap/backend/services/guide-service/internal/domain/enum"
+	"kz/inflap/backend/services/guide-service/internal/domain/model"
+	"kz/inflap/backend/services/guide-service/internal/domain/port"
 )
 
 type GuideAggregate struct {

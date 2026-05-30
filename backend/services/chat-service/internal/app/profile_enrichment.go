@@ -7,8 +7,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/domain/port"
+	"kz/inflap/backend/services/chat-service/internal/domain/model"
+	"kz/inflap/backend/services/chat-service/internal/domain/port"
 )
 
 func enrichParticipants(ctx context.Context, resolver port.UserProfileResolver, participants []*model.Participant) {

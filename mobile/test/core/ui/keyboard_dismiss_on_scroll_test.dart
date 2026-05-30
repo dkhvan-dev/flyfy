@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/core/ui/keyboard_dismiss_on_scroll.dart';
+import 'package:inflap/core/ui/keyboard_dismiss_on_scroll.dart';
 
 void main() {
   testWidgets('dismisses focused text field when the user scrolls', (

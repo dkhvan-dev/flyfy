@@ -652,7 +652,7 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
                           ),
                           if (page.hasMultiplePages) ...[
                             const SizedBox(height: 22),
-                            FlyfyPaginationBar(
+                            InflapPaginationBar(
                               currentPage: page.currentPage,
                               totalPages: page.totalPages,
                               onPageChanged: _setActivePage,

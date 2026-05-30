@@ -1,12 +1,12 @@
-module github.com/dkhvan-dev/flyfy/backend/pkg/trustpolicy
+module kz/inflap/backend/pkg/trustpolicy
 
 go 1.26
 
 require (
-	github.com/dkhvan-dev/flyfy/proto v0.0.0
 	github.com/google/uuid v1.6.0
 	google.golang.org/grpc v1.79.2
 	google.golang.org/protobuf v1.36.11
+	kz/inflap/proto v0.0.0
 )
 
 require (
@@ -16,4 +16,4 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 )
 
-replace github.com/dkhvan-dev/flyfy/proto => ../../../proto
+replace kz/inflap/proto => ../../../proto

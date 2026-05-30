@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class LocaleProvider extends ChangeNotifier {
   LocaleProvider();
 
-  static const _storageKey = 'flyfy_locale_code';
+  static const _storageKey = 'inflap_locale_code';
 
   Locale _locale = const Locale('ru');
   bool _isLoaded = false;

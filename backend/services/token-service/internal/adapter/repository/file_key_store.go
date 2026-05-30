@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/domain/model"
 	"github.com/go-jose/go-jose/v4"
+	"kz/inflap/backend/services/token-service/internal/domain/model"
 )
 
 type fileKeyRecord struct {

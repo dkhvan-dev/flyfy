@@ -7,14 +7,14 @@ import (
 
 func TestBuildPublicObjectURLEscapesObjectKeySegments(t *testing.T) {
 	got, err := buildPublicObjectURL(
-		"https://cdn.flyfy.test/flyfy-files/",
+		"https://cdn.inflap.test/inflap-files/",
 		"activity media/2026/05/28/image one.jpg",
 	)
 	if err != nil {
 		t.Fatalf("buildPublicObjectURL() error = %v", err)
 	}
 
-	const want = "https://cdn.flyfy.test/flyfy-files/activity%20media/2026/05/28/image%20one.jpg"
+	const want = "https://cdn.inflap.test/inflap-files/activity%20media/2026/05/28/image%20one.jpg"
 	if got != want {
 		t.Fatalf("url = %q, want %q", got, want)
 	}

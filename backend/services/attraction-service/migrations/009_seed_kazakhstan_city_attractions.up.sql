@@ -1,5 +1,5 @@
 -- Curated in-city Kazakhstan attractions seed.
--- Texts are original FlyFy editorial summaries localized for en, ru, kk.
+-- Texts are original Inflap editorial summaries localized for en, ru, kk.
 -- Sources audited in May 2026:
 -- - Visit Almaty for Almaty urban parks, Kok Tobe, Central Park, Botanical Garden and Panfilov Park references.
 -- - Visit Astana and QazTravel for Astana landmarks, Nur Alem, National Museum, Hazrat Sultan and city routes.

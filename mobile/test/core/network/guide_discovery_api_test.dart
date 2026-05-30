@@ -4,9 +4,9 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/core/network/api_client.dart';
-import 'package:superapp/core/storage/secure_storage.dart';
-import 'package:superapp/features/guides/data/guide_discovery_api.dart';
+import 'package:inflap/core/network/api_client.dart';
+import 'package:inflap/core/storage/secure_storage.dart';
+import 'package:inflap/features/guides/data/guide_discovery_api.dart';
 
 void main() {
   test(

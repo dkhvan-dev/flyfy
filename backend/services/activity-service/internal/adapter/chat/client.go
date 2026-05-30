@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/domain/port"
+	"kz/inflap/backend/services/activity-service/internal/domain/port"
 )
 
 type Client struct {

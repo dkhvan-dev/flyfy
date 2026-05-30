@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/payment-service/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/payment-service/internal/domain/port"
+	"kz/inflap/backend/services/payment-service/internal/domain/enum"
+	"kz/inflap/backend/services/payment-service/internal/domain/port"
 )
 
 type MockProvider struct{}

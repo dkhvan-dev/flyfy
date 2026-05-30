@@ -14,10 +14,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/config"
-	"github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/domain/port"
+	"kz/inflap/backend/services/file-manager-service/internal/config"
+	"kz/inflap/backend/services/file-manager-service/internal/domain/enum"
+	"kz/inflap/backend/services/file-manager-service/internal/domain/model"
+	"kz/inflap/backend/services/file-manager-service/internal/domain/port"
 )
 
 type FileUseCase struct {

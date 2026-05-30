@@ -5,8 +5,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/model"
+	"kz/inflap/backend/services/admin-panel/internal/domain/enum"
+	"kz/inflap/backend/services/admin-panel/internal/domain/model"
 )
 
 const (

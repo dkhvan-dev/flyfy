@@ -11,9 +11,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/stories-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/stories-service/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/stories-service/internal/transport/dto"
+	"kz/inflap/backend/services/stories-service/internal/app"
+	"kz/inflap/backend/services/stories-service/internal/domain/enum"
+	"kz/inflap/backend/services/stories-service/internal/transport/dto"
 )
 
 type Handler struct {

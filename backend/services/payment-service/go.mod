@@ -1,4 +1,4 @@
-module github.com/dkhvan-dev/flyfy/backend/services/payment-service
+module kz/inflap/backend/services/payment-service
 
 go 1.26
 

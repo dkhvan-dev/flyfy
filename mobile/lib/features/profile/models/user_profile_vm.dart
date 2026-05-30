@@ -157,7 +157,7 @@ class UserProfileVm {
       return 'user_${shortId.substring(0, shortId.length >= 8 ? 8 : shortId.length)}';
     }
 
-    return 'FlyFy';
+    return 'Inflap';
   }
 
   String get initials {

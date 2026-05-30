@@ -6,7 +6,7 @@ CMD_DIR      := ./cmd
 BUILD_DIR    := ./bin
 PROTO_DIR    := ./proto
 MIGRATIONS   := ./migrations
-DOCKER_IMAGE := tourism-superapp/$(APP_NAME)
+DOCKER_IMAGE := tourism-inflap/$(APP_NAME)
 
 # Go settings
 GOFLAGS := -v

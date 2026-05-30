@@ -3,7 +3,7 @@ package model
 import (
 	"testing"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/domain/enum"
+	"kz/inflap/backend/services/activity-service/internal/domain/enum"
 )
 
 func TestActivityLocationAcceptsCityIDAsOfflineLocation(t *testing.T) {

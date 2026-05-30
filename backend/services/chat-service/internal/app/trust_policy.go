@@ -3,7 +3,7 @@ package app
 import (
 	"context"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/domain/port"
+	"kz/inflap/backend/services/chat-service/internal/domain/port"
 )
 
 const trustActionChatSend = "CHAT_SEND"

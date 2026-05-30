@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/user-service/internal/domain/enum"
 	"github.com/google/uuid"
+	"kz/inflap/backend/services/user-service/internal/domain/enum"
 )
 
 func TestRevokeRoleDeletesExistingRole(t *testing.T) {

@@ -1,14 +1,14 @@
-module github.com/dkhvan-dev/flyfy/backend/services/api-gateway
+module kz/inflap/backend/services/api-gateway
 
 go 1.26
 
 require (
-	github.com/dkhvan-dev/flyfy/proto v0.0.0
 	github.com/google/uuid v1.6.0
 	github.com/redis/go-redis/v9 v9.18.0
 	github.com/rs/zerolog v1.34.0
 	github.com/sethvargo/go-envconfig v1.3.0
 	google.golang.org/grpc v1.79.2
+	kz/inflap/proto v0.0.0
 )
 
 require (
@@ -24,4 +24,4 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 )
 
-replace github.com/dkhvan-dev/flyfy/proto => ../../../proto
+replace kz/inflap/proto => ../../../proto

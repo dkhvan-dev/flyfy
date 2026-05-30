@@ -1,15 +1,16 @@
-module github.com/dkhvan-dev/flyfy/backend/services/activity-service
+module kz/inflap/backend/services/activity-service
 
 go 1.26
 
 require (
-	github.com/dkhvan-dev/flyfy/backend/pkg/trustpolicy v0.0.0
-	github.com/dkhvan-dev/flyfy/proto v0.0.0
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/rs/zerolog v1.34.0
 	github.com/sethvargo/go-envconfig v1.3.0
+	golang.org/x/crypto v0.46.0
 	google.golang.org/grpc v1.79.2
+	kz/inflap/backend/pkg/trustpolicy v0.0.0
+	kz/inflap/proto v0.0.0
 )
 
 require (
@@ -18,7 +19,6 @@ require (
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
-	golang.org/x/crypto v0.46.0 // indirect
 	golang.org/x/net v0.48.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.39.0 // indirect
@@ -27,6 +27,6 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 )
 
-replace github.com/dkhvan-dev/flyfy/proto => ../../../proto
+replace kz/inflap/proto => ../../../proto
 
-replace github.com/dkhvan-dev/flyfy/backend/pkg/trustpolicy => ../../pkg/trustpolicy
+replace kz/inflap/backend/pkg/trustpolicy => ../../pkg/trustpolicy

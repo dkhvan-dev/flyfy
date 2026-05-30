@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/features/attractions/models/attraction_vm.dart';
-import 'package:superapp/screens/excursions/excursion_select_location_screen.dart';
+import 'package:inflap/features/attractions/models/attraction_vm.dart';
+import 'package:inflap/screens/excursions/excursion_select_location_screen.dart';
 
 void main() {
   test('selection keeps localized filter city name for excursion payload', () {

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/port"
+	"kz/inflap/backend/services/excursion-service/internal/domain/port"
 )
 
 func TestTranslateTextsPostsBatchWithInternalToken(t *testing.T) {

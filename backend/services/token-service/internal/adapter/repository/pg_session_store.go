@@ -12,8 +12,8 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/domain/port"
+	"kz/inflap/backend/services/token-service/internal/domain/model"
+	"kz/inflap/backend/services/token-service/internal/domain/port"
 )
 
 // pgUniqueViolation is the SQLSTATE for "unique_violation" — used to detect

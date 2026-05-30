@@ -13,7 +13,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/api-gateway/internal/config"
+	"kz/inflap/backend/services/api-gateway/internal/config"
 )
 
 const userIDResolverCacheTTL = 10 * time.Minute

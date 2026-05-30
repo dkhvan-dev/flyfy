@@ -97,7 +97,7 @@ type UserServiceConfig struct {
 }
 
 type PublicConfig struct {
-	StoriesBaseURL string `env:"STORIES_BASE_URL, default=https://flyfy.app/stories"`
+	StoriesBaseURL string `env:"STORIES_BASE_URL, default=https://inflap.app/stories"`
 }
 
 func Load(ctx context.Context) (*Config, error) {

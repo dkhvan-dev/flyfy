@@ -8,8 +8,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/anti-fraud-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/anti-fraud-service/internal/domain/port"
+	"kz/inflap/backend/services/anti-fraud-service/internal/domain/model"
+	"kz/inflap/backend/services/anti-fraud-service/internal/domain/port"
 )
 
 type PGRiskRepository struct {

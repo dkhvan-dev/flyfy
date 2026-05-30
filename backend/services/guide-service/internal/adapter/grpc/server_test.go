@@ -5,9 +5,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/domain/model"
+	"kz/inflap/backend/services/guide-service/internal/app"
+	"kz/inflap/backend/services/guide-service/internal/domain/enum"
+	"kz/inflap/backend/services/guide-service/internal/domain/model"
 )
 
 func TestToProtoAggregateIncludesPublicUserProfile(t *testing.T) {

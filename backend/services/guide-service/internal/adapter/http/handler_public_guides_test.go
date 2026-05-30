@@ -11,10 +11,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/domain/port"
+	"kz/inflap/backend/services/guide-service/internal/app"
+	"kz/inflap/backend/services/guide-service/internal/domain/enum"
+	"kz/inflap/backend/services/guide-service/internal/domain/model"
+	"kz/inflap/backend/services/guide-service/internal/domain/port"
 )
 
 func TestListPublicGuidesAppliesSearchFilterSortAndReturnsTotal(t *testing.T) {

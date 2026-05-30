@@ -1,6 +1,6 @@
 {
-    "name": "superapp",
-    "short_name": "superapp",
+    "name": "inflap",
+    "short_name": "inflap",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

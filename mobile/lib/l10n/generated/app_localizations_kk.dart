@@ -9,7 +9,7 @@ class AppLocalizationsKk extends AppLocalizations {
   AppLocalizationsKk([String locale = 'kk']) : super(locale);
 
   @override
-  String get appTitle => 'FlyFy';
+  String get appTitle => 'Inflap';
 
   @override
   String get welcomeTitle => 'Сіздің жеке әлеміңіз.';
@@ -19,7 +19,7 @@ class AppLocalizationsKk extends AppLocalizations {
       'Заманауи зерттеушіге арналған мінсіз саяхат суперқосымшасының барлық мүмкіндіктерін бағалаңыз.';
 
   @override
-  String get welcomeToFlyFy => 'FlyFy қосымшасына қош келдіңіз';
+  String get welcomeToInflap => 'Inflap қосымшасына қош келдіңіз';
 
   @override
   String get authByPhone => 'Телефон нөмірі арқылы кіру';
@@ -401,7 +401,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get guideVerificationTermsBody =>
-      'Егер ақпарат шындыққа сәйкес келмесе немесе құжаттар талапқа сай болмаса, FlyFy өтінімді кері қайтара алатынын түсінемін.';
+      'Егер ақпарат шындыққа сәйкес келмесе немесе құжаттар талапқа сай болмаса, Inflap өтінімді кері қайтара алатынын түсінемін.';
 
   @override
   String get guideVerificationAgreement =>
@@ -518,7 +518,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get profileIncompleteDescription =>
-      'FlyFy мүмкіндіктерін толық пайдалану үшін атыңызды, тегіңізді және еліңізді толтырыңыз';
+      'Inflap мүмкіндіктерін толық пайдалану үшін атыңызды, тегіңізді және еліңізді толтырыңыз';
 
   @override
   String get fillNowButton => 'Толтыру';
@@ -573,7 +573,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get profileVerifiedExplorer => 'РАСТАЛҒАН ГИД';
 
   @override
-  String get profileGuideTitle => 'FlyFy гиді';
+  String get profileGuideTitle => 'Inflap гиді';
 
   @override
   String get profileEmptyBioPlaceholder =>
@@ -989,7 +989,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get profileNotificationsHeroSubtitle =>
-      'FlyFy белсенділіктер, қатысу және жаңа мүмкіндіктер туралы қалай хабарлайтынын басқарыңыз.';
+      'Inflap белсенділіктер, қатысу және жаңа мүмкіндіктер туралы қалай хабарлайтынын басқарыңыз.';
 
   @override
   String get profileNotificationsActivitySection =>
@@ -1024,7 +1024,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get profileNotificationsMarketingSubtitle =>
-      'Саяхат идеялары, орындар топтамасы және арнайы FlyFy ұсыныстары.';
+      'Саяхат идеялары, орындар топтамасы және арнайы Inflap ұсыныстары.';
 
   @override
   String get profileNotificationsDarkModeTitle => 'Қараңғы режим';
@@ -1442,10 +1442,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get activityDetailsChatButton => 'Белсенділік чаты';
 
   @override
-  String get activityDetailsHostFallbackName => 'FlyFy ұйымдастырушысы';
+  String get activityDetailsHostFallbackName => 'Inflap ұйымдастырушысы';
 
   @override
-  String get activityPaymentScreenTitle => 'FLYFY CHECKOUT';
+  String get activityPaymentScreenTitle => 'INFLAP CHECKOUT';
 
   @override
   String get activityPaymentSummaryTitle => 'Белсенділік туралы мәлімет';
@@ -1471,7 +1471,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get activityPaymentSavedCardLabel => 'Сақталған карта';
 
   @override
-  String get activityPaymentCardHolderFallback => 'FlyFy қатысушысы';
+  String get activityPaymentCardHolderFallback => 'Inflap қатысушысы';
 
   @override
   String get activityPaymentApplePayLabel => 'Apple Pay';
@@ -1572,7 +1572,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get activityPrivateJoinSubmit => 'Тексеру және қосылу';
 
   @override
-  String get homeTitle => 'FlyFy';
+  String get homeTitle => 'Inflap';
 
   @override
   String get homeSubtitle =>
@@ -2012,7 +2012,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get attractionVisitPlanSection => 'Сапар жоспары';
 
   @override
-  String get attractionFlyFyTipTitle => 'FlyFy кеңесі';
+  String get attractionInflapTipTitle => 'Inflap кеңесі';
 
   @override
   String get attractionVisitDurationLabel => 'Орынға уақыт';
@@ -2827,7 +2827,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get excursionBookingSecurePayment =>
-      'Қауіпсіз төлем FlyFy арқылы өңделеді';
+      'Қауіпсіз төлем Inflap арқылы өңделеді';
 
   @override
   String get excursionBookingSubmitted =>
@@ -3147,7 +3147,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get createExcursionVisibilityPublicDescription =>
-      'FlyFy маркетплейсіндегі барлық пайдаланушыларға көрінеді.';
+      'Inflap маркетплейсіндегі барлық пайдаланушыларға көрінеді.';
 
   @override
   String get createExcursionVisibilityUnlistedDescription =>
@@ -3510,7 +3510,8 @@ class AppLocalizationsKk extends AppLocalizations {
   String get createVisibilityByLink => 'Сілтеме арқылы';
 
   @override
-  String get createVisibilityPublicDescription => 'FlyFy-дегі баршаға көрінеді';
+  String get createVisibilityPublicDescription =>
+      'Inflap-дегі баршаға көрінеді';
 
   @override
   String get createVisibilityPrivateDescription =>
@@ -3872,7 +3873,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get myExcursionsVisitedTab => 'Барған';
 
   @override
-  String get myExcursionsGuideFallback => 'FlyFy гиді';
+  String get myExcursionsGuideFallback => 'Inflap гиді';
 
   @override
   String get myExcursionsUntitled => 'Экскурсия';
@@ -4615,7 +4616,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get qrScannerReady => 'Камераны QR кодқа бағыттаңыз';
 
   @override
-  String get qrScannerInvalidCode => 'Бұл FlyFy белсенділігінің QR коды емес';
+  String get qrScannerInvalidCode => 'Бұл Inflap белсенділігінің QR коды емес';
 
   @override
   String get qrScannerSessionUnavailable =>

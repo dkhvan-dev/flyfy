@@ -1,5 +1,5 @@
 -- Priority Indonesia attractions seed.
--- Texts are original FlyFy editorial summaries localized for ru/en.
+-- Texts are original Inflap editorial summaries localized for ru/en.
 -- Sources audited in May 2026:
 -- - Denpasar Tourism, Visit Bali, Indonesia Travel and official attraction pages where available.
 -- - Tripadvisor and Klook for tourist-demand signals.

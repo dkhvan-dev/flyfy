@@ -9,9 +9,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/port"
+	"kz/inflap/backend/services/admin-panel/internal/domain/enum"
+	"kz/inflap/backend/services/admin-panel/internal/domain/model"
+	"kz/inflap/backend/services/admin-panel/internal/domain/port"
 )
 
 func TestDecideExcursionSupersedesPreviousAppliedDecision(t *testing.T) {
@@ -19,7 +19,7 @@ func TestDecideExcursionSupersedesPreviousAppliedDecision(t *testing.T) {
 
 	actor := &model.StaffUser{
 		ID:          uuid.New(),
-		Email:       "moderator@flyfy.local",
+		Email:       "moderator@inflap.local",
 		DisplayName: "Moderator",
 		Status:      enum.StaffStatusActive,
 		Permissions: []enum.Permission{
@@ -76,7 +76,7 @@ func TestSyncActivityQueueUpsertsActiveFlaggedActivityCases(t *testing.T) {
 
 	actor := &model.StaffUser{
 		ID:          uuid.New(),
-		Email:       "activity-moderator@flyfy.local",
+		Email:       "activity-moderator@inflap.local",
 		DisplayName: "Activity Moderator",
 		Status:      enum.StaffStatusActive,
 		Permissions: []enum.Permission{
@@ -119,7 +119,7 @@ func TestSyncGuideApplicationQueueUpsertsPendingApplicationCases(t *testing.T) {
 
 	actor := &model.StaffUser{
 		ID:          uuid.New(),
-		Email:       "guide-moderator@flyfy.local",
+		Email:       "guide-moderator@inflap.local",
 		DisplayName: "Guide Moderator",
 		Status:      enum.StaffStatusActive,
 		Permissions: []enum.Permission{
@@ -163,7 +163,7 @@ func TestSyncChatMessageQueueUpsertsFlaggedMessageCases(t *testing.T) {
 
 	actor := &model.StaffUser{
 		ID:          uuid.New(),
-		Email:       "chat-moderator@flyfy.local",
+		Email:       "chat-moderator@inflap.local",
 		DisplayName: "Chat Moderator",
 		Status:      enum.StaffStatusActive,
 		Permissions: []enum.Permission{
@@ -210,7 +210,7 @@ func TestDecideChatMessageRejectRequiresPublicAndInternalComments(t *testing.T) 
 
 	actor := &model.StaffUser{
 		ID:          uuid.New(),
-		Email:       "chat-moderator@flyfy.local",
+		Email:       "chat-moderator@inflap.local",
 		DisplayName: "Chat Moderator",
 		Status:      enum.StaffStatusActive,
 		Permissions: []enum.Permission{
@@ -227,7 +227,7 @@ func TestDecideChatMessageRejectRequiresPublicAndInternalComments(t *testing.T) 
 		internalComment string
 	}{
 		{name: "missing public comment", internalComment: "Off-platform contact confirmed."},
-		{name: "missing internal comment", publicComment: "Сообщение скрыто из-за попытки увести общение из FlyFy."},
+		{name: "missing internal comment", publicComment: "Сообщение скрыто из-за попытки увести общение из Inflap."},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -280,7 +280,7 @@ func TestDecideChatMessageRejectHidesMessageAndMarksCaseRejected(t *testing.T) {
 
 	actor := &model.StaffUser{
 		ID:          uuid.New(),
-		Email:       "chat-moderator@flyfy.local",
+		Email:       "chat-moderator@inflap.local",
 		DisplayName: "Chat Moderator",
 		Status:      enum.StaffStatusActive,
 		Permissions: []enum.Permission{
@@ -315,7 +315,7 @@ func TestDecideChatMessageRejectHidesMessageAndMarksCaseRejected(t *testing.T) {
 		CaseID:          caseID,
 		Decision:        enum.ModerationDecisionReject,
 		ReasonCodes:     []string{"off_platform_contact"},
-		PublicComment:   "Сообщение скрыто из-за попытки увести общение из FlyFy.",
+		PublicComment:   "Сообщение скрыто из-за попытки увести общение из Inflap.",
 		InternalComment: "Phone number and WhatsApp mention confirmed.",
 		IdempotencyKey:  "chat-hide",
 	})
@@ -339,7 +339,7 @@ func TestDecideChatMessageApproveMarksMessageSafe(t *testing.T) {
 
 	actor := &model.StaffUser{
 		ID:          uuid.New(),
-		Email:       "chat-moderator@flyfy.local",
+		Email:       "chat-moderator@inflap.local",
 		DisplayName: "Chat Moderator",
 		Status:      enum.StaffStatusActive,
 		Permissions: []enum.Permission{
@@ -393,7 +393,7 @@ func TestDecideActivityApproveKeepsCaseAuditedAndApplied(t *testing.T) {
 
 	actor := &model.StaffUser{
 		ID:          uuid.New(),
-		Email:       "activity-moderator@flyfy.local",
+		Email:       "activity-moderator@inflap.local",
 		DisplayName: "Activity Moderator",
 		Status:      enum.StaffStatusActive,
 		Permissions: []enum.Permission{
@@ -451,7 +451,7 @@ func TestDecideActivityRejectRequiresPublicAndInternalComments(t *testing.T) {
 
 	actor := &model.StaffUser{
 		ID:          uuid.New(),
-		Email:       "activity-moderator@flyfy.local",
+		Email:       "activity-moderator@inflap.local",
 		DisplayName: "Activity Moderator",
 		Status:      enum.StaffStatusActive,
 		Permissions: []enum.Permission{
@@ -522,7 +522,7 @@ func TestDecideActivityRejectSendsPublicCommentToActivityService(t *testing.T) {
 
 	actor := &model.StaffUser{
 		ID:          uuid.New(),
-		Email:       "activity-moderator@flyfy.local",
+		Email:       "activity-moderator@inflap.local",
 		DisplayName: "Activity Moderator",
 		Status:      enum.StaffStatusActive,
 		Permissions: []enum.Permission{
@@ -576,7 +576,7 @@ func TestDecideGuideApplicationRejectRequiresPublicAndInternalComments(t *testin
 
 	actor := &model.StaffUser{
 		ID:          uuid.New(),
-		Email:       "guide-moderator@flyfy.local",
+		Email:       "guide-moderator@inflap.local",
 		DisplayName: "Guide Moderator",
 		Status:      enum.StaffStatusActive,
 		Permissions: []enum.Permission{
@@ -647,7 +647,7 @@ func TestDecideGuideApplicationRejectSendsPublicCommentToGuideService(t *testing
 
 	actor := &model.StaffUser{
 		ID:          uuid.New(),
-		Email:       "guide-moderator@flyfy.local",
+		Email:       "guide-moderator@inflap.local",
 		DisplayName: "Guide Moderator",
 		Status:      enum.StaffStatusActive,
 		Permissions: []enum.Permission{
@@ -701,7 +701,7 @@ func TestDecideGuideApplicationRevokeSendsPublicCommentAndMarksCaseRevoked(t *te
 
 	actor := &model.StaffUser{
 		ID:          uuid.New(),
-		Email:       "guide-moderator@flyfy.local",
+		Email:       "guide-moderator@inflap.local",
 		DisplayName: "Guide Moderator",
 		Status:      enum.StaffStatusActive,
 		Permissions: []enum.Permission{
@@ -758,7 +758,7 @@ func TestDecideGuideApplicationRevokeRejectedCaseIsDenied(t *testing.T) {
 
 	actor := &model.StaffUser{
 		ID:          uuid.New(),
-		Email:       "guide-moderator@flyfy.local",
+		Email:       "guide-moderator@inflap.local",
 		DisplayName: "Guide Moderator",
 		Status:      enum.StaffStatusActive,
 		Permissions: []enum.Permission{
@@ -805,7 +805,7 @@ func TestListActiveGuidesUsesGuideClient(t *testing.T) {
 
 	actor := &model.StaffUser{
 		ID:          uuid.New(),
-		Email:       "guide-moderator@flyfy.local",
+		Email:       "guide-moderator@inflap.local",
 		DisplayName: "Guide Moderator",
 		Status:      enum.StaffStatusActive,
 		Permissions: []enum.Permission{
@@ -843,7 +843,7 @@ func TestRevokeActiveGuideUsesGuideProfileIDAndAudit(t *testing.T) {
 
 	actor := &model.StaffUser{
 		ID:          uuid.New(),
-		Email:       "guide-moderator@flyfy.local",
+		Email:       "guide-moderator@inflap.local",
 		DisplayName: "Guide Moderator",
 		Status:      enum.StaffStatusActive,
 		Permissions: []enum.Permission{

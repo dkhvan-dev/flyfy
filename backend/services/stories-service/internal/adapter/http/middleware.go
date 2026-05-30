@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/stories-service/internal/config"
+	"kz/inflap/backend/services/stories-service/internal/config"
 )
 
 func Chain(cfg *config.Config, next http.Handler) http.Handler {

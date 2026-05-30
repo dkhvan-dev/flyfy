@@ -93,8 +93,8 @@ type LogConfig struct {
 }
 
 type SecurityConfig struct {
-	SessionCookieName         string        `env:"SESSION_COOKIE_NAME, default=flyfy_admin_session"`
-	CSRFCookieName            string        `env:"CSRF_COOKIE_NAME, default=flyfy_admin_csrf"`
+	SessionCookieName         string        `env:"SESSION_COOKIE_NAME, default=inflap_admin_session"`
+	CSRFCookieName            string        `env:"CSRF_COOKIE_NAME, default=inflap_admin_csrf"`
 	CookieSecure              bool          `env:"COOKIE_SECURE, default=false"`
 	SessionIdleTimeout        time.Duration `env:"SESSION_IDLE_TIMEOUT, default=30m"`
 	SessionAbsoluteTimeout    time.Duration `env:"SESSION_ABSOLUTE_TIMEOUT, default=12h"`

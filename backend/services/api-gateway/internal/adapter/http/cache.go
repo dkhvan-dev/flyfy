@@ -9,7 +9,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/api-gateway/internal/config"
+	"kz/inflap/backend/services/api-gateway/internal/config"
 )
 
 // ResponseCache is a Redis-backed HTTP response cache for cacheable GET routes.

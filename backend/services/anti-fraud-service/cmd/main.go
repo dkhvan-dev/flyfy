@@ -8,13 +8,13 @@ import (
 	"syscall"
 	"time"
 
-	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/anti-fraud-service/internal/adapter/http"
-	"github.com/dkhvan-dev/flyfy/backend/services/anti-fraud-service/internal/adapter/repository"
-	"github.com/dkhvan-dev/flyfy/backend/services/anti-fraud-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/anti-fraud-service/internal/config"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	httpadapter "kz/inflap/backend/services/anti-fraud-service/internal/adapter/http"
+	"kz/inflap/backend/services/anti-fraud-service/internal/adapter/repository"
+	"kz/inflap/backend/services/anti-fraud-service/internal/app"
+	"kz/inflap/backend/services/anti-fraud-service/internal/config"
 )
 
 func main() {

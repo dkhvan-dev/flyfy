@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/port"
 	"github.com/google/uuid"
+	"kz/inflap/backend/services/excursion-service/internal/app"
+	"kz/inflap/backend/services/excursion-service/internal/domain/model"
+	"kz/inflap/backend/services/excursion-service/internal/domain/port"
 )
 
 func TestListExcursionReviewsParsesGuideFilterAndRatingSort(t *testing.T) {

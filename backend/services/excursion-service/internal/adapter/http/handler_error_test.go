@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/model"
+	"kz/inflap/backend/services/excursion-service/internal/domain/model"
 )
 
 func TestWriteUseCaseErrorMapsInvalidExcursionLocationToBadRequest(t *testing.T) {

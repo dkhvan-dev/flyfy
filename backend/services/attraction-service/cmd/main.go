@@ -8,17 +8,17 @@ import (
 	"syscall"
 	"time"
 
-	cacheadapter "github.com/dkhvan-dev/flyfy/backend/services/attraction-service/internal/adapter/cache"
-	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/attraction-service/internal/adapter/http"
-	"github.com/dkhvan-dev/flyfy/backend/services/attraction-service/internal/adapter/repository"
-	userserviceadapter "github.com/dkhvan-dev/flyfy/backend/services/attraction-service/internal/adapter/userservice"
-	"github.com/dkhvan-dev/flyfy/backend/services/attraction-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/attraction-service/internal/config"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	cacheadapter "kz/inflap/backend/services/attraction-service/internal/adapter/cache"
+	httpadapter "kz/inflap/backend/services/attraction-service/internal/adapter/http"
+	"kz/inflap/backend/services/attraction-service/internal/adapter/repository"
+	userserviceadapter "kz/inflap/backend/services/attraction-service/internal/adapter/userservice"
+	"kz/inflap/backend/services/attraction-service/internal/app"
+	"kz/inflap/backend/services/attraction-service/internal/config"
 )
 
 func main() {

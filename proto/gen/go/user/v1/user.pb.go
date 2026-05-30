@@ -2685,7 +2685,7 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\x13FilterFriendUserIds\x12#.user.v1.FilterFriendUserIdsRequest\x1a$.user.v1.FilterFriendUserIdsResponse\x12W\n" +
 	"\x10GetUserBySubject\x12 .user.v1.GetUserBySubjectRequest\x1a!.user.v1.GetUserBySubjectResponse\x12Q\n" +
 	"\x0eListAdminUsers\x12\x1e.user.v1.ListAdminUsersRequest\x1a\x1f.user.v1.ListAdminUsersResponse\x12]\n" +
-	"\x12GetAdminUserDetail\x12\".user.v1.GetAdminUserDetailRequest\x1a#.user.v1.GetAdminUserDetailResponseB9Z7github.com/dkhvan-dev/flyfy/proto/gen/go/user/v1;userv1b\x06proto3"
+	"\x12GetAdminUserDetail\x12\".user.v1.GetAdminUserDetailRequest\x1a#.user.v1.GetAdminUserDetailResponseB'Z%kz/inflap/proto/gen/go/user/v1;userv1b\x06proto3"
 
 var (
 	file_user_v1_user_proto_rawDescOnce sync.Once

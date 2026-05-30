@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/core/network/chat_api.dart';
-import 'package:superapp/features/chat/models/conversation_vm.dart';
-import 'package:superapp/features/chat/models/message_vm.dart';
-import 'package:superapp/features/chat/models/sticker_pack_vm.dart';
-import 'package:superapp/providers/chat_provider.dart';
+import 'package:inflap/core/network/chat_api.dart';
+import 'package:inflap/features/chat/models/conversation_vm.dart';
+import 'package:inflap/features/chat/models/message_vm.dart';
+import 'package:inflap/features/chat/models/sticker_pack_vm.dart';
+import 'package:inflap/providers/chat_provider.dart';
 
 void main() {
   test('sendSticker delegates to sticker message flow', () async {

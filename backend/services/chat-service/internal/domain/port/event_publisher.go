@@ -2,7 +2,7 @@ package port
 
 import (
 	"context"
-	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/event"
+	"kz/inflap/backend/services/chat-service/internal/event"
 )
 
 type EventPublisher interface {

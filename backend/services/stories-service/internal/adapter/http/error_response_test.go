@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/stories-service/internal/app"
+	"kz/inflap/backend/services/stories-service/internal/app"
 )
 
 func TestLocaleFromRequestUsesSupportedAcceptLanguage(t *testing.T) {

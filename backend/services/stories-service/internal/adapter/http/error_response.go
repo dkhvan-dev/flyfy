@@ -8,7 +8,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/stories-service/internal/app"
+	"kz/inflap/backend/services/stories-service/internal/app"
 )
 
 const (

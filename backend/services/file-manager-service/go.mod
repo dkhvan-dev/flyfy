@@ -1,4 +1,4 @@
-module github.com/dkhvan-dev/flyfy/backend/services/file-manager-service
+module kz/inflap/backend/services/file-manager-service
 
 go 1.26
 
@@ -7,13 +7,13 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.32.11
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.11
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.96.4
-	github.com/dkhvan-dev/flyfy/backend/pkg/trustpolicy v0.0.0
-	github.com/dkhvan-dev/flyfy/proto v0.0.0
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/rs/zerolog v1.34.0
 	github.com/sethvargo/go-envconfig v1.3.0
 	google.golang.org/grpc v1.79.2
+	kz/inflap/backend/pkg/trustpolicy v0.0.0
+	kz/inflap/proto v0.0.0
 )
 
 require (
@@ -45,6 +45,6 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 )
 
-replace github.com/dkhvan-dev/flyfy/proto => ../../../proto
+replace kz/inflap/proto => ../../../proto
 
-replace github.com/dkhvan-dev/flyfy/backend/pkg/trustpolicy => ../../pkg/trustpolicy
+replace kz/inflap/backend/pkg/trustpolicy => ../../pkg/trustpolicy

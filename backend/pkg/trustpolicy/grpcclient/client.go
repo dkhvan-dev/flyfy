@@ -6,13 +6,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dkhvan-dev/flyfy/backend/pkg/trustpolicy"
-	trustv1 "github.com/dkhvan-dev/flyfy/proto/gen/go/trust/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"kz/inflap/backend/pkg/trustpolicy"
+	trustv1 "kz/inflap/proto/gen/go/trust/v1"
 )
 
 const (

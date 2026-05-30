@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/stories-service/internal/domain/port"
+	"kz/inflap/backend/services/stories-service/internal/domain/port"
 )
 
 func TestSanitizeTagsReturnsEmptySliceForEmptyInput(t *testing.T) {

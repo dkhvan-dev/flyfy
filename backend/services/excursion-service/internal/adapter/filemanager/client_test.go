@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/test/bufconn"
 
-	filev1 "github.com/dkhvan-dev/flyfy/proto/gen/go/file/v1"
+	filev1 "kz/inflap/proto/gen/go/file/v1"
 )
 
 func TestValidateExcursionCoverFileAcceptsAttractionMedia(t *testing.T) {

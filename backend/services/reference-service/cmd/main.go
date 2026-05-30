@@ -8,12 +8,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/reference-service/data"
-	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/reference-service/internal/adapter/http"
-	"github.com/dkhvan-dev/flyfy/backend/services/reference-service/internal/adapter/repository"
-	"github.com/dkhvan-dev/flyfy/backend/services/reference-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/reference-service/internal/config"
 	"github.com/rs/zerolog/log"
+	"kz/inflap/backend/services/reference-service/data"
+	httpadapter "kz/inflap/backend/services/reference-service/internal/adapter/http"
+	"kz/inflap/backend/services/reference-service/internal/adapter/repository"
+	"kz/inflap/backend/services/reference-service/internal/app"
+	"kz/inflap/backend/services/reference-service/internal/config"
 )
 
 func main() {

@@ -1,6 +1,6 @@
 package dto
 
-import "github.com/dkhvan-dev/flyfy/backend/services/reference-service/internal/domain/model"
+import "kz/inflap/backend/services/reference-service/internal/domain/model"
 
 type CountryResponse struct {
 	Code         string `json:"code"`

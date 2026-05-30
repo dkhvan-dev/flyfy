@@ -5,8 +5,8 @@ import (
 	"crypto/rsa"
 	"sync"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/domain/model"
 	"github.com/go-jose/go-jose/v4"
+	"kz/inflap/backend/services/token-service/internal/domain/model"
 )
 
 // keyEntry holds a key pair with metadata.

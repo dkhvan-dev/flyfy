@@ -10,9 +10,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/anti-fraud-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/anti-fraud-service/internal/config"
-	"github.com/dkhvan-dev/flyfy/backend/services/anti-fraud-service/internal/domain/model"
+	"kz/inflap/backend/services/anti-fraud-service/internal/app"
+	"kz/inflap/backend/services/anti-fraud-service/internal/config"
+	"kz/inflap/backend/services/anti-fraud-service/internal/domain/model"
 )
 
 type Handler struct {

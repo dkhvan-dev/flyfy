@@ -11,10 +11,10 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/api-gateway/internal/adapter"
-	"github.com/dkhvan-dev/flyfy/backend/services/api-gateway/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/api-gateway/internal/config"
-	tokenpb "github.com/dkhvan-dev/flyfy/proto/gen/go/token"
+	"kz/inflap/backend/services/api-gateway/internal/adapter"
+	"kz/inflap/backend/services/api-gateway/internal/app"
+	"kz/inflap/backend/services/api-gateway/internal/config"
+	tokenpb "kz/inflap/proto/gen/go/token"
 )
 
 type Client struct {

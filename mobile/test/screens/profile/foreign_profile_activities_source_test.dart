@@ -98,7 +98,7 @@ void main() {
       expect(userActivitiesSource, contains('Expanded('));
       expect(userActivitiesSource, contains('profileUserActivitiesHostedTab'));
       expect(userActivitiesSource, contains('profileUserActivitiesVisitedTab'));
-      expect(userActivitiesSource, contains('FlyfyPaginationBar'));
+      expect(userActivitiesSource, contains('InflapPaginationBar'));
       expect(userActivitiesSource, contains('getUserHostedActivitiesPage'));
       expect(userActivitiesSource, contains('getUserJoinedActivitiesPage'));
       expect(userActivitiesSource, contains('AppListSearchField('));

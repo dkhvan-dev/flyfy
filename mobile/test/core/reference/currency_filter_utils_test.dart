@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/core/network/reference_api.dart';
-import 'package:superapp/core/reference/currency_filter_utils.dart';
+import 'package:inflap/core/network/reference_api.dart';
+import 'package:inflap/core/reference/currency_filter_utils.dart';
 
 void main() {
   test('currency label uses localized reference name instead of code', () {

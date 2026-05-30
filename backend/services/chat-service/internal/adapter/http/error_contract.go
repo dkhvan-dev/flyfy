@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/app"
+	"kz/inflap/backend/services/chat-service/internal/app"
 )
 
 const (

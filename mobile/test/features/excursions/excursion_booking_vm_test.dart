@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/features/excursions/models/excursion_booking_vm.dart';
+import 'package:inflap/features/excursions/models/excursion_booking_vm.dart';
 
 void main() {
   test('booking vm parses excursion review and guide context', () {

@@ -2202,7 +2202,7 @@ class ExcursionListCard extends StatelessWidget {
       return fallbackLabel.trim();
     }
 
-    return 'FlyFy';
+    return 'Inflap';
   }
 
   bool _isSameLabel(String left, String right) {

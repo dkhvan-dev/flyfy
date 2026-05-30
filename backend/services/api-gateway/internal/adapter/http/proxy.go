@@ -13,8 +13,8 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/api-gateway/internal/adapter"
-	"github.com/dkhvan-dev/flyfy/backend/services/api-gateway/internal/config"
+	"kz/inflap/backend/services/api-gateway/internal/adapter"
+	"kz/inflap/backend/services/api-gateway/internal/config"
 )
 
 type ProxyHandler struct {

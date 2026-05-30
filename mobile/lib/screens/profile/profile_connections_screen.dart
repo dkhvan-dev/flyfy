@@ -239,21 +239,21 @@ class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
 
     return switch (tab) {
       _ConnectionTab.friends => _profileApi.getMyFriends(
-        limit: _pageSize,
-        offset: offset,
-        query: query,
-        sort: sort,
-        sortDirection: sortDirection,
-        onlineOnly: _filters.onlineOnly,
-      ),
+          limit: _pageSize,
+          offset: offset,
+          query: query,
+          sort: sort,
+          sortDirection: sortDirection,
+          onlineOnly: _filters.onlineOnly,
+        ),
       _ConnectionTab.following => _profileApi.getMyFollowing(
-        limit: _pageSize,
-        offset: offset,
-        query: query,
-        sort: sort,
-        sortDirection: sortDirection,
-        onlineOnly: _filters.onlineOnly,
-      ),
+          limit: _pageSize,
+          offset: offset,
+          query: query,
+          sort: sort,
+          sortDirection: sortDirection,
+          onlineOnly: _filters.onlineOnly,
+        ),
     };
   }
 
@@ -287,11 +287,8 @@ class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
     final userId = user.userId.trim();
     if (userId.isEmpty) return;
 
-    final currentUserId = context
-        .read<SessionProvider>()
-        .profile
-        ?.userId
-        .trim();
+    final currentUserId =
+        context.read<SessionProvider>().profile?.userId.trim();
     if (currentUserId != null && currentUserId == userId) {
       context.push('/profile');
       return;
@@ -619,9 +616,8 @@ class _ConnectionTabData {
   int requestEpoch = 0;
 
   void remove(String userId) {
-    items = items
-        .where((item) => item.userId != userId)
-        .toList(growable: false);
+    items =
+        items.where((item) => item.userId != userId).toList(growable: false);
   }
 
   void dispose() {
@@ -778,8 +774,7 @@ class _ConnectionListView extends StatelessWidget {
     BuildContext buttonContext,
     ProfileFollowerVm user,
     _ConnectionTab tab,
-  )
-  onActionsTap;
+  ) onActionsTap;
 
   @override
   Widget build(BuildContext context) {
@@ -907,8 +902,7 @@ class _FriendRequestsPreviewSection extends StatelessWidget {
   final Future<void> Function(
     BuildContext buttonContext,
     ProfileFollowerVm user,
-  )
-  onActionsTap;
+  ) onActionsTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1265,8 +1259,7 @@ class _FriendRequestsSheetState extends State<_FriendRequestsSheet> {
         parent: BouncingScrollPhysics(),
       ),
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
-      itemCount:
-          _requestsSheetData.items.length +
+      itemCount: _requestsSheetData.items.length +
           (_requestsSheetData.loadingMore ? 1 : 0),
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {

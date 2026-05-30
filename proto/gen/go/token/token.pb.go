@@ -1238,7 +1238,7 @@ const file_token_token_proto_rawDesc = "" +
 	"\x15RevokeAllUserSessions\x12&.token.v1.RevokeAllUserSessionsRequest\x1a'.token.v1.RevokeAllUserSessionsResponse\x12[\n" +
 	"\x13AuthenticateService\x12$.token.v1.AuthenticateServiceRequest\x1a\x1e.token.v1.ServiceTokenResponse\x12Y\n" +
 	"\x14ValidateServiceToken\x12\x1e.token.v1.ValidateTokenRequest\x1a!.token.v1.ValidatedClaimsResponse\x12]\n" +
-	"\x14GenerateServiceToken\x12%.token.v1.GenerateServiceTokenRequest\x1a\x1e.token.v1.ServiceTokenResponseB8Z6github.com/dkhvan-dev/flyfy/proto/gen/go/token;tokenpbb\x06proto3"
+	"\x14GenerateServiceToken\x12%.token.v1.GenerateServiceTokenRequest\x1a\x1e.token.v1.ServiceTokenResponseB&Z$kz/inflap/proto/gen/go/token;tokenpbb\x06proto3"
 
 var (
 	file_token_token_proto_rawDescOnce sync.Once

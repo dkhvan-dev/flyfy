@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/sticker-service/internal/domain/port"
 	"github.com/google/uuid"
+	"kz/inflap/backend/services/sticker-service/internal/domain/port"
 )
 
 func TestCreateStickerUploadRequestUsesAuthenticatedOwner(t *testing.T) {

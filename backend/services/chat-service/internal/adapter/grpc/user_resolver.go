@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/domain/port"
-	userv1 "github.com/dkhvan-dev/flyfy/proto/gen/go/user/v1"
 	"github.com/google/uuid"
+	"kz/inflap/backend/services/chat-service/internal/domain/port"
+	userv1 "kz/inflap/proto/gen/go/user/v1"
 )
 
 type UserResolver struct {

@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/config"
+	"kz/inflap/backend/services/excursion-service/internal/config"
 )
 
 func TestTrustedAuthHeadersRequireInternalServiceToken(t *testing.T) {

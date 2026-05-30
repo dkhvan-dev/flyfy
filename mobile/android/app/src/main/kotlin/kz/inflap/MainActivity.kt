@@ -1,4 +1,4 @@
-package dev.dkhvan.flyfy.superapp
+package kz.inflap
 
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -27,7 +27,7 @@ class MainActivity : FlutterFragmentActivity() {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
-            "flyfy/clipboard_media"
+            "inflap/clipboard_media"
         ).setMethodCallHandler { call, result ->
             when (call.method) {
                 "readImage" -> result.success(readImageFromClipboard())
@@ -36,7 +36,7 @@ class MainActivity : FlutterFragmentActivity() {
         }
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
-            "flyfy/video_tools"
+            "inflap/video_tools"
         ).setMethodCallHandler { call, result ->
             when (call.method) {
                 "trimVideo" -> trimVideo(call, result)
@@ -78,7 +78,7 @@ class MainActivity : FlutterFragmentActivity() {
             throw IllegalArgumentException("Input video does not exist")
         }
 
-        val outputFile = File(cacheDir, "flyfy_trimmed_${System.currentTimeMillis()}.mp4")
+        val outputFile = File(cacheDir, "inflap_trimmed_${System.currentTimeMillis()}.mp4")
         val startUs = startMs * 1000
         val endUs = endMs * 1000
         val extractor = MediaExtractor()

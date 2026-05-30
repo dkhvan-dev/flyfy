@@ -4,9 +4,9 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/core/network/activity_api.dart';
-import 'package:superapp/core/network/api_client.dart';
-import 'package:superapp/core/storage/secure_storage.dart';
+import 'package:inflap/core/network/activity_api.dart';
+import 'package:inflap/core/network/api_client.dart';
+import 'package:inflap/core/storage/secure_storage.dart';
 
 void main() {
   test(
@@ -202,9 +202,8 @@ class _ActivityProfileListAdapter implements HttpClientAdapter {
     offsets.add(options.uri.queryParameters['offset']);
     queryParameters.add(Map<String, String>.from(options.uri.queryParameters));
 
-    final payload = options.uri.path.endsWith('/hosted')
-        ? hostedPayload
-        : joinedPayload;
+    final payload =
+        options.uri.path.endsWith('/hosted') ? hostedPayload : joinedPayload;
     return ResponseBody.fromString(
       jsonEncode(payload),
       200,

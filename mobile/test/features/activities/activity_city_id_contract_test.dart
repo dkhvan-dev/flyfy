@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/features/activities/models/activity_list_item_vm.dart';
-import 'package:superapp/features/activities/models/create_activity_request.dart';
-import 'package:superapp/features/activities/models/update_activity_request.dart';
+import 'package:inflap/features/activities/models/activity_list_item_vm.dart';
+import 'package:inflap/features/activities/models/create_activity_request.dart';
+import 'package:inflap/features/activities/models/update_activity_request.dart';
 
 void main() {
   test(

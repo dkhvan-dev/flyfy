@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/core/config/app_config.dart';
-import 'package:superapp/features/excursions/models/excursion_booking_vm.dart';
-import 'package:superapp/features/excursions/models/excursion_vm.dart';
-import 'package:superapp/features/excursions/excursion_cover_url.dart';
+import 'package:inflap/core/config/app_config.dart';
+import 'package:inflap/features/excursions/models/excursion_booking_vm.dart';
+import 'package:inflap/features/excursions/models/excursion_vm.dart';
+import 'package:inflap/features/excursions/excursion_cover_url.dart';
 
 void main() {
   test('resolves backend relative excursion cover urls against api origin', () {

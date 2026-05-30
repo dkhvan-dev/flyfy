@@ -13,9 +13,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/model"
+	"kz/inflap/backend/services/admin-panel/internal/app"
+	"kz/inflap/backend/services/admin-panel/internal/domain/enum"
+	"kz/inflap/backend/services/admin-panel/internal/domain/model"
 )
 
 func TestRendererRendersCoreTemplates(t *testing.T) {
@@ -28,7 +28,7 @@ func TestRendererRendersCoreTemplates(t *testing.T) {
 
 	staff := &model.StaffUser{
 		ID:          uuid.New(),
-		Email:       "moderator@flyfy.local",
+		Email:       "moderator@inflap.local",
 		DisplayName: "Moderator",
 		Status:      enum.StaffStatusActive,
 		Permissions: []enum.Permission{
@@ -75,7 +75,7 @@ func TestRendererRendersCoreTemplates(t *testing.T) {
 	}
 	queueCase.Snapshot = queueSnapshot
 	templates := map[string]any{
-		"auth/login":           LoginViewData{Email: "moderator@flyfy.local"},
+		"auth/login":           LoginViewData{Email: "moderator@inflap.local"},
 		"auth/change_password": nil,
 		"dashboard/index":      NewDashboardViewData([]*model.ModerationCase{queueCase}, nil, nil, nil),
 		"moderation/queue": NewQueueViewData([]*model.ModerationCase{queueCase}, QueueFilterViewData{
@@ -113,7 +113,7 @@ func TestRendererRendersCoreTemplates(t *testing.T) {
 			if recorder.Code != http.StatusOK {
 				t.Fatalf("unexpected status: %d", recorder.Code)
 			}
-			if !strings.Contains(recorder.Body.String(), "FlyFy") {
+			if !strings.Contains(recorder.Body.String(), "Inflap") {
 				t.Fatalf("rendered template %s does not contain shell content", name)
 			}
 			if name == "dashboard/index" {
@@ -7345,7 +7345,7 @@ func TestRendererRendersGuideApplicationModerationReadableContext(t *testing.T) 
 	applicationID := uuid.New()
 	documentID := uuid.New()
 	documentFileID := uuid.New()
-	documentDownloadURL := "http://file-manager-minio:9000/flyfy-files/guide_verification_doc/2026/04/13/fbc1a575-b630-47b2-b071-f8ec43694947.jpg?X-Amz-Signature=test"
+	documentDownloadURL := "http://file-manager-minio:9000/inflap-files/guide_verification_doc/2026/04/13/fbc1a575-b630-47b2-b071-f8ec43694947.jpg?X-Amz-Signature=test"
 	pageData := PageData{
 		Title:     "Guide application detail",
 		Locale:    localeRU,
@@ -7750,7 +7750,7 @@ func TestRendererRendersStaffManagementTemplates(t *testing.T) {
 	staffID := uuid.New()
 	staff := &model.StaffUser{
 		ID:          staffID,
-		Email:       "moderator@flyfy.local",
+		Email:       "moderator@inflap.local",
 		DisplayName: "Moderator",
 		Status:      enum.StaffStatusActive,
 		Roles:       []enum.StaffRole{enum.StaffRoleExcursionModerator},
@@ -7878,7 +7878,7 @@ func TestRendererRendersStaffProfileWithOwnAuditHistory(t *testing.T) {
 	baseTime := time.Date(2026, 5, 25, 12, 0, 0, 0, time.UTC)
 	staff := &model.StaffUser{
 		ID:          staffID,
-		Email:       "moderator@flyfy.local",
+		Email:       "moderator@inflap.local",
 		DisplayName: "Aruzhan Ops",
 		Status:      enum.StaffStatusActive,
 		Timezone:    "Asia/Tokyo",
@@ -7900,7 +7900,7 @@ func TestRendererRendersStaffProfileWithOwnAuditHistory(t *testing.T) {
 			{
 				ActorStaffID:     &staffID,
 				ActorDisplayName: "Aruzhan Ops",
-				ActorEmail:       "moderator@flyfy.local",
+				ActorEmail:       "moderator@inflap.local",
 				Action:           "admin.login.succeeded",
 				EntityType:       "staff_session",
 				CreatedAt:        baseTime,
@@ -7908,7 +7908,7 @@ func TestRendererRendersStaffProfileWithOwnAuditHistory(t *testing.T) {
 			{
 				ActorStaffID:     &staffID,
 				ActorDisplayName: "Aruzhan Ops",
-				ActorEmail:       "moderator@flyfy.local",
+				ActorEmail:       "moderator@inflap.local",
 				Action:           "moderation.decision.applied",
 				EntityType:       "moderation_case",
 				EntityID:         &caseID,
@@ -7926,7 +7926,7 @@ func TestRendererRendersStaffProfileWithOwnAuditHistory(t *testing.T) {
 	body := html.UnescapeString(recorder.Body.String())
 	for _, expected := range []string{
 		"Aruzhan Ops",
-		"moderator@flyfy.local",
+		"moderator@inflap.local",
 		"Activity moderator",
 		"Sign-in succeeded",
 		"Moderation case: Activity",
@@ -7946,7 +7946,7 @@ func TestRendererRendersStaffProfileWithOwnAuditHistory(t *testing.T) {
 func adminTemplateActor() *model.StaffUser {
 	return &model.StaffUser{
 		ID:          uuid.New(),
-		Email:       "admin@flyfy.local",
+		Email:       "admin@inflap.local",
 		DisplayName: "Admin",
 		Status:      enum.StaffStatusActive,
 		Roles:       []enum.StaffRole{enum.StaffRoleAdmin},

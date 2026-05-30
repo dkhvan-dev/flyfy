@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/trust-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/trust-service/internal/domain/port"
+	"kz/inflap/backend/services/trust-service/internal/domain/model"
+	"kz/inflap/backend/services/trust-service/internal/domain/port"
 )
 
 func TestCheckActionPolicyAllowsNormalUserWithoutRestriction(t *testing.T) {

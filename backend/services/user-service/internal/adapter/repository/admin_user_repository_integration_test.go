@@ -8,7 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/user-service/internal/domain/model"
+	"kz/inflap/backend/services/user-service/internal/domain/model"
 )
 
 func TestPGUserRepositoryListAdminUsersScansLiveDatabase(t *testing.T) {

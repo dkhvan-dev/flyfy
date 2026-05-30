@@ -53,7 +53,7 @@ void main() {
       expect(source, contains('AppListSearchField('));
       expect(source, contains('AppInlineSortRow<MyExcursionBookingSortMode>'));
       expect(source, contains('showModalBottomSheet<_MyExcursionsFilters>'));
-      expect(source, contains('FlyfyPaginationBar('));
+      expect(source, contains('InflapPaginationBar('));
     },
   );
 

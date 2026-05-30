@@ -5,7 +5,7 @@ import (
 
 	"github.com/rs/zerolog"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/domain/model"
+	"kz/inflap/backend/services/auth-service/internal/domain/model"
 )
 
 // AppleVerifier implements port.OAuthVerifier for Apple Sign-In.

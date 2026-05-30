@@ -3,7 +3,7 @@ package app
 import (
 	"errors"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/port"
+	"kz/inflap/backend/services/admin-panel/internal/domain/port"
 )
 
 var (

@@ -132,7 +132,7 @@ CREATE INDEX idx_audit_denied ON service_auth_audit(result) WHERE result = 'deni
 
 const tokenClaims = `// Service Token JWT Claims
 {
-  "iss": "tourism-superapp/token-service",
+  "iss": "tourism-inflap/token-service",
   "sub": "auth-service",                    // service_id
   "type": "service",                        // "service" | "user"
   "roles": [
@@ -151,7 +151,7 @@ const tokenClaims = `// Service Token JWT Claims
 
 // User Token JWT Claims (для сравнения)
 {
-  "iss": "tourism-superapp/token-service",
+  "iss": "tourism-inflap/token-service",
   "sub": "user-uuid-here",
   "type": "user",
   "role": "tourist",                        // "tourist" | "guide" | "agency" | "admin"

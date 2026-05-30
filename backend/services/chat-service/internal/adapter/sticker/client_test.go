@@ -39,7 +39,7 @@ func TestValidateSendCallsStickerServiceInternalEndpoint(t *testing.T) {
 		return jsonResponse(http.StatusOK, map[string]any{
 			"stickerId":      stickerID.String(),
 			"packId":         packID.String(),
-			"packSlug":       "flyfy-travel-basics",
+			"packSlug":       "inflap-travel-basics",
 			"slug":           "boarding-pass",
 			"fileId":         fileID.String(),
 			"fallbackFileId": fallbackID.String(),
@@ -61,7 +61,7 @@ func TestValidateSendCallsStickerServiceInternalEndpoint(t *testing.T) {
 	if result.StickerID != stickerID || result.PackID != packID || result.FileID != fileID {
 		t.Fatalf("unexpected result: %+v", result)
 	}
-	if result.PackSlug != "flyfy-travel-basics" ||
+	if result.PackSlug != "inflap-travel-basics" ||
 		result.Slug != "boarding-pass" ||
 		result.FallbackFileID != fallbackID ||
 		result.PreviewFileID == nil ||

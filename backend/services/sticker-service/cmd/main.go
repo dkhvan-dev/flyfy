@@ -12,11 +12,11 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/sticker-service/internal/adapter/filemanager"
-	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/sticker-service/internal/adapter/http"
-	"github.com/dkhvan-dev/flyfy/backend/services/sticker-service/internal/adapter/repository"
-	"github.com/dkhvan-dev/flyfy/backend/services/sticker-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/sticker-service/internal/config"
+	"kz/inflap/backend/services/sticker-service/internal/adapter/filemanager"
+	httpadapter "kz/inflap/backend/services/sticker-service/internal/adapter/http"
+	"kz/inflap/backend/services/sticker-service/internal/adapter/repository"
+	"kz/inflap/backend/services/sticker-service/internal/app"
+	"kz/inflap/backend/services/sticker-service/internal/config"
 )
 
 func main() {

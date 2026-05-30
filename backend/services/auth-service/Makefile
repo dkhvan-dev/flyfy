@@ -5,7 +5,7 @@ APP_NAME     := auth-service
 CMD_DIR      := ./cmd
 BUILD_DIR    := ./bin
 MIGRATIONS   := ./migrations
-DOCKER_IMAGE := tourism-superapp/$(APP_NAME)
+DOCKER_IMAGE := tourism-inflap/$(APP_NAME)
 
 # Go settings
 GOFLAGS := -v

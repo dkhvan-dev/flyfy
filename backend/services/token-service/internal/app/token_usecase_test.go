@@ -12,10 +12,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/config"
-	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/domain/port"
+	"kz/inflap/backend/services/token-service/internal/app"
+	"kz/inflap/backend/services/token-service/internal/config"
+	"kz/inflap/backend/services/token-service/internal/domain/model"
+	"kz/inflap/backend/services/token-service/internal/domain/port"
 )
 
 // --- Mock implementations ---

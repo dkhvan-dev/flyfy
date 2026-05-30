@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/port"
 	"github.com/rs/zerolog/log"
+	"kz/inflap/backend/services/admin-panel/internal/domain/port"
 )
 
 type RestrictionOutboxWorkerConfig struct {

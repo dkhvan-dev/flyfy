@@ -8,11 +8,11 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/user-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/user-service/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/user-service/internal/domain/model"
-	userv1 "github.com/dkhvan-dev/flyfy/proto/gen/go/user/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"kz/inflap/backend/services/user-service/internal/app"
+	"kz/inflap/backend/services/user-service/internal/domain/enum"
+	"kz/inflap/backend/services/user-service/internal/domain/model"
+	userv1 "kz/inflap/proto/gen/go/user/v1"
 )
 
 type Server struct {

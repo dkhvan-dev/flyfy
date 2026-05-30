@@ -8,12 +8,12 @@ import (
 	"syscall"
 	"time"
 
-	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/api-gateway/internal/adapter/http"
-	tokenserviceadapter "github.com/dkhvan-dev/flyfy/backend/services/api-gateway/internal/adapter/tokenservice"
-	"github.com/dkhvan-dev/flyfy/backend/services/api-gateway/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/api-gateway/internal/config"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	httpadapter "kz/inflap/backend/services/api-gateway/internal/adapter/http"
+	tokenserviceadapter "kz/inflap/backend/services/api-gateway/internal/adapter/tokenservice"
+	"kz/inflap/backend/services/api-gateway/internal/app"
+	"kz/inflap/backend/services/api-gateway/internal/config"
 )
 
 func main() {

@@ -8,10 +8,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/trust-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/trust-service/internal/domain/model"
-	trustv1 "github.com/dkhvan-dev/flyfy/proto/gen/go/trust/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"kz/inflap/backend/services/trust-service/internal/app"
+	"kz/inflap/backend/services/trust-service/internal/domain/model"
+	trustv1 "kz/inflap/proto/gen/go/trust/v1"
 )
 
 type Server struct {

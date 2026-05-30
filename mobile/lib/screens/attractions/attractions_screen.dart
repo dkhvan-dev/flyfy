@@ -496,7 +496,7 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
                   padX,
                   a.scale(34, minFactor: 0.78),
                 ),
-                child: FlyfyPaginationBar(
+                child: InflapPaginationBar(
                   currentPage: _currentPage,
                   totalPages: _totalPages,
                   onPageChanged: _handlePageChanged,

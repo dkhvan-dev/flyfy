@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/core/router/app_router.dart';
+import 'package:inflap/core/router/app_router.dart';
 
 void main() {
   testWidgets('keyboard focus is cleared when navigator route changes', (

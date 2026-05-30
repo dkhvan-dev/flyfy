@@ -3,7 +3,7 @@ package app
 import (
 	"strings"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/domain/enum"
+	"kz/inflap/backend/services/file-manager-service/internal/domain/enum"
 )
 
 type UploadPolicy struct {

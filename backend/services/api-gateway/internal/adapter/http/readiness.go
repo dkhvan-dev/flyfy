@@ -8,7 +8,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/api-gateway/internal/app"
+	"kz/inflap/backend/services/api-gateway/internal/app"
 )
 
 type ReadinessHandler struct {

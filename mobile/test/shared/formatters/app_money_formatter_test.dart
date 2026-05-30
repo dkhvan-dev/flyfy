@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
-import 'package:superapp/shared/formatters/app_money_formatter.dart';
+import 'package:inflap/shared/formatters/app_money_formatter.dart';
 
 void main() {
   test('formats money with app-wide localized currency symbols', () {

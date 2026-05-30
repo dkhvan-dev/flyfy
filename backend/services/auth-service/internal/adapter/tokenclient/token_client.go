@@ -13,10 +13,10 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/config"
-	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/domain/port"
-	tokenpb "github.com/dkhvan-dev/flyfy/proto/gen/go/token"
+	"kz/inflap/backend/services/auth-service/internal/config"
+	"kz/inflap/backend/services/auth-service/internal/domain/model"
+	"kz/inflap/backend/services/auth-service/internal/domain/port"
+	tokenpb "kz/inflap/proto/gen/go/token"
 )
 
 type TokenServiceClient struct {

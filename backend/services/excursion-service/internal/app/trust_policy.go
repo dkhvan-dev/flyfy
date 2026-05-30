@@ -3,8 +3,8 @@ package app
 import (
 	"context"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/port"
+	"kz/inflap/backend/services/excursion-service/internal/domain/model"
+	"kz/inflap/backend/services/excursion-service/internal/domain/port"
 )
 
 const trustActionTourPublish = "TOUR_PUBLISH"

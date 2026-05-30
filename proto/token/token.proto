@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package token.v1;
 
-option go_package = "github.com/dkhvan-dev/flyfy/proto/gen/go/token;tokenpb";
+option go_package = "kz/inflap/proto/gen/go/token;tokenpb";
 
 import "google/protobuf/timestamp.proto";
 

@@ -3,9 +3,9 @@ package app
 import (
 	"context"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/port"
+	"kz/inflap/backend/services/admin-panel/internal/domain/enum"
+	"kz/inflap/backend/services/admin-panel/internal/domain/model"
+	"kz/inflap/backend/services/admin-panel/internal/domain/port"
 )
 
 type AuditUseCase struct {

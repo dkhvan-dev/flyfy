@@ -5,7 +5,7 @@ import (
 
 	"github.com/rs/zerolog"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/domain/model"
+	"kz/inflap/backend/services/auth-service/internal/domain/model"
 )
 
 // GoogleVerifier implements port.OAuthVerifier for Google Sign-In.

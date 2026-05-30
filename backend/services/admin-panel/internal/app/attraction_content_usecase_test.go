@@ -7,8 +7,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/model"
+	"kz/inflap/backend/services/admin-panel/internal/domain/enum"
+	"kz/inflap/backend/services/admin-panel/internal/domain/model"
 )
 
 func TestCreateAttractionRequiresAttractionManagePermission(t *testing.T) {
@@ -17,7 +17,7 @@ func TestCreateAttractionRequiresAttractionManagePermission(t *testing.T) {
 	uc := NewAttractionContentUseCase(&attractionAdminClientStub{}, &fileUploadClientStub{}, &attractionAuditRepoStub{}, AttractionContentConfig{})
 	_, err := uc.CreateAttraction(context.Background(), &model.StaffUser{
 		ID:          uuid.New(),
-		Email:       "support@flyfy.local",
+		Email:       "support@inflap.local",
 		DisplayName: "Support",
 		Status:      enum.StaffStatusActive,
 		Permissions: []enum.Permission{enum.PermissionDashboardRead},
@@ -234,7 +234,7 @@ func TestUpdateAttractionCarouselImagesAllowsDeletingAllMedia(t *testing.T) {
 func attractionManagerActor() *model.StaffUser {
 	return &model.StaffUser{
 		ID:          uuid.New(),
-		Email:       "content@flyfy.local",
+		Email:       "content@inflap.local",
 		DisplayName: "Content Manager",
 		Status:      enum.StaffStatusActive,
 		Permissions: []enum.Permission{enum.PermissionAttractionManage},

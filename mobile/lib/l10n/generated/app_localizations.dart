@@ -103,7 +103,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
-  /// **'FlyFy'**
+  /// **'Inflap'**
   String get appTitle;
 
   /// No description provided for @welcomeTitle.
@@ -118,11 +118,11 @@ abstract class AppLocalizations {
   /// **'Experience the ultimate travel super app designed for the modern explorer.'**
   String get welcomeDescription;
 
-  /// No description provided for @welcomeToFlyFy.
+  /// No description provided for @welcomeToInflap.
   ///
   /// In en, this message translates to:
-  /// **'Welcome to FlyFy'**
-  String get welcomeToFlyFy;
+  /// **'Welcome to Inflap'**
+  String get welcomeToInflap;
 
   /// No description provided for @authByPhone.
   ///
@@ -811,7 +811,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideVerificationTermsBody.
   ///
   /// In en, this message translates to:
-  /// **'I understand that FlyFy may reject the application if any information is inaccurate or the uploaded documents are not suitable.'**
+  /// **'I understand that Inflap may reject the application if any information is inaccurate or the uploaded documents are not suitable.'**
   String get guideVerificationTermsBody;
 
   /// No description provided for @guideVerificationAgreement.
@@ -1009,7 +1009,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileIncompleteDescription.
   ///
   /// In en, this message translates to:
-  /// **'Fill in your first name, last name, and country to unlock all FlyFy features'**
+  /// **'Fill in your first name, last name, and country to unlock all Inflap features'**
   String get profileIncompleteDescription;
 
   /// No description provided for @fillNowButton.
@@ -1117,7 +1117,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileGuideTitle.
   ///
   /// In en, this message translates to:
-  /// **'FlyFy Guide'**
+  /// **'Inflap Guide'**
   String get profileGuideTitle;
 
   /// No description provided for @profileEmptyBioPlaceholder.
@@ -1861,7 +1861,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileNotificationsHeroSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Choose how FlyFy keeps you updated about activity changes, participation, and new opportunities.'**
+  /// **'Choose how Inflap keeps you updated about activity changes, participation, and new opportunities.'**
   String get profileNotificationsHeroSubtitle;
 
   /// No description provided for @profileNotificationsActivitySection.
@@ -1921,7 +1921,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileNotificationsMarketingSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Travel inspiration, place collections, and special FlyFy offers.'**
+  /// **'Travel inspiration, place collections, and special Inflap offers.'**
   String get profileNotificationsMarketingSubtitle;
 
   /// No description provided for @profileNotificationsDarkModeTitle.
@@ -2677,13 +2677,13 @@ abstract class AppLocalizations {
   /// No description provided for @activityDetailsHostFallbackName.
   ///
   /// In en, this message translates to:
-  /// **'FlyFy Host'**
+  /// **'Inflap Host'**
   String get activityDetailsHostFallbackName;
 
   /// No description provided for @activityPaymentScreenTitle.
   ///
   /// In en, this message translates to:
-  /// **'FLYFY CHECKOUT'**
+  /// **'INFLAP CHECKOUT'**
   String get activityPaymentScreenTitle;
 
   /// No description provided for @activityPaymentSummaryTitle.
@@ -2731,7 +2731,7 @@ abstract class AppLocalizations {
   /// No description provided for @activityPaymentCardHolderFallback.
   ///
   /// In en, this message translates to:
-  /// **'FlyFy Member'**
+  /// **'Inflap Member'**
   String get activityPaymentCardHolderFallback;
 
   /// No description provided for @activityPaymentApplePayLabel.
@@ -2917,7 +2917,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeTitle.
   ///
   /// In en, this message translates to:
-  /// **'FlyFy'**
+  /// **'Inflap'**
   String get homeTitle;
 
   /// No description provided for @homeSubtitle.
@@ -3742,11 +3742,11 @@ abstract class AppLocalizations {
   /// **'Plan your visit'**
   String get attractionVisitPlanSection;
 
-  /// No description provided for @attractionFlyFyTipTitle.
+  /// No description provided for @attractionInflapTipTitle.
   ///
   /// In en, this message translates to:
-  /// **'FlyFy tip'**
-  String get attractionFlyFyTipTitle;
+  /// **'Inflap tip'**
+  String get attractionInflapTipTitle;
 
   /// No description provided for @attractionVisitDurationLabel.
   ///
@@ -5209,7 +5209,7 @@ abstract class AppLocalizations {
   /// No description provided for @excursionBookingSecurePayment.
   ///
   /// In en, this message translates to:
-  /// **'Secure payment processed by FlyFy'**
+  /// **'Secure payment processed by Inflap'**
   String get excursionBookingSecurePayment;
 
   /// No description provided for @excursionBookingSubmitted.
@@ -5749,7 +5749,7 @@ abstract class AppLocalizations {
   /// No description provided for @createExcursionVisibilityPublicDescription.
   ///
   /// In en, this message translates to:
-  /// **'Visible to everyone in the FlyFy marketplace.'**
+  /// **'Visible to everyone in the Inflap marketplace.'**
   String get createExcursionVisibilityPublicDescription;
 
   /// No description provided for @createExcursionVisibilityUnlistedDescription.
@@ -6421,7 +6421,7 @@ abstract class AppLocalizations {
   /// No description provided for @createVisibilityPublicDescription.
   ///
   /// In en, this message translates to:
-  /// **'Visible to everyone on FlyFy'**
+  /// **'Visible to everyone on Inflap'**
   String get createVisibilityPublicDescription;
 
   /// No description provided for @createVisibilityPrivateDescription.
@@ -7081,7 +7081,7 @@ abstract class AppLocalizations {
   /// No description provided for @myExcursionsGuideFallback.
   ///
   /// In en, this message translates to:
-  /// **'FlyFy guide'**
+  /// **'Inflap guide'**
   String get myExcursionsGuideFallback;
 
   /// No description provided for @myExcursionsUntitled.
@@ -8375,7 +8375,7 @@ abstract class AppLocalizations {
   /// No description provided for @qrScannerInvalidCode.
   ///
   /// In en, this message translates to:
-  /// **'This is not a FlyFy activity QR'**
+  /// **'This is not an Inflap activity QR'**
   String get qrScannerInvalidCode;
 
   /// No description provided for @qrScannerSessionUnavailable.

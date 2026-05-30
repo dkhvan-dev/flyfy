@@ -10,16 +10,16 @@ import (
 	"syscall"
 	"time"
 
-	fraudadapter "github.com/dkhvan-dev/flyfy/backend/services/payment-service/internal/adapter/fraud"
-	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/payment-service/internal/adapter/http"
-	mockprovider "github.com/dkhvan-dev/flyfy/backend/services/payment-service/internal/adapter/provider"
-	"github.com/dkhvan-dev/flyfy/backend/services/payment-service/internal/adapter/repository"
-	"github.com/dkhvan-dev/flyfy/backend/services/payment-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/payment-service/internal/config"
-	"github.com/dkhvan-dev/flyfy/backend/services/payment-service/internal/domain/port"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	fraudadapter "kz/inflap/backend/services/payment-service/internal/adapter/fraud"
+	httpadapter "kz/inflap/backend/services/payment-service/internal/adapter/http"
+	mockprovider "kz/inflap/backend/services/payment-service/internal/adapter/provider"
+	"kz/inflap/backend/services/payment-service/internal/adapter/repository"
+	"kz/inflap/backend/services/payment-service/internal/app"
+	"kz/inflap/backend/services/payment-service/internal/config"
+	"kz/inflap/backend/services/payment-service/internal/domain/port"
 )
 
 func main() {

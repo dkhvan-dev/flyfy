@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'app_colors.dart';
 
-class FlyfyPaginationBar extends StatelessWidget {
-  const FlyfyPaginationBar({
+class InflapPaginationBar extends StatelessWidget {
+  const InflapPaginationBar({
     super.key,
     required this.currentPage,
     required this.totalPages,

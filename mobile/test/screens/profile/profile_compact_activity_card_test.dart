@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/features/activities/activity_category_art.dart';
-import 'package:superapp/features/activities/models/activity_list_item_vm.dart';
-import 'package:superapp/l10n/generated/app_localizations.dart';
-import 'package:superapp/screens/profile/widgets/profile_activity_card.dart';
+import 'package:inflap/features/activities/activity_category_art.dart';
+import 'package:inflap/features/activities/models/activity_list_item_vm.dart';
+import 'package:inflap/l10n/generated/app_localizations.dart';
+import 'package:inflap/screens/profile/widgets/profile_activity_card.dart';
 
 void main() {
   testWidgets(

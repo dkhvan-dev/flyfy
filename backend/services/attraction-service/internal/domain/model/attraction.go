@@ -3,8 +3,8 @@ package model
 import (
 	"time"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/attraction-service/internal/domain/enum"
 	"github.com/google/uuid"
+	"kz/inflap/backend/services/attraction-service/internal/domain/enum"
 )
 
 type Attraction struct {

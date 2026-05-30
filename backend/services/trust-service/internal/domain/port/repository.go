@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/trust-service/internal/domain/model"
+	"kz/inflap/backend/services/trust-service/internal/domain/model"
 )
 
 var ErrNotFound = errors.New("not found")

@@ -1,9 +1,8 @@
-module github.com/dkhvan-dev/flyfy/backend/services/admin-panel
+module kz/inflap/backend/services/admin-panel
 
 go 1.26
 
 require (
-	github.com/dkhvan-dev/flyfy/proto v0.0.0-00010101000000-000000000000
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/rs/zerolog v1.34.0
@@ -11,6 +10,7 @@ require (
 	golang.org/x/crypto v0.46.0
 	google.golang.org/grpc v1.79.2
 	google.golang.org/protobuf v1.36.10
+	kz/inflap/proto v0.0.0-00010101000000-000000000000
 )
 
 require (
@@ -26,4 +26,4 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 )
 
-replace github.com/dkhvan-dev/flyfy/proto => ../../../proto
+replace kz/inflap/proto => ../../../proto

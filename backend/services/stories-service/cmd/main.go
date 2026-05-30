@@ -8,14 +8,14 @@ import (
 	"syscall"
 	"time"
 
-	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/stories-service/internal/adapter/http"
-	"github.com/dkhvan-dev/flyfy/backend/services/stories-service/internal/adapter/repository"
-	uservicadapter "github.com/dkhvan-dev/flyfy/backend/services/stories-service/internal/adapter/userservice"
-	"github.com/dkhvan-dev/flyfy/backend/services/stories-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/stories-service/internal/config"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	httpadapter "kz/inflap/backend/services/stories-service/internal/adapter/http"
+	"kz/inflap/backend/services/stories-service/internal/adapter/repository"
+	uservicadapter "kz/inflap/backend/services/stories-service/internal/adapter/userservice"
+	"kz/inflap/backend/services/stories-service/internal/app"
+	"kz/inflap/backend/services/stories-service/internal/config"
 )
 
 func main() {

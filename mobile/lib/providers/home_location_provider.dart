@@ -87,7 +87,7 @@ class HomeLocationProvider extends ChangeNotifier {
         _deviceContextService =
             deviceContextService ?? const DeviceContextService();
 
-  static const storageKey = 'flyfy_home_location_preference';
+  static const storageKey = 'inflap_home_location_preference';
 
   final ReferenceApi _referenceApi;
   final DeviceContextService _deviceContextService;

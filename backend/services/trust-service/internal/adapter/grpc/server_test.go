@@ -8,12 +8,12 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/trust-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/trust-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/trust-service/internal/domain/port"
-	trustv1 "github.com/dkhvan-dev/flyfy/proto/gen/go/trust/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"kz/inflap/backend/services/trust-service/internal/app"
+	"kz/inflap/backend/services/trust-service/internal/domain/model"
+	"kz/inflap/backend/services/trust-service/internal/domain/port"
+	trustv1 "kz/inflap/proto/gen/go/trust/v1"
 )
 
 func TestCheckActionPolicyMapsDenyResponse(t *testing.T) {

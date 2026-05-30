@@ -737,7 +737,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                   layout.horizontalPadding,
                                   140 + safeBottomInset,
                                 ),
-                                child: FlyfyPaginationBar(
+                                child: InflapPaginationBar(
                                   currentPage: paginatedItems.currentPage,
                                   totalPages: paginatedItems.totalPages,
                                   onPageChanged: _handleDiscoverPageChanged,

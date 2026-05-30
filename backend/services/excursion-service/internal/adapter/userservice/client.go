@@ -9,9 +9,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	grpcadapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/grpc"
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/port"
-	userv1 "github.com/dkhvan-dev/flyfy/proto/gen/go/user/v1"
+	grpcadapter "kz/inflap/backend/services/excursion-service/internal/adapter/grpc"
+	"kz/inflap/backend/services/excursion-service/internal/domain/port"
+	userv1 "kz/inflap/proto/gen/go/user/v1"
 )
 
 const profileProjectionTimeout = 3 * time.Second

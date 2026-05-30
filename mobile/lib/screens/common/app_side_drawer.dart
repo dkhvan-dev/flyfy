@@ -323,7 +323,7 @@ class AppSideDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final layout = _AppDrawerLayout.of(context);
     final profileTitle =
-        isLoggedIn ? profile?.preferredName ?? 'FlyFy' : 'FlyFy';
+        isLoggedIn ? profile?.preferredName ?? 'Inflap' : 'Inflap';
     final identityStatus = resolveDrawerIdentityStatus(
       l10n: l10n,
       isLoggedIn: isLoggedIn,

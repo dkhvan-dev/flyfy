@@ -15,17 +15,17 @@ import (
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/adapter/crypto"
-	tokengrpc "github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/adapter/grpc"
-	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/adapter/grpc/handler"
-	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/adapter/grpc/interceptor"
-	httpAdapter "github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/adapter/http"
-	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/adapter/repository"
-	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/config"
-	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/domain/port"
-	pb "github.com/dkhvan-dev/flyfy/proto/gen/go/token"
 	"google.golang.org/grpc/reflection"
+	"kz/inflap/backend/services/token-service/internal/adapter/crypto"
+	tokengrpc "kz/inflap/backend/services/token-service/internal/adapter/grpc"
+	"kz/inflap/backend/services/token-service/internal/adapter/grpc/handler"
+	"kz/inflap/backend/services/token-service/internal/adapter/grpc/interceptor"
+	httpAdapter "kz/inflap/backend/services/token-service/internal/adapter/http"
+	"kz/inflap/backend/services/token-service/internal/adapter/repository"
+	"kz/inflap/backend/services/token-service/internal/app"
+	"kz/inflap/backend/services/token-service/internal/config"
+	"kz/inflap/backend/services/token-service/internal/domain/port"
+	pb "kz/inflap/proto/gen/go/token"
 )
 
 func main() {

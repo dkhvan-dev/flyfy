@@ -23,7 +23,7 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   token-postgres-migrator:
     image: postgres:17-alpine
@@ -43,7 +43,7 @@ services:
         condition: service_healthy
     restart: "no"
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Auth Service PostgreSQL
@@ -68,7 +68,7 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # File Manager PostgreSQL
@@ -93,7 +93,7 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # User Service PostgreSQL
@@ -118,7 +118,7 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   user-postgres-migrator:
     image: postgres:17-alpine
@@ -138,7 +138,7 @@ services:
         condition: service_healthy
     restart: "no"
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Guide Service PostgreSQL
@@ -163,7 +163,7 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   guide-postgres-migrator:
     image: postgres:17-alpine
@@ -183,7 +183,7 @@ services:
         condition: service_healthy
     restart: "no"
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Activity PostgreSQL
@@ -208,7 +208,7 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   activity-postgres-migrator:
     image: postgres:17-alpine
@@ -228,7 +228,7 @@ services:
         condition: service_healthy
     restart: "no"
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Excursion PostgreSQL
@@ -253,7 +253,7 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   excursion-postgres-migrator:
     image: postgres:17-alpine
@@ -273,7 +273,7 @@ services:
         condition: service_healthy
     restart: "no"
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Admin Panel PostgreSQL
@@ -297,7 +297,7 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   admin-postgres-migrator:
     image: postgres:17-alpine
@@ -317,7 +317,7 @@ services:
         condition: service_healthy
     restart: "no"
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Trust Service PostgreSQL
@@ -341,7 +341,7 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   trust-postgres-migrator:
     image: postgres:17-alpine
@@ -361,7 +361,7 @@ services:
         condition: service_healthy
     restart: "no"
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Stories PostgreSQL
@@ -386,7 +386,7 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   stories-postgres-migrator:
     image: postgres:17-alpine
@@ -406,7 +406,7 @@ services:
         condition: service_healthy
     restart: "no"
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Chat Service PostgreSQL
@@ -431,7 +431,7 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   chat-postgres-migrator:
     image: postgres:17-alpine
@@ -451,14 +451,14 @@ services:
         condition: service_healthy
     restart: "no"
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # NATS
   # ============================================
   nats:
     image: nats:2
-    container_name: flyfy-nats
+    container_name: inflap-nats
     command: ["-c", "/etc/nats/nats-server.conf"]
     ports:
       - "4222:4222"
@@ -477,14 +477,14 @@ services:
       start_period: 5s
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Redis
   # ============================================
   redis:
     image: redis:7-alpine
-    container_name: flyfy-redis
+    container_name: inflap-redis
     ports:
       - "6379:6379"
     command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
@@ -495,7 +495,7 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # File Manager MinIO
@@ -505,8 +505,8 @@ services:
     container_name: file-manager-minio
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: flyfy
-      MINIO_ROOT_PASSWORD: flyfysecret
+      MINIO_ROOT_USER: inflap
+      MINIO_ROOT_PASSWORD: inflapsecret
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -514,7 +514,7 @@ services:
       - file_manager_minio_data:/data
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # File Manager MinIO Init
@@ -528,13 +528,13 @@ services:
     entrypoint: >
       /bin/sh -c "
       sleep 5;
-      mc alias set local http://file-manager-minio:9000 flyfy flyfysecret;
-      mc mb -p local/flyfy-files || true;
-      mc anonymous set private local/flyfy-files || true;
+      mc alias set local http://file-manager-minio:9000 inflap inflapsecret;
+      mc mb -p local/inflap-files || true;
+      mc anonymous set private local/inflap-files || true;
       exit 0;
       "
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Token Service
@@ -552,11 +552,11 @@ services:
       GRPC_PORT: 50051
       HTTP_PORT: 8081
 
-      JWT_ISSUER: tourism-superapp/token-service
+      JWT_ISSUER: tourism-inflap/token-service
       JWT_ACCESS_TTL: 30m
       JWT_REFRESH_TTL: 720h
       JWT_SERVICE_TTL: 1h
-      JWT_PRIVATE_KEY_PATH: /var/lib/flyfy/token-service/signing-keys.json
+      JWT_PRIVATE_KEY_PATH: /var/lib/inflap/token-service/signing-keys.json
 
       PG_HOST: token-postgres
       PG_PORT: 5432
@@ -567,7 +567,7 @@ services:
 
       REDIS_ADDR: redis:6379
     volumes:
-      - token_service_keys:/var/lib/flyfy/token-service
+      - token_service_keys:/var/lib/inflap/token-service
     depends_on:
       token-postgres:
         condition: service_healthy
@@ -577,7 +577,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Auth Service
@@ -629,7 +629,7 @@ services:
         condition: service_started
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # File Manager Service
@@ -675,9 +675,9 @@ services:
       STORAGE_PROVIDER: s3
       STORAGE_ENDPOINT: http://file-manager-minio:9000
       STORAGE_REGION: us-east-1
-      STORAGE_ACCESS_KEY_ID: flyfy
-      STORAGE_SECRET_ACCESS_KEY: flyfysecret
-      STORAGE_BUCKET: flyfy-files
+      STORAGE_ACCESS_KEY_ID: inflap
+      STORAGE_SECRET_ACCESS_KEY: inflapsecret
+      STORAGE_BUCKET: inflap-files
       STORAGE_USE_PATH_STYLE: "true"
       STORAGE_PRESIGN_TTL: 15m
       STORAGE_MAX_UPLOAD_SIZE_BYTES: 26214400
@@ -702,7 +702,7 @@ services:
       TRUST_SERVICE_TIMEOUT: 250ms
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # User Service
@@ -753,7 +753,7 @@ services:
       FILE_MANAGER_GRPC_TARGET: dns:///file-manager-service:9093
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Guide Service
@@ -816,7 +816,7 @@ services:
       ANTI_FRAUD_TIMEOUT: 800ms
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
   
   # ============================================
   # Activity Service
@@ -884,7 +884,7 @@ services:
       TRUST_SERVICE_TIMEOUT: 250ms
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Translation Service
@@ -911,7 +911,7 @@ services:
       - translation_hf_cache:/models/huggingface
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Excursion Service
@@ -982,7 +982,7 @@ services:
       TRUST_SERVICE_TIMEOUT: 250ms
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Admin Panel
@@ -1034,12 +1034,12 @@ services:
       TRUST_OUTBOX_BASE_BACKOFF: 1s
       ANTI_FRAUD_SERVICE_URL: http://anti-fraud-service:8096
       ANTI_FRAUD_SERVICE_TIMEOUT: 5s
-      BOOTSTRAP_SUPERADMIN_EMAIL: admin@flyfy.local
-      BOOTSTRAP_SUPERADMIN_DISPLAY_NAME: FlyFy Super Admin
+      BOOTSTRAP_SUPERADMIN_EMAIL: admin@inflap.local
+      BOOTSTRAP_SUPERADMIN_DISPLAY_NAME: Inflap Super Admin
       BOOTSTRAP_SUPERADMIN_PASSWORD: AdminPanelDevPass123!
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Stories Service
@@ -1086,10 +1086,10 @@ services:
       REQUEST_ID_HEADER: X-Request-Id
 
       USER_SERVICE_GRPC_TARGET: dns:///user-service:9094
-      STORIES_BASE_URL: https://flyfy.app/stories
+      STORIES_BASE_URL: https://inflap.app/stories
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Chat Service
@@ -1163,7 +1163,7 @@ services:
       TRUST_SERVICE_TIMEOUT: 250ms
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Attraction PostgreSQL
@@ -1188,7 +1188,7 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   attraction-postgres-migrator:
     image: postgres:17-alpine
@@ -1208,7 +1208,7 @@ services:
         condition: service_healthy
     restart: "no"
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Payment PostgreSQL
@@ -1233,7 +1233,7 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   payment-postgres-migrator:
     image: postgres:17-alpine
@@ -1253,7 +1253,7 @@ services:
         condition: service_healthy
     restart: "no"
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Anti-Fraud PostgreSQL
@@ -1278,7 +1278,7 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   anti-fraud-postgres-migrator:
     image: postgres:17-alpine
@@ -1298,7 +1298,7 @@ services:
         condition: service_healthy
     restart: "no"
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Sticker Service PostgreSQL
@@ -1323,7 +1323,7 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   sticker-postgres-migrator:
     image: postgres:17-alpine
@@ -1343,7 +1343,7 @@ services:
         condition: service_healthy
     restart: "no"
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Attraction Service
@@ -1400,7 +1400,7 @@ services:
       USER_SERVICE_GRPC_TARGET: dns:///user-service:9094
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Payment Service
@@ -1456,7 +1456,7 @@ services:
       ANTI_FRAUD_TIMEOUT: 800ms
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Anti-Fraud Service
@@ -1500,7 +1500,7 @@ services:
       FRAUD_PAYMENT_CURRENCY: KZT
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Trust Service
@@ -1536,7 +1536,7 @@ services:
       INTERNAL_SERVICE_TOKEN: super-secret-internal-token
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Sticker Service
@@ -1591,7 +1591,7 @@ services:
       STICKER_UPLOAD_SESSION_TTL: 15m
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   sticker-default-stickers-seeder:
     build:
@@ -1631,7 +1631,7 @@ services:
     entrypoint: ["/app/seed-default-stickers"]
     restart: "no"
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # Reference Service
@@ -1655,7 +1655,7 @@ services:
       LOG_LEVEL: info
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
   # ============================================
   # API Gateway
@@ -1749,10 +1749,10 @@ services:
       RATE_LIMIT_CLEANUP_INTERVAL: 1m
     restart: unless-stopped
     networks:
-      - flyfy-network
+      - inflap-network
 
 networks:
-  flyfy-network:
+  inflap-network:
     driver: bridge
 
 volumes:

@@ -6,13 +6,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dkhvan-dev/flyfy/backend/pkg/trustpolicy"
-	trustv1 "github.com/dkhvan-dev/flyfy/proto/gen/go/trust/v1"
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/test/bufconn"
+	"kz/inflap/backend/pkg/trustpolicy"
+	trustv1 "kz/inflap/proto/gen/go/trust/v1"
 )
 
 func TestClientCheckActionPolicyMapsRequestAndResponse(t *testing.T) {

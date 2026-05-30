@@ -1,6 +1,6 @@
 package port
 
-import "github.com/dkhvan-dev/flyfy/backend/pkg/trustpolicy"
+import "kz/inflap/backend/pkg/trustpolicy"
 
 type TrustPolicyDecision = trustpolicy.Decision
 

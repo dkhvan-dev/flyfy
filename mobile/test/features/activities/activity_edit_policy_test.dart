@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/features/activities/activity_edit_policy.dart';
+import 'package:inflap/features/activities/activity_edit_policy.dart';
 
 void main() {
   test(

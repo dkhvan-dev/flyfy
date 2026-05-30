@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/app"
+	"kz/inflap/backend/services/file-manager-service/internal/app"
 )
 
 func TestHTTPBusinessErrorUsesLocalizedContract(t *testing.T) {

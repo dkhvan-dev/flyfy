@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/app"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+	"kz/inflap/backend/services/excursion-service/internal/app"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/config"
+	"kz/inflap/backend/services/excursion-service/internal/config"
 )
 
 const headerInternalServiceToken = "X-Internal-Service-Token"

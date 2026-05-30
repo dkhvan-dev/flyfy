@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/config"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+	"kz/inflap/backend/services/activity-service/internal/app"
+	"kz/inflap/backend/services/activity-service/internal/config"
 )
 
 func IdentityMiddleware(next http.Handler) http.Handler {

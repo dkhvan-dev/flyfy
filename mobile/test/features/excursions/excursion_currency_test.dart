@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
-import 'package:superapp/features/excursions/excursion_currency.dart';
+import 'package:inflap/features/excursions/excursion_currency.dart';
 
 void main() {
   test('formats tenge with localized compact number and currency symbol', () {

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/features/chat/models/sticker_pack_vm.dart';
-import 'package:superapp/features/chat/utils/sticker_pack_ordering.dart';
+import 'package:inflap/features/chat/models/sticker_pack_vm.dart';
+import 'package:inflap/features/chat/utils/sticker_pack_ordering.dart';
 
 void main() {
   test('puts custom stickers before installed and official packs', () {

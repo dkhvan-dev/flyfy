@@ -5,8 +5,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/user-service/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/user-service/internal/domain/model"
+	"kz/inflap/backend/services/user-service/internal/domain/enum"
+	"kz/inflap/backend/services/user-service/internal/domain/model"
 )
 
 type UserConnectionListOptions struct {

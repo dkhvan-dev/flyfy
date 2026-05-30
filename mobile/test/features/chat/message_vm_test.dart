@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/features/chat/models/conversation_vm.dart';
-import 'package:superapp/features/chat/models/message_vm.dart';
+import 'package:inflap/features/chat/models/conversation_vm.dart';
+import 'package:inflap/features/chat/models/message_vm.dart';
 
 void main() {
   test('message hidden by moderator keeps public moderation comment', () {
@@ -11,7 +11,7 @@ void main() {
       'type': 'text',
       'content': '',
       'moderationStatus': 'HIDDEN_BY_MODERATION',
-      'moderationPublicComment': 'Нельзя переводить общение за пределы FlyFy.',
+      'moderationPublicComment': 'Нельзя переводить общение за пределы Inflap.',
       'deletedAt': '2026-05-25T12:30:00Z',
       'sentAt': '2026-05-25T12:00:00Z',
     });
@@ -20,7 +20,7 @@ void main() {
     expect(message.isHiddenByModerator, isTrue);
     expect(
       message.moderationPublicComment,
-      'Нельзя переводить общение за пределы FlyFy.',
+      'Нельзя переводить общение за пределы Inflap.',
     );
   });
 
@@ -32,7 +32,7 @@ void main() {
       'type': 'text',
       'contentPreview': '',
       'moderationStatus': 'HIDDEN_BY_MODERATION',
-      'moderationPublicComment': 'Нельзя переводить общение за пределы FlyFy.',
+      'moderationPublicComment': 'Нельзя переводить общение за пределы Inflap.',
       'deletedAt': '2026-05-25T12:30:00Z',
       'sentAt': '2026-05-25T12:00:00Z',
     });
@@ -41,7 +41,7 @@ void main() {
     expect(preview.isHiddenByModerator, isTrue);
     expect(
       preview.moderationPublicComment,
-      'Нельзя переводить общение за пределы FlyFy.',
+      'Нельзя переводить общение за пределы Inflap.',
     );
   });
 }

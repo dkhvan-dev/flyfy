@@ -15,7 +15,7 @@ import UIKit
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     let channel = FlutterMethodChannel(
-      name: "flyfy/clipboard_media",
+      name: "inflap/clipboard_media",
       binaryMessenger: engineBridge.applicationRegistrar.messenger()
     )
     channel.setMethodCallHandler { call, result in
@@ -28,7 +28,7 @@ import UIKit
     }
 
     let videoToolsChannel = FlutterMethodChannel(
-      name: "flyfy/video_tools",
+      name: "inflap/video_tools",
       binaryMessenger: engineBridge.applicationRegistrar.messenger()
     )
     videoToolsChannel.setMethodCallHandler { call, result in
@@ -144,7 +144,7 @@ import UIKit
 
     let outputExtension = extensionForVideoOutputFileType(preferredOutputFileType)
     let outputURL = FileManager.default.temporaryDirectory
-      .appendingPathComponent("flyfy_trimmed_\(Int(Date().timeIntervalSince1970 * 1000)).\(outputExtension)")
+      .appendingPathComponent("inflap_trimmed_\(Int(Date().timeIntervalSince1970 * 1000)).\(outputExtension)")
     try? FileManager.default.removeItem(at: outputURL)
 
     exporter.outputURL = outputURL
@@ -250,7 +250,7 @@ import UIKit
 
     if !insertedTrack {
       throw NSError(
-        domain: "FlyfyVideoTools",
+        domain: "InflapVideoTools",
         code: 1,
         userInfo: [NSLocalizedDescriptionKey: "No audio or video tracks found"]
       )

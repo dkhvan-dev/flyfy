@@ -6,7 +6,7 @@ void main() {
   test('android video trimming writes tracks with separate extractors',
       () async {
     final source = await File(
-      'android/app/src/main/kotlin/dev/dkhvan/flyfy/superapp/MainActivity.kt',
+      'android/app/src/main/kotlin/kz/inflap/MainActivity.kt',
     ).readAsString();
 
     expect(source, contains('writeSelectedTrack'));
@@ -20,7 +20,7 @@ void main() {
 
   test('android video trimming uses a large direct sample buffer', () async {
     final source = await File(
-      'android/app/src/main/kotlin/dev/dkhvan/flyfy/superapp/MainActivity.kt',
+      'android/app/src/main/kotlin/kz/inflap/MainActivity.kt',
     ).readAsString();
 
     expect(source, contains('MIN_TRIM_SAMPLE_BUFFER_SIZE'));
@@ -35,7 +35,7 @@ void main() {
 
     expect(source, contains('preferredOutputFileType'));
     expect(source, contains('outputExtension'));
-    expect(source, contains('appendingPathComponent("flyfy_trimmed_'));
+    expect(source, contains('appendingPathComponent("inflap_trimmed_'));
     expect(source, contains('AVFileType.mp4'));
   });
 

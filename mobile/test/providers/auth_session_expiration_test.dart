@@ -1,12 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/core/auth/auth_session_events.dart';
-import 'package:superapp/core/network/api_client.dart';
-import 'package:superapp/core/storage/secure_storage.dart';
-import 'package:superapp/features/profile/data/profile_api.dart';
-import 'package:superapp/features/profile/models/user_profile_vm.dart';
-import 'package:superapp/providers/auth_provider.dart';
-import 'package:superapp/providers/session_provider.dart';
+import 'package:inflap/core/auth/auth_session_events.dart';
+import 'package:inflap/core/network/api_client.dart';
+import 'package:inflap/core/storage/secure_storage.dart';
+import 'package:inflap/features/profile/data/profile_api.dart';
+import 'package:inflap/features/profile/models/user_profile_vm.dart';
+import 'package:inflap/providers/auth_provider.dart';
+import 'package:inflap/providers/session_provider.dart';
 
 void main() {
   test('AuthProvider marks user unauthenticated when session expires',

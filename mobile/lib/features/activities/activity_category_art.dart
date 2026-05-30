@@ -41,9 +41,8 @@ class ActivityDecorativeCoverFallback extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final fallbackSide = MediaQuery.sizeOf(context).shortestSide * 0.28;
-        final width = constraints.maxWidth.isFinite
-            ? constraints.maxWidth
-            : fallbackSide;
+        final width =
+            constraints.maxWidth.isFinite ? constraints.maxWidth : fallbackSide;
         final height = constraints.maxHeight.isFinite
             ? constraints.maxHeight
             : fallbackSide;

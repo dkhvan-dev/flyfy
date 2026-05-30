@@ -16,10 +16,10 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	grpcadapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/grpc"
-	guideadapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/guide"
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/config"
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/port"
+	grpcadapter "kz/inflap/backend/services/excursion-service/internal/adapter/grpc"
+	guideadapter "kz/inflap/backend/services/excursion-service/internal/adapter/guide"
+	"kz/inflap/backend/services/excursion-service/internal/config"
+	"kz/inflap/backend/services/excursion-service/internal/domain/port"
 )
 
 func main() {

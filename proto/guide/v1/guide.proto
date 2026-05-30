@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package guide.v1;
 
-option go_package = "github.com/dkhvan-dev/flyfy/proto/gen/go/guide/v1;guidev1";
+option go_package = "kz/inflap/proto/gen/go/guide/v1;guidev1";
 
 service GuideService {
   rpc GetOrCreateGuideProfile(GetOrCreateGuideProfileRequest) returns (GetOrCreateGuideProfileResponse);

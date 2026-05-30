@@ -6,8 +6,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/domain/model"
+	"kz/inflap/backend/services/activity-service/internal/app"
+	"kz/inflap/backend/services/activity-service/internal/domain/model"
 )
 
 func mapError(err error) error {

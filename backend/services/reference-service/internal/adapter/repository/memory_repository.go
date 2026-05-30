@@ -10,7 +10,7 @@ import (
 
 	"golang.org/x/text/unicode/norm"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/reference-service/internal/domain/model"
+	"kz/inflap/backend/services/reference-service/internal/domain/model"
 )
 
 // MemoryRepository holds all reference data in memory with pre-built search indexes.

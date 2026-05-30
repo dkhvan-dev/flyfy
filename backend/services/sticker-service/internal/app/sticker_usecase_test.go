@@ -8,9 +8,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/sticker-service/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/sticker-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/sticker-service/internal/domain/port"
+	"kz/inflap/backend/services/sticker-service/internal/domain/enum"
+	"kz/inflap/backend/services/sticker-service/internal/domain/model"
+	"kz/inflap/backend/services/sticker-service/internal/domain/port"
 )
 
 func TestGetMyPacksReturnsDefaultAndInstalledPacks(t *testing.T) {
@@ -21,11 +21,11 @@ func TestGetMyPacksReturnsDefaultAndInstalledPacks(t *testing.T) {
 	useCase := NewStickerUseCase(repo, files)
 
 	systemPack := mustPack(t, model.NewStickerPackParams{
-		Slug:       "flyfy-default",
+		Slug:       "inflap-default",
 		Type:       enum.PackTypeSystem,
 		Visibility: enum.PackVisibilityPublic,
 		Status:     enum.PackStatusActive,
-		Title:      map[string]string{"en": "FlyFy"},
+		Title:      map[string]string{"en": "Inflap"},
 	})
 	customPack := mustPack(t, model.NewStickerPackParams{
 		Slug:        "custom-" + userID.String(),
@@ -236,11 +236,11 @@ func TestValidateSendAcceptsActiveDefaultSticker(t *testing.T) {
 	actorID := uuid.New()
 	repo := newFakeStickerRepository(t)
 	pack := mustPack(t, model.NewStickerPackParams{
-		Slug:       "flyfy-default",
+		Slug:       "inflap-default",
 		Type:       enum.PackTypeSystem,
 		Visibility: enum.PackVisibilityPublic,
 		Status:     enum.PackStatusActive,
-		Title:      map[string]string{"en": "FlyFy"},
+		Title:      map[string]string{"en": "Inflap"},
 	})
 	sticker := mustSticker(t, model.NewStickerParams{
 		PackID: pack.ID,
@@ -415,11 +415,11 @@ func TestValidateSendReturnsStickerPayloadWithFallbackMetadata(t *testing.T) {
 	previewID := uuid.New()
 	repo := newFakeStickerRepository(t)
 	pack := mustPack(t, model.NewStickerPackParams{
-		Slug:       "flyfy-default",
+		Slug:       "inflap-default",
 		Type:       enum.PackTypeSystem,
 		Visibility: enum.PackVisibilityPublic,
 		Status:     enum.PackStatusActive,
-		Title:      map[string]string{"en": "FlyFy"},
+		Title:      map[string]string{"en": "Inflap"},
 	})
 	sticker := mustSticker(t, model.NewStickerParams{
 		PackID:         pack.ID,
@@ -464,11 +464,11 @@ func TestValidateSendRecordsRecentStickerUsage(t *testing.T) {
 	actorID := uuid.New()
 	repo := newFakeStickerRepository(t)
 	pack := mustPack(t, model.NewStickerPackParams{
-		Slug:       "flyfy-default",
+		Slug:       "inflap-default",
 		Type:       enum.PackTypeSystem,
 		Visibility: enum.PackVisibilityPublic,
 		Status:     enum.PackStatusActive,
-		Title:      map[string]string{"en": "FlyFy"},
+		Title:      map[string]string{"en": "Inflap"},
 	})
 	sticker := mustSticker(t, model.NewStickerParams{
 		PackID: pack.ID,

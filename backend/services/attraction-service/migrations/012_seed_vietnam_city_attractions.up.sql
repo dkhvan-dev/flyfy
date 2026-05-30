@@ -1,5 +1,5 @@
 -- Curated Vietnam attractions seed.
--- Texts are original FlyFy editorial summaries localized for ru, en, kk.
+-- Texts are original Inflap editorial summaries localized for ru, en, kk.
 -- Sources audited in May 2026:
 -- - Wikimedia Commons and Wikipedia for representative cover media and source pages.
 -- - OpenStreetMap search URLs for lightweight location verification anchors.

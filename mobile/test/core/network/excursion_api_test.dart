@@ -4,12 +4,12 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/core/network/api_client.dart';
-import 'package:superapp/core/network/excursion_api.dart';
-import 'package:superapp/core/storage/secure_storage.dart';
-import 'package:superapp/features/excursions/models/create_excursion_booking_request.dart';
-import 'package:superapp/features/excursions/models/create_excursion_review_request.dart';
-import 'package:superapp/features/excursions/models/create_excursion_request.dart';
+import 'package:inflap/core/network/api_client.dart';
+import 'package:inflap/core/network/excursion_api.dart';
+import 'package:inflap/core/storage/secure_storage.dart';
+import 'package:inflap/features/excursions/models/create_excursion_booking_request.dart';
+import 'package:inflap/features/excursions/models/create_excursion_review_request.dart';
+import 'package:inflap/features/excursions/models/create_excursion_request.dart';
 
 void main() {
   test('getExcursions uses public excursion product endpoint', () async {

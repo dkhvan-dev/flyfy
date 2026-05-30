@@ -178,7 +178,7 @@ const modules = [
     }
   },
   {
-    id: "superapp",
+    id: "inflap",
     title: "Агрегатор сервисов",
     icon: "🧩",
     color: "#E0E0E0",

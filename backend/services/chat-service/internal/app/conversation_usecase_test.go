@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/domain/model"
+	"kz/inflap/backend/services/chat-service/internal/domain/model"
 )
 
 func TestSyncExcursionScheduleSlotConversationCreatesConversationWithGuideAndBookingAuthors(t *testing.T) {

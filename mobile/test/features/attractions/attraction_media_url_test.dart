@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/core/config/app_config.dart';
-import 'package:superapp/features/attractions/attraction_ui.dart';
-import 'package:superapp/features/attractions/models/attraction_vm.dart';
+import 'package:inflap/core/config/app_config.dart';
+import 'package:inflap/features/attractions/attraction_ui.dart';
+import 'package:inflap/features/attractions/models/attraction_vm.dart';
 
 void main() {
   test('resolves attraction media file ids through public file content route',

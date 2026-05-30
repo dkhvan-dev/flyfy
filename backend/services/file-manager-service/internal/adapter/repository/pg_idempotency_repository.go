@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/domain/model"
+	"kz/inflap/backend/services/file-manager-service/internal/domain/model"
 )
 
 type PGIdempotencyRepository struct {

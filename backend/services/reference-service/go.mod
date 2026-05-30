@@ -1,4 +1,4 @@
-module github.com/dkhvan-dev/flyfy/backend/services/reference-service
+module kz/inflap/backend/services/reference-service
 
 go 1.26
 

@@ -3,7 +3,7 @@ package http
 import (
 	"context"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/model"
+	"kz/inflap/backend/services/admin-panel/internal/domain/model"
 )
 
 type contextKey string

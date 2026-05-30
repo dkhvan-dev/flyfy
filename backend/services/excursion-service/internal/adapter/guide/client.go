@@ -11,9 +11,9 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/port"
-	guidev1 "github.com/dkhvan-dev/flyfy/proto/gen/go/guide/v1"
+	"kz/inflap/backend/services/excursion-service/internal/app"
+	"kz/inflap/backend/services/excursion-service/internal/domain/port"
+	guidev1 "kz/inflap/proto/gen/go/guide/v1"
 )
 
 const verifyTimeout = 3 * time.Second

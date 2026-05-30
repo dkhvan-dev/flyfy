@@ -13,15 +13,15 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 
-	fraudadapter "github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/adapter/fraud"
-	httpAdapter "github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/adapter/http"
-	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/adapter/oauth"
-	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/adapter/otp"
-	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/adapter/repository"
-	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/adapter/tokenclient"
-	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/config"
-	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/domain/port"
+	fraudadapter "kz/inflap/backend/services/auth-service/internal/adapter/fraud"
+	httpAdapter "kz/inflap/backend/services/auth-service/internal/adapter/http"
+	"kz/inflap/backend/services/auth-service/internal/adapter/oauth"
+	"kz/inflap/backend/services/auth-service/internal/adapter/otp"
+	"kz/inflap/backend/services/auth-service/internal/adapter/repository"
+	"kz/inflap/backend/services/auth-service/internal/adapter/tokenclient"
+	"kz/inflap/backend/services/auth-service/internal/app"
+	"kz/inflap/backend/services/auth-service/internal/config"
+	"kz/inflap/backend/services/auth-service/internal/domain/port"
 )
 
 func main() {

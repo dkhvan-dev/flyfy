@@ -9,7 +9,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/attraction-service/internal/domain/model"
+	"kz/inflap/backend/services/attraction-service/internal/domain/model"
 )
 
 const defaultAttractionCachePrefix = "attraction-service:cache:"

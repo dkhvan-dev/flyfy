@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/domain/port"
-	activityv1 "github.com/dkhvan-dev/flyfy/proto/gen/go/activity/v1"
+	"kz/inflap/backend/services/chat-service/internal/domain/port"
+	activityv1 "kz/inflap/proto/gen/go/activity/v1"
 )
 
 type ActivityLifecycleResolver struct {

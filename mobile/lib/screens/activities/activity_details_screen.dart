@@ -185,8 +185,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
 
   void _handleBackSwipeEnd(DragEndDetails details) {
     final primaryVelocity = details.primaryVelocity ?? 0;
-    final shouldGoBack =
-        _isTrackingBackSwipe &&
+    final shouldGoBack = _isTrackingBackSwipe &&
         Navigator.of(context).canPop() &&
         (_backSwipeDistance >= _backSwipeMinDistance ||
             primaryVelocity >= _backSwipeMinVelocity);
@@ -482,9 +481,8 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.read<ActivityProvider>();
     setState(
-      () => _pendingAction = minutes == 30
-          ? _FooterAction.extend30
-          : _FooterAction.extend60,
+      () => _pendingAction =
+          minutes == 30 ? _FooterAction.extend30 : _FooterAction.extend60,
     );
     final updated = await provider.extendActivity(
       widget.activityId,
@@ -965,9 +963,8 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                                 imageUrl: _resolveUserAvatarUrl(
                                   participant.userId,
                                   resolvedProfiles: _resolvedProfiles,
-                                  currentProfile: context
-                                      .read<SessionProvider>()
-                                      .profile,
+                                  currentProfile:
+                                      context.read<SessionProvider>().profile,
                                 ),
                                 radius: 21,
                                 borderColor: _DetailsColors.sheet,
@@ -1139,17 +1136,17 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       );
     }
 
-    final activeParticipants =
-        _participants.where((participant) => participant.isActive).toList()
-          ..sort((a, b) => a.joinedAt.compareTo(b.joinedAt));
-    final occupyingCount = _participants
-        .where((participant) => participant.occupiesSlot)
-        .length;
+    final activeParticipants = _participants
+        .where((participant) => participant.isActive)
+        .toList()
+      ..sort((a, b) => a.joinedAt.compareTo(b.joinedAt));
+    final occupyingCount =
+        _participants.where((participant) => participant.occupiesSlot).length;
     final isOwner =
         currentUserId.isNotEmpty && currentUserId == activity.hostUserId;
     final canInviteFriends =
         context.read<AuthProvider>().state == AuthState.authenticated &&
-        (isOwner || activity.allowsParticipantInvites);
+            (isOwner || activity.allowsParticipantInvites);
     ActivityParticipantVm? currentParticipant;
     if (!isOwner && currentUserId.isNotEmpty) {
       for (final participant in activeParticipants) {
@@ -1175,23 +1172,21 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       activity,
       isOwner: isOwner,
     );
-    final canShowAttendanceQr =
-        isOwner &&
+    final canShowAttendanceQr = isOwner &&
         !const {'CANCELLED', 'COMPLETED', 'ARCHIVED'}.contains(status);
     final lifecycleReason = activity.isCompletedEarly
         ? (activity.completionReason ?? '').trim()
         : status == 'CANCELLED'
-        ? (activity.cancellationReason ?? '').trim()
-        : '';
+            ? (activity.cancellationReason ?? '').trim()
+            : '';
     final lifecycleReasonTitle = activity.isCompletedEarly
         ? l10n.activityCompleteReasonLabel
         : l10n.activityCancelReasonLabel;
     final lifecycleReasonIcon = activity.isCompletedEarly
         ? Icons.task_alt_rounded
         : Icons.event_busy_rounded;
-    final lifecycleReasonColor = activity.isCompletedEarly
-        ? _DetailsColors.success
-        : AppColors.accent;
+    final lifecycleReasonColor =
+        activity.isCompletedEarly ? _DetailsColors.success : AppColors.accent;
     final baseCategoryLabel = _resolveLocalizedCategoryLabel(
       activity.categorySlug,
       provider.categoryItems,
@@ -1256,8 +1251,8 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                   final heroHeight = width < 360
                       ? 292.0
                       : width > 430
-                      ? 348.0
-                      : 326.0;
+                          ? 348.0
+                          : 326.0;
                   final compact = width < 360;
 
                   return RefreshIndicator(
@@ -1362,11 +1357,11 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                           loadFailed: _participantsError != null,
                           onViewAll: activeParticipants.isNotEmpty
                               ? () => _showParticipantsSheet(
-                                  activeParticipants,
-                                  l10n,
-                                  activity.hostUserId,
-                                  canInviteFriends,
-                                )
+                                    activeParticipants,
+                                    l10n,
+                                    activity.hostUserId,
+                                    canInviteFriends,
+                                  )
                               : null,
                         ),
                         const SizedBox(height: 8),
@@ -1380,24 +1375,19 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                           canCancelActivity: canCancelActivity,
                           canExtendActivity: canExtendActivity,
                           canCompleteActivity: canCompleteActivity,
-                          isLeaving:
-                              provider.actionState ==
+                          isLeaving: provider.actionState ==
                                   ActivityActionState.loading &&
                               _pendingAction == _FooterAction.leave,
-                          isExtending30:
-                              provider.actionState ==
+                          isExtending30: provider.actionState ==
                                   ActivityActionState.loading &&
                               _pendingAction == _FooterAction.extend30,
-                          isExtending60:
-                              provider.actionState ==
+                          isExtending60: provider.actionState ==
                                   ActivityActionState.loading &&
                               _pendingAction == _FooterAction.extend60,
-                          isCompleting:
-                              provider.actionState ==
+                          isCompleting: provider.actionState ==
                                   ActivityActionState.loading &&
                               _pendingAction == _FooterAction.complete,
-                          isCancelling:
-                              provider.actionState ==
+                          isCancelling: provider.actionState ==
                                   ActivityActionState.loading &&
                               _pendingAction == _FooterAction.cancel,
                           onLeaveTap: _handleLeave,
@@ -1872,8 +1862,7 @@ class _PrivateActivityPasswordDialogState
                                     letterSpacing: 0.2,
                                   ),
                                   decoration: InputDecoration(
-                                    hintText: widget
-                                        .l10n
+                                    hintText: widget.l10n
                                         .activityPrivateJoinPasswordPlaceholder,
                                     hintStyle: TextStyle(
                                       color: Colors.white.withValues(
@@ -1891,9 +1880,9 @@ class _PrivateActivityPasswordDialogState
                                       onPressed: _isSubmitting
                                           ? null
                                           : () => setState(
-                                              () =>
-                                                  _obscureText = !_obscureText,
-                                            ),
+                                                () => _obscureText =
+                                                    !_obscureText,
+                                              ),
                                       icon: Icon(
                                         _obscureText
                                             ? Icons.visibility_outlined
@@ -1910,9 +1899,8 @@ class _PrivateActivityPasswordDialogState
                                     }
                                     setState(() => _errorText = null);
                                   },
-                                  onSubmitted: _isSubmitting
-                                      ? null
-                                      : (_) => _submit(),
+                                  onSubmitted:
+                                      _isSubmitting ? null : (_) => _submit(),
                                 ),
                               ),
                               if (_errorText != null) ...[
@@ -1969,17 +1957,17 @@ class _PrivateActivityPasswordDialogState
                                             ? const SizedBox(
                                                 width: 24,
                                                 height: 24,
-                                                child: CircularProgressIndicator(
+                                                child:
+                                                    CircularProgressIndicator(
                                                   strokeWidth: 2.6,
                                                   valueColor:
                                                       AlwaysStoppedAnimation(
-                                                        Colors.white,
-                                                      ),
+                                                    Colors.white,
+                                                  ),
                                                 ),
                                               )
                                             : Text(
-                                                widget
-                                                    .l10n
+                                                widget.l10n
                                                     .activityPrivateJoinSubmit,
                                                 style: TextStyle(
                                                   color: Colors.white,
@@ -2373,13 +2361,11 @@ class _SheetActionButton extends StatelessWidget {
     final minHeight = _detailsScaled(context, 52, min: 48, max: 54);
     final iconSize = _detailsScaled(context, 16, min: 15, max: 18);
 
-    final backgroundColor = isPrimary
-        ? AppColors.accent
-        : Colors.white.withValues(alpha: 0.06);
+    final backgroundColor =
+        isPrimary ? AppColors.accent : Colors.white.withValues(alpha: 0.06);
     final foregroundColor = isPrimary ? Colors.white : _DetailsColors.text;
-    final borderColor = isPrimary
-        ? AppColors.accent
-        : Colors.white.withValues(alpha: 0.1);
+    final borderColor =
+        isPrimary ? AppColors.accent : Colors.white.withValues(alpha: 0.1);
 
     return ConstrainedBox(
       constraints: BoxConstraints(minHeight: minHeight),
@@ -3193,8 +3179,7 @@ class _StatsGrid extends StatelessWidget {
         ? l10n.freeLabel
         : '${activity.formattedPriceLabel(locale)} ${l10n.activityPerPerson}';
     final formatText = formatActivityFormat(activity.format, l10n);
-    final capacityText =
-        activity.capacityType.toUpperCase() == 'LIMITED' &&
+    final capacityText = activity.capacityType.toUpperCase() == 'LIMITED' &&
             activity.maxParticipants != null
         ? l10n.activityPeopleMax(activity.maxParticipants!)
         : l10n.activityUnlimitedSpots;
@@ -3395,8 +3380,7 @@ class _MeetingSection extends StatelessWidget {
     final mapHeight = _detailsScaled(context, 220, min: 190, max: 236);
 
     final hasMeetingLink = (activity.meetingUrl ?? '').trim().isNotEmpty;
-    final hasLocation =
-        (activity.addressText ?? '').trim().isNotEmpty ||
+    final hasLocation = (activity.addressText ?? '').trim().isNotEmpty ||
         activity.shortLocation.isNotEmpty;
     if (!hasMeetingLink && !hasLocation) {
       return const SizedBox.shrink();
@@ -3716,7 +3700,7 @@ class _MeetingMapCard extends StatelessWidget {
           children: [
             TileLayer(
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'dev.dkhvan.flyfy.superapp',
+              userAgentPackageName: 'kz.inflap',
             ),
             MarkerLayer(
               markers: [
@@ -4373,9 +4357,8 @@ class _InviteFriendsSheetState extends State<_InviteFriendsSheet> {
       );
       if (!mounted) return;
 
-      final incoming = page.items
-          .where(_canInviteFriend)
-          .toList(growable: false);
+      final incoming =
+          page.items.where(_canInviteFriend).toList(growable: false);
       final merged = <String, ProfileFollowerVm>{
         if (append)
           for (final friend in _friends) friend.userId: friend,
@@ -5123,9 +5106,8 @@ class _DetailsActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locale = Localizations.localeOf(context).toString();
-    final priceLabel = activity.isFree
-        ? l10n.freeLabel
-        : activity.formattedPriceLabel(locale);
+    final priceLabel =
+        activity.isFree ? l10n.freeLabel : activity.formattedPriceLabel(locale);
     final shouldShowPaymentAction =
         isJoined && !isOwner && !activity.isFree && !isPaid && onPay != null;
     final secondaryAction = showPublish
@@ -5137,16 +5119,15 @@ class _DetailsActionBar extends StatelessWidget {
             action: _FooterAction.publish,
           )
         : shouldShowPaymentAction
-        ? _FooterButtonSpec(
-            label: l10n.activityDetailsChatButton,
-            icon: Icons.forum_rounded,
-            onTap: onOpenChat ?? () {},
-            style: _FooterButtonStyle.secondary,
-            action: null,
-          )
-        : null;
-    final isRepeatableOwnerActivity =
-        isOwner &&
+            ? _FooterButtonSpec(
+                label: l10n.activityDetailsChatButton,
+                icon: Icons.forum_rounded,
+                onTap: onOpenChat ?? () {},
+                style: _FooterButtonStyle.secondary,
+                action: null,
+              )
+            : null;
+    final isRepeatableOwnerActivity = isOwner &&
         const {
           'CANCELLED',
           'COMPLETED',
@@ -5164,28 +5145,28 @@ class _DetailsActionBar extends StatelessWidget {
             action: null,
           )
         : isJoined
-        ? shouldShowPaymentAction
-              ? _FooterButtonSpec(
-                  label: l10n.activityPaymentPayButton,
-                  icon: Icons.payments_rounded,
-                  onTap: onPay ?? () {},
-                  style: _FooterButtonStyle.primary,
-                  action: null,
-                )
-              : _FooterButtonSpec(
-                  label: l10n.activityDetailsChatButton,
-                  icon: Icons.forum_rounded,
-                  onTap: onOpenChat ?? () {},
-                  style: _FooterButtonStyle.primary,
-                  action: null,
-                )
-        : _FooterButtonSpec(
-            label: l10n.activityJoinActivity,
-            icon: Icons.chevron_right_rounded,
-            onTap: onJoin,
-            style: _FooterButtonStyle.primary,
-            action: _FooterAction.join,
-          );
+            ? shouldShowPaymentAction
+                ? _FooterButtonSpec(
+                    label: l10n.activityPaymentPayButton,
+                    icon: Icons.payments_rounded,
+                    onTap: onPay ?? () {},
+                    style: _FooterButtonStyle.primary,
+                    action: null,
+                  )
+                : _FooterButtonSpec(
+                    label: l10n.activityDetailsChatButton,
+                    icon: Icons.forum_rounded,
+                    onTap: onOpenChat ?? () {},
+                    style: _FooterButtonStyle.primary,
+                    action: null,
+                  )
+            : _FooterButtonSpec(
+                label: l10n.activityJoinActivity,
+                icon: Icons.chevron_right_rounded,
+                onTap: onJoin,
+                style: _FooterButtonStyle.primary,
+                action: _FooterAction.join,
+              );
     final priceBlockLabel = isPaid
         ? l10n.activityPaymentStatusLabel
         : l10n.activityDetailsTotalLabel;
@@ -5211,8 +5192,7 @@ class _DetailsActionBar extends StatelessWidget {
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final stackVertically =
-                constraints.maxWidth < 390 ||
+            final stackVertically = constraints.maxWidth < 390 ||
                 (secondaryAction != null && constraints.maxWidth < 430);
             if (stackVertically) {
               return Column(
@@ -5241,8 +5221,7 @@ class _DetailsActionBar extends StatelessWidget {
                           width: double.infinity,
                           child: _FooterButton(
                             spec: secondaryAction,
-                            isBusy:
-                                isBusy &&
+                            isBusy: isBusy &&
                                 pendingAction == secondaryAction.action,
                           ),
                         ),
@@ -5282,8 +5261,7 @@ class _DetailsActionBar extends StatelessWidget {
                             Expanded(
                               child: _FooterButton(
                                 spec: secondaryAction,
-                                isBusy:
-                                    isBusy &&
+                                isBusy: isBusy &&
                                     pendingAction == secondaryAction.action,
                               ),
                             ),
@@ -5291,8 +5269,7 @@ class _DetailsActionBar extends StatelessWidget {
                             Expanded(
                               child: _FooterButton(
                                 spec: primaryAction,
-                                isBusy:
-                                    isBusy &&
+                                isBusy: isBusy &&
                                     pendingAction == primaryAction.action,
                               ),
                             ),
@@ -5389,12 +5366,10 @@ class _FooterButton extends StatelessWidget {
     final iconSize = _detailsScaled(context, 18, min: 16, max: 19);
 
     final isPrimary = spec.style == _FooterButtonStyle.primary;
-    final backgroundColor = isPrimary
-        ? AppColors.accent
-        : Colors.white.withValues(alpha: 0.08);
-    final borderColor = isPrimary
-        ? AppColors.accent
-        : Colors.white.withValues(alpha: 0.1);
+    final backgroundColor =
+        isPrimary ? AppColors.accent : Colors.white.withValues(alpha: 0.08);
+    final borderColor =
+        isPrimary ? AppColors.accent : Colors.white.withValues(alpha: 0.1);
     final foreground = isPrimary ? Colors.white : _DetailsColors.text;
 
     return ConstrainedBox(

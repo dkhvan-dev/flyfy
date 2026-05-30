@@ -5,9 +5,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/domain/port"
-	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/event"
+	"kz/inflap/backend/services/chat-service/internal/domain/model"
+	"kz/inflap/backend/services/chat-service/internal/domain/port"
+	"kz/inflap/backend/services/chat-service/internal/event"
 )
 
 func loadPinnedMessages(

@@ -8,15 +8,15 @@ import (
 	"syscall"
 	"time"
 
-	grpcadapter "github.com/dkhvan-dev/flyfy/backend/services/trust-service/internal/adapter/grpc"
-	"github.com/dkhvan-dev/flyfy/backend/services/trust-service/internal/adapter/repository"
-	"github.com/dkhvan-dev/flyfy/backend/services/trust-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/trust-service/internal/config"
-	trustv1 "github.com/dkhvan-dev/flyfy/proto/gen/go/trust/v1"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
+	grpcadapter "kz/inflap/backend/services/trust-service/internal/adapter/grpc"
+	"kz/inflap/backend/services/trust-service/internal/adapter/repository"
+	"kz/inflap/backend/services/trust-service/internal/app"
+	"kz/inflap/backend/services/trust-service/internal/config"
+	trustv1 "kz/inflap/proto/gen/go/trust/v1"
 )
 
 func main() {

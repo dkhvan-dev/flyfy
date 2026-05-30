@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/port"
 	"github.com/google/uuid"
+	"kz/inflap/backend/services/excursion-service/internal/domain/port"
 )
 
 const recalculateRatingTimeout = 3 * time.Second

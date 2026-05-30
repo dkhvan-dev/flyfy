@@ -11,7 +11,7 @@ class ChatLinkMatch {
 }
 
 final chatUrlRegex = RegExp(
-  r'((?:https?:\/\/|flyfy:\/\/|www\.|\/(?:activities|attractions|chats|map|me|profile|stories|excursions|users)\b)[^\s<>()]*)',
+  r'((?:https?:\/\/|inflap:\/\/|www\.|\/(?:activities|attractions|chats|map|me|profile|stories|excursions|users)\b)[^\s<>()]*)',
   caseSensitive: false,
 );
 
@@ -51,7 +51,7 @@ Uri? externalUriForChatUrl(String rawUrl) {
 
 String chatLinkHostLabel(String rawUrl) {
   final internalRoute = internalAppRouteForChatUrl(rawUrl);
-  if (internalRoute != null) return 'FlyFy';
+  if (internalRoute != null) return 'Inflap';
 
   final externalUri = externalUriForChatUrl(rawUrl);
   final host = externalUri?.host.trim() ?? '';
@@ -76,14 +76,14 @@ String? internalAppRouteForChatUrl(String rawUrl) {
   if (uri == null) return null;
 
   final scheme = uri.scheme.toLowerCase();
-  if (scheme == 'flyfy') {
+  if (scheme == 'inflap') {
     final path = uri.host.isEmpty ? uri.path : '/${uri.host}${uri.path}';
     return knownInternalChatRoute(routeWithQuery(path, uri.query));
   }
 
   final host = uri.host.toLowerCase();
   if ((scheme == 'http' || scheme == 'https') &&
-      (host == 'flyfy.app' || host.endsWith('.flyfy.app'))) {
+      (host == 'inflap.app' || host.endsWith('.inflap.app'))) {
     return knownInternalChatRoute(routeWithQuery(uri.path, uri.query));
   }
 

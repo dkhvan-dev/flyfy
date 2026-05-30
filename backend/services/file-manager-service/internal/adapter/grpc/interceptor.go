@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/config"
+	"kz/inflap/backend/services/file-manager-service/internal/config"
 )
 
 func UnaryServerInterceptor(cfg *config.Config) grpc.UnaryServerInterceptor {

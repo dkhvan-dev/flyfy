@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/domain/model"
+	"kz/inflap/backend/services/auth-service/internal/domain/model"
 )
 
 // PgUserRepository implements port.UserRepository using PostgreSQL.

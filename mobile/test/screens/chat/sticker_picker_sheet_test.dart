@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:superapp/core/network/sticker_api.dart';
-import 'package:superapp/features/chat/models/sticker_group_vm.dart';
-import 'package:superapp/features/chat/models/sticker_pack_vm.dart';
-import 'package:superapp/l10n/generated/app_localizations.dart';
-import 'package:superapp/providers/sticker_catalog_provider.dart';
-import 'package:superapp/screens/chat/widgets/sticker_picker_sheet.dart';
+import 'package:inflap/core/network/sticker_api.dart';
+import 'package:inflap/features/chat/models/sticker_group_vm.dart';
+import 'package:inflap/features/chat/models/sticker_pack_vm.dart';
+import 'package:inflap/l10n/generated/app_localizations.dart';
+import 'package:inflap/providers/sticker_catalog_provider.dart';
+import 'package:inflap/screens/chat/widgets/sticker_picker_sheet.dart';
 
 void main() {
   testWidgets('shows pack tabs and sticker grid', (tester) async {

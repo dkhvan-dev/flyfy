@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:superapp/l10n/generated/app_localizations.dart';
-import 'package:superapp/providers/auth_provider.dart';
-import 'package:superapp/providers/session_provider.dart';
-import 'package:superapp/screens/auth/otp_screen.dart';
+import 'package:inflap/l10n/generated/app_localizations.dart';
+import 'package:inflap/providers/auth_provider.dart';
+import 'package:inflap/providers/session_provider.dart';
+import 'package:inflap/screens/auth/otp_screen.dart';
 
 void main() {
   Widget buildTestApp() {

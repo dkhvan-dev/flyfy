@@ -1072,7 +1072,7 @@ class _ProfileActivitiesTabView extends StatelessWidget {
         ],
         if (totalPages > 1) ...[
           SizedBox(height: profileScaled(context, 20, min: 16, max: 24)),
-          FlyfyPaginationBar(
+          InflapPaginationBar(
             currentPage: state.page,
             totalPages: totalPages,
             onPageChanged: state.isLoading ? null : onPageChanged,

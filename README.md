@@ -1,2 +1,2 @@
-# flyfy
+# inflap
 Travel SuperApp

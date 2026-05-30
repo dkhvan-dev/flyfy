@@ -4,9 +4,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/app"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"kz/inflap/backend/services/file-manager-service/internal/app"
 )
 
 func TestMapErrorReturnsSafeBusinessMessages(t *testing.T) {

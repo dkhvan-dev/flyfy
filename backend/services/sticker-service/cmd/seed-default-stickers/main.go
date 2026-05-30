@@ -25,7 +25,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/sticker-service/internal/config"
+	"kz/inflap/backend/services/sticker-service/internal/config"
 )
 
 const (
@@ -592,44 +592,44 @@ func defaultStickerDefinitions() []stickerDefinition {
 	seasonalTitle := localized("Seasonal", "Сезонное", "Маусымдық")
 
 	packDescription := localized(
-		"Original FlyFy official stickers for travel chats.",
-		"Официальные оригинальные стикеры FlyFy для туристических чатов.",
-		"Саяхат чаттарына арналған ресми FlyFy стикерлері.",
+		"Original Inflap official stickers for travel chats.",
+		"Официальные оригинальные стикеры Inflap для туристических чатов.",
+		"Саяхат чаттарына арналған ресми Inflap стикерлері.",
 	)
 
 	return []stickerDefinition{
-		stickerDef("travel", 10, travelTitle, "flyfy-travel-basics", travelTitle, packDescription, "airport-sprint", "✈️", []string{"travel", "flight", "airport", "rush", "boarding"}, 10, rgba(226, 244, 255), rgba(53, 132, 228), rgba(15, 49, 92)),
-		stickerDef("travel", 10, travelTitle, "flyfy-travel-basics", travelTitle, packDescription, "passport-ready", "🛂", []string{"passport", "visa", "border", "ready", "trip"}, 20, rgba(236, 232, 255), rgba(113, 82, 220), rgba(49, 39, 107)),
-		stickerDef("travel", 10, travelTitle, "flyfy-travel-basics", travelTitle, packDescription, "lost-but-happy", "🗺️", []string{"lost", "map", "happy", "route", "explore"}, 30, rgba(232, 249, 239), rgba(62, 171, 110), rgba(31, 94, 63)),
-		stickerDef("travel", 10, travelTitle, "flyfy-travel-basics", travelTitle, packDescription, "travel-camera", "📷", []string{"camera", "photo", "memory", "travel", "snapshot"}, 40, rgba(232, 241, 255), rgba(80, 125, 211), rgba(36, 58, 108)),
-		stickerDef("travel", 10, travelTitle, "flyfy-travel-basics", travelTitle, packDescription, "globe-mode", "🌍", []string{"globe", "world", "travel", "explore", "international"}, 50, rgba(225, 248, 255), rgba(53, 154, 205), rgba(24, 88, 118)),
-		stickerDef("emotions", 20, emotionsTitle, "flyfy-emotions", emotionsTitle, packDescription, "trip-excited", "🤩", []string{"excited", "wow", "happy", "trip", "emotion"}, 10, rgba(255, 241, 214), rgba(245, 177, 53), rgba(105, 70, 20)),
-		stickerDef("emotions", 20, emotionsTitle, "flyfy-emotions", emotionsTitle, packDescription, "travel-tired", "😴", []string{"tired", "jetlag", "sleepy", "late", "emotion"}, 20, rgba(235, 238, 255), rgba(112, 126, 220), rgba(48, 55, 112)),
-		stickerDef("emotions", 20, emotionsTitle, "flyfy-emotions", emotionsTitle, packDescription, "delayed-again", "⏰", []string{"delay", "late", "wait", "flight", "train"}, 30, rgba(255, 242, 222), rgba(226, 141, 50), rgba(104, 62, 22)),
-		stickerDef("food", 30, foodTitle, "flyfy-food", foodTitle, packDescription, "need-coffee", "☕", []string{"coffee", "jetlag", "morning", "tired", "airport"}, 10, rgba(247, 239, 228), rgba(142, 92, 52), rgba(77, 48, 31)),
-		stickerDef("food", 30, foodTitle, "flyfy-food", foodTitle, packDescription, "street-food", "🍜", []string{"food", "street", "local", "dinner", "taste"}, 20, rgba(255, 237, 221), rgba(229, 111, 59), rgba(105, 48, 27)),
-		stickerDef("weather", 40, weatherTitle, "flyfy-weather", weatherTitle, packDescription, "sunny-plan", "☀️", []string{"sun", "weather", "clear", "warm", "plan"}, 10, rgba(255, 248, 211), rgba(239, 186, 51), rgba(112, 79, 17)),
-		stickerDef("weather", 40, weatherTitle, "flyfy-weather", weatherTitle, packDescription, "rainy-detour", "🌧️", []string{"rain", "weather", "detour", "umbrella", "change"}, 20, rgba(226, 237, 250), rgba(70, 130, 201), rgba(30, 61, 102)),
-		stickerDef("transport", 50, transportTitle, "flyfy-transport", transportTitle, packDescription, "taxi-found", "🚕", []string{"taxi", "ride", "car", "pickup", "transport"}, 10, rgba(255, 244, 202), rgba(238, 188, 42), rgba(104, 78, 17)),
-		stickerDef("transport", 50, transportTitle, "flyfy-transport", transportTitle, packDescription, "train-window", "🚆", []string{"train", "rail", "window", "route", "transport"}, 20, rgba(224, 244, 241), rgba(46, 158, 151), rgba(24, 82, 78)),
-		stickerDef("planning", 60, planningTitle, "flyfy-planning", planningTitle, packDescription, "packing-mode", "🧳", []string{"packing", "luggage", "suitcase", "trip", "ready"}, 10, rgba(255, 244, 220), rgba(233, 150, 48), rgba(105, 63, 21)),
-		stickerDef("planning", 60, planningTitle, "flyfy-planning", planningTitle, packDescription, "calendar-ready", "🗓️", []string{"calendar", "plan", "schedule", "date", "ready"}, 20, rgba(238, 246, 255), rgba(69, 137, 216), rgba(30, 65, 113)),
-		stickerDef("planning", 60, planningTitle, "flyfy-planning", planningTitle, packDescription, "send-location", "📍", []string{"location", "pin", "meet", "route", "share"}, 30, rgba(255, 235, 230), rgba(226, 83, 79), rgba(116, 39, 35)),
-		stickerDef("guides", 70, guidesTitle, "flyfy-guides", guidesTitle, packDescription, "guide-here", "🙋", []string{"guide", "here", "excursion", "meet", "host"}, 10, rgba(235, 249, 234), rgba(76, 160, 93), rgba(35, 82, 45)),
-		stickerDef("guides", 70, guidesTitle, "flyfy-guides", guidesTitle, packDescription, "follow-flag", "🚩", []string{"guide", "flag", "follow", "group", "excursion"}, 20, rgba(255, 235, 235), rgba(221, 75, 80), rgba(112, 33, 38)),
-		stickerDef("local-culture", 80, cultureTitle, "flyfy-local-culture", cultureTitle, packDescription, "market-walk", "🏺", []string{"market", "culture", "local", "walk", "souvenir"}, 10, rgba(250, 238, 222), rgba(192, 119, 58), rgba(92, 55, 30)),
-		stickerDef("local-culture", 80, cultureTitle, "flyfy-local-culture", cultureTitle, packDescription, "phrase-book", "💬", []string{"language", "phrase", "culture", "local", "hello"}, 20, rgba(235, 241, 255), rgba(92, 112, 216), rgba(42, 54, 112)),
-		stickerDef("bookings", 90, bookingsTitle, "flyfy-bookings", bookingsTitle, packDescription, "ticket-confirmed", "🎫", []string{"ticket", "booking", "confirmed", "reservation", "done"}, 10, rgba(232, 249, 240), rgba(54, 173, 113), rgba(25, 86, 56)),
-		stickerDef("bookings", 90, bookingsTitle, "flyfy-bookings", bookingsTitle, packDescription, "payment-done", "✅", []string{"payment", "paid", "booking", "success", "done"}, 20, rgba(229, 248, 229), rgba(51, 161, 75), rgba(24, 86, 39)),
-		stickerDef("safety", 100, safetyTitle, "flyfy-safety", safetyTitle, packDescription, "safe-route", "🛡️", []string{"safe", "route", "security", "careful", "map"}, 10, rgba(229, 241, 255), rgba(58, 119, 217), rgba(27, 58, 109)),
-		stickerDef("safety", 100, safetyTitle, "flyfy-safety", safetyTitle, packDescription, "help-point", "🆘", []string{"help", "support", "safety", "urgent", "point"}, 20, rgba(255, 231, 231), rgba(226, 73, 73), rgba(116, 31, 31)),
-		stickerDef("celebrations", 110, celebrationsTitle, "flyfy-celebrations", celebrationsTitle, packDescription, "trip-start", "🎉", []string{"start", "party", "celebrate", "trip", "go"}, 10, rgba(255, 238, 247), rgba(213, 83, 151), rgba(102, 38, 75)),
-		stickerDef("celebrations", 110, celebrationsTitle, "flyfy-celebrations", celebrationsTitle, packDescription, "group-cheers", "🥳", []string{"cheers", "group", "friends", "celebrate", "happy"}, 20, rgba(243, 235, 255), rgba(144, 92, 221), rgba(69, 42, 111)),
-		stickerDef("seasonal", 120, seasonalTitle, "flyfy-seasonal", seasonalTitle, packDescription, "winter-trip", "❄️", []string{"winter", "snow", "season", "cold", "trip"}, 10, rgba(230, 247, 255), rgba(62, 154, 207), rgba(26, 79, 110)),
-		stickerDef("seasonal", 120, seasonalTitle, "flyfy-seasonal", seasonalTitle, packDescription, "summer-vibes", "🌴", []string{"summer", "season", "beach", "warm", "vacation"}, 20, rgba(229, 251, 242), rgba(37, 172, 111), rgba(18, 88, 57)),
-		stickerDef("seasonal", 120, seasonalTitle, "flyfy-seasonal", seasonalTitle, packDescription, "beach-please", "🏖️", []string{"beach", "sea", "sun", "vacation", "summer"}, 30, rgba(255, 247, 218), rgba(236, 170, 66), rgba(109, 76, 26)),
-		stickerDef("seasonal", 120, seasonalTitle, "flyfy-seasonal", seasonalTitle, packDescription, "mountain-call", "⛰️", []string{"mountain", "hike", "nature", "view", "trail"}, 40, rgba(231, 246, 235), rgba(81, 158, 94), rgba(39, 90, 48)),
-		stickerDef("seasonal", 120, seasonalTitle, "flyfy-seasonal", seasonalTitle, packDescription, "camp-vibes", "⛺", []string{"camp", "tent", "nature", "night", "outdoor"}, 50, rgba(255, 242, 224), rgba(222, 117, 55), rgba(108, 55, 29)),
+		stickerDef("travel", 10, travelTitle, "inflap-travel-basics", travelTitle, packDescription, "airport-sprint", "✈️", []string{"travel", "flight", "airport", "rush", "boarding"}, 10, rgba(226, 244, 255), rgba(53, 132, 228), rgba(15, 49, 92)),
+		stickerDef("travel", 10, travelTitle, "inflap-travel-basics", travelTitle, packDescription, "passport-ready", "🛂", []string{"passport", "visa", "border", "ready", "trip"}, 20, rgba(236, 232, 255), rgba(113, 82, 220), rgba(49, 39, 107)),
+		stickerDef("travel", 10, travelTitle, "inflap-travel-basics", travelTitle, packDescription, "lost-but-happy", "🗺️", []string{"lost", "map", "happy", "route", "explore"}, 30, rgba(232, 249, 239), rgba(62, 171, 110), rgba(31, 94, 63)),
+		stickerDef("travel", 10, travelTitle, "inflap-travel-basics", travelTitle, packDescription, "travel-camera", "📷", []string{"camera", "photo", "memory", "travel", "snapshot"}, 40, rgba(232, 241, 255), rgba(80, 125, 211), rgba(36, 58, 108)),
+		stickerDef("travel", 10, travelTitle, "inflap-travel-basics", travelTitle, packDescription, "globe-mode", "🌍", []string{"globe", "world", "travel", "explore", "international"}, 50, rgba(225, 248, 255), rgba(53, 154, 205), rgba(24, 88, 118)),
+		stickerDef("emotions", 20, emotionsTitle, "inflap-emotions", emotionsTitle, packDescription, "trip-excited", "🤩", []string{"excited", "wow", "happy", "trip", "emotion"}, 10, rgba(255, 241, 214), rgba(245, 177, 53), rgba(105, 70, 20)),
+		stickerDef("emotions", 20, emotionsTitle, "inflap-emotions", emotionsTitle, packDescription, "travel-tired", "😴", []string{"tired", "jetlag", "sleepy", "late", "emotion"}, 20, rgba(235, 238, 255), rgba(112, 126, 220), rgba(48, 55, 112)),
+		stickerDef("emotions", 20, emotionsTitle, "inflap-emotions", emotionsTitle, packDescription, "delayed-again", "⏰", []string{"delay", "late", "wait", "flight", "train"}, 30, rgba(255, 242, 222), rgba(226, 141, 50), rgba(104, 62, 22)),
+		stickerDef("food", 30, foodTitle, "inflap-food", foodTitle, packDescription, "need-coffee", "☕", []string{"coffee", "jetlag", "morning", "tired", "airport"}, 10, rgba(247, 239, 228), rgba(142, 92, 52), rgba(77, 48, 31)),
+		stickerDef("food", 30, foodTitle, "inflap-food", foodTitle, packDescription, "street-food", "🍜", []string{"food", "street", "local", "dinner", "taste"}, 20, rgba(255, 237, 221), rgba(229, 111, 59), rgba(105, 48, 27)),
+		stickerDef("weather", 40, weatherTitle, "inflap-weather", weatherTitle, packDescription, "sunny-plan", "☀️", []string{"sun", "weather", "clear", "warm", "plan"}, 10, rgba(255, 248, 211), rgba(239, 186, 51), rgba(112, 79, 17)),
+		stickerDef("weather", 40, weatherTitle, "inflap-weather", weatherTitle, packDescription, "rainy-detour", "🌧️", []string{"rain", "weather", "detour", "umbrella", "change"}, 20, rgba(226, 237, 250), rgba(70, 130, 201), rgba(30, 61, 102)),
+		stickerDef("transport", 50, transportTitle, "inflap-transport", transportTitle, packDescription, "taxi-found", "🚕", []string{"taxi", "ride", "car", "pickup", "transport"}, 10, rgba(255, 244, 202), rgba(238, 188, 42), rgba(104, 78, 17)),
+		stickerDef("transport", 50, transportTitle, "inflap-transport", transportTitle, packDescription, "train-window", "🚆", []string{"train", "rail", "window", "route", "transport"}, 20, rgba(224, 244, 241), rgba(46, 158, 151), rgba(24, 82, 78)),
+		stickerDef("planning", 60, planningTitle, "inflap-planning", planningTitle, packDescription, "packing-mode", "🧳", []string{"packing", "luggage", "suitcase", "trip", "ready"}, 10, rgba(255, 244, 220), rgba(233, 150, 48), rgba(105, 63, 21)),
+		stickerDef("planning", 60, planningTitle, "inflap-planning", planningTitle, packDescription, "calendar-ready", "🗓️", []string{"calendar", "plan", "schedule", "date", "ready"}, 20, rgba(238, 246, 255), rgba(69, 137, 216), rgba(30, 65, 113)),
+		stickerDef("planning", 60, planningTitle, "inflap-planning", planningTitle, packDescription, "send-location", "📍", []string{"location", "pin", "meet", "route", "share"}, 30, rgba(255, 235, 230), rgba(226, 83, 79), rgba(116, 39, 35)),
+		stickerDef("guides", 70, guidesTitle, "inflap-guides", guidesTitle, packDescription, "guide-here", "🙋", []string{"guide", "here", "excursion", "meet", "host"}, 10, rgba(235, 249, 234), rgba(76, 160, 93), rgba(35, 82, 45)),
+		stickerDef("guides", 70, guidesTitle, "inflap-guides", guidesTitle, packDescription, "follow-flag", "🚩", []string{"guide", "flag", "follow", "group", "excursion"}, 20, rgba(255, 235, 235), rgba(221, 75, 80), rgba(112, 33, 38)),
+		stickerDef("local-culture", 80, cultureTitle, "inflap-local-culture", cultureTitle, packDescription, "market-walk", "🏺", []string{"market", "culture", "local", "walk", "souvenir"}, 10, rgba(250, 238, 222), rgba(192, 119, 58), rgba(92, 55, 30)),
+		stickerDef("local-culture", 80, cultureTitle, "inflap-local-culture", cultureTitle, packDescription, "phrase-book", "💬", []string{"language", "phrase", "culture", "local", "hello"}, 20, rgba(235, 241, 255), rgba(92, 112, 216), rgba(42, 54, 112)),
+		stickerDef("bookings", 90, bookingsTitle, "inflap-bookings", bookingsTitle, packDescription, "ticket-confirmed", "🎫", []string{"ticket", "booking", "confirmed", "reservation", "done"}, 10, rgba(232, 249, 240), rgba(54, 173, 113), rgba(25, 86, 56)),
+		stickerDef("bookings", 90, bookingsTitle, "inflap-bookings", bookingsTitle, packDescription, "payment-done", "✅", []string{"payment", "paid", "booking", "success", "done"}, 20, rgba(229, 248, 229), rgba(51, 161, 75), rgba(24, 86, 39)),
+		stickerDef("safety", 100, safetyTitle, "inflap-safety", safetyTitle, packDescription, "safe-route", "🛡️", []string{"safe", "route", "security", "careful", "map"}, 10, rgba(229, 241, 255), rgba(58, 119, 217), rgba(27, 58, 109)),
+		stickerDef("safety", 100, safetyTitle, "inflap-safety", safetyTitle, packDescription, "help-point", "🆘", []string{"help", "support", "safety", "urgent", "point"}, 20, rgba(255, 231, 231), rgba(226, 73, 73), rgba(116, 31, 31)),
+		stickerDef("celebrations", 110, celebrationsTitle, "inflap-celebrations", celebrationsTitle, packDescription, "trip-start", "🎉", []string{"start", "party", "celebrate", "trip", "go"}, 10, rgba(255, 238, 247), rgba(213, 83, 151), rgba(102, 38, 75)),
+		stickerDef("celebrations", 110, celebrationsTitle, "inflap-celebrations", celebrationsTitle, packDescription, "group-cheers", "🥳", []string{"cheers", "group", "friends", "celebrate", "happy"}, 20, rgba(243, 235, 255), rgba(144, 92, 221), rgba(69, 42, 111)),
+		stickerDef("seasonal", 120, seasonalTitle, "inflap-seasonal", seasonalTitle, packDescription, "winter-trip", "❄️", []string{"winter", "snow", "season", "cold", "trip"}, 10, rgba(230, 247, 255), rgba(62, 154, 207), rgba(26, 79, 110)),
+		stickerDef("seasonal", 120, seasonalTitle, "inflap-seasonal", seasonalTitle, packDescription, "summer-vibes", "🌴", []string{"summer", "season", "beach", "warm", "vacation"}, 20, rgba(229, 251, 242), rgba(37, 172, 111), rgba(18, 88, 57)),
+		stickerDef("seasonal", 120, seasonalTitle, "inflap-seasonal", seasonalTitle, packDescription, "beach-please", "🏖️", []string{"beach", "sea", "sun", "vacation", "summer"}, 30, rgba(255, 247, 218), rgba(236, 170, 66), rgba(109, 76, 26)),
+		stickerDef("seasonal", 120, seasonalTitle, "inflap-seasonal", seasonalTitle, packDescription, "mountain-call", "⛰️", []string{"mountain", "hike", "nature", "view", "trail"}, 40, rgba(231, 246, 235), rgba(81, 158, 94), rgba(39, 90, 48)),
+		stickerDef("seasonal", 120, seasonalTitle, "inflap-seasonal", seasonalTitle, packDescription, "camp-vibes", "⛺", []string{"camp", "tent", "nature", "night", "outdoor"}, 50, rgba(255, 242, 224), rgba(222, 117, 55), rgba(108, 55, 29)),
 	}
 }
 

@@ -13,9 +13,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/transport/dto"
+	"kz/inflap/backend/services/file-manager-service/internal/app"
+	"kz/inflap/backend/services/file-manager-service/internal/domain/model"
+	"kz/inflap/backend/services/file-manager-service/internal/transport/dto"
 )
 
 type Handler struct {

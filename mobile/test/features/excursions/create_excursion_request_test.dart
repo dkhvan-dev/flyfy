@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/features/excursions/models/create_excursion_request.dart';
+import 'package:inflap/features/excursions/models/create_excursion_request.dart';
 
 void main() {
   test('serializes attraction based guide offer payload for excursion-service',

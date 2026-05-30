@@ -284,7 +284,7 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="FlyFy Translation Service", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="Inflap Translation Service", version="1.0.0", lifespan=lifespan)
 
 
 @app.middleware("http")

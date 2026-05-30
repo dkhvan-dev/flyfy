@@ -9,9 +9,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/port"
+	"kz/inflap/backend/services/excursion-service/internal/domain/enum"
+	"kz/inflap/backend/services/excursion-service/internal/domain/model"
+	"kz/inflap/backend/services/excursion-service/internal/domain/port"
 )
 
 type excursionRepoStub struct {

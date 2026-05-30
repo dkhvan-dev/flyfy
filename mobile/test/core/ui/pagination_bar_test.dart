@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/core/ui/pagination_bar.dart';
+import 'package:inflap/core/ui/pagination_bar.dart';
 
 void main() {
   testWidgets('shows adjacent page numbers on regular width pages', (
@@ -11,7 +11,7 @@ void main() {
     await tester.pumpWidget(
       _PaginationTestApp(
         width: 430,
-        child: FlyfyPaginationBar(
+        child: InflapPaginationBar(
           currentPage: 5,
           totalPages: 10,
           onPageChanged: (page) => selectedPage = page,
@@ -36,7 +36,7 @@ void main() {
     await tester.pumpWidget(
       _PaginationTestApp(
         width: 390,
-        child: FlyfyPaginationBar(
+        child: InflapPaginationBar(
           currentPage: 5,
           totalPages: 10,
           onPageChanged: (page) => selectedPage = page,

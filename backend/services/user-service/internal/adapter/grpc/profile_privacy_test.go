@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	userv1 "github.com/dkhvan-dev/flyfy/proto/gen/go/user/v1"
+	userv1 "kz/inflap/proto/gen/go/user/v1"
 )
 
 func TestUserProfileProtoDoesNotExposeVisibilityFlag(t *testing.T) {

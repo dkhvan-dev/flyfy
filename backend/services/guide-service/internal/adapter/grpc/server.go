@@ -7,9 +7,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/domain/model"
-	guidev1 "github.com/dkhvan-dev/flyfy/proto/gen/go/guide/v1"
+	"kz/inflap/backend/services/guide-service/internal/app"
+	"kz/inflap/backend/services/guide-service/internal/domain/model"
+	guidev1 "kz/inflap/proto/gen/go/guide/v1"
 )
 
 type Server struct {

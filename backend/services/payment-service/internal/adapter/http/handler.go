@@ -11,11 +11,11 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/payment-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/payment-service/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/payment-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/payment-service/internal/domain/port"
-	"github.com/dkhvan-dev/flyfy/backend/services/payment-service/internal/transport/dto"
+	"kz/inflap/backend/services/payment-service/internal/app"
+	"kz/inflap/backend/services/payment-service/internal/domain/enum"
+	"kz/inflap/backend/services/payment-service/internal/domain/model"
+	"kz/inflap/backend/services/payment-service/internal/domain/port"
+	"kz/inflap/backend/services/payment-service/internal/transport/dto"
 )
 
 type Handler struct {

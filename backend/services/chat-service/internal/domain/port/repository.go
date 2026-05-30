@@ -2,8 +2,8 @@ package port
 
 import (
 	"context"
-	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/domain/model"
 	"github.com/google/uuid"
+	"kz/inflap/backend/services/chat-service/internal/domain/model"
 	"time"
 )
 

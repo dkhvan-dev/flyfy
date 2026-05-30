@@ -3,11 +3,11 @@ package grpc
 import (
 	"errors"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/adapter/repository"
-	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/domain/model"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"kz/inflap/backend/services/guide-service/internal/adapter/repository"
+	"kz/inflap/backend/services/guide-service/internal/app"
+	"kz/inflap/backend/services/guide-service/internal/domain/model"
 )
 
 func mapError(err error) error {

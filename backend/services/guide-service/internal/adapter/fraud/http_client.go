@@ -15,7 +15,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/domain/port"
+	"kz/inflap/backend/services/guide-service/internal/domain/port"
 )
 
 type HTTPClient struct {

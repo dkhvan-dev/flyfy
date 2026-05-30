@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/config"
+	"kz/inflap/backend/services/guide-service/internal/config"
 )
 
 func Chain(cfg *config.Config, next http.Handler) http.Handler {

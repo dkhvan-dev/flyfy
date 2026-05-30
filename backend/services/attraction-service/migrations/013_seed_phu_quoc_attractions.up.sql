@@ -1,5 +1,5 @@
 -- Curated Phu Quoc attractions seed.
--- Texts are original FlyFy editorial summaries localized for ru, en, kk.
+-- Texts are original Inflap editorial summaries localized for ru, en, kk.
 -- Sources audited in May 2026:
 -- - Wikimedia Commons for representative cover media.
 -- - OpenStreetMap search URLs for lightweight location verification anchors.

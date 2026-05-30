@@ -9,8 +9,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/config"
+	"kz/inflap/backend/services/admin-panel/internal/app"
+	"kz/inflap/backend/services/admin-panel/internal/config"
 )
 
 func TestServerHandlerRegistersAttractionRoutesWithoutConflict(t *testing.T) {

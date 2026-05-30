@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/reference-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/reference-service/internal/transport/dto"
+	"kz/inflap/backend/services/reference-service/internal/app"
+	"kz/inflap/backend/services/reference-service/internal/transport/dto"
 )
 
 type Handler struct {

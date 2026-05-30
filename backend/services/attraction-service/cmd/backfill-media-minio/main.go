@@ -27,7 +27,7 @@ import (
 
 const (
 	defaultFileManagerHTTPURL = "http://localhost:8083"
-	defaultUserAgent          = "FlyFyMediaBackfill/1.0"
+	defaultUserAgent          = "InflapMediaBackfill/1.0"
 	nilUUID                   = "00000000-0000-0000-0000-000000000000"
 	maxImageBytes             = 20 * 1024 * 1024
 )

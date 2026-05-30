@@ -7,9 +7,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/domain/model"
-	activityv1 "github.com/dkhvan-dev/flyfy/proto/gen/go/activity/v1"
+	"kz/inflap/backend/services/activity-service/internal/app"
+	"kz/inflap/backend/services/activity-service/internal/domain/model"
+	activityv1 "kz/inflap/proto/gen/go/activity/v1"
 )
 
 type Server struct {

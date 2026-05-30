@@ -1,4 +1,4 @@
-module github.com/dkhvan-dev/flyfy/proto
+module kz/inflap/proto
 
 go 1.26
 

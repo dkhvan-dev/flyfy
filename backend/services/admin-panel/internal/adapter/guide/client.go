@@ -13,8 +13,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/port"
+	"kz/inflap/backend/services/admin-panel/internal/domain/model"
+	"kz/inflap/backend/services/admin-panel/internal/domain/port"
 )
 
 type Client struct {

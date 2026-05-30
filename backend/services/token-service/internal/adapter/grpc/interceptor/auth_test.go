@@ -3,7 +3,7 @@ package interceptor_test
 import (
 	"testing"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/adapter/grpc/interceptor"
+	"kz/inflap/backend/services/token-service/internal/adapter/grpc/interceptor"
 )
 
 func TestHasAllRoles(t *testing.T) {

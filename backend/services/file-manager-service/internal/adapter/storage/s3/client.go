@@ -14,8 +14,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	awss3 "github.com/aws/aws-sdk-go-v2/service/s3"
 
-	appconfig "github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/config"
-	"github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/domain/port"
+	appconfig "kz/inflap/backend/services/file-manager-service/internal/config"
+	"kz/inflap/backend/services/file-manager-service/internal/domain/port"
 )
 
 type Client struct {

@@ -163,7 +163,7 @@ void main() {
       ).readAsString();
 
       expect(providerSource, contains('class HomeLocationProvider'));
-      expect(providerSource, contains('flyfy_home_location_preference'));
+      expect(providerSource, contains('inflap_home_location_preference'));
       expect(createActivitySource, contains('HomeLocationProvider'));
       expect(
         createActivitySource,

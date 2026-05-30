@@ -1,8 +1,8 @@
 package app
 
 import (
-	"github.com/dkhvan-dev/flyfy/backend/services/reference-service/internal/adapter/repository"
-	"github.com/dkhvan-dev/flyfy/backend/services/reference-service/internal/domain/model"
+	"kz/inflap/backend/services/reference-service/internal/adapter/repository"
+	"kz/inflap/backend/services/reference-service/internal/domain/model"
 )
 
 const defaultSearchLimit = 20

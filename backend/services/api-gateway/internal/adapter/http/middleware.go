@@ -15,8 +15,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/api-gateway/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/api-gateway/internal/config"
+	"kz/inflap/backend/services/api-gateway/internal/app"
+	"kz/inflap/backend/services/api-gateway/internal/config"
 )
 
 type contextKey string

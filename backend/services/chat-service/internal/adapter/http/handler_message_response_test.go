@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/domain/model"
+	"kz/inflap/backend/services/chat-service/internal/domain/model"
 )
 
 func TestMessageResponseFromModelExposesModeratorRemovalReason(t *testing.T) {
@@ -20,7 +20,7 @@ func TestMessageResponseFromModelExposesModeratorRemovalReason(t *testing.T) {
 		FileIDs:                 []string{"file-1"},
 		ModerationStatus:        model.MessageModerationStatusHiddenByModeration,
 		ModerationReviewedAt:    &reviewedAt,
-		ModerationPublicComment: "Нельзя переводить общение за пределы FlyFy.",
+		ModerationPublicComment: "Нельзя переводить общение за пределы Inflap.",
 		SentAt:                  reviewedAt.Add(-time.Hour),
 	}
 

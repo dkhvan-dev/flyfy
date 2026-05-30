@@ -6,8 +6,8 @@ import (
 
 	"github.com/rs/zerolog"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/config"
-	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/domain/port"
+	"kz/inflap/backend/services/token-service/internal/config"
+	"kz/inflap/backend/services/token-service/internal/domain/port"
 )
 
 // KeyRotationScheduler manages periodic RSA key rotation.

@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:superapp/core/ui/app_colors.dart';
+import 'package:inflap/core/ui/app_colors.dart';
 
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_list_screen_header.dart';
@@ -662,7 +662,7 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                           ],
                           if (paginatedItems.hasMultiplePages) ...[
                             SizedBox(height: layout.sectionSpacing),
-                            FlyfyPaginationBar(
+                            InflapPaginationBar(
                               currentPage: paginatedItems.currentPage,
                               totalPages: paginatedItems.totalPages,
                               onPageChanged: _setActivePage,

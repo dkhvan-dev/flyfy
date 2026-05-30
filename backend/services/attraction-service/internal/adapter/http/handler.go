@@ -11,9 +11,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/attraction-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/attraction-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/attraction-service/internal/transport/dto"
+	"kz/inflap/backend/services/attraction-service/internal/app"
+	"kz/inflap/backend/services/attraction-service/internal/domain/model"
+	"kz/inflap/backend/services/attraction-service/internal/transport/dto"
 )
 
 type Handler struct {

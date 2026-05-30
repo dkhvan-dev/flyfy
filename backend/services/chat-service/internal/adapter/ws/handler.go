@@ -9,8 +9,8 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/rs/zerolog/log"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/domain/port"
+	"kz/inflap/backend/services/chat-service/internal/app"
+	"kz/inflap/backend/services/chat-service/internal/domain/port"
 )
 
 var upgrader = websocket.Upgrader{

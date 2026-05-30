@@ -9,18 +9,18 @@ import (
 	"syscall"
 	"time"
 
-	grpcadapter "github.com/dkhvan-dev/flyfy/backend/services/user-service/internal/adapter/grpc"
-	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/user-service/internal/adapter/http"
-	"github.com/dkhvan-dev/flyfy/backend/services/user-service/internal/adapter/repository"
-	"github.com/dkhvan-dev/flyfy/backend/services/user-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/user-service/internal/config"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
+	grpcadapter "kz/inflap/backend/services/user-service/internal/adapter/grpc"
+	httpadapter "kz/inflap/backend/services/user-service/internal/adapter/http"
+	"kz/inflap/backend/services/user-service/internal/adapter/repository"
+	"kz/inflap/backend/services/user-service/internal/app"
+	"kz/inflap/backend/services/user-service/internal/config"
 
-	filemanageradapter "github.com/dkhvan-dev/flyfy/backend/services/user-service/internal/adapter/filemanager"
-	userv1 "github.com/dkhvan-dev/flyfy/proto/gen/go/user/v1"
+	filemanageradapter "kz/inflap/backend/services/user-service/internal/adapter/filemanager"
+	userv1 "kz/inflap/proto/gen/go/user/v1"
 )
 
 func main() {

@@ -75,7 +75,7 @@ class StoryAuthorVm {
       );
       return 'user_$short';
     }
-    return 'FlyFy';
+    return 'Inflap';
   }
 
   String get initials {

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/shared/widgets/app_city_filter_section.dart';
+import 'package:inflap/shared/widgets/app_city_filter_section.dart';
 
 void main() {
   test('city filter matches legacy city names by selected reference id', () {

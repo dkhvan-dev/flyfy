@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package activity.v1;
 
-option go_package = "github.com/dkhvan-dev/flyfy/proto/gen/go/activity/v1;activityv1";
+option go_package = "kz/inflap/proto/gen/go/activity/v1;activityv1";
 
 service ActivityService {
   rpc GetActivityById(GetActivityByIdRequest) returns (GetActivityByIdResponse);

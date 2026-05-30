@@ -3,14 +3,14 @@ package app
 import (
 	"testing"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/domain/enum"
+	"kz/inflap/backend/services/file-manager-service/internal/domain/enum"
 )
 
 func TestChatStickerAllowsAnimatedGif(t *testing.T) {
 	validator := NewFileValidator(DefaultUploadPolicies(0))
 
 	if err := validator.ValidateForCreate(
-		"flyfy-sticker.gif",
+		"inflap-sticker.gif",
 		"image/gif",
 		128*1024,
 		enum.FilePurposeChatSticker,

@@ -14,9 +14,9 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/model"
-	trustv1 "github.com/dkhvan-dev/flyfy/proto/gen/go/trust/v1"
+	"kz/inflap/backend/services/admin-panel/internal/app"
+	"kz/inflap/backend/services/admin-panel/internal/domain/model"
+	trustv1 "kz/inflap/proto/gen/go/trust/v1"
 )
 
 const defaultTrustTimeout = 3 * time.Second

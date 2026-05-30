@@ -4,10 +4,10 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/core/network/api_client.dart';
-import 'package:superapp/core/network/excursion_schedule_api.dart';
-import 'package:superapp/core/storage/secure_storage.dart';
-import 'package:superapp/features/excursions/models/excursion_schedule_vm.dart';
+import 'package:inflap/core/network/api_client.dart';
+import 'package:inflap/core/network/excursion_schedule_api.dart';
+import 'package:inflap/core/storage/secure_storage.dart';
+import 'package:inflap/features/excursions/models/excursion_schedule_vm.dart';
 
 void main() {
   test('getGuideSchedule sends UTC week range and parses items', () async {

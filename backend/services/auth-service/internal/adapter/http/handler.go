@@ -11,8 +11,8 @@ import (
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/rs/zerolog"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/domain/port"
+	"kz/inflap/backend/services/auth-service/internal/domain/model"
+	"kz/inflap/backend/services/auth-service/internal/domain/port"
 )
 
 // AuthHandler handles HTTP requests for authentication.

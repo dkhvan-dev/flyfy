@@ -3,8 +3,8 @@ package model
 import (
 	"testing"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/domain/enum"
 	"github.com/google/uuid"
+	"kz/inflap/backend/services/guide-service/internal/domain/enum"
 )
 
 func TestGuideProfileRevokeDisablesGuideCapabilitiesAndStoresReason(t *testing.T) {

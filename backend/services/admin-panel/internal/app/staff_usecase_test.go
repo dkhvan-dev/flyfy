@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/model"
+	"kz/inflap/backend/services/admin-panel/internal/domain/enum"
+	"kz/inflap/backend/services/admin-panel/internal/domain/model"
 )
 
 func TestAdminUpdatesNonSuperAdminProfileAndRoles(t *testing.T) {
@@ -292,7 +292,7 @@ func TestStaffCannotUpdateOwnTimezoneToInvalidValue(t *testing.T) {
 func adminActor() *model.StaffUser {
 	return &model.StaffUser{
 		ID:          uuid.New(),
-		Email:       "admin@flyfy.local",
+		Email:       "admin@inflap.local",
 		DisplayName: "Admin",
 		Status:      enum.StaffStatusActive,
 		Roles:       []enum.StaffRole{enum.StaffRoleAdmin},
@@ -314,7 +314,7 @@ func superAdminActor() *model.StaffUser {
 func staffFixture(roles ...enum.StaffRole) *model.StaffUser {
 	return &model.StaffUser{
 		ID:          uuid.New(),
-		Email:       "staff@flyfy.local",
+		Email:       "staff@inflap.local",
 		DisplayName: "Staff",
 		Status:      enum.StaffStatusActive,
 		Timezone:    "Asia/Almaty",

@@ -139,7 +139,7 @@ class PublicGuideVm {
       return 'Guide ${shortId.substring(0, length)}';
     }
 
-    return 'FlyFy Guide';
+    return 'Inflap Guide';
   }
 
   String get initials {

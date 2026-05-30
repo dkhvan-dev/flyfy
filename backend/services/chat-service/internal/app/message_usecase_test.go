@@ -7,9 +7,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/domain/port"
-	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/event"
+	"kz/inflap/backend/services/chat-service/internal/domain/model"
+	"kz/inflap/backend/services/chat-service/internal/domain/port"
+	"kz/inflap/backend/services/chat-service/internal/event"
 )
 
 func TestSendStickerMessageValidatesStickerAndStoresStickerPayload(t *testing.T) {
@@ -29,7 +29,7 @@ func TestSendStickerMessageValidatesStickerAndStoresStickerPayload(t *testing.T)
 		result: &port.StickerMetadata{
 			StickerID:      stickerID,
 			PackID:         packID,
-			PackSlug:       "flyfy-travel-basics",
+			PackSlug:       "inflap-travel-basics",
 			Slug:           "boarding-pass",
 			FileID:         fileID,
 			FallbackFileID: fallbackID,
@@ -70,7 +70,7 @@ func TestSendStickerMessageValidatesStickerAndStoresStickerPayload(t *testing.T)
 		t.Fatal("expected sticker payload")
 	}
 	if msg.StickerPayload.PackID != packID ||
-		msg.StickerPayload.PackSlug != "flyfy-travel-basics" ||
+		msg.StickerPayload.PackSlug != "inflap-travel-basics" ||
 		msg.StickerPayload.Slug != "boarding-pass" ||
 		msg.StickerPayload.FallbackFileID != fallbackID.String() ||
 		msg.StickerPayload.PreviewFileID == nil ||

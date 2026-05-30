@@ -1,4 +1,4 @@
-# superapp
+# inflap
 
 A new Flutter project.
 

@@ -6,7 +6,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/app"
+	"kz/inflap/backend/services/file-manager-service/internal/app"
 )
 
 const (

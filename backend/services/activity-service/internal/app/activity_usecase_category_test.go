@@ -10,9 +10,9 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/domain/port"
+	"kz/inflap/backend/services/activity-service/internal/domain/enum"
+	"kz/inflap/backend/services/activity-service/internal/domain/model"
+	"kz/inflap/backend/services/activity-service/internal/domain/port"
 )
 
 type activityRepoStub struct {
@@ -2123,7 +2123,7 @@ func TestExtendActivityRejectsBeforeStart(t *testing.T) {
 func validCreateActivityInput() CreateActivityInput {
 	startAt := time.Now().UTC().Add(2 * time.Hour)
 	endAt := startAt.Add(2 * time.Hour)
-	meetingURL := "https://meet.example.com/flyfy"
+	meetingURL := "https://meet.example.com/inflap"
 
 	return CreateActivityInput{
 		HostUserID:   uuid.New(),

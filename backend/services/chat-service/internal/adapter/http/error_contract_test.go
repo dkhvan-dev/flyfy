@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/app"
+	"kz/inflap/backend/services/chat-service/internal/app"
 )
 
 func TestWriteAppErrorLocalizesBusinessErrors(t *testing.T) {

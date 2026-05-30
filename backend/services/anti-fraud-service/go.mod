@@ -1,4 +1,4 @@
-module github.com/dkhvan-dev/flyfy/backend/services/anti-fraud-service
+module kz/inflap/backend/services/anti-fraud-service
 
 go 1.26
 

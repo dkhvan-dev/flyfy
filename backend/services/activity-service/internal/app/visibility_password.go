@@ -5,8 +5,8 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/domain/model"
+	"kz/inflap/backend/services/activity-service/internal/domain/enum"
+	"kz/inflap/backend/services/activity-service/internal/domain/model"
 )
 
 const (

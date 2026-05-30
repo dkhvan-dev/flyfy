@@ -10,8 +10,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/trust-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/trust-service/internal/domain/port"
+	"kz/inflap/backend/services/trust-service/internal/domain/model"
+	"kz/inflap/backend/services/trust-service/internal/domain/port"
 )
 
 type PGTrustRepository struct {

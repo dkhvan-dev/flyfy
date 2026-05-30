@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/screens/attractions/attractions_filter_sheet.dart';
-import 'package:superapp/shared/widgets/app_city_filter_section.dart';
+import 'package:inflap/screens/attractions/attractions_filter_sheet.dart';
+import 'package:inflap/shared/widgets/app_city_filter_section.dart';
 
 void main() {
   test('country filter can target a country without selecting a city', () {

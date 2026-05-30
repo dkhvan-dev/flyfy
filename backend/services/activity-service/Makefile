@@ -51,4 +51,4 @@ activity-shell:
 	$(DOCKER_COMPOSE) exec activity-service sh
 
 activity-db-shell:
-	$(DOCKER_COMPOSE) exec activity-postgres psql -U flyfy -d activity_service_db
+	$(DOCKER_COMPOSE) exec activity-postgres psql -U inflap -d activity_service_db

@@ -82,7 +82,7 @@ void main() {
       expect(source, contains('Wrap('));
       expect(source, contains('AspectRatio('));
       expect(source, contains('RefreshIndicator('));
-      expect(source, contains('FlyfyPaginationBar('));
+      expect(source, contains('InflapPaginationBar('));
       expect(source, contains('guideDashboardReviewsTitle'));
       expect(
         source,

@@ -2,7 +2,7 @@ import 'package:flutter/services.dart';
 
 class VideoTrimmer {
   VideoTrimmer({MethodChannel? channel})
-      : _channel = channel ?? const MethodChannel('flyfy/video_tools');
+      : _channel = channel ?? const MethodChannel('inflap/video_tools');
 
   final MethodChannel _channel;
 

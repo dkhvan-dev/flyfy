@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
-import 'package:superapp/features/excursions/guide_dashboard_formatters.dart';
+import 'package:inflap/features/excursions/guide_dashboard_formatters.dart';
 
 void main() {
   test('formats guide revenue as full amount like excursion list', () {

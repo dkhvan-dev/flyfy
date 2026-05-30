@@ -5,8 +5,8 @@ import (
 	"errors"
 	"strings"
 
-	userv1 "github.com/dkhvan-dev/flyfy/proto/gen/go/user/v1"
 	"github.com/google/uuid"
+	userv1 "kz/inflap/proto/gen/go/user/v1"
 )
 
 type UserResolver struct {

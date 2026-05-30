@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/model"
+	"kz/inflap/backend/services/admin-panel/internal/domain/enum"
+	"kz/inflap/backend/services/admin-panel/internal/domain/model"
 )
 
 func TestAuditListOwnAllowsStaffWithoutGlobalAuditPermission(t *testing.T) {
@@ -20,7 +20,7 @@ func TestAuditListOwnAllowsStaffWithoutGlobalAuditPermission(t *testing.T) {
 	uc := NewAuditUseCase(repo)
 	actor := &model.StaffUser{
 		ID:          actorID,
-		Email:       "moderator@flyfy.local",
+		Email:       "moderator@inflap.local",
 		DisplayName: "Moderator",
 		Status:      enum.StaffStatusActive,
 		Permissions: []enum.Permission{enum.PermissionDashboardRead},
@@ -44,7 +44,7 @@ func TestAuditListStillRequiresGlobalAuditPermission(t *testing.T) {
 	uc := NewAuditUseCase(&auditRepoStub{})
 	actor := &model.StaffUser{
 		ID:          uuid.New(),
-		Email:       "moderator@flyfy.local",
+		Email:       "moderator@inflap.local",
 		DisplayName: "Moderator",
 		Status:      enum.StaffStatusActive,
 		Permissions: []enum.Permission{enum.PermissionDashboardRead},
@@ -71,7 +71,7 @@ func (r *auditRepoStub) List(_ context.Context, filter model.AuditFilter) ([]*mo
 			ID:               uuid.New(),
 			ActorStaffID:     filter.ActorStaffID,
 			ActorDisplayName: "Moderator",
-			ActorEmail:       "moderator@flyfy.local",
+			ActorEmail:       "moderator@inflap.local",
 			Action:           "admin.login.succeeded",
 			EntityType:       "staff_session",
 			CreatedAt:        time.Now().UTC(),

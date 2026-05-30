@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/core/network/reference_api.dart';
-import 'package:superapp/core/reference/timezone_filter_utils.dart';
+import 'package:inflap/core/network/reference_api.dart';
+import 'package:inflap/core/reference/timezone_filter_utils.dart';
 
 void main() {
   test('resolves localized Almaty location before device timezone fallback',

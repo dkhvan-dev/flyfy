@@ -59,7 +59,7 @@ class ActivityParticipantVm {
   String get shortHandle {
     final compact = userId.replaceAll('-', '');
     if (compact.isEmpty) {
-      return 'FlyFy';
+      return 'Inflap';
     }
     final short = compact.substring(
       0,

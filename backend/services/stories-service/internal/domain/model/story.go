@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/stories-service/internal/domain/enum"
+	"kz/inflap/backend/services/stories-service/internal/domain/enum"
 )
 
 type Story struct {

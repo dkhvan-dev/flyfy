@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/model"
+	"kz/inflap/backend/services/admin-panel/internal/domain/enum"
+	"kz/inflap/backend/services/admin-panel/internal/domain/model"
 )
 
 func TestFraudReviewRequiresFraudReviewPermission(t *testing.T) {
@@ -81,7 +81,7 @@ func TestFraudReviewWritesAuditEvent(t *testing.T) {
 func fraudTestStaff(permissions ...enum.Permission) *model.StaffUser {
 	return &model.StaffUser{
 		ID:          uuid.New(),
-		Email:       "risk-lead@flyfy.local",
+		Email:       "risk-lead@inflap.local",
 		DisplayName: "Risk Lead",
 		Status:      enum.StaffStatusActive,
 		Permissions: permissions,

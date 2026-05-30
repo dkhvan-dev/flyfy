@@ -614,7 +614,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
                               ],
                               if (totalPages > 1) ...[
                                 SizedBox(height: adaptive.scale(4)),
-                                FlyfyPaginationBar(
+                                InflapPaginationBar(
                                   currentPage: _currentPage,
                                   totalPages: totalPages,
                                   onPageChanged: _handlePageChanged,

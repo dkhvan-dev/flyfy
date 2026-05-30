@@ -1327,7 +1327,7 @@ const file_activity_v1_activity_proto_rawDesc = "" +
 	"\fJoinActivity\x12 .activity.v1.JoinActivityRequest\x1a!.activity.v1.JoinActivityResponse\x12V\n" +
 	"\rLeaveActivity\x12!.activity.v1.LeaveActivityRequest\x1a\".activity.v1.LeaveActivityResponse\x12z\n" +
 	"\x19ApproveActivityModeration\x12-.activity.v1.ApproveActivityModerationRequest\x1a..activity.v1.ApproveActivityModerationResponse\x12w\n" +
-	"\x18RejectActivityModeration\x12,.activity.v1.RejectActivityModerationRequest\x1a-.activity.v1.RejectActivityModerationResponseBAZ?github.com/dkhvan-dev/flyfy/proto/gen/go/activity/v1;activityv1b\x06proto3"
+	"\x18RejectActivityModeration\x12,.activity.v1.RejectActivityModerationRequest\x1a-.activity.v1.RejectActivityModerationResponseB/Z-kz/inflap/proto/gen/go/activity/v1;activityv1b\x06proto3"
 
 var (
 	file_activity_v1_activity_proto_rawDescOnce sync.Once

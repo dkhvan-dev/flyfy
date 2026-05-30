@@ -1168,7 +1168,7 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
     AppLocalizations l10n,
   ) {
     final items = _visitPlanItems(context, v, l10n);
-    final tip = _localizedFlyFyTip(context, v, l10n);
+    final tip = _localizedInflapTip(context, v, l10n);
     final summary = _visitPlanSummary(items);
     final radius = BorderRadius.circular(a.radius(16));
 
@@ -1251,7 +1251,7 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
                     ),
                   ),
             children: [
-              _FlyFyTipCard(tip: tip, l10n: l10n, adaptive: a),
+              _InflapTipCard(tip: tip, l10n: l10n, adaptive: a),
               SizedBox(height: a.scale(8, minFactor: 0.72)),
               for (var i = 0; i < items.length; i++) ...[
                 _VisitPlanRow(item: items[i], adaptive: a),
@@ -1750,8 +1750,8 @@ class _VisitPlanRow extends StatelessWidget {
   }
 }
 
-class _FlyFyTipCard extends StatelessWidget {
-  const _FlyFyTipCard({
+class _InflapTipCard extends StatelessWidget {
+  const _InflapTipCard({
     required this.tip,
     required this.l10n,
     required this.adaptive,
@@ -1798,7 +1798,7 @@ class _FlyFyTipCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  l10n.attractionFlyFyTipTitle,
+                  l10n.attractionInflapTipTitle,
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: adaptive.scale(12.5, minFactor: 0.84),
@@ -1891,7 +1891,7 @@ String _visitPlanSummary(List<_VisitPlanItem> items) {
   return values.join(' · ');
 }
 
-String _localizedFlyFyTip(
+String _localizedInflapTip(
   BuildContext context,
   AttractionVm attraction,
   AppLocalizations l10n,

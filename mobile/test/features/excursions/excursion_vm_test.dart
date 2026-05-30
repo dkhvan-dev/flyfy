@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/features/attractions/models/attraction_vm.dart';
-import 'package:superapp/features/excursions/models/excursion_vm.dart';
-import 'package:superapp/features/excursions/excursion_localization.dart';
+import 'package:inflap/features/attractions/models/attraction_vm.dart';
+import 'package:inflap/features/excursions/models/excursion_vm.dart';
+import 'package:inflap/features/excursions/excursion_localization.dart';
 
 void main() {
   test(

@@ -10,7 +10,7 @@ import (
 const (
 	localeEN         = "en"
 	localeRU         = "ru"
-	localeCookieName = "flyfy_admin_locale"
+	localeCookieName = "inflap_admin_locale"
 	defaultLocale    = localeEN
 )
 
@@ -21,7 +21,7 @@ var supportedLocales = map[string]struct{}{
 
 var translations = map[string]map[string]string{
 	localeEN: {
-		"app.title": "FlyFy Admin",
+		"app.title": "Inflap Admin",
 
 		"lang.en": "EN",
 		"lang.ru": "RU",
@@ -635,7 +635,7 @@ var translations = map[string]map[string]string{
 		"error.invalidID":           "Invalid id.",
 	},
 	localeRU: {
-		"app.title": "FlyFy Admin",
+		"app.title": "Inflap Admin",
 
 		"lang.en": "EN",
 		"lang.ru": "RU",

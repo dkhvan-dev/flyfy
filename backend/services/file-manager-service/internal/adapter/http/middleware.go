@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/config"
+	"kz/inflap/backend/services/file-manager-service/internal/config"
 )
 
 func Chain(

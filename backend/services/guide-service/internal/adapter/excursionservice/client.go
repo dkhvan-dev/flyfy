@@ -12,7 +12,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/app"
+	"kz/inflap/backend/services/guide-service/internal/app"
 )
 
 const defaultListGuideIDsByCityTimeout = 3 * time.Second

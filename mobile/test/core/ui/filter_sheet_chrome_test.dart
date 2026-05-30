@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/core/ui/app_colors.dart';
-import 'package:superapp/core/ui/filter_sheet_chrome.dart';
+import 'package:inflap/core/ui/app_colors.dart';
+import 'package:inflap/core/ui/filter_sheet_chrome.dart';
 
 void main() {
   testWidgets('filter sheet header matches activity modal chrome',

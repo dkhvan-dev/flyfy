@@ -11,15 +11,15 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/file-manager-service/internal/domain/model"
+	"kz/inflap/backend/services/file-manager-service/internal/app"
+	"kz/inflap/backend/services/file-manager-service/internal/domain/model"
 )
 
 func TestPublicContentRedirectsToPublicObjectURL(t *testing.T) {
 	fileID := uuid.New()
 	files := &fakeFileUseCase{
 		publicContentURL: &app.PublicContentURLOutput{
-			URL:          "https://cdn.flyfy.test/activity/2026/05/28/image.jpg",
+			URL:          "https://cdn.inflap.test/activity/2026/05/28/image.jpg",
 			ContentType:  "image/jpeg",
 			CacheControl: "public, max-age=86400, immutable",
 		},

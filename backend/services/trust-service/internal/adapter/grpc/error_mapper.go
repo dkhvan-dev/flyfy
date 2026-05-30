@@ -3,10 +3,10 @@ package grpc
 import (
 	"errors"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/trust-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/trust-service/internal/domain/port"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"kz/inflap/backend/services/trust-service/internal/app"
+	"kz/inflap/backend/services/trust-service/internal/domain/port"
 )
 
 func mapError(err error) error {

@@ -8,7 +8,7 @@ import (
 
 	"github.com/sethvargo/go-envconfig"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/anti-fraud-service/internal/app"
+	"kz/inflap/backend/services/anti-fraud-service/internal/app"
 )
 
 type Config struct {

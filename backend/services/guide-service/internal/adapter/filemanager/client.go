@@ -11,9 +11,9 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 
-	grpcadapter "github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/adapter/grpc"
-	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/app"
-	filev1 "github.com/dkhvan-dev/flyfy/proto/gen/go/file/v1"
+	grpcadapter "kz/inflap/backend/services/guide-service/internal/adapter/grpc"
+	"kz/inflap/backend/services/guide-service/internal/app"
+	filev1 "kz/inflap/proto/gen/go/file/v1"
 )
 
 const (

@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/core/network/sticker_api.dart';
-import 'package:superapp/features/chat/models/sticker_group_vm.dart';
-import 'package:superapp/features/chat/models/sticker_pack_vm.dart';
-import 'package:superapp/providers/sticker_catalog_provider.dart';
+import 'package:inflap/core/network/sticker_api.dart';
+import 'package:inflap/features/chat/models/sticker_group_vm.dart';
+import 'package:inflap/features/chat/models/sticker_pack_vm.dart';
+import 'package:inflap/providers/sticker_catalog_provider.dart';
 
 void main() {
   test('loadCatalog exposes groups and selects first pack', () async {

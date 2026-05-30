@@ -531,8 +531,7 @@ class _MapScreenState extends State<MapScreen> {
                                         TileLayer(
                                           urlTemplate:
                                               'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                          userAgentPackageName:
-                                              'dev.dkhvan.flyfy.superapp',
+                                          userAgentPackageName: 'kz.inflap',
                                         ),
                                         MarkerLayer(
                                           markers: [
@@ -1702,7 +1701,7 @@ class _NearbyPlacesApi {
             responseType: ResponseType.plain,
             headers: const {
               'Accept': 'application/json',
-              'User-Agent': 'Flyfy/1.0 (nearby places)',
+              'User-Agent': 'Inflap/1.0 (nearby places)',
             },
           ),
         );

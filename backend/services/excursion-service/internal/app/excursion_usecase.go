@@ -13,9 +13,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/port"
+	"kz/inflap/backend/services/excursion-service/internal/domain/enum"
+	"kz/inflap/backend/services/excursion-service/internal/domain/model"
+	"kz/inflap/backend/services/excursion-service/internal/domain/port"
 )
 
 type ExcursionAggregate struct {
@@ -3418,7 +3418,7 @@ type excursionMarketingCopy = model.ExcursionLocalizedCopy
 func attractionBasedExcursionCopy(landmarkName *string) model.ExcursionLocalizedCopy {
 	name := strings.TrimSpace(optionalStringValue(landmarkName))
 	if name == "" {
-		name = "FlyFy excursion"
+		name = "Inflap excursion"
 	}
 	return model.ExcursionLocalizedCopy{
 		Title:       name,

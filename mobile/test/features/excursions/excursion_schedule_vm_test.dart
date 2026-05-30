@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/features/excursions/models/excursion_schedule_vm.dart';
+import 'package:inflap/features/excursions/models/excursion_schedule_vm.dart';
 
 void main() {
   test('schedule slot parses booked wire status and computed flags', () {

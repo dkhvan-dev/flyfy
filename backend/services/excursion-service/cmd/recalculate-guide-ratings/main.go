@@ -6,12 +6,12 @@ import (
 	"os"
 	"time"
 
-	guideratingadapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/guiderating"
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/repository"
-	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/config"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	guideratingadapter "kz/inflap/backend/services/excursion-service/internal/adapter/guiderating"
+	"kz/inflap/backend/services/excursion-service/internal/adapter/repository"
+	"kz/inflap/backend/services/excursion-service/internal/config"
 )
 
 func main() {

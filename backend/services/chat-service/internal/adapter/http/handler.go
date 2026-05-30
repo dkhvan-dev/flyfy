@@ -10,10 +10,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/adapter/ws"
-	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/transport/dto"
+	"kz/inflap/backend/services/chat-service/internal/adapter/ws"
+	"kz/inflap/backend/services/chat-service/internal/app"
+	"kz/inflap/backend/services/chat-service/internal/domain/model"
+	"kz/inflap/backend/services/chat-service/internal/transport/dto"
 )
 
 type Handler struct {

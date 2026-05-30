@@ -13,9 +13,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/transport/dto"
+	"kz/inflap/backend/services/guide-service/internal/app"
+	"kz/inflap/backend/services/guide-service/internal/domain/model"
+	"kz/inflap/backend/services/guide-service/internal/transport/dto"
 )
 
 type Handler struct {

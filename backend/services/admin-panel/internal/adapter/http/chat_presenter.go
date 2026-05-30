@@ -3,7 +3,7 @@ package http
 import (
 	"strings"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/model"
+	"kz/inflap/backend/services/admin-panel/internal/domain/model"
 )
 
 func chatMessagePreviewText(locale string, item *model.ChatMessageModerationItem) string {

@@ -610,7 +610,7 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
                           ],
                           if (page.hasMultiplePages) ...[
                             const SizedBox(height: 18),
-                            FlyfyPaginationBar(
+                            InflapPaginationBar(
                               currentPage: page.currentPage,
                               totalPages: page.totalPages,
                               onPageChanged: _setActivePage,

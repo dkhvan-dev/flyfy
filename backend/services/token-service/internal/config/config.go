@@ -44,7 +44,7 @@ type SessionConfig struct {
 }
 
 type JWTConfig struct {
-	Issuer              string        `env:"JWT_ISSUER, default=tourism-superapp/token-service"`
+	Issuer              string        `env:"JWT_ISSUER, default=tourism-inflap/token-service"`
 	AccessTokenTTL      time.Duration `env:"JWT_ACCESS_TTL, default=30m"`
 	RefreshTokenTTL     time.Duration `env:"JWT_REFRESH_TTL, default=720h"`
 	ServiceTokenTTL     time.Duration `env:"JWT_SERVICE_TTL, default=1h"`

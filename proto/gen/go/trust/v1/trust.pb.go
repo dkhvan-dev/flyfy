@@ -932,7 +932,7 @@ const file_trust_v1_trust_proto_rawDesc = "" +
 	"\fTrustService\x12\\\n" +
 	"\x11CheckActionPolicy\x12\".trust.v1.CheckActionPolicyRequest\x1a#.trust.v1.CheckActionPolicyResponse\x12t\n" +
 	"\x19ApplyUserRestrictionEvent\x12*.trust.v1.ApplyUserRestrictionEventRequest\x1a+.trust.v1.ApplyUserRestrictionEventResponse\x12V\n" +
-	"\x0fGetTrustProfile\x12 .trust.v1.GetTrustProfileRequest\x1a!.trust.v1.GetTrustProfileResponseB;Z9github.com/dkhvan-dev/flyfy/proto/gen/go/trust/v1;trustv1b\x06proto3"
+	"\x0fGetTrustProfile\x12 .trust.v1.GetTrustProfileRequest\x1a!.trust.v1.GetTrustProfileResponseB)Z'kz/inflap/proto/gen/go/trust/v1;trustv1b\x06proto3"
 
 var (
 	file_trust_v1_trust_proto_rawDescOnce sync.Once

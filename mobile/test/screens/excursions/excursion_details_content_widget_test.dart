@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/features/profile/models/user_profile_vm.dart';
-import 'package:superapp/features/excursions/models/excursion_vm.dart';
-import 'package:superapp/l10n/generated/app_localizations.dart';
-import 'package:superapp/screens/excursions/excursion_details_screen.dart';
+import 'package:inflap/features/profile/models/user_profile_vm.dart';
+import 'package:inflap/features/excursions/models/excursion_vm.dart';
+import 'package:inflap/l10n/generated/app_localizations.dart';
+import 'package:inflap/screens/excursions/excursion_details_screen.dart';
 
 void main() {
   testWidgets('renders excursion details content and booking CTA', (

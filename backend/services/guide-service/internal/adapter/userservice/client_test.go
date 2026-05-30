@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/test/bufconn"
 
-	userv1 "github.com/dkhvan-dev/flyfy/proto/gen/go/user/v1"
+	userv1 "kz/inflap/proto/gen/go/user/v1"
 )
 
 func TestGetPublicUserProfilesMapsLegalNameFields(t *testing.T) {

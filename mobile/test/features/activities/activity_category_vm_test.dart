@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/features/activities/models/activity_category_vm.dart';
+import 'package:inflap/features/activities/models/activity_category_vm.dart';
 
 void main() {
   test('parses localized category taxonomy with subcategories and system tags',

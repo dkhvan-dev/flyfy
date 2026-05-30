@@ -3,9 +3,9 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:superapp/core/network/api_client.dart';
-import 'package:superapp/core/network/sticker_api.dart';
-import 'package:superapp/core/storage/secure_storage.dart';
+import 'package:inflap/core/network/api_client.dart';
+import 'package:inflap/core/network/sticker_api.dart';
+import 'package:inflap/core/storage/secure_storage.dart';
 
 void main() {
   test('uploads sticker binary through file-manager gateway endpoint',
@@ -22,7 +22,7 @@ void main() {
         uploadSessionId: 'upload-session-id',
         fileId: '8cbe61fb-0764-49b2-a5fb-982cd9c5c54a',
         method: 'PUT',
-        url: 'http://file-manager-minio:9000/flyfy-files/object-key',
+        url: 'http://file-manager-minio:9000/inflap-files/object-key',
         headers: {'X-Amz-SignedHeaders': 'host'},
       ),
       bytes: Uint8List.fromList([1, 2, 3, 4]),

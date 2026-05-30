@@ -11,9 +11,9 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/dkhvan-dev/flyfy/backend/services/sticker-service/internal/domain/enum"
-	"github.com/dkhvan-dev/flyfy/backend/services/sticker-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/backend/services/sticker-service/internal/domain/port"
+	"kz/inflap/backend/services/sticker-service/internal/domain/enum"
+	"kz/inflap/backend/services/sticker-service/internal/domain/model"
+	"kz/inflap/backend/services/sticker-service/internal/domain/port"
 )
 
 type dbRunner interface {

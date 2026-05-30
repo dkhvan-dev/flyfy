@@ -2329,7 +2329,7 @@ const file_guide_v1_guide_proto_rawDesc = "" +
 	"\x19RejectVerificationRequest\x12*.guide.v1.RejectVerificationRequestRequest\x1a+.guide.v1.RejectVerificationRequestResponse\x12b\n" +
 	"\x13SuspendGuideProfile\x12$.guide.v1.SuspendGuideProfileRequest\x1a%.guide.v1.SuspendGuideProfileResponse\x12e\n" +
 	"\x14ActivateGuideProfile\x12%.guide.v1.ActivateGuideProfileRequest\x1a&.guide.v1.ActivateGuideProfileResponse\x12\x86\x01\n" +
-	"\x1fListPendingVerificationRequests\x120.guide.v1.ListPendingVerificationRequestsRequest\x1a1.guide.v1.ListPendingVerificationRequestsResponseB;Z9github.com/dkhvan-dev/flyfy/proto/gen/go/guide/v1;guidev1b\x06proto3"
+	"\x1fListPendingVerificationRequests\x120.guide.v1.ListPendingVerificationRequestsRequest\x1a1.guide.v1.ListPendingVerificationRequestsResponseB)Z'kz/inflap/proto/gen/go/guide/v1;guidev1b\x06proto3"
 
 var (
 	file_guide_v1_guide_proto_rawDescOnce sync.Once
