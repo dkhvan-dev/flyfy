@@ -3298,6 +3298,12 @@ abstract class AppLocalizations {
   /// **'Attractions'**
   String get homeServiceAttractions;
 
+  /// No description provided for @homeServiceCurrencyConverter.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get homeServiceCurrencyConverter;
+
   /// No description provided for @homeServiceStays.
   ///
   /// In en, this message translates to:
@@ -3357,6 +3363,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Explore'**
   String get homePromoExplore;
+
+  /// No description provided for @currencyConverterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency Converter'**
+  String get currencyConverterTitle;
+
+  /// No description provided for @currencyConverterSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert travel prices without leaving FlyFy.'**
+  String get currencyConverterSubtitle;
+
+  /// No description provided for @currencyConverterAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get currencyConverterAmountLabel;
+
+  /// No description provided for @currencyConverterFromLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get currencyConverterFromLabel;
+
+  /// No description provided for @currencyConverterToLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get currencyConverterToLabel;
+
+  /// No description provided for @currencyConverterSwapTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Swap currencies'**
+  String get currencyConverterSwapTooltip;
+
+  /// No description provided for @currencyConverterConvertButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert'**
+  String get currencyConverterConvertButton;
+
+  /// No description provided for @currencyConverterLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Converting...'**
+  String get currencyConverterLoading;
+
+  /// No description provided for @currencyConverterResultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Result'**
+  String get currencyConverterResultTitle;
+
+  /// No description provided for @currencyConverterUpdatedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate updated {value}'**
+  String currencyConverterUpdatedAt(Object value);
+
+  /// No description provided for @currencyConverterProvider.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider: {value}'**
+  String currencyConverterProvider(Object value);
+
+  /// No description provided for @currencyConverterStaleWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing a fallback reference rate because the live provider is unavailable.'**
+  String get currencyConverterStaleWarning;
+
+  /// No description provided for @currencyConverterPopularPairs.
+  ///
+  /// In en, this message translates to:
+  /// **'Popular pairs'**
+  String get currencyConverterPopularPairs;
+
+  /// No description provided for @currencyConverterInfoNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Rates are informational and may differ from payment provider rates during checkout.'**
+  String get currencyConverterInfoNotice;
+
+  /// No description provided for @currencyConverterAmountValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid amount'**
+  String get currencyConverterAmountValidation;
+
+  /// No description provided for @currencyConverterLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not convert right now. Check the connection and try again.'**
+  String get currencyConverterLoadFailed;
 
   /// No description provided for @homeDestinationCharynTitle.
   ///

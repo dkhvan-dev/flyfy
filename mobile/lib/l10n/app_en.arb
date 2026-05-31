@@ -605,6 +605,7 @@
   "homeServiceActivities": "Activities",
   "homeServiceStories": "Stories",
   "homeServiceAttractions": "Attractions",
+  "homeServiceCurrencyConverter": "Currency",
   "homeServiceStays": "Stays",
   "homeServiceDelivery": "Delivery",
   "homeServiceTaxi": "Taxi",
@@ -615,6 +616,32 @@
   "homePromoMountainTitle": "Mountain Excursions",
   "homePromoMountainDescription": "Scale scenic routes with local experts...",
   "homePromoExplore": "Explore",
+  "currencyConverterTitle": "Currency Converter",
+  "currencyConverterSubtitle": "Convert travel prices without leaving FlyFy.",
+  "currencyConverterAmountLabel": "Amount",
+  "currencyConverterFromLabel": "From",
+  "currencyConverterToLabel": "To",
+  "currencyConverterSwapTooltip": "Swap currencies",
+  "currencyConverterConvertButton": "Convert",
+  "currencyConverterLoading": "Converting...",
+  "currencyConverterResultTitle": "Result",
+  "currencyConverterUpdatedAt": "Rate updated {value}",
+  "@currencyConverterUpdatedAt": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "currencyConverterProvider": "Provider: {value}",
+  "@currencyConverterProvider": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "currencyConverterStaleWarning": "Showing a fallback reference rate because the live provider is unavailable.",
+  "currencyConverterPopularPairs": "Popular pairs",
+  "currencyConverterInfoNotice": "Rates are informational and may differ from payment provider rates during checkout.",
+  "currencyConverterAmountValidation": "Enter a valid amount",
+  "currencyConverterLoadFailed": "Could not convert right now. Check the connection and try again.",
   "homeDestinationCharynTitle": "Charyn Canyon",
   "homeDestinationCharynSubtitle": "Nature & Adventure",
   "homeDestinationLakeTitle": "Big Almaty Lake",

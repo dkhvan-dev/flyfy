@@ -1785,6 +1785,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get homeServiceAttractions => 'Орындар';
 
   @override
+  String get homeServiceCurrencyConverter => 'Валюта';
+
+  @override
   String get homeServiceStays => 'Тұру';
 
   @override
@@ -1815,6 +1818,62 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get homePromoExplore => 'Ашу';
+
+  @override
+  String get currencyConverterTitle => 'Валюта конвертері';
+
+  @override
+  String get currencyConverterSubtitle =>
+      'Сапар бағасын FlyFy ішінен-ақ аударыңыз.';
+
+  @override
+  String get currencyConverterAmountLabel => 'Сома';
+
+  @override
+  String get currencyConverterFromLabel => 'Қай валютадан';
+
+  @override
+  String get currencyConverterToLabel => 'Қай валютаға';
+
+  @override
+  String get currencyConverterSwapTooltip => 'Валюталарды ауыстыру';
+
+  @override
+  String get currencyConverterConvertButton => 'Конвертациялау';
+
+  @override
+  String get currencyConverterLoading => 'Есептелуде...';
+
+  @override
+  String get currencyConverterResultTitle => 'Нәтиже';
+
+  @override
+  String currencyConverterUpdatedAt(Object value) {
+    return 'Курс жаңартылды $value';
+  }
+
+  @override
+  String currencyConverterProvider(Object value) {
+    return 'Провайдер: $value';
+  }
+
+  @override
+  String get currencyConverterStaleWarning =>
+      'Live-провайдер қолжетімсіз болғандықтан, резервтік анықтамалық курс көрсетілді.';
+
+  @override
+  String get currencyConverterPopularPairs => 'Танымал жұптар';
+
+  @override
+  String get currencyConverterInfoNotice =>
+      'Курстар ақпараттық сипатта және төлем кезіндегі провайдер курсынан өзгеше болуы мүмкін.';
+
+  @override
+  String get currencyConverterAmountValidation => 'Дұрыс соманы енгізіңіз';
+
+  @override
+  String get currencyConverterLoadFailed =>
+      'Қазір конвертациялау мүмкін болмады. Байланысты тексеріп, қайта көріңіз.';
 
   @override
   String get homeDestinationCharynTitle => 'Шарын шатқалы';

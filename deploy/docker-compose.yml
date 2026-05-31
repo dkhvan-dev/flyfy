@@ -1812,6 +1812,34 @@ services:
       - inflap-network
 
   # ============================================
+  # Currency Service
+  # ============================================
+  currency-service:
+    build:
+      context: ..
+      dockerfile: ./backend/services/currency-service/Dockerfile
+    container_name: currency-service
+    ports:
+      - "8098:8098"
+    environment:
+      APP_NAME: currency-service
+      APP_ENV: development
+
+      HTTP_PORT: 8098
+      HTTP_READ_TIMEOUT: 10s
+      HTTP_WRITE_TIMEOUT: 10s
+      HTTP_IDLE_TIMEOUT: 60s
+
+      CURRENCY_PROVIDER_BASE_URL: https://open.er-api.com/v6/latest
+      CURRENCY_PROVIDER_TIMEOUT: 5s
+      CURRENCY_RATE_CACHE_TTL: 1h
+
+      LOG_LEVEL: info
+    restart: unless-stopped
+    networks:
+      - inflap-network
+
+  # ============================================
   # API Gateway
   # ============================================
   api-gateway:
@@ -1843,6 +1871,8 @@ services:
       sticker-service:
         condition: service_started
       reference-service:
+        condition: service_started
+      currency-service:
         condition: service_started
       attraction-service:
         condition: service_started
@@ -1881,6 +1911,7 @@ services:
       NOTIFICATION_SERVICE_HTTP_URL: http://notification-service:8097
       STICKER_SERVICE_HTTP_URL: http://sticker-service:8092
       REFERENCE_SERVICE_HTTP_URL: http://reference-service:8089
+      CURRENCY_SERVICE_HTTP_URL: http://currency-service:8098
       ATTRACTION_SERVICE_HTTP_URL: http://attraction-service:8090
       PAYMENT_SERVICE_HTTP_URL: http://payment-service:8091
       ADMIN_PANEL_SERVICE_HTTP_URL: http://admin-panel:8095

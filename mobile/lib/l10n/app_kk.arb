@@ -605,6 +605,7 @@
   "homeServiceActivities": "Белсенділіктер",
   "homeServiceStories": "Хикаялар",
   "homeServiceAttractions": "Орындар",
+  "homeServiceCurrencyConverter": "Валюта",
   "homeServiceStays": "Тұру",
   "homeServiceDelivery": "Жеткізу",
   "homeServiceTaxi": "Такси",
@@ -615,6 +616,32 @@
   "homePromoMountainTitle": "Тау экскурсиялары",
   "homePromoMountainDescription": "Жергілікті сарапшылармен көркем маршруттар...",
   "homePromoExplore": "Ашу",
+  "currencyConverterTitle": "Валюта конвертері",
+  "currencyConverterSubtitle": "Сапар бағасын FlyFy ішінен-ақ аударыңыз.",
+  "currencyConverterAmountLabel": "Сома",
+  "currencyConverterFromLabel": "Қай валютадан",
+  "currencyConverterToLabel": "Қай валютаға",
+  "currencyConverterSwapTooltip": "Валюталарды ауыстыру",
+  "currencyConverterConvertButton": "Конвертациялау",
+  "currencyConverterLoading": "Есептелуде...",
+  "currencyConverterResultTitle": "Нәтиже",
+  "currencyConverterUpdatedAt": "Курс жаңартылды {value}",
+  "@currencyConverterUpdatedAt": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "currencyConverterProvider": "Провайдер: {value}",
+  "@currencyConverterProvider": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "currencyConverterStaleWarning": "Live-провайдер қолжетімсіз болғандықтан, резервтік анықтамалық курс көрсетілді.",
+  "currencyConverterPopularPairs": "Танымал жұптар",
+  "currencyConverterInfoNotice": "Курстар ақпараттық сипатта және төлем кезіндегі провайдер курсынан өзгеше болуы мүмкін.",
+  "currencyConverterAmountValidation": "Дұрыс соманы енгізіңіз",
+  "currencyConverterLoadFailed": "Қазір конвертациялау мүмкін болмады. Байланысты тексеріп, қайта көріңіз.",
   "homeDestinationCharynTitle": "Шарын шатқалы",
   "homeDestinationCharynSubtitle": "Табиғат пен шытырман",
   "homeDestinationLakeTitle": "Үлкен Алматы көлі",

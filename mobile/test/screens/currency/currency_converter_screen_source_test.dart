@@ -1,0 +1,39 @@
+import 'dart:io';
+
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  test('currency converter screen is localized and adaptive', () async {
+    final source = await File(
+      'lib/screens/currency/currency_converter_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('class CurrencyConverterScreen'));
+    expect(source, contains('l10n.currencyConverterTitle'));
+    expect(source, contains('SingleChildScrollView'));
+    expect(source, contains('SafeArea'));
+    expect(source, contains('Wrap('));
+    expect(source, contains('TextOverflow.ellipsis'));
+    expect(source, contains('CurrencyApi'));
+  });
+
+  test('home service grid links to the currency converter route', () async {
+    final homeSource =
+        await File('lib/screens/home/home_screen.dart').readAsString();
+    final routerSource =
+        await File('lib/core/router/app_router.dart').readAsString();
+    final ruArb = await File('lib/l10n/app_ru.arb').readAsString();
+    final enArb = await File('lib/l10n/app_en.arb').readAsString();
+    final kkArb = await File('lib/l10n/app_kk.arb').readAsString();
+
+    expect(homeSource, contains('void _openCurrencyConverter()'));
+    expect(homeSource, contains("context.push('/currency-converter')"));
+    expect(homeSource, contains('l10n.homeServiceCurrencyConverter'));
+    expect(homeSource, contains('onTap: _openCurrencyConverter'));
+    expect(routerSource, contains("path: '/currency-converter'"));
+    expect(routerSource, contains('CurrencyConverterScreen'));
+    expect(ruArb, contains('homeServiceCurrencyConverter'));
+    expect(enArb, contains('homeServiceCurrencyConverter'));
+    expect(kkArb, contains('homeServiceCurrencyConverter'));
+  });
+}

@@ -44,6 +44,23 @@ func TestStickerCatalogRouteProxiesToStickerService(t *testing.T) {
 	}
 }
 
+func TestCurrencyRoutesProxyToCurrencyServicePublicly(t *testing.T) {
+	policy := matchRoutePolicy("/api/v1/currency/convert", "/api/v1")
+
+	if policy == nil {
+		t.Fatal("expected currency route policy")
+	}
+	if policy.Upstream != "currency" {
+		t.Fatalf("upstream = %q, want currency", policy.Upstream)
+	}
+	if policy.AuthMode != RouteAuthPublic {
+		t.Fatalf("auth mode = %q, want public", policy.AuthMode)
+	}
+	if policy.RewritePrefix != "/v1/currency" {
+		t.Fatalf("rewrite prefix = %q, want /v1/currency", policy.RewritePrefix)
+	}
+}
+
 func TestExcursionRoutesProxyToExcursionService(t *testing.T) {
 	publicPolicy := matchRoutePolicy("/api/v1/excursions/123", "/api/v1")
 	if publicPolicy == nil {

@@ -1770,6 +1770,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeServiceAttractions => 'Attractions';
 
   @override
+  String get homeServiceCurrencyConverter => 'Currency';
+
+  @override
   String get homeServiceStays => 'Stays';
 
   @override
@@ -1800,6 +1803,62 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homePromoExplore => 'Explore';
+
+  @override
+  String get currencyConverterTitle => 'Currency Converter';
+
+  @override
+  String get currencyConverterSubtitle =>
+      'Convert travel prices without leaving FlyFy.';
+
+  @override
+  String get currencyConverterAmountLabel => 'Amount';
+
+  @override
+  String get currencyConverterFromLabel => 'From';
+
+  @override
+  String get currencyConverterToLabel => 'To';
+
+  @override
+  String get currencyConverterSwapTooltip => 'Swap currencies';
+
+  @override
+  String get currencyConverterConvertButton => 'Convert';
+
+  @override
+  String get currencyConverterLoading => 'Converting...';
+
+  @override
+  String get currencyConverterResultTitle => 'Result';
+
+  @override
+  String currencyConverterUpdatedAt(Object value) {
+    return 'Rate updated $value';
+  }
+
+  @override
+  String currencyConverterProvider(Object value) {
+    return 'Provider: $value';
+  }
+
+  @override
+  String get currencyConverterStaleWarning =>
+      'Showing a fallback reference rate because the live provider is unavailable.';
+
+  @override
+  String get currencyConverterPopularPairs => 'Popular pairs';
+
+  @override
+  String get currencyConverterInfoNotice =>
+      'Rates are informational and may differ from payment provider rates during checkout.';
+
+  @override
+  String get currencyConverterAmountValidation => 'Enter a valid amount';
+
+  @override
+  String get currencyConverterLoadFailed =>
+      'Could not convert right now. Check the connection and try again.';
 
   @override
   String get homeDestinationCharynTitle => 'Charyn Canyon';

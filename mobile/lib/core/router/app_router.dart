@@ -45,6 +45,7 @@ import '../../features/attractions/models/attraction_vm.dart';
 import '../../features/excursions/models/excursion_vm.dart';
 import '../../features/notifications/data/notification_api.dart';
 import '../../screens/common/feature_stub_screen.dart';
+import '../../screens/currency/currency_converter_screen.dart';
 import '../../screens/map/map_screen.dart';
 import '../../screens/notifications/notifications_screen.dart';
 
@@ -485,6 +486,11 @@ class AppRouter {
               _withAndroidBackSwipe(const FeatureStubScreen(title: 'Services')),
         ),
         GoRoute(
+          path: '/currency-converter',
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const CurrencyConverterScreen()),
+        ),
+        GoRoute(
           path: '/chats',
           builder: (context, state) =>
               _withAndroidBackSwipe(const ConversationsScreen()),
@@ -557,6 +563,7 @@ class AppRouter {
         location == '/menu' ||
         location == '/map' ||
         location == '/services' ||
+        location == '/currency-converter' ||
         location == '/chats' ||
         location == '/yandex-go' ||
         location == '/glovo' ||

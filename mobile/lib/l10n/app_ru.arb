@@ -605,6 +605,7 @@
   "homeServiceActivities": "Активности",
   "homeServiceStories": "Истории",
   "homeServiceAttractions": "Места",
+  "homeServiceCurrencyConverter": "Валюта",
   "homeServiceStays": "Жилье",
   "homeServiceDelivery": "Доставка",
   "homeServiceTaxi": "Такси",
@@ -615,6 +616,32 @@
   "homePromoMountainTitle": "Горные экскурсии",
   "homePromoMountainDescription": "Маршруты с живописными видами и локальными экспертами...",
   "homePromoExplore": "Открыть",
+  "currencyConverterTitle": "Конвертер валют",
+  "currencyConverterSubtitle": "Переводите цены для поездок, не выходя из FlyFy.",
+  "currencyConverterAmountLabel": "Сумма",
+  "currencyConverterFromLabel": "Из",
+  "currencyConverterToLabel": "В",
+  "currencyConverterSwapTooltip": "Поменять валюты местами",
+  "currencyConverterConvertButton": "Конвертировать",
+  "currencyConverterLoading": "Конвертируем...",
+  "currencyConverterResultTitle": "Результат",
+  "currencyConverterUpdatedAt": "Курс обновлен {value}",
+  "@currencyConverterUpdatedAt": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "currencyConverterProvider": "Провайдер: {value}",
+  "@currencyConverterProvider": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "currencyConverterStaleWarning": "Показан резервный справочный курс, потому что live-провайдер недоступен.",
+  "currencyConverterPopularPairs": "Популярные пары",
+  "currencyConverterInfoNotice": "Курсы справочные и могут отличаться от курса платежного провайдера при оплате.",
+  "currencyConverterAmountValidation": "Введите корректную сумму",
+  "currencyConverterLoadFailed": "Не удалось конвертировать сейчас. Проверьте соединение и попробуйте снова.",
   "homeDestinationCharynTitle": "Чарынский каньон",
   "homeDestinationCharynSubtitle": "Природа и приключения",
   "homeDestinationLakeTitle": "Большое Алматинское озеро",

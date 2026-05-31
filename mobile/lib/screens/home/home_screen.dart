@@ -192,6 +192,10 @@ class _HomeScreenState extends State<HomeScreen> {
     context.push('/attractions');
   }
 
+  void _openCurrencyConverter() {
+    context.push('/currency-converter');
+  }
+
   void _openAttractionDetails(AttractionVm attraction) {
     context.push('/attractions/${attraction.id}', extra: attraction);
   }
@@ -761,6 +765,11 @@ class _HomeScreenState extends State<HomeScreen> {
         title: l10n.homeServiceAttractions,
         icon: Icons.account_balance_rounded,
         onTap: _openAttractions,
+      ),
+      _QuickActionData(
+        title: l10n.homeServiceCurrencyConverter,
+        icon: Icons.currency_exchange_rounded,
+        onTap: _openCurrencyConverter,
       ),
       _QuickActionData(title: l10n.homeServiceStays, icon: Icons.bed_rounded),
       _QuickActionData(

@@ -39,6 +39,7 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 	stickerLimit := 180
 	excursionLimit := 180
 	notificationLimit := 300
+	currencyLimit := 180
 
 	return []RoutePolicy{
 		{
@@ -326,6 +327,22 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			Upstream:      "reference",
 			RewritePrefix: "/v1/timezones",
 			Cacheable:     true,
+		},
+		{
+			Name:               "currency",
+			Prefix:             apiPrefix + "/currency",
+			AuthMode:           RouteAuthPublic,
+			Upstream:           "currency",
+			RateLimitPerMinute: &currencyLimit,
+			RewritePrefix:      "/v1/currency",
+		},
+		{
+			Name:               "exchange-rates",
+			Prefix:             apiPrefix + "/exchange-rates",
+			AuthMode:           RouteAuthPublic,
+			Upstream:           "currency",
+			RateLimitPerMinute: &currencyLimit,
+			RewritePrefix:      "/v1/exchange-rates",
 		},
 		{
 			Name:               "attraction-reviews",

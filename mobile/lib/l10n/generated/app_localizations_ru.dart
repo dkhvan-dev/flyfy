@@ -1772,6 +1772,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get homeServiceAttractions => 'Места';
 
   @override
+  String get homeServiceCurrencyConverter => 'Валюта';
+
+  @override
   String get homeServiceStays => 'Жилье';
 
   @override
@@ -1802,6 +1805,62 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get homePromoExplore => 'Открыть';
+
+  @override
+  String get currencyConverterTitle => 'Конвертер валют';
+
+  @override
+  String get currencyConverterSubtitle =>
+      'Переводите цены для поездок, не выходя из FlyFy.';
+
+  @override
+  String get currencyConverterAmountLabel => 'Сумма';
+
+  @override
+  String get currencyConverterFromLabel => 'Из';
+
+  @override
+  String get currencyConverterToLabel => 'В';
+
+  @override
+  String get currencyConverterSwapTooltip => 'Поменять валюты местами';
+
+  @override
+  String get currencyConverterConvertButton => 'Конвертировать';
+
+  @override
+  String get currencyConverterLoading => 'Конвертируем...';
+
+  @override
+  String get currencyConverterResultTitle => 'Результат';
+
+  @override
+  String currencyConverterUpdatedAt(Object value) {
+    return 'Курс обновлен $value';
+  }
+
+  @override
+  String currencyConverterProvider(Object value) {
+    return 'Провайдер: $value';
+  }
+
+  @override
+  String get currencyConverterStaleWarning =>
+      'Показан резервный справочный курс, потому что live-провайдер недоступен.';
+
+  @override
+  String get currencyConverterPopularPairs => 'Популярные пары';
+
+  @override
+  String get currencyConverterInfoNotice =>
+      'Курсы справочные и могут отличаться от курса платежного провайдера при оплате.';
+
+  @override
+  String get currencyConverterAmountValidation => 'Введите корректную сумму';
+
+  @override
+  String get currencyConverterLoadFailed =>
+      'Не удалось конвертировать сейчас. Проверьте соединение и попробуйте снова.';
 
   @override
   String get homeDestinationCharynTitle => 'Чарынский каньон';
