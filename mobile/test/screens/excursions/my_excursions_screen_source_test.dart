@@ -126,17 +126,14 @@ void main() {
     },
   );
 
-  test(
-    'visited review badge does not force unwrap excursion review',
-    () async {
-      final source = await File(
-        'lib/screens/excursions/my_excursions_screen.dart',
-      ).readAsString();
+  test('visited review badge does not force unwrap excursion review', () async {
+    final source = await File(
+      'lib/screens/excursions/my_excursions_screen.dart',
+    ).readAsString();
 
-      expect(source, isNot(contains('booking.review!.rating')));
-      expect(source, contains('booking.reviewBadgeRating'));
-    },
-  );
+    expect(source, isNot(contains('booking.review!.rating')));
+    expect(source, contains('booking.reviewBadgeRating'));
+  });
 
   test(
     'my excursions cards resolve localized attraction text for landmark bookings',
@@ -172,9 +169,13 @@ void main() {
       expect(source, contains('localizedLandmark:'));
       expect(source, contains('localizedAttractionTitle('));
       expect(
-          source, contains('final displayTitle = localizedAttractionTitle('));
+        source,
+        contains('final displayTitle = localizedAttractionTitle('),
+      );
       expect(
-          source, contains('final landmarkName = localizedAttractionTitle('));
+        source,
+        contains('final landmarkName = localizedAttractionTitle('),
+      );
       expect(source, contains('displayTitle.isEmpty'));
       expect(source, isNot(contains('booking.landmarkName!.trim()')));
       expect(
@@ -298,13 +299,12 @@ void main() {
 
       expect(source, contains('tab: _activeTab'));
       expect(sheetSource, contains('final MyExcursionsTab tab;'));
+      expect(sheetSource, contains('widget.tab == MyExcursionsTab.booked'));
       expect(
-        sheetSource,
-        contains('widget.tab == MyExcursionsTab.booked'),
-      );
-      expect(
-        sheetSource,
-        contains('widget.tab == MyExcursionsTab.booked ? _statuses'),
+        RegExp(
+          r'statuses:\s*widget\.tab == MyExcursionsTab\.booked\s*\?\s*_statuses\s*:\s*const <String>{}',
+        ).hasMatch(sheetSource),
+        isTrue,
       );
     },
   );

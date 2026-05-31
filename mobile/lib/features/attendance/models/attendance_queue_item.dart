@@ -51,10 +51,12 @@ class AttendanceQueueItem {
       createdAt: createdAt,
       retryCount: retryCount ?? this.retryCount,
       nextRetryAt: nextRetryAt,
-      lastErrorCode:
-          clearLastError ? null : (lastErrorCode ?? this.lastErrorCode),
-      lastErrorMessage:
-          clearLastError ? null : (lastErrorMessage ?? this.lastErrorMessage),
+      lastErrorCode: clearLastError
+          ? null
+          : (lastErrorCode ?? this.lastErrorCode),
+      lastErrorMessage: clearLastError
+          ? null
+          : (lastErrorMessage ?? this.lastErrorMessage),
     );
   }
 
@@ -86,15 +88,17 @@ class AttendanceQueueItem {
       qrToken: json['qrToken']?.toString() ?? '',
       installationId: json['installationId']?.toString() ?? '',
       scannedAtDevice:
-          DateTime.tryParse(json['scannedAtDevice']?.toString() ?? '')
-                  ?.toUtc() ??
-              DateTime.now().toUtc(),
+          DateTime.tryParse(
+            json['scannedAtDevice']?.toString() ?? '',
+          )?.toUtc() ??
+          DateTime.now().toUtc(),
       createdAt:
           DateTime.tryParse(json['createdAt']?.toString() ?? '')?.toUtc() ??
-              DateTime.now().toUtc(),
+          DateTime.now().toUtc(),
       retryCount: (json['retryCount'] as num?)?.toInt() ?? 0,
-      nextRetryAt:
-          DateTime.tryParse(json['nextRetryAt']?.toString() ?? '')?.toUtc(),
+      nextRetryAt: DateTime.tryParse(
+        json['nextRetryAt']?.toString() ?? '',
+      )?.toUtc(),
       lastErrorCode: json['lastErrorCode']?.toString(),
       lastErrorMessage: json['lastErrorMessage']?.toString(),
     );

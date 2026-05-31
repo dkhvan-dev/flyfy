@@ -95,9 +95,7 @@ class PublicGuideVm {
     );
   }
 
-  PublicGuideVm copyWith({
-    List<String>? excursionLanguageCodes,
-  }) {
+  PublicGuideVm copyWith({List<String>? excursionLanguageCodes}) {
     return PublicGuideVm(
       id: id,
       userId: userId,
@@ -126,8 +124,10 @@ class PublicGuideVm {
   String get preferredName {
     final first = firstName?.trim() ?? '';
     final last = lastName?.trim() ?? '';
-    final legalName =
-        [last, first].where((value) => value.isNotEmpty).join(' ');
+    final legalName = [
+      last,
+      first,
+    ].where((value) => value.isNotEmpty).join(' ');
     if (legalName.isNotEmpty) return legalName;
 
     final display = displayName?.trim() ?? '';

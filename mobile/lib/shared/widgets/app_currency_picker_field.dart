@@ -52,7 +52,7 @@ class AppCurrencyPickerField extends StatelessWidget {
                 shrinkWrap: true,
                 padding: const EdgeInsets.all(12),
                 itemCount: appCurrencyOptions.length,
-                separatorBuilder: (_, __) => Divider(
+                separatorBuilder: (_, _) => Divider(
                   height: 1,
                   color: AppColors.accent.withValues(alpha: 0.10),
                 ),

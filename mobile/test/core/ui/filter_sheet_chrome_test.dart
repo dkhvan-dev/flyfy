@@ -4,8 +4,9 @@ import 'package:inflap/core/ui/app_colors.dart';
 import 'package:inflap/core/ui/filter_sheet_chrome.dart';
 
 void main() {
-  testWidgets('filter sheet header matches activity modal chrome',
-      (tester) async {
+  testWidgets('filter sheet header matches activity modal chrome', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -20,10 +21,7 @@ void main() {
 
     final title = tester.widget<Text>(find.text('FILTERS'));
     final clear = tester.widget<TextButton>(
-      find.ancestor(
-        of: find.text('CLEAR'),
-        matching: find.byType(TextButton),
-      ),
+      find.ancestor(of: find.text('CLEAR'), matching: find.byType(TextButton)),
     );
 
     expect(title.textAlign, TextAlign.center);
@@ -31,8 +29,9 @@ void main() {
     expect(clear.style?.foregroundColor?.resolve({}), AppColors.accent);
   });
 
-  testWidgets('filter apply button stretches and keeps entity count label',
-      (tester) async {
+  testWidgets('filter apply button stretches and keeps entity count label', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -48,9 +47,7 @@ void main() {
       ),
     );
 
-    final buttonBox = tester.renderObject<RenderBox>(
-      find.byType(FilledButton),
-    );
+    final buttonBox = tester.renderObject<RenderBox>(find.byType(FilledButton));
     final label = tester.widget<Text>(find.text('Show 12 stories'));
 
     expect(buttonBox.size.width, 360);

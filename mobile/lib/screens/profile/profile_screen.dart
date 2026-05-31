@@ -246,8 +246,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final resolvedStatus = switch (currentStatus) {
         UserFriendshipStatus.none => await _profileApi.sendFriendRequest(
-            userId,
-          ),
+          userId,
+        ),
         UserFriendshipStatus.outgoingRequest =>
           await _profileApi.cancelFriendRequest(userId),
         UserFriendshipStatus.incomingRequest =>
@@ -696,13 +696,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               : null,
           directGuideReviewsFuture:
               !isOwnProfile && extras.guide?.isVerified == true
-                  ? _directGuideReviewsFutureFor(effectiveProfile)
-                  : null,
+              ? _directGuideReviewsFutureFor(effectiveProfile)
+              : null,
           recentActivitiesFuture: isOwnProfile
               ? null
               : _recentActivitiesFutureFor(effectiveProfile),
-          popularStoriesFuture:
-              isOwnProfile ? null : _popularStoriesFutureFor(effectiveProfile),
+          popularStoriesFuture: isOwnProfile
+              ? null
+              : _popularStoriesFutureFor(effectiveProfile),
           activityCountFuture: _activityCountFutureFor(effectiveProfile),
           publishedStoriesCountFuture: _publishedStoriesCountFutureFor(
             effectiveProfile,
@@ -711,16 +712,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
           isFollowActionLoading: _isFollowActionLoading,
           isFriendshipActionLoading: _isFriendshipActionLoading,
           isMessageActionLoading: _isMessageActionLoading,
-          onToggleFollow:
-              isOwnProfile ? null : () => _toggleFollow(effectiveProfile),
+          onToggleFollow: isOwnProfile
+              ? null
+              : () => _toggleFollow(effectiveProfile),
           onFriendshipAction: isOwnProfile
               ? null
               : () => _handleFriendshipAction(effectiveProfile),
           onDeclineFriendship: isOwnProfile
               ? null
               : () => _handleDeclineFriendRequest(effectiveProfile),
-          onMessageTap:
-              isOwnProfile ? null : () => _openDirectChat(effectiveProfile),
+          onMessageTap: isOwnProfile
+              ? null
+              : () => _openDirectChat(effectiveProfile),
           onSettingsTap: isOwnProfile ? _openSettings : null,
           onEditProfile: isOwnProfile ? _openEditProfile : null,
           onCopyProfileLink: () => _copyProfileLink(effectiveProfile),
@@ -1069,10 +1072,13 @@ class _ProfileHero extends StatelessWidget {
     }
     final normalized = value.replaceAll(RegExp(r'[_-]+'), ' ');
     final words = normalized.split(RegExp(r'\s+'));
-    return words.where((word) => word.isNotEmpty).map((word) {
-      final lower = word.toLowerCase();
-      return '${lower.substring(0, 1).toUpperCase()}${lower.substring(1)}';
-    }).join(' ');
+    return words
+        .where((word) => word.isNotEmpty)
+        .map((word) {
+          final lower = word.toLowerCase();
+          return '${lower.substring(0, 1).toUpperCase()}${lower.substring(1)}';
+        })
+        .join(' ');
   }
 }
 
@@ -1083,9 +1089,11 @@ class _GuideRatingBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rating =
-        guide.ratingAvg <= 0 ? '0.0' : guide.ratingAvg.toStringAsFixed(1);
-    final maxWidth = MediaQuery.sizeOf(context).width -
+    final rating = guide.ratingAvg <= 0
+        ? '0.0'
+        : guide.ratingAvg.toStringAsFixed(1);
+    final maxWidth =
+        MediaQuery.sizeOf(context).width -
         profileScaled(context, 56, min: 36, max: 56);
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -1207,7 +1215,7 @@ class _ProfileAvatar extends StatelessWidget {
                     : Image.network(
                         avatarUrl!,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Center(
+                        errorBuilder: (_, _, _) => Center(
                           child: Text(
                             initials,
                             style: TextStyle(
@@ -1380,26 +1388,26 @@ class _BecomeGuideCard extends StatelessWidget {
     final title = isPending
         ? l10n.guideVerificationPendingTitle
         : isRevoked
-            ? l10n.guideVerificationRevokedTitle
-            : isRejected
-                ? l10n.guideVerificationRejectedTitle
-                : l10n.profileBecomeGuideTitle;
+        ? l10n.guideVerificationRevokedTitle
+        : isRejected
+        ? l10n.guideVerificationRejectedTitle
+        : l10n.profileBecomeGuideTitle;
     final subtitle = isPending
         ? l10n.guideVerificationPendingSubtitle
         : isRevoked
-            ? _revokedGuideSubtitle(l10n, guide)
-            : isRejected
-                ? l10n.guideVerificationRejectedSubtitle
-                : isDraft
-                    ? l10n.guideVerificationDraftSubtitle
-                    : l10n.profileBecomeGuideSubtitle;
+        ? _revokedGuideSubtitle(l10n, guide)
+        : isRejected
+        ? l10n.guideVerificationRejectedSubtitle
+        : isDraft
+        ? l10n.guideVerificationDraftSubtitle
+        : l10n.profileBecomeGuideSubtitle;
     final buttonLabel = isPending
         ? l10n.guideVerificationViewApplicationButton
         : isRevoked
-            ? l10n.guideVerificationRevokedButton
-            : isRejected || isDraft
-                ? l10n.guideVerificationContinueButton
-                : l10n.becomeGuideButton;
+        ? l10n.guideVerificationRevokedButton
+        : isRejected || isDraft
+        ? l10n.guideVerificationContinueButton
+        : l10n.becomeGuideButton;
 
     return Container(
       padding: EdgeInsets.all(profileScaled(context, 18, min: 16, max: 20)),
@@ -1424,8 +1432,8 @@ class _BecomeGuideCard extends StatelessWidget {
                   isPending
                       ? Icons.hourglass_bottom_rounded
                       : isRevoked
-                          ? Icons.block_rounded
-                          : Icons.explore_outlined,
+                      ? Icons.block_rounded
+                      : Icons.explore_outlined,
                   color: AppColors.accent,
                 ),
               ),
@@ -1473,10 +1481,7 @@ class _BecomeGuideCard extends StatelessWidget {
     );
   }
 
-  String _revokedGuideSubtitle(
-    AppLocalizations l10n,
-    GuideProfileVm? guide,
-  ) {
+  String _revokedGuideSubtitle(AppLocalizations l10n, GuideProfileVm? guide) {
     final reason = guide?.statusReason?.trim() ?? '';
     if (reason.isEmpty) {
       return l10n.guideVerificationRevokedSubtitle;
@@ -2062,7 +2067,8 @@ class _ForeignProfileActions extends StatelessWidget {
       UserFriendshipStatus.friends => l10n.profileRemoveFriendAction,
     };
 
-    final isPrimary = friendshipStatus == UserFriendshipStatus.none ||
+    final isPrimary =
+        friendshipStatus == UserFriendshipStatus.none ||
         friendshipStatus == UserFriendshipStatus.incomingRequest;
     final isDestructive = friendshipStatus == UserFriendshipStatus.friends;
 
@@ -2075,8 +2081,8 @@ class _ForeignProfileActions extends StatelessWidget {
               color: isPrimary
                   ? AppColors.textPrimary
                   : isDestructive
-                      ? AppColors.destruct
-                      : AppColors.accent,
+                  ? AppColors.destruct
+                  : AppColors.accent,
             ),
           )
         : Text(label, maxLines: 1, overflow: TextOverflow.ellipsis);
@@ -2183,29 +2189,29 @@ class _ForeignProfileActions extends StatelessWidget {
     final color = destructive
         ? AppColors.destruct
         : accent
-            ? AppColors.accent
-            : profileTextSoft;
+        ? AppColors.accent
+        : profileTextSoft;
 
     return OutlinedButton.styleFrom(
       side: BorderSide(
         color: destructive
             ? AppColors.destruct.withValues(alpha: 0.52)
             : accent
-                ? AppColors.accent.withValues(alpha: 0.45)
-                : Colors.white.withValues(alpha: 0.08),
+            ? AppColors.accent.withValues(alpha: 0.45)
+            : Colors.white.withValues(alpha: 0.08),
       ),
       foregroundColor: color,
       backgroundColor: destructive
           ? AppColors.destruct.withValues(alpha: 0.1)
           : accent
-              ? AppColors.accent.withValues(alpha: 0.08)
-              : profileSurfaceMuted.withValues(alpha: 0.62),
+          ? AppColors.accent.withValues(alpha: 0.08)
+          : profileSurfaceMuted.withValues(alpha: 0.62),
       minimumSize: _actionButtonSize(context),
       disabledForegroundColor: destructive
           ? AppColors.destruct.withValues(alpha: 0.62)
           : accent
-              ? AppColors.accent.withValues(alpha: 0.6)
-              : profileTextSoft,
+          ? AppColors.accent.withValues(alpha: 0.6)
+          : profileTextSoft,
     );
   }
 
@@ -2699,8 +2705,9 @@ class _ProfileGuideReviewCard extends StatelessWidget {
               CircleAvatar(
                 radius: profileScaled(context, 18, min: 16, max: 20),
                 backgroundColor: AppColors.accent.withValues(alpha: 0.16),
-                backgroundImage:
-                    avatarUrl == null ? null : NetworkImage(avatarUrl),
+                backgroundImage: avatarUrl == null
+                    ? null
+                    : NetworkImage(avatarUrl),
                 child: avatarUrl == null
                     ? Text(
                         _reviewInitial(authorName),
@@ -2805,8 +2812,9 @@ class _ProfileDirectGuideReviewCard extends StatelessWidget {
               CircleAvatar(
                 radius: profileScaled(context, 18, min: 16, max: 20),
                 backgroundColor: AppColors.accent.withValues(alpha: 0.16),
-                backgroundImage:
-                    avatarUrl == null ? null : NetworkImage(avatarUrl),
+                backgroundImage: avatarUrl == null
+                    ? null
+                    : NetworkImage(avatarUrl),
                 child: avatarUrl == null
                     ? Text(
                         _reviewInitial(authorName),
@@ -2981,8 +2989,9 @@ class _ProfileMenuTile extends StatelessWidget {
                   ),
                   child: Icon(
                     icon,
-                    color:
-                        effectiveDisabled ? profileDisabled : AppColors.accent,
+                    color: effectiveDisabled
+                        ? profileDisabled
+                        : AppColors.accent,
                   ),
                 ),
                 SizedBox(width: profileScaled(context, 14, min: 12, max: 14)),

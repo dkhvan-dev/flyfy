@@ -83,9 +83,9 @@ class HomeLocationProvider extends ChangeNotifier {
   HomeLocationProvider({
     ReferenceApi? referenceApi,
     DeviceContextService? deviceContextService,
-  })  : _referenceApi = referenceApi ?? ReferenceApi(),
-        _deviceContextService =
-            deviceContextService ?? const DeviceContextService();
+  }) : _referenceApi = referenceApi ?? ReferenceApi(),
+       _deviceContextService =
+           deviceContextService ?? const DeviceContextService();
 
   static const storageKey = 'inflap_home_location_preference';
 
@@ -122,7 +122,8 @@ class HomeLocationProvider extends ChangeNotifier {
     final raw = prefs.getString(storageKey);
     _selectedLocation = _decodeSelectedLocation(raw);
     _profileSignature = _profileLocationSignature(profile);
-    _effectiveLocation = _selectedLocation ??
+    _effectiveLocation =
+        _selectedLocation ??
         _profileFallback(profile) ??
         HomeLocationPreference.fallback();
     _isLoaded = true;
@@ -176,20 +177,18 @@ class HomeLocationProvider extends ChangeNotifier {
           lang: languageCode,
           limit: 8,
         );
-        matchedCity = cities.cast<ReferenceCity?>().firstWhere(
-          (city) {
-            if (city == null) return false;
-            if (countryCode == null || countryCode.isEmpty) return true;
-            return city.countryCode.trim().toUpperCase() == countryCode;
-          },
-          orElse: () => cities.isEmpty ? null : cities.first,
-        );
+        matchedCity = cities.cast<ReferenceCity?>().firstWhere((city) {
+          if (city == null) return false;
+          if (countryCode == null || countryCode.isEmpty) return true;
+          return city.countryCode.trim().toUpperCase() == countryCode;
+        }, orElse: () => cities.isEmpty ? null : cities.first);
       }
 
       final preference = HomeLocationPreference(
         source: HomeLocationSource.detected,
-        countryCode:
-            (matchedCity?.countryCode ?? countryCode)?.trim().toUpperCase(),
+        countryCode: (matchedCity?.countryCode ?? countryCode)
+            ?.trim()
+            .toUpperCase(),
         cityId: matchedCity?.id.trim().isEmpty == true
             ? null
             : matchedCity?.id.trim(),

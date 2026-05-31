@@ -4,24 +4,26 @@ import 'package:inflap/features/attractions/attraction_ui.dart';
 import 'package:inflap/features/attractions/models/attraction_vm.dart';
 
 void main() {
-  test('resolves attraction media file ids through public file content route',
-      () {
-    const media = AttractionMediaVm(
-      id: 'media-1',
-      fileId: '7ec7955e-0e4e-4a2f-aa31-3e41aa345211',
-      externalUrl: 'https://cdn.example.com/fallback.jpg',
-      sourceUrl: '',
-      credit: '',
-      license: '',
-      mediaType: 'PHOTO',
-      position: 0,
-    );
+  test(
+    'resolves attraction media file ids through public file content route',
+    () {
+      const media = AttractionMediaVm(
+        id: 'media-1',
+        fileId: '7ec7955e-0e4e-4a2f-aa31-3e41aa345211',
+        externalUrl: 'https://cdn.example.com/fallback.jpg',
+        sourceUrl: '',
+        credit: '',
+        license: '',
+        mediaType: 'PHOTO',
+        position: 0,
+      );
 
-    expect(
-      resolveAttractionMediaUrl(media),
-      '${AppConfig.apiBaseUrl}/public/files/7ec7955e-0e4e-4a2f-aa31-3e41aa345211/content',
-    );
-  });
+      expect(
+        resolveAttractionMediaUrl(media),
+        '${AppConfig.apiBaseUrl}/public/files/7ec7955e-0e4e-4a2f-aa31-3e41aa345211/content',
+      );
+    },
+  );
 
   test('falls back to external attraction media urls for imported content', () {
     const media = AttractionMediaVm(

@@ -101,15 +101,11 @@ typedef PushNotificationRouteHandler = void Function(String route);
 
 class PushNotificationCoordinator {
   PushNotificationCoordinator({
-    required PushNotificationSource source,
-    required PushNotificationPresenter presenter,
-    required PushNotificationRouteHandler routeHandler,
-    PushNotificationDeepLinkResolver resolver =
-        const PushNotificationDeepLinkResolver(),
-  }) : _source = source,
-       _presenter = presenter,
-       _routeHandler = routeHandler,
-       _resolver = resolver;
+    required this._source,
+    required this._presenter,
+    required this._routeHandler,
+    this._resolver = const PushNotificationDeepLinkResolver(),
+  });
 
   final PushNotificationSource _source;
   final PushNotificationPresenter _presenter;
@@ -184,22 +180,39 @@ class PushNotificationCoordinator {
 }
 
 class FirebasePushNotificationSource implements PushNotificationSource {
-  FirebasePushNotificationSource({FirebaseMessaging? messaging})
-    : _messaging = messaging ?? FirebaseMessaging.instance;
+  FirebasePushNotificationSource({
+    FirebaseMessaging? messaging,
+    Future<void>? firebaseReady,
+    // Keep the public parameter name stable while storing it privately.
+    // ignore: prefer_initializing_formals
+  }) : _messaging = messaging,
+       _firebaseReady = firebaseReady ?? Future<void>.value();
 
-  final FirebaseMessaging _messaging;
+  final FirebaseMessaging? _messaging;
+  final Future<void> _firebaseReady;
+
+  FirebaseMessaging get _resolvedMessaging =>
+      _messaging ?? FirebaseMessaging.instance;
 
   @override
-  Stream<PushNotificationEnvelope> get foregroundMessages =>
-      FirebaseMessaging.onMessage.map(_envelopeFromRemoteMessage);
+  Stream<PushNotificationEnvelope> get foregroundMessages {
+    return _firebaseReady.asStream().asyncExpand(
+      (_) => FirebaseMessaging.onMessage.map(_envelopeFromRemoteMessage),
+    );
+  }
 
   @override
-  Stream<PushNotificationEnvelope> get openedMessages =>
-      FirebaseMessaging.onMessageOpenedApp.map(_envelopeFromRemoteMessage);
+  Stream<PushNotificationEnvelope> get openedMessages {
+    return _firebaseReady.asStream().asyncExpand(
+      (_) =>
+          FirebaseMessaging.onMessageOpenedApp.map(_envelopeFromRemoteMessage),
+    );
+  }
 
   @override
   Future<PushNotificationEnvelope?> getInitialMessage() async {
-    final message = await _messaging.getInitialMessage();
+    await _firebaseReady;
+    final message = await _resolvedMessaging.getInitialMessage();
     if (message == null) return null;
     return _envelopeFromRemoteMessage(message);
   }
@@ -208,9 +221,8 @@ class FirebasePushNotificationSource implements PushNotificationSource {
 class LocalPushNotificationPresenter implements PushNotificationPresenter {
   LocalPushNotificationPresenter({
     FlutterLocalNotificationsPlugin? plugin,
-    bool showForegroundNotification = true,
-  }) : _plugin = plugin ?? FlutterLocalNotificationsPlugin(),
-       _showForegroundNotification = showForegroundNotification;
+    this._showForegroundNotification = true,
+  }) : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
 
   static const _notificationIcon = 'ic_stat_inflap_notification';
   static const _notificationColor = Color(0xFF00BCD4);

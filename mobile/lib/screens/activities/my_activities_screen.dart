@@ -239,15 +239,17 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
         .where((id) => id.isNotEmpty)
         .toSet();
 
-    return provider.joinedItems.where((item) {
-      final itemId = item.id.trim();
-      if (itemId.isNotEmpty && hostedActivityIds.contains(itemId)) {
-        return false;
-      }
+    return provider.joinedItems
+        .where((item) {
+          final itemId = item.id.trim();
+          if (itemId.isNotEmpty && hostedActivityIds.contains(itemId)) {
+            return false;
+          }
 
-      return normalizedCurrentUserId.isEmpty ||
-          item.hostUserId.trim() != normalizedCurrentUserId;
-    }).toList(growable: false);
+          return normalizedCurrentUserId.isEmpty ||
+              item.hostUserId.trim() != normalizedCurrentUserId;
+        })
+        .toList(growable: false);
   }
 
   int get _activePage {
@@ -596,7 +598,8 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                             title: _activeTab == _MyActivitiesTab.hosted
                                 ? l10n.myActivitiesLoadFailed
                                 : l10n.myActivitiesAttendedLoadFailed,
-                            message: errorMessage ??
+                            message:
+                                errorMessage ??
                                 (_activeTab == _MyActivitiesTab.hosted
                                     ? l10n.myActivitiesLoadFailed
                                     : l10n.myActivitiesAttendedLoadFailed),
@@ -614,9 +617,11 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                             message: _myActivitiesEmptyMessage(l10n),
                           ),
                         ] else ...[
-                          for (var i = 0;
-                              i < paginatedItems.items.length;
-                              i++) ...[
+                          for (
+                            var i = 0;
+                            i < paginatedItems.items.length;
+                            i++
+                          ) ...[
                             _MyActivitiesCard(
                               item: paginatedItems.items[i],
                               tab: _activeTab,
@@ -644,16 +649,16 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                               },
                               onSecondaryTap:
                                   _activeTab == _MyActivitiesTab.hosted
-                                      ? () {
-                                          final item = paginatedItems.items[i];
-                                          if (item.status.toUpperCase() ==
-                                              'CANCELLED') {
-                                            _openRepeat(item);
-                                            return;
-                                          }
-                                          _showComingSoon();
-                                        }
-                                      : null,
+                                  ? () {
+                                      final item = paginatedItems.items[i];
+                                      if (item.status.toUpperCase() ==
+                                          'CANCELLED') {
+                                        _openRepeat(item);
+                                        return;
+                                      }
+                                      _showComingSoon();
+                                    }
+                                  : null,
                               onCardTap: () =>
                                   _openDetails(paginatedItems.items[i]),
                             ),
@@ -820,8 +825,8 @@ class _MyActivitiesAdaptiveLayout {
   double get horizontalPadding => isCompact
       ? 16
       : isLargePhone
-          ? 24
-          : 20;
+      ? 24
+      : 20;
   double get topPadding => isCompact ? 12 : 14;
   double get topSectionSpacing => isCompact ? 12 : 14;
   double get sectionSpacing => isCompact ? 14 : 16;
@@ -922,8 +927,7 @@ class _MyActivitiesSearchField extends StatelessWidget {
                     IconButton(
                       tooltip: AppLocalizations.of(
                         context,
-                      )!
-                          .myActivitiesFilterTitle,
+                      )!.myActivitiesFilterTitle,
                       onPressed: onFilterTap,
                       splashRadius: 20,
                       icon: Icon(
@@ -1264,9 +1268,11 @@ class _MyActivitiesCard extends StatelessWidget {
                         LayoutBuilder(
                           builder: (context, metaConstraints) {
                             final gap = compactCard ? 8.0 : 10.0;
-                            final columns =
-                                metaConstraints.maxWidth < 320 ? 1 : 2;
-                            final itemWidth = (metaConstraints.maxWidth -
+                            final columns = metaConstraints.maxWidth < 320
+                                ? 1
+                                : 2;
+                            final itemWidth =
+                                (metaConstraints.maxWidth -
                                     gap * (columns - 1)) /
                                 columns;
 
@@ -1606,11 +1612,7 @@ class _ActivityCoverFallback extends StatelessWidget {
 }
 
 class _MetaItem extends StatelessWidget {
-  const _MetaItem({
-    required this.icon,
-    required this.label,
-    this.labelBuilder,
-  });
+  const _MetaItem({required this.icon, required this.label, this.labelBuilder});
 
   final IconData icon;
   final String label;
@@ -1668,11 +1670,11 @@ class _CardActionButton extends StatelessWidget {
     final backgroundColor = switch (variant) {
       _CardActionVariant.primary => _MyActivitiesPalette.accent,
       _CardActionVariant.secondary => _MyActivitiesPalette.accent.withValues(
-          alpha: 0.08,
-        ),
+        alpha: 0.08,
+      ),
       _CardActionVariant.disabled => _MyActivitiesPalette.accent.withValues(
-          alpha: 0.05,
-        ),
+        alpha: 0.05,
+      ),
     };
 
     final foregroundColor = switch (variant) {
@@ -2195,7 +2197,8 @@ class _MyActivitiesFilterSheetState extends State<_MyActivitiesFilterSheet> {
                                         widget.l10n.myActivitiesFilterStartDate,
                                     controller: _startDateController,
                                     focusNode: _startDateFocusNode,
-                                    hintText: widget.l10n
+                                    hintText: widget
+                                        .l10n
                                         .activitiesFilterStartDatePlaceholder,
                                     errorText: _startDateError,
                                     onChanged: (_) => _handleDateChanged(),
@@ -2211,7 +2214,8 @@ class _MyActivitiesFilterSheetState extends State<_MyActivitiesFilterSheet> {
                                         widget.l10n.myActivitiesFilterEndDate,
                                     controller: _endDateController,
                                     focusNode: _endDateFocusNode,
-                                    hintText: widget.l10n
+                                    hintText: widget
+                                        .l10n
                                         .activitiesFilterEndDatePlaceholder,
                                     errorText: _endDateError,
                                     onChanged: (_) => _handleDateChanged(),
@@ -2250,13 +2254,14 @@ class _MyActivitiesFilterSheetState extends State<_MyActivitiesFilterSheet> {
                             const SizedBox(height: 10),
                             LayoutBuilder(
                               builder: (context, constraints) {
-                                final useSingleColumn = constraints.maxWidth <
-                                        370 ||
+                                final useSingleColumn =
+                                    constraints.maxWidth < 370 ||
                                     MediaQuery.textScalerOf(context).scale(1) >
                                         1.08;
                                 final spacing = layout.isCompact ? 8.0 : 10.0;
                                 final columns = useSingleColumn ? 1 : 2;
-                                final itemWidth = (constraints.maxWidth -
+                                final itemWidth =
+                                    (constraints.maxWidth -
                                         spacing * (columns - 1)) /
                                     columns;
 
@@ -2573,9 +2578,9 @@ class _DateTextInputFormatter extends TextInputFormatter {
     final digitsBeforeSelection = newValue.selection.end <= 0
         ? 0
         : newValue.text
-            .substring(0, newValue.selection.end)
-            .replaceAll(RegExp(r'[^0-9]'), '')
-            .length;
+              .substring(0, newValue.selection.end)
+              .replaceAll(RegExp(r'[^0-9]'), '')
+              .length;
 
     var selectionOffset = 0;
     var seenDigits = 0;
@@ -2610,8 +2615,9 @@ class _FilterStatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 360;
-    final foreground =
-        selected ? const Color(0xFFFFFAF2) : _MyActivitiesPalette.text;
+    final foreground = selected
+        ? const Color(0xFFFFFAF2)
+        : _MyActivitiesPalette.text;
 
     return Material(
       color: Colors.transparent,

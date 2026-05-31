@@ -56,9 +56,7 @@ void main() {
     expect(find.text('CONFIRM & PAY'), findsOneWidget);
   });
 
-  testWidgets('stacks date and time schedule cards vertically', (
-    tester,
-  ) async {
+  testWidgets('stacks date and time schedule cards vertically', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: const [

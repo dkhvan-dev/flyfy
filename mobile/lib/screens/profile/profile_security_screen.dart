@@ -48,9 +48,7 @@ class ProfileSecurityScreen extends StatelessWidget {
                   disabled: true,
                 ),
                 SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
-                ProfileSectionHeading(
-                  title: l10n.profileSecurityDataSection,
-                ),
+                ProfileSectionHeading(title: l10n.profileSecurityDataSection),
                 SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
                 _SecurityInfoTile(
                   icon: Icons.download_outlined,

@@ -1,5 +1,1 @@
-enum ProfileGuardResult {
-  allowed,
-  redirectedToEditProfile,
-  cancelled,
-}
+enum ProfileGuardResult { allowed, redirectedToEditProfile, cancelled }

@@ -156,10 +156,7 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
     if (defaultCountry == null && defaultCity == null) return;
 
     setState(() {
-      _filters = _filters.copyWith(
-        country: defaultCountry,
-        city: defaultCity,
-      );
+      _filters = _filters.copyWith(country: defaultCountry, city: defaultCity);
       _currentPage = 1;
     });
   }
@@ -284,19 +281,20 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
   List<AttractionVm> _mustVisitAttractions(AppCityFilterValue? city) {
     if (city == null || _attractions.isEmpty) return const [];
 
-    final currentCityItems = _attractions
-        .where(
-          (item) => city.matches(
-            cityId: item.cityId,
-            countryCode: item.countryCode,
-          ),
-        )
-        .toList()
-      ..sort((a, b) {
-        final ratingCompare = b.rating.compareTo(a.rating);
-        if (ratingCompare != 0) return ratingCompare;
-        return b.reviewCount.compareTo(a.reviewCount);
-      });
+    final currentCityItems =
+        _attractions
+            .where(
+              (item) => city.matches(
+                cityId: item.cityId,
+                countryCode: item.countryCode,
+              ),
+            )
+            .toList()
+          ..sort((a, b) {
+            final ratingCompare = b.rating.compareTo(a.rating);
+            if (ratingCompare != 0) return ratingCompare;
+            return b.reviewCount.compareTo(a.reviewCount);
+          });
 
     return currentCityItems.take(5).toList(growable: false);
   }
@@ -402,7 +400,8 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
     final currentCity = _currentCityValue(locationProvider);
     final mustVisitAttractions = _mustVisitAttractions(currentCity);
     final search = _searchController.text.trim();
-    final shouldShowMustVisit = _filters.isEmpty &&
+    final shouldShowMustVisit =
+        _filters.isEmpty &&
         search.isEmpty &&
         currentCity != null &&
         mustVisitAttractions.isNotEmpty;
@@ -697,10 +696,7 @@ class _MustVisitCard extends StatelessWidget {
     );
     final coverUrl = coverMedia == null
         ? null
-        : resolveAttractionMediaUrl(
-            coverMedia,
-            targetWidth: imageTargetWidth,
-          );
+        : resolveAttractionMediaUrl(coverMedia, targetWidth: imageTargetWidth);
 
     return GestureDetector(
       onTap: () => onTap(attraction),
@@ -730,7 +726,7 @@ class _MustVisitCard extends StatelessWidget {
                           if (progress == null) return child;
                           return _placeholder();
                         },
-                        errorBuilder: (_, __, ___) => _placeholder(),
+                        errorBuilder: (_, _, _) => _placeholder(),
                       )
                     else
                       _placeholder(),
@@ -834,15 +830,15 @@ class _MustVisitCard extends StatelessWidget {
   }
 
   Widget _placeholder() => Container(
-        color: Colors.white.withValues(alpha: 0.05),
-        child: const Center(
-          child: Icon(
-            Icons.landscape_rounded,
-            color: AppColors.textCaption,
-            size: 34,
-          ),
-        ),
-      );
+    color: Colors.white.withValues(alpha: 0.05),
+    child: const Center(
+      child: Icon(
+        Icons.landscape_rounded,
+        color: AppColors.textCaption,
+        size: 34,
+      ),
+    ),
+  );
 }
 
 class _AttractionSortBar extends StatelessWidget {
@@ -945,7 +941,7 @@ class _DiscoverCard extends StatelessWidget {
                             }
                             return _placeholder();
                           },
-                          errorBuilder: (_, __, ___) => _placeholder(),
+                          errorBuilder: (_, _, _) => _placeholder(),
                         )
                       else
                         _placeholder(),
@@ -1036,9 +1032,7 @@ class _DiscoverCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xB71B211F),
         shape: BoxShape.circle,
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.14),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.18),
@@ -1120,13 +1114,13 @@ class _DiscoverCard extends StatelessWidget {
   }
 
   Widget _placeholder() => Container(
-        color: Colors.white.withValues(alpha: 0.05),
-        child: const Center(
-          child: Icon(
-            Icons.landscape_rounded,
-            color: AppColors.textCaption,
-            size: 48,
-          ),
-        ),
-      );
+    color: Colors.white.withValues(alpha: 0.05),
+    child: const Center(
+      child: Icon(
+        Icons.landscape_rounded,
+        color: AppColors.textCaption,
+        size: 48,
+      ),
+    ),
+  );
 }

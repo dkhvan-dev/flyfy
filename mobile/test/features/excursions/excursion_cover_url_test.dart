@@ -26,27 +26,28 @@ void main() {
     );
   });
 
-  test('falls back to public file content url when cover image url is absent',
-      () {
-    const excursion = ExcursionVm(
-      id: 'excursion-1',
-      title: 'Mountain Excursion',
-      summary: 'Summary',
-      status: 'PUBLISHED',
-      visibility: 'PUBLIC',
-      priceAmount: 0,
-      currency: 'KZT',
-      coverFileId: '7ec7955e-0e4e-4a2f-aa31-3e41aa345211',
-    );
+  test(
+    'falls back to public file content url when cover image url is absent',
+    () {
+      const excursion = ExcursionVm(
+        id: 'excursion-1',
+        title: 'Mountain Excursion',
+        summary: 'Summary',
+        status: 'PUBLISHED',
+        visibility: 'PUBLIC',
+        priceAmount: 0,
+        currency: 'KZT',
+        coverFileId: '7ec7955e-0e4e-4a2f-aa31-3e41aa345211',
+      );
 
-    expect(
-      resolveExcursionCoverUrl(excursion),
-      '${AppConfig.apiBaseUrl}/public/files/7ec7955e-0e4e-4a2f-aa31-3e41aa345211/content',
-    );
-  });
+      expect(
+        resolveExcursionCoverUrl(excursion),
+        '${AppConfig.apiBaseUrl}/public/files/7ec7955e-0e4e-4a2f-aa31-3e41aa345211/content',
+      );
+    },
+  );
 
-  test('resolves owned excursion covers from file ids before public routes',
-      () {
+  test('resolves owned excursion covers from file ids before public routes', () {
     const excursion = ExcursionVm(
       id: 'excursion-1',
       title: 'Mountain Excursion',

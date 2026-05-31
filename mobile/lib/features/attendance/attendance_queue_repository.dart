@@ -7,7 +7,7 @@ import 'models/attendance_queue_item.dart';
 
 class AttendanceQueueRepository {
   AttendanceQueueRepository({SecureStorage? secureStorage})
-      : _secureStorage = secureStorage ?? SecureStorage();
+    : _secureStorage = secureStorage ?? SecureStorage();
 
   static const _queueKey = 'attendance_pending_queue_v1';
   static const _installationKey = 'attendance_installation_id_v1';
@@ -51,7 +51,8 @@ class AttendanceQueueRepository {
     await _secureStorage.writeString(
       key: _queueKey,
       value: jsonEncode(
-          items.map((item) => item.toJson()).toList(growable: false)),
+        items.map((item) => item.toJson()).toList(growable: false),
+      ),
     );
   }
 
@@ -106,8 +107,9 @@ class AttendanceQueueRepository {
     bytes[6] = (bytes[6] & 0x0f) | 0x40;
     bytes[8] = (bytes[8] & 0x3f) | 0x80;
 
-    final hex =
-        bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
+    final hex = bytes
+        .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
+        .join();
     return '${hex.substring(0, 8)}-'
         '${hex.substring(8, 12)}-'
         '${hex.substring(12, 16)}-'

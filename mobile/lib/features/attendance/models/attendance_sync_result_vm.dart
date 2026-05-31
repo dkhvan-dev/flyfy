@@ -33,9 +33,10 @@ class AttendanceSyncResultVm {
       message: json['message']?.toString() ?? '',
       syncedAt:
           DateTime.tryParse(json['syncedAt']?.toString() ?? '')?.toUtc() ??
-              DateTime.now().toUtc(),
-      checkedInAt:
-          DateTime.tryParse(json['checkedInAt']?.toString() ?? '')?.toUtc(),
+          DateTime.now().toUtc(),
+      checkedInAt: DateTime.tryParse(
+        json['checkedInAt']?.toString() ?? '',
+      )?.toUtc(),
     );
   }
 }

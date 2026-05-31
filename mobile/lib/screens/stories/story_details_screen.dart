@@ -192,7 +192,8 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
   }
 
   Future<void> _scrollToComments({bool focusComposer = false}) async {
-    final targetContext = _commentComposerKey.currentContext ??
+    final targetContext =
+        _commentComposerKey.currentContext ??
         _commentsSectionKey.currentContext;
     if (targetContext != null) {
       await Scrollable.ensureVisible(
@@ -456,8 +457,8 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
       final nextComments = editingCommentId == null
           ? [result, ...detail.comments]
           : detail.comments
-              .map((comment) => comment.id == result.id ? result : comment)
-              .toList(growable: false);
+                .map((comment) => comment.id == result.id ? result : comment)
+                .toList(growable: false);
       final nextStory = editingCommentId == null
           ? detail.story.copyWith(
               stats: detail.story.stats.copyWith(
@@ -647,8 +648,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     ).formatTimeOfDay(localTime);
     return AppLocalizations.of(
       context,
-    )!
-        .storyCommentCooldownUntil(formattedTime);
+    )!.storyCommentCooldownUntil(formattedTime);
   }
 
   Future<void> _deleteComment(StoryCommentVm comment) async {
@@ -827,8 +827,9 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
         (context.watch<SessionProvider>().profile?.userId ?? '').trim();
     final story = detail?.story;
     final isAuthor = story?.isOwnedBy(currentUserId) ?? false;
-    final commentLockEndsAt =
-        _editingCommentId == null ? _commentLockEndsAt(currentUserId) : null;
+    final commentLockEndsAt = _editingCommentId == null
+        ? _commentLockEndsAt(currentUserId)
+        : null;
     final isCommentComposerLocked = commentLockEndsAt != null;
 
     return Scaffold(
@@ -859,115 +860,115 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                   child: CircularProgressIndicator(color: AppColors.accent),
                 )
               : _errorMessage != null && detail == null
-                  ? _StoryDetailErrorState(
-                      message: _errorMessage!,
-                      retryLabel: l10n.retry,
-                      onRetry: _loadDetail,
-                    )
-                  : Builder(
-                      builder: (context) {
-                        final currentDetail = detail!;
-                        return CustomScrollView(
-                          controller: _scrollController,
-                          physics: const BouncingScrollPhysics(),
-                          slivers: [
-                            SliverToBoxAdapter(
-                              child: _StoryHero(
-                                story: story!,
-                                titleLabel: l10n.storyDetailsTitle,
-                                isSharing: _isSharing,
-                                onBackTap: () => context.pop(false),
-                                onShareTap: _shareStory,
-                              ),
-                            ),
-                            SliverPadding(
-                              padding: EdgeInsets.fromLTRB(
-                                adaptive.scale(16),
-                                0,
-                                adaptive.scale(16),
-                                adaptive.scale(28),
-                              ),
-                              sliver: SliverToBoxAdapter(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Transform.translate(
-                                      offset: Offset(0, adaptive.scale(8)),
-                                      child: _AuthorCard(
-                                        story: story,
-                                        authorProfile: _authorProfile,
-                                        isAuthor: isAuthor,
-                                        isFollowing: _isFollowing,
-                                        onProfileTap: () {
-                                          context.push(
-                                            '/users/${story.author.userId}/profile',
-                                          );
-                                        },
-                                        onFollowTap: _toggleFollow,
-                                        onEditTap: _editStory,
-                                        onDeleteTap: _deleteStory,
-                                        onViewsTap: null,
-                                        onLikesTap: _toggleLike,
-                                        onCommentsTap: () => _scrollToComments(
-                                            focusComposer: true),
-                                        onSharesTap: _shareStory,
-                                      ),
-                                    ),
-                                    SizedBox(height: adaptive.scale(12)),
-                                    _StoryArticle(story: story),
-                                    SizedBox(height: adaptive.scale(24)),
-                                    _CommentComposer(
-                                      key: _commentComposerKey,
-                                      controller: _commentController,
-                                      focusNode: _commentFocusNode,
-                                      isSubmitting: _isSubmittingComment,
-                                      enabled: !isCommentComposerLocked,
-                                      isEditing: _editingCommentId != null,
-                                      helperText: isCommentComposerLocked
-                                          ? _formatCommentCooldownLabel(
-                                              context,
-                                              commentLockEndsAt,
-                                            )
-                                          : null,
-                                      editingTitle: _editingCommentId == null
-                                          ? null
-                                          : l10n.storyCommentEditingTitle,
-                                      submitLabel: _editingCommentId == null
-                                          ? null
-                                          : l10n.storyCommentSaveAction,
-                                      onCancelEdit: _editingCommentId == null
-                                          ? null
-                                          : _cancelCommentEditing,
-                                      onSubmit: _submitComment,
-                                    ),
-                                    SizedBox(height: adaptive.scale(18)),
-                                    _CommentsSection(
-                                      key: _commentsSectionKey,
-                                      comments: currentDetail.comments,
-                                      commentKeyForId: _commentKeyFor,
-                                      onEditComment: _startEditingComment,
-                                      onDeleteComment: _deleteComment,
-                                      onLikeComment: _toggleCommentLike,
-                                      onShareComment: _shareComment,
-                                    ),
-                                    SizedBox(height: adaptive.scale(24)),
-                                    _RelatedStoriesSection(
-                                      stories: currentDetail.related,
-                                      onStoryTap: (story) {
-                                        context.pushReplacement(
-                                          '/stories/${Uri.encodeComponent(story.slug)}',
-                                          extra: story,
-                                        );
-                                      },
-                                    ),
-                                  ],
+              ? _StoryDetailErrorState(
+                  message: _errorMessage!,
+                  retryLabel: l10n.retry,
+                  onRetry: _loadDetail,
+                )
+              : Builder(
+                  builder: (context) {
+                    final currentDetail = detail!;
+                    return CustomScrollView(
+                      controller: _scrollController,
+                      physics: const BouncingScrollPhysics(),
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: _StoryHero(
+                            story: story!,
+                            titleLabel: l10n.storyDetailsTitle,
+                            isSharing: _isSharing,
+                            onBackTap: () => context.pop(false),
+                            onShareTap: _shareStory,
+                          ),
+                        ),
+                        SliverPadding(
+                          padding: EdgeInsets.fromLTRB(
+                            adaptive.scale(16),
+                            0,
+                            adaptive.scale(16),
+                            adaptive.scale(28),
+                          ),
+                          sliver: SliverToBoxAdapter(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Transform.translate(
+                                  offset: Offset(0, adaptive.scale(8)),
+                                  child: _AuthorCard(
+                                    story: story,
+                                    authorProfile: _authorProfile,
+                                    isAuthor: isAuthor,
+                                    isFollowing: _isFollowing,
+                                    onProfileTap: () {
+                                      context.push(
+                                        '/users/${story.author.userId}/profile',
+                                      );
+                                    },
+                                    onFollowTap: _toggleFollow,
+                                    onEditTap: _editStory,
+                                    onDeleteTap: _deleteStory,
+                                    onViewsTap: null,
+                                    onLikesTap: _toggleLike,
+                                    onCommentsTap: () =>
+                                        _scrollToComments(focusComposer: true),
+                                    onSharesTap: _shareStory,
+                                  ),
                                 ),
-                              ),
+                                SizedBox(height: adaptive.scale(12)),
+                                _StoryArticle(story: story),
+                                SizedBox(height: adaptive.scale(24)),
+                                _CommentComposer(
+                                  key: _commentComposerKey,
+                                  controller: _commentController,
+                                  focusNode: _commentFocusNode,
+                                  isSubmitting: _isSubmittingComment,
+                                  enabled: !isCommentComposerLocked,
+                                  isEditing: _editingCommentId != null,
+                                  helperText: isCommentComposerLocked
+                                      ? _formatCommentCooldownLabel(
+                                          context,
+                                          commentLockEndsAt,
+                                        )
+                                      : null,
+                                  editingTitle: _editingCommentId == null
+                                      ? null
+                                      : l10n.storyCommentEditingTitle,
+                                  submitLabel: _editingCommentId == null
+                                      ? null
+                                      : l10n.storyCommentSaveAction,
+                                  onCancelEdit: _editingCommentId == null
+                                      ? null
+                                      : _cancelCommentEditing,
+                                  onSubmit: _submitComment,
+                                ),
+                                SizedBox(height: adaptive.scale(18)),
+                                _CommentsSection(
+                                  key: _commentsSectionKey,
+                                  comments: currentDetail.comments,
+                                  commentKeyForId: _commentKeyFor,
+                                  onEditComment: _startEditingComment,
+                                  onDeleteComment: _deleteComment,
+                                  onLikeComment: _toggleCommentLike,
+                                  onShareComment: _shareComment,
+                                ),
+                                SizedBox(height: adaptive.scale(24)),
+                                _RelatedStoriesSection(
+                                  stories: currentDetail.related,
+                                  onStoryTap: (story) {
+                                    context.pushReplacement(
+                                      '/stories/${Uri.encodeComponent(story.slug)}',
+                                      extra: story,
+                                    );
+                                  },
+                                ),
+                              ],
                             ),
-                          ],
-                        );
-                      },
-                    ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
         ),
       ),
     );
@@ -1178,8 +1179,9 @@ class _HeroChip extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-          color:
-              accent ? AppColors.accent : Colors.white.withValues(alpha: 0.9),
+          color: accent
+              ? AppColors.accent
+              : Colors.white.withValues(alpha: 0.9),
           fontSize: adaptive.scale(9),
           fontWeight: FontWeight.w800,
           letterSpacing: 1.0,
@@ -1347,8 +1349,8 @@ class _AuthorCard extends StatelessWidget {
                   authorProfile!.isFollowedByMe
                       ? l10n.storyFollowingAction
                       : (isFollowing
-                          ? l10n.storyFollowingAction
-                          : l10n.storyFollowAction),
+                            ? l10n.storyFollowingAction
+                            : l10n.storyFollowAction),
                 ),
               ),
             ),
@@ -1703,8 +1705,9 @@ class _CommentComposer extends StatelessWidget {
             ),
             SizedBox(width: adaptive.scale(10)),
             ElevatedButton(
-              onPressed:
-                  isSubmitting || (!enabled && !isEditing) ? null : onSubmit,
+              onPressed: isSubmitting || (!enabled && !isEditing)
+                  ? null
+                  : onSubmit,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.accent,
                 foregroundColor: Colors.white,
@@ -1723,14 +1726,14 @@ class _CommentComposer extends StatelessWidget {
                       ),
                     )
                   : isEditing
-                      ? Text(
-                          submitLabel ?? l10n.storyCommentSaveAction,
-                          style: TextStyle(
-                            fontSize: adaptive.scale(13),
-                            fontWeight: FontWeight.w700,
-                          ),
-                        )
-                      : Icon(Icons.send_rounded, size: adaptive.scale(18)),
+                  ? Text(
+                      submitLabel ?? l10n.storyCommentSaveAction,
+                      style: TextStyle(
+                        fontSize: adaptive.scale(13),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    )
+                  : Icon(Icons.send_rounded, size: adaptive.scale(18)),
             ),
           ],
         ),
@@ -1800,10 +1803,12 @@ class _CommentsSection extends StatelessWidget {
                 _CommentCard(
                   key: commentKeyForId(comment.id),
                   comment: comment,
-                  onEdit:
-                      comment.editable ? () => onEditComment(comment) : null,
-                  onDelete:
-                      comment.deletable ? () => onDeleteComment(comment) : null,
+                  onEdit: comment.editable
+                      ? () => onEditComment(comment)
+                      : null,
+                  onDelete: comment.deletable
+                      ? () => onDeleteComment(comment)
+                      : null,
                   onLike: () => onLikeComment(comment),
                   onShare: () => onShareComment(comment),
                 ),

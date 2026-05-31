@@ -5,7 +5,6 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:open_filex/open_filex.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/files/chat_file_cache.dart';
@@ -257,7 +256,7 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
       }
 
       final result = await _fileCache.open(downloaded);
-      if (!mounted || result.type == ResultType.done) return;
+      if (!mounted || result.isDone) return;
 
       await _showSharedFileError(l10n.chatAttachmentOpenFailed);
     } catch (_) {
@@ -392,20 +391,24 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
     final media = _sharedFiles
         .where((item) => item.metadata?.isMedia ?? false)
         .toList(growable: false);
-    final voiceMessages = _sharedFiles.where((item) {
-      final metadataKnown = _fileMetaById.containsKey(item.fileId);
-      return metadataKnown && (item.metadata?.isAudio ?? false);
-    }).toList(growable: false);
-    final files = _sharedFiles.where((item) {
-      final metadataKnown = _fileMetaById.containsKey(item.fileId);
-      return metadataKnown && !_isSharedMediaOrAudio(item.metadata);
-    }).toList(growable: false);
+    final voiceMessages = _sharedFiles
+        .where((item) {
+          final metadataKnown = _fileMetaById.containsKey(item.fileId);
+          return metadataKnown && (item.metadata?.isAudio ?? false);
+        })
+        .toList(growable: false);
+    final files = _sharedFiles
+        .where((item) {
+          final metadataKnown = _fileMetaById.containsKey(item.fileId);
+          return metadataKnown && !_isSharedMediaOrAudio(item.metadata);
+        })
+        .toList(growable: false);
     final links = _sharedLinks(l10n);
     final contentWidth = MediaQuery.sizeOf(context).width;
     final horizontalPadding = contentWidth < 360 ? 14.0 : 16.0;
     final profileUserId = widget.conversation.isDirect
         ? widget.conversation.directPeer(widget.currentUserId)?.userId.trim() ??
-            ''
+              ''
         : '';
 
     return Scaffold(
@@ -767,7 +770,8 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
 
   String _sharedTitle(AppLocalizations l10n) {
     if (widget.conversation.isDirect) {
-      final peerName = widget.conversation
+      final peerName =
+          widget.conversation
               .directPeer(widget.currentUserId)
               ?.displayName
               .trim() ??
@@ -852,8 +856,9 @@ class _SharedHeader extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize:
-                          MediaQuery.sizeOf(context).width < 360 ? 22 : 24,
+                      fontSize: MediaQuery.sizeOf(context).width < 360
+                          ? 22
+                          : 24,
                       height: 1.12,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.9,
@@ -1702,7 +1707,7 @@ class _SharedAvatar extends StatelessWidget {
             : Image.network(
                 url,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Center(
+                errorBuilder: (_, _, _) => Center(
                   child: Text(
                     initial,
                     style: TextStyle(

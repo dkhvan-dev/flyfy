@@ -23,7 +23,7 @@ class GuideCalendarTimeline extends StatelessWidget {
     if (isLoading && slots.isEmpty) {
       return SliverList.separated(
         itemCount: 4,
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        separatorBuilder: (_, _) => const SizedBox(height: 10),
         itemBuilder: (context, index) => const Padding(
           padding: EdgeInsets.symmetric(horizontal: 20),
           child: _TimelineSkeleton(),
@@ -67,7 +67,7 @@ class GuideCalendarTimeline extends StatelessWidget {
 
     return SliverList.separated(
       itemCount: slots.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final slot = slots[index];
         return Padding(

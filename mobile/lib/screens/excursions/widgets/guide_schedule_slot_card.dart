@@ -22,11 +22,7 @@ Color guideScheduleStatusColor(ExcursionScheduleSlotVm slot) {
 }
 
 class GuideScheduleSlotCard extends StatelessWidget {
-  const GuideScheduleSlotCard({
-    super.key,
-    required this.slot,
-    this.onTap,
-  });
+  const GuideScheduleSlotCard({super.key, required this.slot, this.onTap});
 
   final ExcursionScheduleSlotVm slot;
   final VoidCallback? onTap;
@@ -40,8 +36,9 @@ class GuideScheduleSlotCard extends StatelessWidget {
     final timeLabel =
         '${DateFormat.Hm(locale).format(start)} - ${DateFormat.Hm(locale).format(end)}';
     final color = guideScheduleStatusColor(slot);
-    final title =
-        slot.title.trim().isEmpty ? l10n.serviceExcursions : slot.title.trim();
+    final title = slot.title.trim().isEmpty
+        ? l10n.serviceExcursions
+        : slot.title.trim();
     final cancelReason = _cancelReasonLabel(l10n, slot);
 
     return Material(
@@ -183,10 +180,7 @@ class _StatusPill extends StatelessWidget {
   }
 }
 
-String _statusLabel(
-  AppLocalizations l10n,
-  ExcursionScheduleSlotStatus status,
-) {
+String _statusLabel(AppLocalizations l10n, ExcursionScheduleSlotStatus status) {
   switch (status) {
     case ExcursionScheduleSlotStatus.available:
       return l10n.guideCalendarAvailable;

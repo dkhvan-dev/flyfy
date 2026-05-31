@@ -65,5 +65,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'inflap-develop.firebasestorage.app',
     iosBundleId: 'kz.inflap',
   );
-
 }

@@ -74,7 +74,8 @@ class DeviceContextService {
     return DeviceLocationSuggestion(
       countryCode: _normalizeCountryCode(first?.isoCountryCode),
       countryName: _normalizeText(first?.country),
-      cityName: _normalizeText(first?.locality) ??
+      cityName:
+          _normalizeText(first?.locality) ??
           _normalizeText(first?.subAdministrativeArea) ??
           _normalizeText(first?.administrativeArea),
       latitude: position.latitude,

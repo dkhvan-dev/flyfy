@@ -4,28 +4,30 @@ import 'package:inflap/features/excursions/models/excursion_schedule_vm.dart';
 import 'package:inflap/providers/excursion_schedule_provider.dart';
 
 void main() {
-  test('loadWeek requests Monday-start week and exposes slots for selected day',
-      () async {
-    final api = _FakeExcursionScheduleApi(
-      slots: [
-        _slot('later', DateTime.utc(2026, 6, 3, 12)),
-        _slot('earlier', DateTime.utc(2026, 6, 3, 8)),
-        _slot('other-day', DateTime.utc(2026, 6, 4, 8)),
-      ],
-    );
-    final provider = ExcursionScheduleProvider(scheduleApi: api);
+  test(
+    'loadWeek requests Monday-start week and exposes slots for selected day',
+    () async {
+      final api = _FakeExcursionScheduleApi(
+        slots: [
+          _slot('later', DateTime.utc(2026, 6, 3, 12)),
+          _slot('earlier', DateTime.utc(2026, 6, 3, 8)),
+          _slot('other-day', DateTime.utc(2026, 6, 4, 8)),
+        ],
+      );
+      final provider = ExcursionScheduleProvider(scheduleApi: api);
 
-    await provider.loadWeek(DateTime(2026, 6, 3, 15));
+      await provider.loadWeek(DateTime(2026, 6, 3, 15));
 
-    expect(provider.state, ExcursionScheduleState.success);
-    expect(provider.selectedDate, DateTime(2026, 6, 3, 15));
-    expect(api.lastFrom, DateTime(2026, 6, 1).toUtc());
-    expect(api.lastTo, DateTime(2026, 6, 8).toUtc());
-    expect(
-      provider.slotsForDay(DateTime(2026, 6, 3)).map((slot) => slot.id),
-      ['earlier', 'later'],
-    );
-  });
+      expect(provider.state, ExcursionScheduleState.success);
+      expect(provider.selectedDate, DateTime(2026, 6, 3, 15));
+      expect(api.lastFrom, DateTime(2026, 6, 1).toUtc());
+      expect(api.lastTo, DateTime(2026, 6, 8).toUtc());
+      expect(
+        provider.slotsForDay(DateTime(2026, 6, 3)).map((slot) => slot.id),
+        ['earlier', 'later'],
+      );
+    },
+  );
 
   test('selectDate inside loaded week only updates local selection', () async {
     final api = _FakeExcursionScheduleApi(slots: [_slot('slot-1')]);
@@ -50,10 +52,7 @@ void main() {
     expect(api.lastGuideUserId, 'guide-1');
     expect(provider.isDateInLoadedWeek(DateTime(2026, 6, 4)), isFalse);
     expect(
-      provider.isDateInLoadedWeek(
-        DateTime(2026, 6, 4),
-        guideUserId: 'guide-1',
-      ),
+      provider.isDateInLoadedWeek(DateTime(2026, 6, 4), guideUserId: 'guide-1'),
       isTrue,
     );
   });
@@ -102,27 +101,29 @@ void main() {
     expect(provider.selectedDate, DateTime.utc(2026, 6, 5, 9).toLocal());
   });
 
-  test('createSlot selects the saved slot date instead of the old calendar day',
-      () async {
-    final createdAt = DateTime.utc(2026, 6, 12, 9);
-    final api = _FakeExcursionScheduleApi(
-      slots: [_slot('current', DateTime.utc(2026, 6, 3, 8))],
-      createdSlot: _slot('future', createdAt),
-    );
-    final provider = ExcursionScheduleProvider(scheduleApi: api);
+  test(
+    'createSlot selects the saved slot date instead of the old calendar day',
+    () async {
+      final createdAt = DateTime.utc(2026, 6, 12, 9);
+      final api = _FakeExcursionScheduleApi(
+        slots: [_slot('current', DateTime.utc(2026, 6, 3, 8))],
+        createdSlot: _slot('future', createdAt),
+      );
+      final provider = ExcursionScheduleProvider(scheduleApi: api);
 
-    await provider.loadWeek(DateTime(2026, 6, 3));
-    final ok = await provider.createSlot(
-      CreateExcursionScheduleSlotRequest(
-        offerId: 'offer-1',
-        startAt: createdAt,
-        timezone: 'Asia/Almaty',
-      ),
-    );
+      await provider.loadWeek(DateTime(2026, 6, 3));
+      final ok = await provider.createSlot(
+        CreateExcursionScheduleSlotRequest(
+          offerId: 'offer-1',
+          startAt: createdAt,
+          timezone: 'Asia/Almaty',
+        ),
+      );
 
-    expect(ok, isTrue);
-    expect(provider.selectedDate, createdAt.toLocal());
-  });
+      expect(ok, isTrue);
+      expect(provider.selectedDate, createdAt.toLocal());
+    },
+  );
 }
 
 ExcursionScheduleSlotVm _slot(
@@ -207,8 +208,11 @@ class _FakeExcursionScheduleApi extends ExcursionScheduleApi {
   @override
   Future<ExcursionScheduleSlotVm> closeSlot(String id) async {
     return closedSlot ??
-        _slot(id, DateTime.utc(2026, 6, 3, 8),
-            ExcursionScheduleSlotStatus.closed);
+        _slot(
+          id,
+          DateTime.utc(2026, 6, 3, 8),
+          ExcursionScheduleSlotStatus.closed,
+        );
   }
 
   @override

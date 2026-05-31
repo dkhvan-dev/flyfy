@@ -11,11 +11,8 @@ void main() {
         'isProfileCompleted': true,
       },
       'roles': <String>[],
-      'followers': <String, dynamic>{
-        'count': 0,
-        'isFollowedByMe': false,
-      },
-      if (friendship != null) 'friendship': friendship,
+      'followers': <String, dynamic>{'count': 0, 'isFollowedByMe': false},
+      'friendship': ?friendship,
     };
   }
 
@@ -27,11 +24,7 @@ void main() {
 
   test('parses viewer-relative friendship status from backend response', () {
     final profile = UserProfileVm.fromJson(
-      profileJson(
-        friendship: <String, dynamic>{
-          'status': 'INCOMING_REQUEST',
-        },
-      ),
+      profileJson(friendship: <String, dynamic>{'status': 'INCOMING_REQUEST'}),
     );
 
     expect(profile.friendshipStatus, UserFriendshipStatus.incomingRequest);

@@ -3,8 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('drawer header does not show location under logged-in nickname',
-      () async {
+  test('drawer header does not show location under logged-in nickname', () async {
     final source = await File(
       'lib/screens/common/app_side_drawer.dart',
     ).readAsString();
@@ -22,39 +21,45 @@ void main() {
       isNot(contains('final profileSubtitle = isLoggedIn ? location')),
     );
     expect(
-        headerSource,
-        isNot(contains(
-            'Text(\n                                              profileSubtitle')));
+      headerSource,
+      isNot(
+        contains(
+          'Text(\n                                              profileSubtitle',
+        ),
+      ),
+    );
     expect(headerSource, contains('if (!isLoggedIn) ...['));
     expect(headerSource, contains('l10n.homeSubtitle'));
   });
 
-  test('drawer header shows localized identity status for logged-in users',
-      () async {
-    final source = await File(
-      'lib/screens/common/app_side_drawer.dart',
-    ).readAsString();
+  test(
+    'drawer header shows localized identity status for logged-in users',
+    () async {
+      final source = await File(
+        'lib/screens/common/app_side_drawer.dart',
+      ).readAsString();
 
-    final drawerStart = source.indexOf('class AppSideDrawer');
-    final menuStart = source.indexOf('_DrawerMenuItem(', drawerStart);
+      final drawerStart = source.indexOf('class AppSideDrawer');
+      final menuStart = source.indexOf('_DrawerMenuItem(', drawerStart);
 
-    expect(drawerStart, isNonNegative);
-    expect(menuStart, greaterThan(drawerStart));
+      expect(drawerStart, isNonNegative);
+      expect(menuStart, greaterThan(drawerStart));
 
-    final headerSource = source.substring(drawerStart, menuStart);
+      final headerSource = source.substring(drawerStart, menuStart);
 
-    expect(source, contains('String resolveDrawerIdentityStatus({'));
-    expect(source, contains('l10n.drawerStatusVerifiedGuide'));
-    expect(source, contains('l10n.drawerStatusGuide'));
-    expect(source, contains('l10n.drawerStatusTraveler'));
-    expect(source, contains('l10n.drawerStatusCompleteProfile'));
-    expect(headerSource, contains('final identityStatus ='));
-    expect(headerSource, contains('resolveDrawerIdentityStatus('));
-    expect(source, contains('showGuideBadge'));
-    expect(source, contains('profile?.isGuide'));
-    expect(source, contains('profile?.isProfileCompleted'));
-    expect(headerSource, contains('identityStatus'));
-  });
+      expect(source, contains('String resolveDrawerIdentityStatus({'));
+      expect(source, contains('l10n.drawerStatusVerifiedGuide'));
+      expect(source, contains('l10n.drawerStatusGuide'));
+      expect(source, contains('l10n.drawerStatusTraveler'));
+      expect(source, contains('l10n.drawerStatusCompleteProfile'));
+      expect(headerSource, contains('final identityStatus ='));
+      expect(headerSource, contains('resolveDrawerIdentityStatus('));
+      expect(source, contains('showGuideBadge'));
+      expect(source, contains('profile?.isGuide'));
+      expect(source, contains('profile?.isProfileCompleted'));
+      expect(headerSource, contains('identityStatus'));
+    },
+  );
 
   test('drawer identity status badge is rendered below nickname', () async {
     final source = await File(

@@ -96,7 +96,8 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
       final attraction = results[0] as AttractionVm;
       final reviewResult =
           results[1] as ({List<AttractionReviewVm> items, int total});
-      final currentUserReview = (results[2] as AttractionReviewVm?) ??
+      final currentUserReview =
+          (results[2] as AttractionReviewVm?) ??
           _findReviewByAuthor(reviewResult.items, currentUserId);
       final locationLabel = await _resolveLocationLabel(attraction, locale);
       final mediaCount = attraction.media.length;
@@ -244,8 +245,10 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
 
     final excursionId = excursion?.id.trim() ?? '';
     if (excursionId.isNotEmpty) {
-      context.push('/excursions/${Uri.encodeComponent(excursionId)}',
-          extra: excursion);
+      context.push(
+        '/excursions/${Uri.encodeComponent(excursionId)}',
+        extra: excursion,
+      );
       return;
     }
 
@@ -497,41 +500,39 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
                         ),
                       )
                     : _error != null && _attraction == null
-                        ? _buildError(l10n, adaptive)
-                        : Stack(
-                            children: [
-                              Positioned.fill(
-                                child: Column(
-                                  children: [
-                                    _buildTopBar(adaptive, l10n),
-                                    Expanded(
-                                      child: RefreshIndicator(
-                                        color: AppColors.accent,
-                                        backgroundColor:
-                                            const Color(0xFF271609),
-                                        onRefresh: _loadData,
-                                        child: CustomScrollView(
-                                          controller: _scrollController,
-                                          physics:
-                                              const AlwaysScrollableScrollPhysics(),
-                                          slivers: [
-                                            SliverToBoxAdapter(
-                                              child: _buildHero(adaptive, l10n),
-                                            ),
-                                            SliverToBoxAdapter(
-                                              child:
-                                                  _buildContent(adaptive, l10n),
-                                            ),
-                                          ],
+                    ? _buildError(l10n, adaptive)
+                    : Stack(
+                        children: [
+                          Positioned.fill(
+                            child: Column(
+                              children: [
+                                _buildTopBar(adaptive, l10n),
+                                Expanded(
+                                  child: RefreshIndicator(
+                                    color: AppColors.accent,
+                                    backgroundColor: const Color(0xFF271609),
+                                    onRefresh: _loadData,
+                                    child: CustomScrollView(
+                                      controller: _scrollController,
+                                      physics:
+                                          const AlwaysScrollableScrollPhysics(),
+                                      slivers: [
+                                        SliverToBoxAdapter(
+                                          child: _buildHero(adaptive, l10n),
                                         ),
-                                      ),
+                                        SliverToBoxAdapter(
+                                          child: _buildContent(adaptive, l10n),
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
                                 ),
-                              ),
-                              _buildBottomCta(adaptive, l10n),
-                            ],
+                              ],
+                            ),
                           ),
+                          _buildBottomCta(adaptive, l10n),
+                        ],
+                      ),
               ),
             ),
           );
@@ -671,7 +672,7 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
     final heroHeight = (available * 0.42).clamp(240.0, 360.0);
     final media = attraction.media.isNotEmpty
         ? (List<AttractionMediaVm>.from(attraction.media)
-          ..sort((x, y) => x.position.compareTo(y.position)))
+            ..sort((x, y) => x.position.compareTo(y.position)))
         : <AttractionMediaVm>[];
 
     final padX = a.scale(28);
@@ -828,7 +829,7 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
           }
           return _heroPlaceholder();
         },
-        errorBuilder: (_, __, ___) => _heroPlaceholder(),
+        errorBuilder: (_, _, _) => _heroPlaceholder(),
       ),
     );
   }
@@ -1414,8 +1415,9 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
         child: SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed:
-                _isOpeningExcursions ? null : _openExcursionsForAttraction,
+            onPressed: _isOpeningExcursions
+                ? null
+                : _openExcursionsForAttraction,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.accent,
               foregroundColor: Colors.white,
@@ -1486,8 +1488,9 @@ class _AttractionImageGalleryState extends State<_AttractionImageGallery> {
   @override
   void initState() {
     super.initState();
-    _currentIndex =
-        widget.initialIndex.clamp(0, widget.media.length - 1).toInt();
+    _currentIndex = widget.initialIndex
+        .clamp(0, widget.media.length - 1)
+        .toInt();
     _controller = PageController(initialPage: _currentIndex);
   }
 
@@ -1571,10 +1574,7 @@ class _AttractionImageGalleryState extends State<_AttractionImageGallery> {
       minWidth: 900,
       maxWidth: 2200,
     );
-    final url = resolveAttractionMediaUrl(
-      media,
-      targetWidth: imageTargetWidth,
-    );
+    final url = resolveAttractionMediaUrl(media, targetWidth: imageTargetWidth);
     if (url == null) {
       return const _GalleryPlaceholder();
     }
@@ -1596,7 +1596,7 @@ class _AttractionImageGalleryState extends State<_AttractionImageGallery> {
             }
             return const _GalleryLoading();
           },
-          errorBuilder: (_, __, ___) => const _GalleryPlaceholder(),
+          errorBuilder: (_, _, _) => const _GalleryPlaceholder(),
         ),
       ),
     );
@@ -1846,8 +1846,9 @@ List<_VisitPlanItem> _visitPlanItems(
     _VisitPlanItem(
       icon: Icons.schedule_rounded,
       label: l10n.attractionVisitDurationLabel,
-      value:
-          duration.isNotEmpty ? duration : l10n.attractionVisitDurationFlexible,
+      value: duration.isNotEmpty
+          ? duration
+          : l10n.attractionVisitDurationFlexible,
     ),
     _VisitPlanItem(
       icon: Icons.confirmation_number_outlined,
@@ -1904,7 +1905,8 @@ String _localizedInflapTip(
   }
 
   final category = attraction.category.toUpperCase();
-  final isLongRoute = attraction.durationUnit?.toUpperCase() == 'DAYS' ||
+  final isLongRoute =
+      attraction.durationUnit?.toUpperCase() == 'DAYS' ||
       (attraction.durationValue ?? 0) >= 6;
   if (_isNatureLikeCategory(category) || isLongRoute) {
     return l10n.attractionVisitTipNature;
@@ -2110,8 +2112,9 @@ class _ReviewCard extends StatelessWidget {
                     CircleAvatar(
                       radius: adaptive.scale(19),
                       backgroundColor: const Color(0xFF245163),
-                      backgroundImage:
-                          avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                      backgroundImage: avatarUrl != null
+                          ? NetworkImage(avatarUrl)
+                          : null,
                       child: avatarUrl == null
                           ? Icon(
                               Icons.person_rounded,
@@ -2192,7 +2195,7 @@ class _ReviewCard extends StatelessWidget {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: sorted.length,
-        separatorBuilder: (_, __) => SizedBox(width: a.scale(8)),
+        separatorBuilder: (_, _) => SizedBox(width: a.scale(8)),
         itemBuilder: (context, index) =>
             _buildMediaTile(context, sorted[index], a),
       ),
@@ -2210,10 +2213,7 @@ class _ReviewCard extends StatelessWidget {
       minWidth: 220,
       maxWidth: 360,
     );
-    final url = resolveAttractionMediaUrl(
-      media,
-      targetWidth: imageTargetWidth,
-    );
+    final url = resolveAttractionMediaUrl(media, targetWidth: imageTargetWidth);
     final isVideo = media.mediaType.toUpperCase() == 'VIDEO';
 
     return ClipRRect(
@@ -2237,34 +2237,34 @@ class _ReviewCard extends StatelessWidget {
                 ],
               )
             : (url == null
-                ? Icon(
-                    Icons.image_rounded,
-                    color: AppColors.textCaption,
-                    size: a.scale(28),
-                  )
-                : Image.network(
-                    url,
-                    headers: attractionImageRequestHeaders(url),
-                    fit: BoxFit.cover,
-                    cacheWidth: imageTargetWidth,
-                    filterQuality: FilterQuality.medium,
-                    gaplessPlayback: true,
-                    loadingBuilder: (context, child, progress) {
-                      if (progress == null) {
-                        return child;
-                      }
-                      return Icon(
-                        Icons.image_rounded,
-                        color: AppColors.textCaption,
-                        size: a.scale(28),
-                      );
-                    },
-                    errorBuilder: (_, __, ___) => Icon(
-                      Icons.image_not_supported_rounded,
+                  ? Icon(
+                      Icons.image_rounded,
                       color: AppColors.textCaption,
                       size: a.scale(28),
-                    ),
-                  )),
+                    )
+                  : Image.network(
+                      url,
+                      headers: attractionImageRequestHeaders(url),
+                      fit: BoxFit.cover,
+                      cacheWidth: imageTargetWidth,
+                      filterQuality: FilterQuality.medium,
+                      gaplessPlayback: true,
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) {
+                          return child;
+                        }
+                        return Icon(
+                          Icons.image_rounded,
+                          color: AppColors.textCaption,
+                          size: a.scale(28),
+                        );
+                      },
+                      errorBuilder: (_, _, _) => Icon(
+                        Icons.image_not_supported_rounded,
+                        color: AppColors.textCaption,
+                        size: a.scale(28),
+                      ),
+                    )),
       ),
     );
   }
@@ -2325,13 +2325,15 @@ class _ExcursionAttractionReviewCard extends StatelessWidget {
     final authorAvatarUrl = review.author.resolvedAvatarFileId.isEmpty
         ? null
         : resolvePublicFileContentUrl(review.author.resolvedAvatarFileId);
-    final canManage = currentUserId.isNotEmpty &&
+    final canManage =
+        currentUserId.isNotEmpty &&
         review.author.userId.trim() == currentUserId;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onLongPress:
-          canManage && onLongPress != null ? () => onLongPress!(review) : null,
+      onLongPress: canManage && onLongPress != null
+          ? () => onLongPress!(review)
+          : null,
       child: Container(
         decoration: BoxDecoration(
           color: const Color(0xFF3B2B1C),
@@ -2497,11 +2499,12 @@ Widget _buildExcursionStars(double rating, AttractionAdaptive adaptive) {
   );
 }
 
-typedef _SubmitReviewCallback = Future<bool> Function(
-  double rating,
-  String comment,
-  List<_ReviewDraftMedia> media,
-);
+typedef _SubmitReviewCallback =
+    Future<bool> Function(
+      double rating,
+      String comment,
+      List<_ReviewDraftMedia> media,
+    );
 
 class _ReviewDraftMedia {
   const _ReviewDraftMedia({
@@ -2808,7 +2811,7 @@ class _CreateReviewSheetState extends State<_CreateReviewSheet> {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: _media.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
           final item = _media[index];
           return Stack(

@@ -5,7 +5,7 @@ import 'api_client.dart';
 
 class ExcursionScheduleApi {
   ExcursionScheduleApi({ApiClient? apiClient})
-      : _apiClient = apiClient ?? ApiClient();
+    : _apiClient = apiClient ?? ApiClient();
 
   final ApiClient _apiClient;
 
@@ -134,8 +134,9 @@ class ExcursionScheduleApi {
   }
 
   List<ExcursionScheduleSlotVm> _parseItems(Object? data) {
-    final items =
-        data is Map<String, dynamic> ? data['items'] as List<dynamic>? : null;
+    final items = data is Map<String, dynamic>
+        ? data['items'] as List<dynamic>?
+        : null;
     return (items ?? const [])
         .whereType<Map<String, dynamic>>()
         .map(ExcursionScheduleSlotVm.fromJson)

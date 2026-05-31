@@ -49,8 +49,8 @@ class AttendanceQrTokenPayload {
       final version = (payload['v'] as num?)?.toInt();
       final audience = payload['aud']?.toString();
       final isExcursion = tokenPrefix == excursionPrefix;
-      final subjectId =
-          payload[isExcursion ? 'slotId' : 'activityId']?.toString();
+      final subjectId = payload[isExcursion ? 'slotId' : 'activityId']
+          ?.toString();
       final hostId = payload[isExcursion ? 'guideId' : 'hostId']?.toString();
       final qrJti = payload['jti']?.toString();
       final issuedAt = (payload['iat'] as num?)?.toInt();

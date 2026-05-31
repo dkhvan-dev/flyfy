@@ -17,7 +17,9 @@ void main() {
       expect(source, contains('l10n.cityFilterEmptyHint'));
       expect(source, contains('final filters = _filtersForTab(_activeTab)'));
       expect(
-          source, contains('filters.city == null && filters.country == null'));
+        source,
+        contains('filters.city == null && filters.country == null'),
+      );
       expect(enSource, contains('"cityFilterEmptyHint"'));
       expect(ruSource, contains('"cityFilterEmptyHint"'));
       expect(kkSource, contains('"cityFilterEmptyHint"'));
@@ -93,19 +95,18 @@ void main() {
     },
   );
 
-  test(
-    'my activities country changes reset city to all cities',
-    () async {
-      final source = await File(
-        'lib/screens/activities/my_activities_screen.dart',
-      ).readAsString();
+  test('my activities country changes reset city to all cities', () async {
+    final source = await File(
+      'lib/screens/activities/my_activities_screen.dart',
+    ).readAsString();
 
-      expect(
-          source, contains('void _setCountry(AppCountryFilterValue? country)'));
-      expect(source, contains('_country = country'));
-      expect(source, contains('_city = null'));
-    },
-  );
+    expect(
+      source,
+      contains('void _setCountry(AppCountryFilterValue? country)'),
+    );
+    expect(source, contains('_country = country'));
+    expect(source, contains('_city = null'));
+  });
 
   test(
     'my activities can filter by country without selecting a city',

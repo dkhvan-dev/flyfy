@@ -70,7 +70,9 @@ String localizedExcursionLandmarkName({
 }
 
 ExcursionLocalizedCopyVm? _excursionCopyFor(
-    ExcursionVm excursion, String languageCode) {
+  ExcursionVm excursion,
+  String languageCode,
+) {
   final normalized = _normalizeLocale(languageCode);
   if (normalized.isEmpty || excursion.translations.isEmpty) return null;
   return excursion.translations[normalized] ??
@@ -118,7 +120,8 @@ String _localizedAttractionDescription(
     if (_normalizeLocale(attraction.locale) == normalized.split('-').first)
       attraction.description,
     attraction
-        .translations[_normalizeLocale(attraction.defaultLocale)]?.description,
+        .translations[_normalizeLocale(attraction.defaultLocale)]
+        ?.description,
     attraction.description,
   ]);
 }
@@ -185,7 +188,9 @@ String formatLocalizedExcursionLanguages(
 }
 
 String localizedExcursionCategoryLabel(
-    AppLocalizations l10n, String? categorySlug) {
+  AppLocalizations l10n,
+  String? categorySlug,
+) {
   switch (categorySlug?.trim().toLowerCase()) {
     case 'adventure':
       return l10n.createExcursionCategoryAdventure;

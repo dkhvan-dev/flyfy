@@ -156,8 +156,11 @@ class _ProfileFollowersScreenState extends State<ProfileFollowersScreen> {
     final userId = follower.userId.trim();
     if (userId.isEmpty) return;
 
-    final currentUserId =
-        context.read<SessionProvider>().profile?.userId.trim();
+    final currentUserId = context
+        .read<SessionProvider>()
+        .profile
+        ?.userId
+        .trim();
     if (currentUserId != null && currentUserId == userId) {
       context.push('/profile');
       return;
@@ -532,7 +535,7 @@ class _FollowerAvatar extends StatelessWidget {
               : Image.network(
                   imageUrl,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) =>
+                  errorBuilder: (_, _, _) =>
                       _FollowerAvatarFallback(initials: follower.initials),
                 ),
         ),

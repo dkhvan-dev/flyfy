@@ -57,8 +57,9 @@ String currencyFilterSearchHaystack(
   Map<String, Set<String>> aliases,
 ) {
   final code = normalizeReferenceCurrencyCode(currency.code);
-  final currencyAliases =
-      code == null ? const <String>{} : aliases[code] ?? const <String>{};
+  final currencyAliases = code == null
+      ? const <String>{}
+      : aliases[code] ?? const <String>{};
 
   return [
     currency.code,

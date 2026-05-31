@@ -6,10 +6,7 @@ String localizedGuideLanguageLabel(AppLocalizations l10n, String code) {
   return localizedExcursionLanguageLabel(l10n, code);
 }
 
-String localizedGuideSpecializationLabel(
-  AppLocalizations l10n,
-  String code,
-) {
+String localizedGuideSpecializationLabel(AppLocalizations l10n, String code) {
   final normalized = code.trim().toLowerCase().replaceAll('-', '_');
   switch (normalized) {
     case 'mountain':
@@ -79,9 +76,9 @@ String _humanizeCode(String code) {
       .split('_')
       .where((word) => word.isNotEmpty)
       .map((word) {
-    if (word.length == 1) return word.toUpperCase();
-    return '${word.substring(0, 1).toUpperCase()}${word.substring(1)}';
-  });
+        if (word.length == 1) return word.toUpperCase();
+        return '${word.substring(0, 1).toUpperCase()}${word.substring(1)}';
+      });
   final label = words.join(' ');
   return label.isEmpty ? code.trim().toUpperCase() : label;
 }

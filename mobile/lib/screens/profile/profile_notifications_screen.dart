@@ -47,7 +47,8 @@ class _ProfileNotificationsScreenState
     final profile = context.read<SessionProvider>().profile;
     _profileTimezone = profile?.timezone ?? _profileTimezone;
     final settings = profile?.settings;
-    _settings = settings ??
+    _settings =
+        settings ??
         UserSettingsVm(
           userId: '',
           notificationsPushEnabled: true,
@@ -206,10 +207,10 @@ class _ProfileNotificationsScreenState
     final l10n = AppLocalizations.of(context)!;
 
     try {
-      final updatedPreferences =
-          await _notificationApi.updateNotificationPreferences(
-        NotificationPreferencesUpdate(pushEnabled: value),
-      );
+      final updatedPreferences = await _notificationApi
+          .updateNotificationPreferences(
+            NotificationPreferencesUpdate(pushEnabled: value),
+          );
       final updatedSettings = await _profileApi.updateMeSettings(
         notificationsPushEnabled: value,
       );
@@ -259,10 +260,10 @@ class _ProfileNotificationsScreenState
     final l10n = AppLocalizations.of(context)!;
 
     try {
-      final updatedPreferences =
-          await _notificationApi.updateNotificationPreferences(
-        NotificationPreferencesUpdate(marketingEnabled: value),
-      );
+      final updatedPreferences = await _notificationApi
+          .updateNotificationPreferences(
+            NotificationPreferencesUpdate(marketingEnabled: value),
+          );
       final updatedSettings = await _profileApi.updateMeSettings(
         marketingEnabled: value,
       );
@@ -397,12 +398,14 @@ class _ProfileNotificationsScreenState
                 ),
                 if (_preferencesLoading) ...[
                   SizedBox(
-                      height: profileScaled(context, 16, min: 12, max: 18)),
+                    height: profileScaled(context, 16, min: 12, max: 18),
+                  ),
                   const _NotificationLinearLoader(),
                 ],
                 if (_preferencesLoadFailed) ...[
                   SizedBox(
-                      height: profileScaled(context, 16, min: 12, max: 18)),
+                    height: profileScaled(context, 16, min: 12, max: 18),
+                  ),
                   _NotificationInfoBanner(
                     icon: Icons.cloud_off_rounded,
                     title: l10n.profileNotificationsPreferencesLoadFailedTitle,
@@ -442,7 +445,8 @@ class _ProfileNotificationsScreenState
                   title: l10n.profileNotificationsActivityPushTitle,
                   subtitle: l10n.profileNotificationsActivityPushSubtitle,
                   value: _preferences.activityEnabled,
-                  enabled: categoryControlsEnabled &&
+                  enabled:
+                      categoryControlsEnabled &&
                       !_busyKeys.contains('activity'),
                   busy: _busyKeys.contains('activity'),
                   onChanged: (value) => _updateDeliveryPreference(
@@ -456,7 +460,8 @@ class _ProfileNotificationsScreenState
                   title: l10n.profileNotificationsExcursionPushTitle,
                   subtitle: l10n.profileNotificationsExcursionPushSubtitle,
                   value: _preferences.excursionEnabled,
-                  enabled: categoryControlsEnabled &&
+                  enabled:
+                      categoryControlsEnabled &&
                       !_busyKeys.contains('excursion'),
                   busy: _busyKeys.contains('excursion'),
                   onChanged: (value) => _updateDeliveryPreference(
@@ -484,7 +489,8 @@ class _ProfileNotificationsScreenState
                   title: l10n.profileNotificationsMarketingTitle,
                   subtitle: l10n.profileNotificationsMarketingSubtitle,
                   value: _preferences.marketingEnabled,
-                  enabled: categoryControlsEnabled &&
+                  enabled:
+                      categoryControlsEnabled &&
                       !_busyKeys.contains('marketing'),
                   busy: _busyKeys.contains('marketing'),
                   onChanged: _updateMarketingEnabled,
@@ -504,11 +510,14 @@ class _ProfileNotificationsScreenState
                   title: l10n.profileNotificationsQuietHoursTitle,
                   subtitle: l10n.profileNotificationsQuietHoursSubtitle(
                     _formatMinutes(
-                        context, _preferences.quietHoursStartMinutes),
+                      context,
+                      _preferences.quietHoursStartMinutes,
+                    ),
                     _formatMinutes(context, _preferences.quietHoursEndMinutes),
                   ),
                   value: _preferences.quietHoursEnabled,
-                  enabled: pushControlsEnabled &&
+                  enabled:
+                      pushControlsEnabled &&
                       _preferences.pushEnabled &&
                       !_busyKeys.contains('quiet-hours'),
                   busy: _busyKeys.contains('quiet-hours'),
@@ -519,13 +528,18 @@ class _ProfileNotificationsScreenState
                   ),
                 ),
                 _QuietHoursPanel(
-                  enabled: pushControlsEnabled &&
+                  enabled:
+                      pushControlsEnabled &&
                       _preferences.pushEnabled &&
                       !_busyKeys.contains('quiet-hours'),
                   startLabel: _formatMinutes(
-                      context, _preferences.quietHoursStartMinutes),
+                    context,
+                    _preferences.quietHoursStartMinutes,
+                  ),
                   endLabel: _formatMinutes(
-                      context, _preferences.quietHoursEndMinutes),
+                    context,
+                    _preferences.quietHoursEndMinutes,
+                  ),
                   timezone: _effectiveTimezone,
                   onStartTap: () => _pickQuietHour(start: true),
                   onEndTap: () => _pickQuietHour(start: false),
@@ -1071,8 +1085,9 @@ class _StatusPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: active ? 0.14 : 0.10),
         borderRadius: BorderRadius.circular(999),
-        border:
-            Border.all(color: color.withValues(alpha: active ? 0.28 : 0.18)),
+        border: Border.all(
+          color: color.withValues(alpha: active ? 0.28 : 0.18),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

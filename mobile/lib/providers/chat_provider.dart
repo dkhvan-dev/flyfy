@@ -10,8 +10,8 @@ import '../features/chat/models/sticker_pack_vm.dart';
 
 class ChatProvider extends ChangeNotifier {
   ChatProvider({ChatApi? chatApi, ChatWsService? wsService})
-      : _chatApi = chatApi ?? ChatApi(),
-        _wsService = wsService ?? ChatWsService();
+    : _chatApi = chatApi ?? ChatApi(),
+      _wsService = wsService ?? ChatWsService();
 
   final ChatApi _chatApi;
   final ChatWsService _wsService;
@@ -160,7 +160,8 @@ class ChatProvider extends ChangeNotifier {
     String? stickerId,
     String? replyToMessageId,
   }) async {
-    final normalizedFileIds = fileIds
+    final normalizedFileIds =
+        fileIds
             ?.map((id) => id.trim())
             .where((id) => id.isNotEmpty)
             .toList(growable: false) ??
@@ -169,11 +170,11 @@ class ChatProvider extends ChangeNotifier {
     final normalizedStickerId = stickerId?.trim() ?? '';
     final effectiveType = normalizedFileIds.isEmpty
         ? normalizedStickerId.isNotEmpty
-            ? 'sticker'
-            : normalizedType
+              ? 'sticker'
+              : normalizedType
         : normalizedType == 'text'
-            ? 'file'
-            : normalizedType;
+        ? 'file'
+        : normalizedType;
     if (_activeConversation == null ||
         (content.trim().isEmpty &&
             normalizedFileIds.isEmpty &&
@@ -264,8 +265,9 @@ class ChatProvider extends ChangeNotifier {
       messageId,
     );
     if (result.hardDeleted) {
-      _messages =
-          _messages.where((message) => message.id != messageId).toList();
+      _messages = _messages
+          .where((message) => message.id != messageId)
+          .toList();
     } else {
       final deletedAt = result.deletedAt ?? DateTime.now().toUtc();
       _messages = _messages
@@ -438,8 +440,8 @@ class ChatProvider extends ChangeNotifier {
         event.payload['deletedAt'] as String? ?? '',
       );
       final moderationStatus = event.payload['moderationStatus']?.toString();
-      final moderationPublicComment =
-          event.payload['moderationPublicComment']?.toString();
+      final moderationPublicComment = event.payload['moderationPublicComment']
+          ?.toString();
       _messages = _messages
           .map(
             (message) => message.id == messageId
@@ -496,11 +498,12 @@ class ChatProvider extends ChangeNotifier {
 
   void _onReadUpdated(ChatEvent event) {
     final userId = event.payload['userId'] as String?;
-    final lastReadMessageId = (event.payload['lastReadMsgId'] ??
-        event.payload['lastReadMessageId']) as String?;
+    final lastReadMessageId =
+        (event.payload['lastReadMsgId'] ?? event.payload['lastReadMessageId'])
+            as String?;
     final readAt =
         DateTime.tryParse(event.payload['readAt']?.toString() ?? '') ??
-            DateTime.now().toUtc();
+        DateTime.now().toUtc();
     if (userId == null || lastReadMessageId == null) {
       return;
     }
@@ -558,7 +561,8 @@ class ChatProvider extends ChangeNotifier {
           message: _messages[index],
           readerUserId: readerUserId,
           readAt: readAt,
-          shouldAdd: readIndex <= index &&
+          shouldAdd:
+              readIndex <= index &&
               _messages[index].senderUserId != readerUserId,
         ),
     ];

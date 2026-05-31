@@ -37,9 +37,7 @@ class PushNotificationBannerController {
 }
 
 class InAppPushNotificationPresenter implements PushNotificationPresenter {
-  InAppPushNotificationPresenter({
-    required PushNotificationBannerController controller,
-  }) : _controller = controller;
+  InAppPushNotificationPresenter({required this._controller});
 
   final PushNotificationBannerController _controller;
 

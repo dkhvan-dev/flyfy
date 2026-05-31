@@ -35,9 +35,9 @@ void main() {
     final resolver = AppLocationLabelResolver(
       countryLookup: (_, {required lang}) async => null,
       cityLookup: (_, {required lang}) async => null,
-      citySearchLookup: (_,
-              {required lang, String? countryCode, int limit = 10}) async =>
-          const [],
+      citySearchLookup:
+          (_, {required lang, String? countryCode, int limit = 10}) async =>
+              const [],
     );
 
     final label = await resolver.resolve(
@@ -57,16 +57,16 @@ void main() {
         return const ReferenceCountry(code: 'KZ', name: 'Казахстан');
       },
       cityLookup: (_, {required lang}) async => null,
-      citySearchLookup: (query,
-          {required lang, String? countryCode, int limit = 10}) async {
-        expect(query, 'Almaty');
-        expect(countryCode, 'KZ');
-        expect(lang, 'ru');
-        expect(limit, 5);
-        return const [
-          ReferenceCity(id: 'almaty', countryCode: 'KZ', name: 'Алматы'),
-        ];
-      },
+      citySearchLookup:
+          (query, {required lang, String? countryCode, int limit = 10}) async {
+            expect(query, 'Almaty');
+            expect(countryCode, 'KZ');
+            expect(lang, 'ru');
+            expect(limit, 5);
+            return const [
+              ReferenceCity(id: 'almaty', countryCode: 'KZ', name: 'Алматы'),
+            ];
+          },
     );
 
     final label = await resolver.resolve(
@@ -88,9 +88,9 @@ void main() {
           return const ReferenceCountry(code: 'KZ', name: 'Казахстан');
         },
         cityLookup: (_, {required lang}) async => null,
-        citySearchLookup: (_,
-                {required lang, String? countryCode, int limit = 10}) async =>
-            const [],
+        citySearchLookup:
+            (_, {required lang, String? countryCode, int limit = 10}) async =>
+                const [],
         citiesByCountryLookup: (countryCode, {required lang}) async {
           expect(countryCode, 'KZ');
           expect(lang, 'ru');
@@ -118,9 +118,9 @@ void main() {
         countryLookup: (_, {required lang}) async =>
             const ReferenceCountry(code: 'KZ', name: 'Казахстан'),
         cityLookup: (_, {required lang}) async => null,
-        citySearchLookup: (_,
-                {required lang, String? countryCode, int limit = 10}) async =>
-            const [],
+        citySearchLookup:
+            (_, {required lang, String? countryCode, int limit = 10}) async =>
+                const [],
         citiesByCountryLookup: (_, {required lang}) async => const [
           ReferenceCity(id: 'almaty', countryCode: 'KZ', name: 'Алматы'),
         ],

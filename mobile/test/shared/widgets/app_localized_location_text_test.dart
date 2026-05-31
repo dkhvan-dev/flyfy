@@ -10,9 +10,7 @@ void main() {
     'does not flash raw country-code fallback while resolving structured location',
     (tester) async {
       final completer = Completer<String>();
-      final resolver = _FakeLocationLabelResolver(
-        (_) => completer.future,
-      );
+      final resolver = _FakeLocationLabelResolver((_) => completer.future);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -45,9 +43,7 @@ void main() {
     'does not flash raw city fallback while resolving legacy city name',
     (tester) async {
       final completer = Completer<String>();
-      final resolver = _FakeLocationLabelResolver(
-        (_) => completer.future,
-      );
+      final resolver = _FakeLocationLabelResolver((_) => completer.future);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -115,10 +111,7 @@ void main() {
 }
 
 class _FakeLocationLabelResolver extends AppLocationLabelResolver {
-  _FakeLocationLabelResolver(
-    this._resolve, {
-    Future<String> Function(_AddressLookupRequest request)? resolveAddress,
-  }) : _resolveAddress = resolveAddress;
+  _FakeLocationLabelResolver(this._resolve, {this._resolveAddress});
 
   final Future<String> Function(_LocationLookupRequest request) _resolve;
   final Future<String> Function(_AddressLookupRequest request)? _resolveAddress;

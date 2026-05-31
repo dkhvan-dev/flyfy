@@ -8,9 +8,7 @@ import 'api_client.dart';
 import 'file_api.dart';
 
 abstract class StickerCatalogClient {
-  Future<StickerCatalogResponse> listOfficialCatalog({
-    required String locale,
-  });
+  Future<StickerCatalogResponse> listOfficialCatalog({required String locale});
 
   Future<List<StickerVm>> listPackStickers(
     String packId, {
@@ -39,12 +37,11 @@ class StickerApi implements StickerCatalogClient {
   }) async {
     final response = await _apiClient.dio.get(
       '/stickers/catalog',
-      queryParameters: {
-        if (locale.trim().isNotEmpty) 'locale': locale.trim(),
-      },
+      queryParameters: {if (locale.trim().isNotEmpty) 'locale': locale.trim()},
     );
     return StickerCatalogResponse.fromJson(
-        response.data as Map<String, dynamic>);
+      response.data as Map<String, dynamic>,
+    );
   }
 
   @override
@@ -141,7 +138,10 @@ class StickerApi implements StickerCatalogClient {
     final fileId = upload.fileId.trim();
     if (fileId.isEmpty) {
       throw ArgumentError.value(
-          upload.fileId, 'upload.fileId', 'File id is required');
+        upload.fileId,
+        'upload.fileId',
+        'File id is required',
+      );
     }
 
     // Mobile uploads go through file-manager so clients never depend on
@@ -151,9 +151,7 @@ class StickerApi implements StickerCatalogClient {
       data: bytes,
       options: Options(
         contentType: contentType,
-        headers: {
-          'Content-Type': contentType,
-        },
+        headers: {'Content-Type': contentType},
         responseType: ResponseType.plain,
         sendTimeout: const Duration(seconds: 60),
         receiveTimeout: const Duration(seconds: 30),
@@ -206,10 +204,7 @@ class StickerApi implements StickerCatalogClient {
 }
 
 class StickerCatalogResponse {
-  const StickerCatalogResponse({
-    required this.version,
-    required this.groups,
-  });
+  const StickerCatalogResponse({required this.version, required this.groups});
 
   final int version;
   final List<StickerGroupVm> groups;

@@ -64,42 +64,44 @@ void main() {
     },
   );
 
-  test('excursions filter sheet starts with current-location city filter',
-      () async {
-    final source = await File(
-      'lib/screens/excursions/excursions_screen.dart',
-    ).readAsString();
+  test(
+    'excursions filter sheet starts with current-location city filter',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursions_screen.dart',
+      ).readAsString();
 
-    expect(
-      source,
-      contains("import '../../providers/home_location_provider.dart';"),
-    );
-    expect(
-      source,
-      contains("import '../../shared/widgets/app_city_filter_section.dart';"),
-    );
-    expect(source, contains('HomeLocationProvider'));
-    expect(source, contains('selectedLocation'));
-    expect(source, contains('_initializeDefaultCityFilter'));
-    expect(source, contains('_applyDefaultCityFilter'));
-    expect(source, contains('final AppCountryFilterValue? country'));
-    expect(source, contains('final AppCityFilterValue? city'));
-    expect(source, contains('AppCountryFilterSection'));
-    expect(source, contains('AppCityFilterSection'));
-    expect(source, contains('attractionFilterCountrySection'));
-    expect(source, contains('attractionFilterCountryAll'));
-    expect(source, contains('attractionFilterCountrySearchHint'));
-    expect(source, contains('attractionFilterCountryNoResults'));
-    expect(source, contains('locationFilterCitySection'));
-    expect(source, contains('filters.city'));
-    expect(source, contains('countryCode: _filters.country?.countryCode'));
-    expect(source, contains('countryCode: _filters.countryCode'));
-    expect(source, contains('departureCityId: city?.cityId'));
-    expect(source, contains('cityId: excursion.departureCityId'));
-    expect(source, contains('excursion.cityName'));
-    expect(source, contains('countryCode: excursion.countryCode'));
-    expect(source, isNot(contains('profile?.countryCode')));
-  });
+      expect(
+        source,
+        contains("import '../../providers/home_location_provider.dart';"),
+      );
+      expect(
+        source,
+        contains("import '../../shared/widgets/app_city_filter_section.dart';"),
+      );
+      expect(source, contains('HomeLocationProvider'));
+      expect(source, contains('selectedLocation'));
+      expect(source, contains('_initializeDefaultCityFilter'));
+      expect(source, contains('_applyDefaultCityFilter'));
+      expect(source, contains('final AppCountryFilterValue? country'));
+      expect(source, contains('final AppCityFilterValue? city'));
+      expect(source, contains('AppCountryFilterSection'));
+      expect(source, contains('AppCityFilterSection'));
+      expect(source, contains('attractionFilterCountrySection'));
+      expect(source, contains('attractionFilterCountryAll'));
+      expect(source, contains('attractionFilterCountrySearchHint'));
+      expect(source, contains('attractionFilterCountryNoResults'));
+      expect(source, contains('locationFilterCitySection'));
+      expect(source, contains('filters.city'));
+      expect(source, contains('countryCode: _filters.country?.countryCode'));
+      expect(source, contains('countryCode: _filters.countryCode'));
+      expect(source, contains('departureCityId: city?.cityId'));
+      expect(source, contains('cityId: excursion.departureCityId'));
+      expect(source, contains('excursion.cityName'));
+      expect(source, contains('countryCode: excursion.countryCode'));
+      expect(source, isNot(contains('profile?.countryCode')));
+    },
+  );
 
   test(
     'excursions city filter is compact and searchable through shared selector',
@@ -165,47 +167,51 @@ void main() {
     },
   );
 
-  test('excursions language filter uses searchable single-select field',
-      () async {
-    final source = await File(
-      'lib/screens/excursions/excursions_screen.dart',
-    ).readAsString();
+  test(
+    'excursions language filter uses searchable single-select field',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursions_screen.dart',
+      ).readAsString();
 
-    expect(source, contains('_languageSearchController'));
-    expect(source, contains('_handleLanguageSearchChanged'));
-    expect(source, contains('_selectLanguage(String code)'));
-    expect(source, contains('_selectedLanguage(AppLocalizations l10n)'));
-    expect(source, contains('_visibleLanguages(AppLocalizations l10n)'));
-    expect(source, contains('_languageSearchHaystack('));
-    expect(source, contains('excursionsFilterLanguageAll'));
-    expect(source, contains('excursionsFilterLanguageSearchHint'));
-    expect(source, contains('excursionsFilterLanguageNoResults'));
-    expect(source, contains('_ExcursionsLanguageOptionRow'));
-    expect(source, isNot(contains('void _toggleLanguage(String code)')));
+      expect(source, contains('_languageSearchController'));
+      expect(source, contains('_handleLanguageSearchChanged'));
+      expect(source, contains('_selectLanguage(String code)'));
+      expect(source, contains('_selectedLanguage(AppLocalizations l10n)'));
+      expect(source, contains('_visibleLanguages(AppLocalizations l10n)'));
+      expect(source, contains('_languageSearchHaystack('));
+      expect(source, contains('excursionsFilterLanguageAll'));
+      expect(source, contains('excursionsFilterLanguageSearchHint'));
+      expect(source, contains('excursionsFilterLanguageNoResults'));
+      expect(source, contains('_ExcursionsLanguageOptionRow'));
+      expect(source, isNot(contains('void _toggleLanguage(String code)')));
 
-    final languageSectionStart = source.indexOf(
-      'title: l10n.excursionsFilterLanguage',
-    );
-    final endMarker = source.indexOf(
-      'Padding(\n                padding: EdgeInsets.fromLTRB',
-      languageSectionStart,
-    );
-    expect(languageSectionStart, isNonNegative);
-    expect(endMarker, greaterThan(languageSectionStart));
+      final languageSectionStart = source.indexOf(
+        'title: l10n.excursionsFilterLanguage',
+      );
+      final endMarker = source.indexOf(
+        'Padding(\n                padding: EdgeInsets.fromLTRB',
+        languageSectionStart,
+      );
+      expect(languageSectionStart, isNonNegative);
+      expect(endMarker, greaterThan(languageSectionStart));
 
-    final languageSection = source.substring(
-      languageSectionStart,
-      endMarker,
-    );
-    expect(languageSection, contains('TextField'));
-    expect(languageSection, contains('selectedLanguage ??'));
-    expect(languageSection, contains('l10n.excursionsFilterLanguageAll'));
-    expect(
-        languageSection, contains('l10n.excursionsFilterLanguageSearchHint'));
-    expect(languageSection, contains('l10n.excursionsFilterLanguageNoResults'));
-    expect(languageSection, contains('_ExcursionsLanguageOptionRow'));
-    expect(languageSection, isNot(contains('Wrap(')));
-  });
+      final languageSection = source.substring(languageSectionStart, endMarker);
+      expect(languageSection, contains('TextField'));
+      expect(languageSection, contains('selectedLanguage ??'));
+      expect(languageSection, contains('l10n.excursionsFilterLanguageAll'));
+      expect(
+        languageSection,
+        contains('l10n.excursionsFilterLanguageSearchHint'),
+      );
+      expect(
+        languageSection,
+        contains('l10n.excursionsFilterLanguageNoResults'),
+      );
+      expect(languageSection, contains('_ExcursionsLanguageOptionRow'));
+      expect(languageSection, isNot(contains('Wrap(')));
+    },
+  );
 
   test('router exposes excursions list as a public route', () async {
     final routerSource = await File(
@@ -245,20 +251,24 @@ void main() {
     expect(providerSource, contains('List<ExcursionVm>'));
   });
 
-  test('excursions list resolves cover file ids into real image urls',
-      () async {
-    final source = await File(
-      'lib/screens/excursions/excursions_screen.dart',
-    ).readAsString();
+  test(
+    'excursions list resolves cover file ids into real image urls',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursions_screen.dart',
+      ).readAsString();
 
-    expect(
-      source,
-      contains("import '../../features/excursions/excursion_cover_url.dart';"),
-    );
-    expect(source, contains('resolveExcursionCoverUrl(excursion)'));
-    expect(source, contains('imageUrl: resolveExcursionCoverUrl(excursion)'));
-    expect(source, contains('Image.network'));
-  });
+      expect(
+        source,
+        contains(
+          "import '../../features/excursions/excursion_cover_url.dart';",
+        ),
+      );
+      expect(source, contains('resolveExcursionCoverUrl(excursion)'));
+      expect(source, contains('imageUrl: resolveExcursionCoverUrl(excursion)'));
+      expect(source, contains('Image.network'));
+    },
+  );
 
   test('excursion cards display marketplace offer count', () async {
     final source = await File(
@@ -307,30 +317,34 @@ void main() {
   );
 
   test(
-      'excursions list resolves localized attraction text for landmark excursions',
-      () async {
-    final source = await File(
-      'lib/screens/excursions/excursions_screen.dart',
-    ).readAsString();
+    'excursions list resolves localized attraction text for landmark excursions',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursions_screen.dart',
+      ).readAsString();
 
-    expect(
-      source,
-      contains("import '../../features/attractions/data/attraction_api.dart';"),
-    );
-    expect(
-      source,
-      contains(
-          "import '../../features/attractions/models/attraction_vm.dart';"),
-    );
-    expect(source, contains('final AttractionApi _attractionApi'));
-    expect(source, contains('Map<String, AttractionVm> _localizedLandmarks'));
-    expect(source, contains('_scheduleResolveLocalizedLandmarks'));
-    expect(source, contains('_loadLocalizedLandmark'));
-    expect(source, contains('locale: lang'));
-    expect(source, contains('localizedLandmark:'));
-    expect(source, contains('localizedExcursionTitle('));
-    expect(source, contains('localizedExcursionLandmarkName('));
-  });
+      expect(
+        source,
+        contains(
+          "import '../../features/attractions/data/attraction_api.dart';",
+        ),
+      );
+      expect(
+        source,
+        contains(
+          "import '../../features/attractions/models/attraction_vm.dart';",
+        ),
+      );
+      expect(source, contains('final AttractionApi _attractionApi'));
+      expect(source, contains('Map<String, AttractionVm> _localizedLandmarks'));
+      expect(source, contains('_scheduleResolveLocalizedLandmarks'));
+      expect(source, contains('_loadLocalizedLandmark'));
+      expect(source, contains('locale: lang'));
+      expect(source, contains('localizedLandmark:'));
+      expect(source, contains('localizedExcursionTitle('));
+      expect(source, contains('localizedExcursionLandmarkName('));
+    },
+  );
 
   test(
     'excursion cards show starting price from the cheapest guide offer',

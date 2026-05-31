@@ -172,7 +172,8 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
     _api = widget.api ?? AttractionApi();
 
     final initial = widget.initial;
-    _country = initial.country ??
+    _country =
+        initial.country ??
         AppCountryFilterValue.fromParts(
           countryCode: initial.city?.countryCode ?? widget.fallbackCountryCode,
         );
@@ -190,13 +191,13 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
       if (unit == 'HOURS') {
         _hours = RangeValues(
           initial.durationMin!.toDouble().clamp(
-                _hourMin.toDouble(),
-                _hourMax.toDouble(),
-              ),
+            _hourMin.toDouble(),
+            _hourMax.toDouble(),
+          ),
           initial.durationMax!.toDouble().clamp(
-                _hourMin.toDouble(),
-                _hourMax.toDouble(),
-              ),
+            _hourMin.toDouble(),
+            _hourMax.toDouble(),
+          ),
         );
       }
     }
@@ -381,11 +382,7 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
           final size = MediaQuery.sizeOf(context);
           final viewInsets = MediaQuery.viewInsetsOf(context).bottom;
           final padX = adaptive.scale(22, minFactor: 0.82, maxFactor: 1.05);
-          final sideInset = adaptive.scale(
-            16,
-            minFactor: 0.62,
-            maxFactor: 1.0,
-          );
+          final sideInset = adaptive.scale(16, minFactor: 0.62, maxFactor: 1.0);
           final availableHeight = size.height - viewInsets;
           final reservedTopGap = adaptive.scale(70, minFactor: 0.7);
           final minSheetHeight = adaptive.scale(260, minFactor: 0.75);
@@ -505,10 +502,7 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
     );
   }
 
-  Widget _buildCitySection(
-    AppLocalizations l10n,
-    AttractionAdaptive adaptive,
-  ) {
+  Widget _buildCitySection(AppLocalizations l10n, AttractionAdaptive adaptive) {
     return AppCityFilterSection(
       title: l10n.locationFilterCitySection,
       allCitiesLabel: l10n.locationFilterAllCities,
@@ -842,7 +836,7 @@ class _SectionContainer extends StatelessWidget {
                 ),
               ),
             ),
-            if (trailing != null) trailing!,
+            ?trailing,
           ],
         ),
         SizedBox(height: adaptive.scale(18)),
@@ -882,8 +876,9 @@ class _PillChip extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             color: selected ? AppColors.accent : const Color(0xFF2D1F11),
-            border:
-                selected ? null : Border.all(color: const Color(0xFF443121)),
+            border: selected
+                ? null
+                : Border.all(color: const Color(0xFF443121)),
             borderRadius: BorderRadius.circular(999),
           ),
           child: ConstrainedBox(

@@ -74,7 +74,9 @@ void main() {
     expect(booking.guideReview?.id, 'guide-review-1');
     expect(booking.guideReview?.rating, 5);
     expect(
-        booking.guideReview?.comment, 'Thoughtful pacing and clear stories.');
+      booking.guideReview?.comment,
+      'Thoughtful pacing and clear stories.',
+    );
     expect(booking.guideReview?.author.displayName, '@nomad_aru');
     expect(booking.author.userId, 'tourist-1');
     expect(booking.author.displayName, '@booking_author');
@@ -151,12 +153,7 @@ void main() {
       );
 
       final filtered = filterMyExcursionBookings(
-        [
-          visited,
-          bookedPast,
-          futureCheckedIn,
-          cancelledCheckedIn,
-        ],
+        [visited, bookedPast, futureCheckedIn, cancelledCheckedIn],
         now: now,
         tab: MyExcursionsTab.visited,
         statuses: const {'CANCELLED'},
@@ -168,28 +165,22 @@ void main() {
 
   test('attendance QR action is available only from one hour before start', () {
     final startsAt = DateTime.utc(2026, 5, 1, 8);
-    final booking = _booking(
-      'with-slot',
-      startsAt,
-      scheduleSlotId: 'slot-1',
-    );
+    final booking = _booking('with-slot', startsAt, scheduleSlotId: 'slot-1');
 
     expect(
       booking.canShowAttendanceQr(DateTime.utc(2026, 5, 1, 6, 59)),
       isFalse,
     );
-    expect(
-      booking.canShowAttendanceQr(DateTime.utc(2026, 5, 1, 7)),
-      isTrue,
-    );
+    expect(booking.canShowAttendanceQr(DateTime.utc(2026, 5, 1, 7)), isTrue);
     expect(
       booking.canShowAttendanceQr(DateTime.utc(2026, 5, 1, 8, 30)),
       isTrue,
     );
     expect(
-      _booking('without-slot', startsAt).canShowAttendanceQr(
-        DateTime.utc(2026, 5, 1, 7),
-      ),
+      _booking(
+        'without-slot',
+        startsAt,
+      ).canShowAttendanceQr(DateTime.utc(2026, 5, 1, 7)),
       isFalse,
     );
   });
@@ -216,7 +207,9 @@ void main() {
     expect(checkedIn.isCheckedIn, isTrue);
     expect(checkedIn.checkedInAt, DateTime.utc(2026, 5, 1, 7, 45));
     expect(
-        _booking('waiting', DateTime.utc(2026, 5, 1, 8)).isCheckedIn, isFalse);
+      _booking('waiting', DateTime.utc(2026, 5, 1, 8)).isCheckedIn,
+      isFalse,
+    );
   });
 
   test('visited reviewed bookings still allow author review management', () {

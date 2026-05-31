@@ -11,20 +11,25 @@ class AttendanceApi {
   final ApiClient _apiClient;
 
   Future<ActivityAttendanceQrVm> getActivityAttendanceQr(
-      String activityId) async {
-    final response =
-        await _apiClient.dio.get('/me/activities/$activityId/attendance-qr');
+    String activityId,
+  ) async {
+    final response = await _apiClient.dio.get(
+      '/me/activities/$activityId/attendance-qr',
+    );
     return ActivityAttendanceQrVm.fromJson(
-        response.data as Map<String, dynamic>);
+      response.data as Map<String, dynamic>,
+    );
   }
 
   Future<ActivityAttendanceQrVm> getExcursionAttendanceQr(
-      String scheduleSlotId) async {
+    String scheduleSlotId,
+  ) async {
     final response = await _apiClient.dio.get(
       '/me/excursion-schedule/slots/$scheduleSlotId/attendance-qr',
     );
     return ActivityAttendanceQrVm.fromJson(
-        response.data as Map<String, dynamic>);
+      response.data as Map<String, dynamic>,
+    );
   }
 
   Future<List<AttendanceSyncResultVm>> syncAttendanceProofs(
@@ -32,9 +37,7 @@ class AttendanceApi {
   ) async {
     final response = await _apiClient.dio.post(
       '/me/attendance/sync',
-      data: {
-        'items': _syncPayloadItems(items),
-      },
+      data: {'items': _syncPayloadItems(items)},
       options: Options(sendTimeout: const Duration(seconds: 20)),
     );
 
@@ -46,9 +49,7 @@ class AttendanceApi {
   ) async {
     final response = await _apiClient.dio.post(
       '/me/excursion-schedule/attendance/sync',
-      data: {
-        'items': _syncPayloadItems(items),
-      },
+      data: {'items': _syncPayloadItems(items)},
       options: Options(sendTimeout: const Duration(seconds: 20)),
     );
 
@@ -69,7 +70,8 @@ class AttendanceApi {
   }
 
   List<AttendanceSyncResultVm> _parseSyncResults(Object? data) {
-    final itemsJson = (data is Map<String, dynamic>
+    final itemsJson =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];

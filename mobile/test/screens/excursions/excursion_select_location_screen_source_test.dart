@@ -3,21 +3,23 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('excursion location selector loads attractions and returns a selection',
-      () async {
-    final source = await File(
-      'lib/screens/excursions/excursion_select_location_screen.dart',
-    ).readAsString();
+  test(
+    'excursion location selector loads attractions and returns a selection',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursion_select_location_screen.dart',
+      ).readAsString();
 
-    expect(source, contains('class ExcursionSelectLocationScreen'));
-    expect(source, contains('class ExcursionLocationSelection'));
-    expect(source, contains('final String? cityId'));
-    expect(source, contains('AttractionApi'));
-    expect(source, contains('getAttractions('));
-    expect(source, contains('context.pop<ExcursionLocationSelection>'));
-    expect(source, contains('GridView.builder'));
-    expect(source, contains('RefreshIndicator'));
-  });
+      expect(source, contains('class ExcursionSelectLocationScreen'));
+      expect(source, contains('class ExcursionLocationSelection'));
+      expect(source, contains('final String? cityId'));
+      expect(source, contains('AttractionApi'));
+      expect(source, contains('getAttractions('));
+      expect(source, contains('context.pop<ExcursionLocationSelection>'));
+      expect(source, contains('GridView.builder'));
+      expect(source, contains('RefreshIndicator'));
+    },
+  );
 
   test('location selector receives country from create screen', () async {
     final source = await File(
@@ -35,7 +37,9 @@ void main() {
     expect(source, contains('cityName: initial.cityName'));
     expect(source, contains('_hasUsableInitialSelection'));
     expect(
-        source, contains("import '../../core/ui/app_list_search_field.dart';"));
+      source,
+      contains("import '../../core/ui/app_list_search_field.dart';"),
+    );
     expect(source, isNot(contains('class _CountrySelector')));
     expect(source, isNot(contains('_countrySearchCtrl')));
     expect(source, isNot(contains('_selectCountry')));
@@ -62,8 +66,10 @@ void main() {
       'lib/screens/attractions/attractions_filter_sheet.dart',
     ).readAsString();
 
-    expect(source,
-        contains("import '../attractions/attractions_filter_sheet.dart';"));
+    expect(
+      source,
+      contains("import '../attractions/attractions_filter_sheet.dart';"),
+    );
     expect(source, contains('AttractionFilterResult _filters'));
     expect(source, contains('Future<void> _openFilters() async'));
     expect(source, contains('showModalBottomSheet<AttractionFilterResult>'));
@@ -84,15 +90,20 @@ void main() {
     expect(filterSource, contains('_city = null;'));
   });
 
-  test('router exposes excursion location selection as an authenticated route',
-      () async {
-    final routerSource =
-        await File('lib/core/router/app_router.dart').readAsString();
+  test(
+    'router exposes excursion location selection as an authenticated route',
+    () async {
+      final routerSource = await File(
+        'lib/core/router/app_router.dart',
+      ).readAsString();
 
-    expect(routerSource, contains("path: '/excursions/create/location'"));
-    expect(routerSource, contains('ExcursionSelectLocationScreen'));
-    expect(routerSource, isNot(contains('accessCityId: args?.accessCityId')));
-    expect(routerSource,
-        isNot(contains("location == '/excursions/create/location'")));
-  });
+      expect(routerSource, contains("path: '/excursions/create/location'"));
+      expect(routerSource, contains('ExcursionSelectLocationScreen'));
+      expect(routerSource, isNot(contains('accessCityId: args?.accessCityId')));
+      expect(
+        routerSource,
+        isNot(contains("location == '/excursions/create/location'")),
+      );
+    },
+  );
 }

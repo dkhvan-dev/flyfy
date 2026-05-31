@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
 class AppInlineSortOption<T> {
-  const AppInlineSortOption({
-    required this.value,
-    required this.label,
-  });
+  const AppInlineSortOption({required this.value, required this.label});
 
   final T value;
   final String label;
@@ -52,8 +49,9 @@ class AppInlineSortRow<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final directionIcon =
-        isAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded;
+    final directionIcon = isAscending
+        ? Icons.arrow_upward_rounded
+        : Icons.arrow_downward_rounded;
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -152,11 +150,7 @@ class _InlineSortItem<T> extends StatelessWidget {
                 ),
                 if (selected) ...[
                   SizedBox(width: iconGap),
-                  Icon(
-                    directionIcon,
-                    color: activeColor,
-                    size: iconSize,
-                  ),
+                  Icon(directionIcon, color: activeColor, size: iconSize),
                 ],
               ],
             ),

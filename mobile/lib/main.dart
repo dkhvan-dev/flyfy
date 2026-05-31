@@ -32,7 +32,6 @@ import 'providers/excursion_schedule_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   runApp(const SuperApp());
 }
@@ -50,6 +49,11 @@ class SuperApp extends StatefulWidget {
 }
 
 class _SuperAppState extends State<SuperApp> {
+  static const _deferredStartupDelay = Duration(milliseconds: 350);
+  static const _deferredPushStartupDelay = Duration(seconds: 6);
+
+  late final Completer<void> _firebaseReadyCompleter;
+  late final Future<void> _firebaseReady;
   late final AuthSessionEvents _authSessionEvents;
   late final AuthProvider _authProvider;
   late final SessionProvider _sessionProvider;
@@ -63,20 +67,24 @@ class _SuperAppState extends State<SuperApp> {
   void initState() {
     super.initState();
 
+    _firebaseReadyCompleter = Completer<void>();
+    _firebaseReady = _firebaseReadyCompleter.future;
     _authSessionEvents = AuthSessionEvents.instance;
     _authProvider = AuthProvider(authSessionEvents: _authSessionEvents);
     _sessionProvider = SessionProvider(authSessionEvents: _authSessionEvents);
-    _localeProvider = LocaleProvider()..load();
+    _localeProvider = LocaleProvider();
     _pushRegistrationService = PushRegistrationService(
       client: NotificationApi(
         apiClient: ApiClient(authSessionEvents: _authSessionEvents),
       ),
-      tokenProvider: FirebaseMessagingPushTokenProvider(),
+      tokenProvider: FirebaseMessagingPushTokenProvider(
+        firebaseReady: _firebaseReady,
+      ),
     );
     _pushNotificationBannerController = PushNotificationBannerController();
     _router = AppRouter.router(_authProvider);
     _pushNotificationCoordinator = PushNotificationCoordinator(
-      source: FirebasePushNotificationSource(),
+      source: FirebasePushNotificationSource(firebaseReady: _firebaseReady),
       presenter: CompositePushNotificationPresenter([
         LocalPushNotificationPresenter(showForegroundNotification: false),
         InAppPushNotificationPresenter(
@@ -86,8 +94,7 @@ class _SuperAppState extends State<SuperApp> {
       routeHandler: _router.go,
     );
 
-    _bootstrapAuth();
-    unawaited(_pushNotificationCoordinator.start());
+    _scheduleDeferredStartupWork();
   }
 
   @override
@@ -160,6 +167,57 @@ class _SuperAppState extends State<SuperApp> {
     );
   }
 
+  void _scheduleDeferredStartupWork() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_runDeferredStartupWork());
+    });
+  }
+
+  Future<void> _runDeferredStartupWork() async {
+    await WidgetsBinding.instance.waitUntilFirstFrameRasterized;
+    await Future<void>.delayed(_deferredStartupDelay);
+    if (!mounted) return;
+
+    unawaited(_localeProvider.load());
+    unawaited(_bootstrapAuth());
+    unawaited(_runDeferredPushStartupWork());
+  }
+
+  Future<void> _runDeferredPushStartupWork() async {
+    await Future<void>.delayed(_deferredPushStartupDelay);
+    if (!mounted) return;
+
+    await _initializeFirebaseMessaging();
+    if (!mounted) return;
+    await _startPushNotifications();
+  }
+
+  Future<void> _initializeFirebaseMessaging() async {
+    if (_firebaseReadyCompleter.isCompleted) return;
+
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      if (!_firebaseReadyCompleter.isCompleted) {
+        _firebaseReadyCompleter.complete();
+      }
+    } catch (error, stackTrace) {
+      if (!_firebaseReadyCompleter.isCompleted) {
+        _firebaseReadyCompleter.completeError(error, stackTrace);
+      }
+    }
+  }
+
+  Future<void> _startPushNotifications() async {
+    try {
+      await _pushNotificationCoordinator.start();
+    } catch (_) {
+      // Push setup is best effort and must not delay app startup.
+    }
+  }
+
   Future<void> _bootstrapAuth() async {
     await _authProvider.checkAuthStatus();
     if (_authProvider.state == AuthState.authenticated) {
@@ -194,8 +252,7 @@ class _PushRegistrationBridgeState extends State<_PushRegistrationBridge>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _tokenRefreshSubscription = widget.registrationService.tokenRefreshes
-        .listen((_) => _scheduleRegistration(force: true));
+    _scheduleTokenRefreshSubscription();
   }
 
   @override
@@ -203,6 +260,14 @@ class _PushRegistrationBridgeState extends State<_PushRegistrationBridge>
     _tokenRefreshSubscription?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  void _scheduleTokenRefreshSubscription() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _tokenRefreshSubscription != null) return;
+      _tokenRefreshSubscription = widget.registrationService.tokenRefreshes
+          .listen((_) => _scheduleRegistration(force: true), onError: (_) {});
+    });
   }
 
   @override
@@ -397,9 +462,7 @@ class _AttendanceSyncBridgeState extends State<_AttendanceSyncBridge>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _connectivitySubscription = _connectivity.onConnectivityChanged.listen(
-      _handleConnectivityChanged,
-    );
+    _scheduleConnectivitySubscription();
   }
 
   @override
@@ -407,6 +470,16 @@ class _AttendanceSyncBridgeState extends State<_AttendanceSyncBridge>
     _connectivitySubscription?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  void _scheduleConnectivitySubscription() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _connectivitySubscription != null) return;
+      _connectivitySubscription = _connectivity.onConnectivityChanged.listen(
+        _handleConnectivityChanged,
+        onError: (_) {},
+      );
+    });
   }
 
   @override
@@ -450,6 +523,7 @@ class _AttendanceSyncBridgeState extends State<_AttendanceSyncBridge>
         case ConnectivityResult.ethernet:
         case ConnectivityResult.vpn:
         case ConnectivityResult.bluetooth:
+        case ConnectivityResult.satellite:
         case ConnectivityResult.other:
           return true;
         case ConnectivityResult.none:

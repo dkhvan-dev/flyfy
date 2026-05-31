@@ -83,8 +83,10 @@ class StoryAuthorVm {
     if (source.isEmpty) {
       return 'F';
     }
-    final parts =
-        source.split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList();
+    final parts = source
+        .split(RegExp(r'\s+'))
+        .where((e) => e.isNotEmpty)
+        .toList();
     if (parts.length >= 2) {
       return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
     }
@@ -159,9 +161,9 @@ class StoryVm {
       placeCityId: json['placeCityId']?.toString(),
       tags: rawTags is List
           ? rawTags
-              .map((item) => item.toString())
-              .where((e) => e.trim().isNotEmpty)
-              .toList(growable: false)
+                .map((item) => item.toString())
+                .where((e) => e.trim().isNotEmpty)
+                .toList(growable: false)
           : const [],
       stats: StoryStatsVm.fromJson(
         json['stats'] as Map<String, dynamic>? ?? const {},
@@ -172,9 +174,11 @@ class StoryVm {
       likedByViewer: json['likedByViewer'] == true,
       shareUrl: json['shareUrl']?.toString() ?? '',
       publishedAt: DateTime.tryParse(json['publishedAt']?.toString() ?? ''),
-      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+      createdAt:
+          DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
-      updatedAt: DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
+      updatedAt:
+          DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
@@ -283,9 +287,11 @@ class StoryCommentVm {
       author: StoryAuthorVm.fromJson(
         json['author'] as Map<String, dynamic>? ?? const {},
       ),
-      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+      createdAt:
+          DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
-      updatedAt: DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
+      updatedAt:
+          DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
@@ -340,15 +346,15 @@ class StoryDetailVm {
       ),
       related: rawRelated is List
           ? rawRelated
-              .whereType<Map<String, dynamic>>()
-              .map(StoryVm.fromJson)
-              .toList(growable: false)
+                .whereType<Map<String, dynamic>>()
+                .map(StoryVm.fromJson)
+                .toList(growable: false)
           : const [],
       comments: rawComments is List
           ? rawComments
-              .whereType<Map<String, dynamic>>()
-              .map(StoryCommentVm.fromJson)
-              .toList(growable: false)
+                .whereType<Map<String, dynamic>>()
+                .map(StoryCommentVm.fromJson)
+                .toList(growable: false)
           : const [],
     );
   }

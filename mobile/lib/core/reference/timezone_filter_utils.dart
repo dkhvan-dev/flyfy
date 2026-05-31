@@ -110,11 +110,7 @@ ReferenceTimezone? resolveReferenceTimezoneForLocation({
 }) {
   final cityQuery = normalizeCountrySearchText(cityName ?? '');
   if (cityQuery.isNotEmpty) {
-    final timezone = _findTimezoneBySearchQuery(
-      timezones,
-      aliases,
-      cityQuery,
-    );
+    final timezone = _findTimezoneBySearchQuery(timezones, aliases, cityQuery);
     if (timezone != null) return timezone;
   }
 
@@ -126,8 +122,9 @@ ReferenceTimezone? resolveReferenceTimezoneForLocation({
     if (timezone != null) return timezone;
   }
 
-  final normalizedDeviceTimezoneId =
-      normalizeReferenceTimezoneId(deviceTimezoneId);
+  final normalizedDeviceTimezoneId = normalizeReferenceTimezoneId(
+    deviceTimezoneId,
+  );
   if (normalizedDeviceTimezoneId == null) return null;
 
   return _findTimezoneById(timezones, normalizedDeviceTimezoneId);
@@ -219,121 +216,29 @@ const _defaultTimezoneIdByCountryCode = <String, String>{
 };
 
 const _timezonePlaceNamesById = <String, Map<String, String>>{
-  'UTC': {
-    'en': 'UTC',
-    'ru': 'UTC',
-    'kk': 'UTC',
-  },
-  'Asia/Almaty': {
-    'en': 'Almaty',
-    'ru': 'Алматы',
-    'kk': 'Алматы',
-  },
-  'Asia/Aqtau': {
-    'en': 'Aktau',
-    'ru': 'Актау',
-    'kk': 'Ақтау',
-  },
-  'Asia/Aqtobe': {
-    'en': 'Aktobe',
-    'ru': 'Актобе',
-    'kk': 'Ақтөбе',
-  },
-  'Asia/Atyrau': {
-    'en': 'Atyrau',
-    'ru': 'Атырау',
-    'kk': 'Атырау',
-  },
-  'Asia/Oral': {
-    'en': 'Oral',
-    'ru': 'Уральск',
-    'kk': 'Орал',
-  },
-  'Asia/Qyzylorda': {
-    'en': 'Kyzylorda',
-    'ru': 'Кызылорда',
-    'kk': 'Қызылорда',
-  },
-  'Asia/Bishkek': {
-    'en': 'Bishkek',
-    'ru': 'Бишкек',
-    'kk': 'Бішкек',
-  },
-  'Asia/Tashkent': {
-    'en': 'Tashkent',
-    'ru': 'Ташкент',
-    'kk': 'Ташкент',
-  },
-  'Asia/Dubai': {
-    'en': 'Dubai',
-    'ru': 'Дубай',
-    'kk': 'Дубай',
-  },
-  'Europe/Moscow': {
-    'en': 'Moscow',
-    'ru': 'Москва',
-    'kk': 'Мәскеу',
-  },
-  'Europe/Istanbul': {
-    'en': 'Istanbul',
-    'ru': 'Стамбул',
-    'kk': 'Ыстамбұл',
-  },
-  'Europe/London': {
-    'en': 'London',
-    'ru': 'Лондон',
-    'kk': 'Лондон',
-  },
-  'Europe/Paris': {
-    'en': 'Paris',
-    'ru': 'Париж',
-    'kk': 'Париж',
-  },
-  'Europe/Berlin': {
-    'en': 'Berlin',
-    'ru': 'Берлин',
-    'kk': 'Берлин',
-  },
-  'Asia/Tokyo': {
-    'en': 'Tokyo',
-    'ru': 'Токио',
-    'kk': 'Токио',
-  },
-  'Asia/Seoul': {
-    'en': 'Seoul',
-    'ru': 'Сеул',
-    'kk': 'Сеул',
-  },
-  'Asia/Shanghai': {
-    'en': 'Shanghai',
-    'ru': 'Шанхай',
-    'kk': 'Шанхай',
-  },
-  'Asia/Singapore': {
-    'en': 'Singapore',
-    'ru': 'Сингапур',
-    'kk': 'Сингапур',
-  },
-  'Asia/Kolkata': {
-    'en': 'India',
-    'ru': 'Индия',
-    'kk': 'Үндістан',
-  },
-  'America/New_York': {
-    'en': 'New York',
-    'ru': 'Нью-Йорк',
-    'kk': 'Нью-Йорк',
-  },
-  'America/Chicago': {
-    'en': 'Chicago',
-    'ru': 'Чикаго',
-    'kk': 'Чикаго',
-  },
-  'America/Denver': {
-    'en': 'Denver',
-    'ru': 'Денвер',
-    'kk': 'Денвер',
-  },
+  'UTC': {'en': 'UTC', 'ru': 'UTC', 'kk': 'UTC'},
+  'Asia/Almaty': {'en': 'Almaty', 'ru': 'Алматы', 'kk': 'Алматы'},
+  'Asia/Aqtau': {'en': 'Aktau', 'ru': 'Актау', 'kk': 'Ақтау'},
+  'Asia/Aqtobe': {'en': 'Aktobe', 'ru': 'Актобе', 'kk': 'Ақтөбе'},
+  'Asia/Atyrau': {'en': 'Atyrau', 'ru': 'Атырау', 'kk': 'Атырау'},
+  'Asia/Oral': {'en': 'Oral', 'ru': 'Уральск', 'kk': 'Орал'},
+  'Asia/Qyzylorda': {'en': 'Kyzylorda', 'ru': 'Кызылорда', 'kk': 'Қызылорда'},
+  'Asia/Bishkek': {'en': 'Bishkek', 'ru': 'Бишкек', 'kk': 'Бішкек'},
+  'Asia/Tashkent': {'en': 'Tashkent', 'ru': 'Ташкент', 'kk': 'Ташкент'},
+  'Asia/Dubai': {'en': 'Dubai', 'ru': 'Дубай', 'kk': 'Дубай'},
+  'Europe/Moscow': {'en': 'Moscow', 'ru': 'Москва', 'kk': 'Мәскеу'},
+  'Europe/Istanbul': {'en': 'Istanbul', 'ru': 'Стамбул', 'kk': 'Ыстамбұл'},
+  'Europe/London': {'en': 'London', 'ru': 'Лондон', 'kk': 'Лондон'},
+  'Europe/Paris': {'en': 'Paris', 'ru': 'Париж', 'kk': 'Париж'},
+  'Europe/Berlin': {'en': 'Berlin', 'ru': 'Берлин', 'kk': 'Берлин'},
+  'Asia/Tokyo': {'en': 'Tokyo', 'ru': 'Токио', 'kk': 'Токио'},
+  'Asia/Seoul': {'en': 'Seoul', 'ru': 'Сеул', 'kk': 'Сеул'},
+  'Asia/Shanghai': {'en': 'Shanghai', 'ru': 'Шанхай', 'kk': 'Шанхай'},
+  'Asia/Singapore': {'en': 'Singapore', 'ru': 'Сингапур', 'kk': 'Сингапур'},
+  'Asia/Kolkata': {'en': 'India', 'ru': 'Индия', 'kk': 'Үндістан'},
+  'America/New_York': {'en': 'New York', 'ru': 'Нью-Йорк', 'kk': 'Нью-Йорк'},
+  'America/Chicago': {'en': 'Chicago', 'ru': 'Чикаго', 'kk': 'Чикаго'},
+  'America/Denver': {'en': 'Denver', 'ru': 'Денвер', 'kk': 'Денвер'},
   'America/Los_Angeles': {
     'en': 'Los Angeles',
     'ru': 'Лос-Анджелес',
@@ -344,9 +249,5 @@ const _timezonePlaceNamesById = <String, Map<String, String>>{
     'ru': 'Сан-Паулу',
     'kk': 'Сан-Паулу',
   },
-  'Australia/Sydney': {
-    'en': 'Sydney',
-    'ru': 'Сидней',
-    'kk': 'Сидней',
-  },
+  'Australia/Sydney': {'en': 'Sydney', 'ru': 'Сидней', 'kk': 'Сидней'},
 };

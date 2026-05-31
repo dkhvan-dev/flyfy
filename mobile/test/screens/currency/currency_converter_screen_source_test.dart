@@ -28,10 +28,12 @@ void main() {
   });
 
   test('home service grid links to the currency converter route', () async {
-    final homeSource =
-        await File('lib/screens/home/home_screen.dart').readAsString();
-    final routerSource =
-        await File('lib/core/router/app_router.dart').readAsString();
+    final homeSource = await File(
+      'lib/screens/home/home_screen.dart',
+    ).readAsString();
+    final routerSource = await File(
+      'lib/core/router/app_router.dart',
+    ).readAsString();
     final ruArb = await File('lib/l10n/app_ru.arb').readAsString();
     final enArb = await File('lib/l10n/app_en.arb').readAsString();
     final kkArb = await File('lib/l10n/app_kk.arb').readAsString();

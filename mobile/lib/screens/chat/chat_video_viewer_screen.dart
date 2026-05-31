@@ -9,13 +9,11 @@ import '../../core/ui/app_colors.dart';
 
 class ChatVideoViewerScreen extends StatefulWidget {
   const ChatVideoViewerScreen({super.key, required this.fileId})
-      : localFilePath = null;
+    : localFilePath = null;
 
-  const ChatVideoViewerScreen.localFile({
-    super.key,
-    required String path,
-  })  : fileId = '',
-        localFilePath = path;
+  const ChatVideoViewerScreen.localFile({super.key, required String path})
+    : fileId = '',
+      localFilePath = path;
 
   final String fileId;
   final String? localFilePath;
@@ -188,19 +186,17 @@ class _ChatVideoViewerScreenState extends State<ChatVideoViewerScreen> {
                 onVerticalDragEnd: _dismissBySwipeDown,
                 child: Center(
                   child: _loading
-                      ? const CircularProgressIndicator(
-                          color: AppColors.accent,
-                        )
+                      ? const CircularProgressIndicator(color: AppColors.accent)
                       : _loadFailed || !initialized
-                          ? Icon(
-                              Icons.movie_outlined,
-                              color: Colors.white.withValues(alpha: 0.48),
-                              size: 54,
-                            )
-                          : AspectRatio(
-                              aspectRatio: controller!.value.aspectRatio,
-                              child: VideoPlayer(controller),
-                            ),
+                      ? Icon(
+                          Icons.movie_outlined,
+                          color: Colors.white.withValues(alpha: 0.48),
+                          size: 54,
+                        )
+                      : AspectRatio(
+                          aspectRatio: controller!.value.aspectRatio,
+                          child: VideoPlayer(controller),
+                        ),
                 ),
               ),
             ),
@@ -276,8 +272,9 @@ class _VideoProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final max =
-        duration.inMilliseconds <= 0 ? 1.0 : duration.inMilliseconds.toDouble();
+    final max = duration.inMilliseconds <= 0
+        ? 1.0
+        : duration.inMilliseconds.toDouble();
     final value = position.inMilliseconds.clamp(0, max).toDouble();
 
     return SliderTheme(

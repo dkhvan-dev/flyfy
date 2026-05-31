@@ -4,15 +4,15 @@ import '../config/app_config.dart';
 
 class ReferenceApi {
   ReferenceApi()
-      : _dio = Dio(
-          BaseOptions(
-            baseUrl: AppConfig.apiBaseUrl,
-            connectTimeout: const Duration(seconds: 5),
-            receiveTimeout: const Duration(seconds: 5),
-            contentType: 'application/json',
-            responseType: ResponseType.json,
-          ),
-        );
+    : _dio = Dio(
+        BaseOptions(
+          baseUrl: AppConfig.apiBaseUrl,
+          connectTimeout: const Duration(seconds: 5),
+          receiveTimeout: const Duration(seconds: 5),
+          contentType: 'application/json',
+          responseType: ResponseType.json,
+        ),
+      );
 
   final Dio _dio;
 
@@ -36,9 +36,7 @@ class ReferenceApi {
     }
   }
 
-  Future<List<ReferenceCountry>> listCountries({
-    String lang = 'en',
-  }) async {
+  Future<List<ReferenceCountry>> listCountries({String lang = 'en'}) async {
     final response = await _dio.get(
       '/reference/countries',
       queryParameters: {'lang': lang},
@@ -108,10 +106,7 @@ class ReferenceApi {
         .toList(growable: false);
   }
 
-  Future<ReferenceCity?> getCity(
-    String id, {
-    String lang = 'en',
-  }) async {
+  Future<ReferenceCity?> getCity(String id, {String lang = 'en'}) async {
     try {
       final response = await _dio.get(
         '/reference/cities/${id.trim()}',
@@ -128,9 +123,7 @@ class ReferenceApi {
     }
   }
 
-  Future<List<ReferenceTimezone>> listTimezones({
-    String lang = 'en',
-  }) async {
+  Future<List<ReferenceTimezone>> listTimezones({String lang = 'en'}) async {
     final response = await _dio.get(
       '/reference/timezones',
       queryParameters: {'lang': lang},
@@ -142,9 +135,7 @@ class ReferenceApi {
         .toList(growable: false);
   }
 
-  Future<List<ReferenceCurrency>> listCurrencies({
-    String lang = 'en',
-  }) async {
+  Future<List<ReferenceCurrency>> listCurrencies({String lang = 'en'}) async {
     final response = await _dio.get(
       '/reference/currencies',
       queryParameters: {'lang': lang},

@@ -9,10 +9,7 @@ import '../../../l10n/generated/app_localizations.dart';
 enum ExcursionReviewAction { edit, delete }
 
 class ExcursionReviewEditDraft {
-  const ExcursionReviewEditDraft({
-    required this.rating,
-    required this.comment,
-  });
+  const ExcursionReviewEditDraft({required this.rating, required this.comment});
 
   final double rating;
   final String comment;

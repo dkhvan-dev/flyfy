@@ -3,20 +3,22 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('android video trimming writes tracks with separate extractors',
-      () async {
-    final source = await File(
-      'android/app/src/main/kotlin/kz/inflap/MainActivity.kt',
-    ).readAsString();
+  test(
+    'android video trimming writes tracks with separate extractors',
+    () async {
+      final source = await File(
+        'android/app/src/main/kotlin/kz/inflap/MainActivity.kt',
+      ).readAsString();
 
-    expect(source, contains('writeSelectedTrack'));
-    expect(source, contains('val trackExtractor = MediaExtractor()'));
-    expect(source, contains('trackExtractor.selectTrack(sourceTrackIndex)'));
-    expect(source, contains('firstSampleTimeUs'));
-    expect(source, contains('baseSampleTimeUs'));
-    expect(source, contains('sampleTimeUs - baseSampleTimeUs'));
-    expect(source, isNot(contains('sampleTimeUs - startUs')));
-  });
+      expect(source, contains('writeSelectedTrack'));
+      expect(source, contains('val trackExtractor = MediaExtractor()'));
+      expect(source, contains('trackExtractor.selectTrack(sourceTrackIndex)'));
+      expect(source, contains('firstSampleTimeUs'));
+      expect(source, contains('baseSampleTimeUs'));
+      expect(source, contains('sampleTimeUs - baseSampleTimeUs'));
+      expect(source, isNot(contains('sampleTimeUs - startUs')));
+    },
+  );
 
   test('android video trimming uses a large direct sample buffer', () async {
     final source = await File(
@@ -29,15 +31,17 @@ void main() {
     expect(source, contains('buffer.limit(sampleSize)'));
   });
 
-  test('ios video trimming uses output extension matching export file type',
-      () async {
-    final source = await File('ios/Runner/AppDelegate.swift').readAsString();
+  test(
+    'ios video trimming uses output extension matching export file type',
+    () async {
+      final source = await File('ios/Runner/AppDelegate.swift').readAsString();
 
-    expect(source, contains('preferredOutputFileType'));
-    expect(source, contains('outputExtension'));
-    expect(source, contains('appendingPathComponent("inflap_trimmed_'));
-    expect(source, contains('AVFileType.mp4'));
-  });
+      expect(source, contains('preferredOutputFileType'));
+      expect(source, contains('outputExtension'));
+      expect(source, contains('appendingPathComponent("inflap_trimmed_'));
+      expect(source, contains('AVFileType.mp4'));
+    },
+  );
 
   test('ios video trimming clamps range and exports a composition', () async {
     final source = await File('ios/Runner/AppDelegate.swift').readAsString();

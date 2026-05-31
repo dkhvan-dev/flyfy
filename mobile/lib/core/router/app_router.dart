@@ -107,8 +107,9 @@ class AppRouter {
         GoRoute(
           path: '/stories/create',
           builder: (context, state) {
-            final initialStory =
-                state.extra is StoryVm ? state.extra! as StoryVm : null;
+            final initialStory = state.extra is StoryVm
+                ? state.extra! as StoryVm
+                : null;
             return _withAndroidBackSwipe(
               CreateStoryScreen(initialStory: initialStory),
             );
@@ -118,8 +119,9 @@ class AppRouter {
           path: '/stories/:storyId/edit',
           builder: (context, state) {
             final storyId = state.pathParameters['storyId'] ?? '';
-            final initialStory =
-                state.extra is StoryVm ? state.extra! as StoryVm : null;
+            final initialStory = state.extra is StoryVm
+                ? state.extra! as StoryVm
+                : null;
             return _withAndroidBackSwipe(
               CreateStoryScreen(storyId: storyId, initialStory: initialStory),
             );
@@ -130,8 +132,9 @@ class AppRouter {
           builder: (context, state) {
             final slug = state.pathParameters['slug'] ?? '';
             final initialCommentId = state.uri.queryParameters['comment'];
-            final initialStory =
-                state.extra is StoryVm ? state.extra! as StoryVm : null;
+            final initialStory = state.extra is StoryVm
+                ? state.extra! as StoryVm
+                : null;
             return _withAndroidBackSwipe(
               StoryDetailsScreen(
                 slug: slug,
@@ -326,10 +329,7 @@ class AppRouter {
           builder: (context, state) {
             final guideUserId = state.pathParameters['guideUserId'] ?? '';
             return _withAndroidBackSwipe(
-              GuideCalendarScreen(
-                guideUserId: guideUserId,
-                readOnly: true,
-              ),
+              GuideCalendarScreen(guideUserId: guideUserId, readOnly: true),
             );
           },
         ),
@@ -348,7 +348,8 @@ class AppRouter {
             final args = state.extra is ExcursionLocationPickerArgs
                 ? state.extra! as ExcursionLocationPickerArgs
                 : null;
-            final initialSelection = args?.initialSelection ??
+            final initialSelection =
+                args?.initialSelection ??
                 (state.extra is ExcursionLocationSelection
                     ? state.extra! as ExcursionLocationSelection
                     : null);
@@ -367,8 +368,9 @@ class AppRouter {
           path: '/excursions/:excursionId/edit',
           pageBuilder: (context, state) {
             final excursionId = state.pathParameters['excursionId'] ?? '';
-            final initialExcursion =
-                state.extra is ExcursionVm ? state.extra! as ExcursionVm : null;
+            final initialExcursion = state.extra is ExcursionVm
+                ? state.extra! as ExcursionVm
+                : null;
             return _buildActivityEditorPage(
               state: state,
               child: CreateExcursionScreen(
@@ -385,7 +387,8 @@ class AppRouter {
             final args = state.extra is ExcursionBookingRouteArgs
                 ? state.extra! as ExcursionBookingRouteArgs
                 : null;
-            final initialExcursion = args?.excursion ??
+            final initialExcursion =
+                args?.excursion ??
                 (state.extra is ExcursionVm
                     ? state.extra! as ExcursionVm
                     : null);
@@ -407,8 +410,9 @@ class AppRouter {
           path: '/excursions/:excursionId',
           builder: (context, state) {
             final excursionId = state.pathParameters['excursionId'] ?? '';
-            final initialExcursion =
-                state.extra is ExcursionVm ? state.extra! as ExcursionVm : null;
+            final initialExcursion = state.extra is ExcursionVm
+                ? state.extra! as ExcursionVm
+                : null;
             return _withAndroidBackSwipe(
               ExcursionDetailsScreen(
                 excursionId: excursionId,
@@ -450,8 +454,9 @@ class AppRouter {
         GoRoute(
           path: '/map',
           builder: (context, state) {
-            final initialTarget =
-                state.extra is MapTarget ? state.extra! as MapTarget : null;
+            final initialTarget = state.extra is MapTarget
+                ? state.extra! as MapTarget
+                : null;
             return _withAndroidBackSwipe(
               MapScreen(initialTarget: initialTarget),
             );
@@ -459,9 +464,8 @@ class AppRouter {
         ),
         GoRoute(
           path: '/notifications',
-          builder: (context, state) => _withAndroidBackSwipe(
-            const NotificationsOverviewScreen(),
-          ),
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const NotificationsOverviewScreen()),
         ),
         GoRoute(
           path: '/notifications/:category',

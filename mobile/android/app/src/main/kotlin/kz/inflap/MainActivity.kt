@@ -1,8 +1,10 @@
 package kz.inflap
 
+import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.database.Cursor
 import android.media.MediaCodec
 import android.media.MediaExtractor
@@ -10,6 +12,7 @@ import android.media.MediaFormat
 import android.media.MediaMuxer
 import android.net.Uri
 import android.provider.OpenableColumns
+import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodCall
@@ -21,6 +24,7 @@ import kotlin.math.max
 class MainActivity : FlutterFragmentActivity() {
     companion object {
         private const val MIN_TRIM_SAMPLE_BUFFER_SIZE = 16 * 1024 * 1024
+        private const val FILE_OPENER_AUTHORITY_SUFFIX = ".fileprovider"
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -43,6 +47,63 @@ class MainActivity : FlutterFragmentActivity() {
                 else -> result.notImplemented()
             }
         }
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "inflap/file_opener"
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "openFile" -> openFile(call, result)
+                else -> result.notImplemented()
+            }
+        }
+    }
+
+    private fun openFile(call: MethodCall, result: MethodChannel.Result) {
+        val args = call.arguments as? Map<*, *>
+        val path = (args?.get("path") as? String)?.trim()
+        val contentType = (args?.get("contentType") as? String)
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+            ?: "*/*"
+
+        if (path.isNullOrBlank()) {
+            result.success(fileOpenResult("file_not_found", "File path is empty"))
+            return
+        }
+
+        val file = File(path)
+        if (!file.exists() || !file.isFile) {
+            result.success(fileOpenResult("file_not_found", "File does not exist"))
+            return
+        }
+
+        try {
+            val uri = FileProvider.getUriForFile(
+                this,
+                "${applicationContext.packageName}$FILE_OPENER_AUTHORITY_SUFFIX",
+                file
+            )
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, contentType)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                clipData = ClipData.newUri(contentResolver, file.name, uri)
+            }
+            startActivity(intent)
+            result.success(fileOpenResult("done"))
+        } catch (_: ActivityNotFoundException) {
+            result.success(fileOpenResult("no_app", "No app can open this file"))
+        } catch (error: Exception) {
+            result.success(
+                fileOpenResult(
+                    "failed",
+                    error.localizedMessage ?: "File open failed"
+                )
+            )
+        }
+    }
+
+    private fun fileOpenResult(status: String, message: String? = null): Map<String, Any?> {
+        return mapOf("status" to status, "message" to message)
     }
 
     private fun trimVideo(call: MethodCall, result: MethodChannel.Result) {

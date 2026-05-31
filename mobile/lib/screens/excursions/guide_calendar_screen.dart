@@ -35,9 +35,9 @@ class _GuideCalendarScreenState extends State<GuideCalendarScreen> {
         context.read<ExcursionProvider>().loadGuideDashboardData();
       }
       context.read<ExcursionScheduleProvider>().loadWeek(
-            DateTime.now(),
-            guideUserId: widget.guideUserId,
-          );
+        DateTime.now(),
+        guideUserId: widget.guideUserId,
+      );
     });
   }
 
@@ -66,8 +66,9 @@ class _GuideCalendarScreenState extends State<GuideCalendarScreen> {
                       child: Row(
                         children: [
                           IconButton(
-                            tooltip: MaterialLocalizations.of(context)
-                                .backButtonTooltip,
+                            tooltip: MaterialLocalizations.of(
+                              context,
+                            ).backButtonTooltip,
                             onPressed: () => context.pop(),
                             icon: const Icon(Icons.arrow_back_rounded),
                             color: AppColors.textPrimary,
@@ -148,10 +149,8 @@ class _GuideCalendarScreenState extends State<GuideCalendarScreen> {
       enableDrag: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => GuideScheduleSlotSheet(
-        slot: slot,
-        initialDate: selectedDate,
-      ),
+      builder: (_) =>
+          GuideScheduleSlotSheet(slot: slot, initialDate: selectedDate),
     );
   }
 }

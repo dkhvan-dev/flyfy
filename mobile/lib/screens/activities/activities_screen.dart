@@ -106,10 +106,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     if (defaultCountry == null && defaultCity == null) return;
 
     setState(() {
-      _filters = _filters.copyWith(
-        country: defaultCountry,
-        city: defaultCity,
-      );
+      _filters = _filters.copyWith(country: defaultCountry, city: defaultCity);
       _currentPage = 1;
     });
   }
@@ -640,7 +637,8 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                   0,
                                 ),
                                 child: ErrorView(
-                                  message: provider.errorMessage ??
+                                  message:
+                                      provider.errorMessage ??
                                       l10n.activitiesLoadFailed,
                                   onRetry: () async {
                                     await provider.loadActivities();
@@ -694,16 +692,17 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                               ),
                               sliver: SliverList.separated(
                                 itemCount: paginatedItems.items.length,
-                                separatorBuilder: (_, __) =>
+                                separatorBuilder: (_, _) =>
                                     SizedBox(height: layout.cardGap),
                                 itemBuilder: (context, index) {
                                   final item = paginatedItems.items[index];
                                   final categorySlug =
                                       resolvedActivityCategorySlug(
-                                    categories: provider.categoryItems,
-                                    slug: item.categorySlug,
-                                  );
-                                  final categoryLabel = categoryOptions
+                                        categories: provider.categoryItems,
+                                        slug: item.categorySlug,
+                                      );
+                                  final categoryLabel =
+                                      categoryOptions
                                           .cast<_DiscoverCategoryOption?>()
                                           .firstWhere(
                                             (option) =>
@@ -719,7 +718,8 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                     item: item,
                                     layout: layout,
                                     categoryLabel: categoryLabel,
-                                    isOwner: currentUserId.isNotEmpty &&
+                                    isOwner:
+                                        currentUserId.isNotEmpty &&
                                         currentUserId == item.hostUserId,
                                     onOpenDetails: () =>
                                         _openActivityDetails(context, item.id),
@@ -1024,7 +1024,8 @@ class _FiltersSummaryBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final compact = MediaQuery.sizeOf(context).width < 360 ||
+    final compact =
+        MediaQuery.sizeOf(context).width < 360 ||
         MediaQuery.textScalerOf(context).scale(1) > 1.02;
 
     final summaryText = Text(
@@ -1343,7 +1344,7 @@ class _DiscoverActivityCard extends StatelessWidget {
                         final columns = compactMeta ? 1 : 2;
                         final itemWidth =
                             (constraints.maxWidth - gap * (columns - 1)) /
-                                columns;
+                            columns;
 
                         return Wrap(
                           spacing: gap,
@@ -1430,7 +1431,8 @@ class _CardMetaItem extends StatelessWidget {
         Icon(data.icon, size: iconSize, color: const Color(0xB0FFF0E0)),
         SizedBox(width: gap),
         Expanded(
-          child: data.labelBuilder?.call(labelStyle) ??
+          child:
+              data.labelBuilder?.call(labelStyle) ??
               Text(
                 data.label,
                 maxLines: 2,
@@ -1670,8 +1672,9 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
         builder: (context, constraints) {
           final textScale = MediaQuery.textScalerOf(context).scale(1);
           final spacing = _activitiesScaled(context, 8, min: 6, max: 10);
-          final columns =
-              constraints.maxWidth < 340 || textScale > 1.08 ? 1 : 2;
+          final columns = constraints.maxWidth < 340 || textScale > 1.08
+              ? 1
+              : 2;
           final itemWidth =
               (constraints.maxWidth - spacing * (columns - 1)) / columns;
 
@@ -1829,7 +1832,8 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
       title: widget.l10n.activitiesFilterVisibility,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final useColumn = constraints.maxWidth < 360 ||
+          final useColumn =
+              constraints.maxWidth < 360 ||
               MediaQuery.textScalerOf(context).scale(1) > 1.04;
           final options = [
             _VisibilityOptionCard(
@@ -1873,7 +1877,8 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
   }) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final useColumn = constraints.maxWidth < 360 ||
+        final useColumn =
+            constraints.maxWidth < 360 ||
             MediaQuery.textScalerOf(context).scale(1) > 1.02;
         if (useColumn) {
           return Column(
@@ -2022,8 +2027,9 @@ class _CategoryFilterPill extends StatelessWidget {
     final iconWrap = _activitiesScaled(context, 34, min: 30, max: 34);
     final titleSize = _activitiesScaled(context, 13, min: 12, max: 14);
     final countSize = _activitiesScaled(context, 11, min: 10, max: 11);
-    final foreground =
-        selected ? const Color(0xFFFFFAF5) : const Color(0xE6FFF0E0);
+    final foreground = selected
+        ? const Color(0xFFFFFAF5)
+        : const Color(0xE6FFF0E0);
 
     return Material(
       color: Colors.transparent,
@@ -2750,10 +2756,12 @@ class _DiscoverFilters {
           ? this.startDate
           : startDate as DateTime?,
       endDate: identical(endDate, _unset) ? this.endDate : endDate as DateTime?,
-      minPrice:
-          identical(minPrice, _unset) ? this.minPrice : minPrice as double?,
-      maxPrice:
-          identical(maxPrice, _unset) ? this.maxPrice : maxPrice as double?,
+      minPrice: identical(minPrice, _unset)
+          ? this.minPrice
+          : minPrice as double?,
+      maxPrice: identical(maxPrice, _unset)
+          ? this.maxPrice
+          : maxPrice as double?,
     );
   }
 }
@@ -2897,9 +2905,9 @@ class _DateTextInputFormatter extends TextInputFormatter {
     final digitsBeforeSelection = newValue.selection.end <= 0
         ? 0
         : newValue.text
-            .substring(0, newValue.selection.end)
-            .replaceAll(RegExp(r'[^0-9]'), '')
-            .length;
+              .substring(0, newValue.selection.end)
+              .replaceAll(RegExp(r'[^0-9]'), '')
+              .length;
 
     var selectionOffset = 0;
     var seenDigits = 0;
@@ -3062,7 +3070,8 @@ List<_DiscoverCategoryOption> _buildCategoryOptions(
     options.add(
       _DiscoverCategoryOption(
         slug: slug,
-        label: matchedCategory?.localizedName(languageCode).trim().isNotEmpty ==
+        label:
+            matchedCategory?.localizedName(languageCode).trim().isNotEmpty ==
                 true
             ? matchedCategory!.localizedName(languageCode)
             : ActivityCategoryVm.humanizeSlug(slug),
@@ -3187,8 +3196,9 @@ List<ActivityListItemVm> _sortDiscoverItems(
       _ActivitySortField.price => _numericPrice(a).compareTo(_numericPrice(b)),
     };
 
-    final compare =
-        primaryCompare == 0 ? a.startAt.compareTo(b.startAt) : primaryCompare;
+    final compare = primaryCompare == 0
+        ? a.startAt.compareTo(b.startAt)
+        : primaryCompare;
     return sortAscending ? compare : -compare;
   });
   return sorted;

@@ -119,8 +119,9 @@ class ExcursionBookingVm {
 
     final nowUtc = now.toUtc();
     final startsAt = scheduledFor.toUtc();
-    return !nowUtc
-            .isBefore(startsAt.subtract(_excursionAttendanceQrLeadTime)) &&
+    return !nowUtc.isBefore(
+          startsAt.subtract(_excursionAttendanceQrLeadTime),
+        ) &&
         nowUtc.isBefore(
           startsAt.add(_excursionAttendanceQrFallbackAfterStartWindow),
         );
@@ -237,8 +238,9 @@ class ExcursionBookingVm {
       totalSeats: _int(json['totalSeats']),
       maxGroupSize: _optionalPositiveInt(json['maxGroupSize']),
       totalPriceAmount: _double(json['totalPriceAmount']),
-      currency:
-          _string(json['currency']).isEmpty ? 'KZT' : _string(json['currency']),
+      currency: _string(json['currency']).isEmpty
+          ? 'KZT'
+          : _string(json['currency']),
       status: _string(json['status']).isEmpty
           ? 'REQUESTED'
           : _string(json['status']),
@@ -478,51 +480,53 @@ List<ExcursionBookingVm> filterMyExcursionBookings(
   final normalizedStatuses = tab == MyExcursionsTab.booked
       ? statuses.map((status) => status.trim().toUpperCase()).toSet()
       : const <String>{};
-  return items.where((item) {
-    final isUpcoming = item.scheduledFor.toUtc().isAfter(now.toUtc());
-    if (tab == MyExcursionsTab.booked && !isUpcoming) {
-      return false;
-    }
-    if (tab == MyExcursionsTab.visited && !item.isVisited(now)) {
-      return false;
-    }
-    if (normalizedStatuses.isNotEmpty &&
-        !normalizedStatuses.contains(item.status.trim().toUpperCase())) {
-      return false;
-    }
-    if (reviewed != null && item.isReviewed != reviewed) {
-      return false;
-    }
-    if (startDate != null) {
-      final start = DateTime(
-        startDate.year,
-        startDate.month,
-        startDate.day,
-      );
-      if (item.scheduledFor.isBefore(start)) return false;
-    }
-    if (endDate != null) {
-      final end = DateTime(
-        endDate.year,
-        endDate.month,
-        endDate.day,
-        23,
-        59,
-        59,
-        999,
-      );
-      if (item.scheduledFor.isAfter(end)) return false;
-    }
-    if (normalizedQuery.isEmpty) return true;
-    final haystack = [
-      item.title,
-      item.summary,
-      item.landmarkName,
-      item.guideDisplayName,
-      item.cityName,
-    ].whereType<String>().join(' ').toLowerCase();
-    return haystack.contains(normalizedQuery);
-  }).toList(growable: false);
+  return items
+      .where((item) {
+        final isUpcoming = item.scheduledFor.toUtc().isAfter(now.toUtc());
+        if (tab == MyExcursionsTab.booked && !isUpcoming) {
+          return false;
+        }
+        if (tab == MyExcursionsTab.visited && !item.isVisited(now)) {
+          return false;
+        }
+        if (normalizedStatuses.isNotEmpty &&
+            !normalizedStatuses.contains(item.status.trim().toUpperCase())) {
+          return false;
+        }
+        if (reviewed != null && item.isReviewed != reviewed) {
+          return false;
+        }
+        if (startDate != null) {
+          final start = DateTime(
+            startDate.year,
+            startDate.month,
+            startDate.day,
+          );
+          if (item.scheduledFor.isBefore(start)) return false;
+        }
+        if (endDate != null) {
+          final end = DateTime(
+            endDate.year,
+            endDate.month,
+            endDate.day,
+            23,
+            59,
+            59,
+            999,
+          );
+          if (item.scheduledFor.isAfter(end)) return false;
+        }
+        if (normalizedQuery.isEmpty) return true;
+        final haystack = [
+          item.title,
+          item.summary,
+          item.landmarkName,
+          item.guideDisplayName,
+          item.cityName,
+        ].whereType<String>().join(' ').toLowerCase();
+        return haystack.contains(normalizedQuery);
+      })
+      .toList(growable: false);
 }
 
 List<ExcursionBookingVm> sortMyExcursionBookings(
@@ -543,11 +547,11 @@ List<ExcursionBookingVm> sortMyExcursionBookings(
 
     final primary = switch (sortMode) {
       MyExcursionBookingSortMode.date => a.scheduledFor.compareTo(
-          b.scheduledFor,
-        ),
+        b.scheduledFor,
+      ),
       MyExcursionBookingSortMode.price => a.totalPriceAmount.compareTo(
-          b.totalPriceAmount,
-        ),
+        b.totalPriceAmount,
+      ),
     };
     final directed = ascending ? primary : -primary;
     if (directed != 0) return directed;

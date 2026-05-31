@@ -56,7 +56,8 @@ class ChatParticipantsScreen extends StatelessWidget {
                   slivers: [
                     SliverToBoxAdapter(
                       child: _ParticipantsHeader(
-                        title: conversation.title ??
+                        title:
+                            conversation.title ??
                             l10n.chatActivityFallbackTitle,
                         count: participants.length,
                         horizontalPadding: horizontalPadding,
@@ -353,10 +354,7 @@ class _OrganizerCard extends StatelessWidget {
 }
 
 class _ParticipantRow extends StatelessWidget {
-  const _ParticipantRow({
-    required this.participant,
-    required this.onTap,
-  });
+  const _ParticipantRow({required this.participant, required this.onTap});
 
   final ParticipantInfo participant;
   final VoidCallback onTap;
@@ -502,7 +500,7 @@ class _ParticipantAvatar extends StatelessWidget {
               : Image.network(
                   imageUrl,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) =>
+                  errorBuilder: (_, _, _) =>
                       _AvatarFallback(name: participant.displayName),
                 ),
         ),

@@ -18,7 +18,7 @@ const _secondaryTextColor = Color(0xFFCDB9A8);
 const _mutedTextColor = Color(0xFF9E8B7D);
 
 class CurrencyConverterScreen extends StatefulWidget {
-  const CurrencyConverterScreen({super.key, CurrencyApi? api}) : _api = api;
+  const CurrencyConverterScreen({super.key, this._api});
 
   final CurrencyApi? _api;
 
@@ -29,8 +29,9 @@ class CurrencyConverterScreen extends StatefulWidget {
 
 class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
   late final CurrencyApi _api = widget._api ?? CurrencyApi();
-  final TextEditingController _amountController =
-      TextEditingController(text: '15000');
+  final TextEditingController _amountController = TextEditingController(
+    text: '15000',
+  );
   final FocusNode _amountFocusNode = FocusNode();
 
   List<CurrencyOption> _currencies = defaultCurrencyOptions;
@@ -148,9 +149,7 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
     }
   }
 
-  void _scheduleConvert({
-    Duration delay = const Duration(milliseconds: 450),
-  }) {
+  void _scheduleConvert({Duration delay = const Duration(milliseconds: 450)}) {
     _convertDebounce?.cancel();
     _convertDebounce = Timer(delay, () {
       if (mounted) unawaited(_convert());
@@ -270,9 +269,8 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
                     isCurrencyListLoading: _isCurrencyListLoading,
                     errorText: _errorText,
                     onAmountChanged: (_) => _scheduleConvert(),
-                    onAmountSubmitted: (_) => _convertNow(
-                      dismissKeyboard: true,
-                    ),
+                    onAmountSubmitted: (_) =>
+                        _convertNow(dismissKeyboard: true),
                     onFromTap: () => _openCurrencyPicker(isSource: true),
                     onToTap: () => _openCurrencyPicker(isSource: false),
                     onSwap: _swapCurrencies,
@@ -378,11 +376,7 @@ class _ExchangeStack extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 14),
-        _RateStatusRow(
-          result: result,
-          isLoading: isLoading,
-          l10n: l10n,
-        ),
+        _RateStatusRow(result: result, isLoading: isLoading, l10n: l10n),
       ],
     );
   }
@@ -657,11 +651,7 @@ class _SwapFloatingButton extends StatelessWidget {
           child: const SizedBox(
             width: 58,
             height: 58,
-            child: Icon(
-              Icons.swap_vert_rounded,
-              color: Colors.white,
-              size: 30,
-            ),
+            child: Icon(Icons.swap_vert_rounded, color: Colors.white, size: 30),
           ),
         ),
       ),
@@ -1013,8 +1003,9 @@ class _CurrencyPickerScreenState extends State<_CurrencyPickerScreen> {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: IconButton(
-                      tooltip:
-                          MaterialLocalizations.of(context).closeButtonTooltip,
+                      tooltip: MaterialLocalizations.of(
+                        context,
+                      ).closeButtonTooltip,
                       onPressed: () => Navigator.of(context).pop(),
                       icon: const Icon(Icons.close_rounded),
                       color: _primaryTextColor,
@@ -1094,9 +1085,8 @@ class _CurrencyPickerScreenState extends State<_CurrencyPickerScreen> {
                               l10n: l10n,
                               selected:
                                   currency.code == widget.selectedCurrency,
-                              onTap: () => Navigator.of(context).pop(
-                                currency.code,
-                              ),
+                              onTap: () =>
+                                  Navigator.of(context).pop(currency.code),
                             ),
                           const SizedBox(height: 16),
                         ],
@@ -1109,9 +1099,8 @@ class _CurrencyPickerScreenState extends State<_CurrencyPickerScreen> {
                             currency: currency,
                             l10n: l10n,
                             selected: currency.code == widget.selectedCurrency,
-                            onTap: () => Navigator.of(context).pop(
-                              currency.code,
-                            ),
+                            onTap: () =>
+                                Navigator.of(context).pop(currency.code),
                           ),
                       ],
                     ),
@@ -1328,12 +1317,14 @@ List<CurrencyOption> _filterCurrencies(
     for (final currency in currencies)
       if (currency.code.toLowerCase().contains(normalizedQuery) ||
           currency.name.toLowerCase().contains(normalizedQuery) ||
-          _localizedCurrencyName(currency, l10n)
-              .toLowerCase()
-              .contains(normalizedQuery) ||
-          _localizedCurrencyCountry(currency, l10n)
-              .toLowerCase()
-              .contains(normalizedQuery))
+          _localizedCurrencyName(
+            currency,
+            l10n,
+          ).toLowerCase().contains(normalizedQuery) ||
+          _localizedCurrencyCountry(
+            currency,
+            l10n,
+          ).toLowerCase().contains(normalizedQuery))
         currency,
   ];
 }
@@ -1348,10 +1339,7 @@ String _currencyCountry(CurrencyOption option) {
   return _currencyCountries[option.code] ?? option.name;
 }
 
-String _localizedCurrencyName(
-  CurrencyOption currency,
-  AppLocalizations l10n,
-) {
+String _localizedCurrencyName(CurrencyOption currency, AppLocalizations l10n) {
   final localized =
       _localizedCurrencyNames[_languageCode(l10n)]?[currency.code];
   return localized ?? currency.name;
@@ -1396,8 +1384,9 @@ String _updatedText(
 ) {
   if (result?.rateAsOf == null) return '';
   final localeName = Localizations.localeOf(context).toLanguageTag();
-  final formatted =
-      DateFormat.yMMMd(localeName).add_Hm().format(result!.rateAsOf!.toLocal());
+  final formatted = DateFormat.yMMMd(
+    localeName,
+  ).add_Hm().format(result!.rateAsOf!.toLocal());
   return l10n.currencyConverterUpdatedAt(formatted).toUpperCase();
 }
 

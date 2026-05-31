@@ -87,76 +87,12 @@ void main() {
     expect(provider.selectedPack?.stickers.single.id, 'sticker-1');
   });
 
-  test('loadCatalog can preload every pack for instant picker opening',
-      () async {
-    final api = _FakeStickerCatalogClient(
-      catalog: StickerCatalogResponse(
-        version: 2,
-        groups: [
-          StickerGroupVm(
-            id: 'group-1',
-            slug: 'travel',
-            title: 'Travel',
-            packs: [
-              StickerPackVm(
-                id: 'pack-1',
-                slug: 'travel-basics',
-                title: const {'en': 'Travel Basics'},
-                stickers: const [],
-              ),
-              StickerPackVm(
-                id: 'pack-2',
-                slug: 'travel-moods',
-                title: const {'en': 'Travel Moods'},
-                stickers: const [],
-              ),
-            ],
-          ),
-        ],
-      ),
-      packStickers: const {
-        'pack-1': [
-          StickerVm(
-            id: 'sticker-1',
-            packId: 'pack-1',
-            fileId: 'file-1',
-            fallbackFileId: 'file-1',
-            status: 'active',
-          ),
-        ],
-        'pack-2': [
-          StickerVm(
-            id: 'sticker-2',
-            packId: 'pack-2',
-            fileId: 'file-2',
-            fallbackFileId: 'file-2',
-            status: 'active',
-          ),
-        ],
-      },
-    );
-    final provider = StickerCatalogProvider(api: api);
-
-    await provider.loadCatalog(locale: 'en', preloadAllPacks: true);
-
-    final packs = provider.groups.single.packs;
-    expect(packs.expand((pack) => pack.stickers).map((sticker) => sticker.id),
-        ['sticker-1', 'sticker-2']);
-    expect(api.requestedPackIds, containsAll(['pack-1', 'pack-2']));
-  });
-}
-
-class _FakeStickerCatalogClient implements StickerCatalogClient {
-  _FakeStickerCatalogClient({
-    required StickerCatalogResponse catalog,
-    Map<String, List<StickerVm>> packStickers = const {},
-  })  : _catalog = catalog,
-        _packStickers = packStickers,
-        _failAfterFirstSuccess = false;
-
-  _FakeStickerCatalogClient.failAfterFirstSuccess()
-      : _catalog = StickerCatalogResponse(
-          version: 1,
+  test(
+    'loadCatalog can preload every pack for instant picker opening',
+    () async {
+      final api = _FakeStickerCatalogClient(
+        catalog: StickerCatalogResponse(
+          version: 2,
           groups: [
             StickerGroupVm(
               id: 'group-1',
@@ -169,12 +105,78 @@ class _FakeStickerCatalogClient implements StickerCatalogClient {
                   title: const {'en': 'Travel Basics'},
                   stickers: const [],
                 ),
+                StickerPackVm(
+                  id: 'pack-2',
+                  slug: 'travel-moods',
+                  title: const {'en': 'Travel Moods'},
+                  stickers: const [],
+                ),
               ],
             ),
           ],
         ),
-        _packStickers = const {},
-        _failAfterFirstSuccess = true;
+        packStickers: const {
+          'pack-1': [
+            StickerVm(
+              id: 'sticker-1',
+              packId: 'pack-1',
+              fileId: 'file-1',
+              fallbackFileId: 'file-1',
+              status: 'active',
+            ),
+          ],
+          'pack-2': [
+            StickerVm(
+              id: 'sticker-2',
+              packId: 'pack-2',
+              fileId: 'file-2',
+              fallbackFileId: 'file-2',
+              status: 'active',
+            ),
+          ],
+        },
+      );
+      final provider = StickerCatalogProvider(api: api);
+
+      await provider.loadCatalog(locale: 'en', preloadAllPacks: true);
+
+      final packs = provider.groups.single.packs;
+      expect(
+        packs.expand((pack) => pack.stickers).map((sticker) => sticker.id),
+        ['sticker-1', 'sticker-2'],
+      );
+      expect(api.requestedPackIds, containsAll(['pack-1', 'pack-2']));
+    },
+  );
+}
+
+class _FakeStickerCatalogClient implements StickerCatalogClient {
+  _FakeStickerCatalogClient({
+    required this._catalog,
+    this._packStickers = const {},
+  }) : _failAfterFirstSuccess = false;
+
+  _FakeStickerCatalogClient.failAfterFirstSuccess()
+    : _catalog = StickerCatalogResponse(
+        version: 1,
+        groups: [
+          StickerGroupVm(
+            id: 'group-1',
+            slug: 'travel',
+            title: 'Travel',
+            packs: [
+              StickerPackVm(
+                id: 'pack-1',
+                slug: 'travel-basics',
+                title: const {'en': 'Travel Basics'},
+                stickers: const [],
+              ),
+            ],
+          ),
+        ],
+      ),
+      _packStickers = const {},
+      _failAfterFirstSuccess = true;
 
   final StickerCatalogResponse _catalog;
   final Map<String, List<StickerVm>> _packStickers;

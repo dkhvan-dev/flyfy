@@ -73,8 +73,8 @@ class _GuideReviewsScreenState extends State<GuideReviewsScreen> {
     final maxWidth = screenWidth >= 840
         ? 680.0
         : screenWidth >= 600
-            ? 540.0
-            : double.infinity;
+        ? 540.0
+        : double.infinity;
 
     if (canLoadReviews && _loadedGuideUserId != guideUserId) {
       _loadedGuideUserId = guideUserId;
@@ -139,12 +139,8 @@ class _GuideReviewsScreenState extends State<GuideReviewsScreen> {
                           labelColor: Colors.white,
                           unselectedLabelColor: const Color(0xFFCBB8A3),
                           tabs: [
-                            Tab(
-                              text: l10n.guideDashboardExcursionReviewsTab,
-                            ),
-                            Tab(
-                              text: l10n.guideDashboardDirectGuideReviewsTab,
-                            ),
+                            Tab(text: l10n.guideDashboardExcursionReviewsTab),
+                            Tab(text: l10n.guideDashboardDirectGuideReviewsTab),
                           ],
                         ),
                       ),
@@ -379,8 +375,9 @@ class _GuideReviewCard extends StatelessWidget {
               CircleAvatar(
                 radius: 20,
                 backgroundColor: AppColors.accent.withValues(alpha: 0.16),
-                backgroundImage:
-                    avatarUrl == null ? null : NetworkImage(avatarUrl),
+                backgroundImage: avatarUrl == null
+                    ? null
+                    : NetworkImage(avatarUrl),
                 child: avatarUrl == null
                     ? Text(
                         _reviewInitial(authorName),
@@ -488,8 +485,9 @@ class _DirectGuideReviewCard extends StatelessWidget {
               CircleAvatar(
                 radius: 20,
                 backgroundColor: AppColors.accent.withValues(alpha: 0.16),
-                backgroundImage:
-                    avatarUrl == null ? null : NetworkImage(avatarUrl),
+                backgroundImage: avatarUrl == null
+                    ? null
+                    : NetworkImage(avatarUrl),
                 child: avatarUrl == null
                     ? Text(
                         _reviewInitial(authorName),

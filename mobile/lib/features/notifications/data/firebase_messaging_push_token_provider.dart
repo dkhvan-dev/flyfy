@@ -24,22 +24,37 @@ abstract interface class FirebaseMessagingTokenClient {
 
 class DefaultFirebaseMessagingTokenClient
     implements FirebaseMessagingTokenClient {
-  DefaultFirebaseMessagingTokenClient({FirebaseMessaging? messaging})
-    : _messaging = messaging ?? FirebaseMessaging.instance;
+  DefaultFirebaseMessagingTokenClient({
+    FirebaseMessaging? messaging,
+    Future<void>? firebaseReady,
+    // Keep the public parameter name stable while storing it privately.
+    // ignore: prefer_initializing_formals
+  }) : _messaging = messaging,
+       _firebaseReady = firebaseReady ?? Future<void>.value();
 
-  final FirebaseMessaging _messaging;
+  final FirebaseMessaging? _messaging;
+  final Future<void> _firebaseReady;
+
+  FirebaseMessaging get _resolvedMessaging =>
+      _messaging ?? FirebaseMessaging.instance;
 
   @override
-  Stream<String> get tokenRefreshes => _messaging.onTokenRefresh;
+  Stream<String> get tokenRefreshes {
+    return _firebaseReady.asStream().asyncExpand(
+      (_) => _resolvedMessaging.onTokenRefresh,
+    );
+  }
 
   @override
-  Future<String?> getToken() {
-    return _messaging.getToken();
+  Future<String?> getToken() async {
+    await _firebaseReady;
+    return _resolvedMessaging.getToken();
   }
 
   @override
   Future<bool> requestPermission() async {
-    final settings = await _messaging.requestPermission(
+    await _firebaseReady;
+    final settings = await _resolvedMessaging.requestPermission(
       alert: true,
       badge: true,
       sound: true,
@@ -59,11 +74,13 @@ class DefaultFirebaseMessagingTokenClient
 class FirebaseMessagingPushTokenProvider implements PushTokenProvider {
   FirebaseMessagingPushTokenProvider({
     FirebaseMessagingTokenClient? client,
-    DeviceContextService deviceContextService = const DeviceContextService(),
+    this._deviceContextService = const DeviceContextService(),
     FirebasePushPlatformResolver? platformResolver,
     LocaleResolver? localeResolver,
-  }) : _client = client ?? DefaultFirebaseMessagingTokenClient(),
-       _deviceContextService = deviceContextService,
+    Future<void>? firebaseReady,
+  }) : _client =
+           client ??
+           DefaultFirebaseMessagingTokenClient(firebaseReady: firebaseReady),
        _platformResolver = platformResolver ?? _defaultPlatformResolver,
        _localeResolver = localeResolver ?? _defaultLocaleResolver;
 

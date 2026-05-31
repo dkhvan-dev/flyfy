@@ -393,18 +393,30 @@ class _ProfileUserActivitiesScreenState
                           selectedValue: _sortField,
                           isAscending: _sortAscending,
                           onSelected: _handleSortTap,
-                          fontSize:
-                              profileScaled(context, 12, min: 11, max: 12),
-                          iconSize:
-                              profileScaled(context, 14, min: 12, max: 14),
+                          fontSize: profileScaled(
+                            context,
+                            12,
+                            min: 11,
+                            max: 12,
+                          ),
+                          iconSize: profileScaled(
+                            context,
+                            14,
+                            min: 12,
+                            max: 14,
+                          ),
                           labelToOptionsGap: profileScaled(
                             context,
                             18,
                             min: 12,
                             max: 18,
                           ),
-                          optionGap:
-                              profileScaled(context, 22, min: 16, max: 22),
+                          optionGap: profileScaled(
+                            context,
+                            22,
+                            min: 16,
+                            max: 22,
+                          ),
                           iconGap: profileScaled(context, 5, min: 4, max: 5),
                           verticalPadding: profileScaled(
                             context,
@@ -482,11 +494,11 @@ class _ProfileActivitiesPageState {
   });
 
   const _ProfileActivitiesPageState.loading()
-      : items = const <ActivityListItemVm>[],
-        hasMore = false,
-        page = 1,
-        isLoading = true,
-        hasError = false;
+    : items = const <ActivityListItemVm>[],
+      hasMore = false,
+      page = 1,
+      isLoading = true,
+      hasError = false;
 
   factory _ProfileActivitiesPageState.loaded({
     required List<ActivityListItemVm> items,
@@ -556,8 +568,9 @@ class _ProfileActivityFilters {
           ? this.categorySlug
           : categorySlug as String?,
       format: identical(format, _unset) ? this.format : format as String?,
-      priceType:
-          identical(priceType, _unset) ? this.priceType : priceType as String?,
+      priceType: identical(priceType, _unset)
+          ? this.priceType
+          : priceType as String?,
     );
   }
 
@@ -659,9 +672,7 @@ class _ProfileActivityFiltersSheetState
       child: Container(
         decoration: BoxDecoration(
           color: const Color(0xFF1B120C),
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(28),
-          ),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         ),
         child: Column(
@@ -704,7 +715,8 @@ class _ProfileActivityFiltersSheetState
                                 for (final option in widget.categoryOptions)
                                   _ProfileFilterChip(
                                     label: option.label,
-                                    selected: _draftFilters.categorySlug ==
+                                    selected:
+                                        _draftFilters.categorySlug ==
                                         option.slug,
                                     onTap: () => _toggleCategory(option.slug),
                                   ),
@@ -850,9 +862,10 @@ class _ProfileFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final maxWidth = (MediaQuery.sizeOf(context).width -
-            profileScaled(context, 64, min: 48, max: 72))
-        .clamp(160.0, 420.0);
+    final maxWidth =
+        (MediaQuery.sizeOf(context).width -
+                profileScaled(context, 64, min: 48, max: 72))
+            .clamp(160.0, 420.0);
 
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: maxWidth),
@@ -1003,7 +1016,7 @@ class _ProfileActivitiesTabView extends StatelessWidget {
           profileScaled(context, 28, min: 20, max: 34),
         ),
         itemCount: 3,
-        separatorBuilder: (_, __) =>
+        separatorBuilder: (_, _) =>
             SizedBox(height: profileScaled(context, 12, min: 10)),
         itemBuilder: (context, index) => Container(
           height: profileScaled(context, 220, min: 190, max: 240),

@@ -16,24 +16,25 @@ class SessionProvider extends ChangeNotifier {
     ProfileApi? profileApi,
     AuthSessionEvents? authSessionEvents,
   }) : this._(
-          secureStorage: secureStorage ?? SecureStorage(),
-          profileApi: profileApi,
-          authSessionEvents: authSessionEvents ?? AuthSessionEvents.instance,
-        );
+         secureStorage: secureStorage ?? SecureStorage(),
+         profileApi: profileApi,
+         authSessionEvents: authSessionEvents ?? AuthSessionEvents.instance,
+       );
 
   SessionProvider._({
     required SecureStorage secureStorage,
     required ProfileApi? profileApi,
     required AuthSessionEvents authSessionEvents,
-  })  : _secureStorage = secureStorage,
-        _profileApi = profileApi ??
-            ProfileApi(
-              apiClient: ApiClient(
-                secureStorage: secureStorage,
-                authSessionEvents: authSessionEvents,
-              ),
-            ),
-        _authSessionEvents = authSessionEvents {
+  }) : _secureStorage = secureStorage,
+       _profileApi =
+           profileApi ??
+           ProfileApi(
+             apiClient: ApiClient(
+               secureStorage: secureStorage,
+               authSessionEvents: authSessionEvents,
+             ),
+           ),
+       _authSessionEvents = authSessionEvents {
     _sessionExpiredSubscription = _authSessionEvents.sessionExpired.listen((_) {
       _handleSessionExpired();
     });
@@ -63,7 +64,8 @@ class SessionProvider extends ChangeNotifier {
     try {
       final accessToken = await _secureStorage.getAccessToken();
       final refreshToken = await _secureStorage.getRefreshToken();
-      final hasStoredTokens = (accessToken != null && accessToken.isNotEmpty) ||
+      final hasStoredTokens =
+          (accessToken != null && accessToken.isNotEmpty) ||
           (refreshToken != null && refreshToken.isNotEmpty);
 
       if (!hasStoredTokens) {
@@ -111,7 +113,8 @@ class SessionProvider extends ChangeNotifier {
     try {
       final accessToken = await _secureStorage.getAccessToken();
       final refreshToken = await _secureStorage.getRefreshToken();
-      final hasStoredTokens = (accessToken != null && accessToken.isNotEmpty) ||
+      final hasStoredTokens =
+          (accessToken != null && accessToken.isNotEmpty) ||
           (refreshToken != null && refreshToken.isNotEmpty);
       if (!hasStoredTokens) {
         return;

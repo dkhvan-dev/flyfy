@@ -68,7 +68,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(vertical: 8),
               itemCount: chat.conversations.length,
-              separatorBuilder: (_, __) => Divider(
+              separatorBuilder: (_, _) => Divider(
                 height: 1,
                 indent: 86,
                 color: Colors.white.withValues(alpha: 0.06),
@@ -245,7 +245,7 @@ class _ConversationTile extends StatelessWidget {
               Image.network(
                 imageUrl,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
+                errorBuilder: (_, _, _) =>
                     Center(child: _fallbackInitial(title)),
               ),
           ],

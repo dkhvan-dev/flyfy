@@ -106,7 +106,8 @@ class _AppLocalizedLocationTextState extends State<AppLocalizedLocationText> {
           );
     if (!mounted || serial != _requestSerial) return;
     setState(
-        () => _resolvedText = resolved.trim().isEmpty ? fallback : resolved);
+      () => _resolvedText = resolved.trim().isEmpty ? fallback : resolved,
+    );
   }
 
   @override

@@ -38,8 +38,8 @@ class GuideCalendarDayStrip extends StatelessWidget {
           final indicatorColor = daySlots.any((slot) => slot.isBooked)
               ? AppColors.accent
               : daySlots.isEmpty
-                  ? Colors.transparent
-                  : guideScheduleStatusColor(daySlots.first);
+              ? Colors.transparent
+              : guideScheduleStatusColor(daySlots.first);
           return ConstrainedBox(
             constraints: const BoxConstraints(minWidth: 62),
             child: Material(
@@ -84,8 +84,9 @@ class GuideCalendarDayStrip extends StatelessWidget {
                         width: 8,
                         height: 8,
                         decoration: BoxDecoration(
-                          color:
-                              selected ? AppColors.textPrimary : indicatorColor,
+                          color: selected
+                              ? AppColors.textPrimary
+                              : indicatorColor,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -96,17 +97,19 @@ class GuideCalendarDayStrip extends StatelessWidget {
             ),
           );
         },
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemCount: days.length,
       ),
     );
   }
 
   List<ExcursionScheduleSlotVm> _slotsForDay(DateTime day) {
-    return slots.where((slot) {
-      final local = slot.startAt.toLocal();
-      return _isSameDay(local, day);
-    }).toList(growable: false);
+    return slots
+        .where((slot) {
+          final local = slot.startAt.toLocal();
+          return _isSameDay(local, day);
+        })
+        .toList(growable: false);
   }
 
   DateTime _mondayStart(DateTime value) {

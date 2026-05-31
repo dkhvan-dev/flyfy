@@ -13,42 +13,46 @@ void main() {
     expect(selection.cityName, 'Дананг');
   });
 
-  test('selection falls back to attraction city id when city name is missing',
-      () {
-    final selection = ExcursionLocationSelection.fromAttraction(
-      _attraction(cityId: 'da-nang'),
-    );
+  test(
+    'selection falls back to attraction city id when city name is missing',
+    () {
+      final selection = ExcursionLocationSelection.fromAttraction(
+        _attraction(cityId: 'da-nang'),
+      );
 
-    expect(selection.cityId, 'da-nang');
-    expect(selection.cityName, 'da-nang');
-  });
+      expect(selection.cityId, 'da-nang');
+      expect(selection.cityName, 'da-nang');
+    },
+  );
 
-  test('selection keeps external cover when imported media has no file mirror',
-      () {
-    final selection = ExcursionLocationSelection.fromAttraction(
-      _attraction(
-        cityId: 'da-nang',
-        media: const [
-          AttractionMediaVm(
-            id: 'media-id',
-            fileId: '00000000-0000-0000-0000-000000000000',
-            externalUrl: 'https://upload.wikimedia.org/dragon-bridge.jpg',
-            sourceUrl: '',
-            credit: '',
-            license: '',
-            mediaType: 'PHOTO',
-            position: 0,
-          ),
-        ],
-      ),
-    );
+  test(
+    'selection keeps external cover when imported media has no file mirror',
+    () {
+      final selection = ExcursionLocationSelection.fromAttraction(
+        _attraction(
+          cityId: 'da-nang',
+          media: const [
+            AttractionMediaVm(
+              id: 'media-id',
+              fileId: '00000000-0000-0000-0000-000000000000',
+              externalUrl: 'https://upload.wikimedia.org/dragon-bridge.jpg',
+              sourceUrl: '',
+              credit: '',
+              license: '',
+              mediaType: 'PHOTO',
+              position: 0,
+            ),
+          ],
+        ),
+      );
 
-    expect(selection.coverFileId, isNull);
-    expect(
-      selection.coverImageUrl,
-      'https://upload.wikimedia.org/dragon-bridge.jpg',
-    );
-  });
+      expect(selection.coverFileId, isNull);
+      expect(
+        selection.coverImageUrl,
+        'https://upload.wikimedia.org/dragon-bridge.jpg',
+      );
+    },
+  );
 }
 
 AttractionVm _attraction({

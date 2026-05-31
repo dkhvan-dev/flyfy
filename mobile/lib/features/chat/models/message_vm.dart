@@ -119,7 +119,8 @@ class MessageVm {
       senderAvatarFileId: json['senderAvatarFileId'] as String?,
       type: json['type'] as String,
       content: json['content'] as String,
-      fileIds: (json['fileIds'] as List<dynamic>?)
+      fileIds:
+          (json['fileIds'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           const [],
@@ -140,12 +141,14 @@ class MessageVm {
       moderationPublicComment: _trimmedStringOrNull(
         json['moderationPublicComment'],
       ),
-      reactions: (json['reactions'] as List<dynamic>?)
+      reactions:
+          (json['reactions'] as List<dynamic>?)
               ?.whereType<Map<String, dynamic>>()
               .map(MessageReactionVm.fromJson)
               .toList(growable: false) ??
           const [],
-      readReceipts: (json['readReceipts'] as List<dynamic>?)
+      readReceipts:
+          (json['readReceipts'] as List<dynamic>?)
               ?.whereType<Map<String, dynamic>>()
               .map(MessageReadReceiptVm.fromJson)
               .toList(growable: false) ??
@@ -206,12 +209,14 @@ class MessageReactionVm {
   }
 
   factory MessageReactionVm.fromJson(Map<String, dynamic> json) {
-    final userIds = (json['userIds'] as List<dynamic>?)
+    final userIds =
+        (json['userIds'] as List<dynamic>?)
             ?.map((id) => id.toString())
             .where((id) => id.trim().isNotEmpty)
             .toList(growable: false) ??
         const [];
-    final users = (json['users'] as List<dynamic>?)
+    final users =
+        (json['users'] as List<dynamic>?)
             ?.whereType<Map<String, dynamic>>()
             .map(MessageReactionUserVm.fromJson)
             .where((user) => user.userId.trim().isNotEmpty)
@@ -236,7 +241,8 @@ class MessageReactionUserVm {
   factory MessageReactionUserVm.fromJson(Map<String, dynamic> json) {
     return MessageReactionUserVm(
       userId: json['userId']?.toString() ?? '',
-      reactedAt: DateTime.tryParse(json['reactedAt']?.toString() ?? '') ??
+      reactedAt:
+          DateTime.tryParse(json['reactedAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
     );
   }

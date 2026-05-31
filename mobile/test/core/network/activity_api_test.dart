@@ -202,8 +202,9 @@ class _ActivityProfileListAdapter implements HttpClientAdapter {
     offsets.add(options.uri.queryParameters['offset']);
     queryParameters.add(Map<String, String>.from(options.uri.queryParameters));
 
-    final payload =
-        options.uri.path.endsWith('/hosted') ? hostedPayload : joinedPayload;
+    final payload = options.uri.path.endsWith('/hosted')
+        ? hostedPayload
+        : joinedPayload;
     return ResponseBody.fromString(
       jsonEncode(payload),
       200,

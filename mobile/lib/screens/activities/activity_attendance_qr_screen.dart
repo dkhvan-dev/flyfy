@@ -58,8 +58,9 @@ class _ActivityAttendanceQrScreenState
     }
 
     try {
-      final qr =
-          await _attendanceApi.getActivityAttendanceQr(widget.activityId);
+      final qr = await _attendanceApi.getActivityAttendanceQr(
+        widget.activityId,
+      );
       if (!mounted) return;
       setState(() {
         _token = qr.token;
@@ -81,8 +82,9 @@ class _ActivityAttendanceQrScreenState
   void _scheduleRefresh(DateTime refreshAt) {
     _refreshTimer?.cancel();
     final delay = refreshAt.difference(DateTime.now().toUtc());
-    final effectiveDelay =
-        delay.isNegative ? const Duration(seconds: 1) : delay;
+    final effectiveDelay = delay.isNegative
+        ? const Duration(seconds: 1)
+        : delay;
     _refreshTimer = Timer(effectiveDelay, _loadQr);
   }
 
@@ -192,8 +194,10 @@ class _ActivityAttendanceQrScreenState
               ),
               const SizedBox(height: 18),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF26160C),
                   borderRadius: BorderRadius.circular(22),

@@ -51,7 +51,8 @@ class AttractionAdaptive {
     final mq = MediaQuery.of(context);
     final textScaler = mq.textScaler;
     final baseStyle = Theme.of(context).textTheme.bodyMedium;
-    final textScaleFactor = textScaler.scale(baseStyle?.fontSize ?? 14) /
+    final textScaleFactor =
+        textScaler.scale(baseStyle?.fontSize ?? 14) /
         (baseStyle?.fontSize ?? 14);
 
     return AttractionAdaptive._(
@@ -74,8 +75,9 @@ class AttractionAdaptive {
     double maxFactor = 1.06,
   }) {
     final baseFactor = (shortestSide / 393).clamp(minFactor, maxFactor);
-    final textPenalty =
-        textScaleFactor > 1.1 ? 1 - ((textScaleFactor - 1.1) * 0.12) : 1.0;
+    final textPenalty = textScaleFactor > 1.1
+        ? 1 - ((textScaleFactor - 1.1) * 0.12)
+        : 1.0;
     final factor = math.max(
       minFactor,
       math.min(maxFactor, baseFactor * textPenalty),
@@ -129,12 +131,9 @@ String? _optimizeExternalAttractionMediaUrl(Uri uri, int? targetWidth) {
   final host = uri.host.toLowerCase();
   if (host == 'commons.wikimedia.org' &&
       uri.path.startsWith('/wiki/Special:FilePath/')) {
-    return uri.replace(
-      queryParameters: {
-        ...uri.queryParameters,
-        'width': '$width',
-      },
-    ).toString();
+    return uri
+        .replace(queryParameters: {...uri.queryParameters, 'width': '$width'})
+        .toString();
   }
 
   if (host == 'upload.wikimedia.org' &&

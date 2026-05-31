@@ -31,7 +31,8 @@ class InflapPaginationBar extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final previousLabel = l10n?.commonPaginationPrevious ?? 'Previous page';
     final nextLabel = l10n?.commonPaginationNext ?? 'Next page';
-    final semanticLabel = l10n?.commonPaginationLabel(page, totalPages) ??
+    final semanticLabel =
+        l10n?.commonPaginationLabel(page, totalPages) ??
         'Page $page of $totalPages';
 
     return Padding(
@@ -146,8 +147,9 @@ class _PaginationMetrics {
     required List<_PaginationSlot> slots,
     required int currentPage,
   }) {
-    final width =
-        availableWidth.isFinite && availableWidth > 0 ? availableWidth : 1.0;
+    final width = availableWidth.isFinite && availableWidth > 0
+        ? availableWidth
+        : 1.0;
 
     const pageWeight = 1.0;
     const activeOuterWeight = 1.34;
@@ -188,9 +190,7 @@ class _PaginationMetrics {
 
 class _PaginationSlot {
   const _PaginationSlot.page(this.page) : isDots = false;
-  const _PaginationSlot.dots()
-      : page = null,
-        isDots = true;
+  const _PaginationSlot.dots() : page = null, isDots = true;
 
   final int? page;
   final bool isDots;
@@ -338,7 +338,8 @@ class _PaginationSlotWidget extends StatelessWidget {
     final page = slot.page!;
     final selected = page == currentPage;
     final l10n = AppLocalizations.of(context);
-    final label = l10n?.commonPaginationLabel(page, totalPages) ??
+    final label =
+        l10n?.commonPaginationLabel(page, totalPages) ??
         'Page $page of $totalPages';
 
     if (selected) {
@@ -602,20 +603,20 @@ class _PaginationLabel extends StatelessWidget {
 
     final spans = switch (locale) {
       'ru' => <InlineSpan>[
-          TextSpan(text: 'СТРАНИЦА ', style: baseStyle),
-          TextSpan(text: '$currentPage', style: accentStyle),
-          TextSpan(text: ' ИЗ $totalPages', style: baseStyle),
-        ],
+        TextSpan(text: 'СТРАНИЦА ', style: baseStyle),
+        TextSpan(text: '$currentPage', style: accentStyle),
+        TextSpan(text: ' ИЗ $totalPages', style: baseStyle),
+      ],
       'kk' => <InlineSpan>[
-          TextSpan(text: '$totalPages БЕТТІҢ ', style: baseStyle),
-          TextSpan(text: '$currentPage', style: accentStyle),
-          TextSpan(text: '-БЕТІ', style: baseStyle),
-        ],
+        TextSpan(text: '$totalPages БЕТТІҢ ', style: baseStyle),
+        TextSpan(text: '$currentPage', style: accentStyle),
+        TextSpan(text: '-БЕТІ', style: baseStyle),
+      ],
       _ => <InlineSpan>[
-          TextSpan(text: 'PAGE ', style: baseStyle),
-          TextSpan(text: '$currentPage', style: accentStyle),
-          TextSpan(text: ' OF $totalPages', style: baseStyle),
-        ],
+        TextSpan(text: 'PAGE ', style: baseStyle),
+        TextSpan(text: '$currentPage', style: accentStyle),
+        TextSpan(text: ' OF $totalPages', style: baseStyle),
+      ],
     };
 
     return ExcludeSemantics(

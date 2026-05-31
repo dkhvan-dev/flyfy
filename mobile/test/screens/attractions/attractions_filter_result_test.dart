@@ -5,10 +5,7 @@ import 'package:inflap/shared/widgets/app_city_filter_section.dart';
 void main() {
   test('country filter can target a country without selecting a city', () {
     const result = AttractionFilterResult(
-      country: AppCountryFilterValue(
-        countryCode: 'vn',
-        countryName: 'Vietnam',
-      ),
+      country: AppCountryFilterValue(countryCode: 'vn', countryName: 'Vietnam'),
     );
 
     expect(result.countryCode, 'VN');

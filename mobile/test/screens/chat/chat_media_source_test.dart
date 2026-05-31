@@ -116,8 +116,9 @@ void main() {
     final source = await File(
       'lib/screens/chat/conversations_screen.dart',
     ).readAsString();
-    final serviceFile =
-        File('lib/features/chat/services/chat_e2ee_service.dart');
+    final serviceFile = File(
+      'lib/features/chat/services/chat_e2ee_service.dart',
+    );
 
     expect(await serviceFile.exists(), isFalse);
     expect(source, isNot(contains('chat_e2ee_service.dart')));
@@ -490,8 +491,9 @@ void main() {
     final chatSource = await File(
       'lib/screens/chat/chat_screen.dart',
     ).readAsString();
-    final serviceFile =
-        File('lib/features/chat/services/chat_e2ee_service.dart');
+    final serviceFile = File(
+      'lib/features/chat/services/chat_e2ee_service.dart',
+    );
     final modelSource = await File(
       'lib/features/chat/models/conversation_vm.dart',
     ).readAsString();
@@ -517,7 +519,9 @@ void main() {
     expect(apiSource, isNot(contains('registerE2EEDeviceKey')));
     expect(apiSource, isNot(contains('getE2EEDeviceKey')));
     expect(
-        providerSource, isNot(contains('setActiveConversationSecurityMode')));
+      providerSource,
+      isNot(contains('setActiveConversationSecurityMode')),
+    );
     expect(chatSource, isNot(contains('_ChatSecurityButton')));
     expect(chatSource, isNot(contains('_showChatSecuritySheet')));
     expect(chatSource, isNot(contains('enable_private_e2ee')));
@@ -567,7 +571,9 @@ void main() {
 
     expect(await migrationFile.exists(), isFalse);
     expect(
-        messageUseCaseSource, isNot(contains('ErrEncryptedMessagesDisabled')));
+      messageUseCaseSource,
+      isNot(contains('ErrEncryptedMessagesDisabled')),
+    );
     expect(messageUseCaseSource, isNot(contains('validateMessageEncryption')));
     expect(messageUseCaseSource, isNot(contains('ErrCannotForwardEncrypted')));
     expect(messageUseCaseSource, isNot(contains('EncryptionVersion')));
@@ -575,8 +581,10 @@ void main() {
     expect(conversationUseCaseSource, isNot(contains('E2EE')));
     expect(messageDtoSource, isNot(contains('EncryptionVersion')));
     expect(conversationDtoSource, isNot(contains('SecurityMode')));
-    expect(conversationDtoSource,
-        isNot(contains('SetConversationSecurityModeRequest')));
+    expect(
+      conversationDtoSource,
+      isNot(contains('SetConversationSecurityModeRequest')),
+    );
     expect(handlerSource, isNot(contains('/v1/e2ee')));
     expect(handlerSource, isNot(contains('GetE2EEDeviceKey')));
     expect(handlerSource, isNot(contains('conversationSecurityMode')));

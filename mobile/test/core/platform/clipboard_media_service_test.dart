@@ -15,13 +15,13 @@ void main() {
   test('readImage returns image bytes from platform clipboard', () async {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (call) async {
-      expect(call.method, 'readImage');
-      return {
-        'bytes': Uint8List.fromList([1, 2, 3]),
-        'contentType': 'image/png',
-        'name': 'crop.png',
-      };
-    });
+          expect(call.method, 'readImage');
+          return {
+            'bytes': Uint8List.fromList([1, 2, 3]),
+            'contentType': 'image/png',
+            'name': 'crop.png',
+          };
+        });
 
     final item = await ClipboardMediaService(channel: channel).readImage();
 
@@ -34,12 +34,12 @@ void main() {
   test('readImage ignores non-image clipboard payloads', () async {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (_) async {
-      return {
-        'bytes': Uint8List.fromList([1, 2, 3]),
-        'contentType': 'text/plain',
-        'name': 'notes.txt',
-      };
-    });
+          return {
+            'bytes': Uint8List.fromList([1, 2, 3]),
+            'contentType': 'text/plain',
+            'name': 'notes.txt',
+          };
+        });
 
     final item = await ClipboardMediaService(channel: channel).readImage();
 

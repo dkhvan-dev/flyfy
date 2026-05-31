@@ -32,8 +32,9 @@ void main() {
   });
 
   test('full-screen transparent sheet frames dismiss outside taps', () {
-    final chrome =
-        File('lib/core/ui/filter_sheet_chrome.dart').readAsStringSync();
+    final chrome = File(
+      'lib/core/ui/filter_sheet_chrome.dart',
+    ).readAsStringSync();
     expect(chrome, contains('class AppDismissibleModalSheet'));
     expect(chrome, contains('Navigator.maybePop(context)'));
 
@@ -43,7 +44,9 @@ void main() {
       'lib/screens/attractions/attractions_filter_sheet.dart',
     ]) {
       expect(
-          File(path).readAsStringSync(), contains('AppDismissibleModalSheet'));
+        File(path).readAsStringSync(),
+        contains('AppDismissibleModalSheet'),
+      );
     }
   });
 }

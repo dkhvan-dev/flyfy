@@ -57,6 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _showGuideBadge = false;
   bool _isGuideStatusRevoked = false;
   bool _suppressGuideFallback = false;
+  bool _initialHomeDataLoadScheduled = false;
 
   static const _promoYachtImageUrl =
       'https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?auto=format&fit=crop&w=900&q=80';
@@ -67,32 +68,72 @@ class _HomeScreenState extends State<HomeScreen> {
       'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=700&q=80';
   static const _carRentalsImageUrl =
       'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=700&q=80';
+  static const _initialHomeDataDelay = Duration(milliseconds: 350);
+  static const _initialHomeDataStagger = Duration(milliseconds: 160);
 
   @override
   void initState() {
     super.initState();
+    _scheduleInitialDataLoad();
+  }
+
+  void _scheduleInitialDataLoad() {
+    if (_initialHomeDataLoadScheduled) return;
+    _initialHomeDataLoadScheduled = true;
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = context.read<ActivityProvider>();
-      final sessionProvider = context.read<SessionProvider>();
-      context.read<HomeLocationProvider>().load(
-            profile: sessionProvider.profile,
-          );
-      if (provider.state == ActivitiesState.initial && provider.items.isEmpty) {
-        provider.loadActivities();
-      }
-      if (provider.categoryState == ActivitiesState.initial &&
-          provider.categoryItems.isEmpty) {
-        provider.loadActivityCategories();
-      }
-      final currentUserId = (sessionProvider.profile?.userId ?? '').trim();
-      if (currentUserId.isNotEmpty &&
-          provider.joinedState == ActivitiesState.initial &&
-          provider.joinedItems.isEmpty) {
-        provider.loadJoinedActivities();
-      }
-      _loadTopAttractions();
-      _loadTopStories();
+      if (!mounted) return;
+      unawaited(_runInitialDataLoad());
     });
+  }
+
+  Future<void> _runInitialDataLoad() async {
+    await WidgetsBinding.instance.waitUntilFirstFrameRasterized;
+    await Future<void>.delayed(_initialHomeDataDelay);
+    if (!mounted) return;
+
+    final provider = context.read<ActivityProvider>();
+    final sessionProvider = context.read<SessionProvider>();
+    final homeLocationProvider = context.read<HomeLocationProvider>();
+
+    try {
+      await homeLocationProvider.load(profile: sessionProvider.profile);
+    } catch (_) {
+      // Discovery location is a startup convenience; failed storage reads
+      // should not block the main feed from loading.
+    }
+
+    if (!mounted) return;
+    if (provider.categoryState == ActivitiesState.initial &&
+        provider.categoryItems.isEmpty) {
+      final categoryLoad = provider.loadActivityCategories();
+      unawaited(categoryLoad);
+    }
+
+    await Future<void>.delayed(_initialHomeDataStagger);
+    if (!mounted) return;
+    if (provider.state == ActivitiesState.initial && provider.items.isEmpty) {
+      final activitiesLoad = provider.loadActivities();
+      unawaited(activitiesLoad);
+    }
+
+    await Future<void>.delayed(_initialHomeDataStagger);
+    if (!mounted) return;
+    final currentUserId = (sessionProvider.profile?.userId ?? '').trim();
+    if (currentUserId.isNotEmpty &&
+        provider.joinedState == ActivitiesState.initial &&
+        provider.joinedItems.isEmpty) {
+      final joinedLoad = provider.loadJoinedActivities();
+      unawaited(joinedLoad);
+    }
+
+    await Future<void>.delayed(_initialHomeDataStagger);
+    if (!mounted) return;
+    unawaited(_loadTopAttractions());
+
+    await Future<void>.delayed(_initialHomeDataStagger);
+    if (!mounted) return;
+    unawaited(_loadTopStories());
   }
 
   @override
@@ -395,11 +436,13 @@ class _HomeScreenState extends State<HomeScreen> {
         final iconSize = (isCompact ? 50.0 : 58.0) * visualScale;
         final topPadding = isShortLayout ? 20.0 : (isCompact ? 24.0 : 28.0);
         final bottomPadding = isShortLayout ? 20.0 : (isCompact ? 24.0 : 30.0);
-        final handleToIconGap =
-            isShortLayout ? 20.0 : (isCompact ? 26.0 : 34.0);
+        final handleToIconGap = isShortLayout
+            ? 20.0
+            : (isCompact ? 26.0 : 34.0);
         final iconToTitleGap = isShortLayout ? 18.0 : (isCompact ? 22.0 : 26.0);
-        final titleToOptionsGap =
-            isShortLayout ? 22.0 : (isCompact ? 28.0 : 34.0);
+        final titleToOptionsGap = isShortLayout
+            ? 22.0
+            : (isCompact ? 28.0 : 34.0);
         final optionGap = isShortLayout ? 12.0 : (isCompact ? 14.0 : 16.0);
 
         return SafeArea(
@@ -693,7 +736,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final profile = session.profile;
     final currentUserId = (profile?.userId ?? '').trim();
     final languageCode = Localizations.localeOf(context).languageCode;
-    if (!homeLocationProvider.isLoaded && !homeLocationProvider.isLoading) {
+    if (!_initialHomeDataLoadScheduled &&
+        !homeLocationProvider.isLoaded &&
+        !homeLocationProvider.isLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         context.read<HomeLocationProvider>().load(profile: profile);
@@ -1188,8 +1233,9 @@ class _LogoutDialogActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foregroundColor =
-        isPrimary ? AppColors.textPrimary : const Color(0xFFD8C7B7);
+    final foregroundColor = isPrimary
+        ? AppColors.textPrimary
+        : const Color(0xFFD8C7B7);
 
     return Material(
       color: Colors.transparent,
@@ -1528,8 +1574,9 @@ class _QuickActionsGrid extends StatelessWidget {
         final minContentHeight =
             iconSize + iconLabelGap + 13 + verticalPadding * 2;
         final visualHeight = tileWidth * (isCompact ? 0.82 : 0.76);
-        final tileHeight =
-            visualHeight < minContentHeight ? minContentHeight : visualHeight;
+        final tileHeight = visualHeight < minContentHeight
+            ? minContentHeight
+            : visualHeight;
 
         return GridView.builder(
           shrinkWrap: true,
@@ -1544,12 +1591,15 @@ class _QuickActionsGrid extends StatelessWidget {
           itemBuilder: (context, index) {
             final action = actions[index];
             final isEnabled = action.onTap != null;
-            final foregroundColor =
-                isEnabled ? AppColors.accent : const Color(0xFF8E8A84);
-            final textColor =
-                isEnabled ? const Color(0xFFF2E5D7) : const Color(0xFFB1AAA2);
-            final backgroundColor =
-                isEnabled ? const Color(0xFF43280D) : const Color(0xFF3D3935);
+            final foregroundColor = isEnabled
+                ? AppColors.accent
+                : const Color(0xFF8E8A84);
+            final textColor = isEnabled
+                ? const Color(0xFFF2E5D7)
+                : const Color(0xFFB1AAA2);
+            final backgroundColor = isEnabled
+                ? const Color(0xFF43280D)
+                : const Color(0xFF3D3935);
 
             return Material(
               color: Colors.transparent,
@@ -1647,7 +1697,7 @@ class _PromoCarousel extends StatelessWidget {
                   physics: const BouncingScrollPhysics(),
                   clipBehavior: Clip.none,
                   itemCount: promos.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 14),
+                  separatorBuilder: (_, _) => const SizedBox(width: 14),
                   itemBuilder: (context, index) {
                     return SizedBox(
                       width: cardWidth,
@@ -1811,8 +1861,8 @@ class _TopDestinationsRow extends StatelessWidget {
                 physics: const BouncingScrollPhysics(),
                 clipBehavior: Clip.none,
                 itemCount: 5,
-                separatorBuilder: (_, __) => SizedBox(width: gap),
-                itemBuilder: (_, __) => SizedBox(
+                separatorBuilder: (_, _) => SizedBox(width: gap),
+                itemBuilder: (_, _) => SizedBox(
                   width: cardWidth,
                   child: const _TopDestinationLoadingCard(),
                 ),
@@ -1851,7 +1901,7 @@ class _TopDestinationsRow extends StatelessWidget {
               physics: const BouncingScrollPhysics(),
               clipBehavior: Clip.none,
               itemCount: items.length,
-              separatorBuilder: (_, __) => SizedBox(width: gap),
+              separatorBuilder: (_, _) => SizedBox(width: gap),
               itemBuilder: (context, index) {
                 final attraction = items[index];
                 return SizedBox(
@@ -2096,7 +2146,7 @@ class _AttractionCardNetworkImage extends StatelessWidget {
         if (progress == null) return child;
         return const _AttractionCardImagePlaceholder();
       },
-      errorBuilder: (_, __, ___) => const _AttractionCardImagePlaceholder(),
+      errorBuilder: (_, _, _) => const _AttractionCardImagePlaceholder(),
     );
   }
 }
@@ -2309,8 +2359,8 @@ class _TopStoriesCarousel extends StatelessWidget {
                 physics: const BouncingScrollPhysics(),
                 clipBehavior: Clip.none,
                 itemCount: 5,
-                separatorBuilder: (_, __) => SizedBox(width: gap),
-                itemBuilder: (_, __) => SizedBox(
+                separatorBuilder: (_, _) => SizedBox(width: gap),
+                itemBuilder: (_, _) => SizedBox(
                   width: cardWidth,
                   child: _TopStoryLoadingCard(imageHeight: imageHeight),
                 ),
@@ -2358,7 +2408,7 @@ class _TopStoriesCarousel extends StatelessWidget {
               physics: const BouncingScrollPhysics(),
               clipBehavior: Clip.none,
               itemCount: items.length,
-              separatorBuilder: (_, __) => SizedBox(width: gap),
+              separatorBuilder: (_, _) => SizedBox(width: gap),
               itemBuilder: (context, index) {
                 final story = items[index];
                 return SizedBox(
@@ -2813,7 +2863,8 @@ class _RecommendedActivitiesSection extends StatelessWidget {
       currentUserId: currentUserId,
       location: location,
     );
-    final isLoadingPublic = provider.state == ActivitiesState.loading ||
+    final isLoadingPublic =
+        provider.state == ActivitiesState.loading ||
         provider.state == ActivitiesState.initial;
     final hasLoadError = provider.state == ActivitiesState.error;
 
@@ -2997,8 +3048,9 @@ class _RecommendedActivityCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isCompact = screenWidth < 360;
-    final buttonLabel =
-        isJoined ? l10n.activityDetailsJoinedBadge : l10n.activityJoinSession;
+    final buttonLabel = isJoined
+        ? l10n.activityDetailsJoinedBadge
+        : l10n.activityJoinSession;
 
     return LayoutBuilder(
       builder: (context, constraints) {

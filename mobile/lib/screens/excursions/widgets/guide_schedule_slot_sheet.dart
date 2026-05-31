@@ -77,8 +77,9 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.watch<ExcursionScheduleProvider>();
-    final guideExcursions =
-        context.watch<ExcursionProvider>().myGuideExcursions;
+    final guideExcursions = context
+        .watch<ExcursionProvider>()
+        .myGuideExcursions;
     final offerOptions = _offerOptions(guideExcursions, l10n);
     final dropdownOptions = _dropdownOfferOptions(
       offerOptions,
@@ -90,8 +91,8 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
     final selectedOffer = _selectedOfferOption(dropdownOptions);
     final showActionError =
         provider.actionState == ExcursionScheduleActionState.error &&
-            provider.actionErrorMessage != null &&
-            !provider.isActionConflict;
+        provider.actionErrorMessage != null &&
+        !provider.isActionConflict;
     final isReadonly = widget.slot?.isReadonly == true;
 
     return SafeArea(
@@ -119,8 +120,8 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
                   isReadonly
                       ? l10n.guideCalendarViewSlot
                       : isEditing
-                          ? l10n.guideCalendarEditSlot
-                          : l10n.guideCalendarAddSlot,
+                      ? l10n.guideCalendarEditSlot
+                      : l10n.guideCalendarAddSlot,
                   style: const TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 22,
@@ -133,47 +134,50 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
                   menuMaxHeight: 320,
                   itemHeight: 74,
                   borderRadius: BorderRadius.circular(8),
-                  items: dropdownOptions.map((option) {
-                    return DropdownMenuItem<String>(
-                      value: option.id,
-                      child: _OfferOptionTile(option: option),
-                    );
-                  }).toList(growable: false),
-                  selectedItemBuilder: (context) =>
-                      dropdownOptions.map((option) {
-                    return Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: Text(
-                        option.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    );
-                  }).toList(growable: false),
+                  items: dropdownOptions
+                      .map((option) {
+                        return DropdownMenuItem<String>(
+                          value: option.id,
+                          child: _OfferOptionTile(option: option),
+                        );
+                      })
+                      .toList(growable: false),
+                  selectedItemBuilder: (context) => dropdownOptions
+                      .map((option) {
+                        return Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: Text(
+                            option.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        );
+                      })
+                      .toList(growable: false),
                   onChanged: isReadonly || !hasOfferOptions
                       ? null
                       : (value) => setState(() {
-                            _selectedOfferId = value;
-                            _offerError = null;
-                            _showConflictBanner = false;
-                          }),
+                          _selectedOfferId = value;
+                          _offerError = null;
+                          _showConflictBanner = false;
+                        }),
                   isExpanded: true,
                   dropdownColor: const Color(0xFF241A11),
                   iconEnabledColor: _slotSheetFieldIconColor,
                   iconDisabledColor: _slotSheetFieldIconColor,
                   style: const TextStyle(color: AppColors.textPrimary),
-                  decoration:
-                      _inputDecoration(l10n.guideCalendarOfferLabel).copyWith(
-                    errorText: _offerError,
-                    helperText: !isEditing && !hasOfferOptions
-                        ? l10n.guideCalendarNoPublishedOffers
-                        : null,
-                    helperMaxLines: 2,
-                  ),
+                  decoration: _inputDecoration(l10n.guideCalendarOfferLabel)
+                      .copyWith(
+                        errorText: _offerError,
+                        helperText: !isEditing && !hasOfferOptions
+                            ? l10n.guideCalendarNoPublishedOffers
+                            : null,
+                        helperMaxLines: 2,
+                      ),
                 ),
                 const SizedBox(height: 12),
                 Wrap(
@@ -214,13 +218,13 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
                   onChanged: (_) => _clearActionHints(clearCapacity: true),
                   decoration: _inputDecoration(l10n.guideCalendarCapacityLabel)
                       .copyWith(
-                    errorText: _capacityError,
-                    helperText: selectedOffer?.maxCapacity == null
-                        ? null
-                        : l10n.guideCalendarCapacityMax(
-                            selectedOffer!.maxCapacity!,
-                          ),
-                  ),
+                        errorText: _capacityError,
+                        helperText: selectedOffer?.maxCapacity == null
+                            ? null
+                            : l10n.guideCalendarCapacityMax(
+                                selectedOffer!.maxCapacity!,
+                              ),
+                      ),
                 ),
                 const SizedBox(height: 16),
                 ChipTheme(
@@ -291,7 +295,8 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
                           backgroundColor: AppColors.accent,
                           foregroundColor: AppColors.textPrimary,
                         ),
-                        onPressed: provider.actionState ==
+                        onPressed:
+                            provider.actionState ==
                                     ExcursionScheduleActionState.loading ||
                                 !hasOfferOptions
                             ? null
@@ -301,7 +306,8 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
                       ),
                       OutlinedButton.icon(
                         style: _closeSlotButtonStyle(),
-                        onPressed: provider.actionState ==
+                        onPressed:
+                            provider.actionState ==
                                 ExcursionScheduleActionState.loading
                             ? null
                             : () => _closeSlot(provider),
@@ -310,7 +316,8 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
                       ),
                       OutlinedButton.icon(
                         style: _cancelSlotButtonStyle(),
-                        onPressed: provider.actionState ==
+                        onPressed:
+                            provider.actionState ==
                                 ExcursionScheduleActionState.loading
                             ? null
                             : () => _cancelSlot(provider),
@@ -319,7 +326,8 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
                       ),
                       OutlinedButton.icon(
                         style: _deleteSlotButtonStyle(),
-                        onPressed: provider.actionState ==
+                        onPressed:
+                            provider.actionState ==
                                 ExcursionScheduleActionState.loading
                             ? null
                             : () => _deleteSlot(provider),
@@ -332,7 +340,8 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
                           backgroundColor: AppColors.accent,
                           foregroundColor: AppColors.textPrimary,
                         ),
-                        onPressed: provider.actionState ==
+                        onPressed:
+                            provider.actionState ==
                                     ExcursionScheduleActionState.loading ||
                                 !hasOfferOptions
                             ? null
@@ -400,23 +409,22 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
 
   ChipThemeData _chipTheme(BuildContext context) {
     return Theme.of(context).chipTheme.copyWith(
-          backgroundColor: const Color(0xFF3A2107),
-          selectedColor: AppColors.accent,
-          disabledColor: const Color(0xFF3A2107).withValues(alpha: 0.52),
-          checkmarkColor: AppColors.textPrimary,
-          labelStyle: const TextStyle(
-            color: Color(0xFFEFDCC8),
-            fontWeight: FontWeight.w800,
-          ),
-          secondaryLabelStyle: const TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w900,
-          ),
-          side: BorderSide(color: AppColors.accent.withValues(alpha: 0.26)),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        );
+      backgroundColor: const Color(0xFF3A2107),
+      selectedColor: AppColors.accent,
+      disabledColor: const Color(0xFF3A2107).withValues(alpha: 0.52),
+      checkmarkColor: AppColors.textPrimary,
+      labelStyle: const TextStyle(
+        color: Color(0xFFEFDCC8),
+        fontWeight: FontWeight.w800,
+      ),
+      secondaryLabelStyle: const TextStyle(
+        color: AppColors.textPrimary,
+        fontWeight: FontWeight.w900,
+      ),
+      side: BorderSide(color: AppColors.accent.withValues(alpha: 0.26)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+    );
   }
 
   ButtonStyle _closeSlotButtonStyle() {
@@ -539,9 +547,9 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
       parsedTime.hour,
       parsedTime.minute,
     );
-    if (startAt
-        .toUtc()
-        .isBefore(DateTime.now().toUtc().add(_slotSetupLeadTime))) {
+    if (startAt.toUtc().isBefore(
+      DateTime.now().toUtc().add(_slotSetupLeadTime),
+    )) {
       setState(() {
         _timeError = l10n.guideCalendarSlotLeadTimeTooSoon;
       });
@@ -599,25 +607,25 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
             ),
           )
         : _repeatWeekly
-            ? await provider.createSeries(
-                CreateExcursionScheduleSeriesRequest(
-                  offerId: offerId,
-                  startsOn: _date,
-                  startTime: _formatTime(_time),
-                  timezone: _timezone,
-                  weekdays: _weekdays.toList()..sort(),
-                  occurrenceLimit: 12,
-                  capacity: capacity,
-                ),
-              )
-            : await provider.createSlot(
-                CreateExcursionScheduleSlotRequest(
-                  offerId: offerId,
-                  startAt: startAt,
-                  timezone: _timezone,
-                  capacity: capacity,
-                ),
-              );
+        ? await provider.createSeries(
+            CreateExcursionScheduleSeriesRequest(
+              offerId: offerId,
+              startsOn: _date,
+              startTime: _formatTime(_time),
+              timezone: _timezone,
+              weekdays: _weekdays.toList()..sort(),
+              occurrenceLimit: 12,
+              capacity: capacity,
+            ),
+          )
+        : await provider.createSlot(
+            CreateExcursionScheduleSlotRequest(
+              offerId: offerId,
+              startAt: startAt,
+              timezone: _timezone,
+              capacity: capacity,
+            ),
+          );
     if (!mounted) return;
     final showConflict = !ok && provider.isActionConflict;
     setState(() => _showConflictBanner = showConflict);

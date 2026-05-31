@@ -14,15 +14,17 @@ void main() {
     expect(source, contains('reloadProfile()'));
   });
 
-  test('profile settings screen wires pull-to-refresh to a profile reload',
-      () async {
-    final source = await File(
-      'lib/screens/profile/profile_settings_screen.dart',
-    ).readAsString();
+  test(
+    'profile settings screen wires pull-to-refresh to a profile reload',
+    () async {
+      final source = await File(
+        'lib/screens/profile/profile_settings_screen.dart',
+      ).readAsString();
 
-    expect(source, contains('Future<void> _refreshProfileSettings() async'));
-    expect(source, contains('RefreshIndicator('));
-    expect(source, contains('onRefresh: _refreshProfileSettings'));
-    expect(source, contains('reloadProfile()'));
-  });
+      expect(source, contains('Future<void> _refreshProfileSettings() async'));
+      expect(source, contains('RefreshIndicator('));
+      expect(source, contains('onRefresh: _refreshProfileSettings'));
+      expect(source, contains('reloadProfile()'));
+    },
+  );
 }

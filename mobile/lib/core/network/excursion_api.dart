@@ -43,7 +43,8 @@ class ExcursionApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -92,8 +93,8 @@ class ExcursionApi {
           'sortDirection': sortDirection!.trim(),
         if ((languageCode ?? '').trim().isNotEmpty)
           'languageCode': languageCode!.trim(),
-        if (priceMax != null) 'priceMax': priceMax,
-        if (maxGroupSizeMin != null) 'maxGroupSizeMin': maxGroupSizeMin,
+        'priceMax': ?priceMax,
+        'maxGroupSizeMin': ?maxGroupSizeMin,
         if ((preferredGuideUserId ?? '').trim().isNotEmpty)
           'preferredGuideUserId': preferredGuideUserId!.trim(),
       },
@@ -101,7 +102,8 @@ class ExcursionApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -153,7 +155,8 @@ class ExcursionApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -255,7 +258,8 @@ class ExcursionApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -279,7 +283,8 @@ class ExcursionApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -345,7 +350,8 @@ class ExcursionApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -390,7 +396,8 @@ class ExcursionApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];

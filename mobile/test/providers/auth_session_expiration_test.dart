@@ -9,34 +9,36 @@ import 'package:inflap/providers/auth_provider.dart';
 import 'package:inflap/providers/session_provider.dart';
 
 void main() {
-  test('AuthProvider marks user unauthenticated when session expires',
-      () async {
-    final events = AuthSessionEvents();
-    final storage = _MemorySecureStorage(
-      accessToken: 'access-token',
-      refreshToken: 'refresh-token',
-    );
-    final provider = AuthProvider(
-      apiClient: ApiClient(
-        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1')),
+  test(
+    'AuthProvider marks user unauthenticated when session expires',
+    () async {
+      final events = AuthSessionEvents();
+      final storage = _MemorySecureStorage(
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+      );
+      final provider = AuthProvider(
+        apiClient: ApiClient(
+          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1')),
+          secureStorage: storage,
+          authSessionEvents: events,
+        ),
         secureStorage: storage,
         authSessionEvents: events,
-      ),
-      secureStorage: storage,
-      authSessionEvents: events,
-    );
+      );
 
-    await provider.checkAuthStatus();
-    expect(provider.state, AuthState.authenticated);
+      await provider.checkAuthStatus();
+      expect(provider.state, AuthState.authenticated);
 
-    events.notifySessionExpired();
-    await Future<void>.delayed(Duration.zero);
+      events.notifySessionExpired();
+      await Future<void>.delayed(Duration.zero);
 
-    expect(provider.state, AuthState.unauthenticated);
-    expect(await storage.getAccessToken(), isNull);
-    expect(await storage.getRefreshToken(), isNull);
-    provider.dispose();
-  });
+      expect(provider.state, AuthState.unauthenticated);
+      expect(await storage.getAccessToken(), isNull);
+      expect(await storage.getRefreshToken(), isNull);
+      provider.dispose();
+    },
+  );
 
   test('SessionProvider clears cached profile when session expires', () async {
     final events = AuthSessionEvents();
@@ -83,11 +85,11 @@ class _MemorySecureStorage extends SecureStorage {
 
 class _FakeProfileApi extends ProfileApi {
   _FakeProfileApi()
-      : super(
-          apiClient: ApiClient(
-            dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1')),
-          ),
-        );
+    : super(
+        apiClient: ApiClient(
+          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1')),
+        ),
+      );
 
   @override
   Future<UserProfileVm> getOrInitMe({

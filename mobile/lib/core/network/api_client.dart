@@ -6,6 +6,46 @@ import '../config/app_config.dart';
 import '../models/auth_result.dart';
 import '../storage/secure_storage.dart';
 
+class _CompactNetworkLogInterceptor extends Interceptor {
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    debugPrint('HTTP -> ${options.method} ${_safeRoute(options)}');
+    handler.next(options);
+  }
+
+  @override
+  void onResponse(
+    Response<dynamic> response,
+    ResponseInterceptorHandler handler,
+  ) {
+    final request = response.requestOptions;
+    debugPrint(
+      'HTTP <- ${response.statusCode ?? '-'} ${request.method} '
+      '${_safeRoute(request)}',
+    );
+    handler.next(response);
+  }
+
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) {
+    final request = err.requestOptions;
+    final status = err.response?.statusCode?.toString() ?? err.type.name;
+    debugPrint('HTTP !! $status ${request.method} ${_safeRoute(request)}');
+    handler.next(err);
+  }
+
+  String _safeRoute(RequestOptions options) {
+    final uri = options.uri;
+    final path = uri.path.isEmpty ? options.path : uri.path;
+    final queryKeys =
+        uri.queryParameters.keys.where((key) => key.trim().isNotEmpty).toList()
+          ..sort();
+
+    if (queryKeys.isEmpty) return path;
+    return '$path?${queryKeys.join('&')}';
+  }
+}
+
 class ApiClient {
   ApiClient({
     String? baseUrl,
@@ -39,14 +79,7 @@ class ApiClient {
 
   void _configureInterceptors() {
     if (kDebugMode) {
-      _dio.interceptors.add(
-        LogInterceptor(
-          requestBody: false,
-          responseBody: false,
-          error: true,
-          requestHeader: false,
-        ),
-      );
+      _dio.interceptors.add(_CompactNetworkLogInterceptor());
     }
 
     _dio.interceptors.add(

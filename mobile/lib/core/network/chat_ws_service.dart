@@ -128,7 +128,8 @@ class ChatWsService {
   void _logConnectError(Object error) {
     final signature = error.toString();
     final now = DateTime.now();
-    final shouldLog = signature != _lastConnectErrorSignature ||
+    final shouldLog =
+        signature != _lastConnectErrorSignature ||
         _lastConnectErrorLoggedAt == null ||
         now.difference(_lastConnectErrorLoggedAt!) >
             const Duration(seconds: 30);

@@ -10,10 +10,7 @@ void main() {
         currency: 'KZT',
         localeName: 'ru',
       ),
-      NumberFormat.simpleCurrency(
-        name: 'KZT',
-        decimalDigits: 0,
-      ).format(123456),
+      NumberFormat.simpleCurrency(name: 'KZT', decimalDigits: 0).format(123456),
     );
     expect(
       formatGuideDashboardRevenue(

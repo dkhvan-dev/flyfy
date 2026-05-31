@@ -5,7 +5,7 @@ import '../models/public_guide_vm.dart';
 
 class GuideDiscoveryApi {
   GuideDiscoveryApi({ApiClient? apiClient})
-      : _apiClient = apiClient ?? ApiClient();
+    : _apiClient = apiClient ?? ApiClient();
 
   final ApiClient _apiClient;
 
@@ -78,8 +78,8 @@ class GuideDiscoveryApi {
     final items = data is Map<String, dynamic>
         ? data['items'] as List<dynamic>? ?? const []
         : data is List<dynamic>
-            ? data
-            : const [];
+        ? data
+        : const [];
 
     final guides = items
         .whereType<Map<String, dynamic>>()
@@ -116,15 +116,18 @@ class GuideDiscoveryApi {
         queryParameters: {'guideUserIds': guideUserIds.join(',')},
         options: Options(extra: const {'requiresAuth': false}),
       );
-      final languagesByGuideUserId =
-          _parseExcursionLanguageResponse(response.data);
+      final languagesByGuideUserId = _parseExcursionLanguageResponse(
+        response.data,
+      );
       if (languagesByGuideUserId.isEmpty) return guides;
 
-      return guides.map((guide) {
-        final languages = languagesByGuideUserId[guide.userId.trim()];
-        if (languages == null) return guide;
-        return guide.copyWith(excursionLanguageCodes: languages);
-      }).toList(growable: false);
+      return guides
+          .map((guide) {
+            final languages = languagesByGuideUserId[guide.userId.trim()];
+            if (languages == null) return guide;
+            return guide.copyWith(excursionLanguageCodes: languages);
+          })
+          .toList(growable: false);
     } on DioException {
       return guides;
     } on FormatException {

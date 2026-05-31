@@ -156,8 +156,8 @@ class _ActivityPaymentScreenState extends State<ActivityPaymentScreen> {
         : l10n.activityDetailsHostFallbackName;
     final cardHolderName =
         (sessionProfile?.preferredName ?? '').trim().isNotEmpty
-            ? sessionProfile!.preferredName
-            : l10n.activityPaymentCardHolderFallback;
+        ? sessionProfile!.preferredName
+        : l10n.activityPaymentCardHolderFallback;
     final compact = MediaQuery.sizeOf(context).width < 360;
     final totalLabel = formatActivityMoney(
       amount: activity.priceAmount,
@@ -181,8 +181,9 @@ class _ActivityPaymentScreenState extends State<ActivityPaymentScreen> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final horizontalPadding = compact ? 16.0 : 20.0;
-              final contentWidth =
-                  constraints.maxWidth > 440 ? 440.0 : constraints.maxWidth;
+              final contentWidth = constraints.maxWidth > 440
+                  ? 440.0
+                  : constraints.maxWidth;
 
               return Center(
                 child: SizedBox(

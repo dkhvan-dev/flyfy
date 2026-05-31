@@ -48,8 +48,9 @@ class ExcursionLocationSelection {
   }) {
     final mapUrl = attraction.locationSourceUrl.trim();
     final coverMedia = attraction.coverMedia;
-    final coverImageUrl =
-        coverMedia == null ? null : resolveAttractionMediaUrl(coverMedia);
+    final coverImageUrl = coverMedia == null
+        ? null
+        : resolveAttractionMediaUrl(coverMedia);
     final cityId = attraction.cityId.trim();
     final cityName = _selectionCityName(
       cityId: cityId,
@@ -96,10 +97,7 @@ class ExcursionLocationSelection {
   }
 }
 
-String? _selectionCityName({
-  required String cityId,
-  String? fallbackCityName,
-}) {
+String? _selectionCityName({required String cityId, String? fallbackCityName}) {
   final cityName = fallbackCityName?.trim();
   if (cityName != null && cityName.isNotEmpty) {
     return cityName;
@@ -363,7 +361,8 @@ class _ExcursionSelectLocationScreenState
 
   Future<void> _handleSwipeCloseEnd(DragEndDetails details) async {
     final primaryVelocity = details.primaryVelocity ?? 0;
-    final shouldClose = _isTrackingSwipeClose &&
+    final shouldClose =
+        _isTrackingSwipeClose &&
         (_swipeCloseDistance >= _swipeCloseMinDistance ||
             primaryVelocity >= _swipeCloseMinVelocity);
 
@@ -635,7 +634,7 @@ class _AttractionSelectionCard extends StatelessWidget {
                       fit: BoxFit.cover,
                       cacheWidth: imageTargetWidth,
                       filterQuality: FilterQuality.medium,
-                      errorBuilder: (_, __, ___) => const _AttractionFallback(),
+                      errorBuilder: (_, _, _) => const _AttractionFallback(),
                       loadingBuilder: (context, child, progress) {
                         if (progress == null) return child;
                         return const _AttractionFallback();
@@ -877,8 +876,7 @@ class _LocationPagination extends StatelessWidget {
       if (currentPage > 1) currentPage - 1,
       if (currentPage < totalPages) currentPage + 1,
       totalPages,
-    }.where((page) => page >= 1 && page <= totalPages).toList()
-      ..sort();
+    }.where((page) => page >= 1 && page <= totalPages).toList()..sort();
 
     return Wrap(
       alignment: WrapAlignment.center,
@@ -958,8 +956,9 @@ class _PageCircle extends StatelessWidget {
               )
             : Icon(
                 icon,
-                color:
-                    enabled ? const Color(0xFFD7C7BB) : const Color(0xFF6F5848),
+                color: enabled
+                    ? const Color(0xFFD7C7BB)
+                    : const Color(0xFF6F5848),
               ),
       ),
     );

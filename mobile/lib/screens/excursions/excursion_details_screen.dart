@@ -69,13 +69,13 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ExcursionProvider>().loadExcursionDetails(
-            widget.excursionId,
-            initialExcursion: widget.initialExcursion,
-          );
+        widget.excursionId,
+        initialExcursion: widget.initialExcursion,
+      );
       unawaited(
         context.read<ExcursionProvider>().loadExcursionReviews(
-              productId: widget.excursionId,
-            ),
+          productId: widget.excursionId,
+        ),
       );
     });
   }
@@ -108,9 +108,9 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
 
   Future<void> _retry({ExcursionVm? initialExcursion}) {
     return context.read<ExcursionProvider>().loadExcursionDetails(
-          widget.excursionId,
-          initialExcursion: initialExcursion ?? widget.initialExcursion,
-        );
+      widget.excursionId,
+      initialExcursion: initialExcursion ?? widget.initialExcursion,
+    );
   }
 
   void _showInfoSnack(String message) {
@@ -250,11 +250,13 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
     if (updated != null) {
       final updatedProductId = updated.id.trim();
       setState(() {
-        _visibleOffersExcursionId =
-            updatedProductId.isNotEmpty ? updatedProductId : null;
+        _visibleOffersExcursionId = updatedProductId.isNotEmpty
+            ? updatedProductId
+            : null;
         _visibleOffers = updated.offers;
-        _selectedOfferId =
-            updated.offers.isNotEmpty ? updated.offers.first.id : null;
+        _selectedOfferId = updated.offers.isNotEmpty
+            ? updated.offers.first.id
+            : null;
         _offerScheduleAvailability.clear();
         _loadingOfferScheduleAvailability.clear();
       });
@@ -352,8 +354,10 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
     ExcursionVm excursion,
     ExcursionOfferVm? selectedOffer,
   ) {
-    final selectedOfferScheduleKey =
-        _selectedOfferScheduleKey(excursion, selectedOffer);
+    final selectedOfferScheduleKey = _selectedOfferScheduleKey(
+      excursion,
+      selectedOffer,
+    );
     if (selectedOfferScheduleKey == null ||
         _offerScheduleAvailability.containsKey(selectedOfferScheduleKey) ||
         _loadingOfferScheduleAvailability.contains(selectedOfferScheduleKey)) {
@@ -382,14 +386,15 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
     final to = from.add(const Duration(days: 90));
 
     try {
-      final slots =
-          await context.read<ExcursionProvider>().loadBookableExcursionSchedule(
-                productId: productId,
-                offerId: offerId,
-                from: from,
-                to: to,
-                seats: 1,
-              );
+      final slots = await context
+          .read<ExcursionProvider>()
+          .loadBookableExcursionSchedule(
+            productId: productId,
+            offerId: offerId,
+            from: from,
+            to: to,
+            seats: 1,
+          );
       if (!mounted) return;
       setState(() {
         _offerScheduleAvailability[selectedOfferScheduleKey] = slots.any(
@@ -504,10 +509,10 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
           final excursion = provider.excursionDetailsFor(widget.excursionId);
           final isInitialLoading =
               provider.isDetailLoadingFor(widget.excursionId) &&
-                  excursion == null;
+              excursion == null;
           final isInitialError =
               provider.isDetailErrorFor(widget.excursionId) &&
-                  excursion == null;
+              excursion == null;
 
           if (isInitialLoading) {
             return const _ExcursionDetailsLoading();
@@ -516,7 +521,8 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
           if (isInitialError) {
             return SafeArea(
               child: ErrorView(
-                message: provider.detailErrorMessageFor(widget.excursionId) ??
+                message:
+                    provider.detailErrorMessageFor(widget.excursionId) ??
                     l10n.excursionDetailsLoadFailed,
                 onRetry: _retry,
               ),
@@ -538,7 +544,8 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
                   .trim();
           final hasBookableOffer = offers.isNotEmpty;
           final currentUserId = (session.profile?.userId ?? '').trim();
-          final isCurrentUserGuide = session.profile?.roles.any(
+          final isCurrentUserGuide =
+              session.profile?.roles.any(
                 (role) => role.trim().toUpperCase() == 'GUIDE',
               ) ??
               false;
@@ -547,23 +554,27 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
           if (!isAuthor && hasBookableOffer) {
             _scheduleLoadSelectedOfferAvailability(excursion, selectedOffer);
           }
-          final selectedOfferScheduleKey =
-              _selectedOfferScheduleKey(excursion, selectedOffer);
-          final hasAvailableSchedule = selectedOfferScheduleKey != null &&
+          final selectedOfferScheduleKey = _selectedOfferScheduleKey(
+            excursion,
+            selectedOffer,
+          );
+          final hasAvailableSchedule =
+              selectedOfferScheduleKey != null &&
               (_offerScheduleAvailability[selectedOfferScheduleKey] ?? false);
-          final hasScheduleAvailabilityResult = selectedOfferScheduleKey !=
-                  null &&
+          final hasScheduleAvailabilityResult =
+              selectedOfferScheduleKey != null &&
               _offerScheduleAvailability.containsKey(selectedOfferScheduleKey);
-          final isCheckingSchedule = selectedOfferScheduleKey != null &&
+          final isCheckingSchedule =
+              selectedOfferScheduleKey != null &&
               _loadingOfferScheduleAvailability.contains(
                 selectedOfferScheduleKey,
               );
           final bookingUnavailableMessage =
               !isAuthor && hasBookableOffer && !hasAvailableSchedule
-                  ? (isCheckingSchedule || !hasScheduleAvailabilityResult
-                      ? l10n.excursionDetailsCheckingSchedule
-                      : l10n.excursionDetailsNoAvailableSlots)
-                  : null;
+              ? (isCheckingSchedule || !hasScheduleAvailabilityResult
+                    ? l10n.excursionDetailsCheckingSchedule
+                    : l10n.excursionDetailsNoAvailableSlots)
+              : null;
           _scheduleResolveGuideProfiles(
             offers.map((offer) => offer.guideUserId),
             session.profile,
@@ -589,7 +600,8 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
                 !isAuthor && hasBookableOffer && hasAvailableSchedule,
             showCheckoutPrice:
                 !isCurrentUserGuide && !isAuthor && hasBookableOffer,
-            showEditOfferAction: isAuthor &&
+            showEditOfferAction:
+                isAuthor &&
                 (selectedOffer?.legacyExcursionId ?? '').trim().isNotEmpty,
             isMessageGuideLoading: _isMessageGuideLoading,
             bookingUnavailableMessage: bookingUnavailableMessage,
@@ -676,14 +688,15 @@ class ExcursionDetailsContent extends StatelessWidget {
     final bottomPadding = MediaQuery.paddingOf(context).bottom;
     final activeSelectedOffer = selectedOffer;
     final visibleOffers = offers ?? excursion.offers;
-    final showBottomBookingNotice = !showBookingAction &&
+    final showBottomBookingNotice =
+        !showBookingAction &&
         !showEditOfferAction &&
         bookingUnavailableMessage != null;
     final scrollBottomPadding =
         (showBookingAction || showEditOfferAction || showBottomBookingNotice
-                ? 116.0
-                : 24.0) +
-            bottomPadding;
+            ? 116.0
+            : 24.0) +
+        bottomPadding;
 
     return DecoratedBox(
       decoration: const BoxDecoration(
@@ -747,7 +760,8 @@ class ExcursionDetailsContent extends StatelessWidget {
                               ),
                               if (activeSelectedOffer != null &&
                                   activeSelectedOffer
-                                      .includedItems.isNotEmpty) ...[
+                                      .includedItems
+                                      .isNotEmpty) ...[
                                 const SizedBox(height: 44),
                                 _ExcursionSelectedOfferIncludedSection(
                                   selectedOffer: activeSelectedOffer,
@@ -785,8 +799,7 @@ class ExcursionDetailsContent extends StatelessWidget {
                       label: showEditOfferAction
                           ? AppLocalizations.of(
                               context,
-                            )!
-                              .excursionDetailsEditOffer
+                            )!.excursionDetailsEditOffer
                           : AppLocalizations.of(context)!.excursionDetailsBook,
                       icon: showEditOfferAction
                           ? Icons.edit_rounded
@@ -1110,17 +1123,18 @@ class _ExcursionHeroPainter extends CustomPainter {
     canvas.drawPath(snowCap, snow);
 
     final glow = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          AppColors.accent.withValues(alpha: 0.22),
-          AppColors.accent.withValues(alpha: 0),
-        ],
-      ).createShader(
-        Rect.fromCircle(
-          center: Offset(size.width * 0.5, -size.height * 0.12),
-          radius: math.min(size.width, size.height),
-        ),
-      );
+      ..shader =
+          RadialGradient(
+            colors: [
+              AppColors.accent.withValues(alpha: 0.22),
+              AppColors.accent.withValues(alpha: 0),
+            ],
+          ).createShader(
+            Rect.fromCircle(
+              center: Offset(size.width * 0.5, -size.height * 0.12),
+              radius: math.min(size.width, size.height),
+            ),
+          );
     canvas.drawRect(Offset.zero & size, glow);
   }
 
@@ -1251,8 +1265,8 @@ class _ExcursionStatCard extends StatelessWidget {
                 fontSize: data.accent
                     ? 24
                     : data.allowMultiline
-                        ? 18
-                        : 20,
+                    ? 18
+                    : 20,
                 fontWeight: FontWeight.w800,
                 height: data.allowMultiline ? 1.16 : 1.08,
               ),
@@ -1483,26 +1497,22 @@ _ExcursionIncludedFeatureType? _includedFeatureTypeFromPrefix(String prefix) {
   return switch (prefix) {
     'transport' ||
     'транспорт' ||
-    'көлік' =>
-      _ExcursionIncludedFeatureType.transport,
+    'көлік' => _ExcursionIncludedFeatureType.transport,
     'food' ||
     'meal' ||
     'meals' ||
     'питание' ||
     'еда' ||
-    'тамақ' =>
-      _ExcursionIncludedFeatureType.food,
+    'тамақ' => _ExcursionIncludedFeatureType.food,
     'tickets' ||
     'ticket' ||
     'билеты' ||
     'билет' ||
-    'билеттер' =>
-      _ExcursionIncludedFeatureType.tickets,
+    'билеттер' => _ExcursionIncludedFeatureType.tickets,
     'equipment' ||
     'gear' ||
     'снаряжение' ||
-    'жабдық' =>
-      _ExcursionIncludedFeatureType.equipment,
+    'жабдық' => _ExcursionIncludedFeatureType.equipment,
     'guide' || 'гид' => _ExcursionIncludedFeatureType.guide,
     'photo' || 'photos' || 'фото' => _ExcursionIncludedFeatureType.photo,
     'other' || 'другое' || 'басқа' => _ExcursionIncludedFeatureType.other,
@@ -1517,40 +1527,40 @@ String _includedFeatureTypeLabel(
   final normalized = _normalizeLanguageCode(languageCode);
   final labels = switch (type) {
     _ExcursionIncludedFeatureType.transport => const {
-        'en': 'Transport',
-        'ru': 'Транспорт',
-        'kk': 'Көлік',
-      },
+      'en': 'Transport',
+      'ru': 'Транспорт',
+      'kk': 'Көлік',
+    },
     _ExcursionIncludedFeatureType.food => const {
-        'en': 'Food',
-        'ru': 'Питание',
-        'kk': 'Тамақ',
-      },
+      'en': 'Food',
+      'ru': 'Питание',
+      'kk': 'Тамақ',
+    },
     _ExcursionIncludedFeatureType.tickets => const {
-        'en': 'Tickets',
-        'ru': 'Билеты',
-        'kk': 'Билеттер',
-      },
+      'en': 'Tickets',
+      'ru': 'Билеты',
+      'kk': 'Билеттер',
+    },
     _ExcursionIncludedFeatureType.equipment => const {
-        'en': 'Equipment',
-        'ru': 'Снаряжение',
-        'kk': 'Жабдық',
-      },
+      'en': 'Equipment',
+      'ru': 'Снаряжение',
+      'kk': 'Жабдық',
+    },
     _ExcursionIncludedFeatureType.guide => const {
-        'en': 'Guide',
-        'ru': 'Гид',
-        'kk': 'Гид',
-      },
+      'en': 'Guide',
+      'ru': 'Гид',
+      'kk': 'Гид',
+    },
     _ExcursionIncludedFeatureType.photo => const {
-        'en': 'Photo',
-        'ru': 'Фото',
-        'kk': 'Фото',
-      },
+      'en': 'Photo',
+      'ru': 'Фото',
+      'kk': 'Фото',
+    },
     _ExcursionIncludedFeatureType.other => const {
-        'en': 'Included',
-        'ru': 'Включено',
-        'kk': 'Кіреді',
-      },
+      'en': 'Included',
+      'ru': 'Включено',
+      'kk': 'Кіреді',
+    },
   };
   return labels[normalized] ??
       labels[normalized.split('-').first] ??
@@ -1829,7 +1839,8 @@ class _ExcursionOffersSectionState extends State<_ExcursionOffersSection> {
     if (!widget.enableRemoteOffers) return false;
     if (oldWidget.excursion.id != widget.excursion.id) return true;
 
-    final staleEmptyOffersBecameVisible = widget.offers.isEmpty &&
+    final staleEmptyOffersBecameVisible =
+        widget.offers.isEmpty &&
         widget.excursion.publishedOffersCount > 0 &&
         (oldWidget.offers != widget.offers ||
             oldWidget.excursion.publishedOffersCount !=
@@ -1879,8 +1890,7 @@ class _ExcursionOffersSectionState extends State<_ExcursionOffersSection> {
       setState(
         () => _errorText = AppLocalizations.of(
           context,
-        )!
-            .excursionDetailsOffersLoadFailed,
+        )!.excursionDetailsOffersLoadFailed,
       );
     } finally {
       if (mounted && requestSerial == _requestSerial) {
@@ -2005,12 +2015,14 @@ class _ExcursionOffersSectionState extends State<_ExcursionOffersSection> {
     final searchGroups = excursionSearchNeedleGroups(_offerSearchQuery);
     final searchedOffers = searchGroups.isEmpty
         ? offers
-        : offers.where((offer) {
-            final haystack = _offerSearchHaystack(l10n, offer);
-            return searchGroups.every(
-              (variants) => variants.any(haystack.contains),
-            );
-          }).toList(growable: false);
+        : offers
+              .where((offer) {
+                final haystack = _offerSearchHaystack(l10n, offer);
+                return searchGroups.every(
+                  (variants) => variants.any(haystack.contains),
+                );
+              })
+              .toList(growable: false);
 
     final availableDate = _filters.availableDate;
     if (availableDate == null) return searchedOffers;
@@ -2069,14 +2081,15 @@ class _ExcursionOffersSectionState extends State<_ExcursionOffersSection> {
     );
     final to = from.add(const Duration(days: 1));
     try {
-      final slots =
-          await context.read<ExcursionProvider>().loadBookableExcursionSchedule(
-                productId: widget.excursion.id,
-                offerId: offerId,
-                from: from,
-                to: to,
-                seats: 1,
-              );
+      final slots = await context
+          .read<ExcursionProvider>()
+          .loadBookableExcursionSchedule(
+            productId: widget.excursion.id,
+            offerId: offerId,
+            from: from,
+            to: to,
+            seats: 1,
+          );
       if (!mounted) return;
       setState(() {
         _offerDateAvailability[cacheKey] = slots.any(
@@ -2175,7 +2188,8 @@ class _ExcursionOffersSectionState extends State<_ExcursionOffersSection> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final offers = _visibleOffers(l10n);
-    final isDateFilterLoading = _filters.availableDate != null &&
+    final isDateFilterLoading =
+        _filters.availableDate != null &&
         _loadingOfferDateAvailability.isNotEmpty;
 
     return _ExcursionSection(
@@ -2231,10 +2245,11 @@ class _ExcursionOffersSectionState extends State<_ExcursionOffersSection> {
                         onProfileTap: isCurrentUserOffer
                             ? null
                             : widget.onOfferProfileTap == null
-                                ? null
-                                : () => widget.onOfferProfileTap!(offer),
-                        onMessageTap:
-                            isSelected ? widget.onMessageGuideTap : null,
+                            ? null
+                            : () => widget.onOfferProfileTap!(offer),
+                        onMessageTap: isSelected
+                            ? widget.onMessageGuideTap
+                            : null,
                       );
                     },
                   ),
@@ -2506,10 +2521,12 @@ class _ExcursionOffersFilterSheetState
         .toList(growable: false);
     if (tokens.isEmpty) return const [];
 
-    return _languageCodes.where((code) {
-      final haystack = _languageSearchHaystack(l10n, code);
-      return tokens.every(haystack.contains);
-    }).toList(growable: false);
+    return _languageCodes
+        .where((code) {
+          final haystack = _languageSearchHaystack(l10n, code);
+          return tokens.every(haystack.contains);
+        })
+        .toList(growable: false);
   }
 
   String _languageSearchHaystack(AppLocalizations l10n, String code) {
@@ -2540,15 +2557,15 @@ class _ExcursionOffersFilterSheetState
       setState(
         () => _availableDateError = AppLocalizations.of(
           context,
-        )!
-            .excursionDetailsOffersAvailableDateInvalid,
+        )!.excursionDetailsOffersAvailableDateInvalid,
       );
       return;
     }
     Navigator.of(context).pop(
       _ExcursionOfferFilters(
-        languageCode:
-            (_languageCode ?? '').trim().isEmpty ? null : _languageCode,
+        languageCode: (_languageCode ?? '').trim().isEmpty
+            ? null
+            : _languageCode,
         priceMax: priceMax != null && priceMax > 0 ? priceMax : null,
         maxGroupSizeMin: groupSize != null && groupSize > 0 ? groupSize : null,
         availableDate: availableDate,
@@ -2912,10 +2929,7 @@ class _ExcursionOffersDateField extends StatelessWidget {
                   controller.clear();
                   onChanged('');
                 },
-                icon: const Icon(
-                  Icons.close_rounded,
-                  color: Color(0xFFBDAA98),
-                ),
+                icon: const Icon(Icons.close_rounded, color: Color(0xFFBDAA98)),
               ),
         hintStyle: const TextStyle(color: Color(0xFF9F8B7D)),
         errorStyle: const TextStyle(
@@ -3134,15 +3148,15 @@ class _ExcursionOfferCard extends StatelessWidget {
             color: isCurrentUserOffer
                 ? AppColors.success.withValues(alpha: 0.11)
                 : isSelected
-                    ? AppColors.accent.withValues(alpha: 0.13)
-                    : const Color(0xFF312316),
+                ? AppColors.accent.withValues(alpha: 0.13)
+                : const Color(0xFF312316),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: isCurrentUserOffer
                   ? AppColors.success.withValues(alpha: 0.68)
                   : isSelected
-                      ? AppColors.accent.withValues(alpha: 0.76)
-                      : Colors.white.withValues(alpha: 0.055),
+                  ? AppColors.accent.withValues(alpha: 0.76)
+                  : Colors.white.withValues(alpha: 0.055),
             ),
           ),
           child: Row(
@@ -3240,8 +3254,9 @@ class _ExcursionOfferCard extends StatelessWidget {
                             ),
                           if (showMessageAction)
                             OutlinedButton(
-                              onPressed:
-                                  isMessageActionLoading ? null : onMessageTap,
+                              onPressed: isMessageActionLoading
+                                  ? null
+                                  : onMessageTap,
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: AppColors.textPrimary,
                                 side: BorderSide(
@@ -3296,8 +3311,9 @@ class _ExcursionOfferCard extends StatelessWidget {
   }
 
   String _offerGuideName(AppLocalizations l10n) {
-    final profileName =
-        profile == null ? '' : _formatGuideFullName(profile!).trim();
+    final profileName = profile == null
+        ? ''
+        : _formatGuideFullName(profile!).trim();
     if (profileName.isNotEmpty) {
       return profileName;
     }
@@ -3428,7 +3444,7 @@ class _GuideAvatar extends StatelessWidget {
             : Image.network(
                 imageUrl!,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Center(
+                errorBuilder: (_, _, _) => Center(
                   child: Text(
                     fallbackText,
                     style: const TextStyle(
@@ -3459,8 +3475,8 @@ class _ExcursionMapPreview extends StatelessWidget {
     final label = excursion.meetingPoint.trim().isNotEmpty
         ? excursion.meetingPoint.trim()
         : excursion.cityName?.trim().isNotEmpty == true
-            ? excursion.cityName!.trim()
-            : l10n.excursionDetailsMapPreview;
+        ? excursion.cityName!.trim()
+        : l10n.excursionDetailsMapPreview;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
@@ -3686,10 +3702,7 @@ class _ExcursionItineraryStep extends StatelessWidget {
     final travelFromPreviousMinutes = step.travelFromPreviousMinutes;
     final metaChips = <Widget>[
       if (attractionName.isNotEmpty)
-        _RouteStopMetaChip(
-          icon: Icons.place_rounded,
-          label: attractionName,
-        ),
+        _RouteStopMetaChip(icon: Icons.place_rounded, label: attractionName),
       if (travelFromPreviousMinutes != null && travelFromPreviousMinutes > 0)
         _RouteStopMetaChip(
           icon: Icons.route_rounded,
@@ -3751,11 +3764,7 @@ class _ExcursionItineraryStep extends StatelessWidget {
               ],
               if (metaChips.isNotEmpty) ...[
                 const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: metaChips,
-                ),
+                Wrap(spacing: 8, runSpacing: 8, children: metaChips),
               ],
             ],
           ),
@@ -3766,10 +3775,7 @@ class _ExcursionItineraryStep extends StatelessWidget {
 }
 
 class _RouteStopMetaChip extends StatelessWidget {
-  const _RouteStopMetaChip({
-    required this.icon,
-    required this.label,
-  });
+  const _RouteStopMetaChip({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
@@ -3782,9 +3788,7 @@ class _RouteStopMetaChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.accent.withValues(alpha: 0.13),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: AppColors.accent.withValues(alpha: 0.28),
-        ),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.28)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -3931,13 +3935,15 @@ class _ExcursionReviewCard extends StatelessWidget {
     final authorAvatarUrl = review.author.resolvedAvatarFileId.isEmpty
         ? null
         : resolvePublicFileContentUrl(review.author.resolvedAvatarFileId);
-    final canManage = currentUserId.isNotEmpty &&
+    final canManage =
+        currentUserId.isNotEmpty &&
         review.author.userId.trim() == currentUserId;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onLongPress:
-          canManage && onLongPress != null ? () => onLongPress!(review) : null,
+      onLongPress: canManage && onLongPress != null
+          ? () => onLongPress!(review)
+          : null,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(18),

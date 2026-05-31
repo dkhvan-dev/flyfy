@@ -34,21 +34,25 @@ void main() {
       expect(routerSource, contains('ExcursionDetailsScreen'));
       expect(routerSource, contains("location.startsWith('/excursions/')"));
       expect(
-          routerSource, contains("location.startsWith('/excursions/create')"));
+        routerSource,
+        contains("location.startsWith('/excursions/create')"),
+      );
       expect(routerSource, contains('return false;'));
     },
   );
 
-  test('excursions list opens details with cached excursion as route extra',
-      () async {
-    final listSource = await File(
-      'lib/screens/excursions/excursions_screen.dart',
-    ).readAsString();
+  test(
+    'excursions list opens details with cached excursion as route extra',
+    () async {
+      final listSource = await File(
+        'lib/screens/excursions/excursions_screen.dart',
+      ).readAsString();
 
-    expect(listSource, contains("_openExcursionDetails"));
-    expect(listSource, contains("context.push('/excursions/"));
-    expect(listSource, contains('extra: excursion'));
-  });
+      expect(listSource, contains("_openExcursionDetails"));
+      expect(listSource, contains("context.push('/excursions/"));
+      expect(listSource, contains('extra: excursion'));
+    },
+  );
 
   test(
     'excursion details displays localized language names instead of codes',
@@ -69,47 +73,37 @@ void main() {
     },
   );
 
-  test(
-    'excursion details displays every selected offer language',
-    () async {
-      final source = await File(
-        'lib/screens/excursions/excursion_details_screen.dart',
-      ).readAsString();
-      final localizationSource = await File(
-        'lib/features/excursions/excursion_localization.dart',
-      ).readAsString();
+  test('excursion details displays every selected offer language', () async {
+    final source = await File(
+      'lib/screens/excursions/excursion_details_screen.dart',
+    ).readAsString();
+    final localizationSource = await File(
+      'lib/features/excursions/excursion_localization.dart',
+    ).readAsString();
 
-      expect(source, contains('_ExcursionStatsGrid('));
-      expect(source, contains('selectedOffer: activeSelectedOffer'));
-      expect(source, contains('selectedOffer?.languageCodes'));
-      expect(
-          source, contains('_formatLanguageLabels(l10n, offer.languageCodes)'));
-      expect(localizationSource, contains('int? maxItems'));
-      expect(localizationSource, contains('maxItems == null'));
-      expect(localizationSource, isNot(contains('int maxItems = 2')));
-    },
-  );
+    expect(source, contains('_ExcursionStatsGrid('));
+    expect(source, contains('selectedOffer: activeSelectedOffer'));
+    expect(source, contains('selectedOffer?.languageCodes'));
+    expect(
+      source,
+      contains('_formatLanguageLabels(l10n, offer.languageCodes)'),
+    );
+    expect(localizationSource, contains('int? maxItems'));
+    expect(localizationSource, contains('maxItems == null'));
+    expect(localizationSource, isNot(contains('int maxItems = 2')));
+  });
 
-  test(
-    'excursion details does not truncate language labels',
-    () async {
-      final source = await File(
-        'lib/screens/excursions/excursion_details_screen.dart',
-      ).readAsString();
+  test('excursion details does not truncate language labels', () async {
+    final source = await File(
+      'lib/screens/excursions/excursion_details_screen.dart',
+    ).readAsString();
 
-      expect(source, contains('allowMultiline: true'));
-      expect(
-        source,
-        contains('maxLines: data.allowMultiline ? null : 2'),
-      );
-      expect(
-        source,
-        contains('overflow: data.allowMultiline'),
-      );
-      expect(source, contains('? TextOverflow.visible'));
-      expect(source, contains('maxLines: allowMultiline ? null : 1'));
-    },
-  );
+    expect(source, contains('allowMultiline: true'));
+    expect(source, contains('maxLines: data.allowMultiline ? null : 2'));
+    expect(source, contains('overflow: data.allowMultiline'));
+    expect(source, contains('? TextOverflow.visible'));
+    expect(source, contains('maxLines: allowMultiline ? null : 1'));
+  });
 
   test(
     'excursion details links description section to attraction details',
@@ -183,7 +177,8 @@ void main() {
       expect(
         source,
         contains(
-            "import '../../features/excursions/excursion_cover_url.dart';"),
+          "import '../../features/excursions/excursion_cover_url.dart';",
+        ),
       );
       expect(source, contains('resolveExcursionCoverUrl(excursion)'));
       expect(
@@ -196,19 +191,21 @@ void main() {
     },
   );
 
-  test('excursion details checks selected guide schedule before booking CTA',
-      () async {
-    final source = await File(
-      'lib/screens/excursions/excursion_details_screen.dart',
-    ).readAsString();
+  test(
+    'excursion details checks selected guide schedule before booking CTA',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursion_details_screen.dart',
+      ).readAsString();
 
-    expect(source, contains('_scheduleLoadSelectedOfferAvailability'));
-    expect(source, contains('loadBookableExcursionSchedule'));
-    expect(source, contains('selectedOfferScheduleKey'));
-    expect(source, contains('bookingUnavailableMessage'));
-    expect(source, contains('excursionDetailsNoAvailableSlots'));
-    expect(source, contains('excursionDetailsCheckingSchedule'));
-  });
+      expect(source, contains('_scheduleLoadSelectedOfferAvailability'));
+      expect(source, contains('loadBookableExcursionSchedule'));
+      expect(source, contains('selectedOfferScheduleKey'));
+      expect(source, contains('bookingUnavailableMessage'));
+      expect(source, contains('excursionDetailsNoAvailableSlots'));
+      expect(source, contains('excursionDetailsCheckingSchedule'));
+    },
+  );
 
   test(
     'excursion details reads route-scoped details instead of global selection',
@@ -218,9 +215,13 @@ void main() {
       ).readAsString();
 
       expect(
-          source, contains('provider.excursionDetailsFor(widget.excursionId)'));
+        source,
+        contains('provider.excursionDetailsFor(widget.excursionId)'),
+      );
       expect(
-          source, contains('provider.isDetailLoadingFor(widget.excursionId)'));
+        source,
+        contains('provider.isDetailLoadingFor(widget.excursionId)'),
+      );
       expect(source, contains('provider.isDetailErrorFor(widget.excursionId)'));
       expect(
         source,
@@ -255,29 +256,31 @@ void main() {
     );
   });
 
-  test('excursion details creates direct chat with guide from message CTA',
-      () async {
-    final source = await File(
-      'lib/screens/excursions/excursion_details_screen.dart',
-    ).readAsString();
+  test(
+    'excursion details creates direct chat with guide from message CTA',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursion_details_screen.dart',
+      ).readAsString();
 
-    expect(source, contains('ChatApi'));
-    expect(source, contains('_isMessageGuideLoading'));
-    expect(source, contains('_openGuideChat'));
-    expect(source, contains('createDirectConversation('));
-    expect(source, contains("context.push('/chats/\$conversationId')"));
-    expect(source, contains('DioErrorMapper.toMessage'));
-    expect(source, contains('showErrorDialog'));
-    expect(source, contains('isMessageGuideLoading: _isMessageGuideLoading'));
-    expect(
-      source,
-      isNot(
-        contains(
-          'onMessageGuideTap: () =>\n                _showSoon(l10n.excursionDetailsGuideChatComingSoon)',
+      expect(source, contains('ChatApi'));
+      expect(source, contains('_isMessageGuideLoading'));
+      expect(source, contains('_openGuideChat'));
+      expect(source, contains('createDirectConversation('));
+      expect(source, contains("context.push('/chats/\$conversationId')"));
+      expect(source, contains('DioErrorMapper.toMessage'));
+      expect(source, contains('showErrorDialog'));
+      expect(source, contains('isMessageGuideLoading: _isMessageGuideLoading'));
+      expect(
+        source,
+        isNot(
+          contains(
+            'onMessageGuideTap: () =>\n                _showSoon(l10n.excursionDetailsGuideChatComingSoon)',
+          ),
         ),
-      ),
-    );
-  });
+      );
+    },
+  );
 
   test('excursion details opens own offer editor for author guide', () async {
     final source = await File(
@@ -299,39 +302,43 @@ void main() {
     expect(routerSource, contains("location.endsWith('/edit')"));
   });
 
-  test('excursion details hides footer price for guide offer editing',
-      () async {
-    final source = await File(
-      'lib/screens/excursions/excursion_details_screen.dart',
-    ).readAsString();
+  test(
+    'excursion details hides footer price for guide offer editing',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursion_details_screen.dart',
+      ).readAsString();
 
-    expect(
-      source,
-      contains('showPrice: showCheckoutPrice && showBookingAction'),
-    );
-    expect(source, contains('required this.showPrice'));
-    expect(source, contains('final bool showPrice'));
-    expect(source, contains('if (showPrice) ...['));
-  });
+      expect(
+        source,
+        contains('showPrice: showCheckoutPrice && showBookingAction'),
+      );
+      expect(source, contains('required this.showPrice'));
+      expect(source, contains('final bool showPrice'));
+      expect(source, contains('if (showPrice) ...['));
+    },
+  );
 
-  test('excursion details hides footer price for any guide user role',
-      () async {
-    final source = await File(
-      'lib/screens/excursions/excursion_details_screen.dart',
-    ).readAsString();
+  test(
+    'excursion details hides footer price for any guide user role',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursion_details_screen.dart',
+      ).readAsString();
 
-    expect(source, contains('final isCurrentUserGuide'));
-    expect(source, contains("role.trim().toUpperCase() == 'GUIDE'"));
-    expect(source, contains('showCheckoutPrice:'));
-    expect(
-      source,
-      contains('!isCurrentUserGuide && !isAuthor && hasBookableOffer'),
-    );
-    expect(
-      source,
-      contains('showPrice: showCheckoutPrice && showBookingAction'),
-    );
-  });
+      expect(source, contains('final isCurrentUserGuide'));
+      expect(source, contains("role.trim().toUpperCase() == 'GUIDE'"));
+      expect(source, contains('showCheckoutPrice:'));
+      expect(
+        source,
+        contains('!isCurrentUserGuide && !isAuthor && hasBookableOffer'),
+      );
+      expect(
+        source,
+        contains('showPrice: showCheckoutPrice && showBookingAction'),
+      );
+    },
+  );
 
   test(
     'excursion details offers list is searchable filterable sortable and paginated',
@@ -384,32 +391,39 @@ void main() {
       expect(source, contains('_loadMoreOffers'));
       expect(source, contains('excursionDetailsOffersLoadMore'));
       expect(source, contains('preferredGuideUserId'));
-      expect(apiSource,
-          contains('Future<ExcursionOffersPage> getExcursionOffers'));
+      expect(
+        apiSource,
+        contains('Future<ExcursionOffersPage> getExcursionOffers'),
+      );
     },
   );
 
-  test('excursion details uses real interactive map for meeting point',
-      () async {
-    final source = await File(
-      'lib/screens/excursions/excursion_details_screen.dart',
-    ).readAsString();
+  test(
+    'excursion details uses real interactive map for meeting point',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursion_details_screen.dart',
+      ).readAsString();
 
-    expect(source, contains("import 'package:flutter_map/flutter_map.dart';"));
-    expect(source, contains("import 'package:latlong2/latlong.dart'"));
-    expect(source, contains('FlutterMap('));
-    expect(source, contains('TileLayer('));
-    expect(source, contains('MarkerLayer('));
-    expect(source, contains('LatLng('));
-    expect(source, contains('excursion.latitude'));
-    expect(source, contains('excursion.longitude'));
-    expect(source, contains('InteractiveFlag.all'));
-    expect(source, isNot(contains('class _MapPreviewPainter')));
-    expect(
-      source,
-      isNot(contains('CustomPaint(painter: const _MapPreviewPainter())')),
-    );
-  });
+      expect(
+        source,
+        contains("import 'package:flutter_map/flutter_map.dart';"),
+      );
+      expect(source, contains("import 'package:latlong2/latlong.dart'"));
+      expect(source, contains('FlutterMap('));
+      expect(source, contains('TileLayer('));
+      expect(source, contains('MarkerLayer('));
+      expect(source, contains('LatLng('));
+      expect(source, contains('excursion.latitude'));
+      expect(source, contains('excursion.longitude'));
+      expect(source, contains('InteractiveFlag.all'));
+      expect(source, isNot(contains('class _MapPreviewPainter')));
+      expect(
+        source,
+        isNot(contains('CustomPaint(painter: const _MapPreviewPainter())')),
+      );
+    },
+  );
 
   test(
     'excursion details resolves localized attraction text for landmark excursions',

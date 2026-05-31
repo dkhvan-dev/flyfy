@@ -212,16 +212,13 @@ class _StoriesScreenState extends State<StoriesScreen> {
           initialCountry: _selectedCountry,
           initialCity: _selectedCity,
           previewCount: _totalStories,
-          previewCountLoader: ({
-            required category,
-            required country,
-            required city,
-          }) =>
-              _loadStoriesPreviewCount(
-            category: category,
-            country: country,
-            city: city,
-          ),
+          previewCountLoader:
+              ({required category, required country, required city}) =>
+                  _loadStoriesPreviewCount(
+                    category: category,
+                    country: country,
+                    city: city,
+                  ),
         );
       },
     );
@@ -252,8 +249,9 @@ class _StoriesScreenState extends State<StoriesScreen> {
     required AppCityFilterValue? city,
   }) async {
     final trimmedCategory = category?.trim() ?? '';
-    final categories =
-        trimmedCategory.isEmpty ? null : <String>[trimmedCategory];
+    final categories = trimmedCategory.isEmpty
+        ? null
+        : <String>[trimmedCategory];
     final page = widget.myOnly
         ? await _api.listMyStoriesPage(
             search: _searchQuery,
@@ -342,8 +340,9 @@ class _StoriesScreenState extends State<StoriesScreen> {
       return;
     }
     setState(() {
-      final next =
-          _stories.where((item) => item.id != story.id).toList(growable: true);
+      final next = _stories
+          .where((item) => item.id != story.id)
+          .toList(growable: true);
       next.insert(0, story);
       next.sort((a, b) => b.sortDate.compareTo(a.sortDate));
       _stories = next;
@@ -538,8 +537,8 @@ class _StoriesScreenState extends State<StoriesScreen> {
                 title: widget.myOnly
                     ? l10n.myStoriesTitle
                     : _authorIdFilter == null
-                        ? l10n.storiesDiscoverTitle
-                        : l10n.profileUserStoriesTitle,
+                    ? l10n.storiesDiscoverTitle
+                    : l10n.profileUserStoriesTitle,
                 notificationsTooltip: l10n.profileNotificationsRowTitle,
                 onBackTap: _goBack,
                 onNotificationsTap: () => context.push('/notifications'),
@@ -569,8 +568,8 @@ class _StoriesScreenState extends State<StoriesScreen> {
                               filterTooltip: l10n.storyFiltersTitle,
                               activeFilterCount:
                                   (_selectedCategory == null ? 0 : 1) +
-                                      (_selectedCountry == null ? 0 : 1) +
-                                      (_selectedCity == null ? 0 : 1),
+                                  (_selectedCountry == null ? 0 : 1) +
+                                  (_selectedCity == null ? 0 : 1),
                               onFilterTap: _openFilters,
                             ),
                             SizedBox(height: adaptive.scale(18)),
@@ -1054,11 +1053,12 @@ class _StoryFiltersResult {
   final AppCityFilterValue? city;
 }
 
-typedef _StoryFiltersPreviewCountLoader = Future<int> Function({
-  required String? category,
-  required AppCountryFilterValue? country,
-  required AppCityFilterValue? city,
-});
+typedef _StoryFiltersPreviewCountLoader =
+    Future<int> Function({
+      required String? category,
+      required AppCountryFilterValue? country,
+      required AppCityFilterValue? city,
+    });
 
 class _StoryFiltersSheet extends StatefulWidget {
   const _StoryFiltersSheet({

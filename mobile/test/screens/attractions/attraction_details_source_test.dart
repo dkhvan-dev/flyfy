@@ -18,7 +18,7 @@ void main() {
       expect(source, contains('findFirstExcursionForAttraction('));
       expect(
         source,
-        contains("context.push('/excursions/\${Uri.encodeComponent"),
+        contains("'/excursions/\${Uri.encodeComponent(excursionId)}'"),
       );
       expect(source, contains('ExcursionsRouteArgs.noAttractionExcursions('));
       expect(ctaSource, contains('_isOpeningExcursions'));

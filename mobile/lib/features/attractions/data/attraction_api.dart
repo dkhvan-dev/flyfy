@@ -27,10 +27,7 @@ class AttractionApi {
     int limit = 20,
     int offset = 0,
   }) async {
-    final params = <String, dynamic>{
-      'limit': limit,
-      'offset': offset,
-    };
+    final params = <String, dynamic>{'limit': limit, 'offset': offset};
     if (search != null && search.trim().isNotEmpty) {
       params['search'] = search.trim();
     }
@@ -152,10 +149,6 @@ class AttractionReviewMediaInput {
   final int position;
 
   Map<String, dynamic> toJson() {
-    return {
-      'fileId': fileId,
-      'mediaType': mediaType,
-      'position': position,
-    };
+    return {'fileId': fileId, 'mediaType': mediaType, 'position': position};
   }
 }

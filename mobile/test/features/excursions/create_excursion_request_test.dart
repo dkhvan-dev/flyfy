@@ -2,98 +2,100 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inflap/features/excursions/models/create_excursion_request.dart';
 
 void main() {
-  test('serializes attraction based guide offer payload for excursion-service',
-      () {
-    final request = CreateExcursionRequest(
-      landmarkId: 'attraction-id',
-      landmarkName: 'Medeu',
-      categorySlug: 'adventure',
-      durationMinutes: 240,
-      maxGroupSize: 8,
-      languageCodes: const ['en', 'ru'],
-      visibility: 'UNLISTED',
-      meetingPoint: 'Hotel pickup',
-      countryCode: 'KZ',
-      departureCityId: 'almaty',
-      cityName: 'Almaty',
-      latitude: 43.238949,
-      longitude: 76.889709,
-      mapUrl: 'https://maps.example.test/medeu',
-      priceAmount: 120,
-      currency: 'USD',
-      includedItems: const ['Private SUV', 'Gourmet picnic'],
-      includedItemTranslations: const {
-        'ru': ['Частный внедорожник', 'Пикник'],
-        'kk': ['Жеке жол талғамайтын көлік', 'Пикник'],
-      },
-      itinerary: const [
-        CreateExcursionItineraryItemRequest(
-          startOffsetMinutes: 0,
-          durationMinutes: 45,
-          title: 'Hotel departure',
-          description: 'Meet your guide and start the route.',
-          translations: {
-            'ru': CreateExcursionItineraryLocalizedCopyRequest(
-              title: 'Выезд из отеля',
-              description: 'Встреча с гидом и начало маршрута.',
-            ),
-            'kk': CreateExcursionItineraryLocalizedCopyRequest(
-              title: 'Қонақүйден шығу',
-              description: 'Гидпен кездесіп, маршрутты бастау.',
-            ),
-          },
-        ),
-      ],
-      coverFileId: 'cover-file-id',
-      productCoverFileId: 'attraction-cover-file-id',
-      productCoverImageUrl: 'https://upload.wikimedia.org/attraction.jpg',
-    );
-
-    expect(request.toJson(), {
-      'landmarkId': 'attraction-id',
-      'landmarkName': 'Medeu',
-      'categorySlug': 'adventure',
-      'durationMinutes': 240,
-      'maxGroupSize': 8,
-      'languageCodes': ['en', 'ru'],
-      'visibility': 'UNLISTED',
-      'meetingPoint': 'Hotel pickup',
-      'countryCode': 'KZ',
-      'departureCityId': 'almaty',
-      'cityName': 'Almaty',
-      'latitude': 43.238949,
-      'longitude': 76.889709,
-      'mapUrl': 'https://maps.example.test/medeu',
-      'priceAmount': 120.0,
-      'currency': 'USD',
-      'includedItems': ['Private SUV', 'Gourmet picnic'],
-      'includedItemTranslations': {
-        'ru': ['Частный внедорожник', 'Пикник'],
-        'kk': ['Жеке жол талғамайтын көлік', 'Пикник'],
-      },
-      'itinerary': [
-        {
-          'startOffsetMinutes': 0,
-          'durationMinutes': 45,
-          'title': 'Hotel departure',
-          'description': 'Meet your guide and start the route.',
-          'translations': {
-            'ru': {
-              'title': 'Выезд из отеля',
-              'description': 'Встреча с гидом и начало маршрута.',
-            },
-            'kk': {
-              'title': 'Қонақүйден шығу',
-              'description': 'Гидпен кездесіп, маршрутты бастау.',
-            },
-          },
+  test(
+    'serializes attraction based guide offer payload for excursion-service',
+    () {
+      final request = CreateExcursionRequest(
+        landmarkId: 'attraction-id',
+        landmarkName: 'Medeu',
+        categorySlug: 'adventure',
+        durationMinutes: 240,
+        maxGroupSize: 8,
+        languageCodes: const ['en', 'ru'],
+        visibility: 'UNLISTED',
+        meetingPoint: 'Hotel pickup',
+        countryCode: 'KZ',
+        departureCityId: 'almaty',
+        cityName: 'Almaty',
+        latitude: 43.238949,
+        longitude: 76.889709,
+        mapUrl: 'https://maps.example.test/medeu',
+        priceAmount: 120,
+        currency: 'USD',
+        includedItems: const ['Private SUV', 'Gourmet picnic'],
+        includedItemTranslations: const {
+          'ru': ['Частный внедорожник', 'Пикник'],
+          'kk': ['Жеке жол талғамайтын көлік', 'Пикник'],
         },
-      ],
-      'coverFileId': 'cover-file-id',
-      'productCoverFileId': 'attraction-cover-file-id',
-      'productCoverImageUrl': 'https://upload.wikimedia.org/attraction.jpg',
-    });
-  });
+        itinerary: const [
+          CreateExcursionItineraryItemRequest(
+            startOffsetMinutes: 0,
+            durationMinutes: 45,
+            title: 'Hotel departure',
+            description: 'Meet your guide and start the route.',
+            translations: {
+              'ru': CreateExcursionItineraryLocalizedCopyRequest(
+                title: 'Выезд из отеля',
+                description: 'Встреча с гидом и начало маршрута.',
+              ),
+              'kk': CreateExcursionItineraryLocalizedCopyRequest(
+                title: 'Қонақүйден шығу',
+                description: 'Гидпен кездесіп, маршрутты бастау.',
+              ),
+            },
+          ),
+        ],
+        coverFileId: 'cover-file-id',
+        productCoverFileId: 'attraction-cover-file-id',
+        productCoverImageUrl: 'https://upload.wikimedia.org/attraction.jpg',
+      );
+
+      expect(request.toJson(), {
+        'landmarkId': 'attraction-id',
+        'landmarkName': 'Medeu',
+        'categorySlug': 'adventure',
+        'durationMinutes': 240,
+        'maxGroupSize': 8,
+        'languageCodes': ['en', 'ru'],
+        'visibility': 'UNLISTED',
+        'meetingPoint': 'Hotel pickup',
+        'countryCode': 'KZ',
+        'departureCityId': 'almaty',
+        'cityName': 'Almaty',
+        'latitude': 43.238949,
+        'longitude': 76.889709,
+        'mapUrl': 'https://maps.example.test/medeu',
+        'priceAmount': 120.0,
+        'currency': 'USD',
+        'includedItems': ['Private SUV', 'Gourmet picnic'],
+        'includedItemTranslations': {
+          'ru': ['Частный внедорожник', 'Пикник'],
+          'kk': ['Жеке жол талғамайтын көлік', 'Пикник'],
+        },
+        'itinerary': [
+          {
+            'startOffsetMinutes': 0,
+            'durationMinutes': 45,
+            'title': 'Hotel departure',
+            'description': 'Meet your guide and start the route.',
+            'translations': {
+              'ru': {
+                'title': 'Выезд из отеля',
+                'description': 'Встреча с гидом и начало маршрута.',
+              },
+              'kk': {
+                'title': 'Қонақүйден шығу',
+                'description': 'Гидпен кездесіп, маршрутты бастау.',
+              },
+            },
+          },
+        ],
+        'coverFileId': 'cover-file-id',
+        'productCoverFileId': 'attraction-cover-file-id',
+        'productCoverImageUrl': 'https://upload.wikimedia.org/attraction.jpg',
+      });
+    },
+  );
 
   test('omits optional blank fields from excursion payload', () {
     final request = CreateExcursionRequest(

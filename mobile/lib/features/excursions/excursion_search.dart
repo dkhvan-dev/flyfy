@@ -128,48 +128,48 @@ String cyrillicToLatinExcursionSearchText(String value) {
   final buffer = StringBuffer();
   for (final rune in value.trim().toLowerCase().runes) {
     final char = String.fromCharCode(rune);
-    buffer.write(
-      switch (char) {
-        'а' || 'ә' => 'a',
-        'б' => 'b',
-        'в' => 'v',
-        'г' || 'ғ' => 'g',
-        'д' => 'd',
-        'е' || 'э' => 'e',
-        'ё' => 'yo',
-        'ж' => 'zh',
-        'з' => 'z',
-        'и' || 'і' => 'i',
-        'й' => 'y',
-        'к' || 'қ' => 'k',
-        'л' => 'l',
-        'м' => 'm',
-        'н' || 'ң' => 'n',
-        'о' || 'ө' => 'o',
-        'п' => 'p',
-        'р' => 'r',
-        'с' => 's',
-        'т' => 't',
-        'у' || 'ұ' || 'ү' => 'u',
-        'ф' => 'f',
-        'х' || 'һ' => 'h',
-        'ц' => 'ts',
-        'ч' => 'ch',
-        'ш' => 'sh',
-        'щ' => 'shch',
-        'ы' || 'ь' => 'y',
-        'ъ' => '',
-        'ю' => 'yu',
-        'я' => 'ya',
-        _ => char,
-      },
-    );
+    buffer.write(switch (char) {
+      'а' || 'ә' => 'a',
+      'б' => 'b',
+      'в' => 'v',
+      'г' || 'ғ' => 'g',
+      'д' => 'd',
+      'е' || 'э' => 'e',
+      'ё' => 'yo',
+      'ж' => 'zh',
+      'з' => 'z',
+      'и' || 'і' => 'i',
+      'й' => 'y',
+      'к' || 'қ' => 'k',
+      'л' => 'l',
+      'м' => 'm',
+      'н' || 'ң' => 'n',
+      'о' || 'ө' => 'o',
+      'п' => 'p',
+      'р' => 'r',
+      'с' => 's',
+      'т' => 't',
+      'у' || 'ұ' || 'ү' => 'u',
+      'ф' => 'f',
+      'х' || 'һ' => 'h',
+      'ц' => 'ts',
+      'ч' => 'ch',
+      'ш' => 'sh',
+      'щ' => 'shch',
+      'ы' || 'ь' => 'y',
+      'ъ' => '',
+      'ю' => 'yu',
+      'я' => 'ya',
+      _ => char,
+    });
   }
   return buffer.toString();
 }
 
 void addExcursionLanguageSearchVariants(
-    void Function(String value) add, String token) {
+  void Function(String value) add,
+  String token,
+) {
   switch (normalizeExcursionSearchText(token)) {
     case 'en':
     case 'eng':

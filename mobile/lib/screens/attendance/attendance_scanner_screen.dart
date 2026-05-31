@@ -141,8 +141,9 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
       return (l10n.qrScannerSuccess, _ScannerFeedbackTone.success);
     }
 
-    final alreadySynced =
-        results.where((item) => item.isAlreadySynced).toList();
+    final alreadySynced = results
+        .where((item) => item.isAlreadySynced)
+        .toList();
     if (alreadySynced.isNotEmpty) {
       return (l10n.qrScannerAlreadyCheckedIn, _ScannerFeedbackTone.success);
     }
@@ -230,8 +231,8 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
         result.isSynced || result.isAlreadySynced
             ? _ScannerFeedbackTone.success
             : result.isRejected
-                ? _ScannerFeedbackTone.error
-                : _ScannerFeedbackTone.warning,
+            ? _ScannerFeedbackTone.error
+            : _ScannerFeedbackTone.warning,
       );
       await _refreshExcursionAttendanceState(
         type: payload.type,
@@ -259,7 +260,8 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
 
     final excursionProvider = context.read<ExcursionProvider>();
     await excursionProvider.refreshMyExcursionBookings();
-    final hasGuideDashboardData = excursionProvider.myGuideProfile != null ||
+    final hasGuideDashboardData =
+        excursionProvider.myGuideProfile != null ||
         excursionProvider.myGuideExcursions.isNotEmpty ||
         excursionProvider.myGuideExcursionBookings.isNotEmpty;
     if (hasGuideDashboardData) {
@@ -529,10 +531,10 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
                                                 strokeWidth: 2,
                                                 valueColor:
                                                     AlwaysStoppedAnimation(
-                                                  Colors.white.withValues(
-                                                    alpha: 0.92,
-                                                  ),
-                                                ),
+                                                      Colors.white.withValues(
+                                                        alpha: 0.92,
+                                                      ),
+                                                    ),
                                               ),
                                             )
                                           : Text(l10n.qrScannerSyncNow),

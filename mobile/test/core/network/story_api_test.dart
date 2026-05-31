@@ -74,31 +74,28 @@ void main() {
     },
   );
 
-  test(
-    'getUserPopularStories filters author stories by views',
-    () async {
-      final adapter = _JsonAdapter({
-        'items': [_storyJson('one')],
-        'total': 1,
-      });
-      final api = StoryApi(
-        apiClient: ApiClient(
-          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
-            ..httpClientAdapter = adapter,
-          secureStorage: _FakeSecureStorage(),
-        ),
-      );
+  test('getUserPopularStories filters author stories by views', () async {
+    final adapter = _JsonAdapter({
+      'items': [_storyJson('one')],
+      'total': 1,
+    });
+    final api = StoryApi(
+      apiClient: ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+          ..httpClientAdapter = adapter,
+        secureStorage: _FakeSecureStorage(),
+      ),
+    );
 
-      final stories = await api.getUserPopularStories(' user-1 ', limit: 3);
+    final stories = await api.getUserPopularStories(' user-1 ', limit: 3);
 
-      expect(stories.single.id, 'one');
-      expect(adapter.requestPath, '/api/v1/stories');
-      expect(adapter.queryParameters['authorId'], 'user-1');
-      expect(adapter.queryParameters['sort'], 'popular_desc');
-      expect(adapter.queryParameters['limit'], '4');
-      expect(adapter.queryParameters['offset'], '0');
-    },
-  );
+    expect(stories.single.id, 'one');
+    expect(adapter.requestPath, '/api/v1/stories');
+    expect(adapter.queryParameters['authorId'], 'user-1');
+    expect(adapter.queryParameters['sort'], 'popular_desc');
+    expect(adapter.queryParameters['limit'], '4');
+    expect(adapter.queryParameters['offset'], '0');
+  });
 
   test(
     'listStoriesPage sends country and city filters as first-class query params',

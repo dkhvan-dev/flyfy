@@ -104,7 +104,9 @@ void main() {
       expect(userActivitiesSource, contains('AppListSearchField('));
       expect(userActivitiesSource, contains('AppInlineSortRow<'));
       expect(
-          userActivitiesSource, contains('AlignmentDirectional.centerStart'));
+        userActivitiesSource,
+        contains('AlignmentDirectional.centerStart'),
+      );
       expect(userActivitiesSource, contains('showModalBottomSheet'));
       expect(userActivitiesSource, contains('AppDismissibleModalSheet('));
       expect(userActivitiesSource, contains('_ProfileActivityFilters'));

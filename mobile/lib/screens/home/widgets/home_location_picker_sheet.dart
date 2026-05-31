@@ -12,10 +12,7 @@ import '../../../providers/home_location_provider.dart';
 import '../../../shared/widgets/app_localized_location_text.dart';
 
 class HomeLocationPickerSheet extends StatefulWidget {
-  const HomeLocationPickerSheet({
-    super.key,
-    required this.profile,
-  });
+  const HomeLocationPickerSheet({super.key, required this.profile});
 
   final UserProfileVm? profile;
 
@@ -98,8 +95,8 @@ class _HomeLocationPickerSheetState extends State<HomeLocationPickerSheet> {
     final l10n = AppLocalizations.of(context)!;
     try {
       await context.read<HomeLocationProvider>().detectCurrentLocation(
-            languageCode: Localizations.localeOf(context).languageCode,
-          );
+        languageCode: Localizations.localeOf(context).languageCode,
+      );
       if (mounted) Navigator.of(context).pop(true);
     } catch (_) {
       if (!mounted) return;
@@ -109,8 +106,8 @@ class _HomeLocationPickerSheetState extends State<HomeLocationPickerSheet> {
 
   Future<void> _clearSelection() async {
     await context.read<HomeLocationProvider>().clearSelection(
-          profile: widget.profile,
-        );
+      profile: widget.profile,
+    );
     if (mounted) Navigator.of(context).pop(true);
   }
 
@@ -223,10 +220,7 @@ class _HomeLocationPickerSheetState extends State<HomeLocationPickerSheet> {
 }
 
 class _CurrentLocationPreview extends StatelessWidget {
-  const _CurrentLocationPreview({
-    required this.location,
-    required this.label,
-  });
+  const _CurrentLocationPreview({required this.location, required this.label});
 
   final HomeLocationPreference location;
   final String label;
@@ -320,11 +314,7 @@ class _DetectLocationButton extends StatelessWidget {
                 ),
               )
             : const Icon(Icons.my_location_rounded),
-        label: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
+        label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.accent,
           side: BorderSide(color: AppColors.accent.withValues(alpha: 0.28)),
@@ -376,8 +366,9 @@ class _LocationSearchField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide:
-              BorderSide(color: AppColors.accent.withValues(alpha: 0.5)),
+          borderSide: BorderSide(
+            color: AppColors.accent.withValues(alpha: 0.5),
+          ),
         ),
       ),
     );
@@ -385,10 +376,7 @@ class _LocationSearchField extends StatelessWidget {
 }
 
 class _CityResultTile extends StatelessWidget {
-  const _CityResultTile({
-    required this.city,
-    required this.onTap,
-  });
+  const _CityResultTile({required this.city, required this.onTap});
 
   final ReferenceCity city;
   final VoidCallback onTap;

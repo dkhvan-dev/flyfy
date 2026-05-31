@@ -101,8 +101,9 @@ class UserProfileVm {
         friendship['status']?.toString(),
       ),
       settings: settings == null ? null : UserSettingsVm.fromJson(settings),
-      reputation:
-          reputation == null ? null : UserReputationVm.fromJson(reputation),
+      reputation: reputation == null
+          ? null
+          : UserReputationVm.fromJson(reputation),
     );
   }
 

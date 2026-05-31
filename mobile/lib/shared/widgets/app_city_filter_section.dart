@@ -7,11 +7,7 @@ import '../../core/ui/app_colors.dart';
 import 'app_localized_location_text.dart';
 
 class AppCityFilterValue {
-  const AppCityFilterValue({
-    this.cityId,
-    this.cityName,
-    this.countryCode,
-  });
+  const AppCityFilterValue({this.cityId, this.cityName, this.countryCode});
 
   final String? cityId;
   final String? cityName;
@@ -28,11 +24,7 @@ class AppCityFilterValue {
     return '';
   }
 
-  bool matches({
-    String? cityId,
-    String? cityName,
-    String? countryCode,
-  }) {
+  bool matches({String? cityId, String? cityName, String? countryCode}) {
     final selectedId = _normalize(this.cityId);
     final candidateId = _normalize(cityId);
     if (selectedId != null && candidateId != null) {
@@ -43,7 +35,8 @@ class AppCityFilterValue {
     final candidateCity = _normalizeCity(cityName);
     final selectedCountry = _normalizeCountry(this.countryCode);
     final candidateCountry = _normalizeCountry(countryCode);
-    final countryMatches = selectedCountry == null ||
+    final countryMatches =
+        selectedCountry == null ||
         candidateCountry == null ||
         selectedCountry == candidateCountry;
 
@@ -86,10 +79,7 @@ class AppCityFilterValue {
 }
 
 class AppCountryFilterValue {
-  const AppCountryFilterValue({
-    String? countryCode,
-    this.countryName,
-  }) : _countryCode = countryCode;
+  const AppCountryFilterValue({this._countryCode, this.countryName});
 
   final String? _countryCode;
   final String? countryName;
@@ -232,7 +222,8 @@ class _AppCountryFilterSectionState extends State<AppCountryFilterSection> {
   void _selectCountry(ReferenceCountry country) {
     final value = AppCountryFilterValue.fromCountry(country);
     final current = widget.selectedCountry;
-    final next = current != null &&
+    final next =
+        current != null &&
             value.matches(
               countryCode: current.countryCode,
               countryName: current.countryName,
@@ -357,15 +348,13 @@ class _AppCountryFilterSectionState extends State<AppCountryFilterSection> {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide:
-                  BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+              borderSide: BorderSide(
+                color: Colors.white.withValues(alpha: 0.06),
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(
-                color: AppColors.accent,
-                width: 1.2,
-              ),
+              borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
             ),
           ),
         ),
@@ -415,7 +404,8 @@ class _AppCountryFilterSectionState extends State<AppCountryFilterSection> {
                 separatorBuilder: (_, _) => const SizedBox(height: 8),
                 itemBuilder: (context, index) {
                   final country = _visibleCountries[index];
-                  final selected = widget.selectedCountry?.matches(
+                  final selected =
+                      widget.selectedCountry?.matches(
                         countryCode: country.code,
                         countryName: country.name,
                       ) ??
@@ -530,7 +520,8 @@ class _AppCityFilterSectionState extends State<AppCityFilterSection> {
   void _selectCity(ReferenceCity city) {
     final value = AppCityFilterValue.fromCity(city);
     final current = widget.selectedCity;
-    final next = current != null &&
+    final next =
+        current != null &&
             value.matches(
               cityId: current.cityId,
               cityName: current.cityName,
@@ -656,15 +647,13 @@ class _AppCityFilterSectionState extends State<AppCityFilterSection> {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide:
-                  BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+              borderSide: BorderSide(
+                color: Colors.white.withValues(alpha: 0.06),
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(
-                color: AppColors.accent,
-                width: 1.2,
-              ),
+              borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
             ),
           ),
         ),
@@ -714,7 +703,8 @@ class _AppCityFilterSectionState extends State<AppCityFilterSection> {
                 separatorBuilder: (_, _) => const SizedBox(height: 8),
                 itemBuilder: (context, index) {
                   final city = _visibleCities[index];
-                  final selected = widget.selectedCity?.matches(
+                  final selected =
+                      widget.selectedCity?.matches(
                         cityId: city.id,
                         cityName: city.name,
                         countryCode: city.countryCode,
@@ -898,10 +888,9 @@ String? _normalizeCountry(String? value) {
 }
 
 String? _normalizeCity(String? value) {
-  return _normalize(value)
-      ?.toLowerCase()
-      .replaceAll('ё', 'е')
-      .replaceAll(RegExp(r'\s+'), ' ');
+  return _normalize(
+    value,
+  )?.toLowerCase().replaceAll('ё', 'е').replaceAll(RegExp(r'\s+'), ' ');
 }
 
 String? _normalizeCitySlug(String? value) {

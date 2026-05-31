@@ -110,9 +110,11 @@ class ActivityListItemVm {
           .toList(),
       languageCode: json['languageCode']?.toString() ?? 'ru',
       timezone: json['timezone']?.toString() ?? 'Asia/Almaty',
-      startAt: DateTime.tryParse(json['startAt']?.toString() ?? '') ??
+      startAt:
+          DateTime.tryParse(json['startAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
-      endAt: DateTime.tryParse(json['endAt']?.toString() ?? '') ??
+      endAt:
+          DateTime.tryParse(json['endAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
       capacityType: json['capacityType']?.toString() ?? '',
       priceType: json['priceType']?.toString() ?? 'FREE',

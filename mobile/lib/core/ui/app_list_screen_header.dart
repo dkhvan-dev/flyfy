@@ -134,8 +134,10 @@ class _AppListHeaderButton extends StatelessWidget {
           child: Ink(
             width: size,
             height: size,
-            decoration:
-                BoxDecoration(color: background, shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: background,
+              shape: BoxShape.circle,
+            ),
             child: Icon(icon, color: color, size: iconSize),
           ),
         ),

@@ -118,14 +118,17 @@ class ExcursionVm {
       durationBucket: durationBucket,
       title: offer.title.trim().isNotEmpty ? offer.title : title,
       summary: offer.summary.trim().isNotEmpty ? offer.summary : summary,
-      description:
-          offer.description.trim().isNotEmpty ? offer.description : description,
+      description: offer.description.trim().isNotEmpty
+          ? offer.description
+          : description,
       categorySlug: categorySlug,
-      durationMinutes:
-          offer.durationMinutes > 0 ? offer.durationMinutes : durationMinutes,
+      durationMinutes: offer.durationMinutes > 0
+          ? offer.durationMinutes
+          : durationMinutes,
       maxGroupSize: offer.maxGroupSize > 0 ? offer.maxGroupSize : maxGroupSize,
-      languageCodes:
-          offer.languageCodes.isNotEmpty ? offer.languageCodes : languageCodes,
+      languageCodes: offer.languageCodes.isNotEmpty
+          ? offer.languageCodes
+          : languageCodes,
       tags: tags,
       status: status,
       visibility: visibility,
@@ -141,8 +144,9 @@ class ExcursionVm {
       longitude: offer.longitude ?? longitude,
       mapUrl: offer.mapUrl ?? mapUrl,
       coverFileId: offer.coverFileId ?? coverFileId,
-      coverImageUrl:
-          (offer.coverFileId ?? '').trim().isNotEmpty ? null : coverImageUrl,
+      coverImageUrl: (offer.coverFileId ?? '').trim().isNotEmpty
+          ? null
+          : coverImageUrl,
       includedItems: offer.includedItems,
       includedItemTranslations: offer.includedItemTranslations,
       itinerary: offer.itinerary,
@@ -186,10 +190,12 @@ class ExcursionVm {
       summary: (json['summary'] as String?) ?? '',
       description: (json['description'] as String?) ?? '',
       categorySlug: json['categorySlug'] as String?,
-      durationMinutes: (json['durationMinutes'] as num?)?.toInt() ??
+      durationMinutes:
+          (json['durationMinutes'] as num?)?.toInt() ??
           primaryOffer?.durationMinutes ??
           0,
-      maxGroupSize: (json['maxGroupSize'] as num?)?.toInt() ??
+      maxGroupSize:
+          (json['maxGroupSize'] as num?)?.toInt() ??
           primaryOffer?.maxGroupSize ??
           0,
       languageCodes: languageCodes.isNotEmpty
@@ -198,7 +204,8 @@ class ExcursionVm {
       tags: _stringList(json['tags']),
       status: (json['status'] as String?) ?? 'DRAFT',
       visibility: (json['visibility'] as String?) ?? 'PUBLIC',
-      priceAmount: (json['priceAmount'] as num?)?.toDouble() ??
+      priceAmount:
+          (json['priceAmount'] as num?)?.toDouble() ??
           primaryOffer?.priceAmount ??
           (json['minPriceAmount'] as num?)?.toDouble() ??
           0,
@@ -229,7 +236,8 @@ class ExcursionVm {
       submittedForReviewAt: DateTime.tryParse(
         (json['submittedForReviewAt'] as String?) ?? '',
       )?.toUtc(),
-      publishedOffersCount: (json['publishedOffersCount'] as num?)?.toInt() ??
+      publishedOffersCount:
+          (json['publishedOffersCount'] as num?)?.toInt() ??
           parsedOffers.length,
       offers: parsedOffers,
       createdAt: DateTime.tryParse(
@@ -308,7 +316,8 @@ class ExcursionVm {
 
   List<String> localizedIncludedItems(String languageCode) {
     final normalized = _normalizeLocale(languageCode);
-    final localized = includedItemTranslations[normalized] ??
+    final localized =
+        includedItemTranslations[normalized] ??
         includedItemTranslations[normalized.split('-').first];
     if (localized == null || localized.isEmpty) {
       return includedItems;
@@ -447,7 +456,8 @@ class ExcursionOfferVm {
 
   List<String> localizedIncludedItems(String languageCode) {
     final normalized = _normalizeLocale(languageCode);
-    final localized = includedItemTranslations[normalized] ??
+    final localized =
+        includedItemTranslations[normalized] ??
         includedItemTranslations[normalized.split('-').first];
     if (localized == null || localized.isEmpty) {
       return includedItems;
@@ -474,7 +484,8 @@ class ExcursionItineraryLocalizedCopyVm {
   bool get isEmpty => title.trim().isEmpty && description.trim().isEmpty;
 
   factory ExcursionItineraryLocalizedCopyVm.fromJson(
-      Map<String, dynamic> json) {
+    Map<String, dynamic> json,
+  ) {
     return ExcursionItineraryLocalizedCopyVm(
       title: (json['title'] as String?)?.trim() ?? '',
       description: (json['description'] as String?)?.trim() ?? '',
@@ -521,8 +532,8 @@ class ExcursionItineraryItemVm {
       attractionName: json['attractionName'] as String?,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
-      travelFromPreviousMinutes:
-          (json['travelFromPreviousMinutes'] as num?)?.toInt(),
+      travelFromPreviousMinutes: (json['travelFromPreviousMinutes'] as num?)
+          ?.toInt(),
       title: (json['title'] as String?) ?? '',
       description: (json['description'] as String?) ?? '',
       translations: _translations(json['translations']),

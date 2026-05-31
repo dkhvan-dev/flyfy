@@ -13,8 +13,8 @@ class ChatRecordedVideoReviewScreen extends StatefulWidget {
   const ChatRecordedVideoReviewScreen({
     super.key,
     required this.file,
-    VideoTrimmer? videoTrimmer,
-  }) : _videoTrimmer = videoTrimmer;
+    this._videoTrimmer,
+  });
 
   final XFile file;
   final VideoTrimmer? _videoTrimmer;
@@ -208,7 +208,8 @@ class _ChatRecordedVideoReviewScreenState
     try {
       await controller.pause();
       final duration = controller.value.duration;
-      final hasTrim = trimRange.start > 250 ||
+      final hasTrim =
+          trimRange.start > 250 ||
           trimRange.end < duration.inMilliseconds.toDouble() - 250;
       if (!hasTrim) {
         if (mounted) Navigator.of(context).pop(widget.file);
@@ -257,19 +258,17 @@ class _ChatRecordedVideoReviewScreenState
                 onTap: initialized ? () => unawaited(_togglePlayback()) : null,
                 child: Center(
                   child: _loading
-                      ? const CircularProgressIndicator(
-                          color: AppColors.accent,
-                        )
+                      ? const CircularProgressIndicator(color: AppColors.accent)
                       : _loadFailed || !initialized
-                          ? Icon(
-                              Icons.movie_outlined,
-                              color: Colors.white.withValues(alpha: 0.5),
-                              size: 54,
-                            )
-                          : AspectRatio(
-                              aspectRatio: controller!.value.aspectRatio,
-                              child: VideoPlayer(controller),
-                            ),
+                      ? Icon(
+                          Icons.movie_outlined,
+                          color: Colors.white.withValues(alpha: 0.5),
+                          size: 54,
+                        )
+                      : AspectRatio(
+                          aspectRatio: controller!.value.aspectRatio,
+                          child: VideoPlayer(controller),
+                        ),
                 ),
               ),
             ),
@@ -307,8 +306,9 @@ class _ChatRecordedVideoReviewScreenState
                 label: _sending
                     ? l10n.chatCameraReviewProcessing
                     : l10n.chatCameraReviewSendButtonLabel,
-                onTap:
-                    initialized && !_sending ? () => unawaited(_send()) : null,
+                onTap: initialized && !_sending
+                    ? () => unawaited(_send())
+                    : null,
               ),
             ),
             if (initialized && !controller!.value.isPlaying && !_scrubbing)
@@ -377,8 +377,9 @@ class _ReviewControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final max =
-        duration.inMilliseconds <= 0 ? 1.0 : duration.inMilliseconds.toDouble();
+    final max = duration.inMilliseconds <= 0
+        ? 1.0
+        : duration.inMilliseconds.toDouble();
     final value = position.inMilliseconds.clamp(0, max).toDouble();
     final canTrim = duration.inMilliseconds > 1000;
 

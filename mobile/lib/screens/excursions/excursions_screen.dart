@@ -38,10 +38,10 @@ class ExcursionsRouteArgs {
     required String attractionId,
     String? attractionTitle,
   }) : this(
-          showNoAttractionExcursionsNotice: true,
-          attractionId: attractionId,
-          attractionTitle: attractionTitle,
-        );
+         showNoAttractionExcursionsNotice: true,
+         attractionId: attractionId,
+         attractionTitle: attractionTitle,
+       );
 
   final bool showNoAttractionExcursionsNotice;
   final String? attractionId;
@@ -97,16 +97,7 @@ const _categoryFilterOptions = [
   _CategoryFilterOption(slug: 'wellness', icon: Icons.spa_rounded),
 ];
 
-const _languageFilterCodes = [
-  'en',
-  'ru',
-  'kk',
-  'fr',
-  'ja',
-  'de',
-  'es',
-  'tr',
-];
+const _languageFilterCodes = ['en', 'ru', 'kk', 'fr', 'ja', 'de', 'es', 'tr'];
 
 String _normalizeExcursionSearchText(String value) {
   return value
@@ -238,48 +229,48 @@ String _cyrillicToLatinExcursionSearchText(String value) {
   final buffer = StringBuffer();
   for (final rune in value.trim().toLowerCase().runes) {
     final char = String.fromCharCode(rune);
-    buffer.write(
-      switch (char) {
-        'а' || 'ә' => 'a',
-        'б' => 'b',
-        'в' => 'v',
-        'г' || 'ғ' => 'g',
-        'д' => 'd',
-        'е' || 'э' => 'e',
-        'ё' => 'yo',
-        'ж' => 'zh',
-        'з' => 'z',
-        'и' || 'і' => 'i',
-        'й' => 'y',
-        'к' || 'қ' => 'k',
-        'л' => 'l',
-        'м' => 'm',
-        'н' || 'ң' => 'n',
-        'о' || 'ө' => 'o',
-        'п' => 'p',
-        'р' => 'r',
-        'с' => 's',
-        'т' => 't',
-        'у' || 'ұ' || 'ү' => 'u',
-        'ф' => 'f',
-        'х' || 'һ' => 'h',
-        'ц' => 'ts',
-        'ч' => 'ch',
-        'ш' => 'sh',
-        'щ' => 'shch',
-        'ы' || 'ь' => 'y',
-        'ъ' => '',
-        'ю' => 'yu',
-        'я' => 'ya',
-        _ => char,
-      },
-    );
+    buffer.write(switch (char) {
+      'а' || 'ә' => 'a',
+      'б' => 'b',
+      'в' => 'v',
+      'г' || 'ғ' => 'g',
+      'д' => 'd',
+      'е' || 'э' => 'e',
+      'ё' => 'yo',
+      'ж' => 'zh',
+      'з' => 'z',
+      'и' || 'і' => 'i',
+      'й' => 'y',
+      'к' || 'қ' => 'k',
+      'л' => 'l',
+      'м' => 'm',
+      'н' || 'ң' => 'n',
+      'о' || 'ө' => 'o',
+      'п' => 'p',
+      'р' => 'r',
+      'с' => 's',
+      'т' => 't',
+      'у' || 'ұ' || 'ү' => 'u',
+      'ф' => 'f',
+      'х' || 'һ' => 'h',
+      'ц' => 'ts',
+      'ч' => 'ch',
+      'ш' => 'sh',
+      'щ' => 'shch',
+      'ы' || 'ь' => 'y',
+      'ъ' => '',
+      'ю' => 'yu',
+      'я' => 'ya',
+      _ => char,
+    });
   }
   return buffer.toString();
 }
 
 void _addExcursionLanguageSearchVariants(
-    void Function(String value) add, String token) {
+  void Function(String value) add,
+  String token,
+) {
   switch (_normalizeExcursionSearchText(token)) {
     case 'en':
     case 'eng':
@@ -489,11 +480,11 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
   Future<void> _loadExcursionsForCurrentFilters() {
     final city = _filters.city;
     return context.read<ExcursionProvider>().refreshExcursions(
-          query: _searchQuery,
-          countryCode: _filters.countryCode,
-          cityName: city?.cityName,
-          departureCityId: city?.cityId,
-        );
+      query: _searchQuery,
+      countryCode: _filters.countryCode,
+      cityName: city?.cityName,
+      departureCityId: city?.cityId,
+    );
   }
 
   void _scheduleResolveLocalizedLandmarks(List<ExcursionVm> excursions) {
@@ -530,10 +521,7 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
       if (!mounted || _localizedLandmarksLocale != lang) return;
 
       setState(() {
-        _localizedLandmarks = {
-          ..._localizedLandmarks,
-          landmarkId: attraction,
-        };
+        _localizedLandmarks = {..._localizedLandmarks, landmarkId: attraction};
         _loadingLocalizedLandmarkIds.remove(landmarkId);
       });
     } catch (_) {
@@ -562,8 +550,9 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
     await context.push('/excursions/create');
     if (!mounted) return;
 
-    final lastCreatedExcursion =
-        context.read<ExcursionProvider>().lastCreatedExcursion;
+    final lastCreatedExcursion = context
+        .read<ExcursionProvider>()
+        .lastCreatedExcursion;
     if (lastCreatedExcursion != null && _scrollController.hasClients) {
       _scrollController.animateTo(
         0,
@@ -576,8 +565,10 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
   void _openExcursionDetails(ExcursionVm excursion) {
     if (excursion.id.trim().isEmpty) return;
 
-    context.push('/excursions/${Uri.encodeComponent(excursion.id)}',
-        extra: excursion);
+    context.push(
+      '/excursions/${Uri.encodeComponent(excursion.id)}',
+      extra: excursion,
+    );
   }
 
   void _onSortTap(_ExcursionsSortMode mode) {
@@ -603,9 +594,10 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => _ExcursionsFiltersSheet(
         initialFilters: _filters,
-        resultCountBuilder: (filters) =>
-            _visibleExcursions(excursionsSnapshot, filtersOverride: filters)
-                .length,
+        resultCountBuilder: (filters) => _visibleExcursions(
+          excursionsSnapshot,
+          filtersOverride: filters,
+        ).length,
       ),
     );
 
@@ -645,23 +637,24 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
               child: Consumer<ExcursionProvider>(
                 builder: (context, provider, _) {
                   _scheduleResolveLocalizedLandmarks(provider.excursions);
-                  final visibleExcursions =
-                      _visibleExcursions(provider.excursions);
+                  final visibleExcursions = _visibleExcursions(
+                    provider.excursions,
+                  );
                   final isInitialLoading =
                       provider.listState == ExcursionListState.loading &&
-                          provider.excursions.isEmpty;
+                      provider.excursions.isEmpty;
                   final hasInitialError =
                       provider.listState == ExcursionListState.error &&
-                          provider.excursions.isEmpty;
+                      provider.excursions.isEmpty;
 
                   if (hasInitialError) {
                     return ErrorView(
-                      message: provider.listErrorMessage ??
+                      message:
+                          provider.listErrorMessage ??
                           l10n.excursionsLoadFailed,
-                      onRetry: () =>
-                          context.read<ExcursionProvider>().loadExcursions(
-                                query: _searchQuery,
-                              ),
+                      onRetry: () => context
+                          .read<ExcursionProvider>()
+                          .loadExcursions(query: _searchQuery),
                     );
                   }
 
@@ -702,7 +695,8 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
                                   direction: _sortDirection,
                                   onChanged: _onSortTap,
                                 ),
-                                if (widget.routeArgs
+                                if (widget
+                                        .routeArgs
                                         ?.showNoAttractionExcursionsNotice ==
                                     true) ...[
                                   const SizedBox(height: 14),
@@ -738,22 +732,24 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
                               itemCount: visibleExcursions.length,
                               gridDelegate:
                                   SliverGridDelegateWithMaxCrossAxisExtent(
-                                maxCrossAxisExtent: 220,
-                                mainAxisSpacing: 18,
-                                crossAxisSpacing: 18,
-                                childAspectRatio: _gridAspectRatio(context),
-                              ),
+                                    maxCrossAxisExtent: 220,
+                                    mainAxisSpacing: 18,
+                                    crossAxisSpacing: 18,
+                                    childAspectRatio: _gridAspectRatio(context),
+                                  ),
                               itemBuilder: (context, index) {
                                 return ExcursionListCard(
                                   excursion: visibleExcursions[index],
-                                  languageCode: Localizations.localeOf(context)
-                                      .languageCode,
+                                  languageCode: Localizations.localeOf(
+                                    context,
+                                  ).languageCode,
                                   localizedLandmark: _localizedLandmarkFor(
                                     visibleExcursions[index],
                                   ),
                                   seed: index,
                                   onTap: () => _openExcursionDetails(
-                                      visibleExcursions[index]),
+                                    visibleExcursions[index],
+                                  ),
                                 );
                               },
                             ),
@@ -783,30 +779,33 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
     final lang = Localizations.localeOf(context).languageCode;
     final searchGroups = _excursionSearchNeedleGroups(_searchQuery);
     final filters = filtersOverride ?? _filters;
-    final filtered = excursions.where((excursion) {
-      if (!filters.matches(excursion)) return false;
-      if (searchGroups.isEmpty) return true;
+    final filtered = excursions
+        .where((excursion) {
+          if (!filters.matches(excursion)) return false;
+          if (searchGroups.isEmpty) return true;
 
-      final haystack = _excursionSearchHaystack(l10n, excursion, lang);
-      return searchGroups.every(
-        (variants) => variants.any(haystack.contains),
-      );
-    }).toList(growable: false);
+          final haystack = _excursionSearchHaystack(l10n, excursion, lang);
+          return searchGroups.every(
+            (variants) => variants.any(haystack.contains),
+          );
+        })
+        .toList(growable: false);
 
     final sorted = [...filtered];
     sorted.sort((a, b) {
       final comparison = switch (_sortMode) {
         _ExcursionsSortMode.createdAt => _excursionCreatedAtFor(
-            a,
-          ).compareTo(_excursionCreatedAtFor(b)),
-        _ExcursionsSortMode.rating =>
-          _excursionRatingFor(a).compareTo(_excursionRatingFor(b)),
+          a,
+        ).compareTo(_excursionCreatedAtFor(b)),
+        _ExcursionsSortMode.rating => _excursionRatingFor(
+          a,
+        ).compareTo(_excursionRatingFor(b)),
         _ExcursionsSortMode.price => _excursionCardPriceFor(
-            a,
-          ).amount.compareTo(_excursionCardPriceFor(b).amount),
+          a,
+        ).amount.compareTo(_excursionCardPriceFor(b).amount),
         _ExcursionsSortMode.duration => a.durationMinutes.compareTo(
-            b.durationMinutes,
-          ),
+          b.durationMinutes,
+        ),
       };
 
       final directedComparison = _sortDirection == _ExcursionsSortDirection.asc
@@ -834,9 +833,7 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
       decoration: BoxDecoration(
         color: AppColors.accent.withValues(alpha: 0.11),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.accent.withValues(alpha: 0.24),
-        ),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.24)),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
@@ -1347,10 +1344,12 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
         .where((token) => token.trim().isNotEmpty)
         .toList(growable: false);
 
-    return _languageFilterCodes.where((code) {
-      final haystack = _languageSearchHaystack(l10n, code);
-      return tokens.every(haystack.contains);
-    }).toList(growable: false);
+    return _languageFilterCodes
+        .where((code) {
+          final haystack = _languageSearchHaystack(l10n, code);
+          return tokens.every(haystack.contains);
+        })
+        .toList(growable: false);
   }
 
   String _languageSearchHaystack(AppLocalizations l10n, String code) {
@@ -1471,27 +1470,27 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
                         title: l10n.excursionsFilterDuration,
                         child:
                             _ExcursionsSegmentGrid<_ExcursionsDurationFilter>(
-                          items: [
-                            _ExcursionsSegmentItem(
-                              value: _ExcursionsDurationFilter.short,
-                              label: l10n.excursionsFilterShortDuration,
+                              items: [
+                                _ExcursionsSegmentItem(
+                                  value: _ExcursionsDurationFilter.short,
+                                  label: l10n.excursionsFilterShortDuration,
+                                ),
+                                _ExcursionsSegmentItem(
+                                  value: _ExcursionsDurationFilter.halfDay,
+                                  label: l10n.excursionsFilterHalfDayDuration,
+                                ),
+                                _ExcursionsSegmentItem(
+                                  value: _ExcursionsDurationFilter.fullDay,
+                                  label: l10n.excursionsFilterFullDayDuration,
+                                ),
+                                _ExcursionsSegmentItem(
+                                  value: _ExcursionsDurationFilter.multiDay,
+                                  label: l10n.excursionsFilterMultiDayDuration,
+                                ),
+                              ],
+                              selectedValue: _filters.duration,
+                              onSelected: _setDuration,
                             ),
-                            _ExcursionsSegmentItem(
-                              value: _ExcursionsDurationFilter.halfDay,
-                              label: l10n.excursionsFilterHalfDayDuration,
-                            ),
-                            _ExcursionsSegmentItem(
-                              value: _ExcursionsDurationFilter.fullDay,
-                              label: l10n.excursionsFilterFullDayDuration,
-                            ),
-                            _ExcursionsSegmentItem(
-                              value: _ExcursionsDurationFilter.multiDay,
-                              label: l10n.excursionsFilterMultiDayDuration,
-                            ),
-                          ],
-                          selectedValue: _filters.duration,
-                          onSelected: _setDuration,
-                        ),
                       ),
                       const SizedBox(height: 30),
                       _ExcursionsFilterSection(
@@ -1722,11 +1721,7 @@ class _ExcursionsPriceRangeFields extends StatelessWidget {
 
         if (isNarrow) {
           return Column(
-            children: [
-              fields[0],
-              const SizedBox(height: 12),
-              fields[1],
-            ],
+            children: [fields[0], const SizedBox(height: 12), fields[1]],
           );
         }
 
@@ -2227,7 +2222,10 @@ class ExcursionListCard extends StatelessWidget {
   }
 
   String _formatMeta(
-      BuildContext context, ExcursionVm excursion, String duration) {
+    BuildContext context,
+    ExcursionVm excursion,
+    String duration,
+  ) {
     final l10n = AppLocalizations.of(context)!;
     final parts = <String>[
       if (duration.trim().isNotEmpty) duration.trim(),
@@ -2264,7 +2262,9 @@ _ExcursionCardPrice _excursionCardPriceFor(ExcursionVm excursion) {
   final offers = excursion.offers;
   if (offers.isEmpty) {
     return _ExcursionCardPrice(
-        amount: excursion.priceAmount, currency: excursion.currency);
+      amount: excursion.priceAmount,
+      currency: excursion.currency,
+    );
   }
 
   var selected = _ExcursionCardPrice(
@@ -2473,17 +2473,18 @@ class _ExcursionCoverPainter extends CustomPainter {
       ..drawPath(snowCap, snowPaint);
 
     final sunPaint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          Colors.white.withValues(alpha: 0.8),
-          Colors.white.withValues(alpha: 0),
-        ],
-      ).createShader(
-        Rect.fromCircle(
-          center: Offset(size.width * 0.54, size.height * 0.28),
-          radius: math.min(size.width, size.height) * 0.2,
-        ),
-      );
+      ..shader =
+          RadialGradient(
+            colors: [
+              Colors.white.withValues(alpha: 0.8),
+              Colors.white.withValues(alpha: 0),
+            ],
+          ).createShader(
+            Rect.fromCircle(
+              center: Offset(size.width * 0.54, size.height * 0.28),
+              radius: math.min(size.width, size.height) * 0.2,
+            ),
+          );
     canvas.drawCircle(
       Offset(size.width * 0.54, size.height * 0.28),
       math.min(size.width, size.height) * 0.2,
@@ -2533,8 +2534,9 @@ class _ExcursionsLoadingGrid extends StatelessWidget {
           maxCrossAxisExtent: 220,
           mainAxisSpacing: 18,
           crossAxisSpacing: 18,
-          childAspectRatio:
-              MediaQuery.sizeOf(context).width <= 360 ? 0.63 : 0.68,
+          childAspectRatio: MediaQuery.sizeOf(context).width <= 360
+              ? 0.63
+              : 0.68,
         ),
         itemBuilder: (context, index) {
           return const _ExcursionsSkeletonCard();

@@ -1,35 +1,33 @@
 import '../../core/network/reference_api.dart';
 
-typedef ReferenceCountryLookup = Future<ReferenceCountry?> Function(String code,
-    {required String lang});
+typedef ReferenceCountryLookup =
+    Future<ReferenceCountry?> Function(String code, {required String lang});
 
-typedef ReferenceCityLookup = Future<ReferenceCity?> Function(String id,
-    {required String lang});
+typedef ReferenceCityLookup =
+    Future<ReferenceCity?> Function(String id, {required String lang});
 
-typedef ReferenceCitySearchLookup = Future<List<ReferenceCity>> Function(
-  String query, {
-  String? countryCode,
-  required String lang,
-  int limit,
-});
+typedef ReferenceCitySearchLookup =
+    Future<List<ReferenceCity>> Function(
+      String query, {
+      String? countryCode,
+      required String lang,
+      int limit,
+    });
 
-typedef ReferenceCitiesByCountryLookup = Future<List<ReferenceCity>> Function(
-  String countryCode, {
-  required String lang,
-});
+typedef ReferenceCitiesByCountryLookup =
+    Future<List<ReferenceCity>> Function(
+      String countryCode, {
+      required String lang,
+    });
 
 class AppLocationLabelResolver {
   AppLocationLabelResolver({
     ReferenceApi? api,
-    ReferenceCountryLookup? countryLookup,
-    ReferenceCityLookup? cityLookup,
-    ReferenceCitySearchLookup? citySearchLookup,
-    ReferenceCitiesByCountryLookup? citiesByCountryLookup,
-  })  : _api = api ?? ReferenceApi(),
-        _countryLookup = countryLookup,
-        _cityLookup = cityLookup,
-        _citySearchLookup = citySearchLookup,
-        _citiesByCountryLookup = citiesByCountryLookup;
+    this._countryLookup,
+    this._cityLookup,
+    this._citySearchLookup,
+    this._citiesByCountryLookup,
+  }) : _api = api ?? ReferenceApi();
 
   final ReferenceApi _api;
   final ReferenceCountryLookup? _countryLookup;
@@ -257,11 +255,12 @@ ReferenceCity? _pickBestCityMatch(
   final countryMatches = normalizedCountryCode == null
       ? cities
       : cities
-          .where(
-            (city) =>
-                city.countryCode.trim().toUpperCase() == normalizedCountryCode,
-          )
-          .toList(growable: false);
+            .where(
+              (city) =>
+                  city.countryCode.trim().toUpperCase() ==
+                  normalizedCountryCode,
+            )
+            .toList(growable: false);
   final candidates = countryMatches.isEmpty ? cities : countryMatches;
 
   for (final city in candidates) {

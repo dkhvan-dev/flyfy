@@ -84,7 +84,9 @@ class _ChatVideoPreviewState extends State<ChatVideoPreview> {
       if (!mounted || generation != _loadGeneration) return;
       if (url == null || url.isEmpty) {
         if (await _initializeLocalPreview(
-            generation: generation, fileId: fileId)) {
+          generation: generation,
+          fileId: fileId,
+        )) {
           return;
         }
         setState(() => _loadError = 'missing_url');
@@ -273,7 +275,8 @@ class _VideoFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: progress ??
+      child:
+          progress ??
           Icon(
             icon ?? Icons.movie_rounded,
             color: Colors.white.withValues(alpha: 0.52),

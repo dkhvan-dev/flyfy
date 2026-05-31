@@ -554,13 +554,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       );
       final resolvedTimezoneId =
           normalizeReferenceTimezoneId(resolvedTimezone?.id) ??
-              normalizeReferenceTimezoneId(detectedTimezone);
+          normalizeReferenceTimezoneId(detectedTimezone);
 
       setState(() {
         if ((suggestion.countryCode ?? '').isNotEmpty) {
           _countryCodeController.text =
               normalizeReferenceCountryCode(suggestion.countryCode) ??
-                  suggestion.countryCode!;
+              suggestion.countryCode!;
         }
         if (resolvedTimezoneId != null) {
           final lang = Localizations.localeOf(context).languageCode;
@@ -1082,8 +1082,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             selectedCurrency: _selectedCurrency(),
                             selectedCurrencyCode:
                                 normalizeReferenceCurrencyCode(
-                              _currencyController.text,
-                            ),
+                                  _currencyController.text,
+                                ),
                             searchController: _currencySearchController,
                             visibleCurrencies: _visibleCurrencies(),
                             isLoading: _isCurrenciesLoading,
@@ -1324,7 +1324,7 @@ class _EditProfileHero extends StatelessWidget {
                             Image.network(
                               avatarUrl!,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Center(
+                              errorBuilder: (_, _, _) => Center(
                                 child: Text(
                                   initials,
                                   style: TextStyle(
@@ -1609,8 +1609,9 @@ class _ProfileCountrySearchField extends StatelessWidget {
                 ),
                 prefixIcon: Icon(
                   Icons.search_rounded,
-                  color:
-                      hasError && !hasSelection ? errorColor : AppColors.accent,
+                  color: hasError && !hasSelection
+                      ? errorColor
+                      : AppColors.accent,
                 ),
                 errorText: hasSelection ? null : errorText,
                 errorStyle: TextStyle(
@@ -1701,7 +1702,7 @@ class _ProfileCountrySearchField extends StatelessWidget {
                       final country = visibleCountries[index];
                       final code =
                           normalizeReferenceCountryCode(country.code) ??
-                              country.code.trim().toUpperCase();
+                          country.code.trim().toUpperCase();
                       final selected = selectedCountryCode == code;
 
                       return InkWell(
@@ -1964,7 +1965,7 @@ class _ProfileTimezoneSearchField extends StatelessWidget {
                   final timezone = visibleTimezones[index];
                   final timezoneId =
                       normalizeReferenceTimezoneId(timezone.id) ??
-                          timezone.id.trim();
+                      timezone.id.trim();
                   final selected = selectedTimezoneId == timezoneId;
 
                   return InkWell(
@@ -2204,7 +2205,7 @@ class _ProfileCurrencySearchField extends StatelessWidget {
                   final currency = visibleCurrencies[index];
                   final currencyCode =
                       normalizeReferenceCurrencyCode(currency.code) ??
-                          currency.code.trim();
+                      currency.code.trim();
                   final selected = selectedCurrencyCode == currencyCode;
                   final symbol = currency.symbol.trim();
 

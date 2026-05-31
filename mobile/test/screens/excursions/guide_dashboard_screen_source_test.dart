@@ -55,8 +55,9 @@ void main() {
       expect(source, contains('onSecondaryActionTap: () =>'));
       expect(source, contains('destructiveActionLabel:'));
       expect(source, contains('onDestructiveActionTap:'));
-      final deleteDialogStart =
-          source.indexOf('Future<void> _deleteDraftOffer');
+      final deleteDialogStart = source.indexOf(
+        'Future<void> _deleteDraftOffer',
+      );
       final publishOfferStart = source.indexOf('Future<void> _publishOffer');
       expect(deleteDialogStart, isNonNegative);
       expect(publishOfferStart, greaterThan(deleteDialogStart));

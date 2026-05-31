@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:file_selector/file_selector.dart' as file_selector;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +11,6 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:record/record.dart';
@@ -65,6 +64,14 @@ class _ChatScreenState extends State<ChatScreen> {
   static const _stickerImageWarmupLimit = 180;
   static const _stickerImageWarmupConcurrency = 6;
   static const _messageActionSheetMaxHeightFactor = 0.82;
+  static const _audioFileTypeGroups = [
+    file_selector.XTypeGroup(
+      label: 'Audio',
+      extensions: ['aac', 'flac', 'm4a', 'mp3', 'ogg', 'wav'],
+      mimeTypes: ['audio/*'],
+      uniformTypeIdentifiers: ['public.audio'],
+    ),
+  ];
 
   final _fileApi = FileApi();
   final _stickerApi = StickerApi();
@@ -300,16 +307,14 @@ class _ChatScreenState extends State<ChatScreen> {
 
         case _AttachmentPickType.file:
         case _AttachmentPickType.audio:
-          final result = await FilePicker.pickFiles(
-            allowMultiple: true,
-            withData: true,
-            type: type == _AttachmentPickType.audio
-                ? FileType.audio
-                : FileType.any,
+          final picked = await file_selector.openFiles(
+            acceptedTypeGroups: type == _AttachmentPickType.audio
+                ? _audioFileTypeGroups
+                : const <file_selector.XTypeGroup>[],
           );
-          if (!mounted || result == null || result.files.isEmpty) return;
-          for (final file in result.files) {
-            final att = await _attachmentFromFile(
+          if (!mounted || picked.isEmpty) return;
+          for (final file in picked) {
+            final att = await _attachmentFromXFile(
               file,
               ++_pendingAttachmentSeq,
             );
@@ -390,31 +395,6 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  Future<_PickedChatAttachment?> _attachmentFromFile(
-    PlatformFile file,
-    int localId,
-  ) async {
-    final name = file.name.trim();
-    final bytes = file.bytes ??
-        (file.path == null ? null : await File(file.path!).readAsBytes());
-    if (name.isEmpty || bytes == null || bytes.isEmpty) {
-      return null;
-    }
-
-    final contentType = _contentTypeForFileName(name);
-    if (contentType == null) {
-      return null;
-    }
-
-    return _PickedChatAttachment(
-      localId: localId,
-      name: name,
-      bytes: bytes,
-      contentType: contentType,
-      localPath: file.path,
-    );
-  }
-
   // _attachmentFromXFile handles XFile from gallery and the chat camera.
   // It falls back to the file's MIME type when the extension isn't in our
   // allowlist (e.g. iOS may hand us a video file with no extension at all).
@@ -434,7 +414,8 @@ class _ChatScreenState extends State<ChatScreen> {
       name = 'media_${DateTime.now().millisecondsSinceEpoch}.$ext';
     }
 
-    final contentType = _contentTypeForFileName(name) ??
+    final contentType =
+        _contentTypeForFileName(name) ??
         file.mimeType ??
         'application/octet-stream';
 
@@ -627,12 +608,15 @@ class _ChatScreenState extends State<ChatScreen> {
       return pending;
     }
 
-    final load = _stickerApi.ensureCustomPack().then((pack) {
-      _customStickerPack = pack;
-      return pack;
-    }).whenComplete(() {
-      _customStickerPackLoad = null;
-    });
+    final load = _stickerApi
+        .ensureCustomPack()
+        .then((pack) {
+          _customStickerPack = pack;
+          return pack;
+        })
+        .whenComplete(() {
+          _customStickerPackLoad = null;
+        });
     _customStickerPackLoad = load;
     return load;
   }
@@ -974,8 +958,9 @@ class _ChatScreenState extends State<ChatScreen> {
   List<StickerVm> _prioritizedStickerWarmupList(List<StickerPackVm> packs) {
     if (packs.isEmpty) return const [];
 
-    final safeIndex =
-        _activeStickerPackIndex.clamp(0, packs.length - 1).toInt();
+    final safeIndex = _activeStickerPackIndex
+        .clamp(0, packs.length - 1)
+        .toInt();
     final orderedPacks = [
       packs[safeIndex],
       for (var index = 0; index < packs.length; index += 1)
@@ -993,8 +978,9 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() => _activeStickerPackIndex = index);
 
     final selected = _stickerPacks[index];
-    final next =
-        index + 1 < _stickerPacks.length ? _stickerPacks[index + 1] : null;
+    final next = index + 1 < _stickerPacks.length
+        ? _stickerPacks[index + 1]
+        : null;
     unawaited(
       _precacheStickerImages([
         ...selected.stickers,
@@ -1030,8 +1016,8 @@ class _ChatScreenState extends State<ChatScreen> {
         preloadAllPacks: true,
       );
       final myPacksLoad = _stickerApi.listMyPacks().catchError(
-            (_) => const <StickerPackVm>[],
-          );
+        (_) => const <StickerPackVm>[],
+      );
 
       await catalogLoad;
 
@@ -1151,9 +1137,9 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     final sent = await context.read<ChatProvider>().sendSticker(
-          sticker: sticker,
-          replyToMessageId: _replyToMessage?.id,
-        );
+      sticker: sticker,
+      replyToMessageId: _replyToMessage?.id,
+    );
     if (!mounted) return false;
     if (sent) {
       setState(() => _replyToMessage = null);
@@ -1280,7 +1266,8 @@ class _ChatScreenState extends State<ChatScreen> {
       conversation,
       currentUserId,
     );
-    final hasStatusPreview = message.isForwarded ||
+    final hasStatusPreview =
+        message.isForwarded ||
         message.forwardCount > 0 ||
         reactionInfos.isNotEmpty ||
         readReceipts.isNotEmpty;
@@ -1295,7 +1282,8 @@ class _ChatScreenState extends State<ChatScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (sheetContext) {
-        final maxHeight = MediaQuery.sizeOf(sheetContext).height *
+        final maxHeight =
+            MediaQuery.sizeOf(sheetContext).height *
             _messageActionSheetMaxHeightFactor;
 
         return SafeArea(
@@ -1317,11 +1305,11 @@ class _ChatScreenState extends State<ChatScreen> {
                         onReactionSummaryTap: reactionInfos.isEmpty
                             ? null
                             : () =>
-                                Navigator.pop(sheetContext, 'reaction_users'),
+                                  Navigator.pop(sheetContext, 'reaction_users'),
                         onReadReceiptsTap: readReceipts.isEmpty
                             ? null
                             : () =>
-                                Navigator.pop(sheetContext, 'read_receipts'),
+                                  Navigator.pop(sheetContext, 'read_receipts'),
                       ),
                       SizedBox(height: _scale(context, 12)),
                       Divider(color: Colors.white.withValues(alpha: 0.08)),
@@ -1462,8 +1450,8 @@ class _ChatScreenState extends State<ChatScreen> {
         final messageText = e is DioException
             ? DioErrorMapper.toMessage(e)
             : action == 'pin'
-                ? l10n.chatPinFailed
-                : l10n.chatUnpinFailed;
+            ? l10n.chatPinFailed
+            : l10n.chatUnpinFailed;
         await showErrorDialog(context, title: l10n.error, message: messageText);
       }
       return;
@@ -1473,8 +1461,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
     try {
       final result = await context.read<ChatProvider>().deleteMessage(
-            message.id,
-          );
+        message.id,
+      );
       if (!mounted) return;
       setState(() {
         if (_replyToMessage?.id == message.id) {
@@ -1537,11 +1525,12 @@ class _ChatScreenState extends State<ChatScreen> {
     );
     if (!mounted || selected == null) return;
 
-    final forwarded =
-        await context.read<ChatProvider>().forwardMessageToConversation(
-              message: message,
-              targetConversationId: selected.id,
-            );
+    final forwarded = await context
+        .read<ChatProvider>()
+        .forwardMessageToConversation(
+          message: message,
+          targetConversationId: selected.id,
+        );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1571,7 +1560,8 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _showReactionUsersSheet(
-      List<_ReactionInfo> reactionInfos) async {
+    List<_ReactionInfo> reactionInfos,
+  ) async {
     if (reactionInfos.isEmpty) return;
 
     final selectedUserId = await showModalBottomSheet<String>(
@@ -1672,10 +1662,7 @@ class _ChatScreenState extends State<ChatScreen> {
         _ReadReceiptInfo(
           participant: participant,
           readAt: receipt.readAt,
-          reactionEmoji: _reactionEmojiForUserId(
-            reactionEmojiByUserId,
-            userId,
-          ),
+          reactionEmoji: _reactionEmojiForUserId(reactionEmojiByUserId, userId),
         ),
       );
     }
@@ -1723,9 +1710,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
     try {
       await context.read<ChatProvider>().toggleMessageReaction(
-            messageId,
-            emoji,
-          );
+        messageId,
+        emoji,
+      );
     } catch (e) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
@@ -1788,8 +1775,8 @@ class _ChatScreenState extends State<ChatScreen> {
       if (!mounted) return;
     }
 
-    final targetRenderObject =
-        _messageItemKeys[messageId]?.currentContext?.findRenderObject();
+    final targetRenderObject = _messageItemKeys[messageId]?.currentContext
+        ?.findRenderObject();
     if (targetRenderObject == null ||
         !mounted ||
         !_scrollController.hasClients) {
@@ -2000,8 +1987,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
 // _AttachmentPickType drives _pickAttachments dispatch.
 //   - gallery: native multi-media picker (photos+videos), no runtime permission needed.
-//   - file: arbitrary file via FilePicker.
-//   - audio: audio file via FilePicker.
+//   - file: arbitrary file via the platform file selector.
+//   - audio: audio file via the platform file selector.
 enum _AttachmentPickType { gallery, file, audio }
 
 enum _ComposerPanel { none, emoji, stickers }
@@ -3251,10 +3238,7 @@ class _MessageStatusPreview extends StatelessWidget {
         ],
         if (reactionInfos.isEmpty && readReceipts.isNotEmpty) ...[
           if (hasForwardInfo) SizedBox(height: _scale(context, 10)),
-          _ReadReceiptSummary(
-            receipts: readReceipts,
-            onTap: onReadReceiptsTap,
-          ),
+          _ReadReceiptSummary(receipts: readReceipts, onTap: onReadReceiptsTap),
         ],
       ],
     );
@@ -3350,10 +3334,7 @@ class _StatusMetricCard extends StatelessWidget {
 }
 
 class _ReactionSummary extends StatelessWidget {
-  const _ReactionSummary({
-    required this.reactionInfos,
-    required this.onTap,
-  });
+  const _ReactionSummary({required this.reactionInfos, required this.onTap});
 
   final List<_ReactionInfo> reactionInfos;
   final VoidCallback? onTap;
@@ -3430,10 +3411,7 @@ class _ReactionSummary extends StatelessWidget {
 }
 
 class _ReadReceiptSummary extends StatelessWidget {
-  const _ReadReceiptSummary({
-    required this.receipts,
-    required this.onTap,
-  });
+  const _ReadReceiptSummary({required this.receipts, required this.onTap});
 
   final List<_ReadReceiptInfo> receipts;
   final VoidCallback? onTap;
@@ -3560,7 +3538,7 @@ class _ReactionUsersSheet extends StatelessWidget {
                   shrinkWrap: true,
                   physics: const BouncingScrollPhysics(),
                   itemCount: reactionInfos.length,
-                  separatorBuilder: (_, __) => Divider(
+                  separatorBuilder: (_, _) => Divider(
                     height: 1,
                     color: Colors.white.withValues(alpha: 0.06),
                   ),
@@ -3684,7 +3662,7 @@ class _ReadReceiptsSheet extends StatelessWidget {
                   shrinkWrap: true,
                   physics: const BouncingScrollPhysics(),
                   itemCount: receipts.length,
-                  separatorBuilder: (_, __) => Divider(
+                  separatorBuilder: (_, _) => Divider(
                     height: 1,
                     color: Colors.white.withValues(alpha: 0.06),
                   ),
@@ -3854,7 +3832,7 @@ class _ForwardMessageSheet extends StatelessWidget {
                     shrinkWrap: true,
                     physics: const BouncingScrollPhysics(),
                     itemCount: conversations.length,
-                    separatorBuilder: (_, __) =>
+                    separatorBuilder: (_, _) =>
                         SizedBox(height: _scale(context, 8)),
                     itemBuilder: (context, index) {
                       final conversation = conversations[index];
@@ -4212,8 +4190,9 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final senderParticipant =
-        participants.where((p) => p.userId == message.senderUserId).firstOrNull;
+    final senderParticipant = participants
+        .where((p) => p.userId == message.senderUserId)
+        .firstOrNull;
     final senderName = _senderNameForMessage(message, participants, l10n);
     final isDeleted = message.isDeleted;
     final isSticker = message.isSticker;
@@ -4320,25 +4299,25 @@ class _MessageBubble extends StatelessWidget {
                     gradient: isSticker
                         ? null
                         : isDeleted
-                            ? LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  const Color(0xA334271D),
-                                  const Color(0xD1261C15),
-                                ],
-                              )
-                            : const LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [Color(0xA34D2D13), Color(0xD13C210D)],
-                              ),
+                        ? LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              const Color(0xA334271D),
+                              const Color(0xD1261C15),
+                            ],
+                          )
+                        : const LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Color(0xA34D2D13), Color(0xD13C210D)],
+                          ),
                     border: Border.all(
                       color: isHighlighted
                           ? AppColors.accent.withValues(alpha: 0.72)
                           : isSticker
-                              ? Colors.transparent
-                              : Colors.white.withValues(alpha: 0.05),
+                          ? Colors.transparent
+                          : Colors.white.withValues(alpha: 0.05),
                       width: isHighlighted ? 1.4 : 1,
                     ),
                     boxShadow: isHighlighted
@@ -4372,7 +4351,8 @@ class _MessageBubble extends StatelessWidget {
                                     l10n,
                                   ),
                             preview: _ReplyPreviewText(
-                              message: repliedMessage ??
+                              message:
+                                  repliedMessage ??
                                   MessageVm(
                                     id: message.replyToMessageId!,
                                     senderUserId: '',
@@ -4889,7 +4869,7 @@ class _MessageAttachmentsState extends State<_MessageAttachments> {
       }
 
       final result = await _fileCache.open(downloaded);
-      if (!mounted || result.type == ResultType.done) return;
+      if (!mounted || result.isDone) return;
 
       await showErrorDialog(
         context,
@@ -4911,7 +4891,8 @@ class _MessageAttachmentsState extends State<_MessageAttachments> {
     return FutureBuilder<List<_ChatAttachmentViewData>>(
       future: _future,
       builder: (context, snapshot) {
-        final items = snapshot.data ??
+        final items =
+            snapshot.data ??
             widget.fileIds
                 .map(
                   (fileId) => _ChatAttachmentViewData(
@@ -5045,12 +5026,15 @@ class _VoiceWaveform extends StatelessWidget {
 
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTapDown:
-              enabled ? (details) => seekAt(details.localPosition) : null,
-          onHorizontalDragStart:
-              enabled ? (details) => seekAt(details.localPosition) : null,
-          onHorizontalDragUpdate:
-              enabled ? (details) => seekAt(details.localPosition) : null,
+          onTapDown: enabled
+              ? (details) => seekAt(details.localPosition)
+              : null,
+          onHorizontalDragStart: enabled
+              ? (details) => seekAt(details.localPosition)
+              : null,
+          onHorizontalDragUpdate: enabled
+              ? (details) => seekAt(details.localPosition)
+              : null,
           child: SizedBox(
             height: _scale(context, 28),
             child: Row(
@@ -5368,7 +5352,7 @@ class _ChatAvatar extends StatelessWidget {
             : Image.network(
                 url,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Center(
+                errorBuilder: (_, _, _) => Center(
                   child: Text(
                     _initial,
                     style: TextStyle(
@@ -5442,7 +5426,7 @@ class _PendingAttachmentsStrip extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         itemCount: attachments.length,
-        separatorBuilder: (_, __) => SizedBox(width: _scale(context, 10)),
+        separatorBuilder: (_, _) => SizedBox(width: _scale(context, 10)),
         itemBuilder: (context, index) {
           final item = attachments[index];
           return _PendingAttachmentChip(
@@ -5574,8 +5558,9 @@ class _PastePreviewActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg =
-        emphasized ? AppColors.accent : Colors.white.withValues(alpha: 0.08);
+    final bg = emphasized
+        ? AppColors.accent
+        : Colors.white.withValues(alpha: 0.08);
     final fg = emphasized ? Colors.white : const Color(0xFFf5f3ef);
 
     return GestureDetector(
@@ -5857,8 +5842,8 @@ class _PendingVoiceAttachmentChipState
   Future<void> _seekToFraction(double fraction, Duration duration) async {
     if (duration.inMilliseconds <= 0 || _preparing) return;
     final target = Duration(
-      milliseconds:
-          (duration.inMilliseconds * fraction.clamp(0.0, 1.0)).round(),
+      milliseconds: (duration.inMilliseconds * fraction.clamp(0.0, 1.0))
+          .round(),
     );
     await _player.seek(target);
   }
@@ -5883,11 +5868,13 @@ class _PendingVoiceAttachmentChipState
             stream: _player.playerStateStream,
             builder: (context, snapshot) {
               final processing = snapshot.data?.processingState;
-              final busy = _preparing ||
+              final busy =
+                  _preparing ||
                   widget.uploading ||
                   processing == ProcessingState.loading ||
                   processing == ProcessingState.buffering;
-              final playing = (snapshot.data?.playing ?? false) &&
+              final playing =
+                  (snapshot.data?.playing ?? false) &&
                   processing != ProcessingState.completed;
 
               return GestureDetector(
@@ -5947,14 +5934,15 @@ class _PendingVoiceAttachmentChipState
                     final progress = duration.inMilliseconds <= 0
                         ? 0.0
                         : (position.inMilliseconds / duration.inMilliseconds)
-                            .clamp(0.0, 1.0);
+                              .clamp(0.0, 1.0);
 
                     return Row(
                       children: [
                         Expanded(
                           child: _VoiceWaveform(
                             progress: progress,
-                            enabled: duration.inMilliseconds > 0 &&
+                            enabled:
+                                duration.inMilliseconds > 0 &&
                                 !_preparing &&
                                 !widget.uploading,
                             onSeekFraction: (fraction) =>
@@ -6235,8 +6223,8 @@ class _VoiceRecordingBar extends StatelessWidget {
                     stopping
                         ? l10n.chatVoicePreparingPreview
                         : locked
-                            ? l10n.chatVoiceRecordingLocked
-                            : l10n.chatVoiceRecording,
+                        ? l10n.chatVoiceRecordingLocked
+                        : l10n.chatVoiceRecording,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -6764,14 +6752,14 @@ class _ChatComposer extends StatelessWidget {
                             onChanged: (_) => onTyping(),
                             onSubmitted: (_) => onSend(),
                             contextMenuBuilder: (context, editableTextState) {
-                              final items =
-                                  editableTextState.contextMenuButtonItems
-                                      .where(
-                                        (item) =>
-                                            item.type !=
-                                            ContextMenuButtonType.paste,
-                                      )
-                                      .toList(growable: true);
+                              final items = editableTextState
+                                  .contextMenuButtonItems
+                                  .where(
+                                    (item) =>
+                                        item.type !=
+                                        ContextMenuButtonType.paste,
+                                  )
+                                  .toList(growable: true);
                               items.insert(
                                 0,
                                 ContextMenuButtonItem(
@@ -6812,8 +6800,8 @@ class _ChatComposer extends StatelessWidget {
                               hintText: messagingClosed
                                   ? l10n.chatComposerClosedHint
                                   : attachmentUploading
-                                      ? l10n.chatAttachmentUploading
-                                      : l10n.chatComposerHint,
+                                  ? l10n.chatAttachmentUploading
+                                  : l10n.chatComposerHint,
                               hintStyle: TextStyle(
                                 fontSize: 15,
                                 color: Colors.white.withValues(alpha: 0.48),
@@ -6832,8 +6820,8 @@ class _ChatComposer extends StatelessWidget {
                                 : () {
                                     final nextPanel =
                                         activePanel == _ComposerPanel.none
-                                            ? _ComposerPanel.emoji
-                                            : _ComposerPanel.none;
+                                        ? _ComposerPanel.emoji
+                                        : _ComposerPanel.none;
                                     onPanelChanged(nextPanel);
                                   },
                             child: SizedBox(
@@ -6856,7 +6844,8 @@ class _ChatComposer extends StatelessWidget {
                 ValueListenableBuilder<TextEditingValue>(
                   valueListenable: controller,
                   builder: (context, value, _) {
-                    final hasDraft = value.text.trim().isNotEmpty ||
+                    final hasDraft =
+                        value.text.trim().isNotEmpty ||
                         pendingAttachments.isNotEmpty;
                     if (hasDraft) return const SizedBox.shrink();
                     return Padding(
@@ -6876,7 +6865,8 @@ class _ChatComposer extends StatelessWidget {
                 ValueListenableBuilder<TextEditingValue>(
                   valueListenable: controller,
                   builder: (context, value, _) {
-                    final hasDraft = value.text.trim().isNotEmpty ||
+                    final hasDraft =
+                        value.text.trim().isNotEmpty ||
                         pendingAttachments.isNotEmpty;
                     final disabled =
                         sending || attachmentUploading || messagingClosed;
@@ -7250,8 +7240,9 @@ class _StickerGrid extends StatelessWidget {
       );
     }
 
-    final safeIndex =
-        packs.isEmpty ? 0 : activePackIndex.clamp(0, packs.length - 1).toInt();
+    final safeIndex = packs.isEmpty
+        ? 0
+        : activePackIndex.clamp(0, packs.length - 1).toInt();
     final activePack = packs.isEmpty ? null : packs[safeIndex];
     final stickers = activePack?.stickers ?? const <StickerVm>[];
 

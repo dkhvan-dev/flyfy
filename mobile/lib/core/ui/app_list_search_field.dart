@@ -69,9 +69,9 @@ class AppListSearchField extends StatelessWidget {
                 }
 
                 return IconButton(
-                  tooltip: MaterialLocalizations.of(context)
-                      .deleteButtonTooltip
-                      .toLowerCase(),
+                  tooltip: MaterialLocalizations.of(
+                    context,
+                  ).deleteButtonTooltip.toLowerCase(),
                   onPressed: controller.clear,
                   style: IconButton.styleFrom(
                     foregroundColor: const Color(0xFF9F8B7D),

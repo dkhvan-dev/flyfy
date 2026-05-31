@@ -8,8 +8,7 @@ import 'package:inflap/core/network/sticker_api.dart';
 import 'package:inflap/core/storage/secure_storage.dart';
 
 void main() {
-  test('uploads sticker binary through file-manager gateway endpoint',
-      () async {
+  test('uploads sticker binary through file-manager gateway endpoint', () async {
     final adapter = _RecordingAdapter();
     final dio = Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
       ..httpClientAdapter = adapter;
@@ -36,7 +35,9 @@ void main() {
     );
     expect(adapter.request?.headers['Content-Type'], 'image/png');
     expect(
-        adapter.request?.headers.containsKey('X-Amz-SignedHeaders'), isFalse);
+      adapter.request?.headers.containsKey('X-Amz-SignedHeaders'),
+      isFalse,
+    );
     expect(adapter.body, [1, 2, 3, 4]);
   });
 }

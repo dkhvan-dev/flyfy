@@ -9,10 +9,7 @@ void main() {
       countryCode: 'KZ',
     );
 
-    expect(
-      selected.matches(cityName: 'Almaty', countryCode: 'KZ'),
-      isTrue,
-    );
+    expect(selected.matches(cityName: 'Almaty', countryCode: 'KZ'), isTrue);
   });
 
   test('city filter matches new departure city ids directly', () {

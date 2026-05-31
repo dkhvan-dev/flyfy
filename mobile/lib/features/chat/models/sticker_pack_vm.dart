@@ -65,7 +65,8 @@ class StickerPackVm {
           .whereType<Map<String, dynamic>>()
           .map(StickerVm.fromJson)
           .where(
-              (sticker) => sticker.id.isNotEmpty && sticker.fileId.isNotEmpty)
+            (sticker) => sticker.id.isNotEmpty && sticker.fileId.isNotEmpty,
+          )
           .toList(growable: false),
     );
   }
@@ -115,7 +116,8 @@ class StickerVm {
       height: int.tryParse(json['height']?.toString() ?? '') ?? 0,
       durationMs: int.tryParse(json['durationMs']?.toString() ?? '') ?? 0,
       emoji: json['emoji']?.toString(),
-      keywords: (json['keywords'] as List<dynamic>?)
+      keywords:
+          (json['keywords'] as List<dynamic>?)
               ?.map((value) => value.toString())
               .where((value) => value.trim().isNotEmpty)
               .toList(growable: false) ??

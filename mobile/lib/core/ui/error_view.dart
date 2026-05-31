@@ -4,11 +4,7 @@ import '../../l10n/generated/app_localizations.dart';
 import 'app_colors.dart';
 
 class ErrorView extends StatelessWidget {
-  const ErrorView({
-    super.key,
-    required this.message,
-    required this.onRetry,
-  });
+  const ErrorView({super.key, required this.message, required this.onRetry});
 
   final String message;
   final Future<void> Function() onRetry;
@@ -23,11 +19,7 @@ class ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.error_outline,
-              size: 72,
-              color: Colors.redAccent,
-            ),
+            const Icon(Icons.error_outline, size: 72, color: Colors.redAccent),
             const SizedBox(height: 16),
             Text(
               message,

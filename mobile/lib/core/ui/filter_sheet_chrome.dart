@@ -34,11 +34,7 @@ class AppDismissibleModalSheet extends StatelessWidget {
 
     if (!useSafeArea) return content;
 
-    return SafeArea(
-      top: safeAreaTop,
-      bottom: safeAreaBottom,
-      child: content,
-    );
+    return SafeArea(top: safeAreaTop, bottom: safeAreaBottom, child: content);
   }
 }
 

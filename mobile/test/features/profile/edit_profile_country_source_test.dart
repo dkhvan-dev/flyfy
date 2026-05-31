@@ -64,9 +64,7 @@ void main() {
     final source = await File(
       'lib/screens/profile/edit_profile_screen.dart',
     ).readAsString();
-    final l10nSource = await File(
-      'lib/l10n/app_ru.arb',
-    ).readAsString();
+    final l10nSource = await File('lib/l10n/app_ru.arb').readAsString();
 
     final countryStart = source.indexOf('label: l10n.profileCountry');
     final timezoneStart = source.indexOf(
@@ -108,10 +106,14 @@ void main() {
     final countryFieldSource = source.substring(countryFieldStart);
 
     expect(countryFieldSource, contains('if (hasSelection) ...['));
-    expect(countryFieldSource,
-        isNot(contains('selectedCountryCode ?? searchHint')));
-    expect(countryFieldSource,
-        contains('errorText: hasSelection ? null : errorText'));
+    expect(
+      countryFieldSource,
+      isNot(contains('selectedCountryCode ?? searchHint')),
+    );
+    expect(
+      countryFieldSource,
+      contains('errorText: hasSelection ? null : errorText'),
+    );
   });
 
   test('save scrolls to first missing required profile field', () async {
@@ -123,7 +125,9 @@ void main() {
     expect(source, contains('final _lastNameFieldKey = GlobalKey()'));
     expect(source, contains('final _countryFieldKey = GlobalKey()'));
     expect(
-        source, contains('Future<void> _scrollToFirstInvalidRequiredField()'));
+      source,
+      contains('Future<void> _scrollToFirstInvalidRequiredField()'),
+    );
     expect(source, contains('Scrollable.ensureVisible'));
     expect(source, contains('await _scrollToFirstInvalidRequiredField();'));
     expect(source, contains('const invalidFieldScrollAlignment = 0.42'));
@@ -137,126 +141,164 @@ void main() {
     expect(source, contains('key: _countryFieldKey'));
   });
 
-  test('edit profile screen uses edit title and omits service cities',
-      () async {
-    final source = await File(
-      'lib/screens/profile/edit_profile_screen.dart',
-    ).readAsString();
+  test(
+    'edit profile screen uses edit title and omits service cities',
+    () async {
+      final source = await File(
+        'lib/screens/profile/edit_profile_screen.dart',
+      ).readAsString();
 
-    expect(
-        source, contains('_EditProfileTopBar(title: l10n.editProfileButton)'));
-    expect(source, isNot(contains('title.toUpperCase()')));
-    expect(source, isNot(contains('profileSettingsPageTitle')));
-    expect(source, isNot(contains('serviceCityChips')));
-    expect(source, isNot(contains('profileSettingsServiceCitiesSection')));
-    expect(source, isNot(contains('profileSettingsServiceCitiesUnavailable')));
-    expect(source, isNot(contains('class _ServiceChip')));
-  });
+      expect(
+        source,
+        contains('_EditProfileTopBar(title: l10n.editProfileButton)'),
+      );
+      expect(source, isNot(contains('title.toUpperCase()')));
+      expect(source, isNot(contains('profileSettingsPageTitle')));
+      expect(source, isNot(contains('serviceCityChips')));
+      expect(source, isNot(contains('profileSettingsServiceCitiesSection')));
+      expect(
+        source,
+        isNot(contains('profileSettingsServiceCitiesUnavailable')),
+      );
+      expect(source, isNot(contains('class _ServiceChip')));
+    },
+  );
 
-  test('edit profile timezone uses localized searchable reference selector',
-      () async {
-    final source = await File(
-      'lib/screens/profile/edit_profile_screen.dart',
-    ).readAsString();
-    final referenceApiSource =
-        await File('lib/core/network/reference_api.dart').readAsString();
-    final l10nSource = await File('lib/l10n/app_ru.arb').readAsString();
+  test(
+    'edit profile timezone uses localized searchable reference selector',
+    () async {
+      final source = await File(
+        'lib/screens/profile/edit_profile_screen.dart',
+      ).readAsString();
+      final referenceApiSource = await File(
+        'lib/core/network/reference_api.dart',
+      ).readAsString();
+      final l10nSource = await File('lib/l10n/app_ru.arb').readAsString();
 
-    final timezoneStart = source.indexOf('label: l10n.profileTimezone');
-    final currencyStart = source.indexOf(
-      'label: l10n.profileCurrency',
-      timezoneStart,
-    );
+      final timezoneStart = source.indexOf('label: l10n.profileTimezone');
+      final currencyStart = source.indexOf(
+        'label: l10n.profileCurrency',
+        timezoneStart,
+      );
 
-    expect(timezoneStart, isNonNegative);
-    expect(currencyStart, greaterThan(timezoneStart));
+      expect(timezoneStart, isNonNegative);
+      expect(currencyStart, greaterThan(timezoneStart));
 
-    final timezoneSection = source.substring(timezoneStart, currencyStart);
+      final timezoneSection = source.substring(timezoneStart, currencyStart);
 
-    expect(referenceApiSource, contains('Future<List<ReferenceTimezone>>'));
-    expect(referenceApiSource, contains("'/reference/timezones'"));
-    expect(referenceApiSource, contains('class ReferenceTimezone'));
-    expect(l10nSource, contains('profileTimezoneSearchHint'));
-    expect(l10nSource, contains('profileTimezoneNoResults'));
-    expect(source, contains('_timezoneSearchController'));
-    expect(source, contains('List<ReferenceTimezone> _timezones'));
-    expect(source, contains('Map<String, Set<String>> _timezoneSearchAliases'));
-    expect(source, contains('_loadTimezones'));
-    expect(source, contains('withDefaultReferenceTimezone('));
-    expect(source, contains('timezoneSearchAliasMap('));
-    expect(source, contains('timezoneFilterSearchHaystack('));
-    expect(source, contains('referenceTimezoneLabel('));
-    expect(source, contains('lang: timezoneLabelLang'));
-    expect(source, contains('_selectedTimezone()'));
-    expect(source, contains('_visibleTimezones()'));
-    expect(source, contains('_selectTimezone'));
-    expect(source, contains('class _ProfileTimezoneSearchField'));
+      expect(referenceApiSource, contains('Future<List<ReferenceTimezone>>'));
+      expect(referenceApiSource, contains("'/reference/timezones'"));
+      expect(referenceApiSource, contains('class ReferenceTimezone'));
+      expect(l10nSource, contains('profileTimezoneSearchHint'));
+      expect(l10nSource, contains('profileTimezoneNoResults'));
+      expect(source, contains('_timezoneSearchController'));
+      expect(source, contains('List<ReferenceTimezone> _timezones'));
+      expect(
+        source,
+        contains('Map<String, Set<String>> _timezoneSearchAliases'),
+      );
+      expect(source, contains('_loadTimezones'));
+      expect(source, contains('withDefaultReferenceTimezone('));
+      expect(source, contains('timezoneSearchAliasMap('));
+      expect(source, contains('timezoneFilterSearchHaystack('));
+      expect(source, contains('referenceTimezoneLabel('));
+      expect(source, contains('lang: timezoneLabelLang'));
+      expect(source, contains('_selectedTimezone()'));
+      expect(source, contains('_visibleTimezones()'));
+      expect(source, contains('_selectTimezone'));
+      expect(source, contains('class _ProfileTimezoneSearchField'));
 
-    expect(timezoneSection, contains('_ProfileTimezoneSearchField('));
-    expect(timezoneSection, contains('selectedTimezone: _selectedTimezone()'));
-    expect(timezoneSection, contains('visibleTimezones: _visibleTimezones()'));
-    expect(timezoneSection,
-        contains('searchHint: l10n.profileTimezoneSearchHint'));
-    expect(
-        timezoneSection, contains('emptyLabel: l10n.profileTimezoneNoResults'));
-    expect(timezoneSection, isNot(contains('_StyledTextField(')));
-  });
+      expect(timezoneSection, contains('_ProfileTimezoneSearchField('));
+      expect(
+        timezoneSection,
+        contains('selectedTimezone: _selectedTimezone()'),
+      );
+      expect(
+        timezoneSection,
+        contains('visibleTimezones: _visibleTimezones()'),
+      );
+      expect(
+        timezoneSection,
+        contains('searchHint: l10n.profileTimezoneSearchHint'),
+      );
+      expect(
+        timezoneSection,
+        contains('emptyLabel: l10n.profileTimezoneNoResults'),
+      );
+      expect(timezoneSection, isNot(contains('_StyledTextField(')));
+    },
+  );
 
-  test('edit profile currency uses localized searchable reference selector',
-      () async {
-    final source = await File(
-      'lib/screens/profile/edit_profile_screen.dart',
-    ).readAsString();
-    final referenceApiSource =
-        await File('lib/core/network/reference_api.dart').readAsString();
-    final l10nSource = await File('lib/l10n/app_ru.arb').readAsString();
+  test(
+    'edit profile currency uses localized searchable reference selector',
+    () async {
+      final source = await File(
+        'lib/screens/profile/edit_profile_screen.dart',
+      ).readAsString();
+      final referenceApiSource = await File(
+        'lib/core/network/reference_api.dart',
+      ).readAsString();
+      final l10nSource = await File('lib/l10n/app_ru.arb').readAsString();
 
-    final currencyStart = source.indexOf('label: l10n.profileCurrency');
-    final locationButtonStart = source.indexOf(
-      'onPressed: _isResolvingLocation',
-      currencyStart,
-    );
+      final currencyStart = source.indexOf('label: l10n.profileCurrency');
+      final locationButtonStart = source.indexOf(
+        'onPressed: _isResolvingLocation',
+        currencyStart,
+      );
 
-    expect(currencyStart, isNonNegative);
-    expect(locationButtonStart, greaterThan(currencyStart));
+      expect(currencyStart, isNonNegative);
+      expect(locationButtonStart, greaterThan(currencyStart));
 
-    final currencySection = source.substring(
-      currencyStart,
-      locationButtonStart,
-    );
+      final currencySection = source.substring(
+        currencyStart,
+        locationButtonStart,
+      );
 
-    expect(referenceApiSource, contains('Future<List<ReferenceCurrency>>'));
-    expect(referenceApiSource, contains("'/reference/currencies'"));
-    expect(referenceApiSource, contains('class ReferenceCurrency'));
-    expect(l10nSource, contains('profileCurrencySearchHint'));
-    expect(l10nSource, contains('profileCurrencyNoResults'));
-    expect(
-      source,
-      contains("import '../../core/reference/currency_filter_utils.dart';"),
-    );
-    expect(source, contains('_currencySearchController'));
-    expect(source, contains('List<ReferenceCurrency> _currencies'));
-    expect(source, contains('Map<String, Set<String>> _currencySearchAliases'));
-    expect(source, contains('_loadCurrencies'));
-    expect(source, contains('withDefaultReferenceCurrency('));
-    expect(source, contains('currencySearchAliasMap('));
-    expect(source, contains('currencyFilterSearchHaystack('));
-    expect(source, contains('referenceCurrencyLabel('));
-    expect(source, contains('_selectedCurrency()'));
-    expect(source, contains('_visibleCurrencies()'));
-    expect(source, contains('_selectCurrency'));
-    expect(source, contains('class _ProfileCurrencySearchField'));
+      expect(referenceApiSource, contains('Future<List<ReferenceCurrency>>'));
+      expect(referenceApiSource, contains("'/reference/currencies'"));
+      expect(referenceApiSource, contains('class ReferenceCurrency'));
+      expect(l10nSource, contains('profileCurrencySearchHint'));
+      expect(l10nSource, contains('profileCurrencyNoResults'));
+      expect(
+        source,
+        contains("import '../../core/reference/currency_filter_utils.dart';"),
+      );
+      expect(source, contains('_currencySearchController'));
+      expect(source, contains('List<ReferenceCurrency> _currencies'));
+      expect(
+        source,
+        contains('Map<String, Set<String>> _currencySearchAliases'),
+      );
+      expect(source, contains('_loadCurrencies'));
+      expect(source, contains('withDefaultReferenceCurrency('));
+      expect(source, contains('currencySearchAliasMap('));
+      expect(source, contains('currencyFilterSearchHaystack('));
+      expect(source, contains('referenceCurrencyLabel('));
+      expect(source, contains('_selectedCurrency()'));
+      expect(source, contains('_visibleCurrencies()'));
+      expect(source, contains('_selectCurrency'));
+      expect(source, contains('class _ProfileCurrencySearchField'));
 
-    expect(currencySection, contains('_ProfileCurrencySearchField('));
-    expect(currencySection, contains('selectedCurrency: _selectedCurrency()'));
-    expect(
-        currencySection, contains('visibleCurrencies: _visibleCurrencies()'));
-    expect(currencySection,
-        contains('searchHint: l10n.profileCurrencySearchHint'));
-    expect(
-        currencySection, contains('emptyLabel: l10n.profileCurrencyNoResults'));
-    expect(currencySection, isNot(contains('_StyledTextField(')));
-  });
+      expect(currencySection, contains('_ProfileCurrencySearchField('));
+      expect(
+        currencySection,
+        contains('selectedCurrency: _selectedCurrency()'),
+      );
+      expect(
+        currencySection,
+        contains('visibleCurrencies: _visibleCurrencies()'),
+      );
+      expect(
+        currencySection,
+        contains('searchHint: l10n.profileCurrencySearchHint'),
+      );
+      expect(
+        currencySection,
+        contains('emptyLabel: l10n.profileCurrencyNoResults'),
+      );
+      expect(currencySection, isNot(contains('_StyledTextField(')));
+    },
+  );
 
   test('geolocation applies resolved timezone to the profile form', () async {
     final source = await File(

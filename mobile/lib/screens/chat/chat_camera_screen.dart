@@ -393,8 +393,9 @@ class _ChatCameraScreenState extends State<ChatCameraScreen>
     if (_busy || _recording || _cameras.length < 2) return;
     final selected = _selectedCamera;
     final currentIndex = selected == null ? -1 : _cameras.indexOf(selected);
-    final nextIndex =
-        currentIndex < 0 ? 0 : (currentIndex + 1) % _cameras.length;
+    final nextIndex = currentIndex < 0
+        ? 0
+        : (currentIndex + 1) % _cameras.length;
     await _initializeCamera(_cameras[nextIndex]);
   }
 
@@ -557,8 +558,7 @@ class _ChatCameraScreenState extends State<ChatCameraScreen>
       'CameraAccessRestricted' ||
       'AudioAccessDenied' ||
       'AudioAccessDeniedWithoutPrompt' ||
-      'AudioAccessRestricted' =>
-        l10n.chatCameraPermissionDenied,
+      'AudioAccessRestricted' => l10n.chatCameraPermissionDenied,
       _ => l10n.chatCameraCaptureFailed,
     };
   }
@@ -568,7 +568,8 @@ class _ChatCameraScreenState extends State<ChatCameraScreen>
     final l10n = AppLocalizations.of(context)!;
     final controller = _controller;
     final canFlip = _cameras.length > 1 && !_recording && !_busy;
-    final canUseFlash = controller != null &&
+    final canUseFlash =
+        controller != null &&
         controller.value.isInitialized &&
         !_loading &&
         !_busy;
@@ -578,7 +579,8 @@ class _ChatCameraScreenState extends State<ChatCameraScreen>
       body: Stack(
         children: [
           Positioned.fill(
-            child: controller == null ||
+            child:
+                controller == null ||
                     _loading ||
                     !controller.value.isInitialized
                 ? const Center(
@@ -663,8 +665,9 @@ class _ChatCameraScreenState extends State<ChatCameraScreen>
                       _CameraIconButton(
                         icon: Icons.flip_camera_ios_rounded,
                         label: l10n.chatCameraFlipButtonLabel,
-                        onPressed:
-                            canFlip ? () => unawaited(_flipCamera()) : null,
+                        onPressed: canFlip
+                            ? () => unawaited(_flipCamera())
+                            : null,
                       ),
                     ],
                   ),
@@ -1053,8 +1056,8 @@ class _CaptureButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final label = videoMode
         ? recording
-            ? stopLabel
-            : recordLabel
+              ? stopLabel
+              : recordLabel
         : photoLabel;
 
     return Semantics(

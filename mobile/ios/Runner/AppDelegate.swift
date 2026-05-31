@@ -1,10 +1,12 @@
 import AVFoundation
 import Flutter
-import MobileCoreServices
 import UIKit
+import UniformTypeIdentifiers
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
+  private var documentInteractionController: UIDocumentInteractionController?
+
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -39,6 +41,80 @@ import UIKit
         result(FlutterMethodNotImplemented)
       }
     }
+
+    let fileOpenerChannel = FlutterMethodChannel(
+      name: "inflap/file_opener",
+      binaryMessenger: engineBridge.applicationRegistrar.messenger()
+    )
+    fileOpenerChannel.setMethodCallHandler { [weak self] call, result in
+      switch call.method {
+      case "openFile":
+        self?.openFile(call.arguments, result: result)
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
+  }
+
+  private func openFile(_ arguments: Any?, result: @escaping FlutterResult) {
+    guard let args = arguments as? [String: Any],
+          let rawPath = args["path"] as? String else {
+      result(Self.fileOpenResult(status: "file_not_found", message: "File path is empty"))
+      return
+    }
+
+    let path = rawPath.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !path.isEmpty else {
+      result(Self.fileOpenResult(status: "file_not_found", message: "File path is empty"))
+      return
+    }
+
+    let url = URL(fileURLWithPath: path)
+    guard FileManager.default.fileExists(atPath: url.path) else {
+      result(Self.fileOpenResult(status: "file_not_found", message: "File does not exist"))
+      return
+    }
+
+    guard let presenter = rootViewControllerForFileOpening(),
+          let presenterView = presenter.view else {
+      result(Self.fileOpenResult(status: "failed", message: "No active view controller"))
+      return
+    }
+
+    let controller = UIDocumentInteractionController(url: url)
+    if let rawContentType = args["contentType"] as? String {
+      let contentType = rawContentType.trimmingCharacters(in: .whitespacesAndNewlines)
+      if !contentType.isEmpty, let type = UTType(mimeType: contentType) {
+        controller.uti = type.identifier
+      }
+    }
+
+    documentInteractionController = controller
+    let opened = controller.presentOptionsMenu(
+      from: presenterView.bounds,
+      in: presenterView,
+      animated: true
+    )
+    result(Self.fileOpenResult(
+      status: opened ? "done" : "no_app",
+      message: opened ? nil : "No app can open this file"
+    ))
+  }
+
+  private func rootViewControllerForFileOpening() -> UIViewController? {
+    var controller = window?.rootViewController
+    while let presented = controller?.presentedViewController {
+      controller = presented
+    }
+    return controller
+  }
+
+  private static func fileOpenResult(status: String, message: String? = nil) -> [String: Any] {
+    var payload: [String: Any] = ["status": status]
+    if let message {
+      payload["message"] = message
+    }
+    return payload
   }
 
   private static func trimVideo(_ arguments: Any?, result: @escaping FlutterResult) {
@@ -66,38 +142,46 @@ import UIKit
       return
     }
 
-    let asset = AVURLAsset(url: inputURL)
-    guard let sourceTimeRange = clampedTrimTimeRange(
-      asset: asset,
-      startMs: startMs,
-      endMs: endMs
-    ) else {
-      result(FlutterError(
-        code: "trim_failed",
-        message: "Video trim range is outside the asset duration",
-        details: nil
-      ))
-      return
-    }
+    Task {
+      do {
+        let asset = AVURLAsset(url: inputURL)
+        guard let sourceTimeRange = try await clampedTrimTimeRange(
+          asset: asset,
+          startMs: startMs,
+          endMs: endMs
+        ) else {
+          await MainActor.run {
+            result(FlutterError(
+              code: "trim_failed",
+              message: "Video trim range is outside the asset duration",
+              details: nil
+            ))
+          }
+          return
+        }
 
-    let compositionTimeRange = CMTimeRange(start: .zero, duration: sourceTimeRange.duration)
-    let composition: AVMutableComposition
-    do {
-      composition = try trimmedComposition(asset: asset, sourceTimeRange: sourceTimeRange)
-    } catch {
-      result(FlutterError(
-        code: "trim_failed",
-        message: error.localizedDescription,
-        details: nil
-      ))
-      return
+        let compositionTimeRange = CMTimeRange(start: .zero, duration: sourceTimeRange.duration)
+        let composition = try await trimmedComposition(
+          asset: asset,
+          sourceTimeRange: sourceTimeRange
+        )
+        let outputPath = try await exportTrimmedComposition(
+          composition,
+          compositionTimeRange: compositionTimeRange
+        )
+        await MainActor.run {
+          result(outputPath)
+        }
+      } catch {
+        await MainActor.run {
+          result(FlutterError(
+            code: "trim_failed",
+            message: error.localizedDescription,
+            details: nil
+          ))
+        }
+      }
     }
-
-    exportTrimmedComposition(
-      composition,
-      compositionTimeRange: compositionTimeRange,
-      result: result
-    )
   }
 
   private static func exportTrimmedComposition(
@@ -106,107 +190,65 @@ import UIKit
     presetNames: [String] = [
       AVAssetExportPresetPassthrough,
       AVAssetExportPresetHighestQuality
-    ],
-    presetIndex: Int = 0,
-    result: @escaping FlutterResult
-  ) {
-    guard presetIndex < presetNames.count else {
-      result(FlutterError(
-        code: "trim_failed",
-        message: "Video export session could not be created",
-        details: nil
-      ))
-      return
-    }
+    ]
+  ) async throws -> String {
+    var lastError: Error?
 
-    guard let exporter = AVAssetExportSession(
-      asset: composition,
-      presetName: presetNames[presetIndex]
-    ) else {
-      exportTrimmedComposition(
-        composition,
-        compositionTimeRange: compositionTimeRange,
-        presetNames: presetNames,
-        presetIndex: presetIndex + 1,
-        result: result
-      )
-      return
-    }
+    for presetName in presetNames {
+      guard let exporter = AVAssetExportSession(
+        asset: composition,
+        presetName: presetName
+      ) else {
+        continue
+      }
 
-    guard let preferredOutputFileType = preferredVideoOutputFileType(exporter.supportedFileTypes) else {
-      result(FlutterError(
-        code: "trim_failed",
-        message: "Video export file type is unsupported",
-        details: nil
-      ))
-      return
-    }
+      let compatibleFileTypes = await compatibleFileTypes(for: exporter)
+      guard let preferredOutputFileType = preferredVideoOutputFileType(compatibleFileTypes) else {
+        throw NSError(
+          domain: "InflapVideoTools",
+          code: 2,
+          userInfo: [NSLocalizedDescriptionKey: "Video export file type is unsupported"]
+        )
+      }
 
-    let outputExtension = extensionForVideoOutputFileType(preferredOutputFileType)
-    let outputURL = FileManager.default.temporaryDirectory
-      .appendingPathComponent("inflap_trimmed_\(Int(Date().timeIntervalSince1970 * 1000)).\(outputExtension)")
-    try? FileManager.default.removeItem(at: outputURL)
+      let outputExtension = extensionForVideoOutputFileType(preferredOutputFileType)
+      let outputURL = FileManager.default.temporaryDirectory
+        .appendingPathComponent("inflap_trimmed_\(Int(Date().timeIntervalSince1970 * 1000)).\(outputExtension)")
+      try? FileManager.default.removeItem(at: outputURL)
 
-    exporter.outputURL = outputURL
-    exporter.outputFileType = preferredOutputFileType
-    exporter.shouldOptimizeForNetworkUse = true
-    exporter.timeRange = compositionTimeRange
+      exporter.shouldOptimizeForNetworkUse = true
+      exporter.timeRange = compositionTimeRange
 
-    exporter.exportAsynchronously {
-      DispatchQueue.main.async {
-        switch exporter.status {
-        case .completed:
-          if FileManager.default.fileExists(atPath: outputURL.path) {
-            result(outputURL.path)
-          } else {
-            result(FlutterError(
-              code: "trim_failed",
-              message: "Trimmed video file was not created",
-              details: nil
-            ))
-          }
-        case .failed:
-          try? FileManager.default.removeItem(at: outputURL)
-          if presetIndex + 1 < presetNames.count {
-            exportTrimmedComposition(
-              composition,
-              compositionTimeRange: compositionTimeRange,
-              presetNames: presetNames,
-              presetIndex: presetIndex + 1,
-              result: result
-            )
-            return
-          }
-          result(FlutterError(
-            code: "trim_failed",
-            message: exporter.error?.localizedDescription ?? "Video trim failed",
-            details: nil
-          ))
-        case .cancelled:
-          try? FileManager.default.removeItem(at: outputURL)
-          result(FlutterError(
-            code: "trim_cancelled",
-            message: "Video trim was cancelled",
-            details: nil
-          ))
-        default:
-          try? FileManager.default.removeItem(at: outputURL)
-          result(FlutterError(
-            code: "trim_failed",
-            message: "Video trim ended in an unexpected state",
-            details: nil
-          ))
+      do {
+        try await exporter.export(to: outputURL, as: preferredOutputFileType)
+        guard FileManager.default.fileExists(atPath: outputURL.path) else {
+          throw NSError(
+            domain: "InflapVideoTools",
+            code: 3,
+            userInfo: [NSLocalizedDescriptionKey: "Trimmed video file was not created"]
+          )
         }
+        return outputURL.path
+      } catch {
+        try? FileManager.default.removeItem(at: outputURL)
+        lastError = error
       }
     }
+
+    throw lastError ?? NSError(
+      domain: "InflapVideoTools",
+      code: 4,
+      userInfo: [NSLocalizedDescriptionKey: "Video export session could not be created"]
+    )
   }
 
   private static func clampedTrimTimeRange(
     asset: AVAsset,
     startMs: Int64,
     endMs: Int64
-  ) -> CMTimeRange? {
-    let assetDurationSeconds = CMTimeGetSeconds(asset.duration)
+  ) async throws -> CMTimeRange? {
+    let duration = try await asset.load(.duration)
+    let assetDurationSeconds = CMTimeGetSeconds(duration)
     guard assetDurationSeconds.isFinite, assetDurationSeconds > 0 else {
       return nil
     }
@@ -227,12 +269,12 @@ import UIKit
   private static func trimmedComposition(
     asset: AVAsset,
     sourceTimeRange: CMTimeRange
-  ) throws -> AVMutableComposition {
+  ) async throws -> AVMutableComposition {
     let composition = AVMutableComposition()
     var insertedTrack = false
 
     for mediaType in [AVMediaType.video, AVMediaType.audio] {
-      for sourceTrack in asset.tracks(withMediaType: mediaType) {
+      for sourceTrack in try await asset.loadTracks(withMediaType: mediaType) {
         guard let compositionTrack = composition.addMutableTrack(
           withMediaType: mediaType,
           preferredTrackID: kCMPersistentTrackID_Invalid
@@ -242,7 +284,7 @@ import UIKit
 
         try compositionTrack.insertTimeRange(sourceTimeRange, of: sourceTrack, at: .zero)
         if mediaType == .video {
-          compositionTrack.preferredTransform = sourceTrack.preferredTransform
+          compositionTrack.preferredTransform = try await sourceTrack.load(.preferredTransform)
         }
         insertedTrack = true
       }
@@ -257,6 +299,16 @@ import UIKit
     }
 
     return composition
+  }
+
+  private static func compatibleFileTypes(
+    for exporter: AVAssetExportSession
+  ) async -> [AVFileType] {
+    await withCheckedContinuation { continuation in
+      exporter.determineCompatibleFileTypes { fileTypes in
+        continuation.resume(returning: fileTypes)
+      }
+    }
   }
 
   private static func preferredVideoOutputFileType(_ supportedTypes: [AVFileType]) -> AVFileType? {
@@ -301,31 +353,31 @@ import UIKit
     for item in pasteboard.items {
       for (type, value) in item {
         guard let data = value as? Data, !data.isEmpty else { continue }
-        if type == kUTTypePNG as String {
+        if type == UTType.png.identifier {
           return [
             "bytes": FlutterStandardTypedData(bytes: data),
             "contentType": "image/png",
             "name": "clipboard_\(Int(Date().timeIntervalSince1970 * 1000)).png"
           ]
         }
-        if type == kUTTypeJPEG as String {
+        if type == UTType.jpeg.identifier {
           return [
             "bytes": FlutterStandardTypedData(bytes: data),
             "contentType": "image/jpeg",
             "name": "clipboard_\(Int(Date().timeIntervalSince1970 * 1000)).jpg"
           ]
         }
-        if type == "org.webmproject.webp" {
+        if type == UTType.webP.identifier {
           return [
             "bytes": FlutterStandardTypedData(bytes: data),
             "contentType": "image/webp",
             "name": "clipboard_\(Int(Date().timeIntervalSince1970 * 1000)).webp"
           ]
         }
-        if type == "public.heic" || type == "public.heif" {
+        if type == UTType.heic.identifier || type == UTType.heif.identifier {
           return [
             "bytes": FlutterStandardTypedData(bytes: data),
-            "contentType": type == "public.heif" ? "image/heif" : "image/heic",
+            "contentType": type == UTType.heif.identifier ? "image/heif" : "image/heic",
             "name": "clipboard_\(Int(Date().timeIntervalSince1970 * 1000)).heic"
           ]
         }

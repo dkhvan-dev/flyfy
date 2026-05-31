@@ -25,19 +25,23 @@ void main() {
     }
   });
 
-  test('bottom navigation can render without an active item off home',
-      () async {
-    final bottomNavSource = await _read(
-      'lib/core/ui/app_bottom_navigation_bars.dart',
-    );
-    final attractionsSource = await _read(
-      'lib/screens/attractions/attractions_screen.dart',
-    );
-    final homeSource = await _read('lib/screens/home/home_screen.dart');
+  test(
+    'bottom navigation can render without an active item off home',
+    () async {
+      final bottomNavSource = await _read(
+        'lib/core/ui/app_bottom_navigation_bars.dart',
+      );
+      final attractionsSource = await _read(
+        'lib/screens/attractions/attractions_screen.dart',
+      );
+      final homeSource = await _read('lib/screens/home/home_screen.dart');
 
-    expect(bottomNavSource, contains('final AppBottomNavItem? activeItem;'));
-    expect(attractionsSource,
-        isNot(contains('activeItem: AppBottomNavItem.home')));
-    expect(homeSource, contains('activeItem: AppBottomNavItem.home'));
-  });
+      expect(bottomNavSource, contains('final AppBottomNavItem? activeItem;'));
+      expect(
+        attractionsSource,
+        isNot(contains('activeItem: AppBottomNavItem.home')),
+      );
+      expect(homeSource, contains('activeItem: AppBottomNavItem.home'));
+    },
+  );
 }

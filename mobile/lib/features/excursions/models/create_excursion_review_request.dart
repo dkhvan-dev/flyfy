@@ -13,10 +13,7 @@ class CreateExcursionReviewRequest {
 }
 
 class ReviewDraftRequest {
-  const ReviewDraftRequest({
-    required this.rating,
-    required this.comment,
-  });
+  const ReviewDraftRequest({required this.rating, required this.comment});
 
   final double rating;
   final String comment;
@@ -48,18 +45,12 @@ class ReviewMutationRequest {
 
   Map<String, dynamic> toJson() {
     if (delete) return const {'delete': true};
-    return {
-      'rating': rating,
-      'comment': (comment ?? '').trim(),
-    };
+    return {'rating': rating, 'comment': (comment ?? '').trim()};
   }
 }
 
 class SaveBookingReviewsRequest {
-  const SaveBookingReviewsRequest({
-    this.excursionReview,
-    this.guideReview,
-  });
+  const SaveBookingReviewsRequest({this.excursionReview, this.guideReview});
 
   final ReviewMutationRequest? excursionReview;
   final ReviewMutationRequest? guideReview;

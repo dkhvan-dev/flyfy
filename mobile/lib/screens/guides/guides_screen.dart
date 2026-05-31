@@ -549,8 +549,8 @@ class _GuidesGrid extends StatelessWidget {
         final columns = constraints.crossAxisExtent < 335
             ? 1
             : constraints.crossAxisExtent >= 680
-                ? 3
-                : 2;
+            ? 3
+            : 2;
         final spacing = constraints.crossAxisExtent < 370 ? 12.0 : 16.0;
         final cardWidth =
             (constraints.crossAxisExtent - spacing * (columns - 1)) / columns;
@@ -597,7 +597,8 @@ double _guideCardBodyHeight(BuildContext context) {
   final textScaler = MediaQuery.textScalerOf(context);
   final nameHeight =
       textScaler.scale(_guideCardNameFontSize) * _guideCardNameLineHeight;
-  final languageHeight = textScaler.scale(_guideCardLanguageFontSize) *
+  final languageHeight =
+      textScaler.scale(_guideCardLanguageFontSize) *
       _guideCardLanguageLineHeight;
   final buttonHeight = math.max(
     _guideCardButtonMinHeight,
@@ -605,7 +606,8 @@ double _guideCardBodyHeight(BuildContext context) {
         _guideCardButtonVerticalPadding * 2,
   );
 
-  final contentHeight = _guideCardBodyVerticalPadding * 2 +
+  final contentHeight =
+      _guideCardBodyVerticalPadding * 2 +
       nameHeight +
       _guideCardLanguageGap +
       languageHeight +
@@ -661,7 +663,7 @@ class _GuideCard extends StatelessWidget {
                           fit: BoxFit.cover,
                           cacheWidth: _imageCacheWidth(context),
                           filterQuality: FilterQuality.medium,
-                          errorBuilder: (_, __, ___) =>
+                          errorBuilder: (_, _, _) =>
                               _GuideFallbackArt(initials: guide.initials),
                         )
                       else
@@ -1018,8 +1020,9 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
   void _selectLanguage(String code) {
     final normalized = code.trim().toLowerCase();
     if (normalized.isEmpty) return;
-    final selectedCode =
-        _filters.languageCodes.contains(normalized) ? null : normalized;
+    final selectedCode = _filters.languageCodes.contains(normalized)
+        ? null
+        : normalized;
     _languageSearchController.clear();
     _setFilters(
       _filters.copyWith(

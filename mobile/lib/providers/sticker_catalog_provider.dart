@@ -6,7 +6,7 @@ import '../features/chat/models/sticker_pack_vm.dart';
 
 class StickerCatalogProvider extends ChangeNotifier {
   StickerCatalogProvider({StickerCatalogClient? api})
-      : _api = api ?? StickerApi();
+    : _api = api ?? StickerApi();
 
   final StickerCatalogClient _api;
 
@@ -112,10 +112,7 @@ class StickerCatalogProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _searchResults = await _api.searchStickers(
-        normalized,
-        locale: locale,
-      );
+      _searchResults = await _api.searchStickers(normalized, locale: locale);
     } catch (e) {
       _error = e;
     } finally {
@@ -161,12 +158,14 @@ class StickerCatalogProvider extends ChangeNotifier {
       _groups = _groups
           .map(
             (group) => group.copyWith(
-              packs: group.packs.map((pack) {
-                final stickers = stickersByPackID[pack.id];
-                return stickers == null
-                    ? pack
-                    : pack.copyWith(stickers: stickers);
-              }).toList(growable: false),
+              packs: group.packs
+                  .map((pack) {
+                    final stickers = stickersByPackID[pack.id];
+                    return stickers == null
+                        ? pack
+                        : pack.copyWith(stickers: stickers);
+                  })
+                  .toList(growable: false),
             ),
           )
           .toList(growable: false);
@@ -208,9 +207,7 @@ class StickerCatalogProvider extends ChangeNotifier {
           .map(
             (group) => group.copyWith(
               packs: group.packs
-                  .map(
-                    (item) => item.id == updatedPack.id ? updatedPack : item,
-                  )
+                  .map((item) => item.id == updatedPack.id ? updatedPack : item)
                   .toList(growable: false),
             ),
           )

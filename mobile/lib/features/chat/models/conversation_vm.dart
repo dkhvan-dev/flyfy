@@ -96,7 +96,8 @@ class ConversationVm {
       avatarFileId: json['avatarFileId'] as String?,
       activityId: json['activityId'] as String?,
       excursionScheduleSlotId: json['excursionScheduleSlotId'] as String?,
-      participants: (json['participants'] as List<dynamic>?)
+      participants:
+          (json['participants'] as List<dynamic>?)
               ?.map((e) => ParticipantInfo.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
@@ -161,7 +162,8 @@ class LastMessagePreview {
       senderDisplayName: json['senderDisplayName'] as String,
       type: json['type']?.toString() ?? 'text',
       contentPreview: json['contentPreview'] as String,
-      fileIds: (json['fileIds'] as List<dynamic>?)
+      fileIds:
+          (json['fileIds'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .where((id) => id.trim().isNotEmpty)
               .toList(growable: false) ??
@@ -270,11 +272,13 @@ class ConversationDetail {
       createdAt: DateTime.parse(json['createdAt'] as String),
       activityId: json['activityId'] as String?,
       excursionScheduleSlotId: json['excursionScheduleSlotId'] as String?,
-      participants: (json['participants'] as List<dynamic>?)
+      participants:
+          (json['participants'] as List<dynamic>?)
               ?.map((e) => ParticipantInfo.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
-      pinnedMessages: (json['pinnedMessages'] as List<dynamic>?)
+      pinnedMessages:
+          (json['pinnedMessages'] as List<dynamic>?)
               ?.map(
                 (e) => PinnedMessageInfo.fromJson(e as Map<String, dynamic>),
               )
@@ -386,7 +390,8 @@ class PinnedMessageInfo {
       senderAvatarFileId: json['senderAvatarFileId'] as String?,
       type: (json['type'] as String?) ?? 'text',
       content: json['content'] as String,
-      fileIds: (json['fileIds'] as List<dynamic>?)
+      fileIds:
+          (json['fileIds'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           const [],

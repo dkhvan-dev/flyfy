@@ -23,7 +23,8 @@ class ActivityParticipantVm {
       activityId: json['activityId']?.toString() ?? '',
       userId: json['userId']?.toString() ?? '',
       status: json['status']?.toString() ?? '',
-      joinedAt: DateTime.tryParse(json['joinedAt']?.toString() ?? '') ??
+      joinedAt:
+          DateTime.tryParse(json['joinedAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
       approvedAt: DateTime.tryParse(json['approvedAt']?.toString() ?? ''),
       waitlistedAt: DateTime.tryParse(json['waitlistedAt']?.toString() ?? ''),

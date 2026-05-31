@@ -225,18 +225,19 @@ class AttractionVm {
         .map(AttractionMediaVm.fromJson)
         .toList();
 
-    final tagsList =
-        (json['tags'] as List<dynamic>? ?? []).whereType<String>().toList();
-    final translations =
-        (json['translations'] as Map<String, dynamic>? ?? {}).map((key, value) {
-      if (value is! Map<String, dynamic>) {
-        return MapEntry(
-          key,
-          const AttractionTranslationVm(title: '', description: ''),
-        );
-      }
-      return MapEntry(key, AttractionTranslationVm.fromJson(value));
-    });
+    final tagsList = (json['tags'] as List<dynamic>? ?? [])
+        .whereType<String>()
+        .toList();
+    final translations = (json['translations'] as Map<String, dynamic>? ?? {})
+        .map((key, value) {
+          if (value is! Map<String, dynamic>) {
+            return MapEntry(
+              key,
+              const AttractionTranslationVm(title: '', description: ''),
+            );
+          }
+          return MapEntry(key, AttractionTranslationVm.fromJson(value));
+        });
 
     return AttractionVm(
       id: json['id'] as String? ?? '',

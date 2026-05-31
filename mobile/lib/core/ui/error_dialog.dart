@@ -12,7 +12,7 @@ Future<void> showErrorDialog(
     barrierDismissible: true,
     barrierLabel: 'error-dialog',
     barrierColor: Colors.black.withValues(alpha: 0.72),
-    pageBuilder: (context, _, __) {
+    pageBuilder: (context, _, _) {
       final okLabel = MaterialLocalizations.of(context).okButtonLabel;
 
       return SafeArea(

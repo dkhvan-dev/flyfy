@@ -19,8 +19,9 @@ void main() {
       final categoryLabelStart = cardSource.indexOf(
         'categoryLabel.toUpperCase()',
       );
-      final titleStart =
-          cardSource.indexOf('Text(\n                      item.title');
+      final titleStart = cardSource.indexOf(
+        'Text(\n                      item.title',
+      );
       expect(categoryLabelStart, isNonNegative);
       expect(titleStart, greaterThan(categoryLabelStart));
 
@@ -55,7 +56,8 @@ void main() {
       cardSource,
       isNot(
         contains(
-            '_CardMetaData(icon: Icons.place_outlined, label: locationText)'),
+          '_CardMetaData(icon: Icons.place_outlined, label: locationText)',
+        ),
       ),
     );
   });

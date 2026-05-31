@@ -10,10 +10,7 @@ import '../../../l10n/generated/app_localizations.dart';
 import '../../../providers/sticker_catalog_provider.dart';
 
 class StickerPickerSheet extends StatefulWidget {
-  const StickerPickerSheet({
-    super.key,
-    required this.onStickerSelected,
-  });
+  const StickerPickerSheet({super.key, required this.onStickerSelected});
 
   final ValueChanged<StickerVm> onStickerSelected;
 
@@ -66,9 +63,9 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> {
   Future<void> _retry() async {
     final locale = Localizations.localeOf(context).languageCode;
     await context.read<StickerCatalogProvider>().loadCatalog(
-          locale: locale,
-          forceRefresh: true,
-        );
+      locale: locale,
+      forceRefresh: true,
+    );
   }
 
   Future<void> _selectRecent() async {
@@ -105,8 +102,8 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> {
               final stickers = searchActive
                   ? provider.searchResults
                   : _showRecent
-                      ? provider.recentStickers
-                      : selectedPack?.stickers ?? const <StickerVm>[];
+                  ? provider.recentStickers
+                  : selectedPack?.stickers ?? const <StickerVm>[];
 
               return Column(
                 children: [
@@ -156,7 +153,8 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> {
                           label: pack.titleFor(
                             Localizations.localeOf(context).languageCode,
                           ),
-                          selected: !_showRecent &&
+                          selected:
+                              !_showRecent &&
                               !searchActive &&
                               selectedPack?.id == pack.id,
                           onTap: () {
@@ -247,16 +245,17 @@ class _StickerSearchField extends StatelessWidget {
                     ),
                   )
                 : hasText
-                    ? IconButton(
-                        tooltip: MaterialLocalizations.of(context)
-                            .deleteButtonTooltip,
-                        onPressed: onClear,
-                        icon: Icon(
-                          Icons.close_rounded,
-                          color: Colors.white.withValues(alpha: 0.56),
-                        ),
-                      )
-                    : null,
+                ? IconButton(
+                    tooltip: MaterialLocalizations.of(
+                      context,
+                    ).deleteButtonTooltip,
+                    onPressed: onClear,
+                    icon: Icon(
+                      Icons.close_rounded,
+                      color: Colors.white.withValues(alpha: 0.56),
+                    ),
+                  )
+                : null,
             hintText: hintText,
             hintStyle: TextStyle(
               color: Colors.white.withValues(alpha: 0.46),
@@ -410,8 +409,8 @@ class _StickerGridContent extends StatelessWidget {
       final title = searchActive
           ? emptySearchText
           : showRecent
-              ? emptyRecentText
-              : emptySearchText;
+          ? emptyRecentText
+          : emptySearchText;
       return _StickerMessageState(
         icon: searchActive ? Icons.search_off_rounded : Icons.history_rounded,
         title: title,
@@ -472,11 +471,7 @@ class _StickerGridSkeleton extends StatelessWidget {
 }
 
 class _StickerButton extends StatelessWidget {
-  const _StickerButton({
-    super.key,
-    required this.sticker,
-    required this.onTap,
-  });
+  const _StickerButton({super.key, required this.sticker, required this.onTap});
 
   final StickerVm sticker;
   final VoidCallback onTap;
@@ -552,10 +547,7 @@ class _StickerPreview extends StatelessWidget {
 }
 
 class _StickerFallback extends StatelessWidget {
-  const _StickerFallback({
-    required this.emoji,
-    this.loading = false,
-  });
+  const _StickerFallback({required this.emoji, this.loading = false});
 
   final String emoji;
   final bool loading;
@@ -606,11 +598,7 @@ class _StickerMessageState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 34,
-              color: Colors.white.withValues(alpha: 0.40),
-            ),
+            Icon(icon, size: 34, color: Colors.white.withValues(alpha: 0.40)),
             const SizedBox(height: 10),
             Text(
               title,

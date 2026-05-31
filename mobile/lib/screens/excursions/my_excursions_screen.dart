@@ -119,9 +119,7 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
           );
     if (country == null && city == null) return;
 
-    setState(
-      () => _filters = _filters.copyWith(country: country, city: city),
-    );
+    setState(() => _filters = _filters.copyWith(country: country, city: city));
   }
 
   void _handleSearchChanged() {
@@ -214,10 +212,7 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
       if (!mounted || _localizedLandmarksLocale != lang) return;
 
       setState(() {
-        _localizedLandmarks = {
-          ..._localizedLandmarks,
-          landmarkId: attraction,
-        };
+        _localizedLandmarks = {..._localizedLandmarks, landmarkId: attraction};
         _loadingLocalizedLandmarkIds.remove(landmarkId);
       });
     } catch (_) {
@@ -276,22 +271,22 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
     _MyExcursionsFilters filters,
   ) {
     if (filters.country == null && filters.city == null) return items;
-    return items.where(
-      (booking) {
-        final country = filters.country;
-        if (country != null &&
-            !country.matches(countryCode: booking.countryCode)) {
-          return false;
-        }
+    return items
+        .where((booking) {
+          final country = filters.country;
+          if (country != null &&
+              !country.matches(countryCode: booking.countryCode)) {
+            return false;
+          }
 
-        final city = filters.city;
-        if (city == null) return true;
-        return city.matches(
-          cityName: booking.cityName,
-          countryCode: booking.countryCode,
-        );
-      },
-    ).toList(growable: false);
+          final city = filters.city;
+          if (city == null) return true;
+          return city.matches(
+            cityName: booking.cityName,
+            countryCode: booking.countryCode,
+          );
+        })
+        .toList(growable: false);
   }
 
   String _myExcursionsEmptyMessage(AppLocalizations l10n) {
@@ -338,15 +333,15 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
           onDeleteExcursionReview: booking.review == null
               ? null
               : () => provider.deleteExcursionReview(
-                    booking.id,
-                    booking.review!.id,
-                  ),
+                  booking.id,
+                  booking.review!.id,
+                ),
           onDeleteGuideReview: booking.guideReview == null
               ? null
               : () => provider.deleteGuideReview(
-                    booking.id,
-                    booking.guideReview!.id,
-                  ),
+                  booking.id,
+                  booking.guideReview!.id,
+                ),
         );
       },
     );
@@ -403,10 +398,7 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
           l10n: l10n,
           booking: booking,
           onSubmit: (reason) {
-            return provider.cancelExcursionBooking(
-              booking.id,
-              reason: reason,
-            );
+            return provider.cancelExcursionBooking(booking.id, reason: reason);
           },
         );
       },
@@ -454,9 +446,7 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
           bottom: false,
           child: Consumer<ExcursionProvider>(
             builder: (context, provider, _) {
-              _scheduleResolveLocalizedLandmarks(
-                provider.myExcursionBookings,
-              );
+              _scheduleResolveLocalizedLandmarks(provider.myExcursionBookings);
               final now = DateTime.now().toUtc();
               final locationFilteredBookings = _filterBookingsByLocation(
                 provider.myExcursionBookings,
@@ -486,10 +476,10 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
               );
               final isInitialLoading =
                   provider.bookingListState == ExcursionListState.loading &&
-                      provider.myExcursionBookings.isEmpty;
+                  provider.myExcursionBookings.isEmpty;
               final isInitialError =
                   provider.bookingListState == ExcursionListState.error &&
-                      provider.myExcursionBookings.isEmpty;
+                  provider.myExcursionBookings.isEmpty;
 
               return RefreshIndicator(
                 color: AppColors.accent,
@@ -565,7 +555,8 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
                           _MyExcursionInfoCard(
                             icon: Icons.wifi_off_rounded,
                             title: l10n.myExcursionsLoadFailed,
-                            message: provider.bookingListErrorMessage ??
+                            message:
+                                provider.bookingListErrorMessage ??
                                 l10n.myExcursionsLoadFailed,
                             actionLabel: l10n.retryButton,
                             onActionTap: provider.refreshMyExcursionBookings,
@@ -587,16 +578,18 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
                                 final booking = page.items[i];
                                 return _MyExcursionBookingCard(
                                   booking: booking,
-                                  languageCode: Localizations.localeOf(context)
-                                      .languageCode,
-                                  localizedLandmark:
-                                      _localizedLandmarkFor(booking),
+                                  languageCode: Localizations.localeOf(
+                                    context,
+                                  ).languageCode,
+                                  localizedLandmark: _localizedLandmarkFor(
+                                    booking,
+                                  ),
                                   onTap: () => _openDetails(booking),
                                   onEditGuestsTap: booking.isBooked(now)
                                       ? () => _openEditGuestsSheet(booking)
                                       : null,
-                                  onCancelTap: booking
-                                          .canBeCancelledByTourist(now)
+                                  onCancelTap:
+                                      booking.canBeCancelledByTourist(now)
                                       ? () => _openCancelBookingSheet(booking)
                                       : null,
                                   onReviewTap: booking.canReview(now)
@@ -802,7 +795,8 @@ class _MyExcursionBookingCard extends StatelessWidget {
       attraction: localizedLandmark,
       fallback: booking.landmarkName ?? '',
     ).trim();
-    final showLandmarkName = landmarkName.isNotEmpty &&
+    final showLandmarkName =
+        landmarkName.isNotEmpty &&
         !_isSameMyExcursionLabel(landmarkName, displayTitle);
     final reviewBadgeRating = booking.reviewBadgeRating;
 
@@ -941,8 +935,9 @@ class _MyExcursionBookingCard extends StatelessWidget {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.destructive,
                           side: BorderSide(
-                            color:
-                                AppColors.destructive.withValues(alpha: 0.42),
+                            color: AppColors.destructive.withValues(
+                              alpha: 0.42,
+                            ),
                           ),
                           minimumSize: const Size(0, 42),
                           shape: RoundedRectangleBorder(
@@ -1235,7 +1230,8 @@ class _CancelExcursionBookingSheetState
                       labelText:
                           widget.l10n.myExcursionsCancelBookingReasonLabel,
                       hintText: widget
-                          .l10n.myExcursionsCancelBookingReasonPlaceholder,
+                          .l10n
+                          .myExcursionsCancelBookingReasonPlaceholder,
                       alignLabelWithHint: true,
                     ),
                   ),
@@ -1670,18 +1666,18 @@ class _EditGuestsSettlementPanel extends StatelessWidget {
     final accentColor = isCharge
         ? AppColors.accent
         : isRefund
-            ? const Color(0xFF7ED7B5)
-            : const Color(0xFFDCCAB7);
+        ? const Color(0xFF7ED7B5)
+        : const Color(0xFFDCCAB7);
     final title = isCharge
         ? l10n.myExcursionsGuestsChargeMock(formattedAmount)
         : isRefund
-            ? l10n.myExcursionsGuestsRefundMock(formattedAmount)
-            : l10n.myExcursionsGuestsNoPaymentChange;
+        ? l10n.myExcursionsGuestsRefundMock(formattedAmount)
+        : l10n.myExcursionsGuestsNoPaymentChange;
     final icon = isCharge
         ? Icons.payments_rounded
         : isRefund
-            ? Icons.savings_rounded
-            : Icons.check_circle_rounded;
+        ? Icons.savings_rounded
+        : Icons.check_circle_rounded;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -1959,14 +1955,15 @@ class _MyExcursionsFilterSheetState extends State<_MyExcursionsFilterSheet> {
   }
 
   _MyExcursionsFilters _draftFilters() => _MyExcursionsFilters(
-        country: _country,
-        city: _city,
-        statuses:
-            widget.tab == MyExcursionsTab.booked ? _statuses : const <String>{},
-        reviewed: _reviewed,
-        startDate: _startDate,
-        endDate: _endDate,
-      );
+    country: _country,
+    city: _city,
+    statuses: widget.tab == MyExcursionsTab.booked
+        ? _statuses
+        : const <String>{},
+    reviewed: _reviewed,
+    startDate: _startDate,
+    endDate: _endDate,
+  );
 
   String _formatDate(DateTime date) => DateFormat('dd.MM.yyyy').format(date);
 
@@ -2224,7 +2221,8 @@ class _MyExcursionsFilterSheetState extends State<_MyExcursionsFilterSheet> {
                               controller: _startDateController,
                               focusNode: _startDateFocusNode,
                               hintText: widget
-                                  .l10n.activitiesFilterStartDatePlaceholder,
+                                  .l10n
+                                  .activitiesFilterStartDatePlaceholder,
                               errorText: _startDateError,
                               onChanged: (_) => _handleDateChanged(),
                               onSubmitted: (_) =>
@@ -2239,7 +2237,8 @@ class _MyExcursionsFilterSheetState extends State<_MyExcursionsFilterSheet> {
                               controller: _endDateController,
                               focusNode: _endDateFocusNode,
                               hintText: widget
-                                  .l10n.activitiesFilterEndDatePlaceholder,
+                                  .l10n
+                                  .activitiesFilterEndDatePlaceholder,
                               errorText: _endDateError,
                               onChanged: (_) => _handleDateChanged(),
                               onSubmitted: (_) => _applyFilters(),
@@ -2276,9 +2275,7 @@ class _MyExcursionsFilterSheetState extends State<_MyExcursionsFilterSheet> {
               Padding(
                 padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + safeBottomInset),
                 child: AppFilterApplyButton(
-                  label: widget.l10n.excursionsFiltersShowResults(
-                    previewCount,
-                  ),
+                  label: widget.l10n.excursionsFiltersShowResults(previewCount),
                   onTap: _applyFilters,
                 ),
               ),
@@ -2447,10 +2444,7 @@ class _FilterDateField extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(999),
-              borderSide: const BorderSide(
-                color: AppColors.accent,
-                width: 1.5,
-              ),
+              borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(999),
@@ -2496,9 +2490,9 @@ class _DateTextInputFormatter extends TextInputFormatter {
     final digitsBeforeSelection = newValue.selection.end <= 0
         ? 0
         : newValue.text
-            .substring(0, newValue.selection.end)
-            .replaceAll(RegExp(r'[^0-9]'), '')
-            .length;
+              .substring(0, newValue.selection.end)
+              .replaceAll(RegExp(r'[^0-9]'), '')
+              .length;
 
     var selectionOffset = 0;
     var seenDigits = 0;
@@ -2517,9 +2511,8 @@ class _DateTextInputFormatter extends TextInputFormatter {
   }
 }
 
-typedef _SubmitCombinedReview = Future<bool> Function(
-  _CombinedReviewDraft draft,
-);
+typedef _SubmitCombinedReview =
+    Future<bool> Function(_CombinedReviewDraft draft);
 
 class _ExcursionReviewSheet extends StatefulWidget {
   const _ExcursionReviewSheet({
@@ -2698,7 +2691,8 @@ class _ExcursionReviewSheetState extends State<_ExcursionReviewSheet> {
                   ratingTooltip: widget.l10n.myExcursionsReviewRating,
                   commentController: _excursionCommentController,
                   commentHint: widget.l10n.myExcursionsReviewHint,
-                  enabled: !_submitting &&
+                  enabled:
+                      !_submitting &&
                       !_deletingExcursionReview &&
                       _includeExcursionReview,
                   optional: true,
@@ -2729,7 +2723,8 @@ class _ExcursionReviewSheetState extends State<_ExcursionReviewSheet> {
                   ratingTooltip: widget.l10n.myExcursionsGuideReviewRating,
                   commentController: _guideCommentController,
                   commentHint: widget.l10n.myExcursionsGuideReviewHint,
-                  enabled: !_submitting &&
+                  enabled:
+                      !_submitting &&
                       !_deletingGuideReview &&
                       _includeGuideReview,
                   optional: true,
@@ -2779,10 +2774,7 @@ class _ExcursionReviewSheetState extends State<_ExcursionReviewSheet> {
 }
 
 class _CombinedReviewDraft {
-  const _CombinedReviewDraft({
-    required this.excursion,
-    required this.guide,
-  });
+  const _CombinedReviewDraft({required this.excursion, required this.guide});
 
   final ReviewDraftRequest? excursion;
   final ReviewDraftRequest? guide;

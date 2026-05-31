@@ -74,8 +74,12 @@ class ProfileStoryCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: AppColors.textPrimary,
-                          fontSize:
-                              profileScaled(context, 15, min: 14, max: 16),
+                          fontSize: profileScaled(
+                            context,
+                            15,
+                            min: 14,
+                            max: 16,
+                          ),
                           fontWeight: FontWeight.w900,
                           height: 1.16,
                         ),

@@ -109,7 +109,7 @@ class ChatApi {
         'type': type,
         if (fileIds != null && fileIds.isNotEmpty) 'fileIds': fileIds,
         if ((stickerId ?? '').trim().isNotEmpty) 'stickerId': stickerId!.trim(),
-        if (replyToMessageId != null) 'replyToMessageId': replyToMessageId,
+        'replyToMessageId': ?replyToMessageId,
       },
     );
     return MessageVm.fromJson(response.data as Map<String, dynamic>);

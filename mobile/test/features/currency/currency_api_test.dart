@@ -9,37 +9,39 @@ import 'package:inflap/core/storage/secure_storage.dart';
 import 'package:inflap/features/currency/data/currency_api.dart';
 
 void main() {
-  test('convert sends a public request and parses the conversion result',
-      () async {
-    final adapter = _CurrencyConvertAdapter();
-    final api = CurrencyApi(
-      apiClient: ApiClient(
-        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
-          ..httpClientAdapter = adapter,
-        secureStorage: _FakeSecureStorage(),
-      ),
-    );
+  test(
+    'convert sends a public request and parses the conversion result',
+    () async {
+      final adapter = _CurrencyConvertAdapter();
+      final api = CurrencyApi(
+        apiClient: ApiClient(
+          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+            ..httpClientAdapter = adapter,
+          secureStorage: _FakeSecureStorage(),
+        ),
+      );
 
-    final result = await api.convert(
-      amount: '15000',
-      fromCurrency: 'KZT',
-      toCurrency: 'USD',
-    );
+      final result = await api.convert(
+        amount: '15000',
+        fromCurrency: 'KZT',
+        toCurrency: 'USD',
+      );
 
-    expect(adapter.requestPath, '/api/v1/currency/convert');
-    expect(adapter.requiresAuth, isFalse);
-    expect(adapter.body, {
-      'amount': '15000',
-      'fromCurrency': 'KZT',
-      'toCurrency': 'USD',
-    });
-    expect(result.sourceCurrency, 'KZT');
-    expect(result.targetCurrency, 'USD');
-    expect(result.sourceAmount, '15000.00');
-    expect(result.convertedAmount, '29.59');
-    expect(result.rate, '0.001972386587771203');
-    expect(result.stale, isFalse);
-  });
+      expect(adapter.requestPath, '/api/v1/currency/convert');
+      expect(adapter.requiresAuth, isFalse);
+      expect(adapter.body, {
+        'amount': '15000',
+        'fromCurrency': 'KZT',
+        'toCurrency': 'USD',
+      });
+      expect(result.sourceCurrency, 'KZT');
+      expect(result.targetCurrency, 'USD');
+      expect(result.sourceAmount, '15000.00');
+      expect(result.convertedAmount, '29.59');
+      expect(result.rate, '0.001972386587771203');
+      expect(result.stale, isFalse);
+    },
+  );
 
   test('listCurrencies requests localized reference currencies', () async {
     final adapter = _CurrencyListAdapter();
@@ -83,8 +85,9 @@ class _CurrencyConvertAdapter implements HttpClientAdapter {
     requestPath = options.uri.path;
     requiresAuth = options.extra['requiresAuth'] as bool?;
     final requestBytes = await requestStream?.expand((chunk) => chunk).toList();
-    body = jsonDecode(utf8.decode(requestBytes ?? const []))
-        as Map<String, dynamic>;
+    body =
+        jsonDecode(utf8.decode(requestBytes ?? const []))
+            as Map<String, dynamic>;
 
     return ResponseBody.fromString(
       jsonEncode({
@@ -126,11 +129,7 @@ class _CurrencyListAdapter implements HttpClientAdapter {
     return ResponseBody.fromString(
       jsonEncode({
         'items': [
-          {
-            'code': 'USD',
-            'name': 'Доллар США',
-            'symbol': r'$',
-          },
+          {'code': 'USD', 'name': 'Доллар США', 'symbol': r'$'},
         ],
       }),
       200,

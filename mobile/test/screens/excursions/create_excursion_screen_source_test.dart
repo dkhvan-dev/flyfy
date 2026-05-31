@@ -672,7 +672,12 @@ void main() {
       expect(source, contains('_reservedItineraryAttractionIds'));
       expect(source, contains('_isReservedAttraction'));
       expect(source, contains('createExcursionDuplicateRouteStopValidation'));
-      expect(source, contains('readOnly: widget.enableAttractionSelection'));
+      expect(
+        RegExp(
+          r"readOnly:\s*widget\.enableAttractionSelection\s*&&\s*\(_selectedAttractionId \?\? ''\)\.trim\(\)\.isNotEmpty",
+        ).hasMatch(source),
+        isTrue,
+      );
       expect(source, contains('_titleCtrl.text = result.name.trim();'));
       expect(enSource, contains('createExcursionDuplicateRouteStopValidation'));
       expect(ruSource, contains('createExcursionDuplicateRouteStopValidation'));
@@ -717,31 +722,41 @@ void main() {
       );
       expect(source, contains('landmarkName: isCombinedRoute ? null :'));
       expect(
-        source,
-        contains('landmarkId: isCombinedRoute ? null : _selectedLandmarkId'),
+        RegExp(
+          r'landmarkId:\s*isCombinedRoute\s*\?\s*null\s*:\s*_selectedLandmarkId',
+        ).hasMatch(source),
+        isTrue,
       );
       expect(
-        source,
-        contains('attractionId: isCombinedRoute ? item.attractionId : null'),
+        RegExp(
+          r'attractionId:\s*isCombinedRoute\s*\?\s*item\.attractionId\s*:\s*null',
+        ).hasMatch(source),
+        isTrue,
       );
       expect(
-        source,
-        contains(
-          'attractionName: isCombinedRoute ? item.attractionName : null',
-        ),
+        RegExp(
+          r'attractionName:\s*isCombinedRoute\s*\?\s*item\.attractionName\s*:\s*null',
+        ).hasMatch(source),
+        isTrue,
       );
       expect(
-        source,
-        contains('latitude: isCombinedRoute ? item.latitude : null'),
+        RegExp(
+          r'latitude:\s*isCombinedRoute\s*\?\s*item\.latitude\s*:\s*null',
+        ).hasMatch(source),
+        isTrue,
       );
       expect(
-        source,
-        contains('longitude: isCombinedRoute ? item.longitude : null'),
+        RegExp(
+          r'longitude:\s*isCombinedRoute\s*\?\s*item\.longitude\s*:\s*null',
+        ).hasMatch(source),
+        isTrue,
       );
       expect(source, contains('travelFromPreviousMinutes:'));
       expect(
-        source,
-        contains('isCombinedRoute ? item.travelFromPreviousMinutes : null'),
+        RegExp(
+          r'isCombinedRoute\s*\?\s*item\.travelFromPreviousMinutes\s*:\s*null',
+        ).hasMatch(source),
+        isTrue,
       );
       expect(source, contains('item.travelFromPreviousMinutes'));
     },

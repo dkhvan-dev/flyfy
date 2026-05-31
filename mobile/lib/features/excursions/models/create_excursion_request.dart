@@ -71,8 +71,9 @@ class CreateExcursionRequest {
       'durationMinutes': durationMinutes,
       'maxGroupSize': maxGroupSize,
       'languageCodes': normalizedLanguages,
-      'visibility':
-          _isPresent(visibility) ? visibility.trim().toUpperCase() : 'PUBLIC',
+      'visibility': _isPresent(visibility)
+          ? visibility.trim().toUpperCase()
+          : 'PUBLIC',
       'meetingPoint': meetingPoint.trim(),
       if (_isPresent(countryCode)) 'countryCode': countryCode!.trim(),
       if (_isPresent(cityName)) 'cityName': cityName!.trim(),
@@ -87,8 +88,9 @@ class CreateExcursionRequest {
         'includedItems': normalizedIncludedItems,
       if (normalizedIncludedItemTranslations.isNotEmpty)
         'includedItemTranslations': normalizedIncludedItemTranslations,
-      'itinerary':
-          itinerary.map((item) => item.toJson()).toList(growable: false),
+      'itinerary': itinerary
+          .map((item) => item.toJson())
+          .toList(growable: false),
       if (_isPresent(coverFileId)) 'coverFileId': coverFileId!.trim(),
       if (_isPresent(productCoverFileId))
         'productCoverFileId': productCoverFileId!.trim(),

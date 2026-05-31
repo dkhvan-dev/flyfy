@@ -78,7 +78,8 @@ class _ExcursionBookingScreenState extends State<ExcursionBookingScreen> {
     }
 
     final provider = context.read<ExcursionProvider>();
-    final cachedExcursion = provider.excursionDetailsFor(trimmedExcursionId) ??
+    final cachedExcursion =
+        provider.excursionDetailsFor(trimmedExcursionId) ??
         provider.selectedExcursion;
     if (_excursion == null &&
         cachedExcursion != null &&
@@ -103,12 +104,13 @@ class _ExcursionBookingScreenState extends State<ExcursionBookingScreen> {
     );
 
     if (!mounted) return;
-    final loadedExcursion = provider.excursionDetailsFor(trimmedExcursionId) ??
+    final loadedExcursion =
+        provider.excursionDetailsFor(trimmedExcursionId) ??
         provider.selectedExcursion;
     final loadedMatchingExcursion =
         loadedExcursion != null && loadedExcursion.id == trimmedExcursionId
-            ? loadedExcursion
-            : null;
+        ? loadedExcursion
+        : null;
     final nextExcursion = _applySelectedOffer(
       loadedMatchingExcursion ?? _excursion,
     );
@@ -118,7 +120,7 @@ class _ExcursionBookingScreenState extends State<ExcursionBookingScreen> {
       _isLoading = false;
       _loadError = nextExcursion == null
           ? provider.detailErrorMessageFor(trimmedExcursionId) ??
-              provider.detailErrorMessage
+                provider.detailErrorMessage
           : null;
       _clampTravelersToLimit(_travelerLimitFor(nextExcursion, _selectedSlot));
     });
@@ -152,14 +154,15 @@ class _ExcursionBookingScreenState extends State<ExcursionBookingScreen> {
     final to = from.add(const Duration(days: 90));
 
     try {
-      final loadedSlots =
-          await context.read<ExcursionProvider>().loadBookableExcursionSchedule(
-                productId: productId,
-                offerId: offerId,
-                from: from,
-                to: to,
-                seats: _totalTravelers,
-              );
+      final loadedSlots = await context
+          .read<ExcursionProvider>()
+          .loadBookableExcursionSchedule(
+            productId: productId,
+            offerId: offerId,
+            from: from,
+            to: to,
+            seats: _totalTravelers,
+          );
       if (!mounted || requestSerial != _scheduleRequestSerial) return;
 
       final slots = _sortSlots(
@@ -182,8 +185,7 @@ class _ExcursionBookingScreenState extends State<ExcursionBookingScreen> {
         _isScheduleLoading = false;
         _scheduleError = AppLocalizations.of(
           context,
-        )!
-            .excursionBookingScheduleLoadFailed;
+        )!.excursionBookingScheduleLoadFailed;
       });
     }
   }
@@ -577,7 +579,8 @@ class ExcursionBookingContent extends StatelessWidget {
                       adults: adults,
                       children: children,
                       isSubmitting: isSubmitting,
-                      canConfirm: selectedSlotCanFitTravelers &&
+                      canConfirm:
+                          selectedSlotCanFitTravelers &&
                           existingBooking == null,
                       existingBooking: existingBooking,
                       onConfirm: onConfirm,
@@ -845,8 +848,7 @@ class _BookingScheduleSection extends StatelessWidget {
                       Text(
                         AppLocalizations.of(
                           context,
-                        )!
-                            .excursionBookingSelectSlot,
+                        )!.excursionBookingSelectSlot,
                         style: _sectionTitleStyle,
                       ),
                       const SizedBox(height: 18),
@@ -994,13 +996,13 @@ class _BookingSlotChip extends StatelessWidget {
     final background = selected
         ? AppColors.accent
         : enabled
-            ? _BookingColors.panel
-            : _BookingColors.panel.withValues(alpha: 0.52);
+        ? _BookingColors.panel
+        : _BookingColors.panel.withValues(alpha: 0.52);
     final foreground = selected
         ? AppColors.textPrimary
         : enabled
-            ? _BookingColors.text
-            : _BookingColors.muted.withValues(alpha: 0.58);
+        ? _BookingColors.text
+        : _BookingColors.muted.withValues(alpha: 0.58);
 
     return Material(
       color: background,
@@ -1271,8 +1273,8 @@ class _BookingFooter extends StatelessWidget {
                   onPressed: existingBooking != null
                       ? onOpenMyExcursions
                       : isSubmitting || !canConfirm
-                          ? null
-                          : onConfirm,
+                      ? null
+                      : onConfirm,
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.accent,
                     foregroundColor: Colors.white,
@@ -1318,7 +1320,7 @@ class _BookingFooter extends StatelessWidget {
                 existingBooking != null
                     ? l10n.excursionBookingAlreadyBookedMessage
                     : '${l10n.excursionBookingSecurePayment} · '
-                        '${_formatBookingMoney(context, total, excursion.currency)}',
+                          '${_formatBookingMoney(context, total, excursion.currency)}',
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -1566,9 +1568,8 @@ class _CounterButton extends StatelessWidget {
           color: filled
               ? Colors.white
               : emphasized
-                  ? AppColors.accent.withValues(alpha: enabled ? 1 : 0.34)
-                  : const Color(0xFFD6C1B3)
-                      .withValues(alpha: enabled ? 1 : 0.35),
+              ? AppColors.accent.withValues(alpha: enabled ? 1 : 0.34)
+              : const Color(0xFFD6C1B3).withValues(alpha: enabled ? 1 : 0.35),
           size: 20,
         ),
       ),

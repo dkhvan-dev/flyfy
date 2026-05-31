@@ -7,9 +7,13 @@ void main() {
     final source = File('lib/main.dart').readAsStringSync();
 
     expect(
-        source, contains("import 'core/ui/keyboard_dismiss_on_scroll.dart';"));
+      source,
+      contains("import 'core/ui/keyboard_dismiss_on_scroll.dart';"),
+    );
     expect(source, contains('AppKeyboardDismissOnScroll('));
-    expect(source.indexOf('_DismissKeyboardOnTap('),
-        lessThan(source.indexOf('AppKeyboardDismissOnScroll(')));
+    expect(
+      source.indexOf('_DismissKeyboardOnTap('),
+      lessThan(source.indexOf('AppKeyboardDismissOnScroll(')),
+    );
   });
 }

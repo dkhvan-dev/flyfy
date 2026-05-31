@@ -16,7 +16,7 @@ class ClipboardMediaItem {
 
 class ClipboardMediaService {
   ClipboardMediaService({MethodChannel? channel})
-      : _channel = channel ?? const MethodChannel(_channelName);
+    : _channel = channel ?? const MethodChannel(_channelName);
 
   static const _channelName = 'inflap/clipboard_media';
 

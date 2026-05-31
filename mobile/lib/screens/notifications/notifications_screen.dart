@@ -181,9 +181,9 @@ class _NotificationCategoryScreenState
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.notificationsReadAllDone)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.notificationsReadAllDone)));
       await _refresh();
     } finally {
       if (mounted) {
@@ -216,8 +216,9 @@ class _NotificationCategoryScreenState
           future: _notificationsFuture,
           builder: (context, snapshot) {
             final notifications = snapshot.data ?? const [];
-            final hasUnread =
-                notifications.any((notification) => !notification.isRead);
+            final hasUnread = notifications.any(
+              (notification) => !notification.isRead,
+            );
             return RefreshIndicator(
               color: AppColors.accent,
               backgroundColor: AppColors.surface,
@@ -233,8 +234,9 @@ class _NotificationCategoryScreenState
                         title: meta.label,
                         subtitle: l10n.notificationsSubtitle,
                         action: FilledButton.icon(
-                          onPressed:
-                              hasUnread && !_markingRead ? _markAllRead : null,
+                          onPressed: hasUnread && !_markingRead
+                              ? _markAllRead
+                              : null,
                           icon: _markingRead
                               ? const SizedBox(
                                   width: 18,
@@ -248,8 +250,9 @@ class _NotificationCategoryScreenState
                           label: Text(l10n.notificationsReadAll),
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.accent,
-                            disabledBackgroundColor:
-                                Colors.white.withValues(alpha: 0.08),
+                            disabledBackgroundColor: Colors.white.withValues(
+                              alpha: 0.08,
+                            ),
                             foregroundColor: AppColors.background,
                             disabledForegroundColor: AppColors.textCaption,
                             minimumSize: const Size(0, 44),
@@ -357,7 +360,11 @@ class _NotificationsPageShell extends StatelessWidget {
             constraints: const BoxConstraints(maxWidth: 760),
             child: Padding(
               padding: EdgeInsets.fromLTRB(
-                  horizontalPadding, 14, horizontalPadding, 0),
+                horizontalPadding,
+                14,
+                horizontalPadding,
+                0,
+              ),
               child: child,
             ),
           ),
@@ -479,8 +486,9 @@ class _NotificationCategoryTile extends StatelessWidget {
                     ),
                     if (summary.hasUnread)
                       _UnreadBadge(
-                        label:
-                            l10n.notificationsUnreadCount(summary.unreadCount),
+                        label: l10n.notificationsUnreadCount(
+                          summary.unreadCount,
+                        ),
                       ),
                   ],
                 ),
@@ -777,8 +785,9 @@ class _StateMessage extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: AppColors.accent.withValues(alpha: 0.12),
-                border:
-                    Border.all(color: AppColors.accent.withValues(alpha: 0.24)),
+                border: Border.all(
+                  color: AppColors.accent.withValues(alpha: 0.24),
+                ),
               ),
               child: Icon(icon, color: AppColors.accent, size: 36),
             ),
@@ -923,7 +932,9 @@ class _NotificationCategoryMeta {
 }
 
 _NotificationCategoryMeta _categoryMeta(
-    BuildContext context, String rawCategory) {
+  BuildContext context,
+  String rawCategory,
+) {
   final l10n = AppLocalizations.of(context)!;
   final category = rawCategory.trim().toLowerCase();
   switch (category) {

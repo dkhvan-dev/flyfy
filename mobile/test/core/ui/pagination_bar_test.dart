@@ -55,10 +55,7 @@ void main() {
 }
 
 class _PaginationTestApp extends StatelessWidget {
-  const _PaginationTestApp({
-    required this.width,
-    required this.child,
-  });
+  const _PaginationTestApp({required this.width, required this.child});
 
   final double width;
   final Widget child;
@@ -68,10 +65,7 @@ class _PaginationTestApp extends StatelessWidget {
     return MaterialApp(
       home: Scaffold(
         body: Center(
-          child: SizedBox(
-            width: width,
-            child: child,
-          ),
+          child: SizedBox(width: width, child: child),
         ),
       ),
     );

@@ -277,9 +277,7 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: const Color(0xFF2C2118),
-            border: Border.all(
-              color: AppColors.accent.withValues(alpha: 0.24),
-            ),
+            border: Border.all(color: AppColors.accent.withValues(alpha: 0.24)),
             boxShadow: [
               BoxShadow(
                 color: AppColors.accent.withValues(alpha: 0.14),
@@ -442,8 +440,8 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
     final maxWidth = screenWidth >= 840
         ? 680.0
         : screenWidth >= 600
-            ? 540.0
-            : double.infinity;
+        ? 540.0
+        : double.infinity;
 
     return Scaffold(
       backgroundColor: const Color(0xFF160D07),
@@ -496,12 +494,12 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
               );
               final isInitialLoading =
                   provider.guideDashboardState == ExcursionListState.loading &&
-                      provider.myGuideExcursions.isEmpty &&
-                      provider.myGuideExcursionBookings.isEmpty;
+                  provider.myGuideExcursions.isEmpty &&
+                  provider.myGuideExcursionBookings.isEmpty;
               final isInitialError =
                   provider.guideDashboardState == ExcursionListState.error &&
-                      provider.myGuideExcursions.isEmpty &&
-                      provider.myGuideExcursionBookings.isEmpty;
+                  provider.myGuideExcursions.isEmpty &&
+                  provider.myGuideExcursionBookings.isEmpty;
 
               return RefreshIndicator(
                 color: AppColors.accent,
@@ -598,7 +596,8 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
                           _GuideDashboardInfoCard(
                             icon: Icons.wifi_off_rounded,
                             title: l10n.guideDashboardLoadFailed,
-                            message: provider.guideDashboardErrorMessage ??
+                            message:
+                                provider.guideDashboardErrorMessage ??
                                 l10n.guideDashboardLoadFailed,
                             actionLabel: l10n.retryButton,
                             onActionTap: provider.refreshGuideDashboardData,
@@ -622,13 +621,15 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
                               offerTab: _activeOfferTab,
                               bookingTab: _activeBookingTab,
                             ),
-                            actionLabel: _activeSection ==
+                            actionLabel:
+                                _activeSection ==
                                         GuideDashboardSection.offers &&
                                     _activeOfferTab ==
                                         GuideOfferDashboardTab.active
                                 ? l10n.guideDashboardCreateOffer
                                 : null,
-                            onActionTap: _activeSection ==
+                            onActionTap:
+                                _activeSection ==
                                         GuideDashboardSection.offers &&
                                     _activeOfferTab ==
                                         GuideOfferDashboardTab.active
@@ -683,17 +684,17 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
   }) {
     return switch (_activeSection) {
       GuideDashboardSection.offers => switch (_activeOfferTab) {
-          GuideOfferDashboardTab.active => activeOffers.length,
-          GuideOfferDashboardTab.draft => draftOffers.length,
-          GuideOfferDashboardTab.archive => archivedOffers.length,
-          GuideOfferDashboardTab.rejected => rejectedOffers.length,
-          GuideOfferDashboardTab.review => reviewOffers.length,
-        },
+        GuideOfferDashboardTab.active => activeOffers.length,
+        GuideOfferDashboardTab.draft => draftOffers.length,
+        GuideOfferDashboardTab.archive => archivedOffers.length,
+        GuideOfferDashboardTab.rejected => rejectedOffers.length,
+        GuideOfferDashboardTab.review => reviewOffers.length,
+      },
       GuideDashboardSection.bookings => switch (_activeBookingTab) {
-          GuideBookingDashboardTab.active => upcomingBookings.length,
-          GuideBookingDashboardTab.cancelled => cancelledBookings.length,
-          GuideBookingDashboardTab.completed => completedBookings.length,
-        },
+        GuideBookingDashboardTab.active => upcomingBookings.length,
+        GuideBookingDashboardTab.cancelled => cancelledBookings.length,
+        GuideBookingDashboardTab.completed => completedBookings.length,
+      },
     };
   }
 
@@ -715,24 +716,24 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
     for (final index in pageIndexes) {
       final Widget card = switch (_activeSection) {
         GuideDashboardSection.offers => _offerCardForActiveTab(
-            l10n: l10n,
-            index: index,
-            activeOffers: activeOffers,
-            draftOffers: draftOffers,
-            archivedOffers: archivedOffers,
-            reviewOffers: reviewOffers,
-            rejectedOffers: rejectedOffers,
-            guideBookings: guideBookings,
-          ),
+          l10n: l10n,
+          index: index,
+          activeOffers: activeOffers,
+          draftOffers: draftOffers,
+          archivedOffers: archivedOffers,
+          reviewOffers: reviewOffers,
+          rejectedOffers: rejectedOffers,
+          guideBookings: guideBookings,
+        ),
         GuideDashboardSection.bookings => _bookingCardForActiveTab(
-            l10n: l10n,
-            now: now,
-            index: index,
-            upcomingBookings: upcomingBookings,
-            completedBookings: completedBookings,
-            cancelledBookings: cancelledBookings,
-            guideBookings: guideBookings,
-          ),
+          l10n: l10n,
+          now: now,
+          index: index,
+          upcomingBookings: upcomingBookings,
+          completedBookings: completedBookings,
+          cancelledBookings: cancelledBookings,
+          guideBookings: guideBookings,
+        ),
       };
       cards.add(card);
       if (index != pageIndexes.last) {
@@ -754,64 +755,61 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
   }) {
     return switch (_activeOfferTab) {
       GuideOfferDashboardTab.active => _GuideOfferCard(
-          excursion: activeOffers[index],
-          bookingCount:
-              _bookingCountForOffer(activeOffers[index], guideBookings),
-          statusLabel: l10n.guideDashboardStatusActive,
-          actionLabel: l10n.guideDashboardEditOffer,
-          secondaryActionLabel: l10n.guideDashboardArchiveOffer,
-          onSecondaryActionTap: () => _archiveOffer(activeOffers[index]),
-          onTap: () => _openOfferEditor(activeOffers[index]),
-        ),
+        excursion: activeOffers[index],
+        bookingCount: _bookingCountForOffer(activeOffers[index], guideBookings),
+        statusLabel: l10n.guideDashboardStatusActive,
+        actionLabel: l10n.guideDashboardEditOffer,
+        secondaryActionLabel: l10n.guideDashboardArchiveOffer,
+        onSecondaryActionTap: () => _archiveOffer(activeOffers[index]),
+        onTap: () => _openOfferEditor(activeOffers[index]),
+      ),
       GuideOfferDashboardTab.draft => _GuideOfferCard(
-          excursion: draftOffers[index],
-          bookingCount:
-              _bookingCountForOffer(draftOffers[index], guideBookings),
-          statusLabel: l10n.guideDashboardStatusDraft,
-          actionLabel: l10n.guideDashboardEditOffer,
-          secondaryActionLabel: l10n.guideDashboardSubmitOffer,
-          onSecondaryActionTap: () => _submitOfferForReview(draftOffers[index]),
-          destructiveActionLabel: l10n.guideDashboardDeleteDraftOffer,
-          onDestructiveActionTap: () => _deleteDraftOffer(draftOffers[index]),
-          muted: true,
-          onTap: () => _openOfferEditor(draftOffers[index]),
-        ),
+        excursion: draftOffers[index],
+        bookingCount: _bookingCountForOffer(draftOffers[index], guideBookings),
+        statusLabel: l10n.guideDashboardStatusDraft,
+        actionLabel: l10n.guideDashboardEditOffer,
+        secondaryActionLabel: l10n.guideDashboardSubmitOffer,
+        onSecondaryActionTap: () => _submitOfferForReview(draftOffers[index]),
+        destructiveActionLabel: l10n.guideDashboardDeleteDraftOffer,
+        onDestructiveActionTap: () => _deleteDraftOffer(draftOffers[index]),
+        muted: true,
+        onTap: () => _openOfferEditor(draftOffers[index]),
+      ),
       GuideOfferDashboardTab.archive => _GuideOfferCard(
-          excursion: archivedOffers[index],
-          bookingCount: _bookingCountForOffer(
-            archivedOffers[index],
-            guideBookings,
-          ),
-          statusLabel: l10n.guideDashboardStatusArchived,
-          actionLabel: l10n.guideDashboardEditOffer,
-          secondaryActionLabel: l10n.guideDashboardPublishOffer,
-          onSecondaryActionTap: () => _publishOffer(archivedOffers[index]),
-          muted: true,
-          onTap: () => _openOfferEditor(archivedOffers[index]),
+        excursion: archivedOffers[index],
+        bookingCount: _bookingCountForOffer(
+          archivedOffers[index],
+          guideBookings,
         ),
+        statusLabel: l10n.guideDashboardStatusArchived,
+        actionLabel: l10n.guideDashboardEditOffer,
+        secondaryActionLabel: l10n.guideDashboardPublishOffer,
+        onSecondaryActionTap: () => _publishOffer(archivedOffers[index]),
+        muted: true,
+        onTap: () => _openOfferEditor(archivedOffers[index]),
+      ),
       GuideOfferDashboardTab.rejected => _GuideOfferCard(
-          excursion: rejectedOffers[index],
-          bookingCount: _bookingCountForOffer(
-            rejectedOffers[index],
-            guideBookings,
-          ),
-          statusLabel: l10n.guideDashboardStatusRejected,
-          actionLabel: l10n.guideDashboardViewDetails,
-          secondaryActionLabel: l10n.guideDashboardSubmitOffer,
-          onSecondaryActionTap: () =>
-              _submitOfferForReview(rejectedOffers[index]),
-          muted: true,
-          onTap: () => _openOfferEditor(rejectedOffers[index]),
+        excursion: rejectedOffers[index],
+        bookingCount: _bookingCountForOffer(
+          rejectedOffers[index],
+          guideBookings,
         ),
+        statusLabel: l10n.guideDashboardStatusRejected,
+        actionLabel: l10n.guideDashboardViewDetails,
+        secondaryActionLabel: l10n.guideDashboardSubmitOffer,
+        onSecondaryActionTap: () =>
+            _submitOfferForReview(rejectedOffers[index]),
+        muted: true,
+        onTap: () => _openOfferEditor(rejectedOffers[index]),
+      ),
       GuideOfferDashboardTab.review => _GuideOfferCard(
-          excursion: reviewOffers[index],
-          bookingCount:
-              _bookingCountForOffer(reviewOffers[index], guideBookings),
-          statusLabel: l10n.guideDashboardStatusReview,
-          actionLabel: l10n.guideDashboardViewDetails,
-          muted: true,
-          onTap: () => _openOfferEditor(reviewOffers[index]),
-        ),
+        excursion: reviewOffers[index],
+        bookingCount: _bookingCountForOffer(reviewOffers[index], guideBookings),
+        statusLabel: l10n.guideDashboardStatusReview,
+        actionLabel: l10n.guideDashboardViewDetails,
+        muted: true,
+        onTap: () => _openOfferEditor(reviewOffers[index]),
+      ),
     };
   }
 
@@ -835,8 +833,9 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
           relatedBookings: relatedBookings,
           statusLabel: l10n.guideDashboardStatusBooked,
           actionLabel: l10n.guideDashboardViewBooking,
-          secondaryActionLabel:
-              canCancel ? l10n.guideDashboardCancelExcursion : null,
+          secondaryActionLabel: canCancel
+              ? l10n.guideDashboardCancelExcursion
+              : null,
           onSecondaryActionTap: canCancel
               ? () => _cancelBookedExcursion(booking, relatedBookings)
               : null,
@@ -933,16 +932,18 @@ List<ExcursionBookingVm> _relatedBookingsFor(
   List<ExcursionBookingVm> bookings,
 ) {
   final slotId = (booking.scheduleSlotId ?? '').trim();
-  final related = bookings.where((item) {
-    if (slotId.isNotEmpty) {
-      return (item.scheduleSlotId ?? '').trim() == slotId;
-    }
-    return item.productId == booking.productId &&
-        item.offerId == booking.offerId &&
-        item.scheduledFor.toUtc().isAtSameMomentAs(
+  final related = bookings
+      .where((item) {
+        if (slotId.isNotEmpty) {
+          return (item.scheduleSlotId ?? '').trim() == slotId;
+        }
+        return item.productId == booking.productId &&
+            item.offerId == booking.offerId &&
+            item.scheduledFor.toUtc().isAtSameMomentAs(
               booking.scheduledFor.toUtc(),
             );
-  }).toList(growable: false);
+      })
+      .toList(growable: false);
 
   if (related.isEmpty) return [booking];
   related.sort((a, b) {
@@ -966,17 +967,20 @@ List<ExcursionBookingVm> _effectiveGuideBookingAuthors({
   required List<ExcursionBookingVm> relatedBookings,
   required List<ExcursionBookingVm> providerBookings,
 }) {
-  final fallbackBookings =
-      relatedBookings.isEmpty ? [booking] : relatedBookings;
+  final fallbackBookings = relatedBookings.isEmpty
+      ? [booking]
+      : relatedBookings;
   final slotIds = fallbackBookings
       .map((item) => (item.scheduleSlotId ?? '').trim())
       .where((slotId) => slotId.isNotEmpty)
       .toSet();
   if (slotIds.isEmpty) return fallbackBookings;
 
-  final refreshed = providerBookings.where((item) {
-    return slotIds.contains((item.scheduleSlotId ?? '').trim());
-  }).toList(growable: false);
+  final refreshed = providerBookings
+      .where((item) {
+        return slotIds.contains((item.scheduleSlotId ?? '').trim());
+      })
+      .toList(growable: false);
   if (refreshed.isEmpty) return fallbackBookings;
 
   refreshed.sort((a, b) {
@@ -991,28 +995,30 @@ DateTime _bookingCreatedAtOrEpoch(ExcursionBookingVm booking) {
 
 List<ExcursionVm> _filterOffersBySearch(List<ExcursionVm> items, String query) {
   if (query.trim().isEmpty) return items;
-  return items.where((item) {
-    return _matchesSmartQuery(query, [
-      item.title,
-      item.summary,
-      item.description,
-      item.landmarkName,
-      item.cityName,
-      item.countryCode,
-      item.categorySlug,
-      item.status,
-      item.visibility,
-      item.currency,
-      item.priceAmount,
-      item.maxGroupSize,
-      item.meetingPoint,
-      item.tags.join(' '),
-      item.languageCodes.join(' '),
-      item.primaryOffer?.id,
-      item.primaryOffer?.legacyExcursionId,
-      item.id,
-    ]);
-  }).toList(growable: false);
+  return items
+      .where((item) {
+        return _matchesSmartQuery(query, [
+          item.title,
+          item.summary,
+          item.description,
+          item.landmarkName,
+          item.cityName,
+          item.countryCode,
+          item.categorySlug,
+          item.status,
+          item.visibility,
+          item.currency,
+          item.priceAmount,
+          item.maxGroupSize,
+          item.meetingPoint,
+          item.tags.join(' '),
+          item.languageCodes.join(' '),
+          item.primaryOffer?.id,
+          item.primaryOffer?.legacyExcursionId,
+          item.id,
+        ]);
+      })
+      .toList(growable: false);
 }
 
 List<ExcursionBookingVm> _filterBookingsBySearch(
@@ -1020,28 +1026,30 @@ List<ExcursionBookingVm> _filterBookingsBySearch(
   String query,
 ) {
   if (query.trim().isEmpty) return items;
-  return items.where((item) {
-    return _matchesSmartQuery(query, [
-      item.title,
-      item.summary,
-      item.guideDisplayName,
-      item.landmarkName,
-      item.cityName,
-      item.countryCode,
-      item.categorySlug,
-      item.status,
-      item.currency,
-      item.totalPriceAmount,
-      item.totalSeats,
-      item.scheduledFor.toIso8601String(),
-      item.createdAt?.toIso8601String(),
-      item.updatedAt?.toIso8601String(),
-      item.id,
-      item.productId,
-      item.offerId,
-      item.legacyExcursionId,
-    ]);
-  }).toList(growable: false);
+  return items
+      .where((item) {
+        return _matchesSmartQuery(query, [
+          item.title,
+          item.summary,
+          item.guideDisplayName,
+          item.landmarkName,
+          item.cityName,
+          item.countryCode,
+          item.categorySlug,
+          item.status,
+          item.currency,
+          item.totalPriceAmount,
+          item.totalSeats,
+          item.scheduledFor.toIso8601String(),
+          item.createdAt?.toIso8601String(),
+          item.updatedAt?.toIso8601String(),
+          item.id,
+          item.productId,
+          item.offerId,
+          item.legacyExcursionId,
+        ]);
+      })
+      .toList(growable: false);
 }
 
 bool _isPublishedPublicOffer(ExcursionVm excursion) {
@@ -1186,17 +1194,17 @@ IconData _emptyIconFor({
 }) {
   return switch (section) {
     GuideDashboardSection.offers => switch (offerTab) {
-        GuideOfferDashboardTab.active => Icons.explore_outlined,
-        GuideOfferDashboardTab.draft => Icons.edit_note_rounded,
-        GuideOfferDashboardTab.archive => Icons.inventory_2_outlined,
-        GuideOfferDashboardTab.rejected => Icons.block_rounded,
-        GuideOfferDashboardTab.review => Icons.manage_search_rounded,
-      },
+      GuideOfferDashboardTab.active => Icons.explore_outlined,
+      GuideOfferDashboardTab.draft => Icons.edit_note_rounded,
+      GuideOfferDashboardTab.archive => Icons.inventory_2_outlined,
+      GuideOfferDashboardTab.rejected => Icons.block_rounded,
+      GuideOfferDashboardTab.review => Icons.manage_search_rounded,
+    },
     GuideDashboardSection.bookings => switch (bookingTab) {
-        GuideBookingDashboardTab.active => Icons.confirmation_number_outlined,
-        GuideBookingDashboardTab.cancelled => Icons.event_busy_rounded,
-        GuideBookingDashboardTab.completed => Icons.task_alt_rounded,
-      },
+      GuideBookingDashboardTab.active => Icons.confirmation_number_outlined,
+      GuideBookingDashboardTab.cancelled => Icons.event_busy_rounded,
+      GuideBookingDashboardTab.completed => Icons.task_alt_rounded,
+    },
   };
 }
 
@@ -1208,17 +1216,17 @@ String _emptyTitleFor(
 }) {
   return switch (section) {
     GuideDashboardSection.offers => switch (offerTab) {
-        GuideOfferDashboardTab.active => l10n.guideDashboardOffersEmpty,
-        GuideOfferDashboardTab.draft => l10n.guideDashboardDraftEmpty,
-        GuideOfferDashboardTab.archive => l10n.guideDashboardArchiveEmpty,
-        GuideOfferDashboardTab.rejected => l10n.guideDashboardRejectedEmpty,
-        GuideOfferDashboardTab.review => l10n.guideDashboardReviewEmpty,
-      },
+      GuideOfferDashboardTab.active => l10n.guideDashboardOffersEmpty,
+      GuideOfferDashboardTab.draft => l10n.guideDashboardDraftEmpty,
+      GuideOfferDashboardTab.archive => l10n.guideDashboardArchiveEmpty,
+      GuideOfferDashboardTab.rejected => l10n.guideDashboardRejectedEmpty,
+      GuideOfferDashboardTab.review => l10n.guideDashboardReviewEmpty,
+    },
     GuideDashboardSection.bookings => switch (bookingTab) {
-        GuideBookingDashboardTab.active => l10n.guideDashboardBookingsEmpty,
-        GuideBookingDashboardTab.cancelled => l10n.guideDashboardCancelledEmpty,
-        GuideBookingDashboardTab.completed => l10n.guideDashboardCompletedEmpty,
-      },
+      GuideBookingDashboardTab.active => l10n.guideDashboardBookingsEmpty,
+      GuideBookingDashboardTab.cancelled => l10n.guideDashboardCancelledEmpty,
+      GuideBookingDashboardTab.completed => l10n.guideDashboardCompletedEmpty,
+    },
   };
 }
 
@@ -1230,19 +1238,19 @@ String _emptyMessageFor(
 }) {
   return switch (section) {
     GuideDashboardSection.offers => switch (offerTab) {
-        GuideOfferDashboardTab.active => l10n.guideDashboardOffersEmptyHint,
-        GuideOfferDashboardTab.draft => l10n.guideDashboardDraftEmptyHint,
-        GuideOfferDashboardTab.archive => l10n.guideDashboardArchiveEmptyHint,
-        GuideOfferDashboardTab.rejected => l10n.guideDashboardRejectedEmptyHint,
-        GuideOfferDashboardTab.review => l10n.guideDashboardReviewEmptyHint,
-      },
+      GuideOfferDashboardTab.active => l10n.guideDashboardOffersEmptyHint,
+      GuideOfferDashboardTab.draft => l10n.guideDashboardDraftEmptyHint,
+      GuideOfferDashboardTab.archive => l10n.guideDashboardArchiveEmptyHint,
+      GuideOfferDashboardTab.rejected => l10n.guideDashboardRejectedEmptyHint,
+      GuideOfferDashboardTab.review => l10n.guideDashboardReviewEmptyHint,
+    },
     GuideDashboardSection.bookings => switch (bookingTab) {
-        GuideBookingDashboardTab.active => l10n.guideDashboardBookingsEmptyHint,
-        GuideBookingDashboardTab.cancelled =>
-          l10n.guideDashboardCancelledEmptyHint,
-        GuideBookingDashboardTab.completed =>
-          l10n.guideDashboardCompletedEmptyHint,
-      },
+      GuideBookingDashboardTab.active => l10n.guideDashboardBookingsEmptyHint,
+      GuideBookingDashboardTab.cancelled =>
+        l10n.guideDashboardCancelledEmptyHint,
+      GuideBookingDashboardTab.completed =>
+        l10n.guideDashboardCompletedEmptyHint,
+    },
   };
 }
 
@@ -1648,23 +1656,23 @@ class _GuideDashboardSubTabs extends StatelessWidget {
     return _GuideHorizontalTabs(
       children: switch (activeSection) {
         GuideDashboardSection.offers => [
-            for (final tab in offerTabs)
-              _GuideTabButton(
-                label: tab.$2,
-                count: offerCounts[tab.$1] ?? 0,
-                active: activeOfferTab == tab.$1,
-                onTap: () => onOfferChanged(tab.$1),
-              ),
-          ],
+          for (final tab in offerTabs)
+            _GuideTabButton(
+              label: tab.$2,
+              count: offerCounts[tab.$1] ?? 0,
+              active: activeOfferTab == tab.$1,
+              onTap: () => onOfferChanged(tab.$1),
+            ),
+        ],
         GuideDashboardSection.bookings => [
-            for (final tab in bookingTabs)
-              _GuideTabButton(
-                label: tab.$2,
-                count: bookingCounts[tab.$1] ?? 0,
-                active: activeBookingTab == tab.$1,
-                onTap: () => onBookingChanged(tab.$1),
-              ),
-          ],
+          for (final tab in bookingTabs)
+            _GuideTabButton(
+              label: tab.$2,
+              count: bookingCounts[tab.$1] ?? 0,
+              active: activeBookingTab == tab.$1,
+              onTap: () => onBookingChanged(tab.$1),
+            ),
+        ],
       },
     );
   }
@@ -2281,14 +2289,16 @@ class _GuideAttendanceParticipantStatusList extends StatelessWidget {
 
     return Consumer<ExcursionProvider>(
       builder: (context, provider, _) {
-        final participants = provider.myGuideExcursionBookings.where((booking) {
-          return !booking.isCancelled &&
-              (booking.scheduleSlotId ?? '').trim() == scheduleSlotId;
-        }).toList(growable: false);
+        final participants = provider.myGuideExcursionBookings
+            .where((booking) {
+              return !booking.isCancelled &&
+                  (booking.scheduleSlotId ?? '').trim() == scheduleSlotId;
+            })
+            .toList(growable: false);
         final effectiveParticipants = participants.isEmpty
             ? fallbackBookings
-                .where((booking) => !booking.isCancelled)
-                .toList(growable: false)
+                  .where((booking) => !booking.isCancelled)
+                  .toList(growable: false)
             : participants;
         if (effectiveParticipants.isEmpty) {
           return const SizedBox.shrink();
@@ -2343,8 +2353,9 @@ class _GuideAttendanceParticipantRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final checkedIn = booking.isCheckedIn;
-    final statusColor =
-        checkedIn ? const Color(0xFF77D88B) : const Color(0xFFFFD6A3);
+    final statusColor = checkedIn
+        ? const Color(0xFF77D88B)
+        : const Color(0xFFFFD6A3);
     final statusLabel = checkedIn
         ? l10n.guideDashboardAttendanceCheckedIn
         : l10n.guideDashboardAttendanceWaiting;
@@ -2476,8 +2487,9 @@ class _GuideBookingDetailsSheetState extends State<_GuideBookingDetailsSheet> {
     final localeName = Localizations.localeOf(context).toString();
     final mediaQuery = MediaQuery.of(context);
     final compact = mediaQuery.size.width < 390;
-    final providerBookings =
-        context.watch<ExcursionProvider>().myGuideExcursionBookings;
+    final providerBookings = context
+        .watch<ExcursionProvider>()
+        .myGuideExcursionBookings;
     final bookings = _effectiveGuideBookingAuthors(
       booking: widget.booking,
       relatedBookings: widget.relatedBookings,
@@ -2689,7 +2701,7 @@ class _GuideBookingAuthorsList extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Consumer<ExcursionProvider>(
-      builder: (context, _, __) {
+      builder: (context, _, _) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -2834,8 +2846,7 @@ class _GuideCancelExcursionSheetState
       setState(() {
         _errorText = AppLocalizations.of(
           context,
-        )!
-            .guideDashboardCancelReasonRequired;
+        )!.guideDashboardCancelReasonRequired;
       });
       _reasonFocusNode.requestFocus();
       return;
@@ -3182,8 +3193,9 @@ class _GuideBookingAttendanceStatusPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final checkedIn = booking.isCheckedIn;
-    final statusColor =
-        checkedIn ? const Color(0xFF77D88B) : const Color(0xFFFFD6A3);
+    final statusColor = checkedIn
+        ? const Color(0xFF77D88B)
+        : const Color(0xFFFFD6A3);
     final statusLabel = checkedIn
         ? l10n.guideDashboardAttendanceCheckedIn
         : l10n.guideDashboardAttendanceWaiting;
@@ -3283,8 +3295,9 @@ class _GuideBookingBreakdownRow extends StatelessWidget {
           child: Text(
             label,
             style: TextStyle(
-              color:
-                  emphasized ? AppColors.textPrimary : const Color(0xFFD3BFA9),
+              color: emphasized
+                  ? AppColors.textPrimary
+                  : const Color(0xFFD3BFA9),
               fontSize: emphasized ? 15 : 14,
               fontWeight: emphasized ? FontWeight.w900 : FontWeight.w700,
             ),
@@ -3439,11 +3452,13 @@ class _GuideJourneyCard extends StatelessWidget {
                     LayoutBuilder(
                       builder: (context, constraints) {
                         final secondary = secondaryActionLabel?.trim() ?? '';
-                        final hasSecondary = secondary.isNotEmpty &&
+                        final hasSecondary =
+                            secondary.isNotEmpty &&
                             onSecondaryActionTap != null;
                         final destructive =
                             destructiveActionLabel?.trim() ?? '';
-                        final hasDestructive = destructive.isNotEmpty &&
+                        final hasDestructive =
+                            destructive.isNotEmpty &&
                             onDestructiveActionTap != null;
                         final stackActions = constraints.maxWidth < 360;
                         final primaryButton = FilledButton(

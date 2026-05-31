@@ -322,4 +322,60 @@ void main() {
       expect(cardSource, contains('fontSize: isCompact ? 16 : 17'));
     },
   );
+
+  test(
+    'home screen stages initial discovery requests after first frame',
+    () async {
+      final source = await File(
+        'lib/screens/home/home_screen.dart',
+      ).readAsString();
+
+      final initStart = source.indexOf('@override\n  void initState()');
+      final initEnd = source.indexOf(
+        'void _scheduleInitialDataLoad()',
+        initStart,
+      );
+      final scheduleStart = initEnd;
+      final runStart = source.indexOf(
+        'Future<void> _runInitialDataLoad()',
+        scheduleStart,
+      );
+      final runEnd = source.indexOf('@override\n  void dispose()', runStart);
+
+      expect(initStart, isNonNegative);
+      expect(initEnd, greaterThan(initStart));
+      expect(runStart, greaterThan(scheduleStart));
+      expect(runEnd, greaterThan(runStart));
+
+      final initSource = source.substring(initStart, initEnd);
+      final scheduleSource = source.substring(scheduleStart, runStart);
+      final runSource = source.substring(runStart, runEnd);
+
+      expect(source, contains('static const _initialHomeDataDelay'));
+      expect(source, contains('static const _initialHomeDataStagger'));
+      expect(initSource, contains('_scheduleInitialDataLoad();'));
+      expect(initSource, isNot(contains('provider.loadActivities();')));
+      expect(initSource, isNot(contains('provider.loadActivityCategories();')));
+      expect(initSource, isNot(contains('_loadTopAttractions();')));
+      expect(initSource, isNot(contains('_loadTopStories();')));
+      expect(
+        scheduleSource,
+        contains('WidgetsBinding.instance.addPostFrameCallback'),
+      );
+      expect(scheduleSource, contains('unawaited(_runInitialDataLoad())'));
+      expect(runSource, contains('waitUntilFirstFrameRasterized'));
+      expect(
+        runSource,
+        contains('Future<void>.delayed(_initialHomeDataDelay)'),
+      );
+      expect(
+        runSource,
+        contains('Future<void>.delayed(_initialHomeDataStagger)'),
+      );
+      expect(runSource, contains('provider.loadActivityCategories();'));
+      expect(runSource, contains('unawaited(categoryLoad);'));
+      expect(runSource, contains('unawaited(_loadTopAttractions());'));
+      expect(runSource, contains('unawaited(_loadTopStories());'));
+    },
+  );
 }

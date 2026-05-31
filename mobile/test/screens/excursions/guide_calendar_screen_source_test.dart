@@ -72,7 +72,9 @@ void main() {
       expect(source, contains('iconEnabledColor: _slotSheetFieldIconColor'));
       expect(source, contains('Icon(icon, color: _slotSheetFieldIconColor'));
       expect(
-          source, contains('_repeatWeekly && _weekdays.contains(day.value)'));
+        source,
+        contains('_repeatWeekly && _weekdays.contains(day.value)'),
+      );
       expect(source, contains('const Color(0xFF3A2107)'));
       expect(source, contains('_fallbackOptionFromExcursion'));
       expect(source, contains('menuMaxHeight:'));
@@ -109,7 +111,12 @@ void main() {
       'lib/screens/excursions/widgets/guide_calendar_day_strip.dart',
     ).readAsString();
 
-    expect(source, contains('selected ? AppColors.textPrimary'));
+    expect(
+      RegExp(
+        r'selected\s*\?\s*AppColors\.textPrimary\s*:\s*AppColors\.textSecondary',
+      ).hasMatch(source),
+      isTrue,
+    );
     expect(source, isNot(contains('selected ? const Color(0xFF201407)')));
   });
 }

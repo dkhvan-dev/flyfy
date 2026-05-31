@@ -11,7 +11,7 @@ enum ExcursionScheduleActionState { idle, loading, success, error }
 
 class ExcursionScheduleProvider extends ChangeNotifier {
   ExcursionScheduleProvider({ExcursionScheduleApi? scheduleApi})
-      : _scheduleApi = scheduleApi ?? ExcursionScheduleApi();
+    : _scheduleApi = scheduleApi ?? ExcursionScheduleApi();
 
   final ExcursionScheduleApi _scheduleApi;
 
@@ -40,8 +40,8 @@ class ExcursionScheduleProvider extends ChangeNotifier {
     final normalizedGuideUserId = guideUserId?.trim();
     final publicGuideUserId =
         normalizedGuideUserId == null || normalizedGuideUserId.isEmpty
-            ? null
-            : normalizedGuideUserId;
+        ? null
+        : normalizedGuideUserId;
 
     _selectedDate = anchor;
     _state = ExcursionScheduleState.loading;
@@ -82,11 +82,13 @@ class ExcursionScheduleProvider extends ChangeNotifier {
 
   List<ExcursionScheduleSlotVm> slotsForDay(DateTime day) {
     final target = DateTime(day.year, day.month, day.day);
-    final filtered = _slots.where((slot) {
-      final localStart = slot.startAt.toLocal();
-      return DateTime(localStart.year, localStart.month, localStart.day) ==
-          target;
-    }).toList(growable: false);
+    final filtered = _slots
+        .where((slot) {
+          final localStart = slot.startAt.toLocal();
+          return DateTime(localStart.year, localStart.month, localStart.day) ==
+              target;
+        })
+        .toList(growable: false);
 
     return _sortSlots(filtered);
   }
@@ -113,7 +115,8 @@ class ExcursionScheduleProvider extends ChangeNotifier {
   }
 
   Future<bool> createSeries(
-      CreateExcursionScheduleSeriesRequest request) async {
+    CreateExcursionScheduleSeriesRequest request,
+  ) async {
     _setActionLoading();
 
     try {
@@ -232,8 +235,9 @@ class ExcursionScheduleProvider extends ChangeNotifier {
 
     try {
       await _scheduleApi.deleteSlot(trimmedId);
-      _slots =
-          _slots.where((slot) => slot.id != trimmedId).toList(growable: false);
+      _slots = _slots
+          .where((slot) => slot.id != trimmedId)
+          .toList(growable: false);
       _setActionSuccess();
       return true;
     } on DioException catch (e) {
@@ -258,8 +262,8 @@ class ExcursionScheduleProvider extends ChangeNotifier {
     final normalizedGuideUserId = guideUserId?.trim();
     final expectedGuideUserId =
         normalizedGuideUserId == null || normalizedGuideUserId.isEmpty
-            ? null
-            : normalizedGuideUserId;
+        ? null
+        : normalizedGuideUserId;
     if (_loadedGuideUserId != expectedGuideUserId) return false;
     return !day.isBefore(start) && day.isBefore(end);
   }

@@ -37,7 +37,8 @@ class CurrencyApi {
       options: Options(extra: const {'requiresAuth': false}),
     );
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -70,7 +71,10 @@ const defaultCurrencyOptions = [
   CurrencyOption(code: 'RUB', name: 'Russian ruble', symbol: '₽'),
   CurrencyOption(code: 'TRY', name: 'Turkish lira', symbol: '₺'),
   CurrencyOption(
-      code: 'AED', name: 'United Arab Emirates dirham', symbol: 'د.إ'),
+    code: 'AED',
+    name: 'United Arab Emirates dirham',
+    symbol: 'د.إ',
+  ),
   CurrencyOption(code: 'GBP', name: 'British pound', symbol: '£'),
   CurrencyOption(code: 'CNY', name: 'Chinese yuan', symbol: '¥'),
   CurrencyOption(code: 'JPY', name: 'Japanese yen', symbol: '¥'),

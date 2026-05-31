@@ -19,10 +19,10 @@ class ActivityAttendanceQrVm {
       token: json['token']?.toString() ?? '',
       expiresAt:
           DateTime.tryParse(json['expiresAt']?.toString() ?? '')?.toUtc() ??
-              DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+          DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
       refreshAt:
           DateTime.tryParse(json['refreshAt']?.toString() ?? '')?.toUtc() ??
-              DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+          DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
     );
   }
 }
