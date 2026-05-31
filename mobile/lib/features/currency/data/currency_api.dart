@@ -29,9 +29,11 @@ class CurrencyApi {
     );
   }
 
-  Future<List<CurrencyOption>> listCurrencies() async {
+  Future<List<CurrencyOption>> listCurrencies({String? locale}) async {
+    final lang = _referenceLocale(locale);
     final response = await _apiClient.dio.get(
       '/reference/currencies',
+      queryParameters: lang == null ? null : {'lang': lang},
       options: Options(extra: const {'requiresAuth': false}),
     );
     final data = response.data;
@@ -50,6 +52,14 @@ class CurrencyApi {
       return defaultCurrencyOptions;
     }
     return currencies;
+  }
+
+  String? _referenceLocale(String? locale) {
+    final normalized = locale?.trim().toLowerCase().split(RegExp('[-_]')).first;
+    return switch (normalized) {
+      'en' || 'ru' || 'kk' => normalized,
+      _ => null,
+    };
   }
 }
 

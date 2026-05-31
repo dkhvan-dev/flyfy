@@ -1824,7 +1824,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get currencyConverterSubtitle =>
-      'Сапар бағасын FlyFy ішінен-ақ аударыңыз.';
+      'Сапар бағасын Inflap ішінен-ақ аударыңыз.';
 
   @override
   String get currencyConverterAmountLabel => 'Сома';
@@ -1834,6 +1834,30 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get currencyConverterToLabel => 'Қай валютаға';
+
+  @override
+  String get currencyConverterYouSend => 'Жібересіз';
+
+  @override
+  String get currencyConverterYouReceive => 'Аласыз';
+
+  @override
+  String get currencyConverterQuickSwitch => 'Жылдам таңдау';
+
+  @override
+  String get currencyConverterSelectCurrencyTitle => 'Валютаны таңдау';
+
+  @override
+  String get currencyConverterSearchCurrencyHint => 'Валютаны іздеу';
+
+  @override
+  String get currencyConverterRecentSection => 'Соңғылар';
+
+  @override
+  String get currencyConverterAllCurrenciesSection => 'Барлық валюталар';
+
+  @override
+  String get currencyConverterNoCurrenciesFound => 'Валюта табылмады';
 
   @override
   String get currencyConverterSwapTooltip => 'Валюталарды ауыстыру';

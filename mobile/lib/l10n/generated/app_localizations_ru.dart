@@ -1811,7 +1811,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get currencyConverterSubtitle =>
-      'Переводите цены для поездок, не выходя из FlyFy.';
+      'Переводите цены для поездок, не выходя из Inflap.';
 
   @override
   String get currencyConverterAmountLabel => 'Сумма';
@@ -1821,6 +1821,30 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get currencyConverterToLabel => 'В';
+
+  @override
+  String get currencyConverterYouSend => 'Вы отправляете';
+
+  @override
+  String get currencyConverterYouReceive => 'Вы получите';
+
+  @override
+  String get currencyConverterQuickSwitch => 'Быстрый выбор';
+
+  @override
+  String get currencyConverterSelectCurrencyTitle => 'Выбор валюты';
+
+  @override
+  String get currencyConverterSearchCurrencyHint => 'Поиск валюты';
+
+  @override
+  String get currencyConverterRecentSection => 'Недавние';
+
+  @override
+  String get currencyConverterAllCurrenciesSection => 'Все валюты';
+
+  @override
+  String get currencyConverterNoCurrenciesFound => 'Валюты не найдены';
 
   @override
   String get currencyConverterSwapTooltip => 'Поменять валюты местами';

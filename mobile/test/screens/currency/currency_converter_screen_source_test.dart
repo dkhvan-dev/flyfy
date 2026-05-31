@@ -10,11 +10,21 @@ void main() {
 
     expect(source, contains('class CurrencyConverterScreen'));
     expect(source, contains('l10n.currencyConverterTitle'));
+    expect(source, contains('l10n.currencyConverterYouSend'));
+    expect(source, contains('l10n.currencyConverterYouReceive'));
+    expect(source, contains('l10n.currencyConverterQuickSwitch'));
+    expect(source, contains('class _CurrencyPickerScreen'));
+    expect(source, contains('l10n.currencyConverterSelectCurrencyTitle'));
+    expect(source, contains('l10n.currencyConverterSearchCurrencyHint'));
+    expect(source, contains('_localizedCurrencyName(currency, l10n)'));
+    expect(source, contains('String _currencyFlagEmoji(String code)'));
     expect(source, contains('SingleChildScrollView'));
     expect(source, contains('SafeArea'));
     expect(source, contains('Wrap('));
     expect(source, contains('TextOverflow.ellipsis'));
     expect(source, contains('CurrencyApi'));
+    expect(source, isNot(contains('DropdownButtonFormField')));
+    expect(source, isNot(contains('code.substring(0, 2)')));
   });
 
   test('home service grid links to the currency converter route', () async {

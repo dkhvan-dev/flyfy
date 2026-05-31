@@ -1809,7 +1809,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get currencyConverterSubtitle =>
-      'Convert travel prices without leaving FlyFy.';
+      'Convert travel prices without leaving Inflap.';
 
   @override
   String get currencyConverterAmountLabel => 'Amount';
@@ -1819,6 +1819,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get currencyConverterToLabel => 'To';
+
+  @override
+  String get currencyConverterYouSend => 'You send';
+
+  @override
+  String get currencyConverterYouReceive => 'You receive';
+
+  @override
+  String get currencyConverterQuickSwitch => 'Quick switch';
+
+  @override
+  String get currencyConverterSelectCurrencyTitle => 'Select Currency';
+
+  @override
+  String get currencyConverterSearchCurrencyHint => 'Search currency';
+
+  @override
+  String get currencyConverterRecentSection => 'Recent';
+
+  @override
+  String get currencyConverterAllCurrenciesSection => 'All currencies';
+
+  @override
+  String get currencyConverterNoCurrenciesFound => 'No currencies found';
 
   @override
   String get currencyConverterSwapTooltip => 'Swap currencies';

@@ -40,6 +40,25 @@ void main() {
     expect(result.rate, '0.001972386587771203');
     expect(result.stale, isFalse);
   });
+
+  test('listCurrencies requests localized reference currencies', () async {
+    final adapter = _CurrencyListAdapter();
+    final api = CurrencyApi(
+      apiClient: ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+          ..httpClientAdapter = adapter,
+        secureStorage: _FakeSecureStorage(),
+      ),
+    );
+
+    final currencies = await api.listCurrencies(locale: 'ru');
+
+    expect(adapter.requestPath, '/api/v1/reference/currencies');
+    expect(adapter.queryParameters, {'lang': 'ru'});
+    expect(adapter.requiresAuth, isFalse);
+    expect(currencies.single.code, 'USD');
+    expect(currencies.single.name, 'Доллар США');
+  });
 }
 
 class _FakeSecureStorage extends SecureStorage {
@@ -77,6 +96,42 @@ class _CurrencyConvertAdapter implements HttpClientAdapter {
         'rateAsOf': '2026-05-31T00:00:00Z',
         'provider': 'frankfurter',
         'stale': false,
+      }),
+      200,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+class _CurrencyListAdapter implements HttpClientAdapter {
+  String? requestPath;
+  bool? requiresAuth;
+  Map<String, String>? queryParameters;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    requestPath = options.uri.path;
+    requiresAuth = options.extra['requiresAuth'] as bool?;
+    queryParameters = options.uri.queryParameters;
+
+    return ResponseBody.fromString(
+      jsonEncode({
+        'items': [
+          {
+            'code': 'USD',
+            'name': 'Доллар США',
+            'symbol': r'$',
+          },
+        ],
       }),
       200,
       headers: {

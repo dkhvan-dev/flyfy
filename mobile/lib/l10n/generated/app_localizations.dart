@@ -3373,7 +3373,7 @@ abstract class AppLocalizations {
   /// No description provided for @currencyConverterSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Convert travel prices without leaving FlyFy.'**
+  /// **'Convert travel prices without leaving Inflap.'**
   String get currencyConverterSubtitle;
 
   /// No description provided for @currencyConverterAmountLabel.
@@ -3393,6 +3393,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'To'**
   String get currencyConverterToLabel;
+
+  /// No description provided for @currencyConverterYouSend.
+  ///
+  /// In en, this message translates to:
+  /// **'You send'**
+  String get currencyConverterYouSend;
+
+  /// No description provided for @currencyConverterYouReceive.
+  ///
+  /// In en, this message translates to:
+  /// **'You receive'**
+  String get currencyConverterYouReceive;
+
+  /// No description provided for @currencyConverterQuickSwitch.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick switch'**
+  String get currencyConverterQuickSwitch;
+
+  /// No description provided for @currencyConverterSelectCurrencyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Currency'**
+  String get currencyConverterSelectCurrencyTitle;
+
+  /// No description provided for @currencyConverterSearchCurrencyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search currency'**
+  String get currencyConverterSearchCurrencyHint;
+
+  /// No description provided for @currencyConverterRecentSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get currencyConverterRecentSection;
+
+  /// No description provided for @currencyConverterAllCurrenciesSection.
+  ///
+  /// In en, this message translates to:
+  /// **'All currencies'**
+  String get currencyConverterAllCurrenciesSection;
+
+  /// No description provided for @currencyConverterNoCurrenciesFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No currencies found'**
+  String get currencyConverterNoCurrenciesFound;
 
   /// No description provided for @currencyConverterSwapTooltip.
   ///

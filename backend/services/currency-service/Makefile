@@ -18,4 +18,4 @@ vet:
 	go vet ./...
 
 docker-build:
-	docker build -f Dockerfile -t flyfy/$(SERVICE_NAME):local .
+	docker build -f Dockerfile -t inflap/$(SERVICE_NAME):local .
