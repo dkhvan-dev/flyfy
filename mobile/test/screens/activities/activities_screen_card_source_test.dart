@@ -61,4 +61,22 @@ void main() {
       ),
     );
   });
+
+  test('activities screen exposes nearby activities map preview', () async {
+    final source = await File(
+      'lib/screens/activities/activities_screen.dart',
+    ).readAsString();
+    final ruArb = await File('lib/l10n/app_ru.arb').readAsString();
+
+    expect(source, contains("import '../map/map_screen.dart';"));
+    expect(source, contains('activitiesNearbyTitle'));
+    expect(source, contains('_ActivitiesNearbyMapSection('));
+    expect(source, contains('_buildActivityMapTargets('));
+    expect(source, contains('MapActivityTarget('));
+    expect(source, contains("context.push("));
+    expect(source, contains('extra: MapActivityCollection('));
+    expect(source, contains('item.latitude'));
+    expect(source, contains('item.longitude'));
+    expect(ruArb, contains('"activitiesNearbyTitle": "Активности рядом"'));
+  });
 }

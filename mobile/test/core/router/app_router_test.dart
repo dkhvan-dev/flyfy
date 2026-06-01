@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inflap/core/router/app_router.dart';
@@ -27,5 +29,16 @@ void main() {
     await tester.pump();
 
     expect(focusNode.hasFocus, isFalse);
+  });
+
+  test('activity details route keeps android back-swipe wrapper', () async {
+    final source = await File('lib/core/router/app_router.dart').readAsString();
+    final detailsRouteIndex = source.indexOf("path: '/activities/:activityId'");
+
+    expect(detailsRouteIndex, greaterThanOrEqualTo(0));
+    expect(
+      source.substring(detailsRouteIndex, detailsRouteIndex + 520),
+      contains('return _withAndroidBackSwipe('),
+    );
   });
 }

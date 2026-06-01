@@ -399,7 +399,7 @@ void main() {
   );
 
   test(
-    'excursion details uses real interactive map for meeting point',
+    'excursion details uses shared MapLibre map for meeting point',
     () async {
       final source = await File(
         'lib/screens/excursions/excursion_details_screen.dart',
@@ -407,16 +407,20 @@ void main() {
 
       expect(
         source,
-        contains("import 'package:flutter_map/flutter_map.dart';"),
+        contains("import '../../shared/widgets/app_map_card.dart';"),
       );
       expect(source, contains("import 'package:latlong2/latlong.dart'"));
-      expect(source, contains('FlutterMap('));
-      expect(source, contains('TileLayer('));
-      expect(source, contains('MarkerLayer('));
+      expect(source, contains('AppMapCard('));
+      expect(source, contains('hasMarker: true'));
       expect(source, contains('LatLng('));
       expect(source, contains('excursion.latitude'));
       expect(source, contains('excursion.longitude'));
-      expect(source, contains('InteractiveFlag.all'));
+      expect(source, isNot(contains("package:flutter_map/flutter_map.dart")));
+      expect(source, isNot(contains('FlutterMap(')));
+      expect(source, isNot(contains('TileLayer(')));
+      expect(source, isNot(contains('MarkerLayer(')));
+      expect(source, isNot(contains('tile.openstreetmap.org')));
+      expect(source, isNot(contains('InteractiveFlag.all')));
       expect(source, isNot(contains('class _MapPreviewPainter')));
       expect(
         source,

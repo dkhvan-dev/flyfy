@@ -32,6 +32,7 @@ import '../../providers/session_provider.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
 import '../../shared/widgets/app_localized_location_text.dart';
 import '../common/app_side_drawer.dart';
+import '../map/map_screen.dart';
 
 class ActivitiesScreen extends StatefulWidget {
   const ActivitiesScreen({super.key});
@@ -195,6 +196,20 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     }
 
     context.push('/activities/$activityId');
+  }
+
+  void _openActivitiesMap(List<MapActivityTarget> activities) {
+    if (activities.isEmpty) {
+      return;
+    }
+
+    context.push(
+      '/map',
+      extra: MapActivityCollection(
+        title: AppLocalizations.of(context)!.activitiesNearbyTitle,
+        activities: activities,
+      ),
+    );
   }
 
   Future<void> _confirmLogout() async {
@@ -484,6 +499,13 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                   sortField: _sortField,
                   sortAscending: _sortAscending,
                 );
+                final activityMapTargets = _buildActivityMapTargets(
+                  filteredItems,
+                  categories: provider.categoryItems,
+                  categoryOptions: categoryOptions,
+                  l10n: l10n,
+                  localeName: Localizations.localeOf(context).toString(),
+                );
                 final paginatedItems = paginateItems(
                   filteredItems,
                   currentPage: _currentPage,
@@ -540,6 +562,19 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                     ),
                                   ),
                                   SizedBox(height: layout.filterGap),
+                                  if (filteredItems.isNotEmpty) ...[
+                                    _ActivitiesNearbyMapSection(
+                                      title: l10n.activitiesNearbyTitle,
+                                      emptyText: l10n.activitiesNearbyMapEmpty,
+                                      markers: activityMapTargets,
+                                      onTap: activityMapTargets.isEmpty
+                                          ? null
+                                          : () => _openActivitiesMap(
+                                              activityMapTargets,
+                                            ),
+                                    ),
+                                    SizedBox(height: layout.filterGap),
+                                  ],
                                   _DiscoverSortBar(
                                     l10n: l10n,
                                     sortField: _sortField,
@@ -1068,6 +1103,297 @@ class _FiltersSummaryBar extends StatelessWidget {
       ],
     );
   }
+}
+
+class _ActivitiesNearbyMapSection extends StatelessWidget {
+  const _ActivitiesNearbyMapSection({
+    required this.title,
+    required this.emptyText,
+    required this.markers,
+    required this.onTap,
+  });
+
+  final String title;
+  final String emptyText;
+  final List<MapActivityTarget> markers;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = _activitiesScaled(context, 24, min: 20, max: 24);
+    final previewHeight = _activitiesScaled(context, 142, min: 118, max: 150);
+    final markerSize = _activitiesScaled(context, 30, min: 26, max: 32);
+    final previewMarkers = markers.take(10).toList(growable: false);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: _activitiesScaled(context, 18, min: 16, max: 19),
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        SizedBox(height: _activitiesScaled(context, 10, min: 8, max: 10)),
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(radius),
+            child: Ink(
+              height: previewHeight,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(radius),
+                border: Border.all(
+                  color: AppColors.accent.withValues(alpha: 0.14),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.24),
+                    blurRadius: 30,
+                    offset: const Offset(0, 14),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(radius),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final size = Size(
+                      constraints.maxWidth,
+                      constraints.maxHeight,
+                    );
+
+                    return Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        CustomPaint(
+                          painter: _ActivitiesNearbyMapPainter(),
+                          size: size,
+                        ),
+                        for (var i = 0; i < previewMarkers.length; i++)
+                          Positioned(
+                            left:
+                                _activityPreviewOffset(
+                                  marker: previewMarkers[i],
+                                  markers: previewMarkers,
+                                  index: i,
+                                  size: size,
+                                ).dx -
+                                markerSize / 2,
+                            top:
+                                _activityPreviewOffset(
+                                  marker: previewMarkers[i],
+                                  markers: previewMarkers,
+                                  index: i,
+                                  size: size,
+                                ).dy -
+                                markerSize / 2,
+                            width: markerSize,
+                            height: markerSize,
+                            child: _ActivityPreviewMarker(
+                              marker: previewMarkers[i],
+                            ),
+                          ),
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.black.withValues(alpha: 0.34),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          left: _activitiesScaled(
+                            context,
+                            14,
+                            min: 12,
+                            max: 16,
+                          ),
+                          right: _activitiesScaled(
+                            context,
+                            14,
+                            min: 12,
+                            max: 16,
+                          ),
+                          bottom: _activitiesScaled(
+                            context,
+                            12,
+                            min: 10,
+                            max: 14,
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  markers.isEmpty
+                                      ? emptyText
+                                      : AppLocalizations.of(
+                                          context,
+                                        )!.activitiesResultsCount(
+                                          markers.length,
+                                        ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: _activitiesScaled(
+                                      context,
+                                      13,
+                                      min: 12,
+                                      max: 14,
+                                    ),
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                              if (onTap != null) ...[
+                                SizedBox(
+                                  width: _activitiesScaled(
+                                    context,
+                                    10,
+                                    min: 8,
+                                    max: 10,
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.arrow_forward_rounded,
+                                  size: _activitiesScaled(
+                                    context,
+                                    18,
+                                    min: 16,
+                                    max: 19,
+                                  ),
+                                  color: AppColors.accent,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ActivityPreviewMarker extends StatelessWidget {
+  const _ActivityPreviewMarker({required this.marker});
+
+  final MapActivityTarget marker;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: marker.accentColor,
+        border: Border.all(color: Colors.white, width: 1.6),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.22),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Text(
+          marker.avatarLabel ?? '',
+          maxLines: 1,
+          overflow: TextOverflow.clip,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: _activitiesScaled(context, 11, min: 9, max: 12),
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActivitiesNearbyMapPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final backgroundPaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF2C3A2C), Color(0xFF5C5139), Color(0xFF25323B)],
+      ).createShader(Offset.zero & size);
+    canvas.drawRect(Offset.zero & size, backgroundPaint);
+
+    final parkPaint = Paint()..color = const Color(0x554E8B57);
+    canvas.drawOval(
+      Rect.fromLTWH(size.width * 0.62, -size.height * 0.18, 150, 120),
+      parkPaint,
+    );
+    canvas.drawOval(
+      Rect.fromLTWH(-size.width * 0.18, size.height * 0.42, 160, 120),
+      parkPaint,
+    );
+
+    final roadPaint = Paint()
+      ..color = const Color(0xFFE8D3B0).withValues(alpha: 0.46)
+      ..strokeWidth = math.max(5, size.shortestSide * 0.07)
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+    final road = Path()
+      ..moveTo(-20, size.height * 0.72)
+      ..cubicTo(
+        size.width * 0.18,
+        size.height * 0.58,
+        size.width * 0.36,
+        size.height * 0.86,
+        size.width * 0.56,
+        size.height * 0.58,
+      )
+      ..cubicTo(
+        size.width * 0.70,
+        size.height * 0.38,
+        size.width * 0.88,
+        size.height * 0.44,
+        size.width + 20,
+        size.height * 0.28,
+      );
+    canvas.drawPath(road, roadPaint);
+
+    final sideRoadPaint = Paint()
+      ..color = const Color(0xFFD6BF94).withValues(alpha: 0.28)
+      ..strokeWidth = math.max(3, size.shortestSide * 0.035)
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(
+      Offset(size.width * 0.18, -12),
+      Offset(size.width * 0.48, size.height + 12),
+      sideRoadPaint,
+    );
+    canvas.drawLine(
+      Offset(size.width * 0.72, -12),
+      Offset(size.width * 0.28, size.height + 12),
+      sideRoadPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _DiscoverActivityCard extends StatelessWidget {
@@ -2960,6 +3286,140 @@ List<ActivityListItemVm> _mergePublishedActivities({
   final merged = itemsById.values.toList()
     ..sort((a, b) => a.startAt.compareTo(b.startAt));
   return merged;
+}
+
+List<MapActivityTarget> _buildActivityMapTargets(
+  List<ActivityListItemVm> items, {
+  required List<ActivityCategoryVm> categories,
+  required List<_DiscoverCategoryOption> categoryOptions,
+  required AppLocalizations l10n,
+  required String localeName,
+}) {
+  final targets = <MapActivityTarget>[];
+
+  for (final item in items) {
+    if (!_hasUsableActivityCoordinates(item)) {
+      continue;
+    }
+
+    final categoryLabel = _activityCategoryLabel(
+      item: item,
+      categories: categories,
+      categoryOptions: categoryOptions,
+    );
+    final artSpec = activityCardArtForItem(item);
+    final dateLabel = DateFormat.MMMd(
+      localeName,
+    ).add_Hm().format(item.startAt.toLocal());
+    final priceLabel = item.isFree
+        ? l10n.createPriceFree
+        : item.formattedPriceLabel(localeName);
+
+    targets.add(
+      MapActivityTarget(
+        id: item.id,
+        title: item.title,
+        latitude: item.latitude!,
+        longitude: item.longitude!,
+        detailRoute: '/activities/${Uri.encodeComponent(item.id)}',
+        categoryLabel: categoryLabel,
+        metaLabel: '$categoryLabel · $dateLabel · $priceLabel',
+        startLabel: dateLabel,
+        priceLabel: priceLabel,
+        avatarLabel: _activityAvatarLabel(item.title),
+        icon: artSpec.icon,
+        accentColor: artSpec.colors.last,
+      ),
+    );
+
+    if (targets.length >= 60) {
+      break;
+    }
+  }
+
+  return targets;
+}
+
+bool _hasUsableActivityCoordinates(ActivityListItemVm item) {
+  final latitude = item.latitude;
+  final longitude = item.longitude;
+  if (latitude == null || longitude == null) {
+    return false;
+  }
+  return latitude >= -90 &&
+      latitude <= 90 &&
+      longitude >= -180 &&
+      longitude <= 180 &&
+      (latitude != 0 || longitude != 0);
+}
+
+String _activityCategoryLabel({
+  required ActivityListItemVm item,
+  required List<ActivityCategoryVm> categories,
+  required List<_DiscoverCategoryOption> categoryOptions,
+}) {
+  final categorySlug = resolvedActivityCategorySlug(
+    categories: categories,
+    slug: item.categorySlug,
+  );
+  return categoryOptions
+          .cast<_DiscoverCategoryOption?>()
+          .firstWhere(
+            (option) => option?.slug == categorySlug,
+            orElse: () => null,
+          )
+          ?.label ??
+      ActivityCategoryVm.humanizeSlug(item.categorySlug);
+}
+
+String? _activityAvatarLabel(String title) {
+  final normalized = title.trim();
+  if (normalized.isEmpty) {
+    return null;
+  }
+  return normalized.substring(0, 1).toUpperCase();
+}
+
+Offset _activityPreviewOffset({
+  required MapActivityTarget marker,
+  required List<MapActivityTarget> markers,
+  required int index,
+  required Size size,
+}) {
+  if (markers.length == 1) {
+    return Offset(size.width * 0.5, size.height * 0.46);
+  }
+
+  var minLat = markers.first.latitude;
+  var maxLat = markers.first.latitude;
+  var minLon = markers.first.longitude;
+  var maxLon = markers.first.longitude;
+
+  for (final item in markers.skip(1)) {
+    minLat = math.min(minLat, item.latitude);
+    maxLat = math.max(maxLat, item.latitude);
+    minLon = math.min(minLon, item.longitude);
+    maxLon = math.max(maxLon, item.longitude);
+  }
+
+  final latSpread = maxLat - minLat;
+  final lonSpread = maxLon - minLon;
+  final fallbackAngle = (index / math.max(1, markers.length)) * math.pi * 2;
+  final normalizedX = lonSpread.abs() < 0.00001
+      ? 0.5 + math.cos(fallbackAngle) * 0.22
+      : (marker.longitude - minLon) / lonSpread;
+  final normalizedY = latSpread.abs() < 0.00001
+      ? 0.5 + math.sin(fallbackAngle) * 0.18
+      : 1 - ((marker.latitude - minLat) / latSpread);
+
+  final horizontalPadding = size.width * 0.16;
+  final verticalPadding = size.height * 0.22;
+  return Offset(
+    horizontalPadding +
+        normalizedX.clamp(0.0, 1.0) * (size.width - horizontalPadding * 2),
+    verticalPadding +
+        normalizedY.clamp(0.0, 1.0) * (size.height - verticalPadding * 2),
+  );
 }
 
 bool _isDiscoverVisibility(String visibility) {

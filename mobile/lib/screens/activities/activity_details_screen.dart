@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -31,7 +30,9 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/session_provider.dart';
+import '../../shared/map/app_map_links.dart';
 import '../../shared/widgets/app_localized_location_text.dart';
+import '../../shared/widgets/app_map_card.dart';
 import 'activity_payment_screen.dart';
 
 class ActivityDetailsScreen extends StatefulWidget {
@@ -92,10 +93,17 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
 
   @override
   void dispose() {
-    final activityProvider = _activityProvider;
-    activityProvider?.clearSelectedActivity();
-    activityProvider?.resetActionState();
+    _scheduleActivityProviderCleanup();
     super.dispose();
+  }
+
+  void _scheduleActivityProviderCleanup() {
+    final provider = _activityProvider;
+    final activityId = widget.activityId;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      provider?.clearSelectedActivity(activityId: activityId);
+      provider?.resetActionState();
+    });
   }
 
   Future<void> _refreshScreen() async {
@@ -3498,10 +3506,7 @@ class _MeetingSection extends StatelessWidget {
               fit: StackFit.expand,
               children: [
                 if (meetingPoint != null)
-                  _MeetingMapCard(
-                    point: meetingPoint,
-                    showProtectedNotice: showProtectedNotice,
-                  )
+                  _MeetingMapCard(point: meetingPoint)
                 else
                   _MeetingLocationFallbackCard(
                     label: locationLine.isNotEmpty
@@ -3689,110 +3694,13 @@ class _MeetingSection extends StatelessWidget {
 }
 
 class _MeetingMapCard extends StatelessWidget {
-  const _MeetingMapCard({
-    required this.point,
-    required this.showProtectedNotice,
-  });
+  const _MeetingMapCard({required this.point});
 
   final LatLng point;
-  final bool showProtectedNotice;
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        FlutterMap(
-          options: MapOptions(
-            initialCenter: point,
-            initialZoom: 15.4,
-            backgroundColor: const Color(0xFFB3A28D),
-            interactionOptions: InteractionOptions(
-              flags: showProtectedNotice
-                  ? InteractiveFlag.none
-                  : InteractiveFlag.none,
-            ),
-          ),
-          children: [
-            TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'kz.inflap',
-            ),
-            MarkerLayer(
-              markers: [
-                Marker(
-                  point: point,
-                  width: 66,
-                  height: 66,
-                  alignment: Alignment.topCenter,
-                  child: const _MeetingPointMarker(),
-                ),
-              ],
-            ),
-          ],
-        ),
-        Positioned.fill(
-          child: IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    const Color(0x1F25160B),
-                    Colors.transparent,
-                    const Color(0x33140B04),
-                  ],
-                  stops: const [0, 0.48, 1],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _MeetingPointMarker extends StatelessWidget {
-  const _MeetingPointMarker();
-
-  @override
-  Widget build(BuildContext context) {
-    final dotSize = _detailsScaled(context, 18, min: 14, max: 20);
-    final stemHeight = _detailsScaled(context, 18, min: 14, max: 20);
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: dotSize,
-          height: dotSize,
-          decoration: BoxDecoration(
-            color: AppColors.accent,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 3),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.accent.withValues(alpha: 0.26),
-                blurRadius: 16,
-                spreadRadius: 4,
-              ),
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.18),
-                blurRadius: 18,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-        ),
-        Container(
-          width: 2,
-          height: stemHeight,
-          color: Colors.white.withValues(alpha: 0.88),
-        ),
-      ],
-    );
+    return AppMapCard(target: point, hasMarker: true, initialZoom: 15.4);
   }
 }
 
@@ -5715,26 +5623,7 @@ LatLng? _resolveMeetingPoint(ActivityListItemVm activity) {
     return null;
   }
 
-  final parsedUri = Uri.tryParse(mapUrl);
-  final mlat = double.tryParse(parsedUri?.queryParameters['mlat'] ?? '');
-  final mlon = double.tryParse(parsedUri?.queryParameters['mlon'] ?? '');
-  if (_isValidMeetingPoint(mlat, mlon)) {
-    return LatLng(mlat!, mlon!);
-  }
-
-  final fragment = parsedUri?.fragment ?? '';
-  final fragmentMatch = RegExp(
-    r'map=\d+(?:\.\d+)?/(-?\d+(?:\.\d+)?)/(-?\d+(?:\.\d+)?)',
-  ).firstMatch(fragment);
-  if (fragmentMatch != null) {
-    final fragmentLat = double.tryParse(fragmentMatch.group(1) ?? '');
-    final fragmentLon = double.tryParse(fragmentMatch.group(2) ?? '');
-    if (_isValidMeetingPoint(fragmentLat, fragmentLon)) {
-      return LatLng(fragmentLat!, fragmentLon!);
-    }
-  }
-
-  return null;
+  return AppMapLinks.tryParseCoordinates(mapUrl);
 }
 
 bool _isValidMeetingPoint(double? latitude, double? longitude) {
@@ -5883,6 +5772,15 @@ String? _resolveMeetingActionCopyValue(ActivityListItemVm activity) {
   final meetingUrl = (activity.meetingUrl ?? '').trim();
   if (meetingUrl.isNotEmpty) {
     return meetingUrl;
+  }
+  final meetingPoint = _resolveMeetingPoint(activity);
+  if (meetingPoint != null) {
+    return AppMapLinks.buildUrl(
+      latitude: meetingPoint.latitude,
+      longitude: meetingPoint.longitude,
+      title: activity.title,
+      subtitle: activity.addressText ?? activity.shortLocation,
+    );
   }
   final mapUrl = (activity.mapUrl ?? '').trim();
   if (mapUrl.isNotEmpty) {

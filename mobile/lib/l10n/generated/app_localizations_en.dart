@@ -1956,9 +1956,21 @@ class AppLocalizationsEn extends AppLocalizations {
       'Showing the map from a fallback location';
 
   @override
+  String get mapDistancePending => 'Calculating distance';
+
+  @override
   String mapPlacesCount(int count) {
     return 'Places found: $count';
   }
+
+  @override
+  String mapActivitiesCount(int count) {
+    return 'Activities: $count';
+  }
+
+  @override
+  String get mapTapActivityHint =>
+      'Tap an activity marker to preview it and open details.';
 
   @override
   String get attractionsTitle => 'Discover attractions';
@@ -3803,6 +3815,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createMapLinkHint => 'Paste Maps URL';
 
   @override
+  String get createMapLinkInvalidError =>
+      'We couldn\'t detect coordinates from this link. Choose a point on our map or paste a link with coordinates from another map.';
+
+  @override
+  String get createMapLinkResolvingError =>
+      'Detecting coordinates from this link. Please wait a few seconds.';
+
+  @override
+  String get createMapLinkRequiredError =>
+      'Add a map link or choose a point on our map.';
+
+  @override
+  String get createMapEarlyStageNotice =>
+      'Our in-app map is still early-stage: paste a link from another map or place a point on our map for now. Soon we\'ll improve the map so you can choose the meeting point here without switching to other map apps.';
+
+  @override
   String get createOfflineSection => 'VENUE';
 
   @override
@@ -4629,6 +4657,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get activitiesDiscoverTitle => 'Activities';
+
+  @override
+  String get activitiesNearbyTitle => 'Activities nearby';
+
+  @override
+  String get activitiesNearbyMapEmpty =>
+      'Activities do not have meeting points yet';
 
   @override
   String get activitiesFilteredEmptyTitle =>

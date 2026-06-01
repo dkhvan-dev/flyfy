@@ -23,6 +23,20 @@ void main() {
   );
 
   test(
+    'create activity defers native map until location step settles',
+    () async {
+      final source = await File(
+        'lib/screens/activities/create_activity_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('bool _isStepNativeMapEnabled(int step)'));
+      expect(source, contains('_pendingProgrammaticStep == null'));
+      expect(source, contains('nativeMapEnabled: _isStepNativeMapEnabled(1)'));
+      expect(source, contains('if (_pendingProgrammaticStep != null) return;'));
+    },
+  );
+
+  test(
     'create activity publish action relies on backend auto-publication',
     () async {
       final source = await File(
@@ -82,15 +96,17 @@ void main() {
   );
 
   test(
-    'create activity accepts selected map point as offline location',
+    'create activity requires map link before leaving location step',
     () async {
       final source = await File(
         'lib/screens/activities/create_activity_screen.dart',
       ).readAsString();
 
-      expect(source, contains('final hasOfflineLocation ='));
-      expect(source, contains('(_mapUrlValue ?? \'\').isNotEmpty'));
-      expect(source, contains('!hasOfflineLocation'));
+      expect(source, contains('final requiresMapLink ='));
+      expect(source, contains('required: requiresMapLink'));
+      expect(source, contains('l10n.createMapLinkRequiredError'));
+      expect(source, isNot(contains('final hasOfflineLocation =')));
+      expect(source, isNot(contains('!hasOfflineLocation')));
     },
   );
 
@@ -114,23 +130,116 @@ void main() {
         'lib/screens/activities/create_activity_screen.dart',
       ).readAsString();
 
+      final helperStart = source.indexOf(
+        'Future<void> _resolveSelectedMapPointAddress',
+      );
       final mapTapStart = source.indexOf('Future<void> _handleMapTapped');
       final buildStart = source.indexOf('@override', mapTapStart);
+      expect(helperStart, isNonNegative);
       expect(mapTapStart, isNonNegative);
       expect(buildStart, greaterThan(mapTapStart));
 
       final mapTapSource = source.substring(mapTapStart, buildStart);
+      final reverseGeocodingSource = source.substring(helperStart, buildStart);
 
-      expect(mapTapSource, contains('setLocaleIdentifier('));
-      expect(mapTapSource, contains('_resolveReferenceCity('));
-      expect(mapTapSource, contains('_locationLabelResolver.resolveAddress('));
-      expect(mapTapSource, contains('_cityNameCtrl.text = localizedCityName'));
+      expect(mapTapSource, contains('_resolveSelectedMapPointAddress('));
+      expect(reverseGeocodingSource, contains('setLocaleIdentifier('));
+      expect(reverseGeocodingSource, contains('_resolveReferenceCity('));
       expect(
-        mapTapSource,
+        reverseGeocodingSource,
+        contains('_locationLabelResolver.resolveAddress('),
+      );
+      expect(
+        reverseGeocodingSource,
+        contains('_cityNameCtrl.text = localizedCityName'),
+      );
+      expect(
+        reverseGeocodingSource,
         isNot(contains('final countryLabel = (placemark.country')),
       );
     },
   );
+
+  test(
+    'create activity uses shared MapLibre picker for meeting point',
+    () async {
+      final source = await File(
+        'lib/screens/activities/create_activity_screen.dart',
+      ).readAsString();
+
+      expect(source, contains("../../shared/map/app_map_links.dart"));
+      expect(source, contains("../../shared/widgets/app_map_card.dart"));
+      expect(source, contains("package:latlong2/latlong.dart"));
+      expect(source, contains('AppMapCard('));
+      expect(source, contains('onTap: _handleMapTapped'));
+      expect(source, contains('AppMapLinks.buildUrl('));
+      expect(source, contains('placemarkFromCoordinates('));
+      expect(source, isNot(contains("package:flutter_map/flutter_map.dart")));
+      expect(source, isNot(contains('final MapController _mapController')));
+      expect(source, isNot(contains('FlutterMap(')));
+      expect(source, isNot(contains('TileLayer(')));
+      expect(source, isNot(contains('MarkerLayer(')));
+      expect(source, isNot(contains('tile.openstreetmap.org')));
+    },
+  );
+
+  test('create activity parses pasted map links into the shared map', () async {
+    final source = await File(
+      'lib/screens/activities/create_activity_screen.dart',
+    ).readAsString();
+    final ruArb = await File('lib/l10n/app_ru.arb').readAsString();
+
+    expect(source, contains('Timer? _mapUrlParseDebounce;'));
+    expect(source, contains('_handleMapUrlTextChanged'));
+    expect(source, contains('_applyParsedMapUrl'));
+    expect(source, contains('AppMapLinks.normalizePastedMapLink(rawInput)'));
+    expect(source, contains('AppMapLinks.normalizePastedMapLink(rawValue)'));
+    expect(
+      source,
+      contains('AppMapLinks.tryParseCoordinates(normalizedRawValue)'),
+    );
+    expect(source, contains('AppMapLinkResolver'));
+    expect(source, contains('AppMapLinkResolver.canResolveRemoteMapLink'));
+    expect(
+      source,
+      contains('_mapLinkResolver.resolveCoordinates(normalizedRawValue)'),
+    );
+    expect(source, contains('_applyParsedMapPointAddress('));
+    expect(source, contains('_addressTextCtrl.text = resolvedAddress;'));
+    expect(source, contains('_setMapUrlText(_selectedMapUrl!)'));
+    expect(source, contains('readOnly: true'));
+    expect(source, contains('final requiresMapLink ='));
+    expect(source, contains('required: requiresMapLink'));
+    expect(source, contains('l10n.createMapLinkRequiredError'));
+    expect(source, contains('l10n.createMapEarlyStageNotice'));
+    expect(source, contains('_mapUrlResolvingRawValue'));
+    expect(source, contains('_mapUrlResolveFailedRawValue'));
+    expect(source, contains('_mapUrlErrorText'));
+    expect(source, contains('errorText: _mapUrlErrorText'));
+    expect(source, contains('l10n.createMapLinkInvalidError'));
+    expect(source, contains('l10n.createMapLinkRequiredError'));
+    expect(source, contains('l10n.createMapLinkResolvingError'));
+    expect(source, contains('return l10n.createMapLinkResolvingError;'));
+    expect(
+      ruArb,
+      contains(
+        '"createMapLinkInvalidError": "Не удалось определить координаты по ссылке. Выберите точку на нашей карте или вставьте ссылку с координатами из другой карты."',
+      ),
+    );
+    expect(
+      ruArb,
+      contains(
+        '"createMapLinkResolvingError": "Определяем координаты по ссылке. Подождите несколько секунд."',
+      ),
+    );
+    expect(
+      ruArb,
+      contains(
+        '"createMapLinkRequiredError": "Добавьте ссылку на карту или выберите точку на нашей карте."',
+      ),
+    );
+    expect(ruArb, contains('"createMapEarlyStageNotice":'));
+  });
 
   test(
     'step two location and meeting inputs are horizontally scrollable',
@@ -394,11 +503,16 @@ void main() {
         source,
         contains('bool get _meetingLocationDiffersFromAuthorLocation'),
       );
-      expect(source, contains('_normalizedLocationText(_cityNameCtrl.text)'));
       expect(
         source,
-        contains('_normalizedLocationText(_authorLocationCityName)'),
+        contains('activityMeetingLocationDiffersFromAuthorLocation('),
       );
+      expect(
+        source,
+        contains("features/activities/activity_location_mismatch"),
+      );
+      expect(source, contains('meetingCountryCode: _countryCodeCtrl.text'));
+      expect(source, contains('meetingCityName: _cityNameCtrl.text'));
       expect(source, contains('createAuthorLocationMismatchHint'));
       expect(source, contains('_Step2LocationMismatchNotice('));
       expect(enSource, contains('"createAuthorLocationMismatchHint"'));

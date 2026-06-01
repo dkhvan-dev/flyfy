@@ -1,9 +1,9 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -21,7 +21,10 @@ import '../../features/excursions/excursion_localization.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/excursion_provider.dart';
 import '../../providers/home_location_provider.dart';
+import '../../shared/map/app_map_link_resolver.dart';
+import '../../shared/map/app_map_links.dart';
 import '../../shared/widgets/app_currency_picker_field.dart';
+import '../../shared/widgets/app_map_card.dart';
 import 'excursion_select_location_screen.dart';
 
 class CreateExcursionScreen extends StatefulWidget {
@@ -51,7 +54,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   final _pageController = PageController();
   final _imagePicker = ImagePicker();
   final _fileApi = FileApi();
-  final MapController _mapController = MapController();
+  final _mapLinkResolver = const AppMapLinkResolver();
   var _currentStep = 0;
   var _isSubmitting = false;
   var _isLoadingInitialExcursion = false;
@@ -77,6 +80,10 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   String? _selectedLandmarkId;
   double? _selectedLatitude;
   double? _selectedLongitude;
+  Timer? _mapUrlParseDebounce;
+  int _mapUrlResolveSerial = 0;
+  String? _mapUrlResolvingRawValue;
+  String? _mapUrlResolveFailedRawValue;
   String? _selectedAttractionCoverFileId;
   String? _selectedAttractionCoverImageUrl;
   Map<String, CreateExcursionLocalizedCopyRequest> _productTranslations =
@@ -88,6 +95,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   bool _isCoverUploading = false;
   String? _coverUploadErrorMessage;
   int _coverUploadGeneration = 0;
+  bool _isApplyingMapUrlProgrammatically = false;
   bool _isTrackingStepBackSwipe = false;
   double _stepBackSwipeDistance = 0;
   int _mapSelectionRequestSerial = 0;
@@ -98,6 +106,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   String? _groupSizeErrorText;
   String? _languagesErrorText;
   String? _meetingPointErrorText;
+  String? _mapUrlErrorText;
   String? _priceErrorText;
   String? _currencyErrorText;
   final Set<String> _selectedLanguageCodes = {'en', 'ru'};
@@ -108,6 +117,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   @override
   void initState() {
     super.initState();
+    _mapUrlCtrl.addListener(_handleMapUrlTextChanged);
     if ((widget.excursionId ?? '').trim().isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _loadExcursionForEdit();
@@ -142,6 +152,9 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
 
   @override
   void dispose() {
+    _mapUrlCtrl.removeListener(_handleMapUrlTextChanged);
+    _mapUrlParseDebounce?.cancel();
+    _mapUrlResolveSerial += 1;
     _pageController.dispose();
     _landmarkNameCtrl.dispose();
     _cityNameCtrl.dispose();
@@ -169,6 +182,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       _languagesErrorText != null ||
       _meetingPointErrorText != null ||
       _priceErrorText != null ||
+      _mapUrlErrorText != null ||
       _currencyErrorText != null;
 
   void _clearFieldValidationErrors() {
@@ -178,6 +192,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     _groupSizeErrorText = null;
     _languagesErrorText = null;
     _meetingPointErrorText = null;
+    _mapUrlErrorText = null;
     _priceErrorText = null;
     _currencyErrorText = null;
   }
@@ -195,6 +210,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
 
   void _clearStoryAndPriceErrors() {
     _meetingPointErrorText = null;
+    _mapUrlErrorText = null;
     _priceErrorText = null;
     _currencyErrorText = null;
   }
@@ -263,7 +279,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
         ? excursion.maxGroupSize.toString()
         : _maxGroupSizeCtrl.text;
     _meetingPointCtrl.text = excursion.meetingPoint.trim();
-    _mapUrlCtrl.text = (excursion.mapUrl ?? '').trim();
+    _setMapUrlText((excursion.mapUrl ?? '').trim());
     _priceAmountCtrl.text = excursion.priceAmount > 0
         ? _formatNumberInput(excursion.priceAmount)
         : '';
@@ -461,6 +477,11 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     }
     if (_coverChanged && (_coverFileId ?? '').trim().isEmpty) {
       return l10n.createCoverUploadRetryRequired;
+    }
+    final mapUrlError = _validateMapUrlField(l10n, required: true);
+    if (mapUrlError != null) {
+      _mapUrlErrorText = mapUrlError;
+      return _mapUrlErrorText;
     }
     if (_meetingPointCtrl.text.trim().isEmpty) {
       _meetingPointErrorText = l10n.createLocationValidation;
@@ -760,6 +781,20 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   bool get _hasSelectedMapPoint =>
       _selectedLatitude != null && _selectedLongitude != null;
 
+  void _clearMeetingPointSelection() {
+    _mapUrlParseDebounce?.cancel();
+    _mapUrlResolveSerial += 1;
+    _mapSelectionRequestSerial += 1;
+    _selectedLatitude = null;
+    _selectedLongitude = null;
+    _meetingPointCtrl.clear();
+    _setMapUrlText('');
+    _mapUrlResolvingRawValue = null;
+    _mapUrlResolveFailedRawValue = null;
+    _meetingPointErrorText = null;
+    _mapUrlErrorText = null;
+  }
+
   bool get _hasSelectedAttraction =>
       (_selectedLandmarkId ?? '').trim().isNotEmpty;
 
@@ -847,26 +882,151 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       ? LatLng(_selectedLatitude!, _selectedLongitude!)
       : _fallbackMapTarget;
 
-  List<Marker> get _selectedMapMarkers => !_hasSelectedMapPoint
-      ? const <Marker>[]
-      : [
-          Marker(
-            point: _selectedMapTarget,
-            width: 46,
-            height: 46,
-            alignment: Alignment.topCenter,
-            child: const Icon(
-              Icons.location_on_rounded,
-              size: 46,
-              color: AppColors.accent,
-            ),
-          ),
-        ];
-
   String _buildMapUrl(double latitude, double longitude) {
-    final lat = latitude.toStringAsFixed(6);
-    final lng = longitude.toStringAsFixed(6);
-    return 'https://www.openstreetmap.org/?mlat=$lat&mlon=$lng#map=16/$lat/$lng';
+    return AppMapLinks.buildUrl(
+      latitude: latitude,
+      longitude: longitude,
+      title: _landmarkNameCtrl.text,
+      subtitle: _meetingPointCtrl.text,
+    );
+  }
+
+  void _setMapUrlText(String value) {
+    _isApplyingMapUrlProgrammatically = true;
+    _mapUrlCtrl.text = value;
+    _isApplyingMapUrlProgrammatically = false;
+  }
+
+  void _handleMapUrlTextChanged() {
+    if (_isApplyingMapUrlProgrammatically) {
+      return;
+    }
+    _mapUrlParseDebounce?.cancel();
+    final rawInput = _mapUrlCtrl.text.trim();
+    final rawValue = AppMapLinks.normalizePastedMapLink(rawInput);
+    if (rawValue.isEmpty) {
+      _mapUrlResolveSerial += 1;
+      if (_mapUrlErrorText != null) {
+        setState(() {
+          _mapUrlResolvingRawValue = null;
+          _mapUrlResolveFailedRawValue = null;
+          _mapUrlErrorText = null;
+        });
+      } else {
+        _mapUrlResolvingRawValue = null;
+        _mapUrlResolveFailedRawValue = null;
+      }
+      return;
+    }
+    if (rawInput != rawValue) {
+      _setMapUrlText(rawValue);
+    }
+    _mapUrlParseDebounce = Timer(
+      const Duration(milliseconds: 450),
+      () => unawaited(_applyParsedMapUrl(rawValue, normalizeField: true)),
+    );
+  }
+
+  Future<bool> _applyParsedMapUrl(
+    String rawValue, {
+    required bool normalizeField,
+  }) async {
+    if (!mounted) {
+      return false;
+    }
+    final normalizedRawValue = AppMapLinks.normalizePastedMapLink(rawValue);
+    if (normalizeField && _mapUrlCtrl.text.trim() != normalizedRawValue) {
+      _setMapUrlText(normalizedRawValue);
+    }
+    final requestSerial = ++_mapUrlResolveSerial;
+    final l10n = AppLocalizations.of(context)!;
+    var point = AppMapLinks.tryParseCoordinates(normalizedRawValue);
+    final shouldResolveRemote =
+        point == null &&
+        AppMapLinkResolver.canResolveRemoteMapLink(normalizedRawValue);
+    if (shouldResolveRemote) {
+      setState(() {
+        _mapUrlResolvingRawValue = normalizedRawValue;
+        _mapUrlResolveFailedRawValue = null;
+        _mapUrlErrorText = l10n.createMapLinkResolvingError;
+      });
+    }
+    point ??= await _mapLinkResolver.resolveCoordinates(normalizedRawValue);
+    if (!mounted || requestSerial != _mapUrlResolveSerial) {
+      return false;
+    }
+    if (normalizeField && _mapUrlCtrl.text.trim() != normalizedRawValue) {
+      return false;
+    }
+    if (point == null) {
+      setState(() {
+        _mapUrlResolvingRawValue = null;
+        _mapUrlResolveFailedRawValue = normalizedRawValue;
+        _mapUrlErrorText = l10n.createMapLinkInvalidError;
+      });
+      return false;
+    }
+    final resolvedPoint = point;
+
+    final normalizedUrl = _buildMapUrl(
+      resolvedPoint.latitude,
+      resolvedPoint.longitude,
+    );
+    final mapSelectionRequestSerial = ++_mapSelectionRequestSerial;
+    final coordinateLabel = _buildCoordinateMeetingPointLabel(
+      resolvedPoint.latitude,
+      resolvedPoint.longitude,
+    );
+    if (normalizeField && _mapUrlCtrl.text.trim() != normalizedUrl) {
+      _setMapUrlText(normalizedUrl);
+    }
+    setState(() {
+      _selectedLatitude = resolvedPoint.latitude;
+      _selectedLongitude = resolvedPoint.longitude;
+      _meetingPointCtrl.text = coordinateLabel;
+      _mapUrlResolvingRawValue = null;
+      _mapUrlResolveFailedRawValue = null;
+      _mapUrlErrorText = null;
+      _meetingPointErrorText = null;
+      _stepErrorText = null;
+    });
+    await _applyParsedMeetingPointAddress(
+      position: resolvedPoint,
+      mapUrlRequestSerial: requestSerial,
+      mapSelectionRequestSerial: mapSelectionRequestSerial,
+      syncMapUrlAfterAddress: normalizeField,
+    );
+    return true;
+  }
+
+  String? _validateMapUrlField(AppLocalizations l10n, {bool required = false}) {
+    final rawValue = _mapUrlCtrl.text.trim();
+    if (rawValue.isEmpty) {
+      return required ? l10n.createMapLinkRequiredError : null;
+    }
+    final point = AppMapLinks.tryParseCoordinates(rawValue);
+    if (point == null) {
+      if (AppMapLinkResolver.canResolveRemoteMapLink(rawValue)) {
+        if (_mapUrlResolveFailedRawValue == rawValue) {
+          return l10n.createMapLinkInvalidError;
+        }
+        if (_mapUrlResolvingRawValue != rawValue) {
+          unawaited(_applyParsedMapUrl(rawValue, normalizeField: true));
+        }
+        return l10n.createMapLinkResolvingError;
+      }
+      return l10n.createMapLinkInvalidError;
+    }
+
+    final normalizedUrl = _buildMapUrl(point.latitude, point.longitude);
+    _selectedLatitude = point.latitude;
+    _selectedLongitude = point.longitude;
+    _mapUrlResolvingRawValue = null;
+    _mapUrlResolveFailedRawValue = null;
+    if (rawValue != normalizedUrl) {
+      _setMapUrlText(normalizedUrl);
+    }
+    return null;
   }
 
   String _buildCoordinateMeetingPointLabel(double latitude, double longitude) {
@@ -892,16 +1052,51 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     return parts.join(', ');
   }
 
-  void _moveMapToSelection({double zoom = 15}) {
-    if (!_hasSelectedMapPoint) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      try {
-        _mapController.move(_selectedMapTarget, zoom);
-      } catch (_) {
-        // MapController is attached only after FlutterMap is mounted.
+  Future<void> _applyParsedMeetingPointAddress({
+    required LatLng position,
+    required int mapUrlRequestSerial,
+    required int mapSelectionRequestSerial,
+    required bool syncMapUrlAfterAddress,
+  }) {
+    return _resolveMeetingPointAddress(
+      position: position,
+      isCurrentRequest: () =>
+          mapUrlRequestSerial == _mapUrlResolveSerial &&
+          mapSelectionRequestSerial == _mapSelectionRequestSerial,
+      syncMapUrlAfterAddress: syncMapUrlAfterAddress,
+    );
+  }
+
+  Future<void> _resolveMeetingPointAddress({
+    required LatLng position,
+    required bool Function() isCurrentRequest,
+    required bool syncMapUrlAfterAddress,
+  }) async {
+    try {
+      final placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+      if (!mounted || !isCurrentRequest()) return;
+
+      if (placemarks.isNotEmpty) {
+        final address = _composeMeetingPointLabel(placemarks.first);
+        if (address.isNotEmpty) {
+          setState(() {
+            _meetingPointCtrl.text = address;
+            if (syncMapUrlAfterAddress) {
+              _setMapUrlText(
+                _buildMapUrl(position.latitude, position.longitude),
+              );
+            }
+            _meetingPointErrorText = null;
+            _stepErrorText = null;
+          });
+        }
       }
-    });
+    } catch (_) {
+      // Keep coordinates and map link when reverse geocoding is unavailable.
+    }
   }
 
   Future<void> _handleMapTapped(LatLng position) async {
@@ -915,33 +1110,20 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     setState(() {
       _selectedLatitude = position.latitude;
       _selectedLongitude = position.longitude;
-      _mapUrlCtrl.text = mapUrl;
+      _setMapUrlText(mapUrl);
       _meetingPointCtrl.text = coordinateLabel;
       _meetingPointErrorText = null;
+      _mapUrlResolvingRawValue = null;
+      _mapUrlResolveFailedRawValue = null;
+      _mapUrlErrorText = null;
       _stepErrorText = null;
     });
-    _mapController.move(position, 15);
 
-    try {
-      final placemarks = await placemarkFromCoordinates(
-        position.latitude,
-        position.longitude,
-      );
-      if (!mounted || requestSerial != _mapSelectionRequestSerial) return;
-
-      if (placemarks.isNotEmpty) {
-        final address = _composeMeetingPointLabel(placemarks.first);
-        if (address.isNotEmpty) {
-          setState(() {
-            _meetingPointCtrl.text = address;
-            _meetingPointErrorText = null;
-            _stepErrorText = null;
-          });
-        }
-      }
-    } catch (_) {
-      // Keep coordinates and map link when reverse geocoding is unavailable.
-    }
+    await _resolveMeetingPointAddress(
+      position: position,
+      isCurrentRequest: () => requestSerial == _mapSelectionRequestSerial,
+      syncMapUrlAfterAddress: true,
+    );
   }
 
   Future<void> _pickCoverImage() async {
@@ -1092,9 +1274,6 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           countryCode: _selectedCountryCode ?? '',
           cityId: _departureCityId,
           cityName: _cityNameCtrl.text.trim(),
-          latitude: _selectedLatitude,
-          longitude: _selectedLongitude,
-          mapUrl: _mapUrlCtrl.text.trim(),
           coverFileId: _selectedAttractionCoverFileId,
           coverImageUrl: _selectedAttractionCoverImageUrl,
           translations: _locationTranslationsForPicker(),
@@ -1119,8 +1298,6 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       } else {
         _cityNameCtrl.clear();
       }
-      _selectedLatitude = result.latitude;
-      _selectedLongitude = result.longitude;
       _selectedAttractionCoverFileId = (result.coverFileId ?? '').trim().isEmpty
           ? null
           : result.coverFileId!.trim();
@@ -1133,18 +1310,10 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       if (result.categorySlug.trim().isNotEmpty) {
         _selectedCategorySlug = result.categorySlug.trim();
       }
-      if ((result.mapUrl ?? '').trim().isNotEmpty) {
-        _mapUrlCtrl.text = result.mapUrl!.trim();
-      } else if (result.latitude != null && result.longitude != null) {
-        _mapUrlCtrl.text = _buildMapUrl(result.latitude!, result.longitude!);
-      }
-      if (_meetingPointCtrl.text.trim().isEmpty) {
-        _meetingPointCtrl.text = result.name;
-      }
+      _clearMeetingPointSelection();
       _landmarkErrorText = null;
       _stepErrorText = null;
     });
-    _moveMapToSelection();
   }
 
   Future<void> _openItineraryEditor({_ExcursionItineraryDraft? item}) async {
@@ -1529,6 +1698,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           icon: Icons.location_on_outlined,
           iconColor: AppColors.accent,
           horizontalScroll: true,
+          readOnly: true,
           errorText: _meetingPointErrorText,
           onChanged: (_) => setState(() {
             _meetingPointErrorText = null;
@@ -1544,13 +1714,22 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           iconColor: AppColors.accent,
           keyboardType: TextInputType.url,
           horizontalScroll: true,
+          errorText: _mapUrlErrorText,
         ),
         const SizedBox(height: 14),
-        _ExcursionMapPickerCard(
+        Text(
+          l10n.createMapEarlyStageNotice,
+          style: const TextStyle(
+            color: Color(0xFFD4BEA8),
+            fontSize: 12,
+            height: 1.35,
+          ),
+        ),
+        const SizedBox(height: 12),
+        AppMapCard(
           target: _selectedMapTarget,
-          markers: _selectedMapMarkers,
-          hasSelection: _hasSelectedMapPoint,
-          mapController: _mapController,
+          hasMarker: _hasSelectedMapPoint,
+          nativeMapEnabled: _currentStep == _totalSteps - 1,
           onTap: _handleMapTapped,
         ),
         const SizedBox(height: 8),
@@ -3864,98 +4043,6 @@ class _VisibilityCard extends StatelessWidget {
                 const Icon(Icons.check_circle_rounded, color: Colors.white),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ExcursionMapPickerCard extends StatelessWidget {
-  const _ExcursionMapPickerCard({
-    required this.target,
-    required this.markers,
-    required this.hasSelection,
-    required this.mapController,
-    required this.onTap,
-  });
-
-  final LatLng target;
-  final List<Marker> markers;
-  final bool hasSelection;
-  final MapController mapController;
-  final ValueChanged<LatLng> onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final height = width <= 393 ? 168.0 : 178.0;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(26),
-      child: SizedBox(
-        height: height,
-        width: double.infinity,
-        child: Stack(
-          children: [
-            FlutterMap(
-              mapController: mapController,
-              options: MapOptions(
-                initialCenter: target,
-                initialZoom: hasSelection ? 15 : 12,
-                backgroundColor: const Color(0xFFB3A28D),
-                onTap: (_, point) => onTap(point),
-              ),
-              children: [
-                TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'kz.inflap',
-                ),
-                MarkerLayer(markers: markers),
-              ],
-            ),
-            Positioned.fill(
-              child: IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        const Color(0x22695841),
-                        const Color(0x22695841),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Center(
-              child: IgnorePointer(
-                child: Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.accent,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.accent.withValues(alpha: 0.22),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    hasSelection
-                        ? Icons.location_on_rounded
-                        : Icons.my_location_rounded,
-                    size: 24,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          ],
         ),
       ),
     );

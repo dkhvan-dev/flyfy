@@ -3,7 +3,6 @@ import 'dart:math' as math;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart' hide Path;
@@ -30,6 +29,7 @@ import '../../features/excursions/excursion_search.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/excursion_provider.dart';
+import '../../shared/widgets/app_map_card.dart';
 import 'excursion_booking_screen.dart';
 import 'widgets/excursion_review_management_sheet.dart';
 
@@ -3485,34 +3485,12 @@ class _ExcursionMapPreview extends StatelessWidget {
         width: double.infinity,
         child: Stack(
           children: [
-            FlutterMap(
-              options: MapOptions(
-                initialCenter: point,
-                initialZoom: 14.8,
-                minZoom: 3,
-                maxZoom: 18,
-                backgroundColor: const Color(0xFFB3A28D),
-                interactionOptions: const InteractionOptions(
-                  flags: InteractiveFlag.all,
-                ),
-              ),
-              children: [
-                TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'kz.inflap',
-                ),
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                      point: point,
-                      width: 58,
-                      height: 58,
-                      alignment: Alignment.topCenter,
-                      child: const _ExcursionMeetingPointMarker(),
-                    ),
-                  ],
-                ),
-              ],
+            AppMapCard(
+              target: point,
+              hasMarker: true,
+              height: 190,
+              initialZoom: 14.8,
+              borderRadius: 24,
             ),
             Positioned.fill(
               child: IgnorePointer(
@@ -3564,45 +3542,6 @@ class _ExcursionMapPreview extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _ExcursionMeetingPointMarker extends StatelessWidget {
-  const _ExcursionMeetingPointMarker();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: AppColors.accent,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 3),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.accent.withValues(alpha: 0.35),
-                blurRadius: 22,
-                spreadRadius: 5,
-              ),
-            ],
-          ),
-          child: const Icon(Icons.place_rounded, color: Colors.white, size: 23),
-        ),
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            color: AppColors.accent,
-            border: Border.all(color: Colors.white, width: 2),
-            shape: BoxShape.circle,
-          ),
-        ),
-      ],
     );
   }
 }

@@ -10,6 +10,7 @@ import '../../features/attractions/attraction_ui.dart';
 import '../../features/attractions/data/attraction_api.dart';
 import '../../features/attractions/models/attraction_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../shared/map/app_map_links.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
 import '../attractions/attractions_filter_sheet.dart';
 
@@ -46,7 +47,6 @@ class ExcursionLocationSelection {
     AttractionVm attraction, {
     String? fallbackCityName,
   }) {
-    final mapUrl = attraction.locationSourceUrl.trim();
     final coverMedia = attraction.coverMedia;
     final coverImageUrl = coverMedia == null
         ? null
@@ -88,7 +88,14 @@ class ExcursionLocationSelection {
       cityName: cityName,
       latitude: attraction.latitude,
       longitude: attraction.longitude,
-      mapUrl: mapUrl.isEmpty ? null : mapUrl,
+      mapUrl: attraction.hasLocation
+          ? AppMapLinks.buildUrl(
+              latitude: attraction.latitude!,
+              longitude: attraction.longitude!,
+              title: attraction.title,
+              subtitle: cityName ?? attraction.countryCode,
+            )
+          : null,
       coverFileId: attraction.coverFileId,
       coverImageUrl: coverImageUrl,
       translations: translations,

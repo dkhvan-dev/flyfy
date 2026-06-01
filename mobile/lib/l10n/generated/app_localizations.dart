@@ -3640,11 +3640,29 @@ abstract class AppLocalizations {
   /// **'Showing the map from a fallback location'**
   String get mapUsingFallbackLocation;
 
+  /// No description provided for @mapDistancePending.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculating distance'**
+  String get mapDistancePending;
+
   /// No description provided for @mapPlacesCount.
   ///
   /// In en, this message translates to:
   /// **'Places found: {count}'**
   String mapPlacesCount(int count);
+
+  /// No description provided for @mapActivitiesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Activities: {count}'**
+  String mapActivitiesCount(int count);
+
+  /// No description provided for @mapTapActivityHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap an activity marker to preview it and open details.'**
+  String get mapTapActivityHint;
 
   /// No description provided for @attractionsTitle.
   ///
@@ -6988,6 +7006,30 @@ abstract class AppLocalizations {
   /// **'Paste Maps URL'**
   String get createMapLinkHint;
 
+  /// No description provided for @createMapLinkInvalidError.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t detect coordinates from this link. Choose a point on our map or paste a link with coordinates from another map.'**
+  String get createMapLinkInvalidError;
+
+  /// No description provided for @createMapLinkResolvingError.
+  ///
+  /// In en, this message translates to:
+  /// **'Detecting coordinates from this link. Please wait a few seconds.'**
+  String get createMapLinkResolvingError;
+
+  /// No description provided for @createMapLinkRequiredError.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a map link or choose a point on our map.'**
+  String get createMapLinkRequiredError;
+
+  /// No description provided for @createMapEarlyStageNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Our in-app map is still early-stage: paste a link from another map or place a point on our map for now. Soon we\'ll improve the map so you can choose the meeting point here without switching to other map apps.'**
+  String get createMapEarlyStageNotice;
+
   /// No description provided for @createOfflineSection.
   ///
   /// In en, this message translates to:
@@ -8485,6 +8527,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Activities'**
   String get activitiesDiscoverTitle;
+
+  /// No description provided for @activitiesNearbyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activities nearby'**
+  String get activitiesNearbyTitle;
+
+  /// No description provided for @activitiesNearbyMapEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Activities do not have meeting points yet'**
+  String get activitiesNearbyMapEmpty;
 
   /// No description provided for @activitiesFilteredEmptyTitle.
   ///

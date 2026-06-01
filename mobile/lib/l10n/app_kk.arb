@@ -677,6 +677,7 @@
   "mapCopyPlaceLink": "Сілтемені көшіру",
   "mapPlaceLinkCopied": "Орынға сілтеме көшірілді",
   "mapUsingFallbackLocation": "Карта резервтік локация бойынша көрсетіліп тұр",
+  "mapDistancePending": "Қашықтықты анықтап жатырмыз",
   "mapPlacesCount": "Табылған орындар: {count}",
   "@mapPlacesCount": {
     "placeholders": {
@@ -685,6 +686,15 @@
       }
     }
   },
+  "mapActivitiesCount": "Белсенділіктер: {count}",
+  "@mapActivitiesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mapTapActivityHint": "Қысқаша ақпаратты көріп, мәліметтерін ашу үшін белсенділік маркерін басыңыз.",
   "attractionsTitle": "Көрікті жерлер",
   "attractionsSearchHint": "Қайда барамыз?",
   "attractionsLoadFailed": "Көрікті жерлерді жүктеу сәтсіз аяқталды",
@@ -1415,6 +1425,10 @@
   "createVenueOrAddressHint": "Өтетін жерді немесе мекенжайды енгізіңіз",
   "createMapLinkLabel": "Карта сілтемесі",
   "createMapLinkHint": "Карта сілтемесін қойыңыз",
+  "createMapLinkInvalidError": "Сілтеме бойынша координаттарды анықтай алмадық. Нүктені біздің картадан таңдаңыз немесе басқа картадан координаттары бар сілтемені қойыңыз.",
+  "createMapLinkResolvingError": "Сілтеме бойынша координаттарды анықтап жатырмыз. Бірнеше секунд күтіңіз.",
+  "createMapLinkRequiredError": "Карта сілтемесін қосыңыз немесе біздің картадан нүктені таңдаңыз.",
+  "createMapEarlyStageNotice": "Қолданбадағы карта әзірге ерте кезеңде: басқа картадан сілтемені қойыңыз немесе біздің картадан нүкте белгілеңіз. Жақында картаны жақсартып, кездесу нүктесін басқа карталарға өтпей-ақ осы жерден таңдауға мүмкіндік береміз.",
   "createOfflineSection": "ӨТКІЗУ ОРНЫ",
   "createLocationPreviewHint": "Қатысушылар қай жерде кездесетінін түсінуі үшін қала немесе мекенжай қосыңыз",
   "createAuthorLocationMismatchHint": "Кездесу орны ағымдағы локацияңыздан өзгеше. Белсенділік басқа жерде жоспарланса, осылай қалдырыңыз.",
@@ -1747,6 +1761,8 @@
   "activitiesFilterPricing": "Құны",
   "activitiesFilterVisibility": "Көрінуі",
   "activitiesDiscoverTitle": "Белсенділіктер",
+  "activitiesNearbyTitle": "Жақын белсенділіктер",
+  "activitiesNearbyMapEmpty": "Белсенділіктерде әзірге кездесу нүктелері жоқ",
   "activitiesFilteredEmptyTitle": "Бұл сүзгілерге сай белсенділік табылмады",
   "activitiesFilteredEmptySubtitle": "Санатты, күн аралығын, баға шегін кеңейтіп немесе басқа қаланы таңдаңыз",
   "activitiesResultsCount": "{count, plural, =0{Белсенділік жоқ} =1{1 белсенділік} other{{count} белсенділік}}",

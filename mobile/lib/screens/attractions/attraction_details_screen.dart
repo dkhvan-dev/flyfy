@@ -18,6 +18,7 @@ import '../../features/excursions/models/excursion_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/excursion_provider.dart';
 import '../../providers/session_provider.dart';
+import '../../shared/map/app_map_links.dart';
 import '../excursions/excursions_screen.dart';
 import '../excursions/widgets/excursion_review_management_sheet.dart';
 import '../map/map_screen.dart';
@@ -462,7 +463,6 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
   void _openMap() {
     final attraction = _attraction;
     if (attraction != null && attraction.hasLocation) {
-      final sourceUrl = attraction.locationSourceUrl.trim();
       context.push(
         '/map',
         extra: MapTarget(
@@ -470,7 +470,12 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
           subtitle: _resolvedLocationLabel(attraction),
           latitude: attraction.latitude!,
           longitude: attraction.longitude!,
-          sourceUrl: sourceUrl.isEmpty ? null : sourceUrl,
+          sourceUrl: AppMapLinks.buildUrl(
+            latitude: attraction.latitude!,
+            longitude: attraction.longitude!,
+            title: attraction.title,
+            subtitle: _resolvedLocationLabel(attraction),
+          ),
         ),
       );
       return;

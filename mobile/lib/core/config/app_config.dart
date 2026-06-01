@@ -5,7 +5,11 @@ final class AppConfig {
   AppConfig._();
 
   static const String _baseUrlFromDefine = String.fromEnvironment(
-    'FLYFY_API_BASE_URL',
+    'INFLAP_API_BASE_URL',
+    defaultValue: '',
+  );
+  static const String _mapStyleUrlFromDefine = String.fromEnvironment(
+    'INFLAP_MAP_STYLE_URL',
     defaultValue: '',
   );
 
@@ -15,7 +19,7 @@ final class AppConfig {
     }
 
     const String testUrl =
-        "https://ministry-conscious-verification-solve.trycloudflare.com/api/v1";
+        "https://sleeps-sugar-appeared-reduces.trycloudflare.com/api/v1";
 
     if (kIsWeb) {
       return testUrl;
@@ -34,6 +38,15 @@ final class AppConfig {
 
     return testUrl;
     // return 'http://localhost:8080/api/v1';
+  }
+
+  static String get mapStyleUrl {
+    final configuredValue = _mapStyleUrlFromDefine.trim();
+    if (configuredValue.isNotEmpty) {
+      return configuredValue;
+    }
+
+    return 'https://tiles.openfreemap.org/styles/liberty';
   }
 
   static String _normalize(String value) {

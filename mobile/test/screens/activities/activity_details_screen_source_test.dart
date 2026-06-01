@@ -93,6 +93,30 @@ void main() {
     );
   });
 
+  test(
+    'activity details uses shared MapLibre meeting map and app map links',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activity_details_screen.dart',
+      ).readAsString();
+
+      expect(source, contains("import '../../shared/map/app_map_links.dart';"));
+      expect(
+        source,
+        contains("import '../../shared/widgets/app_map_card.dart';"),
+      );
+      expect(source, contains('AppMapCard('));
+      expect(source, contains('target: point'));
+      expect(source, contains('hasMarker: true'));
+      expect(source, contains('AppMapLinks.buildUrl('));
+      expect(source, isNot(contains("package:flutter_map/flutter_map.dart")));
+      expect(source, isNot(contains('FlutterMap(')));
+      expect(source, isNot(contains('TileLayer(')));
+      expect(source, isNot(contains('MarkerLayer(')));
+      expect(source, isNot(contains('tile.openstreetmap.org')));
+    },
+  );
+
   test('details screen does not look up providers from dispose', () async {
     final source = await File(
       'lib/screens/activities/activity_details_screen.dart',
@@ -116,6 +140,53 @@ void main() {
     expect(
       source,
       contains('_activityProvider = context.read<ActivityProvider>();'),
+    );
+  });
+
+  test('details screen defers provider notifications from dispose', () async {
+    final source = await File(
+      'lib/screens/activities/activity_details_screen.dart',
+    ).readAsString();
+    final providerSource = await File(
+      'lib/providers/activity_provider.dart',
+    ).readAsString();
+
+    final stateStart = source.indexOf('class _ActivityDetailsScreenState');
+    final disposeStart = source.indexOf('void dispose()', stateStart);
+    final disposeEnd = source.indexOf(
+      'Future<void> _refreshScreen',
+      disposeStart,
+    );
+
+    expect(stateStart, isNonNegative);
+    expect(disposeStart, greaterThan(stateStart));
+    expect(disposeEnd, greaterThan(disposeStart));
+
+    final disposeSource = source.substring(disposeStart, disposeEnd);
+    expect(
+      disposeSource,
+      contains('WidgetsBinding.instance.addPostFrameCallback'),
+    );
+    expect(
+      disposeSource,
+      contains('clearSelectedActivity(activityId: activityId)'),
+    );
+    expect(disposeSource, contains('resetActionState()'));
+    expect(
+      disposeSource,
+      isNot(contains('activityProvider?.clearSelectedActivity();')),
+    );
+    expect(
+      disposeSource,
+      isNot(contains('activityProvider?.resetActionState();')),
+    );
+    expect(
+      providerSource,
+      contains('void clearSelectedActivity({String? activityId})'),
+    );
+    expect(
+      providerSource,
+      contains('if (activityId != null && selectedActivity.id != activityId)'),
     );
   });
 }

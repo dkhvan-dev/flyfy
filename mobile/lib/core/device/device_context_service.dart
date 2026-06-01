@@ -18,6 +18,13 @@ class DeviceLocationSuggestion {
   final double longitude;
 }
 
+class DeviceCoordinates {
+  const DeviceCoordinates({required this.latitude, required this.longitude});
+
+  final double latitude;
+  final double longitude;
+}
+
 class DeviceContextService {
   const DeviceContextService();
 
@@ -35,6 +42,55 @@ class DeviceContextService {
   Future<DeviceLocationSuggestion?> detectLocationSuggestion({
     bool requestPermission = true,
   }) async {
+    final position = await _detectPosition(
+      requestPermission: requestPermission,
+    );
+    if (position == null) {
+      return null;
+    }
+
+    Placemark? first;
+    try {
+      final placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+      if (placemarks.isNotEmpty) {
+        first = placemarks.first;
+      }
+    } catch (_) {
+      first = null;
+    }
+
+    return DeviceLocationSuggestion(
+      countryCode: _normalizeCountryCode(first?.isoCountryCode),
+      countryName: _normalizeText(first?.country),
+      cityName:
+          _normalizeText(first?.locality) ??
+          _normalizeText(first?.subAdministrativeArea) ??
+          _normalizeText(first?.administrativeArea),
+      latitude: position.latitude,
+      longitude: position.longitude,
+    );
+  }
+
+  Future<DeviceCoordinates?> detectCoordinates({
+    bool requestPermission = true,
+  }) async {
+    final position = await _detectPosition(
+      requestPermission: requestPermission,
+    );
+    if (position == null) {
+      return null;
+    }
+
+    return DeviceCoordinates(
+      latitude: position.latitude,
+      longitude: position.longitude,
+    );
+  }
+
+  Future<Position?> _detectPosition({required bool requestPermission}) async {
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       throw Exception('location_services_disabled');
@@ -59,27 +115,8 @@ class DeviceContextService {
       throw Exception('location_permission_denied_forever');
     }
 
-    final position = await Geolocator.getCurrentPosition();
-
-    final placemarks = await placemarkFromCoordinates(
-      position.latitude,
-      position.longitude,
-    );
-
-    Placemark? first;
-    if (placemarks.isNotEmpty) {
-      first = placemarks.first;
-    }
-
-    return DeviceLocationSuggestion(
-      countryCode: _normalizeCountryCode(first?.isoCountryCode),
-      countryName: _normalizeText(first?.country),
-      cityName:
-          _normalizeText(first?.locality) ??
-          _normalizeText(first?.subAdministrativeArea) ??
-          _normalizeText(first?.administrativeArea),
-      latitude: position.latitude,
-      longitude: position.longitude,
+    return Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
     );
   }
 

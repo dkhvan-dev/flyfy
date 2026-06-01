@@ -1972,9 +1972,21 @@ class AppLocalizationsKk extends AppLocalizations {
       'Карта резервтік локация бойынша көрсетіліп тұр';
 
   @override
+  String get mapDistancePending => 'Қашықтықты анықтап жатырмыз';
+
+  @override
   String mapPlacesCount(int count) {
     return 'Табылған орындар: $count';
   }
+
+  @override
+  String mapActivitiesCount(int count) {
+    return 'Белсенділіктер: $count';
+  }
+
+  @override
+  String get mapTapActivityHint =>
+      'Қысқаша ақпаратты көріп, мәліметтерін ашу үшін белсенділік маркерін басыңыз.';
 
   @override
   String get attractionsTitle => 'Көрікті жерлер';
@@ -3831,6 +3843,22 @@ class AppLocalizationsKk extends AppLocalizations {
   String get createMapLinkHint => 'Карта сілтемесін қойыңыз';
 
   @override
+  String get createMapLinkInvalidError =>
+      'Сілтеме бойынша координаттарды анықтай алмадық. Нүктені біздің картадан таңдаңыз немесе басқа картадан координаттары бар сілтемені қойыңыз.';
+
+  @override
+  String get createMapLinkResolvingError =>
+      'Сілтеме бойынша координаттарды анықтап жатырмыз. Бірнеше секунд күтіңіз.';
+
+  @override
+  String get createMapLinkRequiredError =>
+      'Карта сілтемесін қосыңыз немесе біздің картадан нүктені таңдаңыз.';
+
+  @override
+  String get createMapEarlyStageNotice =>
+      'Қолданбадағы карта әзірге ерте кезеңде: басқа картадан сілтемені қойыңыз немесе біздің картадан нүкте белгілеңіз. Жақында картаны жақсартып, кездесу нүктесін басқа карталарға өтпей-ақ осы жерден таңдауға мүмкіндік береміз.';
+
+  @override
   String get createOfflineSection => 'ӨТКІЗУ ОРНЫ';
 
   @override
@@ -4666,6 +4694,13 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get activitiesDiscoverTitle => 'Белсенділіктер';
+
+  @override
+  String get activitiesNearbyTitle => 'Жақын белсенділіктер';
+
+  @override
+  String get activitiesNearbyMapEmpty =>
+      'Белсенділіктерде әзірге кездесу нүктелері жоқ';
 
   @override
   String get activitiesFilteredEmptyTitle =>

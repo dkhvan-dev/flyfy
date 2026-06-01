@@ -1958,9 +1958,21 @@ class AppLocalizationsRu extends AppLocalizations {
       'Показываем карту по резервной локации';
 
   @override
+  String get mapDistancePending => 'Определяем расстояние';
+
+  @override
   String mapPlacesCount(int count) {
     return 'Найдено мест: $count';
   }
+
+  @override
+  String mapActivitiesCount(int count) {
+    return 'Активностей: $count';
+  }
+
+  @override
+  String get mapTapActivityHint =>
+      'Нажмите на маркер активности, чтобы посмотреть краткую информацию и открыть детали.';
 
   @override
   String get attractionsTitle => 'Достопримечательности';
@@ -3824,6 +3836,22 @@ class AppLocalizationsRu extends AppLocalizations {
   String get createMapLinkHint => 'Вставьте ссылку на карту';
 
   @override
+  String get createMapLinkInvalidError =>
+      'Не удалось определить координаты по ссылке. Выберите точку на нашей карте или вставьте ссылку с координатами из другой карты.';
+
+  @override
+  String get createMapLinkResolvingError =>
+      'Определяем координаты по ссылке. Подождите несколько секунд.';
+
+  @override
+  String get createMapLinkRequiredError =>
+      'Добавьте ссылку на карту или выберите точку на нашей карте.';
+
+  @override
+  String get createMapEarlyStageNotice =>
+      'Карта в приложении пока на ранней стадии: вставьте ссылку из другой карты или поставьте точку на нашей карте. Скоро мы улучшим карту, чтобы выбирать точку встречи прямо здесь без перехода в другие карты.';
+
+  @override
   String get createOfflineSection => 'МЕСТО ПРОВЕДЕНИЯ';
 
   @override
@@ -4651,6 +4679,12 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get activitiesDiscoverTitle => 'Активности';
+
+  @override
+  String get activitiesNearbyTitle => 'Активности рядом';
+
+  @override
+  String get activitiesNearbyMapEmpty => 'У активностей пока нет точек встречи';
 
   @override
   String get activitiesFilteredEmptyTitle =>

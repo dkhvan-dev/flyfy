@@ -44,6 +44,7 @@ import '../../screens/attractions/attraction_details_screen.dart';
 import '../../features/attractions/models/attraction_vm.dart';
 import '../../features/excursions/models/excursion_vm.dart';
 import '../../features/notifications/data/notification_api.dart';
+import '../../shared/map/app_map_links.dart';
 import '../../screens/common/feature_stub_screen.dart';
 import '../../screens/currency/currency_converter_screen.dart';
 import '../../screens/map/map_screen.dart';
@@ -282,9 +283,11 @@ class AppRouter {
             final initialActivity = state.extra is ActivityListItemVm
                 ? state.extra! as ActivityListItemVm
                 : null;
-            return ActivityDetailsScreen(
-              activityId: activityId,
-              initialActivity: initialActivity,
+            return _withAndroidBackSwipe(
+              ActivityDetailsScreen(
+                activityId: activityId,
+                initialActivity: initialActivity,
+              ),
             );
           },
         ),
@@ -456,9 +459,15 @@ class AppRouter {
           builder: (context, state) {
             final initialTarget = state.extra is MapTarget
                 ? state.extra! as MapTarget
+                : _mapTargetFromQuery(state);
+            final activityCollection = state.extra is MapActivityCollection
+                ? state.extra! as MapActivityCollection
                 : null;
             return _withAndroidBackSwipe(
-              MapScreen(initialTarget: initialTarget),
+              MapScreen(
+                initialTarget: initialTarget,
+                activityCollection: activityCollection,
+              ),
             );
           },
         ),
@@ -643,6 +652,35 @@ class KeyboardDismissRouteObserver extends NavigatorObserver {
 
 Widget _withAndroidBackSwipe(Widget child) {
   return AndroidBackSwipeScope(child: child);
+}
+
+MapTarget? _mapTargetFromQuery(GoRouterState state) {
+  final latitude = double.tryParse(state.uri.queryParameters['lat'] ?? '');
+  final longitude = double.tryParse(state.uri.queryParameters['lon'] ?? '');
+  if (latitude == null ||
+      longitude == null ||
+      latitude < -90 ||
+      latitude > 90 ||
+      longitude < -180 ||
+      longitude > 180) {
+    return null;
+  }
+
+  final title = state.uri.queryParameters['title']?.trim();
+  final subtitle = state.uri.queryParameters['subtitle']?.trim();
+  final fallbackTitle = title?.isNotEmpty == true ? title! : 'Map';
+  return MapTarget(
+    title: fallbackTitle,
+    subtitle: subtitle?.isNotEmpty == true ? subtitle : null,
+    latitude: latitude,
+    longitude: longitude,
+    sourceUrl: AppMapLinks.buildUrl(
+      latitude: latitude,
+      longitude: longitude,
+      title: fallbackTitle,
+      subtitle: subtitle,
+    ),
+  );
 }
 
 CustomTransitionPage<void> _buildActivityEditorPage({

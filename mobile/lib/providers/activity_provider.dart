@@ -278,12 +278,25 @@ class ActivityProvider extends ChangeNotifier {
     }
   }
 
-  void clearSelectedActivity() {
+  void clearSelectedActivity({String? activityId}) {
+    final selectedActivity = _selectedActivity;
+    if (selectedActivity == null) {
+      return;
+    }
+    if (activityId != null && selectedActivity.id != activityId) {
+      return;
+    }
+
     _selectedActivity = null;
     notifyListeners();
   }
 
   void resetActionState() {
+    if (_actionState == ActivityActionState.idle &&
+        _actionErrorMessage == null) {
+      return;
+    }
+
     _actionState = ActivityActionState.idle;
     _actionErrorMessage = null;
     notifyListeners();

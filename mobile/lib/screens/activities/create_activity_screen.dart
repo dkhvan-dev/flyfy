@@ -1,10 +1,10 @@
+import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:dio/dio.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -19,6 +19,7 @@ import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/activity_edit_policy.dart';
+import '../../features/activities/activity_location_mismatch.dart';
 import '../../features/activities/activity_taxonomy_resolver.dart';
 import '../../features/activities/models/activity_category_vm.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
@@ -29,9 +30,11 @@ import '../../providers/activity_provider.dart';
 import '../../providers/home_location_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../shared/formatters/app_money_formatter.dart';
+import '../../shared/map/app_map_link_resolver.dart';
+import '../../shared/map/app_map_links.dart';
 import '../../shared/reference/app_location_label_resolver.dart';
 import '../../shared/widgets/app_currency_picker_field.dart';
-import '../../shared/widgets/app_localized_location_text.dart';
+import '../../shared/widgets/app_map_card.dart';
 
 const _inlineValidationColor = Color(0xFFFF8A65);
 final _activityPasswordInputFormatter = FilteringTextInputFormatter.allow(
@@ -73,9 +76,11 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   final _referenceApi = ReferenceApi();
   late final AppLocationLabelResolver _locationLabelResolver =
       AppLocationLabelResolver(api: _referenceApi);
+  final _mapLinkResolver = const AppMapLinkResolver();
   final _deviceContextService = const DeviceContextService();
   int _currentStep = 0;
   int? _pendingProgrammaticStep;
+  final Set<int> _nativeMapActivatedSteps = <int>{};
   static const _totalSteps = 3;
   static const double _stepBackSwipeMinDistance = 56;
   static const double _stepBackSwipeMinVelocity = 700;
@@ -132,14 +137,19 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   final _addressTextCtrl = TextEditingController();
   final _mapUrlCtrl = TextEditingController();
   final _meetingUrlCtrl = TextEditingController();
-  final MapController _mapController = MapController();
   double? _selectedLatitude;
   double? _selectedLongitude;
   String? _selectedMapUrl;
+  Timer? _mapUrlParseDebounce;
+  int _mapUrlResolveSerial = 0;
+  int _mapSelectionRequestSerial = 0;
+  String? _mapUrlResolvingRawValue;
+  String? _mapUrlResolveFailedRawValue;
   String? _authorLocationCountryCode;
   String? _authorLocationCityId;
   String? _authorLocationCityName;
   bool _isResolvingMapSelection = false;
+  bool _isApplyingMapUrlProgrammatically = false;
   bool _didApplyAuthorLocationSnapshot = false;
 
   static const LatLng _fallbackMapTarget = LatLng(43.238949, 76.889709);
@@ -153,6 +163,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   String? _descriptionErrorText;
   String? _categoryErrorText;
   String? _addressErrorText;
+  String? _mapUrlErrorText;
   String? _meetingUrlErrorText;
   String? _startAtErrorText;
   String? _endAtErrorText;
@@ -257,7 +268,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       _selectedLongitude = a.longitude;
       if (a.mapUrl != null && a.mapUrl!.trim().isNotEmpty) {
         _selectedMapUrl = a.mapUrl!;
-        _mapUrlCtrl.text = a.mapUrl!;
+        _setMapUrlText(a.mapUrl!);
       }
       _syncScheduleControllers();
     }
@@ -279,6 +290,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
     _cityNameCtrl.addListener(_handleLocationPreviewChanged);
     _addressTextCtrl.addListener(_handleLocationPreviewChanged);
+    _mapUrlCtrl.addListener(_handleMapUrlTextChanged);
   }
 
   @override
@@ -298,6 +310,10 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   void dispose() {
     _cityNameCtrl.removeListener(_handleLocationPreviewChanged);
     _addressTextCtrl.removeListener(_handleLocationPreviewChanged);
+    _mapUrlCtrl.removeListener(_handleMapUrlTextChanged);
+    _mapUrlParseDebounce?.cancel();
+    _mapUrlResolveSerial += 1;
+    _mapSelectionRequestSerial += 1;
     _pageController.dispose();
     _titleCtrl.dispose();
     _descriptionCtrl.dispose();
@@ -319,6 +335,146 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   void _handleLocationPreviewChanged() {
     if (!mounted) return;
     setState(() {});
+  }
+
+  void _setMapUrlText(String value) {
+    _isApplyingMapUrlProgrammatically = true;
+    _mapUrlCtrl.text = value;
+    _isApplyingMapUrlProgrammatically = false;
+  }
+
+  void _handleMapUrlTextChanged() {
+    if (_isApplyingMapUrlProgrammatically ||
+        _format == 'ONLINE' ||
+        !_canEditMeetingAddress) {
+      return;
+    }
+    _mapUrlParseDebounce?.cancel();
+    final rawInput = _mapUrlCtrl.text.trim();
+    final rawValue = AppMapLinks.normalizePastedMapLink(rawInput);
+    if (rawValue.isEmpty) {
+      _mapUrlResolveSerial += 1;
+      if (_mapUrlErrorText != null) {
+        setState(() {
+          _mapUrlResolvingRawValue = null;
+          _mapUrlResolveFailedRawValue = null;
+          _mapUrlErrorText = null;
+        });
+      } else {
+        _mapUrlResolvingRawValue = null;
+        _mapUrlResolveFailedRawValue = null;
+      }
+      return;
+    }
+    if (rawInput != rawValue) {
+      _setMapUrlText(rawValue);
+    }
+    _mapUrlParseDebounce = Timer(
+      const Duration(milliseconds: 450),
+      () => unawaited(_applyParsedMapUrl(rawValue, normalizeField: true)),
+    );
+  }
+
+  Future<bool> _applyParsedMapUrl(
+    String rawValue, {
+    required bool normalizeField,
+  }) async {
+    if (!mounted) {
+      return false;
+    }
+    final normalizedRawValue = AppMapLinks.normalizePastedMapLink(rawValue);
+    if (normalizeField && _mapUrlCtrl.text.trim() != normalizedRawValue) {
+      _setMapUrlText(normalizedRawValue);
+    }
+    final requestSerial = ++_mapUrlResolveSerial;
+    final l10n = AppLocalizations.of(context)!;
+    var point = AppMapLinks.tryParseCoordinates(normalizedRawValue);
+    final shouldResolveRemote =
+        point == null &&
+        AppMapLinkResolver.canResolveRemoteMapLink(normalizedRawValue);
+    if (shouldResolveRemote) {
+      setState(() {
+        _mapUrlResolvingRawValue = normalizedRawValue;
+        _mapUrlResolveFailedRawValue = null;
+        _mapUrlErrorText = l10n.createMapLinkResolvingError;
+      });
+    }
+    point ??= await _mapLinkResolver.resolveCoordinates(normalizedRawValue);
+    if (!mounted || requestSerial != _mapUrlResolveSerial) {
+      return false;
+    }
+    if (normalizeField && _mapUrlCtrl.text.trim() != normalizedRawValue) {
+      return false;
+    }
+    if (point == null) {
+      setState(() {
+        _mapUrlResolvingRawValue = null;
+        _mapUrlResolveFailedRawValue = normalizedRawValue;
+        _mapUrlErrorText = l10n.createMapLinkInvalidError;
+      });
+      return false;
+    }
+    final resolvedPoint = point;
+
+    final normalizedUrl = _buildMapUrl(
+      resolvedPoint.latitude,
+      resolvedPoint.longitude,
+    );
+    final mapSelectionRequestSerial = ++_mapSelectionRequestSerial;
+    if (normalizeField && _mapUrlCtrl.text.trim() != normalizedUrl) {
+      _setMapUrlText(normalizedUrl);
+    }
+    setState(() {
+      _selectedLatitude = resolvedPoint.latitude;
+      _selectedLongitude = resolvedPoint.longitude;
+      _selectedMapUrl = normalizedUrl;
+      _mapUrlResolvingRawValue = null;
+      _mapUrlResolveFailedRawValue = null;
+      _mapUrlErrorText = null;
+      _addressErrorText = null;
+      _isResolvingMapSelection = true;
+    });
+    await _applyParsedMapPointAddress(
+      position: resolvedPoint,
+      mapUrlRequestSerial: requestSerial,
+      mapSelectionRequestSerial: mapSelectionRequestSerial,
+      syncMapUrlAfterAddress: normalizeField,
+    );
+    return true;
+  }
+
+  String? _validateMapUrlField(AppLocalizations l10n, {bool required = false}) {
+    if (_format == 'ONLINE' || !_canEditMeetingAddress) {
+      return null;
+    }
+    final rawValue = _mapUrlCtrl.text.trim();
+    if (rawValue.isEmpty) {
+      return required ? l10n.createMapLinkRequiredError : null;
+    }
+    final point = AppMapLinks.tryParseCoordinates(rawValue);
+    if (point == null) {
+      if (AppMapLinkResolver.canResolveRemoteMapLink(rawValue)) {
+        if (_mapUrlResolveFailedRawValue == rawValue) {
+          return l10n.createMapLinkInvalidError;
+        }
+        if (_mapUrlResolvingRawValue != rawValue) {
+          unawaited(_applyParsedMapUrl(rawValue, normalizeField: true));
+        }
+        return l10n.createMapLinkResolvingError;
+      }
+      return l10n.createMapLinkInvalidError;
+    }
+
+    final normalizedUrl = _buildMapUrl(point.latitude, point.longitude);
+    _selectedLatitude = point.latitude;
+    _selectedLongitude = point.longitude;
+    _selectedMapUrl = normalizedUrl;
+    _mapUrlResolvingRawValue = null;
+    _mapUrlResolveFailedRawValue = null;
+    if (rawValue != normalizedUrl) {
+      _setMapUrlText(normalizedUrl);
+    }
+    return null;
   }
 
   Future<void> _prefillAuthorLocationFromHomeLocation() async {
@@ -885,6 +1041,11 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     _pendingProgrammaticStep = null;
   }
 
+  bool _isStepNativeMapEnabled(int step) {
+    return _nativeMapActivatedSteps.contains(step) ||
+        (_currentStep == step && _pendingProgrammaticStep == null);
+  }
+
   void _handlePageChanged(int step) {
     final pendingStep = _pendingProgrammaticStep;
     if (pendingStep != null && step != pendingStep) {
@@ -899,6 +1060,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       _currentStep = step;
       if (_pendingProgrammaticStep == step) {
         _pendingProgrammaticStep = null;
+      }
+      if (step == 1) {
+        _nativeMapActivatedSteps.add(step);
       }
     });
   }
@@ -998,27 +1162,25 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
         if (!_validateScheduleStep(l10n)) {
           return false;
         }
-        final hasOfflineLocation =
-            _cityNameCtrl.text.trim().isNotEmpty ||
-            _addressTextCtrl.text.trim().isNotEmpty ||
-            (_mapUrlValue ?? '').isNotEmpty;
+        final requiresMapLink =
+            (_format == 'OFFLINE' || _format == 'HYBRID') &&
+            _canEditMeetingAddress;
         final meetingUrlError =
             (_format == 'ONLINE' || _format == 'HYBRID') &&
                 _meetingUrlCtrl.text.trim().isEmpty
             ? l10n.createMeetingUrlValidation
             : null;
-        final addressError =
-            (_format == 'OFFLINE' || _format == 'HYBRID') &&
-                _canEditMeetingAddress &&
-                !hasOfflineLocation
-            ? l10n.createLocationValidation
-            : null;
+        final mapUrlError = _validateMapUrlField(
+          l10n,
+          required: requiresMapLink,
+        );
         setState(() {
           _meetingUrlErrorText = meetingUrlError;
-          _addressErrorText = addressError;
+          _addressErrorText = null;
+          _mapUrlErrorText = mapUrlError;
         });
 
-        if (meetingUrlError != null || addressError != null) {
+        if (meetingUrlError != null || mapUrlError != null) {
           return false;
         }
         return true;
@@ -1078,6 +1240,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   }
 
   void _nextStep() {
+    if (_pendingProgrammaticStep != null) return;
     if (!_validateCurrentStep()) return;
 
     if (_currentStep < _totalSteps - 1) {
@@ -1231,33 +1394,16 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       _selectedLatitude != null && _selectedLongitude != null;
 
   bool get _meetingLocationDiffersFromAuthorLocation {
-    if (_format == 'ONLINE' || !_didApplyAuthorLocationSnapshot) {
-      return false;
-    }
-
-    final authorCountryCode = normalizeAppCountryCode(
-      _authorLocationCountryCode,
+    return activityMeetingLocationDiffersFromAuthorLocation(
+      format: _format,
+      didApplyAuthorLocationSnapshot: _didApplyAuthorLocationSnapshot,
+      authorCountryCode: _authorLocationCountryCode,
+      authorCityId: _authorLocationCityId,
+      authorCityName: _authorLocationCityName,
+      meetingCountryCode: _countryCodeCtrl.text,
+      meetingCityId: _selectedCityId,
+      meetingCityName: _cityNameCtrl.text,
     );
-    final meetingCountryCode = normalizeAppCountryCode(_countryCodeCtrl.text);
-    if (authorCountryCode != null &&
-        meetingCountryCode != null &&
-        authorCountryCode != meetingCountryCode) {
-      return true;
-    }
-
-    final authorCityId = _normalizeOptionalLocationId(_authorLocationCityId);
-    final meetingCityId = _normalizeOptionalLocationId(_selectedCityId);
-    if (authorCityId != null && meetingCityId != null) {
-      return authorCityId != meetingCityId;
-    }
-
-    final meetingCityName = _normalizedLocationText(_cityNameCtrl.text);
-    final authorCityName = _normalizedLocationText(_authorLocationCityName);
-    if (meetingCityName == null || authorCityName == null) {
-      return false;
-    }
-
-    return meetingCityName != authorCityName;
   }
 
   String? _normalizeOptionalLocationId(String? value) {
@@ -1268,36 +1414,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     return normalized;
   }
 
-  String? _normalizedLocationText(String? value) {
-    final normalized = value?.trim().toLowerCase().replaceAll(
-      RegExp(r'\s+'),
-      ' ',
-    );
-    if (normalized == null || normalized.isEmpty) {
-      return null;
-    }
-    return normalized;
-  }
-
   LatLng get _selectedMapTarget => _hasSelectedMapPoint
       ? LatLng(_selectedLatitude!, _selectedLongitude!)
       : _fallbackMapTarget;
-
-  List<Marker> get _selectedMapMarkers => !_hasSelectedMapPoint
-      ? const <Marker>[]
-      : [
-          Marker(
-            point: _selectedMapTarget,
-            width: 46,
-            height: 46,
-            alignment: Alignment.topCenter,
-            child: const Icon(
-              Icons.location_on_rounded,
-              size: 46,
-              color: AppColors.accent,
-            ),
-          ),
-        ];
 
   // ── Submit ─────────────────────────────────────────────────────
 
@@ -1627,7 +1746,12 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   }
 
   String _buildMapUrl(double latitude, double longitude) {
-    return 'https://www.openstreetmap.org/?mlat=$latitude&mlon=$longitude#map=16/$latitude/$longitude';
+    return AppMapLinks.buildUrl(
+      latitude: latitude,
+      longitude: longitude,
+      title: _titleCtrl.text,
+      subtitle: _addressTextCtrl.text,
+    );
   }
 
   String _composeCityLabel(Placemark placemark) {
@@ -1716,27 +1840,33 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     }
   }
 
-  Future<void> _handleMapTapped(LatLng position) async {
-    if (!_canEditMeetingAddress) {
-      return;
-    }
+  Future<void> _applyParsedMapPointAddress({
+    required LatLng position,
+    required int mapUrlRequestSerial,
+    required int mapSelectionRequestSerial,
+    required bool syncMapUrlAfterAddress,
+  }) {
+    return _resolveSelectedMapPointAddress(
+      position: position,
+      isCurrentRequest: () =>
+          mapUrlRequestSerial == _mapUrlResolveSerial &&
+          mapSelectionRequestSerial == _mapSelectionRequestSerial,
+      syncMapUrlAfterAddress: syncMapUrlAfterAddress,
+    );
+  }
 
-    setState(() {
-      _selectedLatitude = position.latitude;
-      _selectedLongitude = position.longitude;
-      _selectedMapUrl = _buildMapUrl(position.latitude, position.longitude);
-      _mapUrlCtrl.text = _selectedMapUrl!;
-      _isResolvingMapSelection = true;
-    });
-    _mapController.move(position, 15);
-
+  Future<void> _resolveSelectedMapPointAddress({
+    required LatLng position,
+    required bool Function() isCurrentRequest,
+    required bool syncMapUrlAfterAddress,
+  }) async {
     try {
       await setLocaleIdentifier(_reverseGeocodingLocaleIdentifier());
       final placemarks = await placemarkFromCoordinates(
         position.latitude,
         position.longitude,
       );
-      if (!mounted) return;
+      if (!mounted || !isCurrentRequest()) return;
 
       if (placemarks.isNotEmpty) {
         final placemark = placemarks.first;
@@ -1748,7 +1878,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
           cityName: city,
           countryCode: isoCountryCode,
         );
-        if (!mounted) return;
+        if (!mounted || !isCurrentRequest()) return;
 
         final localizedCityName = referenceCity?.name.trim().isNotEmpty == true
             ? referenceCity!.name.trim()
@@ -1765,7 +1895,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
           addressText: reverseGeocodedAddress,
           localeName: Localizations.localeOf(context).toString(),
         );
-        if (!mounted) return;
+        if (!mounted || !isCurrentRequest()) return;
 
         setState(() {
           if (isoCountryCode.isNotEmpty) {
@@ -1780,6 +1910,13 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
           }
           if (resolvedAddress.isNotEmpty) {
             _addressTextCtrl.text = resolvedAddress;
+            if (syncMapUrlAfterAddress) {
+              _selectedMapUrl = _buildMapUrl(
+                position.latitude,
+                position.longitude,
+              );
+              _setMapUrlText(_selectedMapUrl!);
+            }
           }
           _addressErrorText = null;
           _isResolvingMapSelection = false;
@@ -1790,8 +1927,32 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       // Keep the selected pin even if reverse geocoding fails.
     }
 
-    if (!mounted) return;
+    if (!mounted || !isCurrentRequest()) return;
     setState(() => _isResolvingMapSelection = false);
+  }
+
+  Future<void> _handleMapTapped(LatLng position) async {
+    if (!_canEditMeetingAddress) {
+      return;
+    }
+    final requestSerial = ++_mapSelectionRequestSerial;
+
+    setState(() {
+      _selectedLatitude = position.latitude;
+      _selectedLongitude = position.longitude;
+      _selectedMapUrl = _buildMapUrl(position.latitude, position.longitude);
+      _setMapUrlText(_selectedMapUrl!);
+      _mapUrlResolvingRawValue = null;
+      _mapUrlResolveFailedRawValue = null;
+      _mapUrlErrorText = null;
+      _isResolvingMapSelection = true;
+    });
+
+    await _resolveSelectedMapPointAddress(
+      position: position,
+      isCurrentRequest: () => requestSerial == _mapSelectionRequestSerial,
+      syncMapUrlAfterAddress: true,
+    );
   }
 
   @override
@@ -2158,6 +2319,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                 onChanged: (v) => setState(() {
                   _format = v;
                   _addressErrorText = null;
+                  _mapUrlErrorText = null;
                   _meetingUrlErrorText = null;
                 }),
               ),
@@ -2183,6 +2345,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                   controller: _addressTextCtrl,
                   hint: l10n.createVenueOrAddressHint,
                   icon: Icons.location_on_outlined,
+                  readOnly: true,
                   errorText: _addressErrorText,
                   onChanged: (_) {
                     if (_addressErrorText == null) return;
@@ -2203,20 +2366,30 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                   controller: _mapUrlCtrl,
                   hint: l10n.createMapLinkHint,
                   icon: Icons.link_rounded,
+                  keyboardType: TextInputType.url,
+                  errorText: _mapUrlErrorText,
                 ),
               ),
             ),
           ),
           const SizedBox(height: 18),
+          Text(
+            l10n.createMapEarlyStageNotice,
+            style: const TextStyle(
+              color: Color(0xFFD4BEA8),
+              fontSize: 12,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 12),
           IgnorePointer(
             ignoring: locationLocked,
             child: Opacity(
               opacity: locationLocked ? 0.5 : 1,
-              child: _MapPickerCard(
+              child: AppMapCard(
                 target: _selectedMapTarget,
-                markers: _selectedMapMarkers,
-                hasSelection: _hasSelectedMapPoint,
-                mapController: _mapController,
+                hasMarker: _hasSelectedMapPoint,
+                nativeMapEnabled: _isStepNativeMapEnabled(1),
                 onTap: _handleMapTapped,
               ),
             ),
@@ -2228,18 +2401,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                 : (_isResolvingMapSelection
                       ? l10n.createMapResolvingHint
                       : l10n.createMapTapHint),
-            style: const TextStyle(color: AppColors.textCaption, fontSize: 12),
+            style: const TextStyle(color: Color(0xFFD4BEA8), fontSize: 12),
           ),
-          if (_countryCodeCtrl.text.trim().isNotEmpty ||
-              _cityNameCtrl.text.trim().isNotEmpty) ...[
-            const SizedBox(height: 12),
-            _Step2LocationPreviewCard(
-              label: l10n.createLocationPreviewHint,
-              countryCode: _countryCodeCtrl.text,
-              cityId: _selectedCityId,
-              cityName: _cityNameCtrl.text,
-            ),
-          ],
+
           if (_meetingLocationDiffersFromAuthorLocation) ...[
             const SizedBox(height: 10),
             _Step2LocationMismatchNotice(
@@ -3028,77 +3192,6 @@ class _Step2FieldSection extends StatelessWidget {
   }
 }
 
-class _Step2LocationPreviewCard extends StatelessWidget {
-  const _Step2LocationPreviewCard({
-    required this.label,
-    required this.countryCode,
-    required this.cityId,
-    required this.cityName,
-  });
-
-  final String label;
-  final String? countryCode;
-  final String? cityId;
-  final String? cityName;
-
-  @override
-  Widget build(BuildContext context) {
-    final fallback = [
-      cityName?.trim(),
-      countryCode?.trim().toUpperCase(),
-    ].where((value) => value != null && value.isNotEmpty).join(', ');
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2C1B0D),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.10)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.public_rounded, color: AppColors.accent, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textCaption,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                AppLocalizedLocationText(
-                  countryCode: countryCode,
-                  cityId: cityId,
-                  cityName: cityName,
-                  fallbackText: fallback,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 14,
-                    height: 1.25,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _Step2LocationMismatchNotice extends StatelessWidget {
   const _Step2LocationMismatchNotice({required this.message});
 
@@ -3239,6 +3332,7 @@ class _Step2PillTextField extends StatelessWidget {
     this.keyboardType,
     this.onChanged,
     this.errorText,
+    this.readOnly = false,
   });
 
   final TextEditingController controller;
@@ -3247,6 +3341,7 @@ class _Step2PillTextField extends StatelessWidget {
   final TextInputType? keyboardType;
   final ValueChanged<String>? onChanged;
   final String? errorText;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -3269,6 +3364,7 @@ class _Step2PillTextField extends StatelessWidget {
           child: TextField(
             controller: controller,
             keyboardType: keyboardType,
+            readOnly: readOnly,
             onChanged: onChanged,
             maxLines: 1,
             scrollPhysics: const BouncingScrollPhysics(),
@@ -4540,96 +4636,6 @@ class _DashedCoverBorderPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _DashedCoverBorderPainter oldDelegate) {
     return oldDelegate.color != color || oldDelegate.radius != radius;
-  }
-}
-
-class _MapPickerCard extends StatelessWidget {
-  const _MapPickerCard({
-    required this.target,
-    required this.markers,
-    required this.hasSelection,
-    required this.mapController,
-    required this.onTap,
-  });
-
-  final LatLng target;
-  final List<Marker> markers;
-  final bool hasSelection;
-  final MapController mapController;
-  final ValueChanged<LatLng> onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final height = width <= 393 ? 168.0 : 178.0;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(26),
-      child: SizedBox(
-        height: height,
-        width: double.infinity,
-        child: Stack(
-          children: [
-            FlutterMap(
-              mapController: mapController,
-              options: MapOptions(
-                initialCenter: target,
-                initialZoom: hasSelection ? 15 : 12,
-                backgroundColor: const Color(0xFFB3A28D),
-                onTap: (_, point) => onTap(point),
-              ),
-              children: [
-                TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'kz.inflap',
-                ),
-                MarkerLayer(markers: markers),
-              ],
-            ),
-            Positioned.fill(
-              child: IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        const Color(0x22695841),
-                        const Color(0x22695841),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Center(
-              child: IgnorePointer(
-                child: Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.accent,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.accent.withValues(alpha: 0.22),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.my_location_rounded,
-                    size: 24,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 

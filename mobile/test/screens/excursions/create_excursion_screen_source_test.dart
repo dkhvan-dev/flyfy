@@ -103,24 +103,139 @@ void main() {
     },
   );
 
-  test('create excursion uses a real map picker for meeting point', () async {
+  test(
+    'create excursion uses shared MapLibre picker for meeting point',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
+
+      expect(source, contains("../../shared/map/app_map_links.dart"));
+      expect(source, contains("../../shared/widgets/app_map_card.dart"));
+      expect(source, contains("package:latlong2/latlong.dart"));
+      expect(source, contains("package:geocoding/geocoding.dart"));
+      expect(source, contains('AppMapCard('));
+      expect(source, contains('onTap: _handleMapTapped'));
+      expect(source, contains('_handleMapTapped'));
+      expect(source, contains('AppMapLinks.buildUrl('));
+      expect(source, contains('_composeMeetingPointLabel'));
+      expect(source, contains('placemarkFromCoordinates('));
+      expect(source, contains('_meetingPointCtrl.text = address'));
+      expect(source, isNot(contains("package:flutter_map/flutter_map.dart")));
+      expect(source, isNot(contains('final MapController _mapController')));
+      expect(source, isNot(contains('FlutterMap(')));
+      expect(source, isNot(contains('TileLayer(')));
+      expect(source, isNot(contains('MarkerLayer(')));
+      expect(source, isNot(contains('tile.openstreetmap.org')));
+    },
+  );
+
+  test('create excursion parses pasted map links into the shared map', () async {
     final source = await File(
       'lib/screens/excursions/create_excursion_screen.dart',
     ).readAsString();
+    final ruArb = await File('lib/l10n/app_ru.arb').readAsString();
 
-    expect(source, contains("package:flutter_map/flutter_map.dart"));
-    expect(source, contains("package:latlong2/latlong.dart"));
-    expect(source, contains("package:geocoding/geocoding.dart"));
-    expect(source, contains('final MapController _mapController'));
-    expect(source, contains('FlutterMap('));
-    expect(source, contains('TileLayer('));
-    expect(source, contains('MarkerLayer(markers: markers)'));
-    expect(source, contains('_handleMapTapped'));
-    expect(source, contains('_buildMapUrl'));
-    expect(source, contains('_composeMeetingPointLabel'));
-    expect(source, contains('placemarkFromCoordinates('));
+    expect(source, contains('Timer? _mapUrlParseDebounce;'));
+    expect(source, contains('_handleMapUrlTextChanged'));
+    expect(source, contains('_applyParsedMapUrl'));
+    expect(source, contains('AppMapLinks.normalizePastedMapLink(rawInput)'));
+    expect(source, contains('AppMapLinks.normalizePastedMapLink(rawValue)'));
+    expect(
+      source,
+      contains('AppMapLinks.tryParseCoordinates(normalizedRawValue)'),
+    );
+    expect(source, contains('AppMapLinkResolver'));
+    expect(source, contains('AppMapLinkResolver.canResolveRemoteMapLink'));
+    expect(
+      source,
+      contains('_mapLinkResolver.resolveCoordinates(normalizedRawValue)'),
+    );
+    expect(source, contains('_applyParsedMeetingPointAddress('));
     expect(source, contains('_meetingPointCtrl.text = address'));
+    expect(source, contains('_setMapUrlText(normalizedUrl)'));
+    expect(source, contains('_setMapUrlText(mapUrl)'));
+    expect(source, contains('readOnly: true'));
+    expect(source, contains('required: true'));
+    expect(source, contains('l10n.createMapLinkRequiredError'));
+    expect(source, contains('l10n.createMapEarlyStageNotice'));
+    expect(source, contains('_mapUrlResolvingRawValue'));
+    expect(source, contains('_mapUrlResolveFailedRawValue'));
+    expect(source, contains('_mapUrlErrorText'));
+    expect(source, contains('errorText: _mapUrlErrorText'));
+    expect(source, contains('l10n.createMapLinkInvalidError'));
+    expect(source, contains('l10n.createMapLinkRequiredError'));
+    expect(source, contains('l10n.createMapLinkResolvingError'));
+    expect(source, contains('return l10n.createMapLinkResolvingError;'));
+    expect(
+      ruArb,
+      contains(
+        '"createMapLinkInvalidError": "Не удалось определить координаты по ссылке. Выберите точку на нашей карте или вставьте ссылку с координатами из другой карты."',
+      ),
+    );
+    expect(
+      ruArb,
+      contains(
+        '"createMapLinkResolvingError": "Определяем координаты по ссылке. Подождите несколько секунд."',
+      ),
+    );
+    expect(
+      ruArb,
+      contains(
+        '"createMapLinkRequiredError": "Добавьте ссылку на карту или выберите точку на нашей карте."',
+      ),
+    );
+    expect(ruArb, contains('"createMapEarlyStageNotice":'));
   });
+
+  test(
+    'create excursion does not use selected attraction as meeting point',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
+
+      final selectorStart = source.indexOf(
+        'Future<void> _openLocationSelector() async',
+      );
+      final itineraryEditorStart = source.indexOf(
+        'Future<void> _openItineraryEditor',
+      );
+      expect(selectorStart, isNonNegative);
+      expect(itineraryEditorStart, greaterThan(selectorStart));
+
+      final selectorSource = source.substring(
+        selectorStart,
+        itineraryEditorStart,
+      );
+
+      expect(source, contains('void _clearMeetingPointSelection()'));
+      expect(selectorSource, contains('_clearMeetingPointSelection();'));
+      expect(selectorSource, isNot(contains('latitude: _selectedLatitude,')));
+      expect(selectorSource, isNot(contains('longitude: _selectedLongitude,')));
+      expect(
+        selectorSource,
+        isNot(contains('mapUrl: _mapUrlCtrl.text.trim()')),
+      );
+      expect(
+        selectorSource,
+        isNot(contains('_selectedLatitude = result.latitude;')),
+      );
+      expect(
+        selectorSource,
+        isNot(contains('_selectedLongitude = result.longitude;')),
+      );
+      expect(selectorSource, isNot(contains('_setMapUrlText(result.mapUrl')));
+      expect(
+        selectorSource,
+        isNot(contains('_setMapUrlText(_buildMapUrl(result.latitude!')),
+      );
+      expect(
+        selectorSource,
+        isNot(contains('_meetingPointCtrl.text = result.name')),
+      );
+    },
+  );
 
   test(
     'create excursion keeps long single-line fields horizontally scrollable',

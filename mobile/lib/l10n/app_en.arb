@@ -677,6 +677,7 @@
   "mapCopyPlaceLink": "Copy link",
   "mapPlaceLinkCopied": "Place link copied",
   "mapUsingFallbackLocation": "Showing the map from a fallback location",
+  "mapDistancePending": "Calculating distance",
   "mapPlacesCount": "Places found: {count}",
   "@mapPlacesCount": {
     "placeholders": {
@@ -685,6 +686,15 @@
       }
     }
   },
+  "mapActivitiesCount": "Activities: {count}",
+  "@mapActivitiesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mapTapActivityHint": "Tap an activity marker to preview it and open details.",
   "attractionsTitle": "Discover attractions",
   "attractionsSearchHint": "Where to next?",
   "attractionsLoadFailed": "Failed to load attractions",
@@ -1415,6 +1425,10 @@
   "createVenueOrAddressHint": "Enter venue or address",
   "createMapLinkLabel": "Map Link",
   "createMapLinkHint": "Paste Maps URL",
+  "createMapLinkInvalidError": "We couldn't detect coordinates from this link. Choose a point on our map or paste a link with coordinates from another map.",
+  "createMapLinkResolvingError": "Detecting coordinates from this link. Please wait a few seconds.",
+  "createMapLinkRequiredError": "Add a map link or choose a point on our map.",
+  "createMapEarlyStageNotice": "Our in-app map is still early-stage: paste a link from another map or place a point on our map for now. Soon we'll improve the map so you can choose the meeting point here without switching to other map apps.",
   "createOfflineSection": "VENUE",
   "createLocationPreviewHint": "Add a city or address so participants know where to meet",
   "createAuthorLocationMismatchHint": "Meeting city differs from your current location. Keep it if this activity is planned for another place.",
@@ -1747,6 +1761,8 @@
   "activitiesFilterPricing": "Pricing",
   "activitiesFilterVisibility": "Visibility",
   "activitiesDiscoverTitle": "Activities",
+  "activitiesNearbyTitle": "Activities nearby",
+  "activitiesNearbyMapEmpty": "Activities do not have meeting points yet",
   "activitiesFilteredEmptyTitle": "No activities match these filters",
   "activitiesFilteredEmptySubtitle": "Try widening the category, date range, pricing filters, or choose another city",
   "activitiesResultsCount": "{count, plural, =0{No activities} =1{1 activity} other{{count} activities}}",
