@@ -16,7 +16,7 @@ import (
 	"kz/inflap/backend/services/admin-panel/internal/domain/model"
 )
 
-//go:embed templates/*.html templates/*/*.html static/css/*.css static/js/*.js
+//go:embed templates/*.html templates/*/*.html static/css/*.css static/js/*.js static/vendor/maplibre/*.css static/vendor/maplibre/*.js
 var embeddedFiles embed.FS
 
 type Renderer struct {
@@ -103,6 +103,9 @@ func NewRenderer() (*Renderer, error) {
 		"excursionMeetingPoint": func(locale any, item *model.ExcursionModerationItem) string {
 			return excursionMeetingPointText(fmt.Sprint(locale), item)
 		},
+		"excursionMeetingMap": func(locale any, item *model.ExcursionModerationItem) *meetingMapViewData {
+			return excursionMeetingMap(fmt.Sprint(locale), item)
+		},
 		"excursionIncludedItems": func(locale any, item *model.ExcursionModerationItem) []string {
 			return excursionIncludedItems(fmt.Sprint(locale), item)
 		},
@@ -121,9 +124,13 @@ func NewRenderer() (*Renderer, error) {
 		"activityPrice": func(locale any, item *model.ActivityModerationItem) string {
 			return activityPriceText(fmt.Sprint(locale), item)
 		},
-		"activityMeeting":        activityMeetingText,
-		"activityMapURL":         activityMapURL,
-		"activityDecisionLocked": activityDecisionLocked,
+		"activityMeeting": activityMeetingText,
+		"activityMeetingMap": func(locale any, item *model.ActivityModerationItem) *meetingMapViewData {
+			return activityMeetingMap(fmt.Sprint(locale), item)
+		},
+		"meetingMapCoordinateText": meetingMapCoordinateText,
+		"activityMapURL":           activityMapURL,
+		"activityDecisionLocked":   activityDecisionLocked,
 		"activityCategory": func(locale any, item *model.ActivityModerationItem) string {
 			return activityCategoryText(fmt.Sprint(locale), item)
 		},

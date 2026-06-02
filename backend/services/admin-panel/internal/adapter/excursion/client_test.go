@@ -115,6 +115,9 @@ func TestExcursionResponseToModelExtractsItineraryAttractions(t *testing.T) {
 		MeetingPointTranslations: map[string]string{
 			"ru": "Главный вход",
 		},
+		Latitude:      floatPtr(43.157036),
+		Longitude:     floatPtr(77.058482),
+		MapURL:        stringPtr("https://inflap.app/map?lat=43.157036&lon=77.058482&title=Medeu"),
 		IncludedItems: []string{"transport", "tickets", "transport"},
 		IncludedTranslations: map[string][]string{
 			"ru": {"Транспорт", "Входные билеты"},
@@ -188,6 +191,12 @@ func TestExcursionResponseToModelExtractsItineraryAttractions(t *testing.T) {
 	if item.MeetingPointByLocale["ru"] != "Главный вход" {
 		t.Fatalf("meeting point translations = %#v, want Russian label", item.MeetingPointByLocale)
 	}
+	if item.Latitude == nil || item.Longitude == nil || *item.Latitude != 43.157036 || *item.Longitude != 77.058482 {
+		t.Fatalf("meeting coordinates = %#v,%#v, want 43.157036/77.058482", item.Latitude, item.Longitude)
+	}
+	if item.MapURL == nil || *item.MapURL != "https://inflap.app/map?lat=43.157036&lon=77.058482&title=Medeu" {
+		t.Fatalf("meeting map url = %#v, want Inflap map URL", item.MapURL)
+	}
 	if len(item.LanguageCodes) != 2 || item.LanguageCodes[0] != "ru" || item.LanguageCodes[1] != "en" {
 		t.Fatalf("language codes = %#v, want deduplicated ru/en", item.LanguageCodes)
 	}
@@ -216,6 +225,10 @@ func stringPtr(value string) *string {
 }
 
 func intPtr(value int) *int {
+	return &value
+}
+
+func floatPtr(value float64) *float64 {
 	return &value
 }
 

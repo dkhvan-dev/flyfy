@@ -6889,6 +6889,49 @@ func TestAdminJSAttractionFilterDoesNotAutoSelectSearchSuggestions(t *testing.T)
 	}
 }
 
+func TestAdminJSInitializesMeetingMapsWithMapLibre(t *testing.T) {
+	t.Parallel()
+
+	content, err := embeddedFiles.ReadFile("static/js/admin.js")
+	if err != nil {
+		t.Fatalf("ReadFile returned error: %v", err)
+	}
+	js := string(content)
+	for _, expected := range []string{
+		"/admin/static/vendor/maplibre/maplibre-gl.js",
+		"/admin/static/vendor/maplibre/maplibre-gl.css",
+		"https://tiles.openfreemap.org/styles/liberty",
+		"[data-meeting-map]",
+		"new maplibregl.Map",
+		"new maplibregl.Marker",
+		"new maplibregl.NavigationControl",
+	} {
+		if !strings.Contains(js, expected) {
+			t.Fatalf("admin js should initialize meeting maps with MapLibre, missing %q", expected)
+		}
+	}
+	if strings.Contains(js, "unpkg.com") || strings.Contains(js, "cdn.jsdelivr.net") {
+		t.Fatalf("admin js should not load MapLibre from public CDN under strict admin CSP: %s", js)
+	}
+}
+
+func TestRendererEmbedsLocalMapLibreAssets(t *testing.T) {
+	t.Parallel()
+
+	for _, path := range []string{
+		"static/vendor/maplibre/maplibre-gl.js",
+		"static/vendor/maplibre/maplibre-gl.css",
+	} {
+		content, err := embeddedFiles.ReadFile(path)
+		if err != nil {
+			t.Fatalf("MapLibre asset %q should be embedded: %v", path, err)
+		}
+		if len(content) == 0 {
+			t.Fatalf("MapLibre asset %q should not be empty", path)
+		}
+	}
+}
+
 func TestRendererRendersAttractionListLocalizedRows(t *testing.T) {
 	t.Parallel()
 
@@ -7035,6 +7078,9 @@ func TestRendererRendersModerationDetail(t *testing.T) {
 					MeetingPointByLocale: map[string]string{
 						"ru": "Локализованная точка встречи",
 					},
+					Latitude:      floatPtr(43.157036),
+					Longitude:     floatPtr(77.058482),
+					MapURL:        stringPtr("https://inflap.app/map?lat=43.157036&lon=77.058482&title=Medeu"),
 					IncludedItems: []string{"transfer", "tickets"},
 					IncludedItemsByLocale: map[string][]string{
 						"ru": {"Трансфер", "Входные билеты"},
@@ -7135,6 +7181,12 @@ func TestRendererRendersModerationDetail(t *testing.T) {
 		"До 8 гостей",
 		"Русский, Английский",
 		"Локализованная точка встречи",
+		"Карта точки встречи",
+		`data-meeting-map`,
+		`data-map-style-url="https://tiles.openfreemap.org/styles/liberty"`,
+		`data-lat="43.1570360"`,
+		`data-lon="77.0584820"`,
+		`data-map-title="Локализованная точка встречи"`,
 		"Встреча у главного входа",
 		"Проверка группы и короткий инструктаж.",
 		"00:30",
@@ -7223,6 +7275,12 @@ func TestRendererRendersActivityModerationReadableContext(t *testing.T) {
 		"Dostyk Plaza",
 		"Открыть карту",
 		`href="https://www.openstreetmap.org/?mlat=43.2435&mlon=76.9041#map=16/43.2435/76.9041"`,
+		"Карта точки встречи",
+		`data-meeting-map`,
+		`data-map-style-url="https://tiles.openfreemap.org/styles/liberty"`,
+		`data-lat="43.2435000"`,
+		`data-lon="76.9041000"`,
+		`data-map-title="Dostyk Plaza"`,
 	} {
 		if !strings.Contains(body, expected) {
 			t.Fatalf("activity moderation detail did not render %q: %s", expected, body)
@@ -7955,6 +8013,10 @@ func adminTemplateActor() *model.StaffUser {
 }
 
 func intPtr(value int) *int {
+	return &value
+}
+
+func floatPtr(value float64) *float64 {
 	return &value
 }
 

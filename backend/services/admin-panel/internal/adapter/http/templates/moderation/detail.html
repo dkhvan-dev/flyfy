@@ -50,6 +50,26 @@
         {{if .ModerationReasonCodes}}
           <p class="reason">{{t $.Locale "label.signals"}}: {{join .ModerationReasonCodes ", "}}</p>
         {{end}}
+        {{with excursionMeetingMap $.Locale .}}
+          <h2>{{t $.Locale "section.meetingMap"}}</h2>
+          <div class="meeting-map-card">
+            <div
+              class="admin-map"
+              role="application"
+              aria-label="{{t $.Locale "section.meetingMap"}}"
+              data-meeting-map
+              data-map-style-url="{{.StyleURL}}"
+              data-lat="{{printf "%.7f" .Latitude}}"
+              data-lon="{{printf "%.7f" .Longitude}}"
+              data-map-title="{{.Title}}"
+              data-map-address="{{.Address}}">
+            </div>
+            <div class="meeting-map-meta">
+              <span>{{meetingMapCoordinateText .Latitude .Longitude}}</span>
+              {{with .SourceURL}}<a href="{{.}}" target="_blank" rel="noopener noreferrer">{{t $.Locale "action.openMap"}}</a>{{end}}
+            </div>
+          </div>
+        {{end}}
         <h2>{{t $.Locale "section.summary"}}</h2>
         <p>{{excursionSummary $.Locale .}}</p>
         <h2>{{t $.Locale "section.description"}}</h2>
@@ -114,6 +134,26 @@
         </dl>
         {{if .ModerationReasonCodes}}
           <p class="reason">{{t $.Locale "label.signals"}}: {{join .ModerationReasonCodes ", "}}</p>
+        {{end}}
+        {{with activityMeetingMap $.Locale .}}
+          <h2>{{t $.Locale "section.meetingMap"}}</h2>
+          <div class="meeting-map-card">
+            <div
+              class="admin-map"
+              role="application"
+              aria-label="{{t $.Locale "section.meetingMap"}}"
+              data-meeting-map
+              data-map-style-url="{{.StyleURL}}"
+              data-lat="{{printf "%.7f" .Latitude}}"
+              data-lon="{{printf "%.7f" .Longitude}}"
+              data-map-title="{{.Title}}"
+              data-map-address="{{.Address}}">
+            </div>
+            <div class="meeting-map-meta">
+              <span>{{meetingMapCoordinateText .Latitude .Longitude}}</span>
+              {{with .SourceURL}}<a href="{{.}}" target="_blank" rel="noopener noreferrer">{{t $.Locale "action.openMap"}}</a>{{end}}
+            </div>
+          </div>
         {{end}}
         <h2>{{t $.Locale "section.description"}}</h2>
         <p class="preline">{{.Description}}</p>

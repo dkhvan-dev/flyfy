@@ -70,6 +70,32 @@ func TestSecurityHeadersAllowTrustedWikimediaAttractionImages(t *testing.T) {
 	}
 }
 
+func TestSecurityHeadersAllowAdminMeetingMaps(t *testing.T) {
+	t.Parallel()
+
+	request := httptest.NewRequest(http.MethodGet, "/admin/moderation/activities/id", nil)
+	recorder := httptest.NewRecorder()
+	handler := securityHeadersMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	handler.ServeHTTP(recorder, request)
+
+	csp := recorder.Header().Get("Content-Security-Policy")
+	for _, expected := range []string{
+		"script-src 'self'",
+		"style-src 'self' 'unsafe-inline'",
+		"connect-src 'self' https://tiles.openfreemap.org",
+		"img-src 'self' data: blob: https://tiles.openfreemap.org",
+		"font-src 'self' data: https://tiles.openfreemap.org",
+		"worker-src 'self' blob:",
+	} {
+		if !strings.Contains(csp, expected) {
+			t.Fatalf("Content-Security-Policy = %q, want admin meeting map directive %q", csp, expected)
+		}
+	}
+}
+
 func TestLoginErrorResponseSeparatesAuthenticationAndServerErrors(t *testing.T) {
 	t.Parallel()
 

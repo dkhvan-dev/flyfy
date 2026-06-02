@@ -94,6 +94,119 @@
     return coordinatesFromOSMFragment(parsed.hash.replace(/^#/, "")) || coordinatesFromText(parsed.pathname) || coordinatesFromText(parsed.hash) || coordinatesFromText(value);
   };
   const formatCoordinate = (value) => String(Math.round(value * 10000000) / 10000000);
+  const defaultMeetingMapStyleURL = "https://tiles.openfreemap.org/styles/liberty";
+  const mapLibreScriptURL = "/admin/static/vendor/maplibre/maplibre-gl.js";
+  const mapLibreStyleURL = "/admin/static/vendor/maplibre/maplibre-gl.css";
+  let mapLibreLoadPromise = null;
+
+  const loadStyleOnce = (href) => {
+    if (document.querySelector(`link[data-admin-maplibre-style][href="${href}"]`)) {
+      return;
+    }
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = href;
+    link.setAttribute("data-admin-maplibre-style", "true");
+    document.head.appendChild(link);
+  };
+
+  const loadMapLibre = () => {
+    if (window.maplibregl) {
+      return Promise.resolve(window.maplibregl);
+    }
+    if (mapLibreLoadPromise) {
+      return mapLibreLoadPromise;
+    }
+    loadStyleOnce(mapLibreStyleURL);
+    mapLibreLoadPromise = new Promise((resolve, reject) => {
+      const existingScript = document.querySelector(`script[data-admin-maplibre-script][src="${mapLibreScriptURL}"]`);
+      if (existingScript) {
+        existingScript.addEventListener("load", () => resolve(window.maplibregl));
+        existingScript.addEventListener("error", reject);
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = mapLibreScriptURL;
+      script.async = true;
+      script.defer = true;
+      script.setAttribute("data-admin-maplibre-script", "true");
+      script.addEventListener("load", () => {
+        if (window.maplibregl) {
+          resolve(window.maplibregl);
+          return;
+        }
+        reject(new Error("MapLibre GL JS did not initialize"));
+      });
+      script.addEventListener("error", reject);
+      document.head.appendChild(script);
+    });
+    return mapLibreLoadPromise;
+  };
+
+  const escapeHTML = (value) =>
+    String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
+  const meetingMapPopupHTML = (title, address) => {
+    const titleHTML = escapeHTML(title || address || "");
+    const addressHTML = escapeHTML(address || "");
+    if (!titleHTML && !addressHTML) {
+      return "";
+    }
+    return `<div class="admin-map-popup">${titleHTML ? `<strong>${titleHTML}</strong>` : ""}${addressHTML && addressHTML !== titleHTML ? `<span>${addressHTML}</span>` : ""}</div>`;
+  };
+
+  const initMeetingMaps = () => {
+    const containers = Array.from(document.querySelectorAll("[data-meeting-map]"));
+    if (containers.length === 0) {
+      return;
+    }
+    loadMapLibre()
+      .then((maplibregl) => {
+        containers.forEach((container) => {
+          if (container.dataset.mapInitialized === "true") {
+            return;
+          }
+          const lat = Number.parseFloat(container.dataset.lat || "");
+          const lon = Number.parseFloat(container.dataset.lon || "");
+          if (!validCoordinates(lat, lon)) {
+            container.classList.add("is-unavailable");
+            return;
+          }
+          container.dataset.mapInitialized = "true";
+          const marker = document.createElement("div");
+          marker.className = "admin-map-marker";
+          marker.setAttribute("aria-hidden", "true");
+          const title = container.dataset.mapTitle || "";
+          const address = container.dataset.mapAddress || "";
+          const popupHTML = meetingMapPopupHTML(title, address);
+          const map = new maplibregl.Map({
+            container,
+            style: container.dataset.mapStyleUrl || defaultMeetingMapStyleURL,
+            center: [lon, lat],
+            zoom: 15,
+            attributionControl: true,
+          });
+          map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+          const mapMarker = new maplibregl.Marker({ element: marker, anchor: "bottom" }).setLngLat([lon, lat]);
+          if (popupHTML) {
+            mapMarker.setPopup(new maplibregl.Popup({ offset: 28 }).setHTML(popupHTML));
+          }
+          mapMarker.addTo(map);
+          map.on("load", () => map.resize());
+          window.setTimeout(() => map.resize(), 0);
+        });
+      })
+      .catch(() => {
+        containers.forEach((container) => container.classList.add("is-unavailable"));
+      });
+  };
+
+  initMeetingMaps();
 
   document.querySelectorAll("[data-modal-open]").forEach((button) => {
     button.addEventListener("click", () => {

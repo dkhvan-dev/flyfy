@@ -185,6 +185,9 @@ type excursionResponse struct {
 	DepartureCityID          *string                          `json:"departureCityId"`
 	MeetingPoint             string                           `json:"meetingPoint"`
 	MeetingPointTranslations map[string]string                `json:"meetingPointTranslations"`
+	Latitude                 *float64                         `json:"latitude"`
+	Longitude                *float64                         `json:"longitude"`
+	MapURL                   *string                          `json:"mapUrl"`
 	PriceAmount              float64                          `json:"priceAmount"`
 	Currency                 string                           `json:"currency"`
 	IncludedItems            []string                         `json:"includedItems"`
@@ -253,6 +256,9 @@ func (r excursionResponse) toModel() model.ExcursionModerationItem {
 		DepartureCityID:         deref(r.DepartureCityID),
 		MeetingPoint:            strings.TrimSpace(r.MeetingPoint),
 		MeetingPointByLocale:    localizedStringMapToModel(r.MeetingPointTranslations),
+		Latitude:                r.Latitude,
+		Longitude:               r.Longitude,
+		MapURL:                  r.MapURL,
 		PriceAmount:             r.PriceAmount,
 		Currency:                r.Currency,
 		IncludedItems:           normalizedStringSlice(r.IncludedItems),

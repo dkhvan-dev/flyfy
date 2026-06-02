@@ -143,6 +143,9 @@ type ExcursionModerationItem struct {
 	DepartureCityID         string
 	MeetingPoint            string
 	MeetingPointByLocale    map[string]string
+	Latitude                *float64
+	Longitude               *float64
+	MapURL                  *string
 	PriceAmount             float64
 	Currency                string
 	IncludedItems           []string
