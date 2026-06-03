@@ -31,6 +31,9 @@ void main() {
     final homeSource = await File(
       'lib/screens/home/home_screen.dart',
     ).readAsString();
+    final catalogSource = await File(
+      'lib/features/services/service_catalog.dart',
+    ).readAsString();
     final routerSource = await File(
       'lib/core/router/app_router.dart',
     ).readAsString();
@@ -38,10 +41,9 @@ void main() {
     final enArb = await File('lib/l10n/app_en.arb').readAsString();
     final kkArb = await File('lib/l10n/app_kk.arb').readAsString();
 
-    expect(homeSource, contains('void _openCurrencyConverter()'));
-    expect(homeSource, contains("context.push('/currency-converter')"));
-    expect(homeSource, contains('l10n.homeServiceCurrencyConverter'));
-    expect(homeSource, contains('onTap: _openCurrencyConverter'));
+    expect(homeSource, contains('buildTravelServiceCatalog('));
+    expect(catalogSource, contains('l10n.homeServiceCurrencyConverter'));
+    expect(catalogSource, contains("route: '/currency-converter'"));
     expect(routerSource, contains("path: '/currency-converter'"));
     expect(routerSource, contains('CurrencyConverterScreen'));
     expect(ruArb, contains('homeServiceCurrencyConverter'));

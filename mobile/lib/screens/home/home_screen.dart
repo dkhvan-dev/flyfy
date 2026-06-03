@@ -16,6 +16,8 @@ import '../../features/attractions/attraction_ui.dart';
 import '../../features/attractions/data/attraction_api.dart';
 import '../../features/attractions/models/attraction_vm.dart';
 import '../../features/profile/data/guide_api.dart';
+import '../../features/services/service_catalog.dart';
+import '../../features/services/widgets/service_grid.dart';
 import '../../features/stories/models/story_vm.dart';
 import '../../features/stories/story_ui.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -24,6 +26,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/home_location_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/session_provider.dart';
+import '../../shared/widgets/app_city_filter_section.dart';
 import '../../shared/widgets/app_localized_location_text.dart';
 import '../common/app_side_drawer.dart';
 import 'widgets/home_location_picker_sheet.dart';
@@ -37,6 +40,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
+      GlobalKey<RefreshIndicatorState>();
   final ScrollController _scrollController = ScrollController();
   final GuideApi _guideApi = GuideApi();
   final AttractionApi _attractionApi = AttractionApi();
@@ -64,10 +69,6 @@ class _HomeScreenState extends State<HomeScreen> {
   static const _promoMountainImageUrl =
       'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=900&q=80';
 
-  static const _featuredStaysImageUrl =
-      'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=700&q=80';
-  static const _carRentalsImageUrl =
-      'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=700&q=80';
   static const _initialHomeDataDelay = Duration(milliseconds: 350);
   static const _initialHomeDataStagger = Duration(milliseconds: 160);
 
@@ -144,6 +145,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _handleHomeNavTap() {
     FocusManager.instance.primaryFocus?.unfocus();
+    final refresh =
+        _refreshIndicatorKey.currentState?.show() ?? _refreshActivities();
+    unawaited(refresh);
+
     if (!_scrollController.hasClients) {
       context.go('/');
       return;
@@ -207,14 +212,6 @@ class _HomeScreenState extends State<HomeScreen> {
     context.push('/activities');
   }
 
-  void _openExcursions() {
-    context.push('/excursions');
-  }
-
-  void _openGuides() {
-    context.push('/guides');
-  }
-
   void _openStories() {
     context.push('/stories');
   }
@@ -233,8 +230,13 @@ class _HomeScreenState extends State<HomeScreen> {
     context.push('/attractions');
   }
 
-  void _openCurrencyConverter() {
-    context.push('/currency-converter');
+  void _openServices() {
+    context.push('/services');
+  }
+
+  void _openService(TravelServiceEntry service) {
+    if (!service.isAvailable || service.route.trim().isEmpty) return;
+    context.push(service.route);
   }
 
   void _openAttractionDetails(AttractionVm attraction) {
@@ -286,23 +288,6 @@ class _HomeScreenState extends State<HomeScreen> {
     if (changed == true && mounted) {
       await context.read<ActivityProvider>().refreshActivities();
     }
-  }
-
-  List<_FeatureEntryData> _buildFeatureEntries(AppLocalizations l10n) {
-    return [
-      _FeatureEntryData(
-        title: l10n.homeFeaturedStays,
-        imageUrl: _featuredStaysImageUrl,
-        icon: Icons.bed_rounded,
-        isEnabled: false,
-      ),
-      _FeatureEntryData(
-        title: l10n.homeCarRentals,
-        imageUrl: _carRentalsImageUrl,
-        icon: Icons.directions_car_filled_rounded,
-        isEnabled: false,
-      ),
-    ];
   }
 
   List<_PromoCardData> _buildPromoCards(AppLocalizations l10n) {
@@ -751,8 +736,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     final homeLocation = homeLocationProvider.effectiveLocation;
     final location = homeLocation.fallbackLabel;
-    final featureEntries = _buildFeatureEntries(l10n);
     final promos = _buildPromoCards(l10n);
+    final servicesPreview = buildTravelServiceCatalog(
+      l10n,
+    ).take(6).toList(growable: false);
 
     if (currentUserId.isEmpty) {
       _requestedHostedActivitiesForUserId = null;
@@ -784,52 +771,6 @@ class _HomeScreenState extends State<HomeScreen> {
         _loadTopAttractions(force: true);
       });
     }
-
-    final quickActions = [
-      _QuickActionData(
-        title: l10n.homeServiceActivities,
-        icon: Icons.hiking_rounded,
-        onTap: _openActivities,
-      ),
-      _QuickActionData(
-        title: l10n.serviceExcursions,
-        icon: Icons.travel_explore_rounded,
-        onTap: _openExcursions,
-      ),
-      _QuickActionData(
-        title: l10n.serviceGuides,
-        icon: Icons.flag_rounded,
-        onTap: _openGuides,
-      ),
-      _QuickActionData(
-        title: l10n.homeServiceStories,
-        icon: Icons.article_rounded,
-        onTap: _openStories,
-      ),
-      _QuickActionData(
-        title: l10n.homeServiceAttractions,
-        icon: Icons.account_balance_rounded,
-        onTap: _openAttractions,
-      ),
-      _QuickActionData(
-        title: l10n.homeServiceCurrencyConverter,
-        icon: Icons.currency_exchange_rounded,
-        onTap: _openCurrencyConverter,
-      ),
-      _QuickActionData(title: l10n.homeServiceStays, icon: Icons.bed_rounded),
-      _QuickActionData(
-        title: l10n.serviceTransport,
-        icon: Icons.directions_car_filled_rounded,
-      ),
-      _QuickActionData(
-        title: l10n.homeServiceDelivery,
-        icon: Icons.delivery_dining_rounded,
-      ),
-      _QuickActionData(
-        title: l10n.homeServiceTaxi,
-        icon: Icons.local_taxi_rounded,
-      ),
-    ];
 
     return Scaffold(
       key: _scaffoldKey,
@@ -870,7 +811,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onHomeTap: _handleHomeNavTap,
         onQrTap: () => context.push('/qr'),
         onMapTap: () => context.push('/map'),
-        onServicesTap: () {},
+        onServicesTap: _openServices,
         onChatsTap: () => context.push('/chats'),
       ),
       body: DecoratedBox(
@@ -925,6 +866,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   Expanded(
                     child: RefreshIndicator(
+                      key: _refreshIndicatorKey,
                       color: AppColors.accent,
                       onRefresh: _refreshActivities,
                       child: LayoutBuilder(
@@ -955,7 +897,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                         onTap: _openActivities,
                                       ),
                                       SizedBox(height: isCompact ? 30 : 36),
-                                      _QuickActionsGrid(actions: quickActions),
+                                      _SectionHeader(
+                                        title: l10n.servicesSectionTitle,
+                                        actionLabel: l10n.servicesAllButton,
+                                        onActionTap: _openServices,
+                                      ),
+                                      const SizedBox(height: 14),
+                                      ServiceGrid(
+                                        services: servicesPreview,
+                                        onServiceTap: _openService,
+                                      ),
                                       SizedBox(height: isCompact ? 38 : 52),
                                       _PromoCarousel(promos: promos),
                                       SizedBox(height: isCompact ? 20 : 24),
@@ -988,10 +939,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                         onRetry: () =>
                                             _loadTopStories(force: true),
                                         onEmptyTap: _openStories,
-                                      ),
-                                      const SizedBox(height: 14),
-                                      _FeatureEntriesGrid(
-                                        entries: featureEntries,
                                       ),
                                       SizedBox(height: isCompact ? 30 : 34),
                                       _SectionHeader(
@@ -1552,123 +1499,6 @@ class _SectionHeader extends StatelessWidget {
             ),
           ),
       ],
-    );
-  }
-}
-
-class _QuickActionsGrid extends StatelessWidget {
-  const _QuickActionsGrid({required this.actions});
-
-  final List<_QuickActionData> actions;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < 375;
-        final gap = isCompact ? 12.0 : 24.0;
-        final tileWidth = (constraints.maxWidth - gap * 2) / 3;
-        final iconSize = isCompact ? 26.0 : 31.0;
-        final iconLabelGap = isCompact ? 7.0 : 9.0;
-        final verticalPadding = isCompact ? 10.0 : 12.0;
-        final minContentHeight =
-            iconSize + iconLabelGap + 13 + verticalPadding * 2;
-        final visualHeight = tileWidth * (isCompact ? 0.82 : 0.76);
-        final tileHeight = visualHeight < minContentHeight
-            ? minContentHeight
-            : visualHeight;
-
-        return GridView.builder(
-          shrinkWrap: true,
-          itemCount: actions.length,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            mainAxisSpacing: isCompact ? 18 : 26,
-            crossAxisSpacing: gap,
-            mainAxisExtent: tileHeight,
-          ),
-          itemBuilder: (context, index) {
-            final action = actions[index];
-            final isEnabled = action.onTap != null;
-            final foregroundColor = isEnabled
-                ? AppColors.accent
-                : const Color(0xFF8E8A84);
-            final textColor = isEnabled
-                ? const Color(0xFFF2E5D7)
-                : const Color(0xFFB1AAA2);
-            final backgroundColor = isEnabled
-                ? const Color(0xFF43280D)
-                : const Color(0xFF3D3935);
-
-            return Semantics(
-              container: true,
-              button: true,
-              enabled: isEnabled,
-              label: action.title,
-              onTap: action.onTap,
-              child: ExcludeSemantics(
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: action.onTap,
-                    borderRadius: BorderRadius.circular(16),
-                    splashColor: isEnabled
-                        ? AppColors.accent.withValues(alpha: 0.10)
-                        : Colors.transparent,
-                    highlightColor: Colors.transparent,
-                    child: Ink(
-                      decoration: BoxDecoration(
-                        color: backgroundColor,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: isEnabled
-                              ? Colors.transparent
-                              : Colors.white.withValues(alpha: 0.04),
-                        ),
-                      ),
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: isCompact ? 6 : 8,
-                          vertical: verticalPadding,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              action.icon,
-                              color: foregroundColor,
-                              size: iconSize,
-                            ),
-                            SizedBox(height: iconLabelGap),
-                            Flexible(
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  action.title,
-                                  maxLines: 1,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: textColor,
-                                    fontSize: isCompact ? 11 : 12,
-                                    height: 1,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.2,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
     );
   }
 }
@@ -2722,129 +2552,6 @@ class _TopStoryLoadingCard extends StatelessWidget {
   }
 }
 
-class _FeatureEntriesGrid extends StatelessWidget {
-  const _FeatureEntriesGrid({required this.entries});
-
-  final List<_FeatureEntryData> entries;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < 375;
-        final gap = isCompact ? 14.0 : 19.0;
-
-        return Row(
-          children: [
-            for (var index = 0; index < entries.length; index++) ...[
-              Expanded(child: _TravelEntryCard(data: entries[index])),
-              if (index != entries.length - 1) SizedBox(width: gap),
-            ],
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _TravelEntryCard extends StatelessWidget {
-  const _TravelEntryCard({required this.data});
-
-  final _FeatureEntryData data;
-
-  @override
-  Widget build(BuildContext context) {
-    final isCompact = MediaQuery.sizeOf(context).width < 375;
-    final foreground = data.isEnabled ? Colors.white : const Color(0xFFE0DDD8);
-
-    return Material(
-      color: Colors.transparent,
-      child: Ink(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(26),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.24),
-              blurRadius: 28,
-              offset: const Offset(0, 12),
-            ),
-          ],
-        ),
-        child: AspectRatio(
-          aspectRatio: isCompact ? 1.28 : 1.34,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(26),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                _NetworkCardImage(
-                  imageUrl: data.imageUrl,
-                  overlay: Colors.black.withValues(alpha: 0.18),
-                ),
-                Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: data.isEnabled
-                          ? Colors.transparent
-                          : const Color(0xFF6E6B66).withValues(alpha: 0.42),
-                    ),
-                  ),
-                ),
-                Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black.withValues(alpha: 0.10),
-                          Colors.black.withValues(alpha: 0.62),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isCompact ? 10 : 14,
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          data.icon,
-                          color: foreground,
-                          size: isCompact ? 28 : 32,
-                        ),
-                        const SizedBox(height: 7),
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            data.title,
-                            maxLines: 1,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: foreground,
-                              fontSize: isCompact ? 16 : 18,
-                              height: 1,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _RecommendedActivitiesSection extends StatelessWidget {
   const _RecommendedActivitiesSection({
     required this.provider,
@@ -2869,7 +2576,6 @@ class _RecommendedActivitiesSection extends StatelessWidget {
     final languageCode = Localizations.localeOf(context).languageCode;
     final recommendedItems = _filterHomeRecommendedItems(
       publicItems: provider.items,
-      currentUserId: currentUserId,
       location: location,
     );
     final isLoadingPublic =
@@ -3293,10 +2999,9 @@ class _HomeDecorativeActivityThumb extends StatelessWidget {
 }
 
 class _NetworkCardImage extends StatelessWidget {
-  const _NetworkCardImage({required this.imageUrl, this.overlay});
+  const _NetworkCardImage({required this.imageUrl});
 
   final String imageUrl;
-  final Color? overlay;
 
   @override
   Widget build(BuildContext context) {
@@ -3318,8 +3023,6 @@ class _NetworkCardImage extends StatelessWidget {
             );
           },
         ),
-        if (overlay != null)
-          DecoratedBox(decoration: BoxDecoration(color: overlay)),
       ],
     );
   }
@@ -3603,28 +3306,6 @@ class _LanguageOptionTile extends StatelessWidget {
   }
 }
 
-class _FeatureEntryData {
-  const _FeatureEntryData({
-    required this.title,
-    required this.imageUrl,
-    required this.icon,
-    this.isEnabled = false,
-  });
-
-  final String title;
-  final String imageUrl;
-  final IconData icon;
-  final bool isEnabled;
-}
-
-class _QuickActionData {
-  const _QuickActionData({required this.title, required this.icon, this.onTap});
-
-  final String title;
-  final IconData icon;
-  final VoidCallback? onTap;
-}
-
 class _PromoCardData {
   const _PromoCardData({
     required this.eyebrow,
@@ -3874,15 +3555,16 @@ String _truncateHomeStoryExcerpt(String value) {
 
 List<ActivityListItemVm> _filterHomeRecommendedItems({
   required List<ActivityListItemVm> publicItems,
-  required String? currentUserId,
   required HomeLocationPreference location,
 }) {
   final itemsById = <String, ActivityListItemVm>{};
-  final normalizedUserId = (currentUserId ?? '').trim();
+  final shouldFilterByLocation = _shouldFilterHomeRecommendationsByLocation(
+    location,
+  );
 
   for (final item in publicItems) {
-    if (_isHomeRecommendedActivity(item, normalizedUserId) &&
-        _matchesHomeLocation(item, location)) {
+    if (_isHomeRecommendedActivity(item) &&
+        (!shouldFilterByLocation || _matchesHomeLocation(item, location))) {
       itemsById[item.id] = item;
     }
   }
@@ -3892,10 +3574,7 @@ List<ActivityListItemVm> _filterHomeRecommendedItems({
   return merged;
 }
 
-bool _isHomeRecommendedActivity(ActivityListItemVm item, String currentUserId) {
-  if (currentUserId.isNotEmpty && item.hostUserId.trim() == currentUserId) {
-    return false;
-  }
+bool _isHomeRecommendedActivity(ActivityListItemVm item) {
   if (!_isHomeRegistrationOpenStatus(item.status)) {
     return false;
   }
@@ -3909,28 +3588,36 @@ bool _matchesHomeLocation(
   ActivityListItemVm item,
   HomeLocationPreference location,
 ) {
-  final selectedCityId = (location.cityId ?? '').trim();
-  if (selectedCityId.isNotEmpty) {
-    return (item.cityId ?? '').trim() == selectedCityId;
+  final selectedCity = AppCityFilterValue.fromParts(
+    cityId: location.cityId,
+    cityName: location.cityName,
+    countryCode: location.countryCode,
+  );
+  if (selectedCity != null) {
+    return selectedCity.matches(
+      cityId: item.cityId,
+      cityName: item.cityName,
+      countryCode: item.countryCode,
+    );
   }
 
-  final selectedCityName = _normalizeLocationText(location.cityName);
   final selectedCountryCode = _normalizeLocationText(location.countryCode);
-  if (selectedCityName.isEmpty && selectedCountryCode.isEmpty) {
+  if (selectedCountryCode.isEmpty) {
     return true;
   }
 
-  final itemCityName = _normalizeLocationText(item.cityName);
   final itemCountryCode = _normalizeLocationText(item.countryCode);
-  if (selectedCityName.isNotEmpty && itemCityName != selectedCityName) {
-    return false;
-  }
-  if (selectedCountryCode.isNotEmpty &&
-      itemCountryCode.isNotEmpty &&
-      itemCountryCode != selectedCountryCode) {
-    return false;
-  }
-  return selectedCityName.isNotEmpty || selectedCountryCode.isNotEmpty;
+  return itemCountryCode.isEmpty || itemCountryCode == selectedCountryCode;
+}
+
+bool _shouldFilterHomeRecommendationsByLocation(
+  HomeLocationPreference location,
+) {
+  final hasLocation =
+      (location.cityId ?? '').trim().isNotEmpty ||
+      (location.cityName ?? '').trim().isNotEmpty ||
+      (location.countryCode ?? '').trim().isNotEmpty;
+  return hasLocation && location.source != HomeLocationSource.fallback;
 }
 
 String _normalizeLocationText(String? value) {

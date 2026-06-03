@@ -24,4 +24,10 @@ void main() {
       isTrue,
     );
   });
+
+  test('profile timezone city matches localized activity city without id', () {
+    const selected = AppCityFilterValue(cityName: 'Almaty', countryCode: 'KZ');
+
+    expect(selected.matches(cityName: 'Алматы', countryCode: 'KZ'), isTrue);
+  });
 }

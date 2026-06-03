@@ -49,6 +49,7 @@ import '../../screens/common/feature_stub_screen.dart';
 import '../../screens/currency/currency_converter_screen.dart';
 import '../../screens/map/map_screen.dart';
 import '../../screens/notifications/notifications_screen.dart';
+import '../../screens/services/services_screen.dart';
 
 class AppRouter {
   static GoRouter router(AuthProvider authProvider) {
@@ -509,7 +510,7 @@ class AppRouter {
         GoRoute(
           path: '/services',
           builder: (context, state) =>
-              _withAndroidBackSwipe(const FeatureStubScreen(title: 'Services')),
+              _withAndroidBackSwipe(const ServicesScreen()),
         ),
         GoRoute(
           path: '/currency-converter',

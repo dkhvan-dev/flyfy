@@ -1671,6 +1671,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get servicesSectionTitle => 'Сервистер';
 
   @override
+  String get servicesAllButton => 'Барлығы';
+
+  @override
   String get homeExcursionsTitle => 'Экскурсиялар';
 
   @override
@@ -1782,10 +1785,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get homeServiceStories => 'Хикаялар';
 
   @override
-  String get homeServiceAttractions => 'Орындар';
+  String get homeServiceAttractions => 'Көрікті жерлер';
 
   @override
-  String get homeServiceCurrencyConverter => 'Валюта';
+  String get homeServiceCurrencyConverter => 'Валюта бағамдары';
 
   @override
   String get homeServiceStays => 'Тұру';

@@ -3082,6 +3082,12 @@ abstract class AppLocalizations {
   /// **'Services'**
   String get servicesSectionTitle;
 
+  /// No description provided for @servicesAllButton.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get servicesAllButton;
+
   /// No description provided for @homeExcursionsTitle.
   ///
   /// In en, this message translates to:
@@ -3301,7 +3307,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeServiceCurrencyConverter.
   ///
   /// In en, this message translates to:
-  /// **'Currency'**
+  /// **'Exchange Rates'**
   String get homeServiceCurrencyConverter;
 
   /// No description provided for @homeServiceStays.

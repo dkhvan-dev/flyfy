@@ -1658,6 +1658,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get servicesSectionTitle => 'Сервисы';
 
   @override
+  String get servicesAllButton => 'Все';
+
+  @override
   String get homeExcursionsTitle => 'Экскурсии';
 
   @override
@@ -1769,10 +1772,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get homeServiceStories => 'Истории';
 
   @override
-  String get homeServiceAttractions => 'Места';
+  String get homeServiceAttractions => 'Достопримечательности';
 
   @override
-  String get homeServiceCurrencyConverter => 'Валюта';
+  String get homeServiceCurrencyConverter => 'Курсы валют';
 
   @override
   String get homeServiceStays => 'Жилье';

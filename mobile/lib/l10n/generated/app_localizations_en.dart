@@ -1657,6 +1657,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get servicesSectionTitle => 'Services';
 
   @override
+  String get servicesAllButton => 'All';
+
+  @override
   String get homeExcursionsTitle => 'Excursions';
 
   @override
@@ -1770,7 +1773,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeServiceAttractions => 'Attractions';
 
   @override
-  String get homeServiceCurrencyConverter => 'Currency';
+  String get homeServiceCurrencyConverter => 'Exchange Rates';
 
   @override
   String get homeServiceStays => 'Stays';

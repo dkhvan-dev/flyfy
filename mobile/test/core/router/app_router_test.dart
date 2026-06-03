@@ -88,4 +88,27 @@ void main() {
       expect(publicRouteSource, isNot(contains("location == '/chats'")));
     },
   );
+
+  test('services bottom tab opens the real services grid screen', () async {
+    final source = await File('lib/core/router/app_router.dart').readAsString();
+    final servicesRouteIndex = source.indexOf("path: '/services'");
+    final currencyRouteIndex = source.indexOf(
+      "path: '/currency-converter'",
+      servicesRouteIndex,
+    );
+
+    expect(
+      source,
+      contains("import '../../screens/services/services_screen.dart';"),
+    );
+    expect(servicesRouteIndex, greaterThanOrEqualTo(0));
+    expect(currencyRouteIndex, greaterThan(servicesRouteIndex));
+
+    final routeSource = source.substring(
+      servicesRouteIndex,
+      currencyRouteIndex,
+    );
+    expect(routeSource, contains('const ServicesScreen()'));
+    expect(routeSource, isNot(contains('FeatureStubScreen')));
+  });
 }

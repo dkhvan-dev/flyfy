@@ -42,6 +42,11 @@ class AppCityFilterValue {
 
     final selectedCitySlug = _normalizeCitySlug(selectedCity);
     final candidateCitySlug = _normalizeCitySlug(candidateCity);
+    if (countryMatches &&
+        selectedCitySlug != null &&
+        candidateCitySlug != null) {
+      return selectedCitySlug == candidateCitySlug;
+    }
     if (countryMatches && selectedId != null && candidateCitySlug != null) {
       return selectedId.toLowerCase() == candidateCitySlug;
     }
@@ -906,6 +911,12 @@ String? _normalizeCitySlug(String? value) {
       lastWasSeparator = false;
       continue;
     }
+    final transliterated = _citySlugTransliteration[String.fromCharCode(rune)];
+    if (transliterated != null) {
+      buffer.write(transliterated);
+      lastWasSeparator = false;
+      continue;
+    }
     if (!lastWasSeparator && buffer.isNotEmpty) {
       buffer.write('-');
       lastWasSeparator = true;
@@ -914,3 +925,47 @@ String? _normalizeCitySlug(String? value) {
   final slug = buffer.toString().replaceAll(RegExp(r'-+$'), '');
   return slug.isEmpty ? null : slug;
 }
+
+const _citySlugTransliteration = <String, String>{
+  'а': 'a',
+  'ә': 'a',
+  'б': 'b',
+  'в': 'v',
+  'г': 'g',
+  'ғ': 'g',
+  'д': 'd',
+  'е': 'e',
+  'ж': 'zh',
+  'з': 'z',
+  'и': 'i',
+  'і': 'i',
+  'й': 'y',
+  'к': 'k',
+  'қ': 'q',
+  'л': 'l',
+  'м': 'm',
+  'н': 'n',
+  'ң': 'n',
+  'о': 'o',
+  'ө': 'o',
+  'п': 'p',
+  'р': 'r',
+  'с': 's',
+  'т': 't',
+  'у': 'u',
+  'ұ': 'u',
+  'ү': 'u',
+  'ф': 'f',
+  'х': 'kh',
+  'һ': 'h',
+  'ц': 'ts',
+  'ч': 'ch',
+  'ш': 'sh',
+  'щ': 'shch',
+  'ъ': '',
+  'ы': 'y',
+  'ь': '',
+  'э': 'e',
+  'ю': 'yu',
+  'я': 'ya',
+};

@@ -76,10 +76,14 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
 
   Future<void> _initializeDefaultLocationFilter() async {
     final provider = context.read<HomeLocationProvider>();
+    final sessionProvider = context.read<SessionProvider>();
     if (!provider.isLoaded && !provider.isLoading) {
-      await provider.load();
+      await provider.load(profile: sessionProvider.profile);
     }
     if (!mounted) return;
+    if (provider.shouldSyncProfile(sessionProvider.profile)) {
+      provider.syncProfileFallback(sessionProvider.profile);
+    }
     _applyDefaultLocationFilter(provider);
   }
 
@@ -89,10 +93,8 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
         _filters.city != null) {
       return;
     }
-    final location = provider.selectedLocation;
-    if (location == null) return;
-
-    _hasAppliedDefaultLocationFilter = true;
+    final location = provider.effectiveLocation;
+    if (location.source == HomeLocationSource.fallback) return;
 
     final defaultCountry = AppCountryFilterValue.fromParts(
       countryCode: location.countryCode,
@@ -105,6 +107,8 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
             countryCode: location.countryCode,
           );
     if (defaultCountry == null && defaultCity == null) return;
+
+    _hasAppliedDefaultLocationFilter = true;
 
     setState(() {
       _filters = _filters.copyWith(country: defaultCountry, city: defaultCity);
@@ -606,29 +610,6 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                       ),
                                     ),
                                   ),
-                                  if (filteredItems.isNotEmpty &&
-                                      (_searchQuery.isNotEmpty ||
-                                          _filters.hasAnyValue)) ...[
-                                    SizedBox(
-                                      height: _activitiesScaled(
-                                        context,
-                                        14,
-                                        min: 10,
-                                        max: 16,
-                                      ),
-                                    ),
-                                    _FiltersSummaryBar(
-                                      l10n: l10n,
-                                      count: filteredItems.length,
-                                      onClear: () {
-                                        _searchController.clear();
-                                        setState(() {
-                                          _filters = const _DiscoverFilters();
-                                          _currentPage = 1;
-                                        });
-                                      },
-                                    ),
-                                  ],
                                   if (provider.state ==
                                           ActivitiesState.loading &&
                                       discoverItems.isNotEmpty) ...[
@@ -700,14 +681,6 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                 icon: Icons.filter_alt_off_rounded,
                                 title: l10n.activitiesFilteredEmptyTitle,
                                 subtitle: l10n.activitiesFilteredEmptySubtitle,
-                                actionLabel: l10n.myActivitiesFilterClear,
-                                onActionTap: () {
-                                  _searchController.clear();
-                                  setState(() {
-                                    _filters = const _DiscoverFilters();
-                                    _currentPage = 1;
-                                  });
-                                },
                               ),
                             )
                           else
@@ -1042,65 +1015,6 @@ class _DiscoverSortBar extends StatelessWidget {
       optionGap: _activitiesScaled(context, 22, min: 16, max: 22),
       iconGap: _activitiesScaled(context, 5, min: 4, max: 5),
       verticalPadding: _activitiesScaled(context, 8, min: 6, max: 10),
-    );
-  }
-}
-
-class _FiltersSummaryBar extends StatelessWidget {
-  const _FiltersSummaryBar({
-    required this.l10n,
-    required this.count,
-    required this.onClear,
-  });
-
-  final AppLocalizations l10n;
-  final int count;
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final compact =
-        MediaQuery.sizeOf(context).width < 360 ||
-        MediaQuery.textScalerOf(context).scale(1) > 1.02;
-
-    final summaryText = Text(
-      l10n.activitiesResultsCount(count),
-      style: TextStyle(
-        color: const Color(0xCCFFF0E0),
-        fontSize: _activitiesScaled(context, 13, min: 12, max: 13),
-        fontWeight: FontWeight.w600,
-      ),
-    );
-
-    final clearButton = TextButton(
-      onPressed: onClear,
-      style: TextButton.styleFrom(
-        foregroundColor: AppColors.accent,
-        padding: EdgeInsets.symmetric(
-          horizontal: _activitiesScaled(context, 12, min: 10, max: 12),
-          vertical: _activitiesScaled(context, 8, min: 7, max: 9),
-        ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-      ),
-      child: Text(l10n.myActivitiesFilterClear),
-    );
-
-    if (compact) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          summaryText,
-          SizedBox(height: _activitiesScaled(context, 8, min: 6, max: 10)),
-          Align(alignment: Alignment.centerLeft, child: clearButton),
-        ],
-      );
-    }
-
-    return Row(
-      children: [
-        Expanded(child: summaryText),
-        clearButton,
-      ],
     );
   }
 }
@@ -1776,15 +1690,11 @@ class _ActivitiesEmptyView extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
-    this.actionLabel,
-    this.onActionTap,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
-  final String? actionLabel;
-  final VoidCallback? onActionTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1833,17 +1743,6 @@ class _ActivitiesEmptyView extends StatelessWidget {
                 height: 1.45,
               ),
             ),
-            if (actionLabel != null && onActionTap != null) ...[
-              SizedBox(
-                height: _activitiesScaled(context, 22, min: 16, max: 24),
-              ),
-              _PrimaryPillButton(
-                label: actionLabel!,
-                onTap: onActionTap!,
-                icon: Icons.restart_alt_rounded,
-                minHeight: 50,
-              ),
-            ],
           ],
         ),
       ),

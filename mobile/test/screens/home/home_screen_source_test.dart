@@ -78,56 +78,64 @@ void main() {
     expect(dialogSource, isNot(contains('Color(0xFF7ED7C1)')));
   });
 
-  test('excursions quick action opens the excursions list screen', () async {
-    final source = await File(
-      'lib/screens/home/home_screen.dart',
+  test('excursions service opens the excursions list screen', () async {
+    final catalogSource = await File(
+      'lib/features/services/service_catalog.dart',
     ).readAsString();
 
-    expect(source, contains('void _openExcursions()'));
-    expect(source, contains("context.push('/excursions')"));
-    expect(source, contains('onTap: _openExcursions'));
+    expect(catalogSource, contains('l10n.serviceExcursions'));
+    expect(catalogSource, contains("route: '/excursions'"));
   });
 
   test('quick actions expose semantic button targets', () async {
     final source = await File(
       'lib/screens/home/home_screen.dart',
     ).readAsString();
-    final gridStart = source.indexOf('class _QuickActionsGrid');
-    final gridEnd = source.indexOf('class _PromoCarousel');
+    final gridSource = await File(
+      'lib/features/services/widgets/service_grid.dart',
+    ).readAsString();
 
-    expect(gridStart, isNonNegative);
-    expect(gridEnd, greaterThan(gridStart));
-
-    final gridSource = source.substring(gridStart, gridEnd);
-
+    expect(source, contains('ServiceGrid('));
     expect(gridSource, contains('Semantics('));
     expect(gridSource, contains('button: true'));
     expect(gridSource, contains('enabled: isEnabled'));
-    expect(gridSource, contains('label: action.title'));
-    expect(gridSource, contains('onTap: action.onTap'));
+    expect(gridSource, contains('label: service.title'));
+    expect(gridSource, contains('onTap: isEnabled'));
     expect(gridSource, contains('ExcludeSemantics('));
   });
 
-  test('home nav tap scrolls the current home feed to the top', () async {
-    final source = await File(
-      'lib/screens/home/home_screen.dart',
-    ).readAsString();
-    final stateStart = source.indexOf('class _HomeScreenState');
-    final buildStart = source.indexOf('@override\n  Widget build');
+  test(
+    'home nav tap scrolls the current home feed to the top and refreshes it',
+    () async {
+      final source = await File(
+        'lib/screens/home/home_screen.dart',
+      ).readAsString();
+      final stateStart = source.indexOf('class _HomeScreenState');
+      final buildStart = source.indexOf('@override\n  Widget build');
 
-    expect(stateStart, isNonNegative);
-    expect(buildStart, greaterThan(stateStart));
+      expect(stateStart, isNonNegative);
+      expect(buildStart, greaterThan(stateStart));
 
-    final stateSource = source.substring(stateStart, buildStart);
+      final stateSource = source.substring(stateStart, buildStart);
 
-    expect(stateSource, contains('final ScrollController _scrollController'));
-    expect(stateSource, contains('void _handleHomeNavTap()'));
-    expect(stateSource, contains('_scrollController.animateTo('));
-    expect(stateSource, contains('void dispose()'));
-    expect(source, contains('controller: _scrollController'));
-    expect(source, contains('onHomeTap: _handleHomeNavTap'));
-    expect(source, isNot(contains("onHomeTap: () => context.go('/')")));
-  });
+      expect(stateSource, contains('final ScrollController _scrollController'));
+      expect(
+        stateSource,
+        contains('final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey'),
+      );
+      expect(stateSource, contains('void _handleHomeNavTap()'));
+      expect(
+        stateSource,
+        contains('_refreshIndicatorKey.currentState?.show()'),
+      );
+      expect(stateSource, contains('_scrollController.animateTo('));
+      expect(stateSource, contains('void dispose()'));
+      expect(source, contains('key: _refreshIndicatorKey'));
+      expect(source, contains('controller: _scrollController'));
+      expect(source, contains('onHomeTap: _handleHomeNavTap'));
+      expect(source, isNot(contains("onHomeTap: () => context.go('/')")));
+    },
+  );
 
   test(
     'home location is managed by a discovery provider and resolver',
@@ -190,6 +198,43 @@ void main() {
         contains('_prefillAuthorLocationFromHomeLocation'),
       );
       expect(createActivitySource, contains('provider.selectedLocation'));
+    },
+  );
+
+  test(
+    'home services preview shows six catalog items and opens all services',
+    () async {
+      final source = await File(
+        'lib/screens/home/home_screen.dart',
+      ).readAsString();
+      final ruArb = await File('lib/l10n/app_ru.arb').readAsString();
+      final enArb = await File('lib/l10n/app_en.arb').readAsString();
+      final kkArb = await File('lib/l10n/app_kk.arb').readAsString();
+
+      expect(
+        source,
+        contains("import '../../features/services/service_catalog.dart';"),
+      );
+      expect(
+        source,
+        contains("import '../../features/services/widgets/service_grid.dart';"),
+      );
+      expect(source, contains('void _openServices()'));
+      expect(source, contains("context.push('/services')"));
+      expect(source, contains('buildTravelServiceCatalog('));
+      expect(source, contains('l10n,'));
+      expect(source, contains('.take(6)'));
+      expect(source, contains('actionLabel: l10n.servicesAllButton'));
+      expect(source, contains('onActionTap: _openServices'));
+      expect(source, contains('ServiceGrid('));
+      expect(source, contains('onServiceTap: _openService'));
+      expect(source, isNot(contains('_FeatureEntriesGrid(')));
+      expect(source, isNot(contains('_buildFeatureEntries(')));
+      expect(source, isNot(contains('homeFeaturedStays')));
+      expect(source, isNot(contains('homeCarRentals')));
+      expect(ruArb, contains('"servicesAllButton": "Все"'));
+      expect(enArb, contains('"servicesAllButton": "All"'));
+      expect(kkArb, contains('"servicesAllButton"'));
     },
   );
 
@@ -340,6 +385,79 @@ void main() {
       expect(cardSource, contains('fontSize: isCompact ? 15 : 16'));
       expect(cardSource, contains('fontSize: isCompact ? 11.5 : 12'));
       expect(cardSource, contains('fontSize: isCompact ? 16 : 17'));
+    },
+  );
+
+  test(
+    'recommended activities do not hide current user hosted items',
+    () async {
+      final source = await File(
+        'lib/screens/home/home_screen.dart',
+      ).readAsString();
+      final filterStart = source.indexOf(
+        'List<ActivityListItemVm> _filterHomeRecommendedItems',
+      );
+      final locationStart = source.indexOf(
+        'bool _matchesHomeLocation',
+        filterStart,
+      );
+
+      expect(filterStart, isNonNegative);
+      expect(locationStart, greaterThan(filterStart));
+
+      final filterSource = source.substring(filterStart, locationStart);
+
+      expect(
+        filterSource,
+        isNot(contains('hostUserId.trim() == currentUserId')),
+      );
+      expect(filterSource, isNot(contains('normalizedUserId')));
+      expect(filterSource, contains('_isHomeRecommendedActivity(item)'));
+    },
+  );
+
+  test(
+    'recommended activities use effective user location except fallback',
+    () async {
+      final source = await File(
+        'lib/screens/home/home_screen.dart',
+      ).readAsString();
+      final filterStart = source.indexOf(
+        'List<ActivityListItemVm> _filterHomeRecommendedItems',
+      );
+      final matchStart = source.indexOf(
+        'bool _matchesHomeLocation',
+        filterStart,
+      );
+      final statusStart = source.indexOf(
+        'bool _isHomeRegistrationOpenStatus',
+        matchStart,
+      );
+
+      expect(filterStart, isNonNegative);
+      expect(matchStart, greaterThan(filterStart));
+      expect(statusStart, greaterThan(matchStart));
+
+      final filterSource = source.substring(filterStart, matchStart);
+      final locationSource = source.substring(matchStart, statusStart);
+
+      expect(filterSource, contains('final shouldFilterByLocation ='));
+      expect(
+        filterSource,
+        contains('_shouldFilterHomeRecommendationsByLocation('),
+      );
+      expect(
+        filterSource,
+        contains(
+          '(!shouldFilterByLocation || _matchesHomeLocation(item, location))',
+        ),
+      );
+      expect(
+        locationSource,
+        contains('location.source != HomeLocationSource.fallback'),
+      );
+      expect(locationSource, contains('AppCityFilterValue.fromParts('));
+      expect(locationSource, isNot(contains('location.isUserSelected')));
     },
   );
 

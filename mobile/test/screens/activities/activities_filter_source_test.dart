@@ -13,7 +13,7 @@ void main() {
         'lib/core/ui/app_inline_sort_row.dart',
       ).readAsString();
       final sortBarStart = source.indexOf('class _DiscoverSortBar');
-      final sortBarEnd = source.indexOf('class _FiltersSummaryBar');
+      final sortBarEnd = source.indexOf('class _ActivitiesNearbyMapSection');
 
       expect(sortBarStart, isNonNegative);
       expect(sortBarEnd, greaterThan(sortBarStart));
@@ -87,6 +87,48 @@ void main() {
   );
 
   test(
+    'discover activities default filter uses profile-backed effective location',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activities_screen.dart',
+      ).readAsString();
+      final initStart = source.indexOf(
+        'Future<void> _initializeDefaultLocationFilter()',
+      );
+      final applyStart = source.indexOf(
+        'void _applyDefaultLocationFilter',
+        initStart,
+      );
+      final disposeStart = source.indexOf('@override\n  void dispose()');
+
+      expect(initStart, isNonNegative);
+      expect(applyStart, greaterThan(initStart));
+      expect(disposeStart, greaterThan(applyStart));
+
+      final initSource = source.substring(initStart, applyStart);
+      final applySource = source.substring(applyStart, disposeStart);
+
+      expect(
+        initSource,
+        contains('final sessionProvider = context.read<SessionProvider>();'),
+      );
+      expect(initSource, contains('profile: sessionProvider.profile'));
+      expect(
+        applySource,
+        contains('final location = provider.effectiveLocation'),
+      );
+      expect(
+        applySource,
+        contains('location.source == HomeLocationSource.fallback'),
+      );
+      expect(
+        applySource,
+        isNot(contains('final location = provider.selectedLocation')),
+      );
+    },
+  );
+
+  test(
     'discover activities country changes reset city to all cities',
     () async {
       final source = await File(
@@ -113,24 +155,36 @@ void main() {
   });
 
   test(
-    'discover activities hides summary bar for empty filtered results',
+    'discover activities does not render clear controls below sorting or empty state',
     () async {
       final source = await File(
         'lib/screens/activities/activities_screen.dart',
       ).readAsString();
-      final summaryBarCall = source.indexOf('_FiltersSummaryBar(');
-      final summaryCondition = source.lastIndexOf('if (', summaryBarCall);
-
-      expect(summaryBarCall, isNonNegative);
-      expect(summaryCondition, isNonNegative);
-
-      final conditionSource = source.substring(
-        summaryCondition,
-        summaryBarCall,
+      final filteredEmptyStart = source.indexOf(
+        'else if (filteredItems.isEmpty)',
       );
-      expect(conditionSource, contains('filteredItems.isNotEmpty'));
-      expect(conditionSource, contains('_searchQuery.isNotEmpty'));
-      expect(conditionSource, contains('_filters.hasAnyValue'));
+      final listStart = source.indexOf(
+        'else\n                            SliverPadding',
+        filteredEmptyStart,
+      );
+
+      expect(filteredEmptyStart, isNonNegative);
+      expect(listStart, greaterThan(filteredEmptyStart));
+
+      final filteredEmptySource = source.substring(
+        filteredEmptyStart,
+        listStart,
+      );
+
+      expect(source, isNot(contains('_FiltersSummaryBar(')));
+      expect(
+        source,
+        isNot(contains('activitiesResultsCount(filteredItems.length)')),
+      );
+      expect(filteredEmptySource, contains('activitiesFilteredEmptyTitle'));
+      expect(filteredEmptySource, contains('activitiesFilteredEmptySubtitle'));
+      expect(filteredEmptySource, isNot(contains('actionLabel:')));
+      expect(filteredEmptySource, isNot(contains('onActionTap:')));
     },
   );
 
