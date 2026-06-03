@@ -129,6 +129,37 @@ void main() {
   );
 
   test(
+    'previewExcursions loads all matching pages without mutating list state',
+    () async {
+      final api = _FakeExcursionApi(
+        excursionBatches: const [
+          [_existingExcursion],
+        ],
+        excursionPages: const [
+          ExcursionsPage(items: [_existingExcursion], hasMore: true),
+          ExcursionsPage(items: [_publishedProduct], hasMore: false),
+        ],
+        createdExcursion: _createdDraft,
+        publishedExcursion: _publishedExcursion,
+      );
+      final provider = ExcursionProvider(excursionApi: api);
+
+      final preview = await provider.previewExcursions(
+        query: ' canyon ',
+        countryCode: 'KZ',
+        departureCityId: 'almaty',
+      );
+
+      expect(preview, const [_existingExcursion, _publishedProduct]);
+      expect(provider.excursions, isEmpty);
+      expect(provider.listState, ExcursionListState.initial);
+      expect(api.getExcursionsPageOffsets, [0, 1]);
+      expect(api.getExcursionsPageCountryCodes, ['KZ', 'KZ']);
+      expect(api.getExcursionsPageDepartureCityIds, ['almaty', 'almaty']);
+    },
+  );
+
+  test(
     'loadGuideDashboardData loads real guide rating from guide profile',
     () async {
       final api = _FakeExcursionApi(
@@ -472,6 +503,7 @@ const _request = CreateExcursionRequest(
 class _FakeExcursionApi extends ExcursionApi {
   _FakeExcursionApi({
     required this.excursionBatches,
+    this.excursionPages = const [],
     required this.createdExcursion,
     required this.publishedExcursion,
     this.updatedExcursion,
@@ -481,6 +513,7 @@ class _FakeExcursionApi extends ExcursionApi {
   });
 
   final List<List<ExcursionVm>> excursionBatches;
+  final List<ExcursionsPage> excursionPages;
   final ExcursionVm createdExcursion;
   final ExcursionVm publishedExcursion;
   final ExcursionVm? updatedExcursion;
@@ -488,6 +521,10 @@ class _FakeExcursionApi extends ExcursionApi {
   final List<ExcursionVm> myExcursions;
   final List<ExcursionBookingVm> guideBookings;
   int getExcursionsCallCount = 0;
+  int getExcursionsPageCallCount = 0;
+  final List<int> getExcursionsPageOffsets = [];
+  final List<String?> getExcursionsPageCountryCodes = [];
+  final List<String?> getExcursionsPageDepartureCityIds = [];
   int getMyExcursionsCallCount = 0;
   final List<List<String>> getMyExcursionsStatuses = [];
   int getMyGuideExcursionBookingsCallCount = 0;
@@ -511,6 +548,28 @@ class _FakeExcursionApi extends ExcursionApi {
       return excursionBatches.last;
     }
     return excursionBatches[index];
+  }
+
+  @override
+  Future<ExcursionsPage> getExcursionsPage({
+    int limit = 50,
+    int offset = 0,
+    String? query,
+    String? landmarkId,
+    String? categorySlug,
+    String? countryCode,
+    String? cityName,
+    String? departureCityId,
+  }) async {
+    final index = getExcursionsPageCallCount;
+    getExcursionsPageCallCount++;
+    getExcursionsPageOffsets.add(offset);
+    getExcursionsPageCountryCodes.add(countryCode);
+    getExcursionsPageDepartureCityIds.add(departureCityId);
+    if (index >= excursionPages.length) {
+      return const ExcursionsPage(items: [], hasMore: false);
+    }
+    return excursionPages[index];
   }
 
   @override

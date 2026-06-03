@@ -1,0 +1,2 @@
+-- Data backfill is intentionally irreversible.
+-- Reverting it would remove valid product location data restored from linked legacy offers.

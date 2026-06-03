@@ -19,52 +19,88 @@ void main() {
     },
   );
 
-  test('discover filters default to selected current location city', () async {
-    final files = {
-      'activities': await File(
-        'lib/screens/activities/activities_screen.dart',
-      ).readAsString(),
-      'excursions': await File(
-        'lib/screens/excursions/excursions_screen.dart',
-      ).readAsString(),
-      'attractions': await File(
-        'lib/screens/attractions/attractions_screen.dart',
-      ).readAsString(),
-      'guides': await File(
-        'lib/screens/guides/guides_screen.dart',
-      ).readAsString(),
-    };
+  test(
+    'discover filters default to effective or selected current location city',
+    () async {
+      final files = {
+        'activities': await File(
+          'lib/screens/activities/activities_screen.dart',
+        ).readAsString(),
+        'excursions': await File(
+          'lib/screens/excursions/excursions_screen.dart',
+        ).readAsString(),
+        'attractions': await File(
+          'lib/screens/attractions/attractions_screen.dart',
+        ).readAsString(),
+        'guides': await File(
+          'lib/screens/guides/guides_screen.dart',
+        ).readAsString(),
+      };
 
-    for (final entry in files.entries) {
-      expect(
-        entry.value,
-        contains("import '../../providers/home_location_provider.dart';"),
-        reason: entry.key,
-      );
-      expect(entry.value, contains('HomeLocationProvider'), reason: entry.key);
-      expect(entry.value, contains('selectedLocation'), reason: entry.key);
-      if (entry.key == 'attractions') {
+      for (final entry in files.entries) {
         expect(
           entry.value,
-          contains(
-            "import '../../shared/widgets/app_city_filter_section.dart';",
-          ),
+          contains("import '../../providers/home_location_provider.dart';"),
           reason: entry.key,
         );
-      } else {
         expect(
           entry.value,
-          contains('AppCityFilterSection'),
+          contains('HomeLocationProvider'),
           reason: entry.key,
+        );
+        if (entry.key == 'activities' || entry.key == 'excursions') {
+          expect(entry.value, contains('effectiveLocation'), reason: entry.key);
+          expect(
+            entry.value,
+            isNot(contains('final location = provider.selectedLocation')),
+            reason: entry.key,
+          );
+        } else {
+          expect(entry.value, contains('selectedLocation'), reason: entry.key);
+        }
+        if (entry.key == 'attractions') {
+          expect(
+            entry.value,
+            contains(
+              "import '../../shared/widgets/app_city_filter_section.dart';",
+            ),
+            reason: entry.key,
+          );
+        } else {
+          expect(
+            entry.value,
+            contains('AppCityFilterSection'),
+            reason: entry.key,
+          );
+        }
+        expect(
+          entry.value,
+          isNot(contains('profile?.countryCode')),
+          reason: '${entry.key} must not default filters from profile country',
         );
       }
+    },
+  );
+
+  test(
+    'home location provider resolves profile timezone city into reference city id',
+    () async {
+      final source = await File(
+        'lib/providers/home_location_provider.dart',
+      ).readAsString();
+
       expect(
-        entry.value,
-        isNot(contains('profile?.countryCode')),
-        reason: '${entry.key} must not default filters from profile country',
+        source,
+        contains('Future<HomeLocationPreference> resolveCityReference('),
       );
-    }
-  });
+      expect(
+        source,
+        contains('Future<HomeLocationPreference> _resolveCityReference('),
+      );
+      expect(source, contains('_referenceApi.searchCities('));
+      expect(source, contains('cityId: matchedCity.id.trim()'));
+    },
+  );
 
   test(
     'discover filters carry city id and city name to local or remote filters',

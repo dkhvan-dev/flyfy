@@ -30,6 +30,7 @@ class ExcursionProvider extends ChangeNotifier {
 
   static const _marketplaceRefreshAttempts = 3;
   static const _marketplaceRefreshRetryDelay = Duration(milliseconds: 150);
+  static const _filterPreviewPageSize = 100;
   static const _guideDashboardOfferStatuses = <String>[
     'PUBLISHED',
     'DRAFT',
@@ -196,6 +197,36 @@ class ExcursionProvider extends ChangeNotifier {
       cityName: cityName,
       departureCityId: departureCityId,
     );
+  }
+
+  Future<List<ExcursionVm>> previewExcursions({
+    String? query,
+    String? landmarkId,
+    String? categorySlug,
+    String? countryCode,
+    String? cityName,
+    String? departureCityId,
+  }) async {
+    final items = <ExcursionVm>[];
+    var offset = 0;
+
+    while (true) {
+      final page = await _excursionApi.getExcursionsPage(
+        limit: _filterPreviewPageSize,
+        offset: offset,
+        query: query,
+        landmarkId: landmarkId,
+        categorySlug: categorySlug,
+        countryCode: countryCode,
+        cityName: cityName,
+        departureCityId: departureCityId,
+      );
+      items.addAll(page.items);
+      if (!page.hasMore || page.items.isEmpty) break;
+      offset += page.items.length;
+    }
+
+    return List<ExcursionVm>.unmodifiable(items);
   }
 
   Future<ExcursionVm?> findFirstExcursionForAttraction(

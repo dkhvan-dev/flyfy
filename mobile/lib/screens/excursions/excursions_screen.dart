@@ -421,31 +421,42 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
 
   Future<void> _initializeDefaultCityFilter() async {
     final provider = context.read<HomeLocationProvider>();
+    final sessionProvider = context.read<SessionProvider>();
     if (!provider.isLoaded && !provider.isLoading) {
-      await provider.load();
+      await provider.load(profile: sessionProvider.profile);
     }
     if (!mounted) return;
-    _applyDefaultCityFilter(provider);
+    if (provider.shouldSyncProfile(sessionProvider.profile)) {
+      provider.syncProfileFallback(sessionProvider.profile);
+    }
+    final location = await provider.resolveCityReference(
+      provider.effectiveLocation,
+      languageCode: Localizations.localeOf(context).languageCode,
+    );
+    if (!mounted) return;
+    _applyDefaultCityFilter(location);
   }
 
-  void _applyDefaultCityFilter(HomeLocationProvider provider) {
+  void _applyDefaultCityFilter(HomeLocationPreference location) {
     if (_hasAppliedDefaultCityFilter ||
         _filters.country != null ||
         _filters.city != null) {
       return;
     }
-    _hasAppliedDefaultCityFilter = true;
 
-    final location = provider.selectedLocation;
+    if (location.source == HomeLocationSource.fallback) return;
+
     final country = AppCountryFilterValue.fromParts(
-      countryCode: location?.countryCode,
+      countryCode: location.countryCode,
     );
     final city = AppCityFilterValue.fromParts(
-      cityId: location?.cityId,
-      cityName: location?.cityName,
-      countryCode: location?.countryCode,
+      cityId: location.cityId,
+      cityName: location.cityName,
+      countryCode: location.countryCode,
     );
     if (country == null && city == null) return;
+
+    _hasAppliedDefaultCityFilter = true;
 
     setState(() => _filters = _filters.copyWith(country: country, city: city));
   }
@@ -594,16 +605,34 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => _ExcursionsFiltersSheet(
         initialFilters: _filters,
-        resultCountBuilder: (filters) => _visibleExcursions(
+        initialResultCount: _visibleExcursions(
           excursionsSnapshot,
-          filtersOverride: filters,
+          filtersOverride: _filters,
         ).length,
+        resultCountLoader: _loadPreviewResultCount,
       ),
     );
 
     if (selectedFilters == null || !mounted) return;
     setState(() => _filters = selectedFilters);
     unawaited(_loadExcursionsForCurrentFilters());
+  }
+
+  Future<int> _loadPreviewResultCount(_ExcursionsFilters filters) async {
+    final city = filters.city;
+    final previewExcursions = await context
+        .read<ExcursionProvider>()
+        .previewExcursions(
+          query: _searchQuery,
+          countryCode: filters.countryCode,
+          cityName: city?.cityName,
+          departureCityId: city?.cityId,
+        );
+    if (!mounted) return 0;
+    return _visibleExcursions(
+      previewExcursions,
+      filtersOverride: filters,
+    ).length;
   }
 
   @override
@@ -1216,11 +1245,13 @@ class _ExcursionsFilters {
 class _ExcursionsFiltersSheet extends StatefulWidget {
   const _ExcursionsFiltersSheet({
     required this.initialFilters,
-    required this.resultCountBuilder,
+    required this.initialResultCount,
+    required this.resultCountLoader,
   });
 
   final _ExcursionsFilters initialFilters;
-  final int Function(_ExcursionsFilters filters) resultCountBuilder;
+  final int initialResultCount;
+  final Future<int> Function(_ExcursionsFilters filters) resultCountLoader;
 
   @override
   State<_ExcursionsFiltersSheet> createState() =>
@@ -1228,16 +1259,23 @@ class _ExcursionsFiltersSheet extends StatefulWidget {
 }
 
 class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
+  static const _resultCountDebounceDuration = Duration(milliseconds: 250);
+
   late _ExcursionsFilters _filters;
   late final TextEditingController _languageSearchController;
   late final TextEditingController _priceFromController;
   late final TextEditingController _priceToController;
+  Timer? _resultCountDebounce;
+  late int _resultCount;
+  bool _isResultCountLoading = false;
+  int _resultCountRequestId = 0;
   String _languageSearchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _filters = widget.initialFilters;
+    _resultCount = widget.initialResultCount;
     _languageSearchController = TextEditingController()
       ..addListener(_handleLanguageSearchChanged);
     _priceFromController = TextEditingController(
@@ -1246,10 +1284,15 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
     _priceToController = TextEditingController(
       text: _formatExcursionPriceInput(widget.initialFilters.priceMax),
     )..addListener(_handlePriceRangeChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _scheduleResultCountLoad(immediate: true);
+    });
   }
 
   @override
   void dispose() {
+    _resultCountDebounce?.cancel();
     _languageSearchController
       ..removeListener(_handleLanguageSearchChanged)
       ..dispose();
@@ -1269,6 +1312,38 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
     setState(() => _languageSearchQuery = nextQuery);
   }
 
+  void _scheduleResultCountLoad({bool immediate = false}) {
+    _resultCountDebounce?.cancel();
+    _resultCountRequestId++;
+
+    if (immediate) {
+      unawaited(_loadResultCount());
+      return;
+    }
+
+    _resultCountDebounce = Timer(_resultCountDebounceDuration, () {
+      unawaited(_loadResultCount());
+    });
+  }
+
+  Future<void> _loadResultCount() async {
+    final requestId = _resultCountRequestId;
+    final filters = _filters;
+    setState(() => _isResultCountLoading = true);
+
+    try {
+      final resultCount = await widget.resultCountLoader(filters);
+      if (!mounted || requestId != _resultCountRequestId) return;
+      setState(() {
+        _resultCount = resultCount;
+        _isResultCountLoading = false;
+      });
+    } catch (_) {
+      if (!mounted || requestId != _resultCountRequestId) return;
+      setState(() => _isResultCountLoading = false);
+    }
+  }
+
   void _clear() {
     _languageSearchController.clear();
     _priceFromController.clear();
@@ -1277,6 +1352,7 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
       _filters = const _ExcursionsFilters();
       _languageSearchQuery = '';
     });
+    _scheduleResultCountLoad();
   }
 
   void _toggleCategory(String slug) {
@@ -1286,6 +1362,7 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
     setState(() {
       _filters = _filters.copyWith(categorySlugs: next);
     });
+    _scheduleResultCountLoad();
   }
 
   void _selectLanguage(String code) {
@@ -1300,6 +1377,7 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
       _languageSearchController.clear();
       _languageSearchQuery = '';
     });
+    _scheduleResultCountLoad();
   }
 
   void _setDuration(_ExcursionsDurationFilter duration) {
@@ -1309,12 +1387,21 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
         clearDuration: _filters.duration == duration,
       );
     });
+    _scheduleResultCountLoad();
   }
 
   void _setCountry(AppCountryFilterValue? country) {
     setState(() {
       _filters = _filters.copyWith(country: country, city: null);
     });
+    _scheduleResultCountLoad();
+  }
+
+  void _setCity(AppCityFilterValue? city) {
+    setState(() {
+      _filters = _filters.copyWith(city: city);
+    });
+    _scheduleResultCountLoad();
   }
 
   void _handlePriceRangeChanged() {
@@ -1328,6 +1415,7 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
         clearPriceMax: priceMax == null,
       );
     });
+    _scheduleResultCountLoad();
   }
 
   String? _selectedLanguage(AppLocalizations l10n) {
@@ -1374,7 +1462,6 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final resultCount = widget.resultCountBuilder(_filters);
     final selectedLanguage = _selectedLanguage(l10n);
     final visibleLanguages = _visibleLanguages(l10n);
 
@@ -1424,11 +1511,7 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
                           searchHint: l10n.locationFilterCitySearchHint,
                           noResultsText: l10n.locationFilterCityNoResults,
                           selectedCity: _filters.city,
-                          onChanged: (city) {
-                            setState(() {
-                              _filters = _filters.copyWith(city: city);
-                            });
-                          },
+                          onChanged: _setCity,
                           countryCode: _filters.country?.countryCode,
                         ),
                       ],
@@ -1644,8 +1727,9 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
               Padding(
                 padding: EdgeInsets.fromLTRB(22, 0, 22, bottomInset + 18),
                 child: AppFilterApplyButton(
-                  label: l10n.excursionsFiltersShowResults(resultCount),
+                  label: l10n.excursionsFiltersShowResults(_resultCount),
                   onTap: () => Navigator.of(context).pop(_filters),
+                  isLoading: _isResultCountLoading,
                   borderRadius: 14,
                   fontSize: 15,
                 ),

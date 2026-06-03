@@ -78,6 +78,34 @@ func TestListGuideUserIDsByExcursionCityUsesPublicPublishedExcursionsAndOffers(t
 	}
 }
 
+func TestMarketplaceProductUpsertFillsBlankLocationFields(t *testing.T) {
+	source, err := os.ReadFile("pg_excursion_repository.go")
+	if err != nil {
+		t.Fatalf("read pg_excursion_repository.go: %v", err)
+	}
+
+	body := string(source)
+	start := strings.Index(body, "func upsertExcursionProduct")
+	if start < 0 {
+		t.Fatal("upsertExcursionProduct not found")
+	}
+	end := strings.Index(body[start:], "func upsertExcursionOffer")
+	if end < 0 {
+		t.Fatal("upsertExcursionProduct end marker not found")
+	}
+	fn := body[start : start+end]
+
+	for _, want := range []string{
+		"country_code = COALESCE(NULLIF(BTRIM(excursion_products.country_code), ''), EXCLUDED.country_code)",
+		"city_name = COALESCE(NULLIF(BTRIM(excursion_products.city_name), ''), EXCLUDED.city_name)",
+		"departure_city_id = COALESCE(NULLIF(BTRIM(excursion_products.departure_city_id), ''), EXCLUDED.departure_city_id)",
+	} {
+		if !strings.Contains(fn, want) {
+			t.Fatalf("upsertExcursionProduct should fill blank location field using %q", want)
+		}
+	}
+}
+
 func TestReviewQueriesExcludeSoftDeletedRowsAndGuideStatsUseBothReviewSources(t *testing.T) {
 	source, err := os.ReadFile("pg_excursion_repository.go")
 	if err != nil {

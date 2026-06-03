@@ -22,6 +22,29 @@ class ExcursionApi {
     String? cityName,
     String? departureCityId,
   }) async {
+    final page = await getExcursionsPage(
+      limit: limit,
+      offset: offset,
+      query: query,
+      landmarkId: landmarkId,
+      categorySlug: categorySlug,
+      countryCode: countryCode,
+      cityName: cityName,
+      departureCityId: departureCityId,
+    );
+    return page.items;
+  }
+
+  Future<ExcursionsPage> getExcursionsPage({
+    int limit = 50,
+    int offset = 0,
+    String? query,
+    String? landmarkId,
+    String? categorySlug,
+    String? countryCode,
+    String? cityName,
+    String? departureCityId,
+  }) async {
     final normalizedCountryCode = countryCode?.trim().toUpperCase();
     final response = await _apiClient.dio.get(
       '/excursion-products',
@@ -49,10 +72,13 @@ class ExcursionApi {
             : null) ??
         const [];
 
-    return items
-        .whereType<Map<String, dynamic>>()
-        .map(ExcursionVm.fromJson)
-        .toList(growable: false);
+    return ExcursionsPage(
+      items: items
+          .whereType<Map<String, dynamic>>()
+          .map(ExcursionVm.fromJson)
+          .toList(growable: false),
+      hasMore: data is Map<String, dynamic> && data['hasMore'] == true,
+    );
   }
 
   Future<ExcursionVm> getExcursionById(String excursionId) async {

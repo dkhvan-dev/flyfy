@@ -80,7 +80,33 @@ void main() {
         contains("import '../../shared/widgets/app_city_filter_section.dart';"),
       );
       expect(source, contains('HomeLocationProvider'));
-      expect(source, contains('selectedLocation'));
+      expect(source, contains('SessionProvider'));
+      expect(source, contains('profile: sessionProvider.profile'));
+      expect(
+        source,
+        contains('provider.shouldSyncProfile(sessionProvider.profile)'),
+      );
+      expect(
+        source,
+        contains('provider.syncProfileFallback(sessionProvider.profile)'),
+      );
+      expect(source, contains('provider.resolveCityReference('));
+      expect(
+        source,
+        contains('languageCode: Localizations.localeOf(context).languageCode'),
+      );
+      expect(
+        source,
+        contains('final location = await provider.resolveCityReference('),
+      );
+      expect(
+        source,
+        contains('location.source == HomeLocationSource.fallback'),
+      );
+      expect(
+        source,
+        isNot(contains('final location = provider.selectedLocation')),
+      );
       expect(source, contains('_initializeDefaultCityFilter'));
       expect(source, contains('_applyDefaultCityFilter'));
       expect(source, contains('final AppCountryFilterValue? country'));
@@ -135,6 +161,30 @@ void main() {
       );
       expect(citySection, contains('AppCityFilterSection'));
       expect(citySection, isNot(contains('Wrap(')));
+    },
+  );
+
+  test(
+    'excursions filter sheet refreshes preview count for draft location changes',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursions_screen.dart',
+      ).readAsString();
+
+      expect(
+        source,
+        contains(
+          'final Future<int> Function(_ExcursionsFilters filters) resultCountLoader;',
+        ),
+      );
+      expect(source, contains('Timer? _resultCountDebounce'));
+      expect(source, contains('int _resultCountRequestId = 0'));
+      expect(source, contains('Future<void> _loadResultCount() async'));
+      expect(source, contains('widget.resultCountLoader(filters)'));
+      expect(source, contains('_scheduleResultCountLoad'));
+      expect(source, contains('void _setCity(AppCityFilterValue? city)'));
+      expect(source, contains('onChanged: _setCity'));
+      expect(source, contains('isLoading: _isResultCountLoading'));
     },
   );
 

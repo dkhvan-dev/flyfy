@@ -109,6 +109,7 @@ class HomeLocationProvider extends ChangeNotifier {
 
   bool shouldSyncProfile(UserProfileVm? profile) {
     if (!_isLoaded || _selectedLocation != null) return false;
+    if (_effectiveLocation.source == HomeLocationSource.detected) return false;
     return _profileSignature != _profileLocationSignature(profile);
   }
 
@@ -122,10 +123,21 @@ class HomeLocationProvider extends ChangeNotifier {
     final raw = prefs.getString(storageKey);
     _selectedLocation = _decodeSelectedLocation(raw);
     _profileSignature = _profileLocationSignature(profile);
+    final deviceLocation = _selectedLocation == null
+        ? await _detectDeviceLocationPreference(
+            languageCode: 'en',
+            requestPermission: false,
+          )
+        : null;
     _effectiveLocation =
         _selectedLocation ??
+        deviceLocation ??
         _profileFallback(profile) ??
         HomeLocationPreference.fallback();
+    _effectiveLocation = await _resolveCityReference(
+      _effectiveLocation,
+      languageCode: 'en',
+    );
     _isLoaded = true;
     _isLoading = false;
     notifyListeners();
@@ -133,12 +145,29 @@ class HomeLocationProvider extends ChangeNotifier {
 
   void syncProfileFallback(UserProfileVm? profile) {
     if (!_isLoaded || _selectedLocation != null) return;
+    if (_effectiveLocation.source == HomeLocationSource.detected) return;
     final signature = _profileLocationSignature(profile);
     if (_profileSignature == signature) return;
     _profileSignature = signature;
     _effectiveLocation =
         _profileFallback(profile) ?? HomeLocationPreference.fallback();
     notifyListeners();
+  }
+
+  Future<HomeLocationPreference> resolveCityReference(
+    HomeLocationPreference location, {
+    required String languageCode,
+  }) async {
+    final resolved = await _resolveCityReference(
+      location,
+      languageCode: languageCode,
+    );
+    if (_sameLocation(_effectiveLocation, location) &&
+        !_sameLocation(_effectiveLocation, resolved)) {
+      _effectiveLocation = resolved;
+      notifyListeners();
+    }
+    return resolved;
   }
 
   Future<void> selectCity(ReferenceCity city) async {
@@ -160,47 +189,11 @@ class HomeLocationProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final suggestion = await _deviceContextService.detectLocationSuggestion(
+      final preference = await _detectDeviceLocationPreference(
+        languageCode: languageCode,
         requestPermission: true,
       );
-      if (suggestion == null) {
-        throw Exception('location_unavailable');
-      }
-
-      final cityName = suggestion.cityName?.trim() ?? '';
-      final countryCode = suggestion.countryCode?.trim().toUpperCase();
-      ReferenceCity? matchedCity;
-      if (cityName.isNotEmpty) {
-        final cities = await _referenceApi.searchCities(
-          cityName,
-          countryCode: countryCode,
-          lang: languageCode,
-          limit: 8,
-        );
-        matchedCity = cities.cast<ReferenceCity?>().firstWhere((city) {
-          if (city == null) return false;
-          if (countryCode == null || countryCode.isEmpty) return true;
-          return city.countryCode.trim().toUpperCase() == countryCode;
-        }, orElse: () => cities.isEmpty ? null : cities.first);
-      }
-
-      final preference = HomeLocationPreference(
-        source: HomeLocationSource.detected,
-        countryCode: (matchedCity?.countryCode ?? countryCode)
-            ?.trim()
-            .toUpperCase(),
-        cityId: matchedCity?.id.trim().isEmpty == true
-            ? null
-            : matchedCity?.id.trim(),
-        cityName: (matchedCity?.name.trim().isNotEmpty == true)
-            ? matchedCity!.name.trim()
-            : (cityName.isEmpty ? null : cityName),
-        latitude: suggestion.latitude,
-        longitude: suggestion.longitude,
-        updatedAt: DateTime.now().toUtc(),
-      );
-      if ((preference.countryCode ?? '').trim().isEmpty &&
-          (preference.cityName ?? '').trim().isEmpty) {
+      if (preference == null) {
         throw Exception('location_unavailable');
       }
       await _setSelectedLocation(preference);
@@ -219,7 +212,12 @@ class HomeLocationProvider extends ChangeNotifier {
     _selectedLocation = null;
     _profileSignature = _profileLocationSignature(profile);
     _effectiveLocation =
-        _profileFallback(profile) ?? HomeLocationPreference.fallback();
+        await _detectDeviceLocationPreference(
+          languageCode: 'en',
+          requestPermission: false,
+        ) ??
+        _profileFallback(profile) ??
+        HomeLocationPreference.fallback();
     _errorMessage = null;
     notifyListeners();
   }
@@ -265,6 +263,126 @@ class HomeLocationProvider extends ChangeNotifier {
       cityName: cityName,
       updatedAt: DateTime.now().toUtc(),
     );
+  }
+
+  Future<HomeLocationPreference?> _detectDeviceLocationPreference({
+    required String languageCode,
+    required bool requestPermission,
+  }) async {
+    try {
+      final suggestion = await _deviceContextService.detectLocationSuggestion(
+        requestPermission: requestPermission,
+      );
+      if (suggestion == null) return null;
+
+      final cityName = suggestion.cityName?.trim() ?? '';
+      final countryCode = suggestion.countryCode?.trim().toUpperCase();
+      ReferenceCity? matchedCity;
+      if (cityName.isNotEmpty) {
+        final cities = await _referenceApi.searchCities(
+          cityName,
+          countryCode: countryCode,
+          lang: languageCode,
+          limit: 8,
+        );
+        matchedCity = cities.cast<ReferenceCity?>().firstWhere((city) {
+          if (city == null) return false;
+          if (countryCode == null || countryCode.isEmpty) return true;
+          return city.countryCode.trim().toUpperCase() == countryCode;
+        }, orElse: () => cities.isEmpty ? null : cities.first);
+      }
+
+      final preference = HomeLocationPreference(
+        source: HomeLocationSource.detected,
+        countryCode: (matchedCity?.countryCode ?? countryCode)
+            ?.trim()
+            .toUpperCase(),
+        cityId: matchedCity?.id.trim().isEmpty == true
+            ? null
+            : matchedCity?.id.trim(),
+        cityName: (matchedCity?.name.trim().isNotEmpty == true)
+            ? matchedCity!.name.trim()
+            : (cityName.isEmpty ? null : cityName),
+        latitude: suggestion.latitude,
+        longitude: suggestion.longitude,
+        updatedAt: DateTime.now().toUtc(),
+      );
+      if ((preference.countryCode ?? '').trim().isEmpty &&
+          (preference.cityName ?? '').trim().isEmpty) {
+        return null;
+      }
+      return preference;
+    } catch (_) {
+      if (requestPermission) rethrow;
+      return null;
+    }
+  }
+
+  Future<HomeLocationPreference> _resolveCityReference(
+    HomeLocationPreference location, {
+    required String languageCode,
+  }) async {
+    if ((location.cityId ?? '').trim().isNotEmpty) return location;
+
+    final cityName = location.cityName?.trim();
+    if (cityName == null || cityName.isEmpty) return location;
+
+    try {
+      final countryCode = location.countryCode?.trim().toUpperCase();
+      final cities = await _referenceApi.searchCities(
+        cityName,
+        countryCode: countryCode,
+        lang: languageCode,
+        limit: 8,
+      );
+      ReferenceCity? matchedCity;
+      for (final city in cities) {
+        final cityId = city.id.trim();
+        if (cityId.isEmpty) continue;
+        if ((countryCode ?? '').isNotEmpty &&
+            city.countryCode.trim().toUpperCase() != countryCode) {
+          continue;
+        }
+        matchedCity = city;
+        break;
+      }
+      if (matchedCity == null) {
+        for (final city in cities) {
+          if (city.id.trim().isEmpty) continue;
+          matchedCity = city;
+          break;
+        }
+      }
+      if (matchedCity == null) return location;
+
+      return HomeLocationPreference(
+        source: location.source,
+        countryCode: matchedCity.countryCode.trim().isEmpty
+            ? location.countryCode
+            : matchedCity.countryCode.trim().toUpperCase(),
+        cityId: matchedCity.id.trim(),
+        cityName: matchedCity.name.trim().isEmpty
+            ? location.cityName
+            : matchedCity.name.trim(),
+        latitude: location.latitude,
+        longitude: location.longitude,
+        updatedAt: location.updatedAt,
+      );
+    } catch (_) {
+      return location;
+    }
+  }
+
+  bool _sameLocation(
+    HomeLocationPreference first,
+    HomeLocationPreference second,
+  ) {
+    return first.source == second.source &&
+        first.countryCode == second.countryCode &&
+        first.cityId == second.cityId &&
+        first.cityName == second.cityName &&
+        first.latitude == second.latitude &&
+        first.longitude == second.longitude;
   }
 
   String _profileLocationSignature(UserProfileVm? profile) {

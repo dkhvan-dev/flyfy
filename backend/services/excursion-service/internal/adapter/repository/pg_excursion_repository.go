@@ -3392,9 +3392,9 @@ func upsertExcursionProduct(ctx context.Context, exec dbExecutor, item *model.Ex
 				ELSE EXCLUDED.visibility
 			END,
 			duration_minutes = CASE WHEN excursion_products.published_offers_count = 0 THEN EXCLUDED.duration_minutes ELSE excursion_products.duration_minutes END,
-			country_code = COALESCE(excursion_products.country_code, EXCLUDED.country_code),
-			city_name = COALESCE(excursion_products.city_name, EXCLUDED.city_name),
-			departure_city_id = COALESCE(excursion_products.departure_city_id, EXCLUDED.departure_city_id),
+			country_code = COALESCE(NULLIF(BTRIM(excursion_products.country_code), ''), EXCLUDED.country_code),
+			city_name = COALESCE(NULLIF(BTRIM(excursion_products.city_name), ''), EXCLUDED.city_name),
+			departure_city_id = COALESCE(NULLIF(BTRIM(excursion_products.departure_city_id), ''), EXCLUDED.departure_city_id),
 			latitude = COALESCE(excursion_products.latitude, EXCLUDED.latitude),
 			longitude = COALESCE(excursion_products.longitude, EXCLUDED.longitude),
 			map_url = COALESCE(excursion_products.map_url, EXCLUDED.map_url),

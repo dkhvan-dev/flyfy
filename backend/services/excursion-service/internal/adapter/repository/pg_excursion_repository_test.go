@@ -435,6 +435,32 @@ func TestCombinedRouteMigrationAddsRouteMetadata(t *testing.T) {
 	}
 }
 
+func TestProductLocationBackfillMigrationUsesLinkedOfferLocation(t *testing.T) {
+	migration := readMigration(t, "024_backfill_excursion_product_location_from_offers.up.sql")
+	required := []string{
+		"FROM excursion_offers o",
+		"JOIN excursions e ON e.id = o.legacy_excursion_id",
+		"ROW_NUMBER() OVER",
+		"PARTITION BY o.product_id",
+		"UPDATE excursion_products p",
+		"NULLIF(BTRIM(p.country_code), '')",
+		"NULLIF(BTRIM(p.city_name), '')",
+		"NULLIF(BTRIM(p.departure_city_id), '')",
+		"l.departure_city_id",
+		"WHERE row_num = 1",
+	}
+	for _, fragment := range required {
+		if !strings.Contains(migration, fragment) {
+			t.Fatalf("migration missing %q\n%s", fragment, migration)
+		}
+	}
+
+	downMigration := readMigration(t, "024_backfill_excursion_product_location_from_offers.down.sql")
+	if !strings.Contains(downMigration, "intentionally irreversible") {
+		t.Fatalf("down migration should document why the backfill is not reverted:\n%s", downMigration)
+	}
+}
+
 func TestReviewCommentMigrationAllowsRatingOnlyReviews(t *testing.T) {
 	upMigration := readMigration(t, "017_allow_empty_review_comments.up.sql")
 	requiredUpFragments := []string{

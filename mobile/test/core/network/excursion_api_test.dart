@@ -74,6 +74,44 @@ void main() {
     },
   );
 
+  test(
+    'getExcursionsPage exposes product pagination for preview counts',
+    () async {
+      final adapter = _ExcursionJsonAdapter({
+        '/excursion-products': {
+          'items': [_productJson()],
+          'hasMore': true,
+        },
+      });
+      final api = ExcursionApi(
+        apiClient: ApiClient(
+          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+            ..httpClientAdapter = adapter,
+          secureStorage: _FakeSecureStorage(),
+        ),
+      );
+
+      final page = await api.getExcursionsPage(
+        limit: 100,
+        offset: 200,
+        query: ' canyon ',
+        countryCode: ' kz ',
+        departureCityId: ' almaty ',
+      );
+
+      expect(page.items.single.id, 'product-1');
+      expect(page.hasMore, isTrue);
+      expect(adapter.requests.single.path, '/excursion-products');
+      expect(adapter.requests.single.queryParameters, {
+        'limit': 100,
+        'offset': 200,
+        'q': 'canyon',
+        'countryCode': 'KZ',
+        'departureCityId': 'almaty',
+      });
+    },
+  );
+
   test('getExcursionById loads product details and public offers', () async {
     final adapter = _ExcursionJsonAdapter({
       '/excursion-products/product-1': _productJson(),
