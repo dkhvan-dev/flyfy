@@ -61,6 +61,7 @@ func NewGuideUseCaseWithFraud(
 }
 
 type GuideExcursionCityFilter struct {
+	CityID      string
 	CityName    string
 	CountryCode string
 }
@@ -799,8 +800,8 @@ func (u *GuideUseCase) ListPublicGuideProfiles(
 	input ListPublicGuidesInput,
 ) (port.PublicGuideListResult, error) {
 	filter := normalizePublicGuideListFilter(input)
-	cityFilter := normalizeGuideExcursionCityFilter(input.CityName, input.CityCountryCode)
-	if cityFilter.CityName != "" {
+	cityFilter := normalizeGuideExcursionCityFilter(input.CityID, input.CityName, input.CityCountryCode)
+	if cityFilter.CityID != "" || cityFilter.CityName != "" {
 		if u.excursionClient == nil {
 			return port.PublicGuideListResult{}, fmt.Errorf("excursion coverage client is not configured")
 		}
@@ -876,8 +877,9 @@ func normalizePublicGuideListFilter(input ListPublicGuidesInput) port.PublicGuid
 	}
 }
 
-func normalizeGuideExcursionCityFilter(cityName string, countryCode string) GuideExcursionCityFilter {
+func normalizeGuideExcursionCityFilter(cityID string, cityName string, countryCode string) GuideExcursionCityFilter {
 	return GuideExcursionCityFilter{
+		CityID:      strings.ToLower(strings.TrimSpace(cityID)),
 		CityName:    strings.TrimSpace(cityName),
 		CountryCode: strings.ToUpper(strings.TrimSpace(countryCode)),
 	}

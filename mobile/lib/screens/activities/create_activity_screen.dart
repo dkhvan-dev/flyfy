@@ -505,12 +505,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     }
     if (!mounted) return;
 
-    final location =
-        provider.selectedLocation ??
-        (provider.effectiveLocation.source == HomeLocationSource.fallback
-            ? null
-            : provider.effectiveLocation);
-    if (location == null) {
+    final location = provider.effectiveLocation;
+    if (location.source == HomeLocationSource.fallback) {
       return;
     }
 

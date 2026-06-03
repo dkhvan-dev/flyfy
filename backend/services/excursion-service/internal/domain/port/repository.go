@@ -113,6 +113,7 @@ type GuideReviewFilter struct {
 
 type GuideExcursionCityFilter struct {
 	CountryCode *string
+	CityID      *string
 	CityName    *string
 }
 

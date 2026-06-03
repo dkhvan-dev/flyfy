@@ -87,7 +87,7 @@ void main() {
   );
 
   test(
-    'discover activities default filter uses profile-backed effective location',
+    'discover activities default filter uses device-backed effective location',
     () async {
       final source = await File(
         'lib/screens/activities/activities_screen.dart',

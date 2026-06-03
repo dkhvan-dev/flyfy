@@ -96,7 +96,7 @@ void main() {
       expect(publicRequest.queryParameters['sort'], 'experience_desc');
       expect(publicRequest.queryParameters['minRating'], 4.5);
       expect(publicRequest.queryParameters['minExperienceYears'], 3);
-      expect(publicRequest.queryParameters.containsKey('cityId'), isFalse);
+      expect(publicRequest.queryParameters['cityId'], 'almaty');
       expect(publicRequest.queryParameters['cityName'], 'Алматы');
       expect(publicRequest.queryParameters['cityCountryCode'], 'KZ');
       expect(publicRequest.queryParameters['countries'], 'KZ');

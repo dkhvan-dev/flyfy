@@ -197,7 +197,11 @@ void main() {
         createActivitySource,
         contains('_prefillAuthorLocationFromHomeLocation'),
       );
-      expect(createActivitySource, contains('provider.selectedLocation'));
+      expect(createActivitySource, contains('provider.effectiveLocation'));
+      expect(
+        createActivitySource,
+        isNot(contains('provider.selectedLocation')),
+      );
     },
   );
 

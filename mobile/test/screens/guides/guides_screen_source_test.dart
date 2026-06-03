@@ -35,7 +35,15 @@ void main() {
       expect(source, contains('showModalBottomSheet<_GuideFilters>'));
       expect(source, contains('class _GuidesFiltersSheet'));
       expect(source, contains('HomeLocationProvider'));
-      expect(source, contains('selectedLocation'));
+      expect(source, contains('provider.effectiveLocation'));
+      expect(
+        source,
+        contains('location.source == HomeLocationSource.fallback'),
+      );
+      expect(
+        source,
+        isNot(contains('final location = provider.selectedLocation')),
+      );
       expect(source, contains('_initializeGuides'));
       expect(source, contains('_applyDefaultCityFilter'));
       expect(source, contains('cityId: _filters.city?.cityId'));

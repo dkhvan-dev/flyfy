@@ -505,7 +505,7 @@ void main() {
   });
 
   test(
-    'create activity prefills meeting city from selected home location',
+    'create activity prefills meeting city from effective home location',
     () async {
       final source = await File(
         'lib/screens/activities/create_activity_screen.dart',
@@ -517,7 +517,8 @@ void main() {
       );
       expect(source, contains('_prefillAuthorLocationFromHomeLocation'));
       expect(source, contains('HomeLocationProvider'));
-      expect(source, contains('provider.selectedLocation'));
+      expect(source, contains('provider.effectiveLocation'));
+      expect(source, isNot(contains('provider.selectedLocation ??')));
       expect(source, contains('_authorLocationCountryCode'));
       expect(source, contains('_authorLocationCityId'));
       expect(source, contains('_authorLocationCityName'));

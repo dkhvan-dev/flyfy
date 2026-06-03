@@ -48,6 +48,31 @@ void main() {
   );
 
   test(
+    'create excursion loads effective device location before prefill',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('Future<void> _applyHomeLocation()'));
+      expect(source, contains('await provider.load()'));
+      expect(source, contains('provider.effectiveLocation'));
+      expect(
+        source,
+        contains('location.source == HomeLocationSource.fallback'),
+      );
+      expect(
+        source,
+        isNot(
+          contains(
+            'final location = context.read<HomeLocationProvider>().effectiveLocation',
+          ),
+        ),
+      );
+    },
+  );
+
+  test(
     'create excursion stepper marks completed steps with success color',
     () async {
       final source = await File(

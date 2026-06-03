@@ -42,6 +42,11 @@ class GuideDiscoveryApi {
       queryParameters['minExperienceYears'] = minExperienceYears;
     }
 
+    final normalizedCityId = cityId?.trim().toLowerCase();
+    if (normalizedCityId != null && normalizedCityId.isNotEmpty) {
+      queryParameters['cityId'] = normalizedCityId;
+    }
+
     final normalizedCityName = cityName?.trim();
     if (normalizedCityName != null && normalizedCityName.isNotEmpty) {
       queryParameters['cityName'] = normalizedCityName;

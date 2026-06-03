@@ -48,16 +48,12 @@ void main() {
           contains('HomeLocationProvider'),
           reason: entry.key,
         );
-        if (entry.key == 'activities' || entry.key == 'excursions') {
-          expect(entry.value, contains('effectiveLocation'), reason: entry.key);
-          expect(
-            entry.value,
-            isNot(contains('final location = provider.selectedLocation')),
-            reason: entry.key,
-          );
-        } else {
-          expect(entry.value, contains('selectedLocation'), reason: entry.key);
-        }
+        expect(entry.value, contains('effectiveLocation'), reason: entry.key);
+        expect(
+          entry.value,
+          isNot(contains('final location = provider.selectedLocation')),
+          reason: entry.key,
+        );
         if (entry.key == 'attractions') {
           expect(
             entry.value,
@@ -125,6 +121,7 @@ void main() {
       expect(excursions, contains('excursion.cityName'));
       expect(attractions, contains('cityId: staged.cityId'));
       expect(guides, contains('String? cityId'));
+      expect(guides, contains("queryParameters['cityId']"));
       expect(guides, contains("queryParameters['cityName']"));
       expect(guides, contains("queryParameters['cityCountryCode']"));
     },

@@ -115,8 +115,7 @@ class _GuidesScreenState extends State<GuidesScreen> {
     if (!mounted) return;
 
     final locationProvider = context.read<HomeLocationProvider>();
-    if (locationProvider.selectedLocation == null &&
-        !locationProvider.isLoading) {
+    if (!locationProvider.isLoaded && !locationProvider.isLoading) {
       await locationProvider.load();
     }
     if (!mounted) return;
@@ -133,14 +132,15 @@ class _GuidesScreenState extends State<GuidesScreen> {
     }
 
     _hasAppliedDefaultCityFilter = true;
-    final location = provider.selectedLocation;
+    final location = provider.effectiveLocation;
+    if (location.source == HomeLocationSource.fallback) return;
     final country = AppCountryFilterValue.fromParts(
-      countryCode: location?.countryCode,
+      countryCode: location.countryCode,
     );
     final city = AppCityFilterValue.fromParts(
-      cityId: location?.cityId,
-      cityName: location?.cityName,
-      countryCode: location?.countryCode,
+      cityId: location.cityId,
+      cityName: location.cityName,
+      countryCode: location.countryCode,
     );
     if ((country == null && city == null) || !mounted) return;
 

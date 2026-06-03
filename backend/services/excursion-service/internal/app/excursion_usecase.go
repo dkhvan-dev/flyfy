@@ -976,7 +976,7 @@ func (u *ExcursionUseCase) ListGuideExcursionLanguageCodes(ctx context.Context, 
 
 func (u *ExcursionUseCase) ListGuideUserIDsByExcursionCity(ctx context.Context, filter port.GuideExcursionCityFilter) ([]uuid.UUID, error) {
 	filter = normalizeGuideExcursionCityFilter(filter)
-	if filter.CityName == nil {
+	if filter.CityID == nil && filter.CityName == nil {
 		return []uuid.UUID{}, nil
 	}
 
@@ -988,6 +988,14 @@ func (u *ExcursionUseCase) ListGuideUserIDsByExcursionCity(ctx context.Context, 
 }
 
 func normalizeGuideExcursionCityFilter(filter port.GuideExcursionCityFilter) port.GuideExcursionCityFilter {
+	if filter.CityID != nil {
+		cityID := strings.ToLower(strings.TrimSpace(*filter.CityID))
+		if cityID == "" {
+			filter.CityID = nil
+		} else {
+			filter.CityID = &cityID
+		}
+	}
 	if filter.CityName != nil {
 		cityName := strings.TrimSpace(*filter.CityName)
 		if cityName == "" {

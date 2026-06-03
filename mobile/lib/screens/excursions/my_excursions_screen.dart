@@ -106,16 +106,17 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
     }
     _hasAppliedDefaultCityFilter = true;
 
-    final location = provider.selectedLocation;
+    final location = provider.effectiveLocation;
+    if (location.source == HomeLocationSource.fallback) return;
     final country = AppCountryFilterValue.fromParts(
-      countryCode: location?.countryCode,
+      countryCode: location.countryCode,
     );
     final city = country == null
         ? null
         : AppCityFilterValue.fromParts(
-            cityId: location?.cityId,
-            cityName: location?.cityName,
-            countryCode: location?.countryCode,
+            cityId: location.cityId,
+            cityName: location.cityName,
+            countryCode: location.countryCode,
           );
     if (country == null && city == null) return;
 

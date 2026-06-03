@@ -136,7 +136,25 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       _populateFromExcursion(initialExcursion);
     } else if (!_isEditMode && !_didApplyHomeLocation) {
       _didApplyHomeLocation = true;
-      final location = context.read<HomeLocationProvider>().effectiveLocation;
+      unawaited(_applyHomeLocation());
+    }
+  }
+
+  Future<void> _applyHomeLocation() async {
+    final provider = context.read<HomeLocationProvider>();
+    if (!provider.isLoaded && !provider.isLoading) {
+      try {
+        await provider.load();
+      } catch (_) {
+        // Keep the form usable if device location cannot be resolved.
+      }
+    }
+    if (!mounted) return;
+
+    final location = provider.effectiveLocation;
+    if (location.source == HomeLocationSource.fallback) return;
+
+    setState(() {
       _selectedCountryCode ??= (location.countryCode ?? '').trim().isEmpty
           ? null
           : location.countryCode!.trim().toUpperCase();
@@ -147,7 +165,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           (location.cityName ?? '').trim().isNotEmpty) {
         _cityNameCtrl.text = location.cityName!.trim();
       }
-    }
+    });
   }
 
   @override

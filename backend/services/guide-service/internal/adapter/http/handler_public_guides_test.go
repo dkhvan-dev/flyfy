@@ -73,6 +73,9 @@ func TestListPublicGuidesAppliesSearchFilterSortAndReturnsTotal(t *testing.T) {
 			},
 		},
 	}
+	excursionCoverage := &publicGuideExcursionCoverageClientStub{
+		guideUserIDs: []uuid.UUID{userID},
+	}
 	handler := NewHandler(app.NewGuideUseCase(
 		repo,
 		&publicUserClientStub{
@@ -88,9 +91,7 @@ func TestListPublicGuidesAppliesSearchFilterSortAndReturnsTotal(t *testing.T) {
 			},
 		},
 		nil,
-		&publicGuideExcursionCoverageClientStub{
-			guideUserIDs: []uuid.UUID{userID},
-		},
+		excursionCoverage,
 	))
 
 	req := httptest.NewRequest(
@@ -126,6 +127,12 @@ func TestListPublicGuidesAppliesSearchFilterSortAndReturnsTotal(t *testing.T) {
 	}
 	if !reflect.DeepEqual(repo.lastFilter.UserIDs, []uuid.UUID{userID}) {
 		t.Fatalf("unexpected city guide user ids: %#v", repo.lastFilter.UserIDs)
+	}
+	if excursionCoverage.lastInput.CityID != "almaty" {
+		t.Fatalf("expected excursion city id almaty, got %q", excursionCoverage.lastInput.CityID)
+	}
+	if excursionCoverage.lastInput.CityName != "Алматы" || excursionCoverage.lastInput.CountryCode != "KZ" {
+		t.Fatalf("unexpected excursion city input: %#v", excursionCoverage.lastInput)
 	}
 	if !reflect.DeepEqual(repo.lastFilter.LanguageCodes, []string{"en", "ru"}) {
 		t.Fatalf("unexpected languages: %#v", repo.lastFilter.LanguageCodes)

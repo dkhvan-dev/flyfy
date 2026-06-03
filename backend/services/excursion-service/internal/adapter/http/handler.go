@@ -379,10 +379,19 @@ func (h *Handler) ListGuideExcursionLanguages(w http.ResponseWriter, r *http.Req
 }
 
 func (h *Handler) ListGuideUserIDsByExcursionCity(w http.ResponseWriter, r *http.Request) {
-	cityName := strings.TrimSpace(r.URL.Query().Get("cityName"))
-	if cityName == "" {
-		writeError(w, http.StatusBadRequest, "cityName is required")
+	cityID, err := parseOptionalReferenceCityID(optionalString(r.URL.Query().Get("cityId")))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid cityId")
 		return
+	}
+	cityName := strings.TrimSpace(r.URL.Query().Get("cityName"))
+	if cityID == nil && cityName == "" {
+		writeError(w, http.StatusBadRequest, "cityId or cityName is required")
+		return
+	}
+	var cityNamePtr *string
+	if cityName != "" {
+		cityNamePtr = &cityName
 	}
 	var countryCode *string
 	if raw := strings.TrimSpace(r.URL.Query().Get("countryCode")); raw != "" {
@@ -393,7 +402,8 @@ func (h *Handler) ListGuideUserIDsByExcursionCity(w http.ResponseWriter, r *http
 	guideUserIDs, err := h.useCase.ListGuideUserIDsByExcursionCity(
 		r.Context(),
 		port.GuideExcursionCityFilter{
-			CityName:    &cityName,
+			CityID:      cityID,
+			CityName:    cityNamePtr,
 			CountryCode: countryCode,
 		},
 	)

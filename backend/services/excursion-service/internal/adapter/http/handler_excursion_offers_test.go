@@ -155,7 +155,7 @@ func TestListGuideUserIDsByExcursionCityParsesCityFilterAndReturnsGuideIDs(t *te
 
 	req := httptest.NewRequest(
 		http.MethodGet,
-		"/v1/guides/by-excursion-city?cityName=Алматы&countryCode=KZ",
+		"/v1/guides/by-excursion-city?cityId=almaty&cityName=Алматы&countryCode=KZ",
 		nil,
 	)
 	rec := httptest.NewRecorder()
@@ -172,6 +172,10 @@ func TestListGuideUserIDsByExcursionCityParsesCityFilterAndReturnsGuideIDs(t *te
 	if repo.lastExcursionCityGuideFilter.CountryCode == nil ||
 		*repo.lastExcursionCityGuideFilter.CountryCode != "KZ" {
 		t.Fatalf("country filter = %#v, want KZ", repo.lastExcursionCityGuideFilter.CountryCode)
+	}
+	if repo.lastExcursionCityGuideFilter.CityID == nil ||
+		*repo.lastExcursionCityGuideFilter.CityID != "almaty" {
+		t.Fatalf("city id filter = %#v, want almaty", repo.lastExcursionCityGuideFilter.CityID)
 	}
 
 	var payload struct {

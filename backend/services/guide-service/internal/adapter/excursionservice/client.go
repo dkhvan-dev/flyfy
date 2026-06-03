@@ -38,8 +38,9 @@ func (c *Client) ListGuideUserIDsByCity(
 	ctx context.Context,
 	input app.GuideExcursionCityFilter,
 ) ([]uuid.UUID, error) {
+	cityID := strings.ToLower(strings.TrimSpace(input.CityID))
 	cityName := strings.TrimSpace(input.CityName)
-	if cityName == "" {
+	if cityID == "" && cityName == "" {
 		return []uuid.UUID{}, nil
 	}
 	if c == nil || c.baseURL == "" {
@@ -47,7 +48,12 @@ func (c *Client) ListGuideUserIDsByCity(
 	}
 
 	values := url.Values{}
-	values.Set("cityName", cityName)
+	if cityID != "" {
+		values.Set("cityId", cityID)
+	}
+	if cityName != "" {
+		values.Set("cityName", cityName)
+	}
 	if countryCode := strings.ToUpper(strings.TrimSpace(input.CountryCode)); countryCode != "" {
 		values.Set("countryCode", countryCode)
 	}

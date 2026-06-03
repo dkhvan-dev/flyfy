@@ -138,8 +138,8 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
       return;
     }
 
-    final location = provider.selectedLocation;
-    if (location == null) return;
+    final location = provider.effectiveLocation;
+    if (location.source == HomeLocationSource.fallback) return;
 
     _hasAppliedDefaultLocationFilter = true;
 

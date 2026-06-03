@@ -42,7 +42,15 @@ void main() {
         contains("import '../../shared/widgets/app_city_filter_section.dart';"),
       );
       expect(source, contains('HomeLocationProvider'));
-      expect(source, contains('selectedLocation'));
+      expect(source, contains('provider.effectiveLocation'));
+      expect(
+        source,
+        contains('location.source == HomeLocationSource.fallback'),
+      );
+      expect(
+        source,
+        isNot(contains('final location = provider.selectedLocation')),
+      );
       expect(source, contains('_initializeDefaultLocationFilter'));
       expect(source, contains('_applyDefaultLocationFilter'));
       expect(source, contains('final AppCountryFilterValue? country'));

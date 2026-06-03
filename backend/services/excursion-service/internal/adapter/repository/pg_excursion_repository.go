@@ -1421,15 +1421,19 @@ func (r *PGExcursionRepository) ListGuideUserIDsByExcursionCity(
 	ctx context.Context,
 	filter port.GuideExcursionCityFilter,
 ) ([]uuid.UUID, error) {
+	cityID := ""
+	if filter.CityID != nil {
+		cityID = strings.ToLower(strings.TrimSpace(*filter.CityID))
+	}
 	cityName := ""
 	if filter.CityName != nil {
 		cityName = strings.TrimSpace(*filter.CityName)
 	}
-	if cityName == "" {
+	if cityID == "" && cityName == "" {
 		return []uuid.UUID{}, nil
 	}
 
-	args := make([]any, 0, 4)
+	args := make([]any, 0, 6)
 	addArg := func(value any) string {
 		args = append(args, value)
 		return fmt.Sprintf("$%d", len(args))
@@ -1437,19 +1441,39 @@ func (r *PGExcursionRepository) ListGuideUserIDsByExcursionCity(
 
 	statusRef := addArg(string(enum.ExcursionStatusPublished))
 	visibilityRef := addArg(string(enum.ExcursionVisibilityPublic))
-	cityRef := addArg("%" + cityName + "%")
 
 	excursionWhere := []string{
 		"e.deleted_at IS NULL",
 		fmt.Sprintf("e.status = %s", statusRef),
 		fmt.Sprintf("e.visibility = %s", visibilityRef),
-		fmt.Sprintf("e.city_name ILIKE %s", cityRef),
 	}
 	offerWhere := []string{
 		"o.deleted_at IS NULL",
 		fmt.Sprintf("o.status = %s", statusRef),
 		fmt.Sprintf("o.visibility = %s", visibilityRef),
-		fmt.Sprintf("p.city_name ILIKE %s", cityRef),
+	}
+
+	if cityID != "" {
+		cityIDRef := addArg(cityID)
+		excursionCityConditions := []string{
+			fmt.Sprintf("e.departure_city_id = %s", cityIDRef),
+			fmt.Sprintf("%s = %s", referenceCitySlugExpression("e.city_name"), cityIDRef),
+		}
+		offerCityConditions := []string{
+			fmt.Sprintf("p.departure_city_id = %s", cityIDRef),
+			fmt.Sprintf("%s = %s", referenceCitySlugExpression("p.city_name"), cityIDRef),
+		}
+		if cityName != "" {
+			cityNameRef := addArg("%" + cityName + "%")
+			excursionCityConditions = append(excursionCityConditions, fmt.Sprintf("e.city_name ILIKE %s", cityNameRef))
+			offerCityConditions = append(offerCityConditions, fmt.Sprintf("p.city_name ILIKE %s", cityNameRef))
+		}
+		excursionWhere = append(excursionWhere, "("+strings.Join(excursionCityConditions, " OR ")+")")
+		offerWhere = append(offerWhere, "("+strings.Join(offerCityConditions, " OR ")+")")
+	} else {
+		cityRef := addArg("%" + cityName + "%")
+		excursionWhere = append(excursionWhere, fmt.Sprintf("e.city_name ILIKE %s", cityRef))
+		offerWhere = append(offerWhere, fmt.Sprintf("p.city_name ILIKE %s", cityRef))
 	}
 
 	if filter.CountryCode != nil && strings.TrimSpace(*filter.CountryCode) != "" {
