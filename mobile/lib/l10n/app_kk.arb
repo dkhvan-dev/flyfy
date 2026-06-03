@@ -1302,6 +1302,9 @@
       "total": {}
     }
   },
+  "createActivityDiscardTitle": "Сақтамай шығасыз ба?",
+  "createActivityDiscardDescription": "Белсенділік черновигіндегі өзгерістер жоғалады.",
+  "createActivityDiscardConfirm": "Шығу",
   "createHelpAction": "Көмек",
   "createStepNext": "Келесі қадам",
   "createStepBack": "Артқа",

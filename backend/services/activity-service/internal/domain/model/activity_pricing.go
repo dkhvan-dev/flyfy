@@ -2,6 +2,7 @@ package model
 
 import (
 	"errors"
+	"strings"
 
 	"kz/inflap/backend/services/activity-service/internal/domain/enum"
 )
@@ -9,6 +10,40 @@ import (
 var (
 	ErrInvalidPricingModel = errors.New("invalid activity pricing model")
 )
+
+var supportedActivityCurrencies = map[string]struct{}{
+	"AED": {},
+	"AMD": {},
+	"AUD": {},
+	"AZN": {},
+	"BRL": {},
+	"CAD": {},
+	"CHF": {},
+	"CNY": {},
+	"EUR": {},
+	"GBP": {},
+	"GEL": {},
+	"HKD": {},
+	"IDR": {},
+	"INR": {},
+	"JPY": {},
+	"KGS": {},
+	"KRW": {},
+	"KZT": {},
+	"MYR": {},
+	"NZD": {},
+	"PLN": {},
+	"RUB": {},
+	"SGD": {},
+	"THB": {},
+	"TJS": {},
+	"TMT": {},
+	"TRY": {},
+	"UAH": {},
+	"USD": {},
+	"UZS": {},
+	"VND": {},
+}
 
 type ActivityPricing struct {
 	PriceType   enum.ActivityPriceType
@@ -24,7 +59,7 @@ func NewActivityPricing(
 	item := &ActivityPricing{
 		PriceType:   priceType,
 		PriceAmount: priceAmount,
-		Currency:    NormalizeOptionalString(currency),
+		Currency:    NormalizeOptionalCurrencyCode(currency),
 	}
 
 	if err := item.Validate(); err != nil {
@@ -56,6 +91,24 @@ func (p *ActivityPricing) Validate() error {
 	}
 
 	return nil
+}
+
+func NormalizeOptionalCurrencyCode(v *string) *string {
+	if v == nil {
+		return nil
+	}
+
+	code := strings.ToUpper(strings.TrimSpace(*v))
+	if code == "" {
+		return nil
+	}
+
+	return &code
+}
+
+func IsSupportedActivityCurrency(code string) bool {
+	_, ok := supportedActivityCurrencies[strings.ToUpper(strings.TrimSpace(code))]
+	return ok
 }
 
 func (p *ActivityPricing) IsFree() bool {

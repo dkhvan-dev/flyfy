@@ -718,14 +718,42 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
 
   bool _canLeaveActivity(
     ActivityListItemVm activity, {
-    required bool isJoined,
+    required ActivityParticipantVm? currentParticipant,
     required bool isOwner,
   }) {
-    if (!isJoined || isOwner) {
+    if (currentParticipant == null ||
+        isOwner ||
+        !currentParticipant.canLeaveBeforeStart) {
       return false;
     }
 
     return DateTime.now().toUtc().isBefore(activity.startAt.toUtc());
+  }
+
+  String _participantStatusLabel(
+    ActivityParticipantVm participant,
+    AppLocalizations l10n,
+  ) {
+    switch (participant.normalizedStatus) {
+      case 'INVITED':
+        return l10n.participantStatusInvited;
+      case 'REQUESTED':
+        return l10n.participantStatusRequested;
+      case 'APPROVED':
+        return l10n.participantStatusApproved;
+      case 'WAITLISTED':
+        return l10n.participantStatusWaitlisted;
+      case 'PENDING_PAYMENT':
+        return l10n.participantStatusPendingPayment;
+      case 'CONFIRMED':
+        return l10n.participantStatusConfirmed;
+      case 'CHECKED_IN':
+        return l10n.participantStatusCheckedIn;
+      default:
+        return participant.status.trim().isEmpty
+            ? l10n.participantStatusRequested
+            : participant.status.trim();
+    }
   }
 
   bool _canExtendActivity(
@@ -1169,12 +1197,21 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     }
 
     final isJoined = currentParticipant != null;
+    final canOpenParticipantChat =
+        currentParticipant?.hasConfirmedAccess == true;
+    final requiresParticipantPayment =
+        currentParticipant?.requiresPayment == true;
+    final isParticipationPending =
+        currentParticipant?.isPendingDecision == true;
+    final participantStatusLabel = currentParticipant == null
+        ? null
+        : _participantStatusLabel(currentParticipant, l10n);
     final status = activity.status.toUpperCase();
     final isDraft = status == 'DRAFT';
     final showPublish = isOwner && isDraft;
     final canLeaveActivity = _canLeaveActivity(
       activity,
-      isJoined: isJoined,
+      currentParticipant: currentParticipant,
       isOwner: isOwner,
     );
     final canCancelActivity = _canCancelActivity(activity, isOwner: isOwner);
@@ -1236,6 +1273,9 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
           l10n: l10n,
           isOwner: isOwner,
           isJoined: isJoined,
+          canOpenChat: canOpenParticipantChat,
+          isParticipationPending: isParticipationPending,
+          participantStatusLabel: participantStatusLabel,
           isPaid: _isPaymentSuccessful,
           showPublish: showPublish,
           isBusy: provider.actionState == ActivityActionState.loading,
@@ -1245,10 +1285,10 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
           onEdit: () => const {'CANCELLED', 'COMPLETED'}.contains(status)
               ? _openRepeat(activity)
               : _openEdit(activity),
-          onPay: isJoined && !isOwner && !activity.isFree
+          onPay: requiresParticipantPayment && !isOwner && !activity.isFree
               ? () => _openPayment(activity, hostName: hostName)
               : null,
-          onOpenChat: isJoined
+          onOpenChat: canOpenParticipantChat
               ? () => context.push('/activities/${activity.id}/chat')
               : null,
         ),
@@ -5003,6 +5043,9 @@ class _DetailsActionBar extends StatelessWidget {
     required this.l10n,
     required this.isOwner,
     required this.isJoined,
+    required this.canOpenChat,
+    required this.isParticipationPending,
+    required this.participantStatusLabel,
     required this.isPaid,
     required this.showPublish,
     required this.isBusy,
@@ -5018,6 +5061,9 @@ class _DetailsActionBar extends StatelessWidget {
   final AppLocalizations l10n;
   final bool isOwner;
   final bool isJoined;
+  final bool canOpenChat;
+  final bool isParticipationPending;
+  final String? participantStatusLabel;
   final bool isPaid;
   final bool showPublish;
   final bool isBusy;
@@ -5036,6 +5082,7 @@ class _DetailsActionBar extends StatelessWidget {
         : activity.formattedPriceLabel(locale);
     final shouldShowPaymentAction =
         isJoined && !isOwner && !activity.isFree && !isPaid && onPay != null;
+    final canShowChatAction = isJoined && canOpenChat && onOpenChat != null;
     final secondaryAction = showPublish
         ? _FooterButtonSpec(
             label: l10n.activityPublishButton,
@@ -5044,11 +5091,11 @@ class _DetailsActionBar extends StatelessWidget {
             style: _FooterButtonStyle.secondary,
             action: _FooterAction.publish,
           )
-        : shouldShowPaymentAction
+        : shouldShowPaymentAction && canShowChatAction
         ? _FooterButtonSpec(
             label: l10n.activityDetailsChatButton,
             icon: Icons.forum_rounded,
-            onTap: onOpenChat ?? () {},
+            onTap: onOpenChat,
             style: _FooterButtonStyle.secondary,
             action: null,
           )
@@ -5076,14 +5123,25 @@ class _DetailsActionBar extends StatelessWidget {
               ? _FooterButtonSpec(
                   label: l10n.activityPaymentPayButton,
                   icon: Icons.payments_rounded,
-                  onTap: onPay ?? () {},
+                  onTap: onPay,
+                  style: _FooterButtonStyle.primary,
+                  action: null,
+                )
+              : canShowChatAction
+              ? _FooterButtonSpec(
+                  label: l10n.activityDetailsChatButton,
+                  icon: Icons.forum_rounded,
+                  onTap: onOpenChat,
                   style: _FooterButtonStyle.primary,
                   action: null,
                 )
               : _FooterButtonSpec(
-                  label: l10n.activityDetailsChatButton,
-                  icon: Icons.forum_rounded,
-                  onTap: onOpenChat ?? () {},
+                  label:
+                      participantStatusLabel ?? l10n.participantStatusRequested,
+                  icon: isParticipationPending
+                      ? Icons.hourglass_top_rounded
+                      : Icons.lock_outline_rounded,
+                  onTap: null,
                   style: _FooterButtonStyle.primary,
                   action: null,
                 )
@@ -5280,7 +5338,7 @@ class _FooterButtonSpec {
 
   final String label;
   final IconData icon;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final _FooterButtonStyle style;
   final _FooterAction? action;
 }
@@ -5308,7 +5366,7 @@ class _FooterButton extends StatelessWidget {
     return ConstrainedBox(
       constraints: BoxConstraints(minHeight: minHeight),
       child: ElevatedButton(
-        onPressed: isBusy ? null : spec.onTap,
+        onPressed: isBusy || spec.onTap == null ? null : spec.onTap,
         style: ElevatedButton.styleFrom(
           backgroundColor: backgroundColor,
           foregroundColor: foreground,

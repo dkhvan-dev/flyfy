@@ -1302,6 +1302,9 @@
       "total": {}
     }
   },
+  "createActivityDiscardTitle": "Discard this activity?",
+  "createActivityDiscardDescription": "Your draft changes will be lost if you leave now.",
+  "createActivityDiscardConfirm": "Discard",
   "createHelpAction": "Help",
   "createStepNext": "Next Step",
   "createStepBack": "Back",

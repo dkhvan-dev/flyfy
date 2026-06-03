@@ -1386,24 +1386,10 @@ func toParticipantResponse(item *model.ActivityParticipant) dto.ParticipantRespo
 func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback string) {
 	switch {
 	case errors.Is(err, app.ErrInvalidActivityID),
-		errors.Is(err, app.ErrInvalidActorUserID),
 		errors.Is(err, app.ErrInvalidParticipantUserID),
 		errors.Is(err, app.ErrActivityCancellationReasonRequired),
 		errors.Is(err, app.ErrActivityCompletionReasonRequired),
-		errors.Is(err, app.ErrActivityNotPublishable),
-		errors.Is(err, app.ErrActivityNotStartable),
-		errors.Is(err, app.ErrActivityNotCompletable),
-		errors.Is(err, app.ErrActivityNotCancellable),
-		errors.Is(err, app.ErrActivityNotExtendable),
 		errors.Is(err, app.ErrActivityExtendDurationInvalid),
-		errors.Is(err, app.ErrActivityJoinClosed),
-		errors.Is(err, app.ErrActivityFull),
-		errors.Is(err, app.ErrAlreadyJoined),
-		errors.Is(err, app.ErrParticipantStateInvalid),
-		errors.Is(err, app.ErrActivityLeaveClosed),
-		errors.Is(err, app.ErrPriceChangeForbidden),
-		errors.Is(err, app.ErrCriticalFieldsUpdateForbidden),
-		errors.Is(err, app.ErrMeetingAddressUpdateClosed),
 		errors.Is(err, app.ErrActivityMediaFileNotReady),
 		errors.Is(err, app.ErrActivityMediaFileNotAllowed),
 		errors.Is(err, app.ErrActivityLocationIncomplete),
@@ -1444,7 +1430,6 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, model.ErrInvalidOfflineLocation),
 		errors.Is(err, model.ErrInvalidVisibilityPassword),
 		errors.Is(err, model.ErrPriceLocked),
-		errors.Is(err, model.ErrOnlyAuthorCanDuplicate),
 		errors.Is(err, model.ErrActivityCannotBePublished),
 		errors.Is(err, model.ErrCriticalFieldsLocked),
 		errors.Is(err, app.ErrBlockedURLDetected),
@@ -1457,8 +1442,10 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		writeError(w, http.StatusNotFound, err.Error())
 
 	case errors.Is(err, app.ErrAttendanceAccessDenied),
+		errors.Is(err, app.ErrInvalidActorUserID),
 		errors.Is(err, app.ErrActivityInvitationForbidden),
-		errors.Is(err, app.ErrFraudRejected):
+		errors.Is(err, app.ErrFraudRejected),
+		errors.Is(err, model.ErrOnlyAuthorCanDuplicate):
 		writeError(w, http.StatusForbidden, err.Error())
 
 	case errors.Is(err, app.ErrFriendshipVerificationUnavailable):
@@ -1468,10 +1455,23 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, app.ErrActivityAlreadyStarted),
 		errors.Is(err, app.ErrActivityAlreadyCompleted),
 		errors.Is(err, app.ErrActivityAlreadyCancelled),
+		errors.Is(err, app.ErrActivityNotPublishable),
+		errors.Is(err, app.ErrActivityNotStartable),
+		errors.Is(err, app.ErrActivityNotCompletable),
+		errors.Is(err, app.ErrActivityNotCancellable),
+		errors.Is(err, app.ErrActivityNotExtendable),
 		errors.Is(err, app.ErrActivityTooEarlyToComplete),
 		errors.Is(err, app.ErrActivityShouldBeCancelledInstead),
+		errors.Is(err, app.ErrActivityJoinClosed),
+		errors.Is(err, app.ErrActivityFull),
+		errors.Is(err, app.ErrAlreadyJoined),
 		errors.Is(err, app.ErrParticipantScheduleConflict),
 		errors.Is(err, app.ErrParticipantAlreadyCancelled),
+		errors.Is(err, app.ErrParticipantStateInvalid),
+		errors.Is(err, app.ErrActivityLeaveClosed),
+		errors.Is(err, app.ErrPriceChangeForbidden),
+		errors.Is(err, app.ErrCriticalFieldsUpdateForbidden),
+		errors.Is(err, app.ErrMeetingAddressUpdateClosed),
 		errors.Is(err, app.ErrModerationStateInvalid):
 		writeError(w, http.StatusConflict, err.Error())
 

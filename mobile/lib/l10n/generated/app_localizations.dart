@@ -6352,6 +6352,24 @@ abstract class AppLocalizations {
   /// **'Step {current} of {total}'**
   String createStepCounter(Object current, Object total);
 
+  /// No description provided for @createActivityDiscardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard this activity?'**
+  String get createActivityDiscardTitle;
+
+  /// No description provided for @createActivityDiscardDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Your draft changes will be lost if you leave now.'**
+  String get createActivityDiscardDescription;
+
+  /// No description provided for @createActivityDiscardConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get createActivityDiscardConfirm;
+
   /// No description provided for @createHelpAction.
   ///
   /// In en, this message translates to:

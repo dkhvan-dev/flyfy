@@ -237,6 +237,13 @@ func defaultMessageModerationRevision(value int) int {
 	return value
 }
 
+func defaultMessageModerationReasonCodes(value []string) []string {
+	if value == nil {
+		return []string{}
+	}
+	return value
+}
+
 func decodeStickerPayload(data []byte) *model.StickerPayload {
 	if len(data) == 0 {
 		return nil
@@ -987,7 +994,8 @@ func (tx *pgChatTxRepository) CreateMessage(ctx context.Context, msg *model.Mess
 		msg.ReplyToMessageID, msg.ForwardedFromMessageID,
 		msg.ForwardedFromSenderUserID, nullableString(msg.ForwardedFromSenderName),
 		msg.ForwardCount, msg.EditedAt, msg.DeletedAt,
-		defaultMessageModerationStatus(msg.ModerationStatus), msg.ModerationReasonCodes,
+		defaultMessageModerationStatus(msg.ModerationStatus),
+		defaultMessageModerationReasonCodes(msg.ModerationReasonCodes),
 		msg.ModerationRiskScore, msg.ModerationTriggeredAt, msg.ModerationReviewedAt,
 		msg.ModerationReviewedBy, nullableString(msg.ModerationPublicComment),
 		nullableString(msg.ModerationInternalComment), defaultMessageModerationRevision(msg.ModerationRevision),

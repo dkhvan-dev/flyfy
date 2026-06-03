@@ -1601,57 +1601,66 @@ class _QuickActionsGrid extends StatelessWidget {
                 ? const Color(0xFF43280D)
                 : const Color(0xFF3D3935);
 
-            return Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: action.onTap,
-                borderRadius: BorderRadius.circular(16),
-                splashColor: isEnabled
-                    ? AppColors.accent.withValues(alpha: 0.10)
-                    : Colors.transparent,
-                highlightColor: Colors.transparent,
-                child: Ink(
-                  decoration: BoxDecoration(
-                    color: backgroundColor,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: isEnabled
-                          ? Colors.transparent
-                          : Colors.white.withValues(alpha: 0.04),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isCompact ? 6 : 8,
-                      vertical: verticalPadding,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          action.icon,
-                          color: foregroundColor,
-                          size: iconSize,
+            return Semantics(
+              container: true,
+              button: true,
+              enabled: isEnabled,
+              label: action.title,
+              onTap: action.onTap,
+              child: ExcludeSemantics(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: action.onTap,
+                    borderRadius: BorderRadius.circular(16),
+                    splashColor: isEnabled
+                        ? AppColors.accent.withValues(alpha: 0.10)
+                        : Colors.transparent,
+                    highlightColor: Colors.transparent,
+                    child: Ink(
+                      decoration: BoxDecoration(
+                        color: backgroundColor,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isEnabled
+                              ? Colors.transparent
+                              : Colors.white.withValues(alpha: 0.04),
                         ),
-                        SizedBox(height: iconLabelGap),
-                        Flexible(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              action.title,
-                              maxLines: 1,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: textColor,
-                                fontSize: isCompact ? 11 : 12,
-                                height: 1,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.2,
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isCompact ? 6 : 8,
+                          vertical: verticalPadding,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              action.icon,
+                              color: foregroundColor,
+                              size: iconSize,
+                            ),
+                            SizedBox(height: iconLabelGap),
+                            Flexible(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  action.title,
+                                  maxLines: 1,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontSize: isCompact ? 11 : 12,
+                                    height: 1,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),

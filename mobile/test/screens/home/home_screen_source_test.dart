@@ -88,6 +88,26 @@ void main() {
     expect(source, contains('onTap: _openExcursions'));
   });
 
+  test('quick actions expose semantic button targets', () async {
+    final source = await File(
+      'lib/screens/home/home_screen.dart',
+    ).readAsString();
+    final gridStart = source.indexOf('class _QuickActionsGrid');
+    final gridEnd = source.indexOf('class _PromoCarousel');
+
+    expect(gridStart, isNonNegative);
+    expect(gridEnd, greaterThan(gridStart));
+
+    final gridSource = source.substring(gridStart, gridEnd);
+
+    expect(gridSource, contains('Semantics('));
+    expect(gridSource, contains('button: true'));
+    expect(gridSource, contains('enabled: isEnabled'));
+    expect(gridSource, contains('label: action.title'));
+    expect(gridSource, contains('onTap: action.onTap'));
+    expect(gridSource, contains('ExcludeSemantics('));
+  });
+
   test('home nav tap scrolls the current home feed to the top', () async {
     final source = await File(
       'lib/screens/home/home_screen.dart',

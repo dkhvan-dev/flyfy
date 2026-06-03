@@ -18,7 +18,8 @@ class ActivityProvider extends ChangeNotifier {
     : _activityApi = activityApi ?? ActivityApi(),
       _chatApi = chatApi ?? ChatApi();
 
-  static const int _listFetchLimit = 100;
+  static const int _listPageLimit = 100;
+  static const int _maxListPages = 10;
 
   final ActivityApi _activityApi;
   final ChatApi _chatApi;
@@ -80,6 +81,27 @@ class ActivityProvider extends ChangeNotifier {
     _joinedItems = _joinedItems.map(replace).toList(growable: false);
   }
 
+  Future<List<ActivityListItemVm>> _fetchAllActivityPages(
+    Future<List<ActivityListItemVm>> Function({
+      required int limit,
+      required int offset,
+    })
+    fetchPage,
+  ) async {
+    final allItems = <ActivityListItemVm>[];
+    for (var pageIndex = 0; pageIndex < _maxListPages; pageIndex += 1) {
+      final pageItems = await fetchPage(
+        limit: _listPageLimit,
+        offset: pageIndex * _listPageLimit,
+      );
+      allItems.addAll(pageItems);
+      if (pageItems.length < _listPageLimit) {
+        break;
+      }
+    }
+    return allItems;
+  }
+
   Future<void> loadActivityCategories({bool force = false}) async {
     if (!force &&
         (_categoryState == ActivitiesState.loading ||
@@ -112,7 +134,10 @@ class ActivityProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _items = await _activityApi.getActivities(limit: _listFetchLimit);
+      _items = await _fetchAllActivityPages(
+        ({required limit, required offset}) =>
+            _activityApi.getActivities(limit: limit, offset: offset),
+      );
       _state = ActivitiesState.success;
     } on DioException catch (e) {
       _errorMessage = DioErrorMapper.toMessage(e);
@@ -131,7 +156,10 @@ class ActivityProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _items = await _activityApi.getActivities(limit: _listFetchLimit);
+      _items = await _fetchAllActivityPages(
+        ({required limit, required offset}) =>
+            _activityApi.getActivities(limit: limit, offset: offset),
+      );
       _state = ActivitiesState.success;
     } on DioException catch (e) {
       _errorMessage = DioErrorMapper.toMessage(e);
@@ -151,8 +179,9 @@ class ActivityProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _myItems = await _activityApi.getMyHostedActivities(
-        limit: _listFetchLimit,
+      _myItems = await _fetchAllActivityPages(
+        ({required limit, required offset}) =>
+            _activityApi.getMyHostedActivities(limit: limit, offset: offset),
       );
       _myState = ActivitiesState.success;
     } on DioException catch (e) {
@@ -172,8 +201,9 @@ class ActivityProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _myItems = await _activityApi.getMyHostedActivities(
-        limit: _listFetchLimit,
+      _myItems = await _fetchAllActivityPages(
+        ({required limit, required offset}) =>
+            _activityApi.getMyHostedActivities(limit: limit, offset: offset),
       );
       _myState = ActivitiesState.success;
     } on DioException catch (e) {
@@ -194,8 +224,9 @@ class ActivityProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _joinedItems = await _activityApi.getMyJoinedActivities(
-        limit: _listFetchLimit,
+      _joinedItems = await _fetchAllActivityPages(
+        ({required limit, required offset}) =>
+            _activityApi.getMyJoinedActivities(limit: limit, offset: offset),
       );
       _joinedState = ActivitiesState.success;
     } on DioException catch (e) {
@@ -215,8 +246,9 @@ class ActivityProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _joinedItems = await _activityApi.getMyJoinedActivities(
-        limit: _listFetchLimit,
+      _joinedItems = await _fetchAllActivityPages(
+        ({required limit, required offset}) =>
+            _activityApi.getMyJoinedActivities(limit: limit, offset: offset),
       );
       _joinedState = ActivitiesState.success;
     } on DioException catch (e) {

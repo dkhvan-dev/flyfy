@@ -41,4 +41,34 @@ void main() {
       contains('return _withAndroidBackSwipe('),
     );
   });
+
+  test(
+    'activity edit route without navigation extra falls back to details',
+    () async {
+      final source = await File(
+        'lib/core/router/app_router.dart',
+      ).readAsString();
+      final editRouteIndex = source.indexOf(
+        "path: '/activities/:activityId/edit'",
+      );
+      final paymentRouteIndex = source.indexOf(
+        "path: '/activities/:activityId/payment'",
+      );
+
+      expect(editRouteIndex, greaterThanOrEqualTo(0));
+      expect(paymentRouteIndex, greaterThan(editRouteIndex));
+
+      final routeSource = source.substring(editRouteIndex, paymentRouteIndex);
+      expect(
+        routeSource,
+        contains(
+          "final activityId = state.pathParameters['activityId'] ?? '';",
+        ),
+      );
+      expect(routeSource, contains('if (activity == null)'));
+      expect(routeSource, contains('ActivityDetailsScreen('));
+      expect(routeSource, contains('activityId: activityId'));
+      expect(routeSource, contains('initialActivity: activity'));
+    },
+  );
 }

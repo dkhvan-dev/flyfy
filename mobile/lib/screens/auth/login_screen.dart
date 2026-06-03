@@ -434,65 +434,78 @@ class _LoginScreenState extends State<LoginScreen> {
                                               );
                                             }
 
-                                            return ElevatedButton(
-                                              onPressed: canSubmitPhone
+                                            return Semantics(
+                                              container: true,
+                                              button: true,
+                                              enabled: canSubmitPhone,
+                                              label: l10n.authByPhone,
+                                              onTap: canSubmitPhone
                                                   ? _submit
                                                   : null,
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor:
-                                                    AppColors.accent,
-                                                foregroundColor:
-                                                    AppColors.background,
-                                                padding: EdgeInsets.symmetric(
-                                                  vertical: authScaled(
-                                                    context,
-                                                    16,
-                                                    min: 14,
-                                                    max: 16,
+                                              child: ExcludeSemantics(
+                                                child: ElevatedButton(
+                                                  onPressed: canSubmitPhone
+                                                      ? _submit
+                                                      : null,
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor:
+                                                        AppColors.accent,
+                                                    foregroundColor:
+                                                        AppColors.background,
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                          vertical: authScaled(
+                                                            context,
+                                                            16,
+                                                            min: 14,
+                                                            max: 16,
+                                                          ),
+                                                        ),
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            999,
+                                                          ),
+                                                    ),
+                                                    elevation: 0,
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      const Icon(
+                                                        Icons.sms_rounded,
+                                                        size: 20,
+                                                        color: AppColors
+                                                            .textPrimary,
+                                                      ),
+                                                      SizedBox(
+                                                        width: authScaled(
+                                                          context,
+                                                          8,
+                                                          min: 6,
+                                                          max: 8,
+                                                        ),
+                                                      ),
+                                                      Text(
+                                                        l10n.authByPhone,
+                                                        style: TextStyle(
+                                                          color: AppColors
+                                                              .textPrimary,
+                                                          fontSize: authScaled(
+                                                            context,
+                                                            16,
+                                                            min: 14,
+                                                            max: 16,
+                                                          ),
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
                                                 ),
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                        999,
-                                                      ),
-                                                ),
-                                                elevation: 0,
-                                              ),
-                                              child: Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  const Icon(
-                                                    Icons.sms_rounded,
-                                                    size: 20,
-                                                    color:
-                                                        AppColors.textPrimary,
-                                                  ),
-                                                  SizedBox(
-                                                    width: authScaled(
-                                                      context,
-                                                      8,
-                                                      min: 6,
-                                                      max: 8,
-                                                    ),
-                                                  ),
-                                                  Text(
-                                                    l10n.authByPhone,
-                                                    style: TextStyle(
-                                                      color:
-                                                          AppColors.textPrimary,
-                                                      fontSize: authScaled(
-                                                        context,
-                                                        16,
-                                                        min: 14,
-                                                        max: 16,
-                                                      ),
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                ],
                                               ),
                                             );
                                           },

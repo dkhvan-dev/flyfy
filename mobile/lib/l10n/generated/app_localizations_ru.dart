@@ -3481,6 +3481,16 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String get createActivityDiscardTitle => 'Выйти без сохранения?';
+
+  @override
+  String get createActivityDiscardDescription =>
+      'Изменения в черновике активности будут потеряны.';
+
+  @override
+  String get createActivityDiscardConfirm => 'Выйти';
+
+  @override
   String get createHelpAction => 'Помощь';
 
   @override

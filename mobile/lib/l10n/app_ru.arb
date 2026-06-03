@@ -1302,6 +1302,9 @@
       "total": {}
     }
   },
+  "createActivityDiscardTitle": "Выйти без сохранения?",
+  "createActivityDiscardDescription": "Изменения в черновике активности будут потеряны.",
+  "createActivityDiscardConfirm": "Выйти",
   "createHelpAction": "Помощь",
   "createStepNext": "Следующий шаг",
   "createStepBack": "Назад",

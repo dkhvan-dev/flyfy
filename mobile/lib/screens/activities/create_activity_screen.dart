@@ -214,63 +214,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     if (a == null) {
       _startAt = _defaultStartAt();
       _endAt = _defaultEndAt(_startAt);
-    }
-    if (a != null) {
-      _titleCtrl.text = a.title;
-      _descriptionCtrl.text = a.description;
-      _tagsCtrl.text = a.tags.join(', ');
-      _coverFileId = a.coverFileId;
-      _format = a.format.toUpperCase();
-      _startAt = a.startAt.toLocal();
-      _endAt = a.endAt.toLocal();
-      _languageCode = a.languageCode;
-      _timezone = a.timezone;
-      _capacityType = a.capacityType.toUpperCase();
-      _allowsParticipantInvites = a.allowsParticipantInvites;
-      if (a.minParticipants != null) {
-        _minParticipants = a.minParticipants! < _minActivityParticipants
-            ? _minActivityParticipants
-            : a.minParticipants!;
-      }
-      if (a.maxParticipants != null) {
-        _maxParticipants = a.maxParticipants!;
-      }
-      _visibility = a.visibility.toUpperCase();
-      _priceType = _normalizePriceType(a.priceType);
-      if (a.priceAmount != null) {
-        _priceAmountCtrl.text = a.priceAmount! % 1 == 0
-            ? a.priceAmount!.toStringAsFixed(0)
-            : a.priceAmount!.toStringAsFixed(2);
-      }
-      if (a.currency != null && a.currency!.trim().isNotEmpty) {
-        _selectedCurrencyCode = normalizeAppCurrencyCodeOrDefault(
-          a.currency,
-          fallback: 'KZT',
-        );
-        _didOverrideCurrency = true;
-      }
-      if (a.countryCode != null && a.countryCode!.trim().isNotEmpty) {
-        _countryCodeCtrl.text = a.countryCode!;
-      }
-      if (a.cityName != null && a.cityName!.trim().isNotEmpty) {
-        _cityNameCtrl.text = a.cityName!;
-      }
-      if (a.cityId != null && a.cityId!.trim().isNotEmpty) {
-        _selectedCityId = a.cityId!.trim();
-      }
-      if (a.addressText != null && a.addressText!.trim().isNotEmpty) {
-        _addressTextCtrl.text = a.addressText!;
-      }
-      if (a.meetingUrl != null && a.meetingUrl!.trim().isNotEmpty) {
-        _meetingUrlCtrl.text = a.meetingUrl!;
-      }
-      _selectedLatitude = a.latitude;
-      _selectedLongitude = a.longitude;
-      if (a.mapUrl != null && a.mapUrl!.trim().isNotEmpty) {
-        _selectedMapUrl = a.mapUrl!;
-        _setMapUrlText(a.mapUrl!);
-      }
-      _syncScheduleControllers();
+    } else {
+      _applyInitialActivity(a);
     }
     _minParticipantsCtrl.text = '$_minParticipants';
     _maxParticipantsCtrl.text = '$_maxParticipants';
@@ -291,6 +236,73 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     _cityNameCtrl.addListener(_handleLocationPreviewChanged);
     _addressTextCtrl.addListener(_handleLocationPreviewChanged);
     _mapUrlCtrl.addListener(_handleMapUrlTextChanged);
+  }
+
+  void _applyInitialActivity(ActivityListItemVm a) {
+    _titleCtrl.text = a.title;
+    _descriptionCtrl.text = a.description;
+    _tagsCtrl.text = a.tags.join(', ');
+    _coverFileId = a.coverFileId;
+    _format = a.format.toUpperCase();
+    if (widget.isRepeatMode) {
+      _startAt = _defaultStartAt();
+      _endAt = _defaultEndAt(_startAt);
+    } else {
+      _applyExistingSchedule(a);
+    }
+    _languageCode = a.languageCode;
+    _timezone = a.timezone;
+    _capacityType = a.capacityType.toUpperCase();
+    _allowsParticipantInvites = a.allowsParticipantInvites;
+    if (a.minParticipants != null) {
+      _minParticipants = a.minParticipants! < _minActivityParticipants
+          ? _minActivityParticipants
+          : a.minParticipants!;
+    }
+    if (a.maxParticipants != null) {
+      _maxParticipants = a.maxParticipants!;
+    }
+    _visibility = a.visibility.toUpperCase();
+    _priceType = _normalizePriceType(a.priceType);
+    if (a.priceAmount != null) {
+      _priceAmountCtrl.text = a.priceAmount! % 1 == 0
+          ? a.priceAmount!.toStringAsFixed(0)
+          : a.priceAmount!.toStringAsFixed(2);
+    }
+    if (a.currency != null && a.currency!.trim().isNotEmpty) {
+      _selectedCurrencyCode = normalizeAppCurrencyCodeOrDefault(
+        a.currency,
+        fallback: 'KZT',
+      );
+      _didOverrideCurrency = true;
+    }
+    if (a.countryCode != null && a.countryCode!.trim().isNotEmpty) {
+      _countryCodeCtrl.text = a.countryCode!;
+    }
+    if (a.cityName != null && a.cityName!.trim().isNotEmpty) {
+      _cityNameCtrl.text = a.cityName!;
+    }
+    if (a.cityId != null && a.cityId!.trim().isNotEmpty) {
+      _selectedCityId = a.cityId!.trim();
+    }
+    if (a.addressText != null && a.addressText!.trim().isNotEmpty) {
+      _addressTextCtrl.text = a.addressText!;
+    }
+    if (a.meetingUrl != null && a.meetingUrl!.trim().isNotEmpty) {
+      _meetingUrlCtrl.text = a.meetingUrl!;
+    }
+    _selectedLatitude = a.latitude;
+    _selectedLongitude = a.longitude;
+    if (a.mapUrl != null && a.mapUrl!.trim().isNotEmpty) {
+      _selectedMapUrl = a.mapUrl!;
+      _setMapUrlText(a.mapUrl!);
+    }
+    _syncScheduleControllers();
+  }
+
+  void _applyExistingSchedule(ActivityListItemVm activity) {
+    _startAt = activity.startAt.toLocal();
+    _endAt = activity.endAt.toLocal();
   }
 
   @override
@@ -1115,13 +1127,157 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     _goToStep(_currentStep - 1);
   }
 
-  void _handleRoutePopInvoked(bool didPop) {
-    if (didPop || _currentStep <= 0) {
+  Future<void> _handleRouteBack() async {
+    if (_currentStep > 0) {
+      FocusScope.of(context).unfocus();
+      _goToStep(_currentStep - 1, animate: false);
       return;
     }
 
-    FocusScope.of(context).unfocus();
-    _goToStep(_currentStep - 1, animate: false);
+    final canDiscard = await _confirmDiscardIfNeeded();
+    if (!mounted || !canDiscard) {
+      return;
+    }
+
+    context.pop();
+  }
+
+  void _handleRoutePopInvoked(bool didPop) {
+    if (didPop) {
+      return;
+    }
+
+    unawaited(_handleRouteBack());
+  }
+
+  bool get _hasUnsavedChanges {
+    if (_isSubmitting) {
+      return false;
+    }
+
+    final initialActivity = widget.activity;
+    if (initialActivity != null && !widget.isRepeatMode) {
+      return _hasChangedFromInitialActivity(initialActivity);
+    }
+
+    return _hasNewDraftInput;
+  }
+
+  bool _hasChangedFromInitialActivity(ActivityListItemVm activity) {
+    return _normalizedText(_titleCtrl.text) !=
+            _normalizedText(activity.title) ||
+        _normalizedText(_descriptionCtrl.text) !=
+            _normalizedText(activity.description) ||
+        _normalizedText(_tagsCtrl.text) !=
+            _normalizedText(activity.tags.join(', ')) ||
+        _coverChanged ||
+        _coverFileId != activity.coverFileId ||
+        _format != activity.format.toUpperCase() ||
+        _startAtChanged ||
+        _endAtChanged ||
+        _languageCode != activity.languageCode ||
+        _timezone != activity.timezone ||
+        _capacityType != activity.capacityType.toUpperCase() ||
+        _minParticipants !=
+            (activity.minParticipants ?? _minActivityParticipants) ||
+        _maxParticipants != (activity.maxParticipants ?? 15) ||
+        _allowsParticipantInvites != activity.allowsParticipantInvites ||
+        _visibility != activity.visibility.toUpperCase() ||
+        _visibilityPasswordChanged ||
+        _priceType != _normalizePriceType(activity.priceType) ||
+        _normalizedText(_priceAmountCtrl.text) !=
+            _normalizedPriceAmount(activity.priceAmount) ||
+        (_priceType != 'FREE' &&
+            _selectedCurrencyCode !=
+                normalizeAppCurrencyCodeOrDefault(
+                  activity.currency,
+                  fallback: 'KZT',
+                )) ||
+        _normalizedText(_countryCodeCtrl.text) !=
+            _normalizedText(activity.countryCode ?? 'KZ') ||
+        _normalizedText(_cityNameCtrl.text) !=
+            _normalizedText(activity.cityName ?? '') ||
+        (_selectedCityId ?? '') != (activity.cityId ?? '') ||
+        _normalizedText(_addressTextCtrl.text) !=
+            _normalizedText(activity.addressText ?? '') ||
+        _normalizedText(_mapUrlCtrl.text) !=
+            _normalizedText(activity.mapUrl ?? '') ||
+        _normalizedText(_meetingUrlCtrl.text) !=
+            _normalizedText(activity.meetingUrl ?? '');
+  }
+
+  bool get _hasNewDraftInput {
+    return _currentStep > 0 ||
+        _titleCtrl.text.trim().isNotEmpty ||
+        _descriptionCtrl.text.trim().isNotEmpty ||
+        _tagsCtrl.text.trim().isNotEmpty ||
+        _selectedCategorySlug != null ||
+        _selectedSubcategorySlug != null ||
+        _coverChanged ||
+        _coverFileId != null ||
+        _format != 'OFFLINE' ||
+        _capacityType != 'UNLIMITED' ||
+        _minParticipants != _minActivityParticipants ||
+        _maxParticipants != 15 ||
+        _allowsParticipantInvites ||
+        _visibility != 'PUBLIC' ||
+        _visibilityPasswordCtrl.text.trim().isNotEmpty ||
+        _priceType != 'FREE' ||
+        _priceAmountCtrl.text.trim().isNotEmpty ||
+        _addressTextCtrl.text.trim().isNotEmpty ||
+        _mapUrlCtrl.text.trim().isNotEmpty ||
+        _meetingUrlCtrl.text.trim().isNotEmpty ||
+        _selectedLatitude != null ||
+        _selectedLongitude != null;
+  }
+
+  Future<bool> _confirmDiscardIfNeeded() async {
+    if (!_hasUnsavedChanges) {
+      return true;
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface,
+          title: Text(
+            l10n.createActivityDiscardTitle,
+            style: const TextStyle(color: AppColors.textPrimary),
+          ),
+          content: Text(
+            l10n.createActivityDiscardDescription,
+            style: const TextStyle(color: AppColors.textSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.cancelButton),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(
+                l10n.createActivityDiscardConfirm,
+                style: const TextStyle(color: _inlineValidationColor),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+    return result ?? false;
+  }
+
+  String _normalizedText(String value) => value.trim();
+
+  String _normalizedPriceAmount(double? amount) {
+    if (amount == null) {
+      return '';
+    }
+    return amount % 1 == 0
+        ? amount.toStringAsFixed(0)
+        : amount.toStringAsFixed(2);
   }
 
   bool _validateCurrentStep() {
@@ -1966,7 +2122,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     ];
 
     return PopScope(
-      canPop: _currentStep == 0,
+      canPop: false,
       onPopInvokedWithResult: (didPop, _) => _handleRoutePopInvoked(didPop),
       child: Scaffold(
         backgroundColor: AppColors.background,
@@ -1985,7 +2141,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                   title: widget.isEditMode
                       ? l10n.editActivityTitle
                       : l10n.createActivityTitle,
-                  onBack: _currentStep == 0 ? () => context.pop() : null,
+                  onBack: _currentStep == 0
+                      ? () => unawaited(_handleRouteBack())
+                      : null,
                 ),
                 _StepIndicator(
                   currentStep: _currentStep,
@@ -4290,49 +4448,57 @@ class _CategorySelectorField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        InkWell(
-          borderRadius: BorderRadius.circular(32),
+        Semantics(
+          container: true,
+          button: true,
+          label: value,
           onTap: onTap,
-          child: Container(
-            constraints: BoxConstraints(minHeight: height),
-            padding: EdgeInsets.symmetric(
-              horizontal: horizontalPadding,
-              vertical: 10,
-            ),
-            decoration: BoxDecoration(
-              color: const Color(0xFF3A2107),
+          child: ExcludeSemantics(
+            child: InkWell(
               borderRadius: BorderRadius.circular(32),
-              border: Border.all(
-                color: errorText != null
-                    ? _inlineValidationColor
-                    : (isPlaceholder
-                          ? Colors.white.withValues(alpha: 0.02)
-                          : AppColors.accent.withValues(alpha: 0.3)),
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    value,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: isPlaceholder
-                          ? Colors.white.withValues(alpha: 0.58)
-                          : AppColors.textPrimary,
-                      fontSize: fontSize,
-                      fontWeight: FontWeight.w400,
-                      letterSpacing: -0.8,
-                    ),
+              onTap: onTap,
+              child: Container(
+                constraints: BoxConstraints(minHeight: height),
+                padding: EdgeInsets.symmetric(
+                  horizontal: horizontalPadding,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3A2107),
+                  borderRadius: BorderRadius.circular(32),
+                  border: Border.all(
+                    color: errorText != null
+                        ? _inlineValidationColor
+                        : (isPlaceholder
+                              ? Colors.white.withValues(alpha: 0.02)
+                              : AppColors.accent.withValues(alpha: 0.3)),
                   ),
                 ),
-                Icon(
-                  Icons.expand_more_rounded,
-                  color: Colors.white.withValues(alpha: 0.78),
-                  size: 22,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        value,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: isPlaceholder
+                              ? Colors.white.withValues(alpha: 0.58)
+                              : AppColors.textPrimary,
+                          fontSize: fontSize,
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: -0.8,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.expand_more_rounded,
+                      color: Colors.white.withValues(alpha: 0.78),
+                      size: 22,
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -4763,53 +4929,66 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                     itemBuilder: (context, index) {
                       final entry = widget.items.entries.elementAt(index);
                       final selected = entry.key == _selected;
-                      return InkWell(
-                        borderRadius: BorderRadius.circular(18),
-                        onTap: () => setState(() => _selected = entry.key),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                          decoration: BoxDecoration(
-                            color: selected
-                                ? AppColors.accent.withValues(alpha: 0.18)
-                                : const Color(0xFF332416),
+                      void selectItem() {
+                        setState(() => _selected = entry.key);
+                      }
+
+                      return Semantics(
+                        container: true,
+                        button: true,
+                        selected: selected,
+                        label: entry.value,
+                        onTap: selectItem,
+                        child: ExcludeSemantics(
+                          child: InkWell(
                             borderRadius: BorderRadius.circular(18),
-                            border: Border.all(
-                              color: selected
-                                  ? AppColors.accent
-                                  : AppColors.borderLight,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                widget.iconForSlug(entry.key),
-                                color: AppColors.accent,
+                            onTap: selectItem,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  entry.value,
-                                  style: TextStyle(
-                                    color: AppColors.textPrimary,
-                                    fontSize: 15,
-                                    fontWeight: selected
-                                        ? FontWeight.w700
-                                        : FontWeight.w500,
-                                  ),
+                              decoration: BoxDecoration(
+                                color: selected
+                                    ? AppColors.accent.withValues(alpha: 0.18)
+                                    : const Color(0xFF332416),
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: selected
+                                      ? AppColors.accent
+                                      : AppColors.borderLight,
                                 ),
                               ),
-                              Icon(
-                                selected
-                                    ? Icons.check_circle_rounded
-                                    : Icons.chevron_right_rounded,
-                                color: selected
-                                    ? AppColors.accent
-                                    : AppColors.textCaption,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    widget.iconForSlug(entry.key),
+                                    color: AppColors.accent,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      entry.value,
+                                      style: TextStyle(
+                                        color: AppColors.textPrimary,
+                                        fontSize: 15,
+                                        fontWeight: selected
+                                            ? FontWeight.w700
+                                            : FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                  Icon(
+                                    selected
+                                        ? Icons.check_circle_rounded
+                                        : Icons.chevron_right_rounded,
+                                    color: selected
+                                        ? AppColors.accent
+                                        : AppColors.textCaption,
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
                         ),
                       );

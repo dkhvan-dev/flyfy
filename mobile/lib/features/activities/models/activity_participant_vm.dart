@@ -31,8 +31,10 @@ class ActivityParticipantVm {
     );
   }
 
+  String get normalizedStatus => status.trim().toUpperCase();
+
   bool get isActive {
-    switch (status.toUpperCase()) {
+    switch (normalizedStatus) {
       case 'REQUESTED':
       case 'APPROVED':
       case 'WAITLISTED':
@@ -46,11 +48,47 @@ class ActivityParticipantVm {
   }
 
   bool get occupiesSlot {
-    switch (status.toUpperCase()) {
+    switch (normalizedStatus) {
       case 'APPROVED':
       case 'PENDING_PAYMENT':
       case 'CONFIRMED':
       case 'CHECKED_IN':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  bool get hasConfirmedAccess {
+    switch (normalizedStatus) {
+      case 'APPROVED':
+      case 'CONFIRMED':
+      case 'CHECKED_IN':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  bool get requiresPayment => normalizedStatus == 'PENDING_PAYMENT';
+
+  bool get isPendingDecision {
+    switch (normalizedStatus) {
+      case 'REQUESTED':
+      case 'WAITLISTED':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  bool get canLeaveBeforeStart {
+    switch (normalizedStatus) {
+      case 'REQUESTED':
+      case 'APPROVED':
+      case 'WAITLISTED':
+      case 'PENDING_PAYMENT':
+      case 'CONFIRMED':
         return true;
       default:
         return false;

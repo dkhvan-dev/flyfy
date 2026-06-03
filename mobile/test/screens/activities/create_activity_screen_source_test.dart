@@ -82,6 +82,48 @@ void main() {
   );
 
   test(
+    'repeat mode resets copied schedule to a valid future default',
+    () async {
+      final source = await File(
+        'lib/screens/activities/create_activity_screen.dart',
+      ).readAsString();
+
+      final initStart = source.indexOf('void _applyInitialActivity');
+      final initEnd = source.indexOf(
+        '@override\n  void didChangeDependencies',
+        initStart,
+      );
+      expect(initStart, isNonNegative);
+      expect(initEnd, greaterThan(initStart));
+
+      final initSource = source.substring(initStart, initEnd);
+      expect(initSource, contains('if (widget.isRepeatMode)'));
+      expect(initSource, contains('_startAt = _defaultStartAt();'));
+      expect(initSource, contains('_endAt = _defaultEndAt(_startAt);'));
+      expect(initSource, isNot(contains('_startAt = a.startAt.toLocal();')));
+    },
+  );
+
+  test('create activity asks before discarding a dirty draft', () async {
+    final source = await File(
+      'lib/screens/activities/create_activity_screen.dart',
+    ).readAsString();
+    final enArb = await File('lib/l10n/app_en.arb').readAsString();
+    final ruArb = await File('lib/l10n/app_ru.arb').readAsString();
+    final kkArb = await File('lib/l10n/app_kk.arb').readAsString();
+
+    expect(source, contains('bool get _hasUnsavedChanges'));
+    expect(source, contains('Future<bool> _confirmDiscardIfNeeded()'));
+    expect(source, contains('Future<void> _handleRouteBack()'));
+    expect(source, contains('canPop: false'));
+    expect(source, contains('l10n.createActivityDiscardTitle'));
+    expect(source, contains('l10n.createActivityDiscardConfirm'));
+    expect(enArb, contains('"createActivityDiscardTitle"'));
+    expect(ruArb, contains('"createActivityDiscardTitle"'));
+    expect(kkArb, contains('"createActivityDiscardTitle"'));
+  });
+
+  test(
     'create activity splits price amount and currency into separate fields',
     () async {
       final source = await File(
@@ -520,4 +562,41 @@ void main() {
       expect(kkSource, contains('"createAuthorLocationMismatchHint"'));
     },
   );
+
+  test('category selector fields expose semantic button targets', () async {
+    final source = await File(
+      'lib/screens/activities/create_activity_screen.dart',
+    ).readAsString();
+    final selectorStart = source.indexOf('class _CategorySelectorField');
+    final selectorEnd = source.indexOf('class _CoverUploadCard', selectorStart);
+
+    expect(selectorStart, isNonNegative);
+    expect(selectorEnd, greaterThan(selectorStart));
+
+    final selectorSource = source.substring(selectorStart, selectorEnd);
+
+    expect(selectorSource, contains('Semantics('));
+    expect(selectorSource, contains('container: true'));
+    expect(selectorSource, contains('button: true'));
+    expect(selectorSource, contains('label: value'));
+    expect(selectorSource, contains('onTap: onTap'));
+    expect(selectorSource, contains('ExcludeSemantics('));
+  });
+
+  test('category picker options expose semantic button targets', () async {
+    final source = await File(
+      'lib/screens/activities/create_activity_screen.dart',
+    ).readAsString();
+    final pickerStart = source.indexOf('class _CategoryPickerSheetState');
+
+    expect(pickerStart, isNonNegative);
+
+    final pickerSource = source.substring(pickerStart);
+
+    expect(pickerSource, contains('Semantics('));
+    expect(pickerSource, contains('button: true'));
+    expect(pickerSource, contains('label: entry.value'));
+    expect(pickerSource, contains('onTap: selectItem'));
+    expect(pickerSource, contains('ExcludeSemantics('));
+  });
 }

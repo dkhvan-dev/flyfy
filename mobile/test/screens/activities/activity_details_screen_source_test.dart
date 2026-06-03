@@ -189,4 +189,27 @@ void main() {
       contains('if (activityId != null && selectedActivity.id != activityId)'),
     );
   });
+
+  test(
+    'details footer does not grant chat access for pending participation',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activity_details_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('final canOpenParticipantChat ='));
+      expect(
+        source,
+        contains('currentParticipant?.hasConfirmedAccess == true'),
+      );
+      expect(source, contains('currentParticipant?.requiresPayment == true'));
+      expect(source, contains('currentParticipant?.isPendingDecision == true'));
+      expect(source, contains('participantStatusLabel:'));
+      expect(source, contains('canOpenChat: canOpenParticipantChat'));
+      expect(
+        source,
+        contains('isParticipationPending: isParticipationPending'),
+      );
+    },
+  );
 }

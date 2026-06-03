@@ -3487,6 +3487,16 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
+  String get createActivityDiscardTitle => 'Сақтамай шығасыз ба?';
+
+  @override
+  String get createActivityDiscardDescription =>
+      'Белсенділік черновигіндегі өзгерістер жоғалады.';
+
+  @override
+  String get createActivityDiscardConfirm => 'Шығу';
+
+  @override
   String get createHelpAction => 'Көмек';
 
   @override

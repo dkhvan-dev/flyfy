@@ -1605,7 +1605,7 @@ func (u *ActivityUseCase) UpdateActivity(ctx context.Context, input UpdateActivi
 		item.PriceAmount = input.PriceAmount
 	}
 	if input.HasCurrency {
-		item.Currency = model.NormalizeOptionalString(input.Currency)
+		item.Currency = model.NormalizeOptionalCurrencyCode(input.Currency)
 	}
 	if input.RequiresProfileCompletion != nil {
 		item.RequiresProfileCompletion = *input.RequiresProfileCompletion

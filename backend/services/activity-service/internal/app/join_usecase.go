@@ -222,7 +222,13 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 			}
 		}
 
-		if status == enum.ParticipantStatusWaitlisted {
+		activityReachedFullCapacity := status == enum.ParticipantStatusWaitlisted ||
+			(!isPaidActivity(activity) &&
+				activity.CapacityType == enum.ActivityCapacityTypeLimited &&
+				activity.MaxParticipants != nil &&
+				status.OccupiesSlot() &&
+				occupied+1 >= *activity.MaxParticipants)
+		if activityReachedFullCapacity {
 			activity.Status = enum.ActivityStatusFull
 			activity.Revision++
 			activity.UpdatedAt = now
@@ -250,7 +256,7 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 				return fmt.Errorf("create participant event: %w", err)
 			}
 		}
-		if status == enum.ParticipantStatusWaitlisted {
+		if activityReachedFullCapacity {
 			if err = txRepo.UpdateActivity(ctx, activity); err != nil {
 				return fmt.Errorf("update activity full status: %w", err)
 			}
@@ -585,6 +591,7 @@ func (u *JoinUseCase) LeaveActivity(ctx context.Context, input LeaveActivityInpu
 	var err error
 	var activityForNotification *model.Activity
 	lateCancellationForNotification := false
+	var promotedParticipantForChat *model.ActivityParticipant
 	if u.fraud != nil {
 		activityForFraud, err := u.repo.GetActivityByID(ctx, input.ActivityID)
 		if err != nil {
@@ -751,8 +758,26 @@ func (u *JoinUseCase) LeaveActivity(ctx context.Context, input LeaveActivityInpu
 		}
 
 		if !lateCancellation && activity.CapacityType == enum.ActivityCapacityTypeLimited && activity.MaxParticipants != nil {
+			if activity.Status == enum.ActivityStatusFull {
+				promoted, promoteErr := u.promoteFirstWaitlistedParticipantInTx(
+					ctx,
+					txRepo,
+					activity,
+					participant.ID,
+					input.UserID,
+					now,
+				)
+				if promoteErr != nil {
+					return promoteErr
+				}
+				promotedParticipantForChat = promoted
+			}
+
 			occupied, countErr := txRepo.CountOccupiedSlotsForUpdate(ctx, activity.ID)
-			if countErr == nil && occupied < *activity.MaxParticipants && activity.Status == enum.ActivityStatusFull {
+			if countErr == nil &&
+				occupied < *activity.MaxParticipants &&
+				activity.Status == enum.ActivityStatusFull &&
+				promotedParticipantForChat == nil {
 				activity.Status = enum.ActivityStatusEnrollmentOpen
 				activity.Revision++
 				activity.UpdatedAt = now
@@ -786,7 +811,128 @@ func (u *JoinUseCase) LeaveActivity(ctx context.Context, input LeaveActivityInpu
 			return nil, err
 		}
 	}
+	if promotedParticipantForChat != nil {
+		u.ensureParticipantChat(ctx, activityForNotification, promotedParticipantForChat)
+	}
 	u.notifyParticipantLeft(ctx, activityForNotification, updated, lateCancellationForNotification)
 
 	return updated, nil
+}
+
+func (u *JoinUseCase) promoteFirstWaitlistedParticipantInTx(
+	ctx context.Context,
+	txRepo port.ActivityTxRepository,
+	activity *model.Activity,
+	freedByParticipantID uuid.UUID,
+	actorUserID uuid.UUID,
+	now time.Time,
+) (*model.ActivityParticipant, error) {
+	if activity == nil || isPaidActivity(activity) {
+		return nil, nil
+	}
+
+	participants, err := txRepo.ListParticipantsByActivityIDForUpdate(ctx, activity.ID)
+	if err != nil {
+		return nil, fmt.Errorf("list participants for waitlist promotion: %w", err)
+	}
+
+	for _, candidate := range participants {
+		if candidate == nil || candidate.Status != enum.ParticipantStatusWaitlisted {
+			continue
+		}
+		if err = candidate.SetStatus(enum.ParticipantStatusApproved, now); err != nil {
+			return nil, err
+		}
+		if err = txRepo.UpdateParticipant(ctx, candidate); err != nil {
+			return nil, fmt.Errorf("promote waitlisted participant: %w", err)
+		}
+
+		event, eventErr := model.NewParticipantEvent(model.NewParticipantEventParams{
+			ActivityID:    activity.ID,
+			ParticipantID: candidate.ID,
+			UserID:        candidate.UserID,
+			EventType:     string(enum.ParticipantStatusApproved),
+			ActorUserID:   &actorUserID,
+			PayloadJSON: mustJSON(map[string]any{
+				"status":                  string(enum.ParticipantStatusApproved),
+				"promotedFromWaitlist":    true,
+				"freedByParticipantId":    freedByParticipantID.String(),
+				"waitlistedAt":            optionalTimeString(candidate.WaitlistedAt),
+				"hostExcludedFromMinimum": true,
+			}),
+		})
+		if eventErr == nil {
+			if err = txRepo.CreateParticipantEvent(ctx, event); err != nil {
+				return nil, fmt.Errorf("create waitlist promotion event: %w", err)
+			}
+		}
+
+		return candidate, nil
+	}
+
+	return nil, nil
+}
+
+func (u *JoinUseCase) ensureParticipantChat(
+	ctx context.Context,
+	activity *model.Activity,
+	participant *model.ActivityParticipant,
+) {
+	if u.chatGateway == nil ||
+		activity == nil ||
+		participant == nil ||
+		participant.Status == enum.ParticipantStatusPendingPayment ||
+		!participant.Status.IsActive() {
+		return
+	}
+
+	messagingAvailableUntil := activityChatMessagingAvailableUntil(activity)
+	chatInput := port.EnsureActivityParticipantInput{
+		ActivityID:              activity.ID,
+		ActivityTitle:           activity.Title,
+		MessagingAvailableUntil: &messagingAvailableUntil,
+		HostUserID:              activity.HostUserID,
+		UserID:                  participant.UserID,
+	}
+
+	chatCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+
+	media, mediaErr := u.repo.ListMediaByActivityID(chatCtx, chatInput.ActivityID)
+	if mediaErr != nil {
+		log.Warn().
+			Err(mediaErr).
+			Str("activity_id", chatInput.ActivityID.String()).
+			Msg("failed to resolve activity cover for chat")
+	} else {
+		chatInput.ActivityAvatarFileID = activityCoverFileID(media)
+	}
+
+	if u.userProfileResolver != nil {
+		displayName, displayNameErr := u.userProfileResolver.DisplayNameForUserID(chatCtx, chatInput.UserID)
+		if displayNameErr != nil {
+			log.Warn().
+				Err(displayNameErr).
+				Str("user_id", chatInput.UserID.String()).
+				Msg("failed to resolve activity participant display name for chat")
+		} else {
+			chatInput.DisplayName = strings.TrimSpace(displayName)
+		}
+	}
+
+	if chatErr := u.chatGateway.EnsureActivityParticipant(chatCtx, chatInput); chatErr != nil {
+		log.Error().
+			Err(chatErr).
+			Str("activity_id", chatInput.ActivityID.String()).
+			Str("user_id", chatInput.UserID.String()).
+			Msg("failed to add activity participant to chat")
+	}
+}
+
+func optionalTimeString(value *time.Time) *string {
+	if value == nil {
+		return nil
+	}
+	formatted := value.UTC().Format(time.RFC3339)
+	return &formatted
 }

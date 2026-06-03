@@ -10,6 +10,29 @@ import (
 	"kz/inflap/backend/services/chat-service/internal/domain/model"
 )
 
+func TestNewSystemMessageDefaultsModerationFields(t *testing.T) {
+	t.Parallel()
+
+	msg := newSystemMessage(uuid.New(), "User joined", time.Now().UTC())
+
+	if msg.ModerationStatus != model.MessageModerationStatusVisible {
+		t.Fatalf(
+			"ModerationStatus = %q, want %q",
+			msg.ModerationStatus,
+			model.MessageModerationStatusVisible,
+		)
+	}
+	if msg.ModerationReasonCodes == nil {
+		t.Fatal("ModerationReasonCodes is nil, want empty slice")
+	}
+	if len(msg.ModerationReasonCodes) != 0 {
+		t.Fatalf("ModerationReasonCodes = %v, want empty", msg.ModerationReasonCodes)
+	}
+	if msg.ModerationRevision != 1 {
+		t.Fatalf("ModerationRevision = %d, want 1", msg.ModerationRevision)
+	}
+}
+
 func TestSyncExcursionScheduleSlotConversationCreatesConversationWithGuideAndBookingAuthors(t *testing.T) {
 	slotID := uuid.New()
 	guideUserID := uuid.New()

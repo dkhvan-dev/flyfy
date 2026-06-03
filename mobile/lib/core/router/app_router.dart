@@ -255,10 +255,23 @@ class AppRouter {
         GoRoute(
           path: '/activities/:activityId/edit',
           pageBuilder: (context, state) {
+            final activityId = state.pathParameters['activityId'] ?? '';
             final activity = state.extra as ActivityListItemVm?;
+            if (activity == null) {
+              return _buildActivityEditorPage(
+                state: state,
+                child: ActivityDetailsScreen(
+                  activityId: activityId,
+                  initialActivity: activity,
+                ),
+              );
+            }
             return _buildActivityEditorPage(
               state: state,
-              child: CreateActivityScreen(activity: activity),
+              child: CreateActivityScreen(
+                activity: activity,
+                repeatFromActivity: false,
+              ),
             );
           },
         ),

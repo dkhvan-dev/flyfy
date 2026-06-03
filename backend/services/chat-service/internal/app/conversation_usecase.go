@@ -701,12 +701,15 @@ func (u *ConversationUseCase) RemoveParticipant(ctx context.Context, conversatio
 
 func newSystemMessage(conversationID uuid.UUID, content string, sentAt time.Time) *model.Message {
 	return &model.Message{
-		ID:             uuid.New(),
-		ConversationID: conversationID,
-		SenderUserID:   uuid.Nil,
-		Type:           "system",
-		Content:        content,
-		SentAt:         sentAt,
+		ID:                    uuid.New(),
+		ConversationID:        conversationID,
+		SenderUserID:          uuid.Nil,
+		Type:                  "system",
+		Content:               content,
+		ModerationStatus:      model.MessageModerationStatusVisible,
+		ModerationReasonCodes: []string{},
+		ModerationRevision:    1,
+		SentAt:                sentAt,
 	}
 }
 

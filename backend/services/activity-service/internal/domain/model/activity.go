@@ -210,7 +210,7 @@ func NewActivity(params NewActivityParams) (*Activity, error) {
 
 		PriceType:   params.PriceType,
 		PriceAmount: params.PriceAmount,
-		Currency:    NormalizeOptionalString(params.Currency),
+		Currency:    NormalizeOptionalCurrencyCode(params.Currency),
 
 		RequiresProfileCompletion:      params.RequiresProfileCompletion,
 		RequiresAttendanceConfirmation: params.RequiresAttendanceConfirmation,
@@ -460,7 +460,7 @@ func (a *Activity) validatePrice() error {
 		if a.PriceAmount == nil || *a.PriceAmount <= 0 {
 			return ErrInvalidPrice
 		}
-		if a.Currency == nil || strings.TrimSpace(*a.Currency) == "" {
+		if a.Currency == nil || !IsSupportedActivityCurrency(*a.Currency) {
 			return ErrInvalidCurrency
 		}
 	default:

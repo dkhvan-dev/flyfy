@@ -198,6 +198,25 @@ type fraudEvaluatorStub struct {
 	assessActivity func(ctx context.Context, input port.FraudAssessmentInput) (*port.FraudAssessmentResult, error)
 }
 
+type chatGatewayStub struct {
+	ensureActivityParticipant func(ctx context.Context, input port.EnsureActivityParticipantInput) error
+	syncActivityConversation  func(ctx context.Context, input port.SyncActivityConversationInput) error
+}
+
+func (s chatGatewayStub) EnsureActivityParticipant(ctx context.Context, input port.EnsureActivityParticipantInput) error {
+	if s.ensureActivityParticipant != nil {
+		return s.ensureActivityParticipant(ctx, input)
+	}
+	return nil
+}
+
+func (s chatGatewayStub) SyncActivityConversation(ctx context.Context, input port.SyncActivityConversationInput) error {
+	if s.syncActivityConversation != nil {
+		return s.syncActivityConversation(ctx, input)
+	}
+	return nil
+}
+
 func (s fraudEvaluatorStub) AssessActivity(
 	ctx context.Context,
 	input port.FraudAssessmentInput,
@@ -469,6 +488,23 @@ func TestCreateActivityRejectsDepositPriceType(t *testing.T) {
 	_, err := uc.CreateActivity(context.Background(), input)
 	if !errors.Is(err, model.ErrInvalidPriceType) {
 		t.Fatalf("CreateActivity() error = %v, want %v", err, model.ErrInvalidPriceType)
+	}
+}
+
+func TestCreateActivityRejectsUnsupportedCurrency(t *testing.T) {
+	t.Parallel()
+
+	uc := NewActivityUseCase(&activityRepoStub{})
+	input := validCreateActivityInput()
+	priceAmount := 1000.0
+	currency := "XXX"
+	input.PriceType = enum.ActivityPriceTypePaid
+	input.PriceAmount = &priceAmount
+	input.Currency = &currency
+
+	_, err := uc.CreateActivity(context.Background(), input)
+	if !errors.Is(err, model.ErrInvalidCurrency) {
+		t.Fatalf("CreateActivity() error = %v, want %v", err, model.ErrInvalidCurrency)
 	}
 }
 
@@ -1047,6 +1083,43 @@ func TestUpdateActivityClearsPrivatePasswordWhenVisibilityChanges(t *testing.T) 
 	}
 }
 
+func TestUpdateActivityRejectsUnsupportedCurrency(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	actorUserID := uuid.New()
+	repo := &activityRepoStub{
+		getActivityByID: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+			if requestedID != activityID {
+				t.Fatalf("GetActivityByID() requestedID = %s, want %s", requestedID, activityID)
+			}
+			return validActivity(t, activityID, actorUserID), nil
+		},
+		updateActivity: func(ctx context.Context, item *model.Activity) error {
+			t.Fatal("UpdateActivity() persisted activity with unsupported currency")
+			return nil
+		},
+	}
+
+	uc := NewActivityUseCase(repo)
+	priceType := enum.ActivityPriceTypePaid
+	priceAmount := 1000.0
+	currency := "XXX"
+
+	_, err := uc.UpdateActivity(context.Background(), UpdateActivityInput{
+		ActorUserID:    actorUserID,
+		ActivityID:     activityID,
+		PriceType:      &priceType,
+		PriceAmount:    &priceAmount,
+		HasPriceAmount: true,
+		Currency:       &currency,
+		HasCurrency:    true,
+	})
+	if !errors.Is(err, model.ErrInvalidCurrency) {
+		t.Fatalf("UpdateActivity() error = %v, want %v", err, model.ErrInvalidCurrency)
+	}
+}
+
 func TestUpdateActivityAllowsPriceChangeWhenOnlyHostParticipantExists(t *testing.T) {
 	t.Parallel()
 
@@ -1560,6 +1633,97 @@ func TestJoinPaidActivityAuthorizesPaymentAndConfirmsParticipant(t *testing.T) {
 	}
 }
 
+func TestJoinPaidActivityMarksFullAfterSuccessfulPaymentAuthorization(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	hostUserID := uuid.New()
+	userID := uuid.New()
+	priceAmount := 2500.0
+	currency := "KZT"
+	minParticipants := 2
+	maxParticipants := 2
+
+	activity := validActivity(t, activityID, hostUserID)
+	activity.Status = enum.ActivityStatusEnrollmentOpen
+	activity.CapacityType = enum.ActivityCapacityTypeLimited
+	activity.MinParticipants = &minParticipants
+	activity.MaxParticipants = &maxParticipants
+	activity.PriceType = enum.ActivityPriceTypePaid
+	activity.PriceAmount = &priceAmount
+	activity.Currency = &currency
+
+	var createdParticipant *model.ActivityParticipant
+	var activityUpdated bool
+	createdActivityEvents := make([]enum.ActivityEventType, 0)
+	occupiedSlotCounts := []int{1, 2}
+
+	repo := &activityRepoStub{
+		getActivityByID: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+			return activity, nil
+		},
+		withTx: func(ctx context.Context, fn func(repo port.ActivityTxRepository) error) error {
+			txRepo := &activityTxRepoStub{
+				getActivityByIDForUpdate: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+					return activity, nil
+				},
+				getParticipantByActivityAndUserForUpdate: func(ctx context.Context, requestedID uuid.UUID, requestedUserID uuid.UUID) (*model.ActivityParticipant, error) {
+					return createdParticipant, nil
+				},
+				countOccupiedSlotsForUpdate: func(ctx context.Context, requestedID uuid.UUID) (int, error) {
+					if len(occupiedSlotCounts) == 0 {
+						t.Fatal("CountOccupiedSlotsForUpdate called more often than expected")
+					}
+					next := occupiedSlotCounts[0]
+					occupiedSlotCounts = occupiedSlotCounts[1:]
+					return next, nil
+				},
+				createParticipant: func(ctx context.Context, item *model.ActivityParticipant) error {
+					createdParticipant = item
+					return nil
+				},
+				updateParticipant: func(ctx context.Context, item *model.ActivityParticipant) error {
+					createdParticipant = item
+					return nil
+				},
+				updateActivity: func(ctx context.Context, item *model.Activity) error {
+					activityUpdated = true
+					activity = item
+					return nil
+				},
+				createActivityEvent: func(ctx context.Context, item *model.ActivityEvent) error {
+					createdActivityEvents = append(createdActivityEvents, item.EventType)
+					return nil
+				},
+			}
+			return fn(txRepo)
+		},
+	}
+
+	uc := NewJoinUseCase(repo, nil)
+	uc.SetPaymentGateway(paymentGatewayStub{})
+
+	participant, err := uc.JoinActivity(context.Background(), JoinActivityInput{
+		ActivityID: activityID,
+		UserID:     userID,
+	})
+	if err != nil {
+		t.Fatalf("JoinActivity() error = %v", err)
+	}
+	if participant.Status != enum.ParticipantStatusConfirmed {
+		t.Fatalf("participant status = %s, want %s", participant.Status, enum.ParticipantStatusConfirmed)
+	}
+	if activity.Status != enum.ActivityStatusFull {
+		t.Fatalf("activity status = %s, want %s", activity.Status, enum.ActivityStatusFull)
+	}
+	if !activityUpdated {
+		t.Fatal("JoinActivity() did not persist activity FULL status after paid authorization")
+	}
+	if !containsActivityEventType(createdActivityEvents, enum.ActivityEventTypeCapacityChanged) {
+		t.Fatalf("activity events = %v, want capacity changed event", createdActivityEvents)
+	}
+}
+
 func TestJoinActivityAllowsReviewFraudDecisionAndAuditsIt(t *testing.T) {
 	t.Parallel()
 
@@ -1707,6 +1871,78 @@ func TestJoinActivityAllowsFraudAssessmentUnavailableAndAuditsIt(t *testing.T) {
 	}
 	if participantEventPayload["fraudAssessmentUnavailable"] != true {
 		t.Fatalf("fraudAssessmentUnavailable = %v, want true", participantEventPayload["fraudAssessmentUnavailable"])
+	}
+}
+
+func TestJoinFreeLimitedActivityMarksFullWhenLastSlotIsTaken(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	hostUserID := uuid.New()
+	userID := uuid.New()
+	maxParticipants := 1
+
+	activity := validActivity(t, activityID, hostUserID)
+	activity.Status = enum.ActivityStatusEnrollmentOpen
+	activity.CapacityType = enum.ActivityCapacityTypeLimited
+	activity.MaxParticipants = &maxParticipants
+
+	var createdParticipant *model.ActivityParticipant
+	activityUpdated := false
+	createdActivityEvents := make([]enum.ActivityEventType, 0)
+
+	repo := &activityRepoStub{
+		withTx: func(ctx context.Context, fn func(repo port.ActivityTxRepository) error) error {
+			txRepo := &activityTxRepoStub{
+				getActivityByIDForUpdate: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+					return activity, nil
+				},
+				getParticipantByActivityAndUserForUpdate: func(ctx context.Context, requestedID uuid.UUID, requestedUserID uuid.UUID) (*model.ActivityParticipant, error) {
+					return nil, nil
+				},
+				countOccupiedSlotsForUpdate: func(ctx context.Context, requestedID uuid.UUID) (int, error) {
+					return 0, nil
+				},
+				createParticipant: func(ctx context.Context, item *model.ActivityParticipant) error {
+					createdParticipant = item
+					return nil
+				},
+				updateActivity: func(ctx context.Context, item *model.Activity) error {
+					activityUpdated = true
+					activity = item
+					return nil
+				},
+				createActivityEvent: func(ctx context.Context, item *model.ActivityEvent) error {
+					createdActivityEvents = append(createdActivityEvents, item.EventType)
+					return nil
+				},
+			}
+			return fn(txRepo)
+		},
+	}
+
+	uc := NewJoinUseCase(repo, nil)
+	participant, err := uc.JoinActivity(context.Background(), JoinActivityInput{
+		ActivityID: activityID,
+		UserID:     userID,
+	})
+	if err != nil {
+		t.Fatalf("JoinActivity() error = %v", err)
+	}
+	if participant == nil || createdParticipant == nil {
+		t.Fatal("JoinActivity() did not create participant")
+	}
+	if participant.Status != enum.ParticipantStatusApproved {
+		t.Fatalf("participant status = %s, want %s", participant.Status, enum.ParticipantStatusApproved)
+	}
+	if activity.Status != enum.ActivityStatusFull {
+		t.Fatalf("activity status = %s, want %s", activity.Status, enum.ActivityStatusFull)
+	}
+	if !activityUpdated {
+		t.Fatal("JoinActivity() did not persist activity FULL status")
+	}
+	if !containsActivityEventType(createdActivityEvents, enum.ActivityEventTypeCapacityChanged) {
+		t.Fatalf("activity events = %v, want capacity changed event", createdActivityEvents)
 	}
 }
 
@@ -2094,6 +2330,101 @@ func TestLeavePaidActivityAfterDeadlineMarksLateCancellationWithoutRefund(t *tes
 	}
 }
 
+func TestLeaveFreeFullActivityPromotesFirstWaitlistedParticipant(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	hostUserID := uuid.New()
+	leavingUserID := uuid.New()
+	waitlistedUserID := uuid.New()
+	maxParticipants := 1
+
+	activity := validActivity(t, activityID, hostUserID)
+	activity.Status = enum.ActivityStatusFull
+	activity.CapacityType = enum.ActivityCapacityTypeLimited
+	activity.MaxParticipants = &maxParticipants
+
+	leavingParticipant := validParticipant(t, activityID, leavingUserID, enum.ParticipantStatusApproved)
+	waitlistedParticipant := validParticipant(t, activityID, waitlistedUserID, enum.ParticipantStatusWaitlisted)
+	waitlistedAt := time.Now().UTC().Add(-10 * time.Minute)
+	waitlistedParticipant.WaitlistedAt = &waitlistedAt
+
+	updatedParticipants := make([]*model.ActivityParticipant, 0)
+	createdParticipantEvents := make([]string, 0)
+	ensuredChatUserIDs := make([]uuid.UUID, 0)
+
+	repo := &activityRepoStub{
+		withTx: func(ctx context.Context, fn func(repo port.ActivityTxRepository) error) error {
+			txRepo := &activityTxRepoStub{
+				getActivityByIDForUpdate: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+					return activity, nil
+				},
+				getParticipantByActivityAndUserForUpdate: func(ctx context.Context, requestedID uuid.UUID, requestedUserID uuid.UUID) (*model.ActivityParticipant, error) {
+					return leavingParticipant, nil
+				},
+				listParticipantsByActivityIDForUpdate: func(ctx context.Context, requestedID uuid.UUID) ([]*model.ActivityParticipant, error) {
+					return []*model.ActivityParticipant{leavingParticipant, waitlistedParticipant}, nil
+				},
+				countOccupiedSlotsForUpdate: func(ctx context.Context, requestedID uuid.UUID) (int, error) {
+					return 0, nil
+				},
+				updateActivity: func(ctx context.Context, item *model.Activity) error {
+					activity = item
+					return nil
+				},
+				updateParticipant: func(ctx context.Context, item *model.ActivityParticipant) error {
+					updatedParticipants = append(updatedParticipants, item)
+					return nil
+				},
+				createParticipantEvent: func(ctx context.Context, item *model.ParticipantEvent) error {
+					createdParticipantEvents = append(createdParticipantEvents, item.EventType)
+					return nil
+				},
+				createActivityEvent: func(ctx context.Context, item *model.ActivityEvent) error {
+					return nil
+				},
+			}
+			return fn(txRepo)
+		},
+	}
+
+	uc := NewJoinUseCase(repo, chatGatewayStub{
+		ensureActivityParticipant: func(ctx context.Context, input port.EnsureActivityParticipantInput) error {
+			ensuredChatUserIDs = append(ensuredChatUserIDs, input.UserID)
+			return nil
+		},
+	})
+
+	updated, err := uc.LeaveActivity(context.Background(), LeaveActivityInput{
+		ActivityID: activityID,
+		UserID:     leavingUserID,
+	})
+	if err != nil {
+		t.Fatalf("LeaveActivity() error = %v", err)
+	}
+	if updated.Status != enum.ParticipantStatusCancelled {
+		t.Fatalf("leaving participant status = %s, want %s", updated.Status, enum.ParticipantStatusCancelled)
+	}
+	if waitlistedParticipant.Status != enum.ParticipantStatusApproved {
+		t.Fatalf("waitlisted participant status = %s, want %s", waitlistedParticipant.Status, enum.ParticipantStatusApproved)
+	}
+	if waitlistedParticipant.ApprovedAt == nil {
+		t.Fatal("promoted participant ApprovedAt is nil")
+	}
+	if activity.Status != enum.ActivityStatusFull {
+		t.Fatalf("activity status = %s, want %s after waitlist promotion", activity.Status, enum.ActivityStatusFull)
+	}
+	if !containsString(createdParticipantEvents, string(enum.ParticipantStatusApproved)) {
+		t.Fatalf("participant events = %v, want approved event for promoted participant", createdParticipantEvents)
+	}
+	if !containsUUID(ensuredChatUserIDs, waitlistedUserID) {
+		t.Fatalf("ensured chat user ids = %v, want promoted user %s", ensuredChatUserIDs, waitlistedUserID)
+	}
+	if len(updatedParticipants) < 2 {
+		t.Fatalf("updated participants = %d, want leaving and promoted participants", len(updatedParticipants))
+	}
+}
+
 func TestExtendActivityRejectsBeforeStart(t *testing.T) {
 	t.Parallel()
 
@@ -2241,6 +2572,24 @@ func validParticipant(
 }
 
 func containsString(items []string, needle string) bool {
+	for _, item := range items {
+		if item == needle {
+			return true
+		}
+	}
+	return false
+}
+
+func containsActivityEventType(items []enum.ActivityEventType, needle enum.ActivityEventType) bool {
+	for _, item := range items {
+		if item == needle {
+			return true
+		}
+	}
+	return false
+}
+
+func containsUUID(items []uuid.UUID, needle uuid.UUID) bool {
 	for _, item := range items {
 		if item == needle {
 			return true

@@ -3462,6 +3462,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get createActivityDiscardTitle => 'Discard this activity?';
+
+  @override
+  String get createActivityDiscardDescription =>
+      'Your draft changes will be lost if you leave now.';
+
+  @override
+  String get createActivityDiscardConfirm => 'Discard';
+
+  @override
   String get createHelpAction => 'Help';
 
   @override

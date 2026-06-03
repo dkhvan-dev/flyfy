@@ -107,6 +107,18 @@ func (u *JoinUseCase) authorizeParticipantPayment(
 			}
 		}
 
+		if paymentSucceeded(tx) {
+			if err = markActivityFullIfCapacityReachedAfterPayment(
+				ctx,
+				txRepo,
+				current.ActivityID,
+				actorUserID,
+				now,
+			); err != nil {
+				return err
+			}
+		}
+
 		updated = current
 		return nil
 	})
@@ -115,4 +127,61 @@ func (u *JoinUseCase) authorizeParticipantPayment(
 	}
 
 	return updated, nil
+}
+
+func markActivityFullIfCapacityReachedAfterPayment(
+	ctx context.Context,
+	txRepo port.ActivityTxRepository,
+	activityID uuid.UUID,
+	actorUserID uuid.UUID,
+	now time.Time,
+) error {
+	activity, err := txRepo.GetActivityByIDForUpdate(ctx, activityID)
+	if err != nil {
+		return fmt.Errorf("get activity after payment authorization: %w", err)
+	}
+	if activity == nil {
+		return ErrActivityNotFound
+	}
+	if activity.CapacityType != enum.ActivityCapacityTypeLimited ||
+		activity.MaxParticipants == nil ||
+		activity.Status == enum.ActivityStatusFull {
+		return nil
+	}
+	switch activity.Status {
+	case enum.ActivityStatusEnrollmentOpen, enum.ActivityStatusPublished:
+	default:
+		return nil
+	}
+
+	occupied, err := txRepo.CountOccupiedSlotsForUpdate(ctx, activityID)
+	if err != nil {
+		return fmt.Errorf("count occupied slots after payment authorization: %w", err)
+	}
+	if occupied < *activity.MaxParticipants {
+		return nil
+	}
+
+	activity.Status = enum.ActivityStatusFull
+	activity.Revision++
+	activity.UpdatedAt = now
+	if err = txRepo.UpdateActivity(ctx, activity); err != nil {
+		return fmt.Errorf("update activity full status after payment authorization: %w", err)
+	}
+
+	activityEvent, activityEventErr := model.NewActivityEvent(model.NewActivityEventParams{
+		ActivityID:  activity.ID,
+		EventType:   enum.ActivityEventTypeCapacityChanged,
+		ActorUserID: &actorUserID,
+		PayloadJSON: mustJSON(map[string]any{
+			"status": "FULL",
+		}),
+	})
+	if activityEventErr == nil {
+		if err = txRepo.CreateActivityEvent(ctx, activityEvent); err != nil {
+			return fmt.Errorf("create payment capacity changed event: %w", err)
+		}
+	}
+
+	return nil
 }
