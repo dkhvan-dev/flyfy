@@ -590,7 +590,6 @@ class AppRouter {
         location == '/map' ||
         location == '/services' ||
         location == '/currency-converter' ||
-        location == '/chats' ||
         location == '/yandex-go' ||
         location == '/glovo' ||
         location == '/wolt' ||

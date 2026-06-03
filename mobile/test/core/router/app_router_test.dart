@@ -71,4 +71,21 @@ void main() {
       expect(routeSource, contains('initialActivity: activity'));
     },
   );
+
+  test(
+    'chat list route requires authentication before screen is built',
+    () async {
+      final source = await File(
+        'lib/core/router/app_router.dart',
+      ).readAsString();
+      final publicRouteIndex = source.indexOf(
+        'static bool _isPublicRoute(String location)',
+      );
+
+      expect(publicRouteIndex, greaterThanOrEqualTo(0));
+
+      final publicRouteSource = source.substring(publicRouteIndex);
+      expect(publicRouteSource, isNot(contains("location == '/chats'")));
+    },
+  );
 }
