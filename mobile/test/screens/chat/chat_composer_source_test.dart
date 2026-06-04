@@ -11,13 +11,27 @@ void main() {
     expect(source, isNot(contains('Icons.sticky_note_2_outlined')));
   });
 
-  test('sticker warm-up uses the same byte cache as the grid', () async {
+  test('sticker warm-up uses the same asset cache as the grid', () async {
     final source = await File(
       'lib/screens/chat/chat_screen.dart',
     ).readAsString();
 
     expect(source, contains('_StickerImageCache.preload'));
     expect(source, isNot(contains('precacheImage(NetworkImage')));
+  });
+
+  test('chat sticker renderer supports telegram tgs assets', () async {
+    final source = await File(
+      'lib/screens/chat/chat_screen.dart',
+    ).readAsString();
+
+    expect(source, contains("package:lottie/lottie.dart"));
+    expect(source, contains('resolveStickerAssetContentFormat'));
+    expect(source, contains('Lottie.memory'));
+    expect(source, contains('LottieComposition.decodeGZip'));
+    expect(source, contains('RenderCache.drawingCommands'));
+    expect(source, contains('FrameRate(60)'));
+    expect(source, isNot(contains('FrameRate.max')));
   });
 
   test(
@@ -37,5 +51,16 @@ void main() {
     ).readAsString();
 
     expect(source, isNot(contains('chatStickerCreated')));
+  });
+
+  test('chat composer does not expose custom sticker creation', () async {
+    final source = await File(
+      'lib/screens/chat/chat_screen.dart',
+    ).readAsString();
+
+    expect(source, isNot(contains('_CreateStickerButton')));
+    expect(source, isNot(contains('_createCustomSticker')));
+    expect(source, isNot(contains('_PastedImageAction.sendSticker')));
+    expect(source, isNot(contains('chatPasteSendSticker')));
   });
 }

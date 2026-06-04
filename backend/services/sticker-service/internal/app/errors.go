@@ -16,4 +16,5 @@ var (
 	ErrUploadSessionExpired   = errors.New("sticker upload session expired")
 	ErrFileNotReady           = errors.New("file is not ready")
 	ErrUnsupportedMedia       = errors.New("unsupported sticker media")
+	ErrCustomStickersDisabled = errors.New("custom stickers are disabled")
 )

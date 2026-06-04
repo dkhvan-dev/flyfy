@@ -2,16 +2,30 @@ package main
 
 import (
 	"bytes"
-	"image/gif"
+	"compress/gzip"
+	"encoding/json"
+	"io"
 	"testing"
 )
+
+type lottieTestAnimation struct {
+	Version string           `json:"v"`
+	FrameR  float64          `json:"fr"`
+	In      float64          `json:"ip"`
+	Out     float64          `json:"op"`
+	Width   int              `json:"w"`
+	Height  int              `json:"h"`
+	Assets  []map[string]any `json:"assets"`
+	Layers  []map[string]any `json:"layers"`
+}
 
 func TestDefaultTravelStickerDefinitionsAreValid(t *testing.T) {
 	t.Parallel()
 
 	defs := defaultStickerDefinitions()
-	if len(defs) < 32 {
-		t.Fatalf("expected at least 32 default stickers, got %d", len(defs))
+	expectedKeys := expectedOfficialLottieStickerKeys()
+	if len(defs) != len(expectedKeys) {
+		t.Fatalf("expected %d official lottie stickers, got %d", len(expectedKeys), len(defs))
 	}
 
 	seen := make(map[string]struct{}, len(defs))
@@ -30,6 +44,15 @@ func TestDefaultTravelStickerDefinitionsAreValid(t *testing.T) {
 		if len(def.Keywords) < 3 {
 			t.Fatalf("sticker %q should have searchable keywords", def.Key)
 		}
+		if def.AssetPath == "" {
+			t.Fatalf("sticker %q must be backed by an embedded tgs asset", def.Key)
+		}
+		if def.PackSlug != "inflap-official-lottie" {
+			t.Fatalf("sticker %q pack = %q, want inflap-official-lottie", def.Key, def.PackSlug)
+		}
+		if def.GroupSlug != "official" {
+			t.Fatalf("sticker %q group = %q, want official", def.Key, def.GroupSlug)
+		}
 
 		body, err := renderStickerAnimation(def)
 		if err != nil {
@@ -38,19 +61,105 @@ func TestDefaultTravelStickerDefinitionsAreValid(t *testing.T) {
 		if len(body) < 1024 {
 			t.Fatalf("rendered sticker %q is suspiciously small: %d bytes", def.Key, len(body))
 		}
+		if len(body) > stickerTGSMaxBytes {
+			t.Fatalf("rendered sticker %q is too large: %d bytes", def.Key, len(body))
+		}
 
-		img, err := gif.DecodeAll(bytes.NewReader(body))
+		img, err := decodeTGS(body)
 		if err != nil {
 			t.Fatalf("decode %q: %v", def.Key, err)
 		}
-		if len(img.Image) < 2 {
-			t.Fatalf("sticker %q should be animated, got %d frame(s)", def.Key, len(img.Image))
+		if len(img.Layers) == 0 {
+			t.Fatalf("sticker %q should have lottie layers", def.Key)
 		}
-		if got := img.Image[0].Bounds().Dx(); got != stickerCanvasSize {
-			t.Fatalf("sticker %q width = %d, want %d", def.Key, got, stickerCanvasSize)
+		if got := img.Width; got != def.Width {
+			t.Fatalf("sticker %q width = %d, want %d", def.Key, got, def.Width)
 		}
-		if got := img.Image[0].Bounds().Dy(); got != stickerCanvasSize {
-			t.Fatalf("sticker %q height = %d, want %d", def.Key, got, stickerCanvasSize)
+		if got := img.Height; got != def.Height {
+			t.Fatalf("sticker %q height = %d, want %d", def.Key, got, def.Height)
+		}
+		if len(img.Assets) != 0 {
+			if hasImageAssets(img) {
+				t.Fatalf("sticker %q must not embed raster/image assets: %#v", def.Key, img.Assets)
+			}
+		}
+	}
+
+	for _, key := range expectedKeys {
+		if _, ok := seen[key]; !ok {
+			t.Fatalf("expected official lottie sticker %q", key)
+		}
+	}
+}
+
+func TestDefaultStickerAnimationsUseTelegramTGSFormat(t *testing.T) {
+	t.Parallel()
+
+	if stickerContentType != "application/x-tgsticker" {
+		t.Fatalf("stickerContentType = %q, want application/x-tgsticker", stickerContentType)
+	}
+	if stickerFileExt != "tgs" {
+		t.Fatalf("stickerFileExt = %q, want tgs", stickerFileExt)
+	}
+
+	body, err := renderStickerAnimation(defaultStickerDefinitions()[0])
+	if err != nil {
+		t.Fatalf("render sticker: %v", err)
+	}
+	if len(body) > 64*1024 {
+		t.Fatalf("telegram tgs sticker is too large: %d bytes", len(body))
+	}
+	if len(body) < 512 {
+		t.Fatalf("telegram tgs sticker is suspiciously small: %d bytes", len(body))
+	}
+
+	animation, err := decodeTGS(body)
+	if err != nil {
+		t.Fatalf("decode tgs: %v", err)
+	}
+	if animation.FrameR <= 0 || animation.FrameR > 60 {
+		t.Fatalf("frame rate = %.0f, want in (0, 60]", animation.FrameR)
+	}
+	if hasImageAssets(animation) {
+		t.Fatalf("telegram tgs animation must not contain image assets: %#v", animation.Assets)
+	}
+	if !usesVectorOnlyLayers(animation) {
+		t.Fatalf("telegram tgs animation must use vector shape layers only")
+	}
+	if !hasAnimatedVectorTransform(animation) {
+		t.Fatalf("telegram tgs animation should contain animated vector values")
+	}
+	durationMS := (animation.Out - animation.In) / animation.FrameR * 1000
+	if durationMS <= 0 || durationMS > 3000 {
+		t.Fatalf("duration = %.0fms, want <= 3000ms", durationMS)
+	}
+}
+
+func TestDefaultStickerAssetsAreVectorOnlyTelegramTGS(t *testing.T) {
+	t.Parallel()
+
+	for _, def := range defaultStickerDefinitions() {
+		body, err := renderStickerAnimation(def)
+		if err != nil {
+			t.Fatalf("render %q: %v", def.Key, err)
+		}
+		if len(body) > stickerTGSMaxBytes {
+			t.Fatalf("sticker %q exceeds telegram tgs limit: %d bytes", def.Key, len(body))
+		}
+
+		animation, err := decodeTGS(body)
+		if err != nil {
+			t.Fatalf("decode %q: %v", def.Key, err)
+		}
+		if hasImageAssets(animation) {
+			t.Fatalf("sticker %q contains image assets: %#v", def.Key, animation.Assets)
+		}
+		if !usesVectorOnlyLayers(animation) {
+			t.Fatalf("sticker %q must use vector/precomp lottie layers only", def.Key)
+		}
+		durationMS := (animation.Out - animation.In) / animation.FrameR * 1000
+		if durationMS <= 0 || durationMS > 3000 {
+			t.Fatalf("sticker %q duration = %.0fms, want <= 3000ms", def.Key, durationMS)
 		}
 	}
 }
@@ -64,18 +173,9 @@ func TestExpandedOfficialStickerSetIncludesTravelChatMoments(t *testing.T) {
 		seen[def.Key] = struct{}{}
 	}
 
-	for _, key := range []string{
-		"lost-but-happy",
-		"delayed-again",
-		"beach-please",
-		"mountain-call",
-		"send-location",
-		"travel-camera",
-		"globe-mode",
-		"camp-vibes",
-	} {
+	for _, key := range expectedOfficialLottieStickerKeys() {
 		if _, ok := seen[key]; !ok {
-			t.Fatalf("expected expanded official sticker %q", key)
+			t.Fatalf("expected official lottie sticker %q", key)
 		}
 	}
 }
@@ -86,14 +186,14 @@ func TestOfficialProductionGroupsAreDefined(t *testing.T) {
 	defs := defaultStickerDefinitions()
 	groups := make(map[string]int)
 	for _, def := range defs {
-		if def.GroupSlug == "" {
-			t.Fatalf("sticker %q must define a group slug", def.Key)
+		if def.GroupSlug != "official" {
+			t.Fatalf("sticker %q must be in single official group, got %q", def.Key, def.GroupSlug)
 		}
 		if def.GroupTitle["en"] == "" {
 			t.Fatalf("sticker %q must define localized group title", def.Key)
 		}
-		if def.PackSlug == "" {
-			t.Fatalf("sticker %q must define a pack slug", def.Key)
+		if def.PackSlug != "inflap-official-lottie" {
+			t.Fatalf("sticker %q must be in single official lottie pack, got %q", def.Key, def.PackSlug)
 		}
 		if def.PackTitle["en"] == "" {
 			t.Fatalf("sticker %q must define localized pack title", def.Key)
@@ -107,23 +207,8 @@ func TestOfficialProductionGroupsAreDefined(t *testing.T) {
 		groups[def.GroupSlug]++
 	}
 
-	for _, slug := range []string{
-		"travel",
-		"emotions",
-		"food",
-		"weather",
-		"transport",
-		"planning",
-		"guides",
-		"local-culture",
-		"bookings",
-		"safety",
-		"celebrations",
-		"seasonal",
-	} {
-		if groups[slug] < 2 {
-			t.Fatalf("expected at least 2 stickers for group %q, got %d", slug, groups[slug])
-		}
+	if len(groups) != 1 || groups["official"] != len(expectedOfficialLottieStickerKeys()) {
+		t.Fatalf("expected one official group with provided stickers, got %#v", groups)
 	}
 }
 
@@ -136,59 +221,142 @@ func TestDefaultStickerAnimationsAreLively(t *testing.T) {
 			t.Fatalf("render %q: %v", def.Key, err)
 		}
 
-		img, err := gif.DecodeAll(bytes.NewReader(body))
+		img, err := decodeTGS(body)
 		if err != nil {
 			t.Fatalf("decode %q: %v", def.Key, err)
 		}
-		if len(img.Image) < 16 {
-			t.Fatalf("sticker %q should have production-grade animation density, got %d frame(s)", def.Key, len(img.Image))
-		}
-
-		totalDelay := 0
-		for _, delay := range img.Delay {
-			if delay > 8 {
-				t.Fatalf("sticker %q has sluggish frame delay %dcs, want <= 8cs", def.Key, delay)
-			}
-			totalDelay += delay
-		}
-		if totalDelay > 120 {
-			t.Fatalf("sticker %q animation duration = %dcs, want <= 120cs", def.Key, totalDelay)
-		}
-
-		changed := maxChangedPixelRatio(img)
-		if changed < 0.035 {
-			t.Fatalf("sticker %q is visually too static: changed %.2f%% of pixels", def.Key, changed*100)
+		if !hasAnimatedVectorTransform(img) {
+			t.Fatalf("sticker %q should contain animated vector transforms", def.Key)
 		}
 	}
 }
 
-func maxChangedPixelRatio(img *gif.GIF) float64 {
-	maxChanged := 0.0
-	for frame := 1; frame < len(img.Image); frame++ {
-		changed := changedPixelRatio(img, 0, frame)
-		if changed > maxChanged {
-			maxChanged = changed
-		}
+func decodeTGS(body []byte) (lottieTestAnimation, error) {
+	var animation lottieTestAnimation
+	raw, err := decodeTGSRaw(body)
+	if err != nil {
+		return animation, err
 	}
-	return maxChanged
+	if err = json.Unmarshal(raw, &animation); err != nil {
+		return animation, err
+	}
+	return animation, nil
 }
 
-func changedPixelRatio(img *gif.GIF, firstFrame int, secondFrame int) float64 {
-	a := img.Image[firstFrame]
-	b := img.Image[secondFrame]
-	bounds := a.Bounds()
-	if !bounds.Eq(b.Bounds()) {
-		return 1
+func decodeTGSRaw(body []byte) ([]byte, error) {
+	reader, err := gzip.NewReader(bytes.NewReader(body))
+	if err != nil {
+		return nil, err
 	}
+	defer reader.Close()
+	return io.ReadAll(reader)
+}
 
-	changed := 0
-	total := bounds.Dx() * bounds.Dy()
-	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-			if a.ColorIndexAt(x, y) != b.ColorIndexAt(x, y) {
-				changed++
+func findDefaultStickerDefinition(t *testing.T, key string) stickerDefinition {
+	t.Helper()
+
+	for _, def := range defaultStickerDefinitions() {
+		if def.Key == key {
+			return def
+		}
+	}
+	t.Fatalf("default sticker %q not found", key)
+	return stickerDefinition{}
+}
+
+func expectedOfficialLottieStickerKeys() []string {
+	return []string{
+		"lottie-cat-love",
+		"lottie-fire-flame",
+		"lottie-flirting-dog",
+		"lottie-jellyfish-greeting",
+		"lottie-like-button",
+		"lottie-sea-walk",
+		"lottie-travel-character",
+	}
+}
+
+func hasImageAssets(animation lottieTestAnimation) bool {
+	for _, asset := range animation.Assets {
+		if _, ok := asset["p"]; ok {
+			return true
+		}
+		if _, ok := asset["u"]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func hasAnimatedVectorTransform(animation lottieTestAnimation) bool {
+	return containsAnimatedValue(animation.Layers) || containsAnimatedValue(animation.Assets)
+}
+
+func usesVectorOnlyLayers(animation lottieTestAnimation) bool {
+	for _, layer := range animation.Layers {
+		layerType, _ := layer["ty"].(float64)
+		if layerType == 2 {
+			return false
+		}
+	}
+	return len(animation.Layers) > 0
+}
+
+func containsAnimatedValue(value any) bool {
+	switch v := value.(type) {
+	case []map[string]any:
+		for _, item := range v {
+			if containsAnimatedValue(item) {
+				return true
+			}
+		}
+	case []any:
+		for _, item := range v {
+			if containsAnimatedValue(item) {
+				return true
+			}
+		}
+	case map[string]any:
+		if animated, _ := v["a"].(float64); animated == 1 {
+			return true
+		}
+		for _, item := range v {
+			if containsAnimatedValue(item) {
+				return true
 			}
 		}
 	}
-	return float64(changed) / float64(total)
+	return false
+}
+
+func hasSmoothKeyframes(animation lottieTestAnimation) bool {
+	for _, layer := range animation.Layers {
+		ks, ok := layer["ks"].(map[string]any)
+		if !ok {
+			continue
+		}
+		for _, property := range []string{"p", "s", "r", "o"} {
+			value, ok := ks[property].(map[string]any)
+			if !ok {
+				continue
+			}
+			keyframes, ok := value["k"].([]any)
+			if !ok {
+				continue
+			}
+			for _, raw := range keyframes {
+				keyframe, ok := raw.(map[string]any)
+				if !ok {
+					continue
+				}
+				if _, hasIn := keyframe["i"]; !hasIn {
+					continue
+				}
+				if _, hasOut := keyframe["o"]; hasOut {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }

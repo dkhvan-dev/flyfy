@@ -4,9 +4,8 @@ List<StickerPackVm> orderStickerPacksForComposer({
   required List<StickerPackVm> myPacks,
   required List<StickerPackVm> officialPacks,
 }) {
-  final customPacks = myPacks.where(isCustomStickerPack);
   final installedPacks = myPacks.where((pack) => !isCustomStickerPack(pack));
-  return _dedupePacks([...customPacks, ...installedPacks, ...officialPacks]);
+  return _dedupePacks([...installedPacks, ...officialPacks]);
 }
 
 bool isCustomStickerPack(StickerPackVm pack) {

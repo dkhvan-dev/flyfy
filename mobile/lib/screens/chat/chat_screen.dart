@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:dio/dio.dart';
 import 'package:file_selector/file_selector.dart' as file_selector;
@@ -11,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:lottie/lottie.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:record/record.dart';
@@ -29,6 +31,7 @@ import '../../features/chat/models/message_vm.dart';
 import '../../features/chat/models/sticker_pack_vm.dart';
 import '../../features/chat/utils/chat_link_utils.dart';
 import '../../features/chat/utils/chat_presence_status.dart';
+import '../../features/chat/utils/sticker_asset_format.dart';
 import '../../features/chat/utils/sticker_pack_ordering.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/chat_provider.dart';
@@ -60,7 +63,6 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   static const _maxChatAttachmentBytes = 25 * 1024 * 1024;
-  static const _maxChatStickerBytes = 5 * 1024 * 1024;
   static const _stickerImageWarmupLimit = 180;
   static const _stickerImageWarmupConcurrency = 6;
   static const _messageActionSheetMaxHeightFactor = 0.82;
@@ -102,11 +104,8 @@ class _ChatScreenState extends State<ChatScreen> {
   List<StickerPackVm> _stickerPacks = const [];
   bool _stickersLoading = false;
   bool _stickersLoadFailed = false;
-  bool _stickerCreating = false;
   int _activeStickerPackIndex = 0;
   String? _stickerWarmLocale;
-  StickerPackVm? _customStickerPack;
-  Future<StickerPackVm>? _customStickerPackLoad;
   bool _initialMessageScrollHandled = false;
 
   @override
@@ -469,7 +468,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _handlePasteImageRequested() async {
-    if (_attachmentUploading || _stickerCreating) return;
+    if (_attachmentUploading) return;
     if (!_canSendInActiveConversation()) {
       _showChatClosedMessage();
       return;
@@ -514,7 +513,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _PickedChatAttachment attachment,
   ) async {
     if (!mounted) return;
-    final action = await showModalBottomSheet<_PastedImageAction>(
+    final shouldSend = await showModalBottomSheet<bool>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
@@ -524,133 +523,10 @@ class _ChatScreenState extends State<ChatScreen> {
         return _PastedImagePreviewSheet(attachment: attachment);
       },
     );
-    if (!mounted || action == null) return;
+    if (!mounted || shouldSend != true) return;
 
-    switch (action) {
-      case _PastedImageAction.sendImage:
-        setState(() => _pendingAttachments.add(attachment));
-        await _handleSend();
-      case _PastedImageAction.sendSticker:
-        await _createAndSendStickerFromAttachment(attachment);
-    }
-  }
-
-  Future<void> _createAndSendStickerFromAttachment(
-    _PickedChatAttachment attachment,
-  ) async {
-    if (_stickerCreating || _attachmentUploading) return;
-    final sticker = await _createCustomSticker(attachment);
-    if (sticker != null) {
-      await _sendSticker(sticker);
-    }
-  }
-
-  Future<StickerVm?> _createCustomSticker(
-    _PickedChatAttachment attachment,
-  ) async {
-    final l10n = AppLocalizations.of(context)!;
-    if (!_isStickerContentType(attachment.contentType)) {
-      await _showAttachmentError(l10n.chatStickerUnsupported);
-      return null;
-    }
-    if (attachment.bytes.lengthInBytes > _maxChatStickerBytes) {
-      await _showAttachmentError(l10n.chatStickerTooLarge);
-      return null;
-    }
-
-    try {
-      setState(() => _stickerCreating = true);
-
-      final customPack = await _ensureCustomStickerPack();
-      final upload = await _stickerApi.createUploadRequest(
-        packId: customPack.id,
-        originalName: attachment.name,
-        contentType: attachment.contentType,
-        sizeBytes: attachment.bytes.lengthInBytes,
-      );
-      await _stickerApi.uploadBinary(
-        upload: upload,
-        bytes: attachment.bytes,
-        contentType: attachment.contentType,
-      );
-      await _stickerApi.completeFileUpload(upload.fileId);
-      final sticker = await _stickerApi.finalizeUpload(
-        packId: customPack.id,
-        uploadSessionId: upload.uploadSessionId,
-      );
-
-      if (!mounted) return null;
-      _upsertCustomSticker(customPack, sticker);
-      unawaited(_precacheStickerImages([sticker]));
-      return sticker;
-    } catch (e) {
-      if (!mounted) return null;
-      final message = e is DioException
-          ? DioErrorMapper.toMessage(e)
-          : l10n.chatStickerCreateFailed;
-      await _showAttachmentError(message);
-      return null;
-    } finally {
-      if (mounted) {
-        setState(() => _stickerCreating = false);
-      }
-    }
-  }
-
-  Future<StickerPackVm> _ensureCustomStickerPack() {
-    final existing = _customStickerPack;
-    if (existing != null) {
-      return Future.value(existing);
-    }
-
-    final pending = _customStickerPackLoad;
-    if (pending != null) {
-      return pending;
-    }
-
-    final load = _stickerApi
-        .ensureCustomPack()
-        .then((pack) {
-          _customStickerPack = pack;
-          return pack;
-        })
-        .whenComplete(() {
-          _customStickerPackLoad = null;
-        });
-    _customStickerPackLoad = load;
-    return load;
-  }
-
-  void _upsertCustomSticker(StickerPackVm customPack, StickerVm sticker) {
-    final existingPack = _customStickerPack?.id == customPack.id
-        ? _customStickerPack!
-        : customPack;
-    final updatedPack = existingPack.copyWith(
-      stickers: [
-        sticker,
-        ...existingPack.stickers.where((item) => item.id != sticker.id),
-      ],
-    );
-    _customStickerPack = updatedPack;
-
-    final packs = _stickerPacks.toList(growable: true);
-    final index = packs.indexWhere((pack) => pack.id == updatedPack.id);
-    if (index >= 0) {
-      packs[index] = updatedPack;
-    } else {
-      packs.insert(0, updatedPack);
-    }
-
-    if (!mounted) return;
-    setState(() {
-      _stickerPacks = orderStickerPacksForComposer(
-        myPacks: [updatedPack],
-        officialPacks: packs
-            .where((pack) => pack.id != updatedPack.id)
-            .toList(growable: false),
-      );
-      _activeStickerPackIndex = 0;
-    });
+    setState(() => _pendingAttachments.add(attachment));
+    await _handleSend();
   }
 
   void _removePendingAttachment(int localId) {
@@ -1111,73 +987,10 @@ class _ChatScreenState extends State<ChatScreen> {
     List<StickerPackVm> myPacks,
     List<StickerPackVm> officialPacks,
   ) {
-    _customStickerPack = _firstCustomStickerPack(myPacks) ?? _customStickerPack;
     return orderStickerPacksForComposer(
       myPacks: myPacks,
       officialPacks: officialPacks,
     );
-  }
-
-  StickerPackVm? _firstCustomStickerPack(List<StickerPackVm> packs) {
-    for (final pack in packs) {
-      if (isCustomStickerPack(pack)) {
-        return pack;
-      }
-    }
-    return null;
-  }
-
-  Future<void> _createStickerFromGallery() async {
-    if (_stickerCreating || _attachmentUploading) return;
-    if (!_canSendInActiveConversation()) {
-      _showChatClosedMessage();
-      return;
-    }
-
-    FocusScope.of(context).unfocus();
-    final l10n = AppLocalizations.of(context)!;
-
-    try {
-      final picker = ImagePicker();
-      final picked = await picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 92,
-      );
-      if (!mounted || picked == null) return;
-
-      final attachment = await _attachmentFromXFile(
-        picked,
-        ++_pendingAttachmentSeq,
-      );
-      if (!mounted) return;
-      if (attachment == null ||
-          !_isStickerContentType(attachment.contentType)) {
-        await _showAttachmentError(l10n.chatStickerUnsupported);
-        return;
-      }
-      if (attachment.bytes.lengthInBytes > _maxChatStickerBytes) {
-        await _showAttachmentError(l10n.chatStickerTooLarge);
-        return;
-      }
-
-      final sticker = await _createCustomSticker(attachment);
-      if (!mounted || sticker == null) return;
-      setState(() {
-        _activeComposerPanel = _ComposerPanel.stickers;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      final message = e is DioException
-          ? DioErrorMapper.toMessage(e)
-          : l10n.chatStickerCreateFailed;
-      await _showAttachmentError(message);
-    } finally {
-      if (mounted) {
-        setState(() => _stickerCreating = false);
-      }
-    }
   }
 
   Future<bool> _sendSticker(StickerVm sticker) async {
@@ -2011,7 +1824,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   activeStickerPackIndex: _activeStickerPackIndex,
                   stickersLoading: _stickersLoading,
                   stickersLoadFailed: _stickersLoadFailed,
-                  stickerCreating: _stickerCreating,
                   onPanelChanged: _setComposerPanel,
                   onEmojiSelected: _handleEmojiSelected,
                   onPasteRequested: () => unawaited(_handlePasteRequested()),
@@ -2020,7 +1832,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   onStickerPackSelected: _handleStickerPackSelected,
                   onStickerSelected: (sticker) =>
                       unawaited(_sendSticker(sticker)),
-                  onCreateSticker: () => unawaited(_createStickerFromGallery()),
                   onRetryStickers: () =>
                       unawaited(_loadStickerPacks(force: true)),
                   sending: chat.sendingMessage,
@@ -2047,8 +1858,6 @@ class _ChatScreenState extends State<ChatScreen> {
 enum _AttachmentPickType { gallery, file, audio }
 
 enum _ComposerPanel { none, emoji, stickers }
-
-enum _PastedImageAction { sendImage, sendSticker }
 
 class _PickedChatAttachment {
   const _PickedChatAttachment({
@@ -2145,13 +1954,6 @@ String? _contentTypeForFileName(String fileName) {
     'docx' =>
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     _ => null,
-  };
-}
-
-bool _isStickerContentType(String contentType) {
-  return switch (contentType.trim().toLowerCase()) {
-    'image/gif' || 'image/jpeg' || 'image/png' || 'image/webp' => true,
-    _ => false,
   };
 }
 
@@ -4689,12 +4491,21 @@ class _StickerMessageAttachment extends StatefulWidget {
 
 class _StickerMessageAttachmentState extends State<_StickerMessageAttachment> {
   Future<void> _openSticker() async {
-    final bytes = await _StickerImageCache.bytesFor(widget.fileId);
-    if (!mounted || bytes == null || bytes.isEmpty) return;
+    final asset = await _StickerImageCache.assetFor(widget.fileId);
+    if (!mounted || asset == null || asset.bytes.isEmpty) return;
+
+    if (asset.isLottieSticker) {
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => _StickerViewerScreen(fileId: widget.fileId),
+        ),
+      );
+      return;
+    }
 
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => ChatImageViewerScreen(imageBytes: bytes),
+        builder: (_) => ChatImageViewerScreen(imageBytes: asset.bytes),
       ),
     );
   }
@@ -4712,76 +4523,197 @@ class _StickerMessageAttachmentState extends State<_StickerMessageAttachment> {
   }
 }
 
-class _StickerImage extends StatelessWidget {
-  const _StickerImage({required this.fileId, required this.fit});
+class _StickerViewerScreen extends StatelessWidget {
+  const _StickerViewerScreen({required this.fileId});
 
   final String fileId;
-  final BoxFit fit;
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Uint8List?>(
-      future: _StickerImageCache.bytesFor(fileId),
+    return Scaffold(
+      backgroundColor: const Color(0xFF100802),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final maxSide = math.min(
+                  math.min(constraints.maxWidth, constraints.maxHeight) * 0.82,
+                  420.0,
+                );
+                return Center(
+                  child: SizedBox.square(
+                    dimension: maxSide,
+                    child: _StickerImage(fileId: fileId, fit: BoxFit.contain),
+                  ),
+                );
+              },
+            ),
+            PositionedDirectional(
+              top: _scale(context, 10),
+              start: _scale(context, 10),
+              child: IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.close),
+                color: Colors.white.withValues(alpha: 0.86),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StickerAsset {
+  const _StickerAsset({
+    required this.bytes,
+    required this.responseContentType,
+    this.declaredContentType = '',
+  });
+
+  final Uint8List bytes;
+  final String responseContentType;
+  final String declaredContentType;
+
+  _StickerAsset withDeclaredContentType(String contentType) {
+    return _StickerAsset(
+      bytes: bytes,
+      responseContentType: responseContentType,
+      declaredContentType: contentType,
+    );
+  }
+
+  StickerAssetContentFormat get format {
+    return resolveStickerAssetContentFormat(
+      bytes,
+      responseContentType: responseContentType,
+      declaredContentType: declaredContentType,
+    );
+  }
+
+  bool get isLottieSticker {
+    return format == StickerAssetContentFormat.tgsGzip ||
+        format == StickerAssetContentFormat.lottieJson;
+  }
+
+  LottieDecoder? get lottieDecoder {
+    return format == StickerAssetContentFormat.tgsGzip
+        ? LottieComposition.decodeGZip
+        : null;
+  }
+}
+
+class _StickerImage extends StatelessWidget {
+  const _StickerImage({
+    required this.fileId,
+    required this.fit,
+    this.declaredContentType = '',
+  });
+
+  final String fileId;
+  final BoxFit fit;
+  final String declaredContentType;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<_StickerAsset?>(
+      future: _StickerImageCache.assetFor(fileId),
       builder: (context, snapshot) {
-        final bytes = snapshot.data;
-        if (bytes == null || bytes.isEmpty) {
-          return DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(_scale(context, 18)),
-              color: Colors.white.withValues(alpha: 0.06),
-            ),
-            child: Center(
-              child: snapshot.connectionState == ConnectionState.waiting
-                  ? SizedBox(
-                      width: _scale(context, 22),
-                      height: _scale(context, 22),
-                      child: const CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.accent,
-                      ),
-                    )
-                  : Icon(
-                      Icons.image_not_supported_outlined,
-                      size: _scale(context, 26),
-                      color: Colors.white.withValues(alpha: 0.42),
-                    ),
-            ),
+        final asset = snapshot.data?.withDeclaredContentType(
+          declaredContentType,
+        );
+        if (asset == null || asset.bytes.isEmpty) {
+          return _StickerPlaceholder(
+            loading: snapshot.connectionState == ConnectionState.waiting,
           );
         }
 
-        return Image.memory(bytes, fit: fit, gaplessPlayback: true);
+        if (asset.isLottieSticker) {
+          return Lottie.memory(
+            asset.bytes,
+            decoder: asset.lottieDecoder,
+            errorBuilder: (context, error, stackTrace) =>
+                const _StickerPlaceholder(),
+            fit: fit,
+            frameRate: const FrameRate(60),
+            repeat: true,
+            renderCache: RenderCache.drawingCommands,
+          );
+        }
+
+        if (asset.format == StickerAssetContentFormat.rasterImage) {
+          return Image.memory(asset.bytes, fit: fit, gaplessPlayback: true);
+        }
+
+        return const _StickerPlaceholder();
       },
+    );
+  }
+}
+
+class _StickerPlaceholder extends StatelessWidget {
+  const _StickerPlaceholder({this.loading = false});
+
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(_scale(context, 18)),
+        color: Colors.white.withValues(alpha: 0.06),
+      ),
+      child: Center(
+        child: loading
+            ? SizedBox(
+                width: _scale(context, 22),
+                height: _scale(context, 22),
+                child: const CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.accent,
+                ),
+              )
+            : Icon(
+                Icons.image_not_supported_outlined,
+                size: _scale(context, 26),
+                color: Colors.white.withValues(alpha: 0.42),
+              ),
+      ),
     );
   }
 }
 
 class _StickerImageCache {
   static final FileApi _fileApi = FileApi();
-  static final Map<String, Future<Uint8List?>> _bytesFutures = {};
+  static final Map<String, Future<_StickerAsset?>> _assetFutures = {};
 
-  static Future<Uint8List?> bytesFor(String fileId) {
+  static Future<_StickerAsset?> assetFor(String fileId) {
     final normalizedFileId = fileId.trim();
     if (normalizedFileId.isEmpty) {
-      return Future<Uint8List?>.value(null);
+      return Future<_StickerAsset?>.value(null);
     }
 
-    final cached = _bytesFutures[normalizedFileId];
+    final cached = _assetFutures[normalizedFileId];
     if (cached != null) return cached;
 
     final load = () async {
       try {
         final content = await _fileApi.downloadContent(normalizedFileId);
         if (content.bytes.isEmpty) {
-          _bytesFutures.remove(normalizedFileId);
+          _assetFutures.remove(normalizedFileId);
           return null;
         }
-        return content.bytes;
+        return _StickerAsset(
+          bytes: content.bytes,
+          responseContentType: content.contentType,
+        );
       } catch (_) {
-        _bytesFutures.remove(normalizedFileId);
+        _assetFutures.remove(normalizedFileId);
         return null;
       }
     }();
-    _bytesFutures[normalizedFileId] = load;
+    _assetFutures[normalizedFileId] = load;
     return load;
   }
 
@@ -4811,7 +4743,7 @@ class _StickerImageCache {
         while (nextIndex < normalized.length) {
           final fileId = normalized[nextIndex];
           nextIndex += 1;
-          await bytesFor(fileId);
+          await assetFor(fileId);
         }
       }),
     );
@@ -5603,28 +5535,11 @@ class _PastedImagePreviewSheet extends StatelessWidget {
               ),
             ),
             SizedBox(height: _scale(context, 16)),
-            Row(
-              children: [
-                Expanded(
-                  child: _PastePreviewActionButton(
-                    icon: Icons.image_rounded,
-                    label: l10n.chatPasteSendImage,
-                    onTap: () =>
-                        Navigator.of(context).pop(_PastedImageAction.sendImage),
-                  ),
-                ),
-                SizedBox(width: _scale(context, 10)),
-                Expanded(
-                  child: _PastePreviewActionButton(
-                    icon: Icons.sticky_note_2_rounded,
-                    label: l10n.chatPasteSendSticker,
-                    emphasized: true,
-                    onTap: () => Navigator.of(
-                      context,
-                    ).pop(_PastedImageAction.sendSticker),
-                  ),
-                ),
-              ],
+            _PastePreviewActionButton(
+              icon: Icons.image_rounded,
+              label: l10n.chatPasteSendImage,
+              emphasized: true,
+              onTap: () => Navigator.of(context).pop(true),
             ),
           ],
         ),
@@ -6684,14 +6599,12 @@ class _ChatComposer extends StatelessWidget {
     required this.activeStickerPackIndex,
     required this.stickersLoading,
     required this.stickersLoadFailed,
-    required this.stickerCreating,
     required this.onPanelChanged,
     required this.onEmojiSelected,
     required this.onPasteRequested,
     required this.onPasteImageRequested,
     required this.onStickerPackSelected,
     required this.onStickerSelected,
-    required this.onCreateSticker,
     required this.onRetryStickers,
     required this.sending,
     required this.attachmentUploading,
@@ -6726,14 +6639,12 @@ class _ChatComposer extends StatelessWidget {
   final int activeStickerPackIndex;
   final bool stickersLoading;
   final bool stickersLoadFailed;
-  final bool stickerCreating;
   final ValueChanged<_ComposerPanel> onPanelChanged;
   final ValueChanged<String> onEmojiSelected;
   final VoidCallback onPasteRequested;
   final VoidCallback onPasteImageRequested;
   final ValueChanged<int> onStickerPackSelected;
   final ValueChanged<StickerVm> onStickerSelected;
-  final VoidCallback onCreateSticker;
   final VoidCallback onRetryStickers;
   final bool sending;
   final bool attachmentUploading;
@@ -6999,12 +6910,10 @@ class _ChatComposer extends StatelessWidget {
               activeStickerPackIndex: activeStickerPackIndex,
               stickersLoading: stickersLoading,
               stickersLoadFailed: stickersLoadFailed,
-              stickerCreating: stickerCreating,
               onPanelChanged: onPanelChanged,
               onEmojiSelected: onEmojiSelected,
               onStickerPackSelected: onStickerPackSelected,
               onStickerSelected: onStickerSelected,
-              onCreateSticker: onCreateSticker,
               onRetryStickers: onRetryStickers,
             ),
           ],
@@ -7107,12 +7016,10 @@ class _InlineEmojiStickerPanel extends StatelessWidget {
     required this.activeStickerPackIndex,
     required this.stickersLoading,
     required this.stickersLoadFailed,
-    required this.stickerCreating,
     required this.onPanelChanged,
     required this.onEmojiSelected,
     required this.onStickerPackSelected,
     required this.onStickerSelected,
-    required this.onCreateSticker,
     required this.onRetryStickers,
   });
 
@@ -7121,12 +7028,10 @@ class _InlineEmojiStickerPanel extends StatelessWidget {
   final int activeStickerPackIndex;
   final bool stickersLoading;
   final bool stickersLoadFailed;
-  final bool stickerCreating;
   final ValueChanged<_ComposerPanel> onPanelChanged;
   final ValueChanged<String> onEmojiSelected;
   final ValueChanged<int> onStickerPackSelected;
   final ValueChanged<StickerVm> onStickerSelected;
-  final VoidCallback onCreateSticker;
   final VoidCallback onRetryStickers;
 
   @override
@@ -7176,8 +7081,6 @@ class _InlineEmojiStickerPanel extends StatelessWidget {
                     activePackIndex: activeStickerPackIndex,
                     loading: stickersLoading,
                     loadFailed: stickersLoadFailed,
-                    creating: stickerCreating,
-                    onCreateSticker: onCreateSticker,
                     onRetry: onRetryStickers,
                     onPackSelected: onStickerPackSelected,
                     onStickerSelected: onStickerSelected,
@@ -7294,8 +7197,6 @@ class _StickerGrid extends StatelessWidget {
     required this.activePackIndex,
     required this.loading,
     required this.loadFailed,
-    required this.creating,
-    required this.onCreateSticker,
     required this.onRetry,
     required this.onPackSelected,
     required this.onStickerSelected,
@@ -7305,8 +7206,6 @@ class _StickerGrid extends StatelessWidget {
   final int activePackIndex;
   final bool loading;
   final bool loadFailed;
-  final bool creating;
-  final VoidCallback onCreateSticker;
   final VoidCallback onRetry;
   final ValueChanged<int> onPackSelected;
   final ValueChanged<StickerVm> onStickerSelected;
@@ -7360,43 +7259,52 @@ class _StickerGrid extends StatelessWidget {
             ),
           ),
         Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final rawColumns = (constraints.maxWidth / 82).floor();
-              final columns = rawColumns.clamp(4, 6).toInt();
-              final itemCount = stickers.length + 1;
+          child: stickers.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: _scale(context, 24),
+                    ),
+                    child: Text(
+                      l10n.stickersEmptySearch,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: _scale(context, 13),
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white.withValues(alpha: 0.68),
+                      ),
+                    ),
+                  ),
+                )
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    final rawColumns = (constraints.maxWidth / 82).floor();
+                    final columns = rawColumns.clamp(4, 6).toInt();
 
-              return GridView.builder(
-                padding: EdgeInsets.fromLTRB(
-                  _scale(context, 12),
-                  _scale(context, 8),
-                  _scale(context, 12),
-                  _scale(context, 16),
-                ),
-                physics: const BouncingScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: columns,
-                  mainAxisSpacing: _scale(context, 10),
-                  crossAxisSpacing: _scale(context, 10),
-                ),
-                itemCount: itemCount,
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    return _CreateStickerButton(
-                      loading: creating,
-                      onTap: creating ? null : onCreateSticker,
+                    return GridView.builder(
+                      padding: EdgeInsets.fromLTRB(
+                        _scale(context, 12),
+                        _scale(context, 8),
+                        _scale(context, 12),
+                        _scale(context, 16),
+                      ),
+                      physics: const BouncingScrollPhysics(),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: columns,
+                        mainAxisSpacing: _scale(context, 10),
+                        crossAxisSpacing: _scale(context, 10),
+                      ),
+                      itemCount: stickers.length,
+                      itemBuilder: (context, index) {
+                        final sticker = stickers[index];
+                        return _StickerPickerButton(
+                          sticker: sticker,
+                          onTap: () => onStickerSelected(sticker),
+                        );
+                      },
                     );
-                  }
-
-                  final sticker = stickers[index - 1];
-                  return _StickerPickerButton(
-                    sticker: sticker,
-                    onTap: () => onStickerSelected(sticker),
-                  );
-                },
-              );
-            },
-          ),
+                  },
+                ),
         ),
       ],
     );
@@ -7456,66 +7364,6 @@ class _StickerPackChip extends StatelessWidget {
   }
 }
 
-class _CreateStickerButton extends StatelessWidget {
-  const _CreateStickerButton({required this.loading, required this.onTap});
-
-  final bool loading;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Semantics(
-      button: true,
-      label: l10n.chatStickerCreateAction,
-      enabled: onTap != null,
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(_scale(context, 16)),
-            color: AppColors.accent.withValues(alpha: 0.13),
-            border: Border.all(color: AppColors.accent.withValues(alpha: 0.32)),
-          ),
-          child: Center(
-            child: loading
-                ? SizedBox(
-                    width: _scale(context, 22),
-                    height: _scale(context, 22),
-                    child: const CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.accent,
-                    ),
-                  )
-                : Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.add_photo_alternate_rounded,
-                        size: _scale(context, 26),
-                        color: AppColors.accent,
-                      ),
-                      SizedBox(height: _scale(context, 4)),
-                      Text(
-                        l10n.chatStickerCreateAction,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: _scale(context, 10),
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFFffd08a),
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _StickerPickerButton extends StatelessWidget {
   const _StickerPickerButton({required this.sticker, required this.onTap});
 
@@ -7538,7 +7386,11 @@ class _StickerPickerButton extends StatelessWidget {
           ),
           child: Padding(
             padding: EdgeInsets.all(_scale(context, 8)),
-            child: _StickerImage(fileId: sticker.fileId, fit: BoxFit.contain),
+            child: _StickerImage(
+              fileId: sticker.fileId,
+              fit: BoxFit.contain,
+              declaredContentType: sticker.contentType,
+            ),
           ),
         ),
       ),

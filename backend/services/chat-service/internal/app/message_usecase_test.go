@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -130,6 +131,64 @@ func TestSendStickerMessageCanValidateWithStickerServiceIdentity(t *testing.T) {
 	}
 	if msg.SenderUserID != senderID {
 		t.Fatalf("message sender must remain canonical user id %s, got %s", senderID, msg.SenderUserID)
+	}
+}
+
+func TestSendStickerMessageFlagsWhenTrustPolicyUnavailable(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	conversationID := uuid.New()
+	senderID := uuid.New()
+	stickerID := uuid.New()
+	fileID := uuid.New()
+
+	repo := newFakeMessageRepo(conversationID, senderID)
+	stickers := &fakeStickerResolver{
+		result: &port.StickerMetadata{
+			StickerID:   stickerID,
+			PackID:      uuid.New(),
+			PackSlug:    "inflap-travel-basics",
+			Slug:        "boarding-pass",
+			FileID:      fileID,
+			ContentType: "application/x-tgsticker",
+			Width:       512,
+			Height:      512,
+			DurationMS:  1800,
+			Status:      "ACTIVE",
+		},
+	}
+	trustPolicy := &fakeTrustPolicyClient{err: errors.New("trust policy timeout")}
+	useCase := NewMessageUseCaseWithStickerResolver(repo, &fakeEventPublisher{}, nil, stickers)
+	useCase.SetTrustPolicyClient(trustPolicy)
+
+	msg, err := useCase.SendMessage(ctx, SendMessageInput{
+		ConversationID: conversationID,
+		SenderUserID:   senderID,
+		Type:           "sticker",
+		StickerID:      &stickerID,
+	})
+	if err != nil {
+		t.Fatalf("SendMessage error: %v", err)
+	}
+
+	if trustPolicy.check.Action != trustActionChatSend {
+		t.Fatalf("trust action = %q, want %q", trustPolicy.check.Action, trustActionChatSend)
+	}
+	if hasSticker, ok := trustPolicy.check.Metadata["hasSticker"].(bool); !ok || !hasSticker {
+		t.Fatalf("trust metadata hasSticker = %#v, want true", trustPolicy.check.Metadata["hasSticker"])
+	}
+	if msg.ModerationStatus != model.MessageModerationStatusFlagged {
+		t.Fatalf("ModerationStatus = %q, want %q", msg.ModerationStatus, model.MessageModerationStatusFlagged)
+	}
+	if !containsString(msg.ModerationReasonCodes, "TRUST_POLICY_UNAVAILABLE") {
+		t.Fatalf("ModerationReasonCodes = %#v, want TRUST_POLICY_UNAVAILABLE", msg.ModerationReasonCodes)
+	}
+	if msg.ModerationTriggeredAt == nil {
+		t.Fatal("ModerationTriggeredAt must be set when trust policy is unavailable")
+	}
+	if msg.StickerPayload == nil || msg.StickerPayload.ContentType != "application/x-tgsticker" {
+		t.Fatalf("sticker payload was not preserved: %+v", msg.StickerPayload)
 	}
 }
 
@@ -997,6 +1056,20 @@ func (f *fakeStickerResolver) ValidateSend(
 ) (*port.StickerMetadata, error) {
 	f.senderUserID = senderUserID
 	f.stickerID = stickerID
+	return f.result, f.err
+}
+
+type fakeTrustPolicyClient struct {
+	check  port.TrustPolicyCheck
+	result port.TrustPolicyResult
+	err    error
+}
+
+func (f *fakeTrustPolicyClient) CheckActionPolicy(
+	_ context.Context,
+	check port.TrustPolicyCheck,
+) (port.TrustPolicyResult, error) {
+	f.check = check
 	return f.result, f.err
 }
 

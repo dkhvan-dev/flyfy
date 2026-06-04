@@ -242,7 +242,12 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 		},
 	})
 	if trustErr != nil {
-		return nil, ErrTrustPolicyRejected
+		log.Warn().
+			Err(trustErr).
+			Str("conversation_id", input.ConversationID.String()).
+			Str("sender_user_id", input.SenderUserID.String()).
+			Msg("trust policy unavailable; flagging chat message for moderation")
+		trustResult = unavailableTrustPolicyResult()
 	}
 	switch trustResult.Decision {
 	case port.TrustPolicyDeny:

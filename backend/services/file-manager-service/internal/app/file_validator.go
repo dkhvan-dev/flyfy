@@ -45,6 +45,9 @@ func (v *FileValidator) ValidateForCreate(
 	if policy.MaxSizeBytes > 0 && sizeBytes > policy.MaxSizeBytes {
 		return ErrUploadTooLarge
 	}
+	if err := validateContentSpecificSize(contentType, sizeBytes); err != nil {
+		return err
+	}
 
 	ext := normalizeExtension(originalName)
 	if ext == "" {
@@ -84,6 +87,9 @@ func (v *FileValidator) ValidateUploadedObject(
 	if policy.MaxSizeBytes > 0 && sizeBytes > policy.MaxSizeBytes {
 		return ErrUploadTooLarge
 	}
+	if err := validateContentSpecificSize(detectedContentType, sizeBytes); err != nil {
+		return err
+	}
 
 	ext := normalizeExtension(originalName)
 	if ext == "" {
@@ -112,4 +118,11 @@ func normalizeContentType(v string) string {
 		v = strings.TrimSpace(v[:idx])
 	}
 	return v
+}
+
+func validateContentSpecificSize(contentType string, sizeBytes int64) error {
+	if contentType == telegramTGSContentType && sizeBytes > maxTelegramTGSBytes {
+		return ErrUploadTooLarge
+	}
+	return nil
 }

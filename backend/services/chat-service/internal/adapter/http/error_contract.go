@@ -62,6 +62,7 @@ var appHTTPErrorDefinitions = []appHTTPErrorDefinition{
 	{err: app.ErrNotMessageAuthor, status: http.StatusForbidden, code: "not_message_author"},
 	{err: app.ErrConversationMessagingClosed, status: http.StatusForbidden, code: "conversation_messaging_closed"},
 	{err: app.ErrStickerNotAvailable, status: http.StatusForbidden, code: "sticker_not_available"},
+	{err: app.ErrTrustPolicyRejected, status: http.StatusForbidden, code: "trust_policy_rejected"},
 	{err: app.ErrCannotMessageBlockedUser, status: http.StatusForbidden, code: "recipient_blocked_sender"},
 
 	{err: app.ErrConversationFull, status: http.StatusConflict, code: "conversation_full"},
@@ -147,6 +148,11 @@ var businessErrorMessages = map[string]map[string]string{
 		"ru": "Стикер недоступен",
 		"en": "Sticker is not available",
 		"kk": "Стикер қолжетімді емес",
+	},
+	"trust_policy_rejected": {
+		"ru": "Отправка сообщения ограничена политикой доверия",
+		"en": "Message sending is restricted by trust policy",
+		"kk": "Хабар жіберу сенім саясатымен шектелген",
 	},
 	"invalid_reaction": {
 		"ru": "Некорректная реакция",

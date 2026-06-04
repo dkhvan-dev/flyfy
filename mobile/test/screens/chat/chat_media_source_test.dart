@@ -170,6 +170,28 @@ void main() {
   });
 
   test(
+    'chat tgs stickers use robust lottie decoding and visible fallback',
+    () async {
+      final source = await File(
+        'lib/screens/chat/chat_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('resolveStickerAssetContentFormat'));
+      expect(source, contains('StickerAssetContentFormat.tgsGzip'));
+      expect(source, contains('StickerAssetContentFormat.lottieJson'));
+      expect(source, contains('LottieDecoder? get lottieDecoder'));
+      expect(source, contains('LottieComposition.decodeGZip'));
+      expect(source, contains('decoder: asset.lottieDecoder'));
+      expect(source, contains('declaredContentType: sticker.contentType'));
+      expect(source, contains('errorBuilder:'));
+      expect(source, contains('class _StickerPlaceholder'));
+      expect(source, contains('frameRate: const FrameRate(60)'));
+      expect(source, isNot(contains('frameRate: FrameRate.max')));
+      expect(source, isNot(contains('_hasGZipMagic(bytes)')));
+    },
+  );
+
+  test(
     'chat mute and user block actions are wired through UI and API',
     () async {
       final conversationsSource = await File(

@@ -3,7 +3,7 @@ import 'package:inflap/features/chat/models/sticker_pack_vm.dart';
 import 'package:inflap/features/chat/utils/sticker_pack_ordering.dart';
 
 void main() {
-  test('puts custom stickers before installed and official packs', () {
+  test('omits custom stickers from composer packs', () {
     final ordered = orderStickerPacksForComposer(
       myPacks: [
         const StickerPackVm(
@@ -32,11 +32,7 @@ void main() {
       ],
     );
 
-    expect(ordered.map((pack) => pack.id), [
-      'custom-pack',
-      'installed-pack',
-      'official-pack',
-    ]);
+    expect(ordered.map((pack) => pack.id), ['installed-pack', 'official-pack']);
   });
 
   test('keeps user pack version when it duplicates an official pack', () {

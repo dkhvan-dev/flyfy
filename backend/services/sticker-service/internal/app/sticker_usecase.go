@@ -323,16 +323,20 @@ func (u *StickerUseCase) ListMyPacks(ctx context.Context, userID string) ([]*mod
 
 	result := make([]*model.StickerPackWithStickers, 0, len(defaultPacks)+len(userPacks))
 	result = append(result, defaultPacks...)
-	result = append(result, userPacks...)
+	for _, pack := range userPacks {
+		if pack == nil || pack.Pack == nil || pack.Pack.Type == enum.PackTypeUserCustom {
+			continue
+		}
+		result = append(result, pack)
+	}
 	return result, nil
 }
 
 func (u *StickerUseCase) EnsureMyCustomPack(ctx context.Context, userID string) (*model.StickerPack, error) {
-	parsedUserID, err := parseUUID(userID, ErrInvalidUserID)
-	if err != nil {
+	if _, err := parseUUID(userID, ErrInvalidUserID); err != nil {
 		return nil, err
 	}
-	return u.repo.EnsureCustomPack(ctx, parsedUserID)
+	return nil, ErrCustomStickersDisabled
 }
 
 func (u *StickerUseCase) InstallPack(ctx context.Context, input InstallStickerPackInput) error {
@@ -376,154 +380,29 @@ func (u *StickerUseCase) CreateStickerUploadRequest(
 	ctx context.Context,
 	input CreateStickerUploadInput,
 ) (*CreateStickerUploadOutput, error) {
-	userID, err := parseUUID(input.UserID, ErrInvalidUserID)
-	if err != nil {
+	if _, err := parseUUID(input.UserID, ErrInvalidUserID); err != nil {
 		return nil, err
 	}
-	packID, err := parseUUID(input.PackID, ErrInvalidPackID)
-	if err != nil {
+	if _, err := parseUUID(input.PackID, ErrInvalidPackID); err != nil {
 		return nil, err
 	}
-
-	pack, err := u.repo.GetPackByID(ctx, packID)
-	if err != nil {
-		return nil, err
-	}
-	if pack == nil || pack.Status == enum.PackStatusDeleted {
-		return nil, ErrPackNotFound
-	}
-	if !userCanCreateStickerInPack(userID, pack) {
-		return nil, ErrPackNotAccessible
-	}
-
-	upload, err := u.files.CreateStickerUploadRequest(ctx, port.CreateStickerUploadRequest{
-		UserID:       userID,
-		OriginalName: input.OriginalName,
-		ContentType:  input.ContentType,
-		SizeBytes:    input.SizeBytes,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	session, err := model.NewUploadSession(model.NewUploadSessionParams{
-		UserID:         userID,
-		PackID:         packID,
-		FileID:         upload.FileID,
-		Status:         enum.UploadSessionStatusPending,
-		IdempotencyKey: input.IdempotencyKey,
-		ExpiresAt:      time.Now().UTC().Add(u.uploadTTL),
-	})
-	if err != nil {
-		return nil, err
-	}
-	if err = u.repo.CreateUploadSession(ctx, session); err != nil {
-		return nil, err
-	}
-
-	return &CreateStickerUploadOutput{
-		UploadSessionID: session.ID,
-		FileID:          upload.FileID,
-		Method:          upload.Method,
-		URL:             upload.URL,
-		Headers:         upload.Headers,
-		ExpiresAt:       upload.ExpiresAt,
-	}, nil
+	return nil, ErrCustomStickersDisabled
 }
 
 func (u *StickerUseCase) FinalizeStickerUpload(
 	ctx context.Context,
 	input FinalizeStickerUploadInput,
 ) (*model.Sticker, error) {
-	userID, err := parseUUID(input.UserID, ErrInvalidUserID)
-	if err != nil {
+	if _, err := parseUUID(input.UserID, ErrInvalidUserID); err != nil {
 		return nil, err
 	}
-	packID, err := parseUUID(input.PackID, ErrInvalidPackID)
-	if err != nil {
+	if _, err := parseUUID(input.PackID, ErrInvalidPackID); err != nil {
 		return nil, err
 	}
-	sessionID, err := parseUUID(input.UploadSessionID, ErrInvalidUploadSessionID)
-	if err != nil {
+	if _, err := parseUUID(input.UploadSessionID, ErrInvalidUploadSessionID); err != nil {
 		return nil, err
 	}
-
-	var created *model.Sticker
-	err = u.repo.WithTx(ctx, func(repo port.StickerRepository) error {
-		session, err := repo.GetUploadSessionForUpdate(ctx, sessionID)
-		if err != nil {
-			return err
-		}
-		if session == nil {
-			return ErrUploadSessionNotFound
-		}
-		if session.UserID != userID || session.PackID != packID {
-			return ErrPackNotAccessible
-		}
-
-		pack, err := repo.GetPackByID(ctx, packID)
-		if err != nil {
-			return err
-		}
-		if pack == nil || pack.Status == enum.PackStatusDeleted {
-			return ErrPackNotFound
-		}
-		if !userCanCreateStickerInPack(userID, pack) {
-			return ErrPackNotAccessible
-		}
-
-		existing, err := repo.GetStickerByPackAndFile(ctx, packID, session.FileID)
-		if err != nil {
-			return err
-		}
-		if existing != nil {
-			created = existing
-			return nil
-		}
-
-		if time.Now().UTC().After(session.ExpiresAt) {
-			return ErrUploadSessionExpired
-		}
-
-		file, err := u.files.GetFile(ctx, session.FileID)
-		if err != nil {
-			return err
-		}
-		if file == nil || !strings.EqualFold(file.Status, "READY") {
-			return ErrFileNotReady
-		}
-		if !isStickerContentType(file.ContentType) {
-			return ErrUnsupportedMedia
-		}
-		if err = u.files.BindStickerFileToUser(ctx, session.FileID, userID); err != nil {
-			return err
-		}
-
-		status := enum.StickerStatusInReview
-		if u.postModeration {
-			status = enum.StickerStatusActive
-		}
-		sticker, err := model.NewSticker(model.NewStickerParams{
-			PackID:          packID,
-			FileID:          session.FileID,
-			Emoji:           input.Emoji,
-			Keywords:        input.Keywords,
-			Status:          status,
-			CreatedByUserID: &userID,
-		})
-		if err != nil {
-			return err
-		}
-		if err = repo.CreateSticker(ctx, sticker); err != nil {
-			return err
-		}
-		created = sticker
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return created, nil
+	return nil, ErrCustomStickersDisabled
 }
 
 func (u *StickerUseCase) ValidateSend(
@@ -550,6 +429,14 @@ func (u *StickerUseCase) ValidateSend(
 		return nil, ErrStickerBlocked
 	}
 	if sticker.Status != enum.StickerStatusActive {
+		return nil, ErrStickerNotAccessible
+	}
+
+	pack, err := u.repo.GetPackByID(ctx, sticker.PackID)
+	if err != nil {
+		return nil, err
+	}
+	if pack == nil || pack.Status != enum.PackStatusActive || pack.Type == enum.PackTypeUserCustom {
 		return nil, ErrStickerNotAccessible
 	}
 

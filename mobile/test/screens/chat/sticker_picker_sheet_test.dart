@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,14 +12,18 @@ import 'package:inflap/providers/sticker_catalog_provider.dart';
 import 'package:inflap/screens/chat/widgets/sticker_picker_sheet.dart';
 
 void main() {
-  testWidgets('shows pack tabs and sticker grid', (tester) async {
+  testWidgets('shows one combined sticker grid without pack tabs', (
+    tester,
+  ) async {
     final provider = await _loadedProvider();
 
     await tester.pumpWidget(_buildTestApp(provider));
 
-    expect(find.text('Travel Basics'), findsOneWidget);
-    expect(find.byKey(const ValueKey('sticker-pack-tabs')), findsOneWidget);
+    expect(find.text('Travel Basics'), findsNothing);
+    expect(find.byKey(const ValueKey('sticker-pack-tabs')), findsNothing);
     expect(find.byKey(const ValueKey('sticker-grid')), findsOneWidget);
+    expect(find.byKey(const ValueKey('sticker-sticker1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('sticker-sticker2')), findsOneWidget);
   });
 
   testWidgets('tapping sticker sends selected sticker', (tester) async {
@@ -33,6 +39,21 @@ void main() {
 
     expect(selected.single.id, 'sticker1');
   });
+
+  test(
+    'sticker picker preview renders tgs through lottie-aware loader',
+    () async {
+      final source = await File(
+        'lib/screens/chat/widgets/sticker_picker_sheet.dart',
+      ).readAsString();
+
+      expect(source, contains('resolveStickerAssetContentFormat'));
+      expect(source, contains('Lottie.memory'));
+      expect(source, contains('LottieComposition.decodeGZip'));
+      expect(source, contains('declaredContentType: sticker.contentType'));
+      expect(source, isNot(contains('Image.network')));
+    },
+  );
 }
 
 Widget _buildTestApp(
@@ -52,6 +73,7 @@ Widget _buildTestApp(
       home: Scaffold(
         body: StickerPickerSheet(
           onStickerSelected: onStickerSelected ?? (_) {},
+          previewContentLoader: (_) async => null,
         ),
       ),
     ),
@@ -90,6 +112,23 @@ class _FakeStickerCatalogClient implements StickerCatalogClient {
                   fallbackFileId: 'file1',
                   emoji: '✈️',
                   keywords: ['flight'],
+                  status: 'active',
+                ),
+              ],
+            ),
+            StickerPackVm(
+              id: 'pack2',
+              slug: 'emotions',
+              title: const {'en': 'Emotions'},
+              stickers: const [
+                StickerVm(
+                  id: 'sticker2',
+                  packId: 'pack2',
+                  slug: 'cat-love',
+                  fileId: 'file2',
+                  fallbackFileId: 'file2',
+                  emoji: '😍',
+                  keywords: ['love'],
                   status: 'active',
                 ),
               ],

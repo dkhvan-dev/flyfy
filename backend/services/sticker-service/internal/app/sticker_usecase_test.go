@@ -13,7 +13,7 @@ import (
 	"kz/inflap/backend/services/sticker-service/internal/domain/port"
 )
 
-func TestGetMyPacksReturnsDefaultAndInstalledPacks(t *testing.T) {
+func TestGetMyPacksReturnsDefaultAndInstalledPacksWithoutCustomPacks(t *testing.T) {
 	ctx := context.Background()
 	userID := uuid.New()
 	repo := newFakeStickerRepository(t)
@@ -35,8 +35,18 @@ func TestGetMyPacksReturnsDefaultAndInstalledPacks(t *testing.T) {
 		OwnerUserID: &userID,
 		Title:       map[string]string{"en": "My stickers"},
 	})
+	installedPack := mustPack(t, model.NewStickerPackParams{
+		Slug:       "travel-basics",
+		Type:       enum.PackTypeSystem,
+		Visibility: enum.PackVisibilityPublic,
+		Status:     enum.PackStatusActive,
+		Title:      map[string]string{"en": "Travel Basics"},
+	})
 	repo.defaultPacks = []*model.StickerPackWithStickers{{Pack: systemPack}}
-	repo.userPacks[userID] = []*model.StickerPackWithStickers{{Pack: customPack}}
+	repo.userPacks[userID] = []*model.StickerPackWithStickers{
+		{Pack: customPack},
+		{Pack: installedPack},
+	}
 
 	packs, err := useCase.ListMyPacks(ctx, userID.String())
 	if err != nil {
@@ -45,27 +55,26 @@ func TestGetMyPacksReturnsDefaultAndInstalledPacks(t *testing.T) {
 	if len(packs) != 2 {
 		t.Fatalf("expected 2 packs, got %d", len(packs))
 	}
-	if packs[0].Pack.ID != systemPack.ID || packs[1].Pack.ID != customPack.ID {
+	if packs[0].Pack.ID != systemPack.ID || packs[1].Pack.ID != installedPack.ID {
 		t.Fatalf("unexpected pack order: %+v", packs)
 	}
 }
 
-func TestEnsureCustomPackIsIdempotentPerUser(t *testing.T) {
+func TestEnsureCustomPackIsDisabled(t *testing.T) {
 	ctx := context.Background()
 	userID := uuid.New()
 	repo := newFakeStickerRepository(t)
 	useCase := NewStickerUseCase(repo, &fakeFileManagerClient{})
 
-	first, err := useCase.EnsureMyCustomPack(ctx, userID.String())
-	if err != nil {
-		t.Fatalf("first EnsureMyCustomPack error: %v", err)
+	pack, err := useCase.EnsureMyCustomPack(ctx, userID.String())
+	if !errors.Is(err, ErrCustomStickersDisabled) {
+		t.Fatalf("expected ErrCustomStickersDisabled, got %v", err)
 	}
-	second, err := useCase.EnsureMyCustomPack(ctx, userID.String())
-	if err != nil {
-		t.Fatalf("second EnsureMyCustomPack error: %v", err)
+	if pack != nil {
+		t.Fatalf("expected no custom pack, got %+v", pack)
 	}
-	if first.ID != second.ID {
-		t.Fatalf("expected idempotent custom pack, got %s and %s", first.ID, second.ID)
+	if len(repo.customPacks) != 0 {
+		t.Fatalf("expected no custom pack to be created, got %d", len(repo.customPacks))
 	}
 }
 
@@ -121,12 +130,12 @@ func TestInstallPackPersistsManualUserPack(t *testing.T) {
 	}
 }
 
-func TestCreateUploadRequestRejectsPackOwnedByAnotherUser(t *testing.T) {
+func TestCreateUploadRequestIsDisabled(t *testing.T) {
 	ctx := context.Background()
 	ownerID := uuid.New()
 	actorID := uuid.New()
 	repo := newFakeStickerRepository(t)
-	foreignPack := mustPack(t, model.NewStickerPackParams{
+	pack := mustPack(t, model.NewStickerPackParams{
 		Slug:        "custom-" + ownerID.String(),
 		Type:        enum.PackTypeUserCustom,
 		Visibility:  enum.PackVisibilityPrivate,
@@ -134,23 +143,30 @@ func TestCreateUploadRequestRejectsPackOwnedByAnotherUser(t *testing.T) {
 		OwnerUserID: &ownerID,
 		Title:       map[string]string{"en": "Owner stickers"},
 	})
-	repo.packs[foreignPack.ID] = foreignPack
-	useCase := NewStickerUseCase(repo, &fakeFileManagerClient{})
+	repo.packs[pack.ID] = pack
+	files := &fakeFileManagerClient{}
+	useCase := NewStickerUseCase(repo, files)
 
 	_, err := useCase.CreateStickerUploadRequest(ctx, CreateStickerUploadInput{
 		UserID:       actorID.String(),
-		PackID:       foreignPack.ID.String(),
+		PackID:       pack.ID.String(),
 		OriginalName: "sticker.png",
 		ContentType:  "image/png",
 		SizeBytes:    1024,
 	})
 
-	if !errors.Is(err, ErrPackNotAccessible) {
-		t.Fatalf("expected ErrPackNotAccessible, got %v", err)
+	if !errors.Is(err, ErrCustomStickersDisabled) {
+		t.Fatalf("expected ErrCustomStickersDisabled, got %v", err)
+	}
+	if len(repo.sessions) != 0 {
+		t.Fatalf("expected no upload session to be created, got %d", len(repo.sessions))
+	}
+	if files.createUploadCalls != 0 {
+		t.Fatalf("expected no file-manager upload request, got %d", files.createUploadCalls)
 	}
 }
 
-func TestFinalizeUploadReturnsExistingStickerForCompletedSession(t *testing.T) {
+func TestFinalizeUploadIsDisabled(t *testing.T) {
 	ctx := context.Background()
 	userID := uuid.New()
 	fileID := uuid.New()
@@ -182,20 +198,17 @@ func TestFinalizeUploadReturnsExistingStickerForCompletedSession(t *testing.T) {
 	repo.sessions[session.ID] = session
 	useCase := NewStickerUseCase(repo, files)
 
-	result, err := useCase.FinalizeStickerUpload(ctx, FinalizeStickerUploadInput{
+	_, err := useCase.FinalizeStickerUpload(ctx, FinalizeStickerUploadInput{
 		UserID:          userID.String(),
 		PackID:          pack.ID.String(),
 		UploadSessionID: session.ID.String(),
 	})
 
-	if err != nil {
-		t.Fatalf("FinalizeStickerUpload error: %v", err)
-	}
-	if result.ID != sticker.ID {
-		t.Fatalf("expected existing sticker %s, got %s", sticker.ID, result.ID)
+	if !errors.Is(err, ErrCustomStickersDisabled) {
+		t.Fatalf("expected ErrCustomStickersDisabled, got %v", err)
 	}
 	if files.bindCalls != 0 {
-		t.Fatalf("expected no file rebind for completed session, got %d", files.bindCalls)
+		t.Fatalf("expected no file bind after disabled finalize, got %d", files.bindCalls)
 	}
 }
 
@@ -223,6 +236,37 @@ func TestValidateSendRejectsPrivateStickerWithoutAccess(t *testing.T) {
 
 	_, err := useCase.ValidateSend(ctx, ValidateStickerSendInput{
 		SenderUserID: actorID.String(),
+		StickerID:    sticker.ID.String(),
+	})
+
+	if !errors.Is(err, ErrStickerNotAccessible) {
+		t.Fatalf("expected ErrStickerNotAccessible, got %v", err)
+	}
+}
+
+func TestValidateSendRejectsCustomStickerEvenForOwner(t *testing.T) {
+	ctx := context.Background()
+	ownerID := uuid.New()
+	repo := newFakeStickerRepository(t)
+	pack := mustPack(t, model.NewStickerPackParams{
+		Slug:        "custom-" + ownerID.String(),
+		Type:        enum.PackTypeUserCustom,
+		Visibility:  enum.PackVisibilityPrivate,
+		Status:      enum.PackStatusActive,
+		OwnerUserID: &ownerID,
+		Title:       map[string]string{"en": "Private"},
+	})
+	sticker := mustSticker(t, model.NewStickerParams{
+		PackID: pack.ID,
+		FileID: uuid.New(),
+		Status: enum.StickerStatusActive,
+	})
+	repo.packs[pack.ID] = pack
+	repo.stickers[sticker.ID] = sticker
+	useCase := NewStickerUseCase(repo, &fakeFileManagerClient{})
+
+	_, err := useCase.ValidateSend(ctx, ValidateStickerSendInput{
+		SenderUserID: ownerID.String(),
 		StickerID:    sticker.ID.String(),
 	})
 
@@ -672,11 +716,13 @@ func (r *fakeStickerRepository) WithTx(ctx context.Context, fn func(repo port.St
 }
 
 type fakeFileManagerClient struct {
-	fileID    uuid.UUID
-	bindCalls int
+	fileID            uuid.UUID
+	createUploadCalls int
+	bindCalls         int
 }
 
 func (c *fakeFileManagerClient) CreateStickerUploadRequest(context.Context, port.CreateStickerUploadRequest) (*port.CreateStickerUploadResponse, error) {
+	c.createUploadCalls++
 	fileID := c.fileID
 	if fileID == uuid.Nil {
 		fileID = uuid.New()

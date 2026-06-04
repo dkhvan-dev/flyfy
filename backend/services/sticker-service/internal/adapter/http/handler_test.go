@@ -158,9 +158,9 @@ func TestListPackStickersReturnsStickerMetadata(t *testing.T) {
 	}
 }
 
-func TestEnsureCustomPackUsesAuthenticatedUser(t *testing.T) {
+func TestEnsureCustomPackReturnsGoneWhenDisabled(t *testing.T) {
 	userID := uuid.New()
-	useCase := &fakeStickerUseCase{}
+	useCase := &fakeStickerUseCase{ensureCustomErr: app.ErrCustomStickersDisabled}
 	handler := NewHandler(useCase, "internal-token")
 	mux := http.NewServeMux()
 	handler.Register(mux)
@@ -172,8 +172,8 @@ func TestEnsureCustomPackUsesAuthenticatedUser(t *testing.T) {
 
 	mux.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusCreated {
-		t.Fatalf("expected 201, got %d body=%s", rec.Code, rec.Body.String())
+	if rec.Code != http.StatusGone {
+		t.Fatalf("expected 410, got %d body=%s", rec.Code, rec.Body.String())
 	}
 	if useCase.ensureCustomUserID != userID.String() {
 		t.Fatalf("expected authenticated user id, got %q", useCase.ensureCustomUserID)
@@ -202,19 +202,11 @@ func TestInstallPackUsesAuthenticatedUser(t *testing.T) {
 	}
 }
 
-func TestCreateStickerUploadRequestUsesAuthenticatedUserAndPathPack(t *testing.T) {
+func TestCreateStickerUploadRequestReturnsGoneWhenDisabled(t *testing.T) {
 	userID := uuid.New()
 	packID := uuid.New()
-	fileID := uuid.New()
-	sessionID := uuid.New()
 	useCase := &fakeStickerUseCase{
-		uploadOutput: &app.CreateStickerUploadOutput{
-			UploadSessionID: sessionID,
-			FileID:          fileID,
-			Method:          "PUT",
-			URL:             "https://storage.local/upload",
-			Headers:         map[string]string{"Content-Type": "image/webp"},
-		},
+		createUploadErr: app.ErrCustomStickersDisabled,
 	}
 	handler := NewHandler(useCase, "internal-token")
 	mux := http.NewServeMux()
@@ -227,8 +219,8 @@ func TestCreateStickerUploadRequestUsesAuthenticatedUserAndPathPack(t *testing.T
 
 	mux.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusCreated {
-		t.Fatalf("expected 201, got %d body=%s", rec.Code, rec.Body.String())
+	if rec.Code != http.StatusGone {
+		t.Fatalf("expected 410, got %d body=%s", rec.Code, rec.Body.String())
 	}
 	if useCase.createUploadInput.UserID != userID.String() || useCase.createUploadInput.PackID != packID.String() {
 		t.Fatalf("unexpected upload input: %+v", useCase.createUploadInput)
@@ -307,6 +299,8 @@ type fakeStickerUseCase struct {
 	stickerListOutput  *app.StickerListOutput
 	uploadOutput       *app.CreateStickerUploadOutput
 	validateOutput     *app.ValidateStickerSendOutput
+	ensureCustomErr    error
+	createUploadErr    error
 }
 
 func (f *fakeStickerUseCase) ListDefaultPacks(context.Context) ([]*model.StickerPackWithStickers, error) {
@@ -338,6 +332,9 @@ func (f *fakeStickerUseCase) ListMyPacks(context.Context, string) ([]*model.Stic
 
 func (f *fakeStickerUseCase) EnsureMyCustomPack(_ context.Context, userID string) (*model.StickerPack, error) {
 	f.ensureCustomUserID = userID
+	if f.ensureCustomErr != nil {
+		return nil, f.ensureCustomErr
+	}
 	parsed := uuid.MustParse(userID)
 	return model.NewStickerPack(model.NewStickerPackParams{
 		Slug:        "custom-" + userID,
@@ -364,6 +361,9 @@ func (f *fakeStickerUseCase) CreateStickerUploadRequest(
 	input app.CreateStickerUploadInput,
 ) (*app.CreateStickerUploadOutput, error) {
 	f.createUploadInput = input
+	if f.createUploadErr != nil {
+		return nil, f.createUploadErr
+	}
 	return f.uploadOutput, nil
 }
 

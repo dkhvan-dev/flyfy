@@ -173,6 +173,7 @@ func (r *PGStickerRepository) ListUserPacks(
 		 AND usp.user_id = $1
 		 AND usp.removed_at IS NULL
 		WHERE p.status = 'ACTIVE'
+		  AND p.type <> 'USER_CUSTOM'
 		  AND (
 		    p.owner_user_id = $1
 		    OR usp.pack_id IS NOT NULL
@@ -404,6 +405,7 @@ func (r *PGStickerRepository) UserHasPackAccess(ctx context.Context, userID, pac
 			 AND usp.removed_at IS NULL
 			WHERE p.id = $2
 			  AND p.status = 'ACTIVE'
+			  AND p.type <> 'USER_CUSTOM'
 			  AND (
 			    (p.type = 'SYSTEM' AND p.visibility = 'PUBLIC')
 			    OR p.owner_user_id = $1
@@ -568,6 +570,7 @@ func (r *PGStickerRepository) ListRecentStickers(
 		WHERE ru.user_id = $1
 		  AND s.status = 'ACTIVE'
 		  AND p.status = 'ACTIVE'
+		  AND p.type <> 'USER_CUSTOM'
 		  AND (
 		    (p.type = 'SYSTEM' AND p.visibility = 'PUBLIC')
 		    OR p.owner_user_id = $1

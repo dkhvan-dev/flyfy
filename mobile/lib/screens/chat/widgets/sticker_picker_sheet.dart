@@ -1,18 +1,29 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/network/file_api.dart';
 import '../../../core/ui/app_colors.dart';
 import '../../../features/chat/models/sticker_pack_vm.dart';
+import '../../../features/chat/utils/sticker_asset_format.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../providers/sticker_catalog_provider.dart';
 
+typedef StickerPreviewContentLoader =
+    Future<FileContentVm?> Function(String fileId);
+
 class StickerPickerSheet extends StatefulWidget {
-  const StickerPickerSheet({super.key, required this.onStickerSelected});
+  const StickerPickerSheet({
+    super.key,
+    required this.onStickerSelected,
+    this.previewContentLoader,
+  });
 
   final ValueChanged<StickerVm> onStickerSelected;
+  final StickerPreviewContentLoader? previewContentLoader;
 
   @override
   State<StickerPickerSheet> createState() => _StickerPickerSheetState();
@@ -21,7 +32,6 @@ class StickerPickerSheet extends StatefulWidget {
 class _StickerPickerSheetState extends State<StickerPickerSheet> {
   final _searchController = TextEditingController();
   Timer? _searchDebounce;
-  bool _showRecent = false;
 
   @override
   void initState() {
@@ -30,7 +40,10 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> {
       if (!mounted) return;
       final locale = Localizations.localeOf(context).languageCode;
       unawaited(
-        context.read<StickerCatalogProvider>().loadCatalog(locale: locale),
+        context.read<StickerCatalogProvider>().loadCatalog(
+          locale: locale,
+          preloadAllPacks: true,
+        ),
       );
     });
   }
@@ -54,9 +67,6 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> {
       }
       final locale = Localizations.localeOf(context).languageCode;
       unawaited(provider.search(query, locale: locale));
-      if (_showRecent) {
-        setState(() => _showRecent = false);
-      }
     });
   }
 
@@ -65,12 +75,8 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> {
     await context.read<StickerCatalogProvider>().loadCatalog(
       locale: locale,
       forceRefresh: true,
+      preloadAllPacks: true,
     );
-  }
-
-  Future<void> _selectRecent() async {
-    setState(() => _showRecent = true);
-    await context.read<StickerCatalogProvider>().loadRecent();
   }
 
   @override
@@ -97,13 +103,12 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> {
               final packs = provider.groups
                   .expand((group) => group.packs)
                   .toList(growable: false);
-              final selectedPack =
-                  provider.selectedPack ?? (packs.isEmpty ? null : packs.first);
+              final allStickers = packs
+                  .expand((pack) => pack.stickers)
+                  .toList(growable: false);
               final stickers = searchActive
                   ? provider.searchResults
-                  : _showRecent
-                  ? provider.recentStickers
-                  : selectedPack?.stickers ?? const <StickerVm>[];
+                  : allStickers;
 
               return Column(
                 children: [
@@ -126,42 +131,6 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> {
                       onClear: () {
                         _searchController.clear();
                         provider.clearSearch();
-                        setState(() => _showRecent = false);
-                      },
-                    ),
-                  ),
-                  SizedBox(
-                    key: const ValueKey('sticker-pack-tabs'),
-                    height: 44,
-                    child: ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      scrollDirection: Axis.horizontal,
-                      itemCount: packs.length + 1,
-                      separatorBuilder: (_, _) => const SizedBox(width: 8),
-                      itemBuilder: (context, index) {
-                        if (index == 0) {
-                          return _StickerTab(
-                            label: l10n.stickersTabRecent,
-                            icon: Icons.history_rounded,
-                            selected: _showRecent && !searchActive,
-                            onTap: _selectRecent,
-                          );
-                        }
-
-                        final pack = packs[index - 1];
-                        return _StickerTab(
-                          label: pack.titleFor(
-                            Localizations.localeOf(context).languageCode,
-                          ),
-                          selected:
-                              !_showRecent &&
-                              !searchActive &&
-                              selectedPack?.id == pack.id,
-                          onTap: () {
-                            unawaited(provider.selectPack(pack));
-                            setState(() => _showRecent = false);
-                          },
-                        );
                       },
                     ),
                   ),
@@ -172,13 +141,14 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> {
                       hasCatalog: packs.isNotEmpty,
                       stickers: stickers,
                       searchActive: searchActive,
-                      showRecent: _showRecent,
+                      showRecent: false,
                       emptyRecentText: l10n.stickersEmptyRecent,
                       emptySearchText: l10n.stickersEmptySearch,
                       loadFailedText: l10n.stickersLoadFailed,
                       retryText: l10n.stickersRetry,
                       onRetry: _retry,
                       onStickerSelected: widget.onStickerSelected,
+                      previewContentLoader: widget.previewContentLoader,
                     ),
                   ),
                 ],
@@ -286,81 +256,6 @@ class _StickerSearchField extends StatelessWidget {
   }
 }
 
-class _StickerTab extends StatelessWidget {
-  const _StickerTab({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    this.icon,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  final IconData? icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: label,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(999),
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          constraints: const BoxConstraints(minWidth: 44),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            color: selected
-                ? AppColors.accent.withValues(alpha: 0.18)
-                : Colors.white.withValues(alpha: 0.06),
-            border: Border.all(
-              color: selected
-                  ? AppColors.accent.withValues(alpha: 0.42)
-                  : Colors.white.withValues(alpha: 0.07),
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (icon != null) ...[
-                Icon(
-                  icon,
-                  size: 18,
-                  color: selected
-                      ? const Color(0xFFffd08a)
-                      : Colors.white.withValues(alpha: 0.66),
-                ),
-                const SizedBox(width: 6),
-              ],
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 150),
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: selected
-                        ? const Color(0xFFffd08a)
-                        : Colors.white.withValues(alpha: 0.68),
-                    letterSpacing: 0,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _StickerGridContent extends StatelessWidget {
   const _StickerGridContent({
     required this.loading,
@@ -375,6 +270,7 @@ class _StickerGridContent extends StatelessWidget {
     required this.retryText,
     required this.onRetry,
     required this.onStickerSelected,
+    required this.previewContentLoader,
   });
 
   final bool loading;
@@ -389,6 +285,7 @@ class _StickerGridContent extends StatelessWidget {
   final String retryText;
   final VoidCallback onRetry;
   final ValueChanged<StickerVm> onStickerSelected;
+  final StickerPreviewContentLoader? previewContentLoader;
 
   @override
   Widget build(BuildContext context) {
@@ -437,6 +334,7 @@ class _StickerGridContent extends StatelessWidget {
             return _StickerButton(
               key: ValueKey('sticker-${sticker.id}'),
               sticker: sticker,
+              previewContentLoader: previewContentLoader,
               onTap: () => onStickerSelected(sticker),
             );
           },
@@ -471,9 +369,15 @@ class _StickerGridSkeleton extends StatelessWidget {
 }
 
 class _StickerButton extends StatelessWidget {
-  const _StickerButton({super.key, required this.sticker, required this.onTap});
+  const _StickerButton({
+    super.key,
+    required this.sticker,
+    required this.previewContentLoader,
+    required this.onTap,
+  });
 
   final StickerVm sticker;
+  final StickerPreviewContentLoader? previewContentLoader;
   final VoidCallback onTap;
 
   @override
@@ -493,7 +397,10 @@ class _StickerButton extends StatelessWidget {
           ),
           child: Padding(
             padding: const EdgeInsets.all(8),
-            child: _StickerPreview(sticker: sticker),
+            child: _StickerPreview(
+              sticker: sticker,
+              previewContentLoader: previewContentLoader,
+            ),
           ),
         ),
       ),
@@ -509,31 +416,28 @@ class _StickerButton extends StatelessWidget {
 }
 
 class _StickerPreview extends StatelessWidget {
-  const _StickerPreview({required this.sticker});
+  const _StickerPreview({
+    required this.sticker,
+    required this.previewContentLoader,
+  });
 
   final StickerVm sticker;
+  final StickerPreviewContentLoader? previewContentLoader;
 
   @override
   Widget build(BuildContext context) {
     final fileId = _previewFileId(sticker);
-    final url = resolvePublicFileContentUrl(fileId);
     final emoji = sticker.emoji?.trim() ?? '';
 
-    if (url == null) {
+    if (fileId.isEmpty) {
       return _StickerFallback(emoji: emoji);
     }
 
-    return Image.network(
-      url,
-      fit: BoxFit.contain,
-      gaplessPlayback: true,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return _StickerFallback(emoji: emoji, loading: true);
-      },
-      errorBuilder: (context, error, stackTrace) {
-        return _StickerFallback(emoji: emoji);
-      },
+    return _StickerPreviewImage(
+      fileId: fileId,
+      emoji: emoji,
+      declaredContentType: sticker.contentType,
+      previewContentLoader: previewContentLoader,
     );
   }
 
@@ -543,6 +447,149 @@ class _StickerPreview extends StatelessWidget {
     final fallback = sticker.fallbackFileId.trim();
     if (fallback.isNotEmpty) return fallback;
     return sticker.fileId.trim();
+  }
+}
+
+class _StickerPreviewImage extends StatelessWidget {
+  const _StickerPreviewImage({
+    required this.fileId,
+    required this.emoji,
+    required this.declaredContentType,
+    required this.previewContentLoader,
+  });
+
+  final String fileId;
+  final String emoji;
+  final String declaredContentType;
+  final StickerPreviewContentLoader? previewContentLoader;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<_StickerPreviewAsset?>(
+      future: _StickerPreviewAssetCache.assetFor(
+        fileId,
+        contentLoader: previewContentLoader,
+      ),
+      builder: (context, snapshot) {
+        final asset = snapshot.data?.withDeclaredContentType(
+          declaredContentType,
+        );
+        if (asset == null || asset.bytes.isEmpty) {
+          return _StickerFallback(
+            emoji: emoji,
+            loading: snapshot.connectionState == ConnectionState.waiting,
+          );
+        }
+
+        if (asset.isLottieSticker) {
+          return Lottie.memory(
+            asset.bytes,
+            decoder: asset.lottieDecoder,
+            errorBuilder: (context, error, stackTrace) =>
+                _StickerFallback(emoji: emoji),
+            fit: BoxFit.contain,
+            frameRate: const FrameRate(60),
+            repeat: true,
+            renderCache: RenderCache.drawingCommands,
+          );
+        }
+
+        if (asset.format == StickerAssetContentFormat.rasterImage) {
+          return Image.memory(
+            asset.bytes,
+            fit: BoxFit.contain,
+            gaplessPlayback: true,
+          );
+        }
+
+        return _StickerFallback(emoji: emoji);
+      },
+    );
+  }
+}
+
+class _StickerPreviewAsset {
+  const _StickerPreviewAsset({
+    required this.bytes,
+    required this.responseContentType,
+    this.declaredContentType = '',
+  });
+
+  final Uint8List bytes;
+  final String responseContentType;
+  final String declaredContentType;
+
+  _StickerPreviewAsset withDeclaredContentType(String contentType) {
+    return _StickerPreviewAsset(
+      bytes: bytes,
+      responseContentType: responseContentType,
+      declaredContentType: contentType,
+    );
+  }
+
+  StickerAssetContentFormat get format {
+    return resolveStickerAssetContentFormat(
+      bytes,
+      responseContentType: responseContentType,
+      declaredContentType: declaredContentType,
+    );
+  }
+
+  bool get isLottieSticker {
+    return format == StickerAssetContentFormat.tgsGzip ||
+        format == StickerAssetContentFormat.lottieJson;
+  }
+
+  LottieDecoder? get lottieDecoder {
+    return format == StickerAssetContentFormat.tgsGzip
+        ? LottieComposition.decodeGZip
+        : null;
+  }
+}
+
+class _StickerPreviewAssetCache {
+  static final FileApi _fileApi = FileApi();
+  static final Map<String, Future<_StickerPreviewAsset?>> _assetFutures = {};
+
+  static Future<_StickerPreviewAsset?> assetFor(
+    String fileId, {
+    StickerPreviewContentLoader? contentLoader,
+  }) {
+    final normalizedFileId = fileId.trim();
+    if (normalizedFileId.isEmpty) {
+      return Future<_StickerPreviewAsset?>.value(null);
+    }
+
+    if (contentLoader != null) {
+      return _load(normalizedFileId, contentLoader);
+    }
+
+    final cached = _assetFutures[normalizedFileId];
+    if (cached != null) return cached;
+
+    final load = _load(normalizedFileId, _fileApi.downloadContent);
+    _assetFutures[normalizedFileId] = load;
+    return load;
+  }
+
+  static Future<_StickerPreviewAsset?> _load(
+    String normalizedFileId,
+    StickerPreviewContentLoader contentLoader,
+  ) async {
+    try {
+      final content = await contentLoader(normalizedFileId);
+      if (content == null || content.bytes.isEmpty) {
+        _assetFutures.remove(normalizedFileId);
+        return null;
+      }
+      return _StickerPreviewAsset(
+        bytes: content.bytes,
+        responseContentType: content.contentType,
+      );
+    } catch (_) {
+      _assetFutures.remove(normalizedFileId);
+      return null;
+    }
   }
 }
 

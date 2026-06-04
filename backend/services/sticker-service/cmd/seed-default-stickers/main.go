@@ -2,17 +2,16 @@ package main
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/sha256"
+	"embed"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"image"
 	"image/color"
-	"image/color/palette"
-	imagedraw "image/draw"
-	"image/gif"
 	"io"
 	"log"
 	"math"
@@ -30,12 +29,17 @@ import (
 
 const (
 	stickerCanvasSize  = 512
-	stickerContentType = "image/gif"
-	stickerFileExt     = "gif"
+	stickerContentType = "application/x-tgsticker"
+	stickerFileExt     = "tgs"
 	stickerFrameCount  = 18
+	stickerFrameRate   = 60
+	stickerTGSMaxBytes = 64 * 1024
 	systemOwnerType    = "ORGANIZATION"
 	systemOwnerID      = "00000000-0000-0000-0000-000000000001"
 )
+
+//go:embed assets/*.tgs
+var officialStickerAssetFS embed.FS
 
 type stickerDefinition struct {
 	GroupSlug       string
@@ -48,12 +52,66 @@ type stickerDefinition struct {
 	Key             string
 	Emoji           string
 	Keywords        []string
+	AssetPath       string
 	FallbackName    string
 	DurationMS      int
+	Width           int
+	Height          int
 	SortOrder       int
 	Background      color.RGBA
 	Accent          color.RGBA
 	Dark            color.RGBA
+}
+
+type stickerCatalogGroup struct {
+	Slug    string
+	Order   int
+	Title   map[string]string
+	Moments []stickerMoment
+}
+
+type stickerMoment struct {
+	Key      string
+	Emoji    string
+	Keywords []string
+}
+
+type orderedJSONField struct {
+	key   string
+	value any
+}
+
+type orderedJSONObject []orderedJSONField
+
+func orderedObject(fields ...orderedJSONField) orderedJSONObject {
+	return orderedJSONObject(fields)
+}
+
+func field(key string, value any) orderedJSONField {
+	return orderedJSONField{key: key, value: value}
+}
+
+func (o orderedJSONObject) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	buf.WriteByte('{')
+	for i, field := range o {
+		if i > 0 {
+			buf.WriteByte(',')
+		}
+		key, err := json.Marshal(field.key)
+		if err != nil {
+			return nil, err
+		}
+		value, err := json.Marshal(field.value)
+		if err != nil {
+			return nil, err
+		}
+		buf.Write(key)
+		buf.WriteByte(':')
+		buf.Write(value)
+	}
+	buf.WriteByte('}')
+	return buf.Bytes(), nil
 }
 
 type seedAsset struct {
@@ -336,6 +394,14 @@ func (s *seeder) upsertStickerAndSeedAsset(ctx context.Context, asset seedAsset,
 	}()
 
 	emoji := def.Emoji
+	width := def.Width
+	if width <= 0 {
+		width = stickerCanvasSize
+	}
+	height := def.Height
+	if height <= 0 {
+		height = stickerCanvasSize
+	}
 	if _, err = tx.Exec(ctx, `
 		INSERT INTO stickers (
 			id, pack_id, slug, file_id, fallback_file_id, preview_file_id,
@@ -365,7 +431,7 @@ func (s *seeder) upsertStickerAndSeedAsset(ctx context.Context, asset seedAsset,
 			sort_order = EXCLUDED.sort_order,
 			updated_at = NOW()
 	`, asset.StickerID, asset.PackID, def.Key, asset.FileID, emoji, def.Keywords,
-		stickerContentType, stickerCanvasSize, stickerCanvasSize, def.DurationMS,
+		stickerContentType, width, height, def.DurationMS,
 		asset.SizeBytes, asset.Checksum, def.SortOrder); err != nil {
 		return fmt.Errorf("upsert sticker row: %w", err)
 	}
@@ -577,64 +643,145 @@ func sha256Hex(body []byte) string {
 	return hex.EncodeToString(sum[:])
 }
 
-func defaultStickerDefinitions() []stickerDefinition {
-	travelTitle := localized("Travel", "Путешествия", "Саяхат")
-	emotionsTitle := localized("Emotions", "Эмоции", "Эмоциялар")
-	foodTitle := localized("Food", "Еда", "Тамақ")
-	weatherTitle := localized("Weather", "Погода", "Ауа райы")
-	transportTitle := localized("Transport", "Транспорт", "Көлік")
-	planningTitle := localized("Planning", "Планы", "Жоспар")
-	guidesTitle := localized("Guides", "Гиды", "Гидтер")
-	cultureTitle := localized("Local Culture", "Местная культура", "Жергілікті мәдениет")
-	bookingsTitle := localized("Bookings", "Бронирования", "Брондау")
-	safetyTitle := localized("Safety", "Безопасность", "Қауіпсіздік")
-	celebrationsTitle := localized("Celebrations", "Праздники", "Мереке")
-	seasonalTitle := localized("Seasonal", "Сезонное", "Маусымдық")
+func stickerVariant(key string) int {
+	sum := sha256.Sum256([]byte(key))
+	return int(sum[0])
+}
 
+func defaultStickerDefinitions() []stickerDefinition {
+	groupTitle := localized("Stickers", "Стикеры", "Стикерлер")
+	packTitle := localized("Official stickers", "Официальные стикеры", "Ресми стикерлер")
 	packDescription := localized(
-		"Original Inflap official stickers for travel chats.",
-		"Официальные оригинальные стикеры Inflap для туристических чатов.",
-		"Саяхат чаттарына арналған ресми Inflap стикерлері.",
+		"Official animated stickers for Inflap chats.",
+		"Официальные анимированные стикеры для чатов Inflap.",
+		"Inflap чаттарына арналған ресми анимациялық стикерлер.",
 	)
 
 	return []stickerDefinition{
-		stickerDef("travel", 10, travelTitle, "inflap-travel-basics", travelTitle, packDescription, "airport-sprint", "✈️", []string{"travel", "flight", "airport", "rush", "boarding"}, 10, rgba(226, 244, 255), rgba(53, 132, 228), rgba(15, 49, 92)),
-		stickerDef("travel", 10, travelTitle, "inflap-travel-basics", travelTitle, packDescription, "passport-ready", "🛂", []string{"passport", "visa", "border", "ready", "trip"}, 20, rgba(236, 232, 255), rgba(113, 82, 220), rgba(49, 39, 107)),
-		stickerDef("travel", 10, travelTitle, "inflap-travel-basics", travelTitle, packDescription, "lost-but-happy", "🗺️", []string{"lost", "map", "happy", "route", "explore"}, 30, rgba(232, 249, 239), rgba(62, 171, 110), rgba(31, 94, 63)),
-		stickerDef("travel", 10, travelTitle, "inflap-travel-basics", travelTitle, packDescription, "travel-camera", "📷", []string{"camera", "photo", "memory", "travel", "snapshot"}, 40, rgba(232, 241, 255), rgba(80, 125, 211), rgba(36, 58, 108)),
-		stickerDef("travel", 10, travelTitle, "inflap-travel-basics", travelTitle, packDescription, "globe-mode", "🌍", []string{"globe", "world", "travel", "explore", "international"}, 50, rgba(225, 248, 255), rgba(53, 154, 205), rgba(24, 88, 118)),
-		stickerDef("emotions", 20, emotionsTitle, "inflap-emotions", emotionsTitle, packDescription, "trip-excited", "🤩", []string{"excited", "wow", "happy", "trip", "emotion"}, 10, rgba(255, 241, 214), rgba(245, 177, 53), rgba(105, 70, 20)),
-		stickerDef("emotions", 20, emotionsTitle, "inflap-emotions", emotionsTitle, packDescription, "travel-tired", "😴", []string{"tired", "jetlag", "sleepy", "late", "emotion"}, 20, rgba(235, 238, 255), rgba(112, 126, 220), rgba(48, 55, 112)),
-		stickerDef("emotions", 20, emotionsTitle, "inflap-emotions", emotionsTitle, packDescription, "delayed-again", "⏰", []string{"delay", "late", "wait", "flight", "train"}, 30, rgba(255, 242, 222), rgba(226, 141, 50), rgba(104, 62, 22)),
-		stickerDef("food", 30, foodTitle, "inflap-food", foodTitle, packDescription, "need-coffee", "☕", []string{"coffee", "jetlag", "morning", "tired", "airport"}, 10, rgba(247, 239, 228), rgba(142, 92, 52), rgba(77, 48, 31)),
-		stickerDef("food", 30, foodTitle, "inflap-food", foodTitle, packDescription, "street-food", "🍜", []string{"food", "street", "local", "dinner", "taste"}, 20, rgba(255, 237, 221), rgba(229, 111, 59), rgba(105, 48, 27)),
-		stickerDef("weather", 40, weatherTitle, "inflap-weather", weatherTitle, packDescription, "sunny-plan", "☀️", []string{"sun", "weather", "clear", "warm", "plan"}, 10, rgba(255, 248, 211), rgba(239, 186, 51), rgba(112, 79, 17)),
-		stickerDef("weather", 40, weatherTitle, "inflap-weather", weatherTitle, packDescription, "rainy-detour", "🌧️", []string{"rain", "weather", "detour", "umbrella", "change"}, 20, rgba(226, 237, 250), rgba(70, 130, 201), rgba(30, 61, 102)),
-		stickerDef("transport", 50, transportTitle, "inflap-transport", transportTitle, packDescription, "taxi-found", "🚕", []string{"taxi", "ride", "car", "pickup", "transport"}, 10, rgba(255, 244, 202), rgba(238, 188, 42), rgba(104, 78, 17)),
-		stickerDef("transport", 50, transportTitle, "inflap-transport", transportTitle, packDescription, "train-window", "🚆", []string{"train", "rail", "window", "route", "transport"}, 20, rgba(224, 244, 241), rgba(46, 158, 151), rgba(24, 82, 78)),
-		stickerDef("planning", 60, planningTitle, "inflap-planning", planningTitle, packDescription, "packing-mode", "🧳", []string{"packing", "luggage", "suitcase", "trip", "ready"}, 10, rgba(255, 244, 220), rgba(233, 150, 48), rgba(105, 63, 21)),
-		stickerDef("planning", 60, planningTitle, "inflap-planning", planningTitle, packDescription, "calendar-ready", "🗓️", []string{"calendar", "plan", "schedule", "date", "ready"}, 20, rgba(238, 246, 255), rgba(69, 137, 216), rgba(30, 65, 113)),
-		stickerDef("planning", 60, planningTitle, "inflap-planning", planningTitle, packDescription, "send-location", "📍", []string{"location", "pin", "meet", "route", "share"}, 30, rgba(255, 235, 230), rgba(226, 83, 79), rgba(116, 39, 35)),
-		stickerDef("guides", 70, guidesTitle, "inflap-guides", guidesTitle, packDescription, "guide-here", "🙋", []string{"guide", "here", "excursion", "meet", "host"}, 10, rgba(235, 249, 234), rgba(76, 160, 93), rgba(35, 82, 45)),
-		stickerDef("guides", 70, guidesTitle, "inflap-guides", guidesTitle, packDescription, "follow-flag", "🚩", []string{"guide", "flag", "follow", "group", "excursion"}, 20, rgba(255, 235, 235), rgba(221, 75, 80), rgba(112, 33, 38)),
-		stickerDef("local-culture", 80, cultureTitle, "inflap-local-culture", cultureTitle, packDescription, "market-walk", "🏺", []string{"market", "culture", "local", "walk", "souvenir"}, 10, rgba(250, 238, 222), rgba(192, 119, 58), rgba(92, 55, 30)),
-		stickerDef("local-culture", 80, cultureTitle, "inflap-local-culture", cultureTitle, packDescription, "phrase-book", "💬", []string{"language", "phrase", "culture", "local", "hello"}, 20, rgba(235, 241, 255), rgba(92, 112, 216), rgba(42, 54, 112)),
-		stickerDef("bookings", 90, bookingsTitle, "inflap-bookings", bookingsTitle, packDescription, "ticket-confirmed", "🎫", []string{"ticket", "booking", "confirmed", "reservation", "done"}, 10, rgba(232, 249, 240), rgba(54, 173, 113), rgba(25, 86, 56)),
-		stickerDef("bookings", 90, bookingsTitle, "inflap-bookings", bookingsTitle, packDescription, "payment-done", "✅", []string{"payment", "paid", "booking", "success", "done"}, 20, rgba(229, 248, 229), rgba(51, 161, 75), rgba(24, 86, 39)),
-		stickerDef("safety", 100, safetyTitle, "inflap-safety", safetyTitle, packDescription, "safe-route", "🛡️", []string{"safe", "route", "security", "careful", "map"}, 10, rgba(229, 241, 255), rgba(58, 119, 217), rgba(27, 58, 109)),
-		stickerDef("safety", 100, safetyTitle, "inflap-safety", safetyTitle, packDescription, "help-point", "🆘", []string{"help", "support", "safety", "urgent", "point"}, 20, rgba(255, 231, 231), rgba(226, 73, 73), rgba(116, 31, 31)),
-		stickerDef("celebrations", 110, celebrationsTitle, "inflap-celebrations", celebrationsTitle, packDescription, "trip-start", "🎉", []string{"start", "party", "celebrate", "trip", "go"}, 10, rgba(255, 238, 247), rgba(213, 83, 151), rgba(102, 38, 75)),
-		stickerDef("celebrations", 110, celebrationsTitle, "inflap-celebrations", celebrationsTitle, packDescription, "group-cheers", "🥳", []string{"cheers", "group", "friends", "celebrate", "happy"}, 20, rgba(243, 235, 255), rgba(144, 92, 221), rgba(69, 42, 111)),
-		stickerDef("seasonal", 120, seasonalTitle, "inflap-seasonal", seasonalTitle, packDescription, "winter-trip", "❄️", []string{"winter", "snow", "season", "cold", "trip"}, 10, rgba(230, 247, 255), rgba(62, 154, 207), rgba(26, 79, 110)),
-		stickerDef("seasonal", 120, seasonalTitle, "inflap-seasonal", seasonalTitle, packDescription, "summer-vibes", "🌴", []string{"summer", "season", "beach", "warm", "vacation"}, 20, rgba(229, 251, 242), rgba(37, 172, 111), rgba(18, 88, 57)),
-		stickerDef("seasonal", 120, seasonalTitle, "inflap-seasonal", seasonalTitle, packDescription, "beach-please", "🏖️", []string{"beach", "sea", "sun", "vacation", "summer"}, 30, rgba(255, 247, 218), rgba(236, 170, 66), rgba(109, 76, 26)),
-		stickerDef("seasonal", 120, seasonalTitle, "inflap-seasonal", seasonalTitle, packDescription, "mountain-call", "⛰️", []string{"mountain", "hike", "nature", "view", "trail"}, 40, rgba(231, 246, 235), rgba(81, 158, 94), rgba(39, 90, 48)),
-		stickerDef("seasonal", 120, seasonalTitle, "inflap-seasonal", seasonalTitle, packDescription, "camp-vibes", "⛺", []string{"camp", "tent", "nature", "night", "outdoor"}, 50, rgba(255, 242, 224), rgba(222, 117, 55), rgba(108, 55, 29)),
+		officialLottieSticker(groupTitle, packTitle, packDescription, "cat-love", "assets/cat-love.tgs", "😻", []string{"cat", "love", "heart", "emotion"}, 10, 500, 500, 3000),
+		officialLottieSticker(groupTitle, packTitle, packDescription, "fire-flame", "assets/fire-flame.tgs", "🔥", []string{"fire", "flame", "hot", "energy"}, 20, 600, 600, 3000),
+		officialLottieSticker(groupTitle, packTitle, packDescription, "flirting-dog", "assets/flirting-dog.tgs", "🐶", []string{"dog", "flirt", "wink", "emotion"}, 30, 512, 512, 3000),
+		officialLottieSticker(groupTitle, packTitle, packDescription, "jellyfish-greeting", "assets/jellyfish-greeting.tgs", "👋", []string{"jellyfish", "hello", "greeting", "sea"}, 40, 512, 512, 2933),
+		officialLottieSticker(groupTitle, packTitle, packDescription, "like-button", "assets/like-button.tgs", "👍", []string{"like", "thumbs", "yes", "approve"}, 50, 480, 608, 2000),
+		officialLottieSticker(groupTitle, packTitle, packDescription, "sea-walk", "assets/sea-walk.tgs", "🌊", []string{"sea", "walk", "beach", "travel"}, 60, 2000, 2000, 2000),
+		officialLottieSticker(groupTitle, packTitle, packDescription, "travel-character", "assets/travel-character.tgs", "✨", []string{"travel", "character", "animated", "fun"}, 70, 800, 800, 3000),
+	}
+}
+
+func officialLottieSticker(
+	groupTitle map[string]string,
+	packTitle map[string]string,
+	packDescription map[string]string,
+	key string,
+	assetPath string,
+	emoji string,
+	keywords []string,
+	sortOrder int,
+	width int,
+	height int,
+	durationMS int,
+) stickerDefinition {
+	return stickerDefinition{
+		GroupSlug:       "official",
+		GroupTitle:      groupTitle,
+		GroupOrder:      10,
+		PackSlug:        "inflap-official-lottie",
+		PackTitle:       packTitle,
+		PackDescription: packDescription,
+		PackOrder:       10,
+		Key:             "lottie-" + key,
+		Emoji:           emoji,
+		Keywords:        keywords,
+		AssetPath:       assetPath,
+		FallbackName:    key,
+		DurationMS:      durationMS,
+		Width:           width,
+		Height:          height,
+		SortOrder:       sortOrder,
 	}
 }
 
 func localized(en, ru, kk string) map[string]string {
 	return map[string]string{"en": en, "ru": ru, "kk": kk}
+}
+
+func moment(key, emoji string, keywords ...string) stickerMoment {
+	return stickerMoment{
+		Key:      key,
+		Emoji:    emoji,
+		Keywords: keywords,
+	}
+}
+
+func stickerColors(groupSlug string, index int) (color.RGBA, color.RGBA, color.RGBA) {
+	palettes := map[string][][3]color.RGBA{
+		"travel": {
+			{rgba(226, 244, 255), rgba(53, 132, 228), rgba(15, 49, 92)},
+			{rgba(236, 232, 255), rgba(113, 82, 220), rgba(49, 39, 107)},
+			{rgba(232, 249, 239), rgba(62, 171, 110), rgba(31, 94, 63)},
+		},
+		"emotions": {
+			{rgba(255, 241, 214), rgba(245, 177, 53), rgba(105, 70, 20)},
+			{rgba(235, 238, 255), rgba(112, 126, 220), rgba(48, 55, 112)},
+			{rgba(255, 238, 247), rgba(213, 83, 151), rgba(102, 38, 75)},
+		},
+		"food": {
+			{rgba(247, 239, 228), rgba(142, 92, 52), rgba(77, 48, 31)},
+			{rgba(255, 237, 221), rgba(229, 111, 59), rgba(105, 48, 27)},
+			{rgba(255, 247, 218), rgba(236, 170, 66), rgba(109, 76, 26)},
+		},
+		"weather": {
+			{rgba(255, 248, 211), rgba(239, 186, 51), rgba(112, 79, 17)},
+			{rgba(226, 237, 250), rgba(70, 130, 201), rgba(30, 61, 102)},
+			{rgba(230, 247, 255), rgba(62, 154, 207), rgba(26, 79, 110)},
+		},
+		"transport": {
+			{rgba(255, 244, 202), rgba(238, 188, 42), rgba(104, 78, 17)},
+			{rgba(224, 244, 241), rgba(46, 158, 151), rgba(24, 82, 78)},
+			{rgba(232, 241, 255), rgba(80, 125, 211), rgba(36, 58, 108)},
+		},
+		"planning": {
+			{rgba(255, 244, 220), rgba(233, 150, 48), rgba(105, 63, 21)},
+			{rgba(238, 246, 255), rgba(69, 137, 216), rgba(30, 65, 113)},
+			{rgba(255, 235, 230), rgba(226, 83, 79), rgba(116, 39, 35)},
+		},
+		"guides": {
+			{rgba(235, 249, 234), rgba(76, 160, 93), rgba(35, 82, 45)},
+			{rgba(255, 235, 235), rgba(221, 75, 80), rgba(112, 33, 38)},
+			{rgba(243, 235, 255), rgba(144, 92, 221), rgba(69, 42, 111)},
+		},
+		"local-culture": {
+			{rgba(250, 238, 222), rgba(192, 119, 58), rgba(92, 55, 30)},
+			{rgba(235, 241, 255), rgba(92, 112, 216), rgba(42, 54, 112)},
+			{rgba(255, 238, 247), rgba(213, 83, 151), rgba(102, 38, 75)},
+		},
+		"bookings": {
+			{rgba(232, 249, 240), rgba(54, 173, 113), rgba(25, 86, 56)},
+			{rgba(229, 248, 229), rgba(51, 161, 75), rgba(24, 86, 39)},
+			{rgba(238, 246, 255), rgba(69, 137, 216), rgba(30, 65, 113)},
+		},
+		"safety": {
+			{rgba(229, 241, 255), rgba(58, 119, 217), rgba(27, 58, 109)},
+			{rgba(255, 231, 231), rgba(226, 73, 73), rgba(116, 31, 31)},
+			{rgba(235, 249, 234), rgba(76, 160, 93), rgba(35, 82, 45)},
+		},
+		"celebrations": {
+			{rgba(255, 238, 247), rgba(213, 83, 151), rgba(102, 38, 75)},
+			{rgba(243, 235, 255), rgba(144, 92, 221), rgba(69, 42, 111)},
+			{rgba(255, 241, 214), rgba(245, 177, 53), rgba(105, 70, 20)},
+		},
+		"seasonal": {
+			{rgba(230, 247, 255), rgba(62, 154, 207), rgba(26, 79, 110)},
+			{rgba(229, 251, 242), rgba(37, 172, 111), rgba(18, 88, 57)},
+			{rgba(255, 242, 224), rgba(222, 117, 55), rgba(108, 55, 29)},
+		},
+	}
+	groupPalettes := palettes[groupSlug]
+	if len(groupPalettes) == 0 {
+		groupPalettes = palettes["travel"]
+	}
+	colors := groupPalettes[index%len(groupPalettes)]
+	return colors[0], colors[1], colors[2]
 }
 
 func stickerDef(
@@ -673,30 +820,629 @@ func stickerDef(
 }
 
 func renderStickerAnimation(def stickerDefinition) ([]byte, error) {
-	animation := &gif.GIF{LoopCount: 0}
-	delay := def.DurationMS / stickerFrameCount / 10
-	if delay < 4 {
-		delay = 4
+	if strings.TrimSpace(def.AssetPath) != "" {
+		body, err := officialStickerAssetFS.ReadFile(def.AssetPath)
+		if err != nil {
+			return nil, fmt.Errorf("read embedded sticker asset %q: %w", def.AssetPath, err)
+		}
+		if len(body) > stickerTGSMaxBytes {
+			return nil, fmt.Errorf("telegram sticker asset %q exceeds %d bytes: %d", def.Key, stickerTGSMaxBytes, len(body))
+		}
+		return body, nil
 	}
 
-	for frame := 0; frame < stickerFrameCount; frame++ {
-		rgbaFrame := renderStickerFrame(def, frame)
-		palettedFrame := image.NewPaletted(rgbaFrame.Bounds(), palette.Plan9)
-		imagedraw.FloydSteinberg.Draw(
-			palettedFrame,
-			rgbaFrame.Bounds(),
-			rgbaFrame,
-			image.Point{},
-		)
-		animation.Image = append(animation.Image, palettedFrame)
-		animation.Delay = append(animation.Delay, delay)
+	frames := int(math.Round(float64(def.DurationMS) / 1000 * stickerFrameRate))
+	if frames < 30 {
+		frames = 30
+	}
+	if frames > stickerFrameRate*3 {
+		frames = stickerFrameRate * 3
+	}
+
+	raw, err := json.Marshal(buildStickerLottie(def, frames))
+	if err != nil {
+		return nil, err
 	}
 
 	var buf bytes.Buffer
-	if err := gif.EncodeAll(&buf, animation); err != nil {
+	writer := gzip.NewWriter(&buf)
+	if _, err = writer.Write(raw); err != nil {
+		_ = writer.Close()
 		return nil, err
 	}
+	if err = writer.Close(); err != nil {
+		return nil, err
+	}
+	if buf.Len() > stickerTGSMaxBytes {
+		return nil, fmt.Errorf("telegram sticker %q exceeds %d bytes: %d", def.Key, stickerTGSMaxBytes, buf.Len())
+	}
 	return buf.Bytes(), nil
+}
+
+func buildStickerLottie(def stickerDefinition, frames int) map[string]any {
+	return map[string]any{
+		"v":      "5.7.4",
+		"fr":     stickerFrameRate,
+		"ip":     0,
+		"op":     frames,
+		"w":      stickerCanvasSize,
+		"h":      stickerCanvasSize,
+		"nm":     "Inflap " + def.Key,
+		"ddd":    0,
+		"assets": []any{},
+		"layers": []any{
+			lottieLayer(1, "ambient motion", animatedReverseScaleTransform(256, 256, 98, 106, frames), accentVectorGroups(def), frames),
+			lottieLayer(2, "illustration", animatedStickerTransform(def, frames), stickerVectorGroups(def), frames),
+			lottieLayer(3, "micro highlights", animatedScaleTransform(256, 256, 98, 104, frames), signatureVectorGroups(def, stickerVariant(def.Key)), frames),
+		},
+	}
+}
+
+func lottieLayer(ind int, name string, transform map[string]any, groups []any, frames int) map[string]any {
+	return map[string]any{
+		"ddd":    0,
+		"ind":    ind,
+		"ty":     4,
+		"nm":     name,
+		"sr":     1,
+		"ks":     transform,
+		"ao":     0,
+		"shapes": groups,
+		"ip":     0,
+		"op":     frames,
+		"st":     0,
+		"bm":     0,
+	}
+}
+
+func stickerVectorGroups(def stickerDefinition) []any {
+	groups := []any{
+		ellipseGroup("contact shadow", 0, 116, 184, 36, alpha(def.Dark, 38), color.RGBA{}, 0),
+	}
+
+	key := stickerMomentKey(def.Key)
+	switch key {
+	case "airport-sprint", "boarding-now":
+		groups = append(groups, planeVectorGroups(def)...)
+	case "need-coffee":
+		groups = append(groups, coffeeVectorGroups(def)...)
+	case "winter-trip", "ski-day":
+		groups = append(groups, winterVectorGroups(def)...)
+	case "passport-ready", "visa-approved", "documents-ready":
+		groups = append(groups, passportVectorGroups(def)...)
+	case "lost-but-happy", "send-location", "meeting-point", "route-built":
+		groups = append(groups, mapPinVectorGroups(def)...)
+	case "travel-camera", "photo-spot":
+		groups = append(groups, cameraVectorGroups(def)...)
+	case "globe-mode", "roaming-on":
+		groups = append(groups, globeVectorGroups(def)...)
+	case "street-food", "local-dessert", "spicy-surprise", "breakfast-ready", "snack-hunt", "dinner-spot", "split-bill":
+		groups = append(groups, foodVectorGroups(def)...)
+	case "sunny-plan", "rainy-detour", "windy-hair", "foggy-route", "hot-day", "cold-evening", "rainbow-stop", "storm-delay", "cloudy-walk":
+		groups = append(groups, weatherVectorGroups(def)...)
+	case "beach-please", "summer-vibes", "desert-sun":
+		groups = append(groups, beachVectorGroups(def)...)
+	case "mountain-call", "camp-vibes":
+		if key == "camp-vibes" {
+			groups = append(groups, tentVectorGroups(def)...)
+		} else {
+			groups = append(groups, mountainVectorGroups(def)...)
+		}
+	default:
+		groups = append(groups, groupFallbackVectorGroups(def)...)
+	}
+
+	return groups
+}
+
+func stickerMomentKey(key string) string {
+	return strings.TrimPrefix(key, "tgs-")
+}
+
+func groupFallbackVectorGroups(def stickerDefinition) []any {
+	switch def.GroupSlug {
+	case "travel":
+		return mapPinVectorGroups(def)
+	case "emotions":
+		return emotionVectorGroups(def)
+	case "food":
+		return foodVectorGroups(def)
+	case "weather", "seasonal":
+		return weatherVectorGroups(def)
+	case "transport":
+		return transportVectorGroups(def)
+	case "planning", "bookings":
+		return ticketVectorGroups(def)
+	case "guides", "local-culture":
+		return guideVectorGroups(def)
+	case "safety":
+		return safetyVectorGroups(def)
+	case "celebrations":
+		return celebrationVectorGroups(def)
+	default:
+		return globeVectorGroups(def)
+	}
+}
+
+func planeVectorGroups(def stickerDefinition) []any {
+	white := rgba(255, 255, 255)
+	return []any{
+		roundedRectGroup("plane fuselage", 0, -4, 212, 54, 27, white, alpha(def.Dark, 220), 7),
+		ellipseGroup("plane nose", 106, -4, 54, 54, white, alpha(def.Dark, 180), 5),
+		roundedRectGroup("plane wing", -22, 38, 118, 34, 17, alpha(def.Accent, 255), alpha(def.Dark, 190), 6),
+		roundedRectGroup("plane tail", -98, -42, 58, 42, 14, alpha(def.Accent, 235), alpha(def.Dark, 180), 5),
+		ellipseGroup("plane window one", -46, -10, 18, 18, alpha(def.Dark, 190), color.RGBA{}, 0),
+		ellipseGroup("plane window two", -12, -10, 18, 18, alpha(def.Dark, 190), color.RGBA{}, 0),
+		ellipseGroup("plane window three", 22, -10, 18, 18, alpha(def.Dark, 190), color.RGBA{}, 0),
+	}
+}
+
+func coffeeVectorGroups(def stickerDefinition) []any {
+	white := rgba(255, 255, 255)
+	return []any{
+		roundedRectGroup("coffee saucer", -10, 82, 160, 26, 13, alpha(def.Dark, 88), color.RGBA{}, 0),
+		roundedRectGroup("coffee cup", -18, 28, 142, 94, 26, white, alpha(def.Dark, 210), 8),
+		ellipseGroup("coffee handle", 76, 26, 62, 62, color.RGBA{}, alpha(def.Dark, 205), 9),
+		roundedRectGroup("coffee surface", -18, -6, 112, 24, 12, alpha(def.Accent, 225), color.RGBA{}, 0),
+		roundedRectGroup("steam one", -60, -70, 18, 72, 9, alpha(def.Dark, 120), color.RGBA{}, 0),
+		roundedRectGroup("steam two", -14, -84, 18, 88, 9, alpha(def.Accent, 185), color.RGBA{}, 0),
+		roundedRectGroup("steam three", 32, -70, 18, 72, 9, alpha(def.Dark, 120), color.RGBA{}, 0),
+	}
+}
+
+func winterVectorGroups(def stickerDefinition) []any {
+	white := rgba(255, 255, 255)
+	return []any{
+		ellipseGroup("snow globe", 0, -20, 168, 168, alpha(white, 226), alpha(def.Dark, 190), 8),
+		roundedRectGroup("snow hill", -20, 32, 128, 34, 17, alpha(def.Accent, 190), color.RGBA{}, 0),
+		roundedRectGroup("pine trunk", 28, 28, 18, 70, 9, alpha(def.Dark, 150), color.RGBA{}, 0),
+		ellipseGroup("pine crown top", 28, -12, 54, 54, alpha(def.Accent, 220), alpha(def.Dark, 120), 4),
+		ellipseGroup("pine crown bottom", 28, 18, 78, 62, alpha(def.Accent, 200), color.RGBA{}, 0),
+		ellipseGroup("falling snow", -52, -58, 16, 16, white, color.RGBA{}, 0),
+		ellipseGroup("falling snow two", 48, -54, 13, 13, white, color.RGBA{}, 0),
+		ellipseGroup("falling snow three", -8, -76, 12, 12, white, color.RGBA{}, 0),
+		roundedRectGroup("snow base", 0, 88, 170, 44, 18, white, alpha(def.Dark, 180), 7),
+	}
+}
+
+func passportVectorGroups(def stickerDefinition) []any {
+	return []any{
+		roundedRectGroup("passport cover", 0, 0, 140, 178, 18, alpha(def.Accent, 255), alpha(def.Dark, 220), 8),
+		ellipseGroup("passport globe", 0, -22, 64, 64, color.RGBA{}, alpha(rgba(255, 255, 255), 210), 7),
+		roundedRectGroup("passport title line", 0, 48, 78, 12, 6, alpha(rgba(255, 255, 255), 200), color.RGBA{}, 0),
+		roundedRectGroup("passport code line", 0, 74, 96, 10, 5, alpha(def.Dark, 120), color.RGBA{}, 0),
+	}
+}
+
+func mapPinVectorGroups(def stickerDefinition) []any {
+	white := rgba(255, 255, 255)
+	return []any{
+		roundedRectGroup("folded map left", -54, 16, 94, 148, 18, alpha(white, 235), alpha(def.Dark, 160), 6),
+		roundedRectGroup("folded map right", 46, 4, 94, 148, 18, alpha(def.Accent, 230), alpha(def.Dark, 150), 6),
+		roundedRectGroup("map route", -16, 14, 124, 16, 8, alpha(def.Dark, 140), color.RGBA{}, 0),
+		ellipseGroup("map pin head", 48, -46, 70, 70, alpha(rgba(238, 85, 85), 245), alpha(def.Dark, 175), 6),
+		ellipseGroup("map pin center", 48, -46, 24, 24, white, color.RGBA{}, 0),
+		roundedRectGroup("map pin stem", 48, 0, 28, 70, 14, alpha(rgba(238, 85, 85), 235), color.RGBA{}, 0),
+	}
+}
+
+func cameraVectorGroups(def stickerDefinition) []any {
+	white := rgba(255, 255, 255)
+	return []any{
+		roundedRectGroup("camera body", 0, 12, 178, 118, 26, white, alpha(def.Dark, 210), 8),
+		roundedRectGroup("camera top", -42, -62, 78, 34, 14, alpha(def.Accent, 245), alpha(def.Dark, 160), 5),
+		ellipseGroup("camera lens outer", 20, 12, 76, 76, alpha(def.Accent, 245), alpha(def.Dark, 210), 7),
+		ellipseGroup("camera lens inner", 20, 12, 34, 34, alpha(def.Dark, 190), color.RGBA{}, 0),
+		ellipseGroup("camera flash", -62, -4, 22, 22, alpha(def.Accent, 190), color.RGBA{}, 0),
+	}
+}
+
+func globeVectorGroups(def stickerDefinition) []any {
+	white := rgba(255, 255, 255)
+	return []any{
+		ellipseGroup("travel globe", 0, -20, 150, 150, alpha(white, 235), alpha(def.Dark, 200), 8),
+		roundedRectGroup("globe equator", 0, -20, 134, 18, 9, alpha(def.Accent, 210), color.RGBA{}, 0),
+		roundedRectGroup("globe meridian", 0, -20, 18, 136, 9, alpha(def.Accent, 150), color.RGBA{}, 0),
+		roundedRectGroup("globe stand stem", 0, 70, 18, 54, 9, alpha(def.Dark, 150), color.RGBA{}, 0),
+		roundedRectGroup("globe stand foot", 0, 104, 120, 24, 12, alpha(def.Dark, 120), color.RGBA{}, 0),
+	}
+}
+
+func foodVectorGroups(def stickerDefinition) []any {
+	white := rgba(255, 255, 255)
+	return []any{
+		roundedRectGroup("food bowl", 0, 38, 168, 78, 30, white, alpha(def.Dark, 195), 8),
+		roundedRectGroup("food broth", 0, 14, 132, 22, 11, alpha(def.Accent, 230), color.RGBA{}, 0),
+		roundedRectGroup("food chopstick one", -30, -58, 16, 112, 8, alpha(def.Dark, 130), color.RGBA{}, 0),
+		roundedRectGroup("food chopstick two", 30, -58, 16, 112, 8, alpha(def.Dark, 130), color.RGBA{}, 0),
+		ellipseGroup("food garnish", 52, 2, 24, 24, alpha(def.Accent, 220), color.RGBA{}, 0),
+	}
+}
+
+func weatherVectorGroups(def stickerDefinition) []any {
+	white := rgba(255, 255, 255)
+	return []any{
+		ellipseGroup("weather sun", -58, -42, 82, 82, rgba(255, 218, 88), alpha(def.Dark, 150), 6),
+		ellipseGroup("weather cloud left", -18, 20, 96, 78, alpha(white, 245), alpha(def.Dark, 110), 4),
+		ellipseGroup("weather cloud right", 50, 22, 114, 76, alpha(white, 245), alpha(def.Dark, 110), 4),
+		roundedRectGroup("weather cloud base", 20, 48, 170, 48, 24, white, color.RGBA{}, 0),
+		roundedRectGroup("weather rain one", -38, 96, 16, 48, 8, alpha(def.Accent, 190), color.RGBA{}, 0),
+		roundedRectGroup("weather rain two", 30, 96, 16, 48, 8, alpha(def.Accent, 190), color.RGBA{}, 0),
+	}
+}
+
+func beachVectorGroups(def stickerDefinition) []any {
+	return []any{
+		ellipseGroup("beach sun", -72, -60, 74, 74, rgba(255, 218, 88), alpha(def.Dark, 145), 5),
+		roundedRectGroup("beach water", 10, 42, 176, 38, 19, alpha(def.Accent, 220), color.RGBA{}, 0),
+		roundedRectGroup("beach sand", 0, 82, 190, 34, 17, alpha(rgba(255, 230, 160), 245), alpha(def.Dark, 80), 4),
+		roundedRectGroup("palm trunk", 42, -8, 20, 116, 10, alpha(def.Dark, 145), color.RGBA{}, 0),
+		ellipseGroup("palm leaf left", 2, -70, 88, 42, alpha(def.Accent, 230), color.RGBA{}, 0),
+		ellipseGroup("palm leaf right", 82, -72, 92, 42, alpha(def.Accent, 220), color.RGBA{}, 0),
+	}
+}
+
+func mountainVectorGroups(def stickerDefinition) []any {
+	white := rgba(255, 255, 255)
+	return []any{
+		roundedRectGroup("mountain back", 44, 20, 130, 130, 20, alpha(def.Accent, 190), alpha(def.Dark, 130), 5),
+		roundedRectGroup("mountain front", -34, 36, 156, 134, 22, alpha(def.Accent, 245), alpha(def.Dark, 170), 6),
+		ellipseGroup("mountain snow cap", -54, -18, 56, 38, white, color.RGBA{}, 0),
+		roundedRectGroup("mountain trail", 4, 74, 86, 16, 8, alpha(white, 190), color.RGBA{}, 0),
+	}
+}
+
+func tentVectorGroups(def stickerDefinition) []any {
+	white := rgba(255, 255, 255)
+	return []any{
+		roundedRectGroup("tent canvas", 0, 26, 178, 126, 18, alpha(def.Accent, 245), alpha(def.Dark, 190), 7),
+		roundedRectGroup("tent doorway", 30, 52, 60, 82, 16, alpha(def.Dark, 125), color.RGBA{}, 0),
+		roundedRectGroup("tent flap", -34, 52, 62, 82, 16, alpha(white, 170), color.RGBA{}, 0),
+		roundedRectGroup("camp ground", 0, 102, 202, 24, 12, alpha(def.Dark, 95), color.RGBA{}, 0),
+	}
+}
+
+func emotionVectorGroups(def stickerDefinition) []any {
+	white := rgba(255, 255, 255)
+	return []any{
+		ellipseGroup("emotion face", 0, -8, 154, 154, alpha(white, 240), alpha(def.Dark, 185), 8),
+		ellipseGroup("emotion eye left", -34, -30, 22, 22, alpha(def.Dark, 210), color.RGBA{}, 0),
+		ellipseGroup("emotion eye right", 34, -30, 22, 22, alpha(def.Dark, 210), color.RGBA{}, 0),
+		roundedRectGroup("emotion smile", 0, 36, 82, 18, 9, alpha(def.Accent, 230), color.RGBA{}, 0),
+		ellipseGroup("emotion blush left", -56, 12, 30, 18, alpha(def.Accent, 120), color.RGBA{}, 0),
+		ellipseGroup("emotion blush right", 56, 12, 30, 18, alpha(def.Accent, 120), color.RGBA{}, 0),
+	}
+}
+
+func transportVectorGroups(def stickerDefinition) []any {
+	white := rgba(255, 255, 255)
+	return []any{
+		roundedRectGroup("transport cabin", 0, 0, 180, 92, 24, alpha(def.Accent, 245), alpha(def.Dark, 190), 7),
+		roundedRectGroup("transport window left", -48, -18, 48, 34, 10, white, color.RGBA{}, 0),
+		roundedRectGroup("transport window right", 24, -18, 64, 34, 10, white, color.RGBA{}, 0),
+		ellipseGroup("transport wheel left", -58, 58, 42, 42, alpha(def.Dark, 200), color.RGBA{}, 0),
+		ellipseGroup("transport wheel right", 58, 58, 42, 42, alpha(def.Dark, 200), color.RGBA{}, 0),
+		roundedRectGroup("transport road", 0, 102, 204, 20, 10, alpha(def.Dark, 88), color.RGBA{}, 0),
+	}
+}
+
+func ticketVectorGroups(def stickerDefinition) []any {
+	white := rgba(255, 255, 255)
+	return []any{
+		roundedRectGroup("ticket card", 0, 0, 186, 122, 20, white, alpha(def.Dark, 190), 8),
+		ellipseGroup("ticket notch left", -94, 0, 34, 34, alpha(def.Accent, 235), color.RGBA{}, 0),
+		ellipseGroup("ticket notch right", 94, 0, 34, 34, alpha(def.Accent, 235), color.RGBA{}, 0),
+		roundedRectGroup("ticket title", -18, -28, 94, 14, 7, alpha(def.Dark, 135), color.RGBA{}, 0),
+		roundedRectGroup("ticket barcode one", -42, 30, 12, 46, 6, alpha(def.Accent, 210), color.RGBA{}, 0),
+		roundedRectGroup("ticket barcode two", -8, 30, 12, 46, 6, alpha(def.Accent, 160), color.RGBA{}, 0),
+		roundedRectGroup("ticket barcode three", 28, 30, 12, 46, 6, alpha(def.Accent, 210), color.RGBA{}, 0),
+	}
+}
+
+func guideVectorGroups(def stickerDefinition) []any {
+	white := rgba(255, 255, 255)
+	return []any{
+		roundedRectGroup("guide flag pole", -56, 18, 20, 144, 10, alpha(def.Dark, 180), color.RGBA{}, 0),
+		roundedRectGroup("guide flag cloth", 16, -48, 132, 78, 17, alpha(def.Accent, 245), alpha(def.Dark, 160), 6),
+		ellipseGroup("guide avatar", -38, 42, 72, 72, white, alpha(def.Dark, 180), 6),
+		roundedRectGroup("guide smile", -38, 62, 44, 10, 5, alpha(def.Accent, 220), color.RGBA{}, 0),
+		ellipseGroup("guide marker", 58, 52, 42, 42, alpha(def.Accent, 235), color.RGBA{}, 0),
+	}
+}
+
+func safetyVectorGroups(def stickerDefinition) []any {
+	white := rgba(255, 255, 255)
+	return []any{
+		roundedRectGroup("shield body top", 0, -26, 150, 102, 40, white, alpha(def.Dark, 190), 8),
+		roundedRectGroup("shield body lower", 0, 48, 112, 98, 28, white, alpha(def.Dark, 165), 6),
+		roundedRectGroup("shield check short", -26, 22, 62, 18, 9, alpha(def.Accent, 245), color.RGBA{}, 0),
+		roundedRectGroup("shield check long", 36, 2, 96, 18, 9, alpha(def.Accent, 245), color.RGBA{}, 0),
+	}
+}
+
+func celebrationVectorGroups(def stickerDefinition) []any {
+	white := rgba(255, 255, 255)
+	return []any{
+		roundedRectGroup("party popper", -18, 34, 96, 112, 20, alpha(def.Accent, 245), alpha(def.Dark, 180), 7),
+		ellipseGroup("party burst center", 34, -54, 58, 58, white, alpha(def.Dark, 130), 5),
+		ellipseGroup("confetti dot one", -86, -58, 28, 28, colorForIndex(1), color.RGBA{}, 0),
+		ellipseGroup("confetti dot two", 94, -26, 30, 30, colorForIndex(2), color.RGBA{}, 0),
+		roundedRectGroup("confetti ribbon", 10, -98, 88, 16, 8, colorForIndex(3), color.RGBA{}, 0),
+	}
+}
+
+func accentVectorGroups(def stickerDefinition) []any {
+	variant := stickerVariant(def.Key)
+	xShift := float64((variant%7)-3) * 6
+	yShift := float64(((variant/7)%7)-3) * 5
+	return []any{
+		ellipseGroup("dot one", -184+xShift, -148-yShift, 34, 34, alpha(def.Accent, 190), color.RGBA{}, 0),
+		ellipseGroup("dot two", 184-xShift, -128+yShift, 28, 28, alpha(def.Dark, 122), color.RGBA{}, 0),
+		ellipseGroup("dot three", 162+xShift/2, 146-yShift, 30, 30, alpha(def.Accent, 165), color.RGBA{}, 0),
+		roundedRectGroup("dash one", -172-xShift, 140+yShift, 86, 18, 9, alpha(def.Dark, 96), color.RGBA{}, 0),
+		roundedRectGroup("dash two", 144+xShift, -182-yShift, 76, 16, 8, alpha(def.Accent, 136), color.RGBA{}, 0),
+	}
+}
+
+func signatureVectorGroups(def stickerDefinition, variant int) []any {
+	white := rgba(255, 255, 255)
+	switch variant % 8 {
+	case 0:
+		return []any{
+			ellipseGroup("signature pulse", 76, -58, 42, 42, alpha(white, 170), alpha(def.Dark, 130), 5),
+			ellipseGroup("signature core", 76, -58, 18, 18, alpha(def.Dark, 190), color.RGBA{}, 0),
+		}
+	case 1:
+		return []any{
+			roundedRectGroup("signature tag", 72, 58, 78, 34, 15, alpha(white, 178), alpha(def.Dark, 120), 5),
+			roundedRectGroup("signature tag line", 72, 58, 38, 8, 4, alpha(def.Accent, 180), color.RGBA{}, 0),
+		}
+	case 2:
+		return []any{
+			roundedRectGroup("signature pin stem", -82, 56, 18, 68, 9, alpha(white, 180), color.RGBA{}, 0),
+			ellipseGroup("signature pin cap", -82, 20, 42, 42, alpha(white, 190), alpha(def.Dark, 125), 5),
+		}
+	case 3:
+		return []any{
+			ellipseGroup("signature orbit a", -78, -58, 24, 24, alpha(white, 172), color.RGBA{}, 0),
+			ellipseGroup("signature orbit b", 88, 48, 30, 30, alpha(def.Dark, 105), color.RGBA{}, 0),
+			roundedRectGroup("signature orbit dash", 4, -72, 72, 12, 6, alpha(white, 132), color.RGBA{}, 0),
+		}
+	case 4:
+		return []any{
+			roundedRectGroup("signature scan top", 0, -74, 116, 12, 6, alpha(white, 150), color.RGBA{}, 0),
+			roundedRectGroup("signature scan bottom", 0, 76, 96, 12, 6, alpha(def.Dark, 112), color.RGBA{}, 0),
+		}
+	case 5:
+		return []any{
+			ellipseGroup("signature sparkle one", -88, -52, 22, 22, alpha(white, 180), color.RGBA{}, 0),
+			ellipseGroup("signature sparkle two", 78, -32, 16, 16, alpha(white, 150), color.RGBA{}, 0),
+			ellipseGroup("signature sparkle three", 44, 72, 20, 20, alpha(def.Dark, 118), color.RGBA{}, 0),
+		}
+	case 6:
+		return []any{
+			roundedRectGroup("signature card", -78, 56, 82, 46, 12, alpha(white, 175), alpha(def.Dark, 120), 5),
+			ellipseGroup("signature card dot", -108, 56, 18, 18, alpha(def.Accent, 200), color.RGBA{}, 0),
+		}
+	default:
+		return []any{
+			ellipseGroup("signature marker outer", 84, 56, 50, 50, alpha(white, 178), alpha(def.Dark, 120), 5),
+			ellipseGroup("signature marker inner", 84, 56, 20, 20, alpha(def.Accent, 210), color.RGBA{}, 0),
+		}
+	}
+}
+
+func ellipseGroup(name string, x, y, w, h float64, fill color.RGBA, stroke color.RGBA, strokeWidth float64, fillAlpha ...float64) any {
+	items := []any{
+		orderedObject(
+			field("ty", "el"),
+			field("nm", name+" path"),
+			field("p", staticValue([]float64{x, y})),
+			field("s", staticValue([]float64{w, h})),
+			field("hd", false),
+		),
+	}
+	if fill.A > 0 {
+		opacity := float64(fill.A) / 255 * 100
+		if len(fillAlpha) > 0 {
+			opacity = fillAlpha[0]
+		}
+		items = append(items, fillValue(name+" fill", fill, opacity))
+	}
+	if stroke.A > 0 && strokeWidth > 0 {
+		items = append(items, strokeValue(name+" stroke", stroke, strokeWidth))
+	}
+	items = append(items, shapeTransform())
+	return groupValue(name, items)
+}
+
+func roundedRectGroup(name string, x, y, w, h, radius float64, fill color.RGBA, stroke color.RGBA, strokeWidth float64) any {
+	items := []any{
+		orderedObject(
+			field("ty", "rc"),
+			field("nm", name+" path"),
+			field("p", staticValue([]float64{x, y})),
+			field("s", staticValue([]float64{w, h})),
+			field("r", staticValue(radius)),
+			field("hd", false),
+		),
+	}
+	if fill.A > 0 {
+		items = append(items, fillValue(name+" fill", fill, float64(fill.A)/255*100))
+	}
+	if stroke.A > 0 && strokeWidth > 0 {
+		items = append(items, strokeValue(name+" stroke", stroke, strokeWidth))
+	}
+	items = append(items, shapeTransform())
+	return groupValue(name, items)
+}
+
+func groupValue(name string, items []any) orderedJSONObject {
+	return orderedObject(
+		field("ty", "gr"),
+		field("nm", name),
+		field("it", items),
+		field("hd", false),
+	)
+}
+
+func fillValue(name string, c color.RGBA, opacity float64) any {
+	return orderedObject(
+		field("ty", "fl"),
+		field("nm", name),
+		field("c", staticValue(lottieColor(c))),
+		field("o", staticValue(opacity)),
+		field("r", 1),
+		field("bm", 0),
+		field("hd", false),
+	)
+}
+
+func strokeValue(name string, c color.RGBA, width float64) any {
+	return orderedObject(
+		field("ty", "st"),
+		field("nm", name),
+		field("c", staticValue(lottieColor(c))),
+		field("o", staticValue(float64(c.A)/255*100)),
+		field("w", staticValue(width)),
+		field("lc", 2),
+		field("lj", 2),
+		field("ml", 4),
+		field("bm", 0),
+		field("hd", false),
+	)
+}
+
+func shapeTransform() any {
+	return orderedObject(
+		field("ty", "tr"),
+		field("p", staticValue([]float64{0, 0})),
+		field("a", staticValue([]float64{0, 0})),
+		field("s", staticValue([]float64{100, 100})),
+		field("r", staticValue(0)),
+		field("o", staticValue(100)),
+		field("sk", staticValue(0)),
+		field("sa", staticValue(0)),
+	)
+}
+
+func staticTransform(x, y float64) map[string]any {
+	return map[string]any{
+		"o": staticValue(100),
+		"r": staticValue(0),
+		"p": staticValue([]float64{x, y, 0}),
+		"a": staticValue([]float64{0, 0, 0}),
+		"s": staticValue([]float64{100, 100, 100}),
+	}
+}
+
+func animatedStickerTransform(def stickerDefinition, frames int) map[string]any {
+	variant := stickerVariant(def.Key)
+	dx, dy := sceneMotion(def, variant%stickerFrameCount)
+	rotation := 3 + float64(variant%8)
+	startScale := 96 + float64(variant%3)
+	peakScale := 103 + float64((variant/3)%5)
+	return map[string]any{
+		"o": staticValue(100),
+		"r": animatedValue(-rotation, rotation, frames),
+		"p": animatedValue(
+			[]float64{256 - float64(dx)/2, 256 - float64(dy)/2, 0},
+			[]float64{256 + float64(dx), 256 + float64(dy), 0},
+			frames,
+		),
+		"a": staticValue([]float64{0, 0, 0}),
+		"s": animatedValue([]float64{startScale, startScale, 100}, []float64{peakScale, peakScale, 100}, frames),
+	}
+}
+
+func animatedScaleTransform(x, y, start, peak float64, frames int) map[string]any {
+	return map[string]any{
+		"o": animatedValue(58, 86, frames),
+		"r": staticValue(0),
+		"p": staticValue([]float64{x, y, 0}),
+		"a": staticValue([]float64{0, 0, 0}),
+		"s": animatedValue([]float64{start, start, 100}, []float64{peak, peak, 100}, frames),
+	}
+}
+
+func animatedReverseScaleTransform(x, y, start, peak float64, frames int) map[string]any {
+	return map[string]any{
+		"o": animatedValue(82, 44, frames),
+		"r": animatedValue(-12, 12, frames),
+		"p": staticValue([]float64{x, y, 0}),
+		"a": staticValue([]float64{0, 0, 0}),
+		"s": animatedValue([]float64{peak, peak, 100}, []float64{start, start, 100}, frames),
+	}
+}
+
+func staticValue(value any) map[string]any {
+	return map[string]any{"a": 0, "k": value}
+}
+
+func animatedValue(start, end any, frames int) map[string]any {
+	half := frames / 2
+	if half <= 0 {
+		half = 1
+	}
+	startValue := keyframeValue(start)
+	endValue := keyframeValue(end)
+	return map[string]any{
+		"a": 1,
+		"k": []any{
+			map[string]any{
+				"t": 0,
+				"s": startValue,
+				"e": endValue,
+				"i": smoothEaseIn(),
+				"o": smoothEaseOut(),
+			},
+			map[string]any{
+				"t": half,
+				"s": endValue,
+				"e": startValue,
+				"i": smoothEaseIn(),
+				"o": smoothEaseOut(),
+			},
+			map[string]any{
+				"t": frames,
+				"s": startValue,
+			},
+		},
+	}
+}
+
+func keyframeValue(value any) any {
+	switch v := value.(type) {
+	case int:
+		return []float64{float64(v)}
+	case float64:
+		return []float64{v}
+	default:
+		return value
+	}
+}
+
+func smoothEaseIn() map[string]any {
+	return map[string]any{
+		"x": []float64{0.42},
+		"y": []float64{0},
+	}
+}
+
+func smoothEaseOut() map[string]any {
+	return map[string]any{
+		"x": []float64{0.58},
+		"y": []float64{1},
+	}
+}
+
+func lottieColor(c color.RGBA) []float64 {
+	return []float64{
+		float64(c.R) / 255,
+		float64(c.G) / 255,
+		float64(c.B) / 255,
+		float64(c.A) / 255,
+	}
 }
 
 func renderStickerFrame(def stickerDefinition, frame int) *image.RGBA {

@@ -14,6 +14,11 @@ type UploadPolicy struct {
 
 type UploadPolicies map[enum.FilePurpose]UploadPolicy
 
+const (
+	telegramTGSContentType = "application/x-tgsticker"
+	maxTelegramTGSBytes    = 64 * 1024
+)
+
 func DefaultUploadPolicies(globalMaxSize int64) UploadPolicies {
 	return UploadPolicies{
 		enum.FilePurposeAvatar: {
@@ -97,9 +102,10 @@ func DefaultUploadPolicies(globalMaxSize int64) UploadPolicies {
 		enum.FilePurposeChatSticker: {
 			MaxSizeBytes: 5 * 1024 * 1024,
 			AllowedExtensions: setOf(
-				"gif", "jpg", "jpeg", "png", "webp",
+				"tgs", "gif", "jpg", "jpeg", "png", "webp",
 			),
 			AllowedContentTypes: setOf(
+				telegramTGSContentType,
 				"image/gif", "image/jpeg", "image/png", "image/webp",
 			),
 		},

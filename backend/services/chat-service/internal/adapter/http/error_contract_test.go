@@ -43,6 +43,14 @@ func TestWriteAppErrorLocalizesBusinessErrors(t *testing.T) {
 			wantCode:    "access_denied",
 			wantMessage: "Доступ запрещен",
 		},
+		{
+			name:        "english trust policy rejection",
+			err:         app.ErrTrustPolicyRejected,
+			acceptLang:  "en",
+			wantStatus:  http.StatusForbidden,
+			wantCode:    "trust_policy_rejected",
+			wantMessage: "Message sending is restricted by trust policy",
+		},
 	}
 
 	for _, tt := range tests {

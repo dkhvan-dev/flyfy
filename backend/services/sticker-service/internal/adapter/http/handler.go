@@ -614,6 +614,8 @@ func writeAppError(w http.ResponseWriter, err error) {
 		errors.Is(err, app.ErrStickerNotFound),
 		errors.Is(err, app.ErrUploadSessionNotFound):
 		writeError(w, http.StatusNotFound, err.Error())
+	case errors.Is(err, app.ErrCustomStickersDisabled):
+		writeError(w, http.StatusGone, err.Error())
 	case errors.Is(err, app.ErrPackNotAccessible),
 		errors.Is(err, app.ErrStickerNotAccessible),
 		errors.Is(err, app.ErrStickerBlocked),
@@ -664,6 +666,8 @@ func localizedBusinessError(status int) (string, string) {
 		return "Данные не найдены", "Запрошенные данные не найдены."
 	case http.StatusConflict:
 		return "Конфликт данных", "Данные уже изменились или действие недоступно в текущем состоянии."
+	case http.StatusGone:
+		return "Действие недоступно", "Эта возможность больше не поддерживается."
 	case http.StatusTooManyRequests:
 		return "Слишком много запросов", "Попробуйте повторить запрос чуть позже."
 	default:
