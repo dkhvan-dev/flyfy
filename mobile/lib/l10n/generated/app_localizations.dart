@@ -9458,6 +9458,72 @@ abstract class AppLocalizations {
   /// **'No conversations yet'**
   String get chatListEmpty;
 
+  /// No description provided for @chatListPersonalTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal'**
+  String get chatListPersonalTab;
+
+  /// No description provided for @chatListActivitiesTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Activities'**
+  String get chatListActivitiesTab;
+
+  /// No description provided for @chatListExcursionsTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Tours'**
+  String get chatListExcursionsTab;
+
+  /// No description provided for @chatListSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search chats'**
+  String get chatListSearchHint;
+
+  /// No description provided for @chatListSearchEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No chats found'**
+  String get chatListSearchEmpty;
+
+  /// No description provided for @chatMuteNotificationsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute notifications'**
+  String get chatMuteNotificationsAction;
+
+  /// No description provided for @chatUnmuteNotificationsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmute notifications'**
+  String get chatUnmuteNotificationsAction;
+
+  /// No description provided for @chatMuteUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update chat notifications'**
+  String get chatMuteUpdateFailed;
+
+  /// No description provided for @chatBlockUserAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Block'**
+  String get chatBlockUserAction;
+
+  /// No description provided for @chatUnblockUserAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblock'**
+  String get chatUnblockUserAction;
+
+  /// No description provided for @chatUserBlockUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update user block status'**
+  String get chatUserBlockUpdateFailed;
+
   /// No description provided for @chatFallbackTitle.
   ///
   /// In en, this message translates to:

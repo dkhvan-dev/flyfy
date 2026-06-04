@@ -25,6 +25,8 @@ type Conversation struct {
 	ParticipantCount int
 	LastMessage      *Message
 	MutedUntil       *time.Time
+	IsBlockedByMe    bool
+	HasBlockedMe     bool
 }
 
 func (c *Conversation) IsMessagingClosed(now time.Time) bool {

@@ -113,6 +113,10 @@ type ChatRepository interface {
 	GetLastMessage(ctx context.Context, conversationID uuid.UUID) (*model.Message, error)
 	GetMessageFileIDs(ctx context.Context, messageID uuid.UUID) ([]string, error)
 	ListPinnedMessagesByConversationID(ctx context.Context, conversationID uuid.UUID) ([]*model.ConversationPin, error)
+	IsUserBlocked(ctx context.Context, blockerUserID, blockedUserID uuid.UUID) (bool, error)
+	ListUserIDsBlockingUser(ctx context.Context, blockedUserID uuid.UUID, candidateBlockerUserIDs []uuid.UUID) (map[uuid.UUID]bool, error)
+	UpsertUserBlock(ctx context.Context, block *model.UserBlock) error
+	DeleteUserBlock(ctx context.Context, blockerUserID, blockedUserID uuid.UUID) error
 	ListFlaggedMessagesForModeration(ctx context.Context, filter ChatModerationFilter) ([]*model.ChatMessageModerationItem, error)
 	GetMessageForModeration(ctx context.Context, messageID uuid.UUID, before int, after int) (*model.ChatMessageModerationItem, error)
 	UpdateMessageModeration(ctx context.Context, messageID uuid.UUID, status string, reasonCodes []string, publicComment string, internalComment string, moderatedBy uuid.UUID, now time.Time) (*model.Message, error)

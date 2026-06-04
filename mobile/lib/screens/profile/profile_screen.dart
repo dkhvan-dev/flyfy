@@ -18,6 +18,7 @@ import '../../core/reference/currency_filter_utils.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
+import '../../features/chat/models/user_block_status_vm.dart';
 import '../../features/excursions/models/excursion_booking_vm.dart';
 import '../../features/profile/data/guide_api.dart';
 import '../../features/profile/data/profile_api.dart';
@@ -62,6 +63,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<int>? _publishedStoriesCountFuture;
   Future<ExcursionReviewsPage>? _guideReviewsFuture;
   Future<GuideReviewsPage>? _directGuideReviewsFuture;
+  Future<UserBlockStatusVm>? _blockStatusFuture;
   String _extrasKey = '';
   String _activityCountKey = '';
   String _foreignRecentActivitiesKey = '';
@@ -69,13 +71,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _publishedStoriesCountKey = '';
   String _guideReviewsKey = '';
   String _directGuideReviewsKey = '';
+  String _blockStatusKey = '';
   String _relationshipOverrideUserId = '';
+  String _blockStatusOverrideUserId = '';
   int? _followersCountOverride;
   bool? _isFollowedByMeOverride;
+  bool? _isBlockedByMeOverride;
   UserFriendshipStatus? _friendshipStatusOverride;
   bool _isFollowActionLoading = false;
   bool _isFriendshipActionLoading = false;
   bool _isMessageActionLoading = false;
+  bool _isBlockActionLoading = false;
 
   @override
   void initState() {
@@ -107,16 +113,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _guideReviewsKey = '';
     _directGuideReviewsFuture = null;
     _directGuideReviewsKey = '';
+    _blockStatusFuture = null;
+    _blockStatusKey = '';
   }
 
   void _configureForeignProfileFuture() {
     _relationshipOverrideUserId = '';
+    _blockStatusOverrideUserId = '';
     _followersCountOverride = null;
     _isFollowedByMeOverride = null;
+    _isBlockedByMeOverride = null;
     _friendshipStatusOverride = null;
     _isFollowActionLoading = false;
     _isFriendshipActionLoading = false;
     _isMessageActionLoading = false;
+    _isBlockActionLoading = false;
     _clearProfileDataFutures();
 
     final userId = widget.userId?.trim() ?? '';
@@ -403,6 +414,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _toggleBlockUser(
+    UserProfileVm profile,
+    bool isBlockedByMe,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final userId = profile.userId.trim();
+    if (userId.isEmpty || _isBlockActionLoading) {
+      return;
+    }
+
+    setState(() {
+      _blockStatusOverrideUserId = userId;
+      _isBlockedByMeOverride = !isBlockedByMe;
+      _isBlockActionLoading = true;
+    });
+
+    try {
+      final status = isBlockedByMe
+          ? await _chatApi.unblockUser(userId)
+          : await _chatApi.blockUser(userId);
+      if (!mounted) return;
+      setState(() {
+        _blockStatusOverrideUserId = userId;
+        _isBlockedByMeOverride = status.isBlockedByMe;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _blockStatusOverrideUserId = userId;
+        _isBlockedByMeOverride = isBlockedByMe;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.chatUserBlockUpdateFailed)));
+    } finally {
+      if (mounted) {
+        setState(() => _isBlockActionLoading = false);
+      }
+    }
+  }
+
   Future<_ProfileExtras> _loadExtras(UserProfileVm profile, String lang) async {
     Future<GuideProfileVm?> loadGuide() async {
       try {
@@ -431,6 +483,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       avatarUrl: results[1] as String?,
       referenceLabels: results[2] as _ProfileReferenceLabels,
     );
+  }
+
+  Future<UserBlockStatusVm> _blockStatusFutureFor(UserProfileVm profile) {
+    final key = profile.userId.trim();
+    if (_blockStatusFuture == null || _blockStatusKey != key) {
+      _blockStatusKey = key;
+      _blockStatusFuture = _chatApi.getUserBlockStatus(key);
+    }
+    return _blockStatusFuture!;
   }
 
   Future<_ProfileReferenceLabels> _resolveProfileReferenceLabels(
@@ -698,6 +759,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               !isOwnProfile && extras.guide?.isVerified == true
               ? _directGuideReviewsFutureFor(effectiveProfile)
               : null,
+          blockStatusFuture: isOwnProfile
+              ? null
+              : _blockStatusFutureFor(effectiveProfile),
           recentActivitiesFuture: isOwnProfile
               ? null
               : _recentActivitiesFutureFor(effectiveProfile),
@@ -712,6 +776,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           isFollowActionLoading: _isFollowActionLoading,
           isFriendshipActionLoading: _isFriendshipActionLoading,
           isMessageActionLoading: _isMessageActionLoading,
+          isBlockActionLoading: _isBlockActionLoading,
+          isBlockedByMeOverride:
+              _blockStatusOverrideUserId == effectiveProfile.userId.trim()
+              ? _isBlockedByMeOverride
+              : null,
           onToggleFollow: isOwnProfile
               ? null
               : () => _toggleFollow(effectiveProfile),
@@ -724,6 +793,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           onMessageTap: isOwnProfile
               ? null
               : () => _openDirectChat(effectiveProfile),
+          onToggleBlock: isOwnProfile
+              ? null
+              : (isBlockedByMe) =>
+                    _toggleBlockUser(effectiveProfile, isBlockedByMe),
           onSettingsTap: isOwnProfile ? _openSettings : null,
           onEditProfile: isOwnProfile ? _openEditProfile : null,
           onCopyProfileLink: () => _copyProfileLink(effectiveProfile),
@@ -742,6 +815,7 @@ class _ProfileBody extends StatelessWidget {
     required this.referenceLabels,
     required this.guideReviewsFuture,
     required this.directGuideReviewsFuture,
+    required this.blockStatusFuture,
     required this.recentActivitiesFuture,
     required this.popularStoriesFuture,
     required this.activityCountFuture,
@@ -750,10 +824,13 @@ class _ProfileBody extends StatelessWidget {
     required this.isFollowActionLoading,
     required this.isFriendshipActionLoading,
     required this.isMessageActionLoading,
+    required this.isBlockActionLoading,
+    required this.isBlockedByMeOverride,
     required this.onToggleFollow,
     required this.onFriendshipAction,
     required this.onDeclineFriendship,
     required this.onMessageTap,
+    required this.onToggleBlock,
     required this.onSettingsTap,
     required this.onCopyProfileLink,
     required this.onEditProfile,
@@ -766,6 +843,7 @@ class _ProfileBody extends StatelessWidget {
   final _ProfileReferenceLabels referenceLabels;
   final Future<ExcursionReviewsPage>? guideReviewsFuture;
   final Future<GuideReviewsPage>? directGuideReviewsFuture;
+  final Future<UserBlockStatusVm>? blockStatusFuture;
   final Future<List<ActivityListItemVm>>? recentActivitiesFuture;
   final Future<List<StoryVm>>? popularStoriesFuture;
   final Future<int> activityCountFuture;
@@ -774,10 +852,13 @@ class _ProfileBody extends StatelessWidget {
   final bool isFollowActionLoading;
   final bool isFriendshipActionLoading;
   final bool isMessageActionLoading;
+  final bool isBlockActionLoading;
+  final bool? isBlockedByMeOverride;
   final Future<void> Function()? onToggleFollow;
   final Future<void> Function()? onFriendshipAction;
   final Future<void> Function()? onDeclineFriendship;
   final Future<void> Function()? onMessageTap;
+  final Future<void> Function(bool isBlockedByMe)? onToggleBlock;
   final VoidCallback? onSettingsTap;
   final VoidCallback onCopyProfileLink;
   final Future<void> Function()? onEditProfile;
@@ -800,12 +881,7 @@ class _ProfileBody extends StatelessWidget {
         profileScaled(context, 28, min: 20, max: 34),
       ),
       children: [
-        _ProfileTopBar(
-          isOwnProfile: isOwnProfile,
-          title: isOwnProfile ? l10n.myProfileTitle : profile.preferredName,
-          onLeadingTap: isOwnProfile ? onSettingsTap : () => context.pop(),
-          onShareTap: onCopyProfileLink,
-        ),
+        _buildProfileTopBar(context, l10n),
         SizedBox(height: profileScaled(context, 26, min: 18, max: 30)),
         if (isOwnProfile && !profile.isProfileCompleted)
           Padding(
@@ -877,6 +953,39 @@ class _ProfileBody extends StatelessWidget {
       ],
     );
   }
+
+  Widget _buildProfileTopBar(BuildContext context, AppLocalizations l10n) {
+    final title = isOwnProfile ? l10n.myProfileTitle : profile.preferredName;
+    final leadingTap = isOwnProfile ? onSettingsTap : () => context.pop();
+
+    if (isOwnProfile || blockStatusFuture == null) {
+      return _ProfileTopBar(
+        isOwnProfile: isOwnProfile,
+        title: title,
+        onLeadingTap: leadingTap,
+        onShareTap: onCopyProfileLink,
+      );
+    }
+
+    return FutureBuilder<UserBlockStatusVm>(
+      future: blockStatusFuture,
+      builder: (context, snapshot) {
+        final isBlockedByMe =
+            isBlockedByMeOverride ?? snapshot.data?.isBlockedByMe ?? false;
+        return _ProfileTopBar(
+          isOwnProfile: isOwnProfile,
+          title: title,
+          onLeadingTap: leadingTap,
+          onShareTap: onCopyProfileLink,
+          isBlockedByMe: isBlockedByMe,
+          isBlockActionLoading: isBlockActionLoading,
+          onToggleBlock: onToggleBlock == null
+              ? null
+              : () => onToggleBlock!(isBlockedByMe),
+        );
+      },
+    );
+  }
 }
 
 class _ProfileTopBar extends StatelessWidget {
@@ -885,12 +994,18 @@ class _ProfileTopBar extends StatelessWidget {
     required this.title,
     required this.onLeadingTap,
     required this.onShareTap,
+    this.isBlockedByMe = false,
+    this.isBlockActionLoading = false,
+    this.onToggleBlock,
   });
 
   final bool isOwnProfile;
   final String title;
   final VoidCallback? onLeadingTap;
   final VoidCallback onShareTap;
+  final bool isBlockedByMe;
+  final bool isBlockActionLoading;
+  final VoidCallback? onToggleBlock;
 
   @override
   Widget build(BuildContext context) {
@@ -919,11 +1034,67 @@ class _ProfileTopBar extends StatelessWidget {
             ),
           ),
         ),
-        ProfileTopIconButton(icon: Icons.ios_share_outlined, onTap: onShareTap),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ProfileTopIconButton(
+              icon: Icons.ios_share_outlined,
+              onTap: onShareTap,
+            ),
+            if (!isOwnProfile && onToggleBlock != null) ...[
+              SizedBox(width: profileScaled(context, 8, min: 6, max: 8)),
+              PopupMenuButton<_ProfileTopMenuAction>(
+                enabled: !isBlockActionLoading,
+                color: profileSurface,
+                elevation: 10,
+                onSelected: (_) => onToggleBlock?.call(),
+                itemBuilder: (context) {
+                  final l10n = AppLocalizations.of(context)!;
+                  return [
+                    PopupMenuItem(
+                      value: _ProfileTopMenuAction.toggleBlock,
+                      child: Row(
+                        children: [
+                          Icon(
+                            isBlockedByMe
+                                ? Icons.lock_open_rounded
+                                : Icons.block_rounded,
+                            color: isBlockedByMe
+                                ? AppColors.accent
+                                : AppColors.destruct,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            isBlockedByMe
+                                ? l10n.chatUnblockUserAction
+                                : l10n.chatBlockUserAction,
+                            style: TextStyle(
+                              color: isBlockedByMe
+                                  ? AppColors.textPrimary
+                                  : AppColors.destruct,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ];
+                },
+                child: ProfileTopIconButton(
+                  icon: Icons.more_vert_rounded,
+                  onTap: null,
+                  disabled: isBlockActionLoading,
+                ),
+              ),
+            ],
+          ],
+        ),
       ],
     );
   }
 }
+
+enum _ProfileTopMenuAction { toggleBlock }
 
 class _ProfileHero extends StatelessWidget {
   const _ProfileHero({

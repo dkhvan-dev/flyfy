@@ -50,6 +50,7 @@ var appHTTPErrorDefinitions = []appHTTPErrorDefinition{
 	{err: app.ErrMessageEditExpired, status: http.StatusBadRequest, code: "message_edit_expired"},
 	{err: app.ErrMessageAlreadyDeleted, status: http.StatusBadRequest, code: "message_already_deleted"},
 	{err: app.ErrInvalidModerationDecision, status: http.StatusBadRequest, code: "invalid_moderation_decision"},
+	{err: app.ErrCannotBlockSelf, status: http.StatusBadRequest, code: "cannot_block_self"},
 
 	{err: app.ErrConversationNotFound, status: http.StatusNotFound, code: "conversation_not_found"},
 	{err: app.ErrMessageNotFound, status: http.StatusNotFound, code: "message_not_found"},
@@ -61,6 +62,7 @@ var appHTTPErrorDefinitions = []appHTTPErrorDefinition{
 	{err: app.ErrNotMessageAuthor, status: http.StatusForbidden, code: "not_message_author"},
 	{err: app.ErrConversationMessagingClosed, status: http.StatusForbidden, code: "conversation_messaging_closed"},
 	{err: app.ErrStickerNotAvailable, status: http.StatusForbidden, code: "sticker_not_available"},
+	{err: app.ErrCannotMessageBlockedUser, status: http.StatusForbidden, code: "recipient_blocked_sender"},
 
 	{err: app.ErrConversationFull, status: http.StatusConflict, code: "conversation_full"},
 }
@@ -185,6 +187,16 @@ var businessErrorMessages = map[string]map[string]string{
 		"ru": "Переписка в этом чате закрыта",
 		"en": "Messaging in this chat is closed",
 		"kk": "Бұл чатта жазысу жабық",
+	},
+	"cannot_block_self": {
+		"ru": "Нельзя заблокировать самого себя",
+		"en": "You cannot block yourself",
+		"kk": "Өзіңізді бұғаттай алмайсыз",
+	},
+	"recipient_blocked_sender": {
+		"ru": "Пользователь ограничил получение сообщений",
+		"en": "This user has limited incoming messages",
+		"kk": "Бұл пайдаланушы кіріс хабарламаларды шектеді",
 	},
 }
 

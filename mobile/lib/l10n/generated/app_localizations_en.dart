@@ -5192,6 +5192,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatListEmpty => 'No conversations yet';
 
   @override
+  String get chatListPersonalTab => 'Personal';
+
+  @override
+  String get chatListActivitiesTab => 'Activities';
+
+  @override
+  String get chatListExcursionsTab => 'Tours';
+
+  @override
+  String get chatListSearchHint => 'Search chats';
+
+  @override
+  String get chatListSearchEmpty => 'No chats found';
+
+  @override
+  String get chatMuteNotificationsAction => 'Mute notifications';
+
+  @override
+  String get chatUnmuteNotificationsAction => 'Unmute notifications';
+
+  @override
+  String get chatMuteUpdateFailed => 'Failed to update chat notifications';
+
+  @override
+  String get chatBlockUserAction => 'Block';
+
+  @override
+  String get chatUnblockUserAction => 'Unblock';
+
+  @override
+  String get chatUserBlockUpdateFailed => 'Failed to update user block status';
+
+  @override
   String get chatFallbackTitle => 'Chat';
 
   @override

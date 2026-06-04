@@ -1,5 +1,6 @@
 import '../../features/chat/models/conversation_vm.dart';
 import '../../features/chat/models/message_vm.dart';
+import '../../features/chat/models/user_block_status_vm.dart';
 import 'api_client.dart';
 
 class ChatApi {
@@ -45,6 +46,33 @@ class ChatApi {
       '/chat/conversations/by-activity/$activityId',
     );
     return ConversationDetail.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<void> muteConversation(
+    String conversationId, {
+    DateTime? until,
+  }) async {
+    await _apiClient.dio.post(
+      '/chat/conversations/$conversationId/mute',
+      data: {'until': until?.toUtc().toIso8601String()},
+    );
+  }
+
+  Future<UserBlockStatusVm> getUserBlockStatus(String userId) async {
+    final response = await _apiClient.dio.get(
+      '/chat/users/$userId/block-status',
+    );
+    return UserBlockStatusVm.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<UserBlockStatusVm> blockUser(String userId) async {
+    final response = await _apiClient.dio.post('/chat/users/$userId/block');
+    return UserBlockStatusVm.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<UserBlockStatusVm> unblockUser(String userId) async {
+    final response = await _apiClient.dio.delete('/chat/users/$userId/block');
+    return UserBlockStatusVm.fromJson(response.data as Map<String, dynamic>);
   }
 
   Future<String> createActivityConversation({

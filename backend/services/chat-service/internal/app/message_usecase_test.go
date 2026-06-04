@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -174,6 +175,277 @@ func TestSendMessageStoresTextContent(t *testing.T) {
 	}
 }
 
+func TestSendMessageNotifiesEligibleParticipants(t *testing.T) {
+	t.Parallel()
+
+	conversationID := uuid.New()
+	senderID := uuid.New()
+	recipientID := uuid.New()
+	mutedRecipientID := uuid.New()
+	blockedRecipientID := uuid.New()
+	leftRecipientID := uuid.New()
+	now := time.Now().UTC()
+	mutedUntil := now.Add(time.Hour)
+	leftAt := now.Add(-time.Minute)
+	repo := newFakeMessageRepo(conversationID, senderID)
+	repo.participantsByConversationUser = map[[2]uuid.UUID]*model.Participant{
+		{conversationID, senderID}: {
+			ID:             uuid.New(),
+			ConversationID: conversationID,
+			UserID:         senderID,
+			Role:           "member",
+			JoinedAt:       now,
+		},
+		{conversationID, recipientID}: {
+			ID:             uuid.New(),
+			ConversationID: conversationID,
+			UserID:         recipientID,
+			Role:           "member",
+			JoinedAt:       now,
+		},
+		{conversationID, mutedRecipientID}: {
+			ID:             uuid.New(),
+			ConversationID: conversationID,
+			UserID:         mutedRecipientID,
+			Role:           "member",
+			MutedUntil:     &mutedUntil,
+			JoinedAt:       now,
+		},
+		{conversationID, blockedRecipientID}: {
+			ID:             uuid.New(),
+			ConversationID: conversationID,
+			UserID:         blockedRecipientID,
+			Role:           "member",
+			JoinedAt:       now,
+		},
+		{conversationID, leftRecipientID}: {
+			ID:             uuid.New(),
+			ConversationID: conversationID,
+			UserID:         leftRecipientID,
+			Role:           "member",
+			JoinedAt:       now.Add(-time.Hour),
+			LeftAt:         &leftAt,
+		},
+	}
+	repo.blockedPairs = map[[2]uuid.UUID]bool{
+		{blockedRecipientID, senderID}: true,
+	}
+	notifications := newFakeChatNotificationSender()
+	useCase := NewMessageUseCase(repo, &fakeEventPublisher{}, nil)
+	useCase.SetNotificationSender(notifications)
+
+	msg, err := useCase.SendMessage(context.Background(), SendMessageInput{
+		ConversationID:    conversationID,
+		SenderUserID:      senderID,
+		SenderDisplayName: "Aigerim",
+		Type:              "text",
+		Content:           "Meet near the north gate",
+	})
+	if err != nil {
+		t.Fatalf("SendMessage error: %v", err)
+	}
+
+	notification := notifications.take(t)
+	if notification.IdempotencyKey != fmt.Sprintf("chat-message-%s", msg.ID) {
+		t.Fatalf("IdempotencyKey = %q, want message-scoped key", notification.IdempotencyKey)
+	}
+	if notification.ConversationID != conversationID {
+		t.Fatalf("ConversationID = %s, want %s", notification.ConversationID, conversationID)
+	}
+	if notification.MessageID != msg.ID {
+		t.Fatalf("MessageID = %s, want %s", notification.MessageID, msg.ID)
+	}
+	if notification.SenderUserID != senderID {
+		t.Fatalf("SenderUserID = %s, want %s", notification.SenderUserID, senderID)
+	}
+	if notification.SenderDisplayName != "Aigerim" {
+		t.Fatalf("SenderDisplayName = %q, want Aigerim", notification.SenderDisplayName)
+	}
+	if notification.Body != "Meet near the north gate" {
+		t.Fatalf("Body = %q, want message content", notification.Body)
+	}
+	if len(notification.RecipientUserIDs) != 1 || notification.RecipientUserIDs[0] != recipientID {
+		t.Fatalf("RecipientUserIDs = %v, want only active unmuted non-blocking recipient %s", notification.RecipientUserIDs, recipientID)
+	}
+	if repo.blockListLookupCount != 1 {
+		t.Fatalf("block list lookups = %d, want one bulk lookup", repo.blockListLookupCount)
+	}
+	if repo.blockLookupCount != 0 {
+		t.Fatalf("per-recipient block lookups = %d, want none for notification fanout", repo.blockLookupCount)
+	}
+}
+
+func TestSendMessageSkipsNotificationWhenAllRecipientsMuted(t *testing.T) {
+	t.Parallel()
+
+	conversationID := uuid.New()
+	senderID := uuid.New()
+	mutedRecipientID := uuid.New()
+	now := time.Now().UTC()
+	mutedUntil := now.Add(time.Hour)
+	repo := newFakeMessageRepo(conversationID, senderID)
+	repo.participantsByConversationUser = map[[2]uuid.UUID]*model.Participant{
+		{conversationID, senderID}: {
+			ID:             uuid.New(),
+			ConversationID: conversationID,
+			UserID:         senderID,
+			Role:           "member",
+			JoinedAt:       now,
+		},
+		{conversationID, mutedRecipientID}: {
+			ID:             uuid.New(),
+			ConversationID: conversationID,
+			UserID:         mutedRecipientID,
+			Role:           "member",
+			MutedUntil:     &mutedUntil,
+			JoinedAt:       now,
+		},
+	}
+	notifications := newFakeChatNotificationSender()
+	useCase := NewMessageUseCase(repo, &fakeEventPublisher{}, nil)
+	useCase.SetNotificationSender(notifications)
+
+	_, err := useCase.SendMessage(context.Background(), SendMessageInput{
+		ConversationID:    conversationID,
+		SenderUserID:      senderID,
+		SenderDisplayName: "Aigerim",
+		Type:              "text",
+		Content:           "Meet near the north gate",
+	})
+	if err != nil {
+		t.Fatalf("SendMessage error: %v", err)
+	}
+	notifications.expectNone(t)
+}
+
+func TestSendMessageRejectsDirectMessageWhenRecipientBlockedSender(t *testing.T) {
+	t.Parallel()
+
+	conversationID := uuid.New()
+	senderID := uuid.New()
+	recipientID := uuid.New()
+	now := time.Now().UTC()
+	repo := newFakeMessageRepo(conversationID, senderID)
+	repo.conversation.Type = "direct"
+	repo.participantsByConversationUser = map[[2]uuid.UUID]*model.Participant{
+		{conversationID, senderID}: {
+			ID:             uuid.New(),
+			ConversationID: conversationID,
+			UserID:         senderID,
+			Role:           "member",
+			JoinedAt:       now,
+		},
+		{conversationID, recipientID}: {
+			ID:             uuid.New(),
+			ConversationID: conversationID,
+			UserID:         recipientID,
+			Role:           "member",
+			JoinedAt:       now,
+		},
+	}
+	repo.blockedPairs = map[[2]uuid.UUID]bool{
+		{recipientID, senderID}: true,
+	}
+
+	useCase := NewMessageUseCase(repo, &fakeEventPublisher{}, nil)
+	_, err := useCase.SendMessage(context.Background(), SendMessageInput{
+		ConversationID: conversationID,
+		SenderUserID:   senderID,
+		Type:           "text",
+		Content:        "hello",
+	})
+	if err != ErrCannotMessageBlockedUser {
+		t.Fatalf("expected ErrCannotMessageBlockedUser, got %v", err)
+	}
+	if repo.createdMessage != nil {
+		t.Fatalf("blocked direct message must not be stored: %+v", repo.createdMessage)
+	}
+}
+
+func TestToggleReactionNotifiesOriginalMessageSender(t *testing.T) {
+	t.Parallel()
+
+	conversationID := uuid.New()
+	messageID := uuid.New()
+	actorUserID := uuid.New()
+	messageSenderID := uuid.New()
+	mutedUserID := uuid.New()
+	now := time.Now().UTC()
+	mutedUntil := now.Add(time.Hour)
+
+	repo := newFakeMessageRepo(conversationID, actorUserID)
+	repo.participantsByConversationUser = map[[2]uuid.UUID]*model.Participant{
+		{conversationID, actorUserID}: {
+			ID:             uuid.New(),
+			ConversationID: conversationID,
+			UserID:         actorUserID,
+			Role:           "member",
+			JoinedAt:       now,
+		},
+		{conversationID, messageSenderID}: {
+			ID:             uuid.New(),
+			ConversationID: conversationID,
+			UserID:         messageSenderID,
+			Role:           "member",
+			JoinedAt:       now,
+		},
+		{conversationID, mutedUserID}: {
+			ID:             uuid.New(),
+			ConversationID: conversationID,
+			UserID:         mutedUserID,
+			Role:           "member",
+			MutedUntil:     &mutedUntil,
+			JoinedAt:       now,
+		},
+	}
+	repo.messagesByID = map[uuid.UUID]*model.Message{
+		messageID: {
+			ID:             messageID,
+			ConversationID: conversationID,
+			SenderUserID:   messageSenderID,
+			Type:           "text",
+			Content:        "Meet near the north gate",
+			SentAt:         now,
+		},
+	}
+	notifications := newFakeChatNotificationSender()
+	profiles := &fakeUserProfileResolver{
+		profiles: map[uuid.UUID]port.PublicUserProfile{
+			actorUserID: {UserID: actorUserID, DisplayName: "Aigerim"},
+		},
+	}
+	useCase := NewMessageUseCase(repo, &fakeEventPublisher{}, profiles)
+	useCase.SetNotificationSender(notifications)
+
+	_, err := useCase.ToggleReaction(context.Background(), conversationID, messageID, actorUserID, "👍")
+	if err != nil {
+		t.Fatalf("ToggleReaction error: %v", err)
+	}
+
+	notification := notifications.take(t)
+	if notification.EventType != "chat_reaction" {
+		t.Fatalf("EventType = %q, want chat_reaction", notification.EventType)
+	}
+	if notification.IdempotencyKey != "chat-reaction-"+messageID.String()+"-"+actorUserID.String()+"-👍" {
+		t.Fatalf("IdempotencyKey = %q", notification.IdempotencyKey)
+	}
+	if notification.ConversationID != conversationID || notification.MessageID != messageID {
+		t.Fatalf("notification target = conversation %s message %s", notification.ConversationID, notification.MessageID)
+	}
+	if notification.SenderUserID != actorUserID || notification.SenderDisplayName != "Aigerim" {
+		t.Fatalf("notification actor = %s/%q", notification.SenderUserID, notification.SenderDisplayName)
+	}
+	if notification.ReactionEmoji != "👍" {
+		t.Fatalf("ReactionEmoji = %q, want thumbs up", notification.ReactionEmoji)
+	}
+	if notification.Body != "Reacted 👍 to your message" {
+		t.Fatalf("Body = %q, want reaction body", notification.Body)
+	}
+	if len(notification.RecipientUserIDs) != 1 || notification.RecipientUserIDs[0] != messageSenderID {
+		t.Fatalf("RecipientUserIDs = %v, want only message sender %s", notification.RecipientUserIDs, messageSenderID)
+	}
+}
+
 func TestSendMessageFlagsOffPlatformContactForModeration(t *testing.T) {
 	t.Parallel()
 
@@ -278,6 +550,83 @@ func TestForwardMessageCreatesTargetCopyAndTracksForwardMetadata(t *testing.T) {
 	}
 }
 
+func TestForwardMessageRejectsDirectTargetWhenRecipientBlockedSender(t *testing.T) {
+	t.Parallel()
+
+	sourceConversationID := uuid.New()
+	targetConversationID := uuid.New()
+	sourceMessageID := uuid.New()
+	actorUserID := uuid.New()
+	recipientID := uuid.New()
+	sourceSenderID := uuid.New()
+	now := time.Now().UTC()
+	repo := newFakeMessageRepo(targetConversationID, actorUserID)
+	repo.conversationsByID = map[uuid.UUID]*model.Conversation{
+		sourceConversationID: {
+			ID:             sourceConversationID,
+			Type:           "group",
+			CreatedAt:      now,
+			LastActivityAt: now,
+		},
+		targetConversationID: {
+			ID:             targetConversationID,
+			Type:           "direct",
+			CreatedAt:      now,
+			LastActivityAt: now,
+		},
+	}
+	repo.participantsByConversationUser = map[[2]uuid.UUID]*model.Participant{
+		{sourceConversationID, actorUserID}: {
+			ID:             uuid.New(),
+			ConversationID: sourceConversationID,
+			UserID:         actorUserID,
+			Role:           "member",
+			JoinedAt:       now,
+		},
+		{targetConversationID, actorUserID}: {
+			ID:             uuid.New(),
+			ConversationID: targetConversationID,
+			UserID:         actorUserID,
+			Role:           "member",
+			JoinedAt:       now,
+		},
+		{targetConversationID, recipientID}: {
+			ID:             uuid.New(),
+			ConversationID: targetConversationID,
+			UserID:         recipientID,
+			Role:           "member",
+			JoinedAt:       now,
+		},
+	}
+	repo.messagesByID = map[uuid.UUID]*model.Message{
+		sourceMessageID: {
+			ID:             sourceMessageID,
+			ConversationID: sourceConversationID,
+			SenderUserID:   sourceSenderID,
+			Type:           "text",
+			Content:        "Meet near the north gate",
+			SentAt:         now,
+		},
+	}
+	repo.blockedPairs = map[[2]uuid.UUID]bool{
+		{recipientID, actorUserID}: true,
+	}
+
+	useCase := NewMessageUseCase(repo, &fakeEventPublisher{}, nil)
+	_, err := useCase.ForwardMessage(context.Background(), ForwardMessageInput{
+		SourceConversationID: sourceConversationID,
+		TargetConversationID: targetConversationID,
+		MessageID:            sourceMessageID,
+		SenderUserID:         actorUserID,
+	})
+	if err != ErrCannotMessageBlockedUser {
+		t.Fatalf("expected ErrCannotMessageBlockedUser, got %v", err)
+	}
+	if repo.messagesByID[sourceMessageID].ForwardCount != 0 {
+		t.Fatalf("blocked forward must not increment source forward count")
+	}
+}
+
 type fakeMessageRepo struct {
 	conversationID                 uuid.UUID
 	senderID                       uuid.UUID
@@ -289,6 +638,9 @@ type fakeMessageRepo struct {
 	participantsByConversationUser map[[2]uuid.UUID]*model.Participant
 	createdParticipants            []*model.Participant
 	messagesByID                   map[uuid.UUID]*model.Message
+	blockedPairs                   map[[2]uuid.UUID]bool
+	blockLookupCount               int
+	blockListLookupCount           int
 }
 
 func newFakeMessageRepo(conversationID, senderID uuid.UUID) *fakeMessageRepo {
@@ -418,8 +770,50 @@ func (r *fakeMessageRepo) ListMessageReadReceipts(
 	return nil, nil
 }
 
-func (r *fakeMessageRepo) ListParticipantsByConversationID(context.Context, uuid.UUID) ([]*model.Participant, error) {
+func (r *fakeMessageRepo) ListParticipantsByConversationID(_ context.Context, conversationID uuid.UUID) ([]*model.Participant, error) {
+	if r.participantsByConversationUser != nil {
+		participants := make([]*model.Participant, 0, len(r.participantsByConversationUser))
+		for key, participant := range r.participantsByConversationUser {
+			if key[0] == conversationID {
+				participants = append(participants, participant)
+			}
+		}
+		return participants, nil
+	}
 	return nil, nil
+}
+
+func (r *fakeMessageRepo) IsUserBlocked(_ context.Context, blockerUserID, blockedUserID uuid.UUID) (bool, error) {
+	r.blockLookupCount++
+	return r.blockedPairs[[2]uuid.UUID{blockerUserID, blockedUserID}], nil
+}
+
+func (r *fakeMessageRepo) ListUserIDsBlockingUser(
+	_ context.Context,
+	blockedUserID uuid.UUID,
+	candidateBlockerUserIDs []uuid.UUID,
+) (map[uuid.UUID]bool, error) {
+	r.blockListLookupCount++
+	result := make(map[uuid.UUID]bool)
+	for _, blockerUserID := range candidateBlockerUserIDs {
+		if r.blockedPairs[[2]uuid.UUID{blockerUserID, blockedUserID}] {
+			result[blockerUserID] = true
+		}
+	}
+	return result, nil
+}
+
+func (r *fakeMessageRepo) UpsertUserBlock(_ context.Context, block *model.UserBlock) error {
+	if r.blockedPairs == nil {
+		r.blockedPairs = map[[2]uuid.UUID]bool{}
+	}
+	r.blockedPairs[[2]uuid.UUID{block.BlockerUserID, block.BlockedUserID}] = true
+	return nil
+}
+
+func (r *fakeMessageRepo) DeleteUserBlock(_ context.Context, blockerUserID, blockedUserID uuid.UUID) error {
+	delete(r.blockedPairs, [2]uuid.UUID{blockerUserID, blockedUserID})
+	return nil
 }
 
 func (r *fakeMessageRepo) CountActiveParticipants(context.Context, uuid.UUID) (int, error) {
@@ -610,6 +1004,60 @@ type fakeEventPublisher struct{}
 
 func (fakeEventPublisher) Publish(context.Context, string, event.Event) error { return nil }
 func (fakeEventPublisher) Close() error                                       { return nil }
+
+type fakeUserProfileResolver struct {
+	profiles map[uuid.UUID]port.PublicUserProfile
+}
+
+func (f *fakeUserProfileResolver) GetPublicProfilesByUserIDs(
+	_ context.Context,
+	userIDs []uuid.UUID,
+) (map[uuid.UUID]port.PublicUserProfile, error) {
+	result := make(map[uuid.UUID]port.PublicUserProfile)
+	for _, userID := range userIDs {
+		if profile, ok := f.profiles[userID]; ok {
+			result[userID] = profile
+		}
+	}
+	return result, nil
+}
+
+type fakeChatNotificationSender struct {
+	sent chan port.ChatNotification
+}
+
+func newFakeChatNotificationSender() *fakeChatNotificationSender {
+	return &fakeChatNotificationSender{sent: make(chan port.ChatNotification, 1)}
+}
+
+func (f *fakeChatNotificationSender) SendChatMessageNotification(
+	_ context.Context,
+	notification port.ChatNotification,
+) error {
+	f.sent <- notification
+	return nil
+}
+
+func (f *fakeChatNotificationSender) take(t *testing.T) port.ChatNotification {
+	t.Helper()
+	select {
+	case notification := <-f.sent:
+		return notification
+	case <-time.After(time.Second):
+		t.Fatal("expected chat notification to be sent")
+		return port.ChatNotification{}
+	}
+}
+
+func (f *fakeChatNotificationSender) expectNone(t *testing.T) {
+	t.Helper()
+	select {
+	case notification := <-f.sent:
+		t.Fatalf("expected no chat notification, got %+v", notification)
+	case <-time.After(50 * time.Millisecond):
+		return
+	}
+}
 
 func chatModerationItemFromMessage(msg *model.Message) *model.ChatMessageModerationItem {
 	if msg == nil {

@@ -5220,6 +5220,40 @@ class AppLocalizationsRu extends AppLocalizations {
   String get chatListEmpty => 'Диалогов пока нет';
 
   @override
+  String get chatListPersonalTab => 'Личные';
+
+  @override
+  String get chatListActivitiesTab => 'Активности';
+
+  @override
+  String get chatListExcursionsTab => 'Экскурсии';
+
+  @override
+  String get chatListSearchHint => 'Поиск чатов';
+
+  @override
+  String get chatListSearchEmpty => 'Чаты не найдены';
+
+  @override
+  String get chatMuteNotificationsAction => 'Выключить уведомления';
+
+  @override
+  String get chatUnmuteNotificationsAction => 'Включить уведомления';
+
+  @override
+  String get chatMuteUpdateFailed => 'Не удалось обновить уведомления чата';
+
+  @override
+  String get chatBlockUserAction => 'Заблокировать';
+
+  @override
+  String get chatUnblockUserAction => 'Разблокировать';
+
+  @override
+  String get chatUserBlockUpdateFailed =>
+      'Не удалось обновить блокировку пользователя';
+
+  @override
   String get chatFallbackTitle => 'Чат';
 
   @override

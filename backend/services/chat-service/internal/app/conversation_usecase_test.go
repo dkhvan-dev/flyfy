@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"kz/inflap/backend/services/chat-service/internal/domain/model"
+	"kz/inflap/backend/services/chat-service/internal/domain/port"
 )
 
 func TestNewSystemMessageDefaultsModerationFields(t *testing.T) {
@@ -70,6 +71,88 @@ func TestSyncExcursionScheduleSlotConversationCreatesConversationWithGuideAndBoo
 	assertParticipantRole(t, repo, conv.ID, touristTwoID, "member")
 	if len(repo.createdParticipants) != 3 {
 		t.Fatalf("created participants = %d, want guide + 2 unique booking authors", len(repo.createdParticipants))
+	}
+}
+
+func TestPinMessageNotifiesEligibleParticipants(t *testing.T) {
+	t.Parallel()
+
+	conversationID := uuid.New()
+	messageID := uuid.New()
+	actorUserID := uuid.New()
+	recipientUserID := uuid.New()
+	mutedUserID := uuid.New()
+	now := time.Now().UTC()
+	mutedUntil := now.Add(time.Hour)
+
+	repo := newFakeMessageRepo(conversationID, actorUserID)
+	repo.conversation.Type = "group"
+	repo.participantsByConversationUser = map[[2]uuid.UUID]*model.Participant{
+		{conversationID, actorUserID}: {
+			ID:             uuid.New(),
+			ConversationID: conversationID,
+			UserID:         actorUserID,
+			Role:           "admin",
+			JoinedAt:       now,
+		},
+		{conversationID, recipientUserID}: {
+			ID:             uuid.New(),
+			ConversationID: conversationID,
+			UserID:         recipientUserID,
+			Role:           "member",
+			JoinedAt:       now,
+		},
+		{conversationID, mutedUserID}: {
+			ID:             uuid.New(),
+			ConversationID: conversationID,
+			UserID:         mutedUserID,
+			Role:           "member",
+			MutedUntil:     &mutedUntil,
+			JoinedAt:       now,
+		},
+	}
+	repo.messagesByID = map[uuid.UUID]*model.Message{
+		messageID: {
+			ID:             messageID,
+			ConversationID: conversationID,
+			SenderUserID:   recipientUserID,
+			Type:           "text",
+			Content:        "Meet near the north gate",
+			SentAt:         now,
+		},
+	}
+	notifications := newFakeChatNotificationSender()
+	profiles := &fakeUserProfileResolver{
+		profiles: map[uuid.UUID]port.PublicUserProfile{
+			actorUserID: {UserID: actorUserID, DisplayName: "Aigerim"},
+		},
+	}
+	uc := NewConversationUseCase(repo, fakeEventPublisher{}, profiles)
+	uc.SetNotificationSender(notifications)
+
+	_, err := uc.PinMessage(context.Background(), conversationID, messageID, actorUserID)
+	if err != nil {
+		t.Fatalf("PinMessage error: %v", err)
+	}
+
+	notification := notifications.take(t)
+	if notification.EventType != "chat_pin" {
+		t.Fatalf("EventType = %q, want chat_pin", notification.EventType)
+	}
+	if notification.IdempotencyKey != "chat-pin-"+conversationID.String()+"-"+messageID.String()+"-"+actorUserID.String() {
+		t.Fatalf("IdempotencyKey = %q", notification.IdempotencyKey)
+	}
+	if notification.ConversationID != conversationID || notification.MessageID != messageID {
+		t.Fatalf("notification target = conversation %s message %s", notification.ConversationID, notification.MessageID)
+	}
+	if notification.SenderUserID != actorUserID || notification.SenderDisplayName != "Aigerim" {
+		t.Fatalf("notification actor = %s/%q", notification.SenderUserID, notification.SenderDisplayName)
+	}
+	if notification.Body != "Pinned a message" {
+		t.Fatalf("Body = %q, want pin body", notification.Body)
+	}
+	if len(notification.RecipientUserIDs) != 1 || notification.RecipientUserIDs[0] != recipientUserID {
+		t.Fatalf("RecipientUserIDs = %v, want only %s", notification.RecipientUserIDs, recipientUserID)
 	}
 }
 

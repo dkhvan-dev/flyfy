@@ -893,6 +893,75 @@ func (r *PGChatRepository) GetUnreadCount(ctx context.Context, conversationID, u
 	return count, err
 }
 
+func (r *PGChatRepository) IsUserBlocked(ctx context.Context, blockerUserID, blockedUserID uuid.UUID) (bool, error) {
+	var exists bool
+	err := r.pool.QueryRow(ctx, `
+		SELECT EXISTS(
+			SELECT 1
+			FROM chat_user_blocks
+			WHERE blocker_user_id = $1 AND blocked_user_id = $2
+		)
+	`, blockerUserID, blockedUserID).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("check user block: %w", err)
+	}
+	return exists, nil
+}
+
+func (r *PGChatRepository) ListUserIDsBlockingUser(
+	ctx context.Context,
+	blockedUserID uuid.UUID,
+	candidateBlockerUserIDs []uuid.UUID,
+) (map[uuid.UUID]bool, error) {
+	result := make(map[uuid.UUID]bool)
+	if blockedUserID == uuid.Nil || len(candidateBlockerUserIDs) == 0 {
+		return result, nil
+	}
+
+	rows, err := r.pool.Query(ctx, `
+		SELECT blocker_user_id
+		FROM chat_user_blocks
+		WHERE blocked_user_id = $1
+		  AND blocker_user_id = ANY($2::uuid[])
+	`, blockedUserID, candidateBlockerUserIDs)
+	if err != nil {
+		return nil, fmt.Errorf("list users blocking user: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var blockerUserID uuid.UUID
+		if err := rows.Scan(&blockerUserID); err != nil {
+			return nil, fmt.Errorf("scan user block: %w", err)
+		}
+		result[blockerUserID] = true
+	}
+	return result, rows.Err()
+}
+
+func (r *PGChatRepository) UpsertUserBlock(ctx context.Context, block *model.UserBlock) error {
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO chat_user_blocks (blocker_user_id, blocked_user_id, created_at)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (blocker_user_id, blocked_user_id) DO NOTHING
+	`, block.BlockerUserID, block.BlockedUserID, block.CreatedAt)
+	if err != nil {
+		return fmt.Errorf("upsert user block: %w", err)
+	}
+	return nil
+}
+
+func (r *PGChatRepository) DeleteUserBlock(ctx context.Context, blockerUserID, blockedUserID uuid.UUID) error {
+	_, err := r.pool.Exec(ctx, `
+		DELETE FROM chat_user_blocks
+		WHERE blocker_user_id = $1 AND blocked_user_id = $2
+	`, blockerUserID, blockedUserID)
+	if err != nil {
+		return fmt.Errorf("delete user block: %w", err)
+	}
+	return nil
+}
+
 func (tx *pgChatTxRepository) CreateConversation(ctx context.Context, conv *model.Conversation) error {
 	_, err := tx.tx.Exec(ctx, `
 		INSERT INTO conversations (id, type, title, avatar_file_id, activity_id, excursion_schedule_slot_id, pinned_message_id, messaging_available_until, created_at, last_activity_at)

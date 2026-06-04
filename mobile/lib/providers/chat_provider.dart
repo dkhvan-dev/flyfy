@@ -7,6 +7,9 @@ import '../core/network/chat_ws_service.dart';
 import '../features/chat/models/conversation_vm.dart';
 import '../features/chat/models/message_vm.dart';
 import '../features/chat/models/sticker_pack_vm.dart';
+import '../features/chat/models/user_block_status_vm.dart';
+
+const _conversationMuteDuration = Duration(days: 3650);
 
 class ChatProvider extends ChangeNotifier {
   ChatProvider({ChatApi? chatApi, ChatWsService? wsService})
@@ -73,6 +76,87 @@ class ChatProvider extends ChangeNotifier {
     } finally {
       _conversationsLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<bool> setConversationMuted(
+    String conversationId, {
+    required bool muted,
+  }) async {
+    final normalizedId = conversationId.trim();
+    if (normalizedId.isEmpty) return false;
+
+    final previousConversations = _conversations;
+    final previousActiveConversation = _activeConversation;
+    final mutedUntil = muted
+        ? DateTime.now().toUtc().add(_conversationMuteDuration)
+        : null;
+    final mutedUntilWire = mutedUntil?.toIso8601String();
+
+    _conversations = _conversations
+        .map(
+          (conversation) => conversation.id == normalizedId
+              ? conversation.copyWith(mutedUntil: mutedUntilWire)
+              : conversation,
+        )
+        .toList(growable: false);
+    if (_activeConversation?.id == normalizedId) {
+      _activeConversation = _activeConversation!.copyWith(
+        mutedUntil: mutedUntilWire,
+      );
+    }
+    notifyListeners();
+
+    try {
+      await _chatApi.muteConversation(normalizedId, until: mutedUntil);
+      return true;
+    } catch (e) {
+      debugPrint('setConversationMuted error: $e');
+      _conversations = previousConversations;
+      _activeConversation = previousActiveConversation;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<UserBlockStatusVm?> blockUser(String userId) async {
+    return _setUserBlocked(userId, blocked: true);
+  }
+
+  Future<UserBlockStatusVm?> unblockUser(String userId) async {
+    return _setUserBlocked(userId, blocked: false);
+  }
+
+  Future<UserBlockStatusVm?> _setUserBlocked(
+    String userId, {
+    required bool blocked,
+  }) async {
+    final normalizedUserId = userId.trim();
+    if (normalizedUserId.isEmpty) return null;
+
+    try {
+      final status = blocked
+          ? await _chatApi.blockUser(normalizedUserId)
+          : await _chatApi.unblockUser(normalizedUserId);
+      final active = _activeConversation;
+      final matchesActiveDirectChat =
+          active != null &&
+          active.isDirect &&
+          active.participants.any(
+            (participant) => participant.userId.trim() == normalizedUserId,
+          );
+      if (matchesActiveDirectChat) {
+        _activeConversation = active.copyWith(
+          isBlockedByMe: status.isBlockedByMe,
+          hasBlockedMe: status.hasBlockedMe,
+          canSendMessages: !status.hasBlockedMe,
+        );
+        notifyListeners();
+      }
+      return status;
+    } catch (e) {
+      debugPrint('setUserBlocked error: $e');
+      return null;
     }
   }
 

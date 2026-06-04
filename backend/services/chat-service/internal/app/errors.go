@@ -32,4 +32,6 @@ var (
 	ErrConversationFull            = errors.New("conversation has reached maximum participants")
 	ErrConversationMessagingClosed = errors.New("conversation messaging is closed")
 	ErrTrustPolicyRejected         = errors.New("message rejected by trust policy")
+	ErrCannotBlockSelf             = errors.New("cannot block yourself")
+	ErrCannotMessageBlockedUser    = errors.New("recipient has blocked this user")
 )

@@ -19,6 +19,7 @@ import (
 	grpcadapter "kz/inflap/backend/services/chat-service/internal/adapter/grpc"
 	httpadapter "kz/inflap/backend/services/chat-service/internal/adapter/http"
 	natsadapter "kz/inflap/backend/services/chat-service/internal/adapter/nats"
+	notificationadapter "kz/inflap/backend/services/chat-service/internal/adapter/notification"
 	"kz/inflap/backend/services/chat-service/internal/adapter/repository"
 	stickeradapter "kz/inflap/backend/services/chat-service/internal/adapter/sticker"
 	"kz/inflap/backend/services/chat-service/internal/adapter/ws"
@@ -104,6 +105,14 @@ func main() {
 		stickerResolver,
 		activityResolver,
 	)
+	notificationClient := notificationadapter.NewClient(
+		cfg.Notification.HTTPURL,
+		cfg.Security.InternalServiceToken,
+		cfg.App.Name,
+		&http.Client{Timeout: cfg.Notification.RequestTimeout},
+	)
+	conversationUC.SetNotificationSender(notificationClient)
+	messageUC.SetNotificationSender(notificationClient)
 	var trustClient *grpcclient.Client
 	if cfg.Trust.Enabled {
 		trustClient, err = grpcclient.New(

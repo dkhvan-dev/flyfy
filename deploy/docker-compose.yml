@@ -1175,6 +1175,8 @@ services:
         condition: service_started
       sticker-service:
         condition: service_started
+      notification-service:
+        condition: service_started
       trust-service:
         condition: service_started
     ports:
@@ -1218,6 +1220,8 @@ services:
       STICKER_SERVICE_HTTP_URL: http://sticker-service:8092
       STICKER_SERVICE_TIMEOUT: 5s
       STICKER_SERVICE_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      NOTIFICATION_SERVICE_HTTP_URL: http://notification-service:8097
+      NOTIFICATION_SERVICE_REQUEST_TIMEOUT: 3s
 
       TRUST_POLICY_ENABLED: "true"
       TRUST_SERVICE_GRPC_TARGET: dns:///trust-service:9096

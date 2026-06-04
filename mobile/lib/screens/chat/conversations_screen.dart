@@ -17,6 +17,10 @@ import 'widgets/chat_video_preview.dart';
 
 const _videoPreviewDownloadLimitBytes = 25 * 1024 * 1024;
 
+enum _ConversationListTab { personal, activities, excursions }
+
+enum _ConversationAction { toggleMute }
+
 class ConversationsScreen extends StatefulWidget {
   const ConversationsScreen({super.key});
 
@@ -25,6 +29,9 @@ class ConversationsScreen extends StatefulWidget {
 }
 
 class _ConversationsScreenState extends State<ConversationsScreen> {
+  _ConversationListTab _selectedTab = _ConversationListTab.personal;
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
@@ -60,26 +67,48 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
             return _buildEmpty(context);
           }
 
-          return RefreshIndicator(
-            color: AppColors.accent,
-            backgroundColor: const Color(0xFF1a0d03),
-            onRefresh: () => chat.loadConversations(),
-            child: ListView.separated(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: chat.conversations.length,
-              separatorBuilder: (_, _) => Divider(
-                height: 1,
-                indent: 86,
-                color: Colors.white.withValues(alpha: 0.06),
-              ),
-              itemBuilder: (context, index) {
-                return _ConversationTile(
-                  conversation: chat.conversations[index],
-                  currentUserId: currentUserId,
-                  onTap: () => _openChat(chat.conversations[index]),
-                );
-              },
+          final conversations = _filterConversations(
+            chat.conversations,
+            currentUserId,
+          );
+
+          return DefaultTabController(
+            length: _ConversationListTab.values.length,
+            initialIndex: _selectedTab.index,
+            child: Column(
+              children: [
+                _buildSearchField(context),
+                _buildTabs(context),
+                Expanded(
+                  child: RefreshIndicator(
+                    color: AppColors.accent,
+                    backgroundColor: const Color(0xFF1a0d03),
+                    onRefresh: () => chat.loadConversations(),
+                    child: conversations.isEmpty
+                        ? _buildFilteredEmptyList(context)
+                        : ListView.separated(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            itemCount: conversations.length,
+                            separatorBuilder: (_, _) => Divider(
+                              height: 1,
+                              indent: 86,
+                              color: Colors.white.withValues(alpha: 0.06),
+                            ),
+                            itemBuilder: (context, index) {
+                              final conversation = conversations[index];
+                              return _ConversationTile(
+                                conversation: conversation,
+                                currentUserId: currentUserId,
+                                onTap: () => _openChat(conversation),
+                                onLongPress: () =>
+                                    _showConversationActions(conversation),
+                              );
+                            },
+                          ),
+                  ),
+                ),
+              ],
             ),
           );
         },
@@ -108,6 +137,96 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
         ),
       ),
       centerTitle: true,
+    );
+  }
+
+  Widget _buildSearchField(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: TextField(
+        textInputAction: TextInputAction.search,
+        style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
+        cursorColor: AppColors.accent,
+        onChanged: (value) => setState(() {
+          _searchQuery = value;
+        }),
+        decoration: InputDecoration(
+          hintText: l10n.chatListSearchHint,
+          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.38)),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            color: Colors.white.withValues(alpha: 0.42),
+          ),
+          filled: true,
+          fillColor: Colors.white.withValues(alpha: 0.07),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabs(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TabBar(
+        isScrollable: true,
+        tabAlignment: TabAlignment.start,
+        dividerColor: Colors.transparent,
+        indicatorColor: AppColors.accent,
+        indicatorWeight: 3,
+        labelColor: AppColors.textPrimary,
+        unselectedLabelColor: Colors.white.withValues(alpha: 0.48),
+        labelStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        labelPadding: const EdgeInsets.symmetric(horizontal: 12),
+        onTap: (index) => setState(() {
+          _selectedTab = _ConversationListTab.values[index];
+        }),
+        tabs: [
+          Tab(text: l10n.chatListPersonalTab),
+          Tab(text: l10n.chatListActivitiesTab),
+          Tab(text: l10n.chatListExcursionsTab),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilteredEmptyList(BuildContext context) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      children: [
+        SizedBox(height: MediaQuery.sizeOf(context).height * 0.18),
+        _buildEmpty(
+          context,
+          message: _searchQuery.trim().isEmpty
+              ? AppLocalizations.of(context)!.chatListEmpty
+              : AppLocalizations.of(context)!.chatListSearchEmpty,
+        ),
+      ],
     );
   }
 
@@ -147,7 +266,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     );
   }
 
-  Widget _buildEmpty(BuildContext context) {
+  Widget _buildEmpty(BuildContext context, {String? message}) {
     final l10n = AppLocalizations.of(context)!;
 
     return Center(
@@ -161,7 +280,8 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            l10n.chatListEmpty,
+            message ?? l10n.chatListEmpty,
+            textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.4),
               fontSize: 16,
@@ -173,8 +293,97 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     );
   }
 
+  List<ConversationVm> _filterConversations(
+    List<ConversationVm> conversations,
+    String currentUserId,
+  ) {
+    return conversations
+        .where(_matchesSelectedTab)
+        .where(
+          (conversation) => _matchesSearchQuery(conversation, currentUserId),
+        )
+        .toList(growable: false);
+  }
+
+  bool _matchesSelectedTab(ConversationVm conversation) {
+    return switch (_selectedTab) {
+      _ConversationListTab.personal =>
+        !conversation.isActivity && !conversation.isExcursion,
+      _ConversationListTab.activities =>
+        conversation.isActivity && !conversation.isExcursion,
+      _ConversationListTab.excursions => conversation.isExcursion,
+    };
+  }
+
+  bool _matchesSearchQuery(ConversationVm conversation, String currentUserId) {
+    final query = _searchQuery.trim().toLowerCase();
+    if (query.isEmpty) return true;
+
+    final values = <String>[
+      conversation.displayTitle(currentUserId),
+      conversation.title ?? '',
+      conversation.lastMessage?.contentPreview ?? '',
+      conversation.lastMessage?.senderDisplayName ?? '',
+      for (final participant in conversation.participants)
+        participant.displayName,
+    ];
+
+    return values.any((value) => value.toLowerCase().contains(query));
+  }
+
   void _openChat(ConversationVm conversation) {
     context.push('/chats/${conversation.id}');
+  }
+
+  Future<void> _showConversationActions(ConversationVm conversation) async {
+    final l10n = AppLocalizations.of(context)!;
+    final isMuted = conversation.isMutedNow;
+    final action = await showModalBottomSheet<_ConversationAction>(
+      context: context,
+      isDismissible: true,
+      backgroundColor: const Color(0xFF1d120b),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: ListTile(
+              leading: Icon(
+                isMuted
+                    ? Icons.notifications_active_rounded
+                    : Icons.notifications_off_rounded,
+                color: AppColors.accent,
+              ),
+              title: Text(
+                isMuted
+                    ? l10n.chatUnmuteNotificationsAction
+                    : l10n.chatMuteNotificationsAction,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              onTap: () => Navigator.of(
+                sheetContext,
+              ).pop(_ConversationAction.toggleMute),
+            ),
+          ),
+        );
+      },
+    );
+    if (action != _ConversationAction.toggleMute || !mounted) return;
+
+    final ok = await context.read<ChatProvider>().setConversationMuted(
+      conversation.id,
+      muted: !isMuted,
+    );
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.chatMuteUpdateFailed)));
+    }
   }
 }
 
@@ -183,11 +392,13 @@ class _ConversationTile extends StatelessWidget {
     required this.conversation,
     required this.currentUserId,
     required this.onTap,
+    required this.onLongPress,
   });
 
   final ConversationVm conversation;
   final String currentUserId;
   final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -195,6 +406,7 @@ class _ConversationTile extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
@@ -315,6 +527,14 @@ class _ConversationTile extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
+            if (conversation.isMutedNow) ...[
+              Icon(
+                Icons.notifications_off_rounded,
+                size: 16,
+                color: Colors.white.withValues(alpha: 0.32),
+              ),
+              const SizedBox(width: 6),
+            ],
             Text(
               _formatTime(conversation.lastActivityAt, l10n),
               style: TextStyle(

@@ -25,6 +25,7 @@ var appGRPCErrorDefinitions = []appGRPCErrorDefinition{
 	{err: app.ErrInvalidStickerID, code: codes.InvalidArgument, message: "invalid sticker id"},
 	{err: app.ErrInvalidReaction, code: codes.InvalidArgument, message: "invalid message reaction"},
 	{err: app.ErrInvalidModerationDecision, code: codes.InvalidArgument, message: "invalid moderation decision"},
+	{err: app.ErrCannotBlockSelf, code: codes.InvalidArgument, message: "cannot block yourself"},
 
 	{err: app.ErrConversationNotFound, code: codes.NotFound, message: "conversation not found"},
 	{err: app.ErrMessageNotFound, code: codes.NotFound, message: "message not found"},
@@ -34,6 +35,7 @@ var appGRPCErrorDefinitions = []appGRPCErrorDefinition{
 	{err: app.ErrNotParticipant, code: codes.PermissionDenied, message: "user is not a participant of this conversation"},
 	{err: app.ErrNotAdmin, code: codes.PermissionDenied, message: "user is not an admin of this conversation"},
 	{err: app.ErrNotMessageAuthor, code: codes.PermissionDenied, message: "user is not the author of this message"},
+	{err: app.ErrCannotMessageBlockedUser, code: codes.PermissionDenied, message: "recipient has blocked this user"},
 
 	{err: app.ErrTooManyFiles, code: codes.ResourceExhausted, message: "maximum 10 files per message"},
 	{err: app.ErrConversationFull, code: codes.ResourceExhausted, message: "conversation has reached maximum participants"},

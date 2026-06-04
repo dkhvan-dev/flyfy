@@ -282,6 +282,14 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			RewritePrefix:      "/v1/conversations",
 		},
 		{
+			Name:               "chat-users",
+			Prefix:             apiPrefix + "/chat/users",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "chat",
+			RateLimitPerMinute: &chatLimit,
+			RewritePrefix:      "/v1/users",
+		},
+		{
 			Name:          "chat-ws",
 			Prefix:        apiPrefix + "/chat/ws",
 			AuthMode:      RouteAuthAuthenticated,

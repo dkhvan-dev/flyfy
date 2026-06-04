@@ -52,6 +52,9 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/conversations/", h.handleConversationRoutes)
 	mux.HandleFunc("PATCH /v1/conversations/", h.handleConversationRoutes)
 	mux.HandleFunc("DELETE /v1/conversations/", h.handleConversationRoutes)
+	mux.HandleFunc("GET /v1/users/", h.handleUserRoutes)
+	mux.HandleFunc("POST /v1/users/", h.handleUserRoutes)
+	mux.HandleFunc("DELETE /v1/users/", h.handleUserRoutes)
 
 	mux.HandleFunc("GET /v1/ws", h.WebSocketUpgrade)
 }
@@ -603,6 +606,41 @@ func (h *Handler) handleConversationRoutes(w http.ResponseWriter, r *http.Reques
 	writeError(w, r, http.StatusNotFound, "not found")
 }
 
+func (h *Handler) handleUserRoutes(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/v1/users/")
+	path = strings.Trim(path, "/")
+	parts := strings.Split(path, "/")
+	if len(parts) != 2 {
+		writeError(w, r, http.StatusNotFound, "not found")
+		return
+	}
+
+	targetUserID, err := uuid.Parse(parts[0])
+	if err != nil {
+		writeError(w, r, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	switch parts[1] {
+	case "block-status":
+		if r.Method == http.MethodGet {
+			h.GetUserBlockStatus(w, r, targetUserID)
+			return
+		}
+	case "block":
+		switch r.Method {
+		case http.MethodPost:
+			h.BlockUser(w, r, targetUserID)
+			return
+		case http.MethodDelete:
+			h.UnblockUser(w, r, targetUserID)
+			return
+		}
+	}
+
+	writeError(w, r, http.StatusMethodNotAllowed, "method not allowed")
+}
+
 func (h *Handler) GetConversation(w http.ResponseWriter, r *http.Request, convID uuid.UUID) {
 	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
@@ -623,7 +661,9 @@ func (h *Handler) GetConversation(w http.ResponseWriter, r *http.Request, convID
 		AvatarFileID:    conv.AvatarFileID,
 		CreatedAt:       conv.CreatedAt.Format(time.RFC3339),
 		UnreadCount:     conv.UnreadCount,
-		CanSendMessages: !conv.IsMessagingClosed(time.Now().UTC()),
+		CanSendMessages: !conv.IsMessagingClosed(time.Now().UTC()) && !conv.HasBlockedMe,
+		IsBlockedByMe:   conv.IsBlockedByMe,
+		HasBlockedMe:    conv.HasBlockedMe,
 		LastActivityAt:  conv.LastActivityAt.Format(time.RFC3339),
 	}
 	if conv.ActivityID != nil {
@@ -669,7 +709,9 @@ func (h *Handler) GetConversationByActivity(w http.ResponseWriter, r *http.Reque
 		AvatarFileID:    conv.AvatarFileID,
 		CreatedAt:       conv.CreatedAt.Format(time.RFC3339),
 		UnreadCount:     conv.UnreadCount,
-		CanSendMessages: !conv.IsMessagingClosed(time.Now().UTC()),
+		CanSendMessages: !conv.IsMessagingClosed(time.Now().UTC()) && !conv.HasBlockedMe,
+		IsBlockedByMe:   conv.IsBlockedByMe,
+		HasBlockedMe:    conv.HasBlockedMe,
 		LastActivityAt:  conv.LastActivityAt.Format(time.RFC3339),
 	}
 	if conv.ActivityID != nil {
@@ -982,6 +1024,65 @@ func (h *Handler) MuteConversation(w http.ResponseWriter, r *http.Request, convI
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) GetUserBlockStatus(w http.ResponseWriter, r *http.Request, targetUserID uuid.UUID) {
+	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, "missing authenticated user")
+		return
+	}
+
+	status, err := h.conversationUC.GetUserBlockStatus(r.Context(), actorUserID, targetUserID)
+	if err != nil {
+		h.writeAppError(w, r, err, "get user block status failed")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, userBlockStatusResponseFromModel(status))
+}
+
+func (h *Handler) BlockUser(w http.ResponseWriter, r *http.Request, targetUserID uuid.UUID) {
+	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, "missing authenticated user")
+		return
+	}
+
+	status, err := h.conversationUC.BlockUser(r.Context(), actorUserID, targetUserID)
+	if err != nil {
+		h.writeAppError(w, r, err, "block user failed")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, userBlockStatusResponseFromModel(status))
+}
+
+func (h *Handler) UnblockUser(w http.ResponseWriter, r *http.Request, targetUserID uuid.UUID) {
+	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, "missing authenticated user")
+		return
+	}
+
+	status, err := h.conversationUC.UnblockUser(r.Context(), actorUserID, targetUserID)
+	if err != nil {
+		h.writeAppError(w, r, err, "unblock user failed")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, userBlockStatusResponseFromModel(status))
+}
+
+func userBlockStatusResponseFromModel(status *model.UserBlockStatus) dto.UserBlockStatusResponse {
+	if status == nil {
+		return dto.UserBlockStatusResponse{}
+	}
+	return dto.UserBlockStatusResponse{
+		UserID:        status.UserID.String(),
+		IsBlockedByMe: status.IsBlockedByMe,
+		HasBlockedMe:  status.HasBlockedMe,
+	}
 }
 
 func (h *Handler) LeaveConversation(w http.ResponseWriter, r *http.Request, convID uuid.UUID) {

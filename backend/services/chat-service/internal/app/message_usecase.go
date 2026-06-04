@@ -19,6 +19,7 @@ const maxFilesPerMessage = 10
 const editWindowHours = 24
 const maxReactionLength = 32
 const moderationContextWindow = 5
+const maxChatNotificationBodyRunes = 240
 
 const (
 	messageTypeText    = "text"
@@ -45,6 +46,7 @@ type MessageUseCase struct {
 	activityResolver port.ActivityLifecycleResolver
 	stickerResolver  port.StickerResolver
 	trustPolicy      port.TrustPolicyClient
+	notifications    port.ChatNotificationSender
 }
 
 func NewMessageUseCase(
@@ -224,6 +226,9 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 	if participant == nil || participant.LeftAt != nil {
 		return nil, ErrNotParticipant
 	}
+	if err := u.ensureDirectRecipientAllowsMessage(ctx, conv, input.SenderUserID); err != nil {
+		return nil, err
+	}
 
 	trustResult, trustErr := checkTrustPolicy(ctx, u.trustPolicy, port.TrustPolicyCheck{
 		UserID:       input.SenderUserID,
@@ -291,6 +296,8 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 	msg.FileIDs = fileIDs
 	msg.SenderDisplayName = input.SenderDisplayName
 	enrichMessages(ctx, u.profileResolver, []*model.Message{msg})
+
+	u.notifyChatMessageSent(ctx, conv, msg)
 
 	go func() {
 		evt := event.New("message.sent", input.ConversationID, event.MessageSentPayload{
@@ -360,6 +367,9 @@ func (u *MessageUseCase) ForwardMessage(ctx context.Context, input ForwardMessag
 	}
 	if targetParticipant == nil || targetParticipant.LeftAt != nil {
 		return nil, ErrNotParticipant
+	}
+	if err := u.ensureDirectRecipientAllowsMessage(ctx, targetConversation, input.SenderUserID); err != nil {
+		return nil, err
 	}
 
 	fileIDs, err := u.repo.GetMessageFileIDs(ctx, sourceMessage.ID)
@@ -434,6 +444,8 @@ func (u *MessageUseCase) ForwardMessage(ctx context.Context, input ForwardMessag
 	forwarded.FileIDs = fileIDs
 	enrichMessages(ctx, u.profileResolver, []*model.Message{forwarded})
 
+	u.notifyChatMessageSent(ctx, targetConversation, forwarded)
+
 	go func() {
 		evt := event.New("message.sent", input.TargetConversationID, event.MessageSentPayload{
 			MessageID:                 forwarded.ID,
@@ -464,6 +476,103 @@ func (u *MessageUseCase) ForwardMessage(ctx context.Context, input ForwardMessag
 	}()
 
 	return forwarded, nil
+}
+
+func (u *MessageUseCase) SetNotificationSender(sender port.ChatNotificationSender) {
+	u.notifications = sender
+}
+
+func (u *MessageUseCase) notifyChatMessageSent(
+	ctx context.Context,
+	conv *model.Conversation,
+	msg *model.Message,
+) {
+	if u == nil || u.notifications == nil || conv == nil || msg == nil {
+		return
+	}
+
+	recipients, err := resolveChatNotificationRecipients(ctx, u.repo, conv.ID, msg.SenderUserID, nil)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Str("conversation_id", conv.ID.String()).
+			Str("message_id", msg.ID.String()).
+			Msg("failed to resolve chat push recipients")
+		return
+	}
+	if len(recipients) == 0 {
+		return
+	}
+
+	notification := chatMessageNotification(conv, msg, recipients)
+	if err := u.notifications.SendChatMessageNotification(ctx, notification); err != nil {
+		log.Error().
+			Err(err).
+			Str("conversation_id", conv.ID.String()).
+			Str("message_id", msg.ID.String()).
+			Int("recipient_count", len(recipients)).
+			Msg("failed to send chat push notification")
+	}
+}
+
+func chatNotificationBody(msg *model.Message) string {
+	if msg == nil {
+		return "New message"
+	}
+	body := strings.TrimSpace(msg.Content)
+	if body == "" {
+		switch msg.Type {
+		case messageTypeSticker:
+			body = "Sticker"
+		case messageTypeFile:
+			body = "Attachment"
+		default:
+			body = "New message"
+		}
+	}
+	return truncateRunes(body, maxChatNotificationBodyRunes)
+}
+
+func truncateRunes(value string, maxRunes int) string {
+	if maxRunes <= 0 {
+		return ""
+	}
+	runes := []rune(strings.TrimSpace(value))
+	if len(runes) <= maxRunes {
+		return string(runes)
+	}
+	if maxRunes <= 3 {
+		return string(runes[:maxRunes])
+	}
+	return strings.TrimSpace(string(runes[:maxRunes-3])) + "..."
+}
+
+func (u *MessageUseCase) ensureDirectRecipientAllowsMessage(
+	ctx context.Context,
+	conv *model.Conversation,
+	senderUserID uuid.UUID,
+) error {
+	if conv == nil || conv.Type != "direct" || senderUserID == uuid.Nil {
+		return nil
+	}
+
+	participants, err := u.repo.ListParticipantsByConversationID(ctx, conv.ID)
+	if err != nil {
+		return err
+	}
+	recipientUserID := directConversationPeerID(participants, senderUserID)
+	if recipientUserID == uuid.Nil {
+		return nil
+	}
+
+	blocked, err := u.repo.IsUserBlocked(ctx, recipientUserID, senderUserID)
+	if err != nil {
+		return err
+	}
+	if blocked {
+		return ErrCannotMessageBlockedUser
+	}
+	return nil
 }
 
 func normalizeMessageFileIDs(fileIDs []string) []string {
@@ -719,12 +828,14 @@ func (u *MessageUseCase) ToggleReaction(
 	}
 
 	now := time.Now().UTC()
+	reactionAdded := true
 	err = u.repo.WithTx(ctx, func(txRepo port.ChatTxRepository) error {
 		current, err := txRepo.GetMessageReactionForUpdate(ctx, messageID, actorUserID)
 		if err != nil {
 			return err
 		}
 		if current != nil && current.Emoji == reactionEmoji {
+			reactionAdded = false
 			return txRepo.DeleteMessageReaction(ctx, messageID, actorUserID)
 		}
 		return txRepo.SetMessageReaction(ctx, &model.MessageReaction{
@@ -748,6 +859,10 @@ func (u *MessageUseCase) ToggleReaction(
 	}
 	reactions := reactionsByMessage[messageID]
 
+	if reactionAdded {
+		u.notifyMessageReaction(ctx, conv, msg, actorUserID, reactionEmoji)
+	}
+
 	go func() {
 		evt := event.New(
 			"message.reaction_updated",
@@ -765,6 +880,48 @@ func (u *MessageUseCase) ToggleReaction(
 		MessageID: messageID,
 		Reactions: reactions,
 	}, nil
+}
+
+func (u *MessageUseCase) notifyMessageReaction(
+	ctx context.Context,
+	conv *model.Conversation,
+	msg *model.Message,
+	actorUserID uuid.UUID,
+	reactionEmoji string,
+) {
+	if u == nil || u.notifications == nil || conv == nil || msg == nil || msg.SenderUserID == uuid.Nil {
+		return
+	}
+
+	recipients, err := resolveChatNotificationRecipients(
+		ctx,
+		u.repo,
+		conv.ID,
+		actorUserID,
+		[]uuid.UUID{msg.SenderUserID},
+	)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Str("conversation_id", conv.ID.String()).
+			Str("message_id", msg.ID.String()).
+			Msg("failed to resolve chat reaction push recipient")
+		return
+	}
+	if len(recipients) == 0 {
+		return
+	}
+
+	actorDisplayName := displayNameForUser(ctx, u.profileResolver, actorUserID, "User")
+	notification := chatReactionNotification(conv, msg, actorUserID, actorDisplayName, reactionEmoji, recipients)
+	if err := u.notifications.SendChatMessageNotification(ctx, notification); err != nil {
+		log.Error().
+			Err(err).
+			Str("conversation_id", conv.ID.String()).
+			Str("message_id", msg.ID.String()).
+			Int("recipient_count", len(recipients)).
+			Msg("failed to send chat reaction push notification")
+	}
 }
 
 func (u *MessageUseCase) ListMessages(ctx context.Context, conversationID, actorUserID uuid.UUID, limit int, cursor *uuid.UUID, direction string) ([]*model.Message, error) {

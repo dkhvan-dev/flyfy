@@ -865,6 +865,59 @@ class _ChatScreenState extends State<ChatScreen> {
     return context.read<ChatProvider>().activeConversation?.canSendNow ?? true;
   }
 
+  Future<void> _showDirectChatActions(
+    ConversationDetail conversation,
+    String currentUserId,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final peerUserId = conversation.directPeer(currentUserId)?.userId.trim();
+    if (peerUserId == null || peerUserId.isEmpty) return;
+
+    final isBlocked = conversation.isBlockedByMe;
+    final shouldBlock = await showModalBottomSheet<bool>(
+      context: context,
+      isDismissible: true,
+      backgroundColor: const Color(0xFF1d120b),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: _scale(context, 8)),
+            child: ListTile(
+              leading: Icon(
+                isBlocked ? Icons.lock_open_rounded : Icons.block_rounded,
+                color: isBlocked ? AppColors.accent : AppColors.destruct,
+              ),
+              title: Text(
+                isBlocked
+                    ? l10n.chatUnblockUserAction
+                    : l10n.chatBlockUserAction,
+                style: TextStyle(
+                  color: isBlocked ? AppColors.textPrimary : AppColors.destruct,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              onTap: () => Navigator.of(sheetContext).pop(!isBlocked),
+            ),
+          ),
+        );
+      },
+    );
+    if (shouldBlock == null || !mounted) return;
+
+    final provider = context.read<ChatProvider>();
+    final status = shouldBlock
+        ? await provider.blockUser(peerUserId)
+        : await provider.unblockUser(peerUserId);
+    if (status == null && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.chatUserBlockUpdateFailed)));
+    }
+  }
+
   void _showChatClosedMessage() {
     final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1894,6 +1947,8 @@ class _ChatScreenState extends State<ChatScreen> {
                 currentUserId: currentUserId,
                 onParticipantsTap: () => _openParticipants(conv, currentUserId),
                 onDirectPeerAvatarTap: (userId) => _openUserProfile(userId),
+                onDirectActionsTap: () =>
+                    _showDirectChatActions(conv, currentUserId),
                 onSharedContentTap: () => unawaited(
                   _openSharedContent(conv, currentUserId, chat.messages),
                 ),
@@ -2108,6 +2163,7 @@ class _ChatTopBar extends StatelessWidget {
     required this.currentUserId,
     required this.onParticipantsTap,
     required this.onDirectPeerAvatarTap,
+    required this.onDirectActionsTap,
     required this.onSharedContentTap,
   });
 
@@ -2115,6 +2171,7 @@ class _ChatTopBar extends StatelessWidget {
   final String currentUserId;
   final VoidCallback onParticipantsTap;
   final ValueChanged<String> onDirectPeerAvatarTap;
+  final VoidCallback onDirectActionsTap;
   final VoidCallback onSharedContentTap;
 
   @override
@@ -2153,14 +2210,16 @@ class _ChatTopBar extends StatelessWidget {
             ),
           ),
           SizedBox(width: _scale(context, 12)),
-          if (conversation.isDirect)
+          if (conversation.isDirect) ...[
             _DirectTopBarContent(
               conversation: conversation,
               currentUserId: currentUserId,
               onTap: onSharedContentTap,
               onDirectPeerAvatarTap: onDirectPeerAvatarTap,
-            )
-          else ...[
+            ),
+            SizedBox(width: _scale(context, 10)),
+            _DirectActionsButton(onTap: onDirectActionsTap),
+          ] else ...[
             _GroupTopBarContent(
               conversation: conversation,
               onTap: onSharedContentTap,
@@ -2169,6 +2228,37 @@ class _ChatTopBar extends StatelessWidget {
             _ParticipantsButton(onTap: onParticipantsTap),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _DirectActionsButton extends StatelessWidget {
+  const _DirectActionsButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = _scale(context, 42);
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: s,
+        height: s,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+          color: Colors.white.withValues(alpha: 0.05),
+        ),
+        child: Center(
+          child: Icon(
+            Icons.more_vert_rounded,
+            size: _scale(context, 22),
+            color: AppColors.textPrimary,
+          ),
+        ),
       ),
     );
   }

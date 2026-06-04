@@ -18,6 +18,7 @@ type ConversationUseCase struct {
 	publisher        port.EventPublisher
 	profileResolver  port.UserProfileResolver
 	activityResolver port.ActivityLifecycleResolver
+	notifications    port.ChatNotificationSender
 }
 
 func NewConversationUseCase(
@@ -37,6 +38,10 @@ func NewConversationUseCase(
 		profileResolver:  profileResolver,
 		activityResolver: resolver,
 	}
+}
+
+func (u *ConversationUseCase) SetNotificationSender(sender port.ChatNotificationSender) {
+	u.notifications = sender
 }
 
 type CreateDirectConversationInput struct {
@@ -100,6 +105,65 @@ func (u *ConversationUseCase) CreateDirectConversation(ctx context.Context, inpu
 	}()
 
 	return conv, nil
+}
+
+func (u *ConversationUseCase) BlockUser(ctx context.Context, actorUserID, targetUserID uuid.UUID) (*model.UserBlockStatus, error) {
+	if actorUserID == uuid.Nil || targetUserID == uuid.Nil {
+		return nil, ErrInvalidUserID
+	}
+	if actorUserID == targetUserID {
+		return nil, ErrCannotBlockSelf
+	}
+
+	now := time.Now().UTC()
+	if err := u.repo.UpsertUserBlock(ctx, &model.UserBlock{
+		BlockerUserID: actorUserID,
+		BlockedUserID: targetUserID,
+		CreatedAt:     now,
+	}); err != nil {
+		return nil, err
+	}
+
+	return u.GetUserBlockStatus(ctx, actorUserID, targetUserID)
+}
+
+func (u *ConversationUseCase) UnblockUser(ctx context.Context, actorUserID, targetUserID uuid.UUID) (*model.UserBlockStatus, error) {
+	if actorUserID == uuid.Nil || targetUserID == uuid.Nil {
+		return nil, ErrInvalidUserID
+	}
+	if actorUserID == targetUserID {
+		return nil, ErrCannotBlockSelf
+	}
+
+	if err := u.repo.DeleteUserBlock(ctx, actorUserID, targetUserID); err != nil {
+		return nil, err
+	}
+
+	return u.GetUserBlockStatus(ctx, actorUserID, targetUserID)
+}
+
+func (u *ConversationUseCase) GetUserBlockStatus(ctx context.Context, actorUserID, targetUserID uuid.UUID) (*model.UserBlockStatus, error) {
+	if actorUserID == uuid.Nil || targetUserID == uuid.Nil {
+		return nil, ErrInvalidUserID
+	}
+	if actorUserID == targetUserID {
+		return nil, ErrCannotBlockSelf
+	}
+
+	isBlockedByMe, err := u.repo.IsUserBlocked(ctx, actorUserID, targetUserID)
+	if err != nil {
+		return nil, err
+	}
+	hasBlockedMe, err := u.repo.IsUserBlocked(ctx, targetUserID, actorUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.UserBlockStatus{
+		UserID:        targetUserID,
+		IsBlockedByMe: isBlockedByMe,
+		HasBlockedMe:  hasBlockedMe,
+	}, nil
 }
 
 type CreateActivityConversationInput struct {
@@ -506,12 +570,16 @@ func (u *ConversationUseCase) GetConversationByID(ctx context.Context, conversat
 	if participant == nil || participant.LeftAt != nil {
 		return nil, ErrNotParticipant
 	}
+	conv.MutedUntil = participant.MutedUntil
 
 	conv.Participants, err = u.repo.ListParticipantsByConversationID(ctx, conversationID)
 	if err != nil {
 		return nil, err
 	}
 	enrichParticipants(ctx, u.profileResolver, conv.Participants)
+	if err := u.populateDirectBlockStatus(ctx, conv, actorUserID); err != nil {
+		return nil, err
+	}
 
 	conv.UnreadCount, err = u.repo.GetUnreadCount(ctx, conversationID, actorUserID)
 	if err != nil {
@@ -551,6 +619,7 @@ func (u *ConversationUseCase) GetConversationByActivityID(ctx context.Context, a
 	if participant == nil || participant.LeftAt != nil {
 		return nil, ErrNotParticipant
 	}
+	conv.MutedUntil = participant.MutedUntil
 
 	conv.Participants, err = u.repo.ListParticipantsByConversationID(ctx, conv.ID)
 	if err != nil {
@@ -574,6 +643,23 @@ func (u *ConversationUseCase) GetConversationByActivityID(ctx context.Context, a
 	}
 
 	return conv, nil
+}
+
+func (u *ConversationUseCase) populateDirectBlockStatus(ctx context.Context, conv *model.Conversation, actorUserID uuid.UUID) error {
+	if conv == nil || conv.Type != "direct" {
+		return nil
+	}
+	peerUserID := directConversationPeerID(conv.Participants, actorUserID)
+	if peerUserID == uuid.Nil {
+		return nil
+	}
+	status, err := u.GetUserBlockStatus(ctx, actorUserID, peerUserID)
+	if err != nil {
+		return err
+	}
+	conv.IsBlockedByMe = status.IsBlockedByMe
+	conv.HasBlockedMe = status.HasBlockedMe
+	return nil
 }
 
 func (u *ConversationUseCase) ListConversations(ctx context.Context, actorUserID uuid.UUID, convType *string, limit int, cursor *time.Time) ([]*model.Conversation, error) {
@@ -820,6 +906,8 @@ func (u *ConversationUseCase) PinMessage(
 		return nil, err
 	}
 
+	u.notifyMessagePinned(ctx, conv, msg, actorUserID)
+
 	publishedPins := pins
 	go func() {
 		_ = publishPinnedMessages(
@@ -831,6 +919,41 @@ func (u *ConversationUseCase) PinMessage(
 	}()
 
 	return pins, nil
+}
+
+func (u *ConversationUseCase) notifyMessagePinned(
+	ctx context.Context,
+	conv *model.Conversation,
+	msg *model.Message,
+	actorUserID uuid.UUID,
+) {
+	if u == nil || u.notifications == nil || conv == nil || msg == nil || actorUserID == uuid.Nil {
+		return
+	}
+
+	recipients, err := resolveChatNotificationRecipients(ctx, u.repo, conv.ID, actorUserID, nil)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Str("conversation_id", conv.ID.String()).
+			Str("message_id", msg.ID.String()).
+			Msg("failed to resolve chat pin push recipients")
+		return
+	}
+	if len(recipients) == 0 {
+		return
+	}
+
+	actorDisplayName := displayNameForUser(ctx, u.profileResolver, actorUserID, "User")
+	notification := chatPinNotification(conv, msg, actorUserID, actorDisplayName, recipients)
+	if err := u.notifications.SendChatMessageNotification(ctx, notification); err != nil {
+		log.Error().
+			Err(err).
+			Str("conversation_id", conv.ID.String()).
+			Str("message_id", msg.ID.String()).
+			Int("recipient_count", len(recipients)).
+			Msg("failed to send chat pin push notification")
+	}
 }
 
 func (u *ConversationUseCase) UnpinMessage(

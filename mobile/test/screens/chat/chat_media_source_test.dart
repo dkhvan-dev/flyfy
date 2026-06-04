@@ -129,6 +129,127 @@ void main() {
     expect(source, isNot(contains('chatEncryptedMessage')));
   });
 
+  test('conversation list exposes chat type tabs and shared search', () async {
+    final source = await File(
+      'lib/screens/chat/conversations_screen.dart',
+    ).readAsString();
+    final en = await File('lib/l10n/app_en.arb').readAsString();
+    final ru = await File('lib/l10n/app_ru.arb').readAsString();
+    final kk = await File('lib/l10n/app_kk.arb').readAsString();
+
+    expect(
+      source,
+      contains(
+        'enum _ConversationListTab { personal, activities, excursions }',
+      ),
+    );
+    expect(source, contains('TabBar('));
+    expect(source, contains('chatListPersonalTab'));
+    expect(source, contains('chatListActivitiesTab'));
+    expect(source, contains('chatListExcursionsTab'));
+    expect(source, contains('chatListSearchHint'));
+    expect(source, contains('_filterConversations('));
+    expect(source, contains('_matchesSelectedTab('));
+    expect(source, contains('_matchesSearchQuery('));
+
+    expect(en, contains('"chatListPersonalTab": "Personal"'));
+    expect(en, contains('"chatListActivitiesTab": "Activities"'));
+    expect(en, contains('"chatListExcursionsTab": "Tours"'));
+    expect(en, contains('"chatListSearchHint": "Search chats"'));
+    expect(en, contains('"chatListSearchEmpty": "No chats found"'));
+    expect(ru, contains('"chatListPersonalTab": "Личные"'));
+    expect(ru, contains('"chatListActivitiesTab": "Активности"'));
+    expect(ru, contains('"chatListExcursionsTab": "Экскурсии"'));
+    expect(ru, contains('"chatListSearchHint": "Поиск чатов"'));
+    expect(ru, contains('"chatListSearchEmpty": "Чаты не найдены"'));
+    expect(kk, contains('"chatListPersonalTab": "Жеке"'));
+    expect(kk, contains('"chatListActivitiesTab": "Белсенділіктер"'));
+    expect(kk, contains('"chatListExcursionsTab": "Экскурсиялар"'));
+    expect(kk, contains('"chatListSearchHint": "Чаттарды іздеу"'));
+    expect(kk, contains('"chatListSearchEmpty": "Чаттар табылмады"'));
+  });
+
+  test(
+    'chat mute and user block actions are wired through UI and API',
+    () async {
+      final conversationsSource = await File(
+        'lib/screens/chat/conversations_screen.dart',
+      ).readAsString();
+      final chatSource = await File(
+        'lib/screens/chat/chat_screen.dart',
+      ).readAsString();
+      final profileSource = await File(
+        'lib/screens/profile/profile_screen.dart',
+      ).readAsString();
+      final apiSource = await File(
+        'lib/core/network/chat_api.dart',
+      ).readAsString();
+      final providerSource = await File(
+        'lib/providers/chat_provider.dart',
+      ).readAsString();
+      final en = await File('lib/l10n/app_en.arb').readAsString();
+      final ru = await File('lib/l10n/app_ru.arb').readAsString();
+      final kk = await File('lib/l10n/app_kk.arb').readAsString();
+      final handlerSource = await File(
+        '../backend/services/chat-service/internal/adapter/http/handler.go',
+      ).readAsString();
+      final gatewayRoutesSource = await File(
+        '../backend/services/api-gateway/internal/adapter/http/routes.go',
+      ).readAsString();
+
+      expect(conversationsSource, contains('onLongPress'));
+      expect(conversationsSource, contains('_showConversationActions'));
+      expect(conversationsSource, contains('chatMuteNotificationsAction'));
+      expect(conversationsSource, contains('chatUnmuteNotificationsAction'));
+      expect(chatSource, contains('_showDirectChatActions'));
+      expect(chatSource, contains('Icons.more_vert_rounded'));
+      expect(chatSource, contains('chatBlockUserAction'));
+      expect(chatSource, contains('chatUnblockUserAction'));
+      expect(profileSource, contains('getUserBlockStatus'));
+      expect(profileSource, contains('onToggleBlock'));
+      expect(apiSource, contains('muteConversation('));
+      expect(apiSource, contains('/chat/conversations/\$conversationId/mute'));
+      expect(apiSource, contains('blockUser('));
+      expect(apiSource, contains('/chat/users/\$userId/block'));
+      expect(providerSource, contains('setConversationMuted('));
+      expect(providerSource, contains('blockUser('));
+      expect(providerSource, contains('unblockUser('));
+      expect(handlerSource, contains('handleUserRoutes'));
+      expect(handlerSource, contains('/v1/users/'));
+      expect(gatewayRoutesSource, contains('"chat-users"'));
+      expect(gatewayRoutesSource, contains('/chat/users'));
+
+      expect(
+        en,
+        contains('"chatMuteNotificationsAction": "Mute notifications"'),
+      );
+      expect(
+        en,
+        contains('"chatUnmuteNotificationsAction": "Unmute notifications"'),
+      );
+      expect(en, contains('"chatBlockUserAction": "Block"'));
+      expect(en, contains('"chatUnblockUserAction": "Unblock"'));
+      expect(
+        ru,
+        contains('"chatMuteNotificationsAction": "Выключить уведомления"'),
+      );
+      expect(
+        ru,
+        contains('"chatUnmuteNotificationsAction": "Включить уведомления"'),
+      );
+      expect(ru, contains('"chatBlockUserAction": "Заблокировать"'));
+      expect(ru, contains('"chatUnblockUserAction": "Разблокировать"'));
+      expect(
+        kk,
+        contains('"chatMuteNotificationsAction": "Хабарландыруларды өшіру"'),
+      );
+      expect(
+        kk,
+        contains('"chatUnmuteNotificationsAction": "Хабарландыруларды қосу"'),
+      );
+    },
+  );
+
   test(
     'conversation list video thumbnails can load local first frame',
     () async {

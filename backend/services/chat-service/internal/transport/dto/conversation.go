@@ -47,6 +47,8 @@ type ConversationListItem struct {
 	MutedUntil              *string             `json:"mutedUntil"`
 	MessagingAvailableUntil *string             `json:"messagingAvailableUntil,omitempty"`
 	CanSendMessages         bool                `json:"canSendMessages"`
+	IsBlockedByMe           bool                `json:"isBlockedByMe,omitempty"`
+	HasBlockedMe            bool                `json:"hasBlockedMe,omitempty"`
 	LastActivityAt          string              `json:"lastActivityAt"`
 }
 
@@ -79,6 +81,8 @@ type ConversationDetail struct {
 	MutedUntil              *string             `json:"mutedUntil"`
 	MessagingAvailableUntil *string             `json:"messagingAvailableUntil,omitempty"`
 	CanSendMessages         bool                `json:"canSendMessages"`
+	IsBlockedByMe           bool                `json:"isBlockedByMe,omitempty"`
+	HasBlockedMe            bool                `json:"hasBlockedMe,omitempty"`
 	LastActivityAt          string              `json:"lastActivityAt"`
 }
 
@@ -114,6 +118,12 @@ type ConversationListResponse struct {
 
 type MuteRequest struct {
 	Until *string `json:"until"`
+}
+
+type UserBlockStatusResponse struct {
+	UserID        string `json:"userId"`
+	IsBlockedByMe bool   `json:"isBlockedByMe"`
+	HasBlockedMe  bool   `json:"hasBlockedMe"`
 }
 
 type PinRequest struct {

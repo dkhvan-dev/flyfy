@@ -5230,6 +5230,41 @@ class AppLocalizationsKk extends AppLocalizations {
   String get chatListEmpty => 'Әзірге диалог жоқ';
 
   @override
+  String get chatListPersonalTab => 'Жеке';
+
+  @override
+  String get chatListActivitiesTab => 'Белсенділіктер';
+
+  @override
+  String get chatListExcursionsTab => 'Экскурсиялар';
+
+  @override
+  String get chatListSearchHint => 'Чаттарды іздеу';
+
+  @override
+  String get chatListSearchEmpty => 'Чаттар табылмады';
+
+  @override
+  String get chatMuteNotificationsAction => 'Хабарландыруларды өшіру';
+
+  @override
+  String get chatUnmuteNotificationsAction => 'Хабарландыруларды қосу';
+
+  @override
+  String get chatMuteUpdateFailed =>
+      'Чат хабарландыруларын жаңарту мүмкін болмады';
+
+  @override
+  String get chatBlockUserAction => 'Бұғаттау';
+
+  @override
+  String get chatUnblockUserAction => 'Бұғаттан шығару';
+
+  @override
+  String get chatUserBlockUpdateFailed =>
+      'Пайдаланушыны бұғаттау күйін жаңарту мүмкін болмады';
+
+  @override
   String get chatFallbackTitle => 'Чат';
 
   @override

@@ -1,3 +1,5 @@
+const Object _copyWithSentinel = Object();
+
 class ConversationVm {
   final String id;
   final String type;
@@ -41,6 +43,11 @@ class ConversationVm {
       canSendMessages &&
       (messagingAvailableUntil == null ||
           DateTime.now().toUtc().isBefore(messagingAvailableUntil!.toUtc()));
+  DateTime? get mutedUntilAt => _parseDateTimeOrNull(mutedUntil);
+  bool get isMutedNow {
+    final until = mutedUntilAt;
+    return until != null && DateTime.now().toUtc().isBefore(until.toUtc());
+  }
 
   ParticipantInfo? directPeer(String currentUserId) {
     final current = currentUserId.trim();
@@ -69,6 +76,7 @@ class ConversationVm {
     int? unreadCount,
     LastMessagePreview? lastMessage,
     List<ParticipantInfo>? participants,
+    Object? mutedUntil = _copyWithSentinel,
   }) {
     return ConversationVm(
       id: id,
@@ -81,7 +89,9 @@ class ConversationVm {
       lastMessage: lastMessage ?? this.lastMessage,
       unreadCount: unreadCount ?? this.unreadCount,
       participantCount: participantCount,
-      mutedUntil: mutedUntil,
+      mutedUntil: identical(mutedUntil, _copyWithSentinel)
+          ? this.mutedUntil
+          : mutedUntil as String?,
       messagingAvailableUntil: messagingAvailableUntil,
       canSendMessages: canSendMessages,
       lastActivityAt: lastActivityAt,
@@ -194,6 +204,8 @@ class ConversationDetail {
   final String? mutedUntil;
   final DateTime? messagingAvailableUntil;
   final bool canSendMessages;
+  final bool isBlockedByMe;
+  final bool hasBlockedMe;
   final DateTime lastActivityAt;
 
   const ConversationDetail({
@@ -210,6 +222,8 @@ class ConversationDetail {
     this.mutedUntil,
     this.messagingAvailableUntil,
     this.canSendMessages = true,
+    this.isBlockedByMe = false,
+    this.hasBlockedMe = false,
     required this.lastActivityAt,
   });
 
@@ -223,6 +237,11 @@ class ConversationDetail {
       canSendMessages &&
       (messagingAvailableUntil == null ||
           DateTime.now().toUtc().isBefore(messagingAvailableUntil!.toUtc()));
+  DateTime? get mutedUntilAt => _parseDateTimeOrNull(mutedUntil);
+  bool get isMutedNow {
+    final until = mutedUntilAt;
+    return until != null && DateTime.now().toUtc().isBefore(until.toUtc());
+  }
 
   ParticipantInfo? directPeer(String currentUserId) {
     final current = currentUserId.trim();
@@ -244,6 +263,10 @@ class ConversationDetail {
     List<ParticipantInfo>? participants,
     List<PinnedMessageInfo>? pinnedMessages,
     int? unreadCount,
+    Object? mutedUntil = _copyWithSentinel,
+    bool? canSendMessages,
+    bool? isBlockedByMe,
+    bool? hasBlockedMe,
   }) {
     return ConversationDetail(
       id: id,
@@ -256,9 +279,13 @@ class ConversationDetail {
       participants: participants ?? this.participants,
       pinnedMessages: pinnedMessages ?? this.pinnedMessages,
       unreadCount: unreadCount ?? this.unreadCount,
-      mutedUntil: mutedUntil,
+      mutedUntil: identical(mutedUntil, _copyWithSentinel)
+          ? this.mutedUntil
+          : mutedUntil as String?,
       messagingAvailableUntil: messagingAvailableUntil,
-      canSendMessages: canSendMessages,
+      canSendMessages: canSendMessages ?? this.canSendMessages,
+      isBlockedByMe: isBlockedByMe ?? this.isBlockedByMe,
+      hasBlockedMe: hasBlockedMe ?? this.hasBlockedMe,
       lastActivityAt: lastActivityAt,
     );
   }
@@ -290,6 +317,8 @@ class ConversationDetail {
         json['messagingAvailableUntil'],
       ),
       canSendMessages: json['canSendMessages'] != false,
+      isBlockedByMe: json['isBlockedByMe'] == true,
+      hasBlockedMe: json['hasBlockedMe'] == true,
       lastActivityAt: DateTime.parse(json['lastActivityAt'] as String),
     );
   }

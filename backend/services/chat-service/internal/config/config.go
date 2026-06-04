@@ -21,6 +21,7 @@ type Config struct {
 	UserService     UserServiceConfig
 	ActivityService ActivityServiceConfig
 	StickerService  StickerServiceConfig
+	Notification    NotificationServiceConfig
 	Trust           TrustServiceConfig
 }
 
@@ -118,6 +119,11 @@ type StickerServiceConfig struct {
 	HTTPURL              string        `env:"STICKER_SERVICE_HTTP_URL, default=http://sticker-service:8092"`
 	Timeout              time.Duration `env:"STICKER_SERVICE_TIMEOUT, default=5s"`
 	InternalServiceToken string        `env:"STICKER_SERVICE_INTERNAL_SERVICE_TOKEN"`
+}
+
+type NotificationServiceConfig struct {
+	HTTPURL        string        `env:"NOTIFICATION_SERVICE_HTTP_URL, default=http://notification-service:8097"`
+	RequestTimeout time.Duration `env:"NOTIFICATION_SERVICE_REQUEST_TIMEOUT, default=3s"`
 }
 
 type TrustServiceConfig struct {
