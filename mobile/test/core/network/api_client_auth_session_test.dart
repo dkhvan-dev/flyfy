@@ -105,6 +105,44 @@ void main() {
     ]);
     await sub.cancel();
   });
+
+  test(
+    'concurrent 401 responses across api clients share one token refresh',
+    () async {
+      final events = AuthSessionEvents();
+      var expiredCount = 0;
+      final sub = events.sessionExpired.listen((_) => expiredCount++);
+      final storage = _MemorySecureStorage(
+        accessToken: 'expired-access',
+        refreshToken: 'rotating-refresh',
+      );
+      final adapter = _RotatingRefreshAdapter();
+      final firstClient = ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+          ..httpClientAdapter = adapter,
+        secureStorage: storage,
+        authSessionEvents: events,
+      );
+      final secondClient = ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+          ..httpClientAdapter = adapter,
+        secureStorage: storage,
+        authSessionEvents: events,
+      );
+
+      await expectLater(
+        Future.wait([firstClient.getMe(), secondClient.getMe()]),
+        completes,
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(adapter.refreshRequests, 1);
+      expect(storage.accessToken, 'fresh-access');
+      expect(storage.refreshToken, 'fresh-refresh');
+      expect(expiredCount, 0);
+      await sub.cancel();
+    },
+  );
 }
 
 class _MemorySecureStorage extends SecureStorage {
@@ -173,4 +211,51 @@ class _JsonResponse {
 
   final int statusCode;
   final Map<String, Object?> body;
+}
+
+class _RotatingRefreshAdapter implements HttpClientAdapter {
+  int refreshRequests = 0;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    if (options.uri.path == '/api/v1/auth/refresh') {
+      refreshRequests++;
+      if (refreshRequests == 1) {
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        return _json(200, {
+          'access_token': 'fresh-access',
+          'refresh_token': 'fresh-refresh',
+          'is_new_user': false,
+        });
+      }
+
+      return _json(401, {'error': 'refresh token already used'});
+    }
+
+    if (options.headers['Authorization'] == 'Bearer fresh-access') {
+      return _json(200, {
+        'user': {'id': 'user-1', 'status': 'ACTIVE'},
+        'profile': {'locale': 'ru', 'timezone': 'Asia/Almaty'},
+      });
+    }
+
+    return _json(401, {'error': 'token expired'});
+  }
+
+  ResponseBody _json(int statusCode, Map<String, Object?> body) {
+    return ResponseBody.fromString(
+      jsonEncode(body),
+      statusCode,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
 }

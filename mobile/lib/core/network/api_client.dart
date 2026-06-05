@@ -73,7 +73,8 @@ class ApiClient {
   final SecureStorage _secureStorage;
   final AuthSessionEvents _authSessionEvents;
 
-  Future<void>? _refreshFuture;
+  // SecureStorage is shared app-wide, so refresh must be serialized app-wide too.
+  static Future<void>? _sharedRefreshFuture;
 
   Dio get dio => _dio;
 
@@ -123,8 +124,7 @@ class ApiClient {
           }
 
           try {
-            await (_refreshFuture ??= _refreshAccessToken());
-            _refreshFuture = null;
+            await _refreshAccessTokenIfNeeded(request);
 
             final newAccessToken = await _secureStorage.getAccessToken();
             if (newAccessToken == null || newAccessToken.isEmpty) {
@@ -139,7 +139,6 @@ class ApiClient {
             final response = await _dio.fetch(request);
             handler.resolve(response);
           } catch (_) {
-            _refreshFuture = null;
             await _expireLocalSession();
             handler.next(error);
           }
@@ -179,17 +178,45 @@ class ApiClient {
     }
 
     try {
-      await (_refreshFuture ??= _refreshAccessToken());
-      _refreshFuture = null;
+      await _refreshAccessTokenShared();
       final accessToken = await _secureStorage.getAccessToken();
       if (accessToken == null || accessToken.isEmpty) {
         return null;
       }
       return accessToken;
     } catch (_) {
-      _refreshFuture = null;
       await _secureStorage.deleteTokens();
       return null;
+    }
+  }
+
+  Future<void> _refreshAccessTokenIfNeeded(RequestOptions failedRequest) async {
+    final currentAccessToken = await _secureStorage.getAccessToken();
+    final failedAuthorization = failedRequest.headers['Authorization'];
+    if (currentAccessToken != null &&
+        currentAccessToken.isNotEmpty &&
+        failedAuthorization != 'Bearer $currentAccessToken') {
+      return;
+    }
+
+    await _refreshAccessTokenShared();
+  }
+
+  Future<void> _refreshAccessTokenShared() async {
+    final existingRefresh = _sharedRefreshFuture;
+    if (existingRefresh != null) {
+      await existingRefresh;
+      return;
+    }
+
+    final refresh = _refreshAccessToken();
+    _sharedRefreshFuture = refresh;
+    try {
+      await refresh;
+    } finally {
+      if (identical(_sharedRefreshFuture, refresh)) {
+        _sharedRefreshFuture = null;
+      }
     }
   }
 
