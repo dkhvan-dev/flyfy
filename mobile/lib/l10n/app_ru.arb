@@ -24,6 +24,35 @@
   "authLoginFailed": "Не удалось войти. Проверьте данные и попробуйте снова.",
   "authRegistrationFailed": "Не удалось начать регистрацию. Проверьте данные и попробуйте снова.",
   "authPasswordMismatchError": "Пароли не совпадают",
+  "authForgotPasswordAction": "Забыли пароль?",
+  "passwordResetTitle": "Восстановление доступа",
+  "passwordResetRequestDescription": "Введите email или никнейм. Если аккаунт найден, мы отправим код на привязанную почту.",
+  "passwordResetVerifyDescription": "Введите код из письма и задайте новый пароль для аккаунта.",
+  "passwordResetIdentifierLabel": "Email или никнейм",
+  "passwordResetIdentifierHint": "@nomad или traveler@example.com",
+  "passwordResetIdentifierRequiredError": "Введите email или никнейм",
+  "passwordResetCodeLabel": "Код подтверждения",
+  "passwordResetCodeHint": "6 цифр",
+  "passwordResetCodeRequiredError": "Введите код подтверждения",
+  "passwordResetNewPasswordLabel": "Новый пароль",
+  "passwordResetConfirmPasswordLabel": "Повторите новый пароль",
+  "passwordResetSendCodeAction": "Отправить код",
+  "passwordResetResendCodeAction": "Отправить повторно",
+  "passwordResetResendCodeCountdown": "Повторно через {time}",
+  "@passwordResetResendCodeCountdown": {
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "00:59"
+      }
+    }
+  },
+  "passwordResetSavePasswordAction": "Сохранить пароль",
+  "passwordResetBackToLogin": "Вернуться ко входу",
+  "passwordResetStartFailed": "Не удалось отправить код восстановления. Попробуйте еще раз.",
+  "passwordResetVerifyFailed": "Не удалось обновить пароль. Проверьте код и попробуйте снова.",
+  "passwordResetSentNotice": "Если аккаунт найден, код отправлен на привязанную почту.",
+  "passwordResetSuccess": "Пароль обновлен. Войдите с новым паролем.",
   "emailRequiredError": "Введите email",
   "emailInvalidError": "Введите корректный email",
   "passwordRequiredError": "Введите пароль",
@@ -407,6 +436,30 @@
   "profileSecurityHeroSubtitle": "Здесь будут собраны инструменты защиты аккаунта, экспорт данных и настройки приватности.",
   "profileSecurityAccountSection": "Защита аккаунта",
   "profileSecurityDataSection": "Данные и конфиденциальность",
+  "profileSecurityPasswordTitle": "Смена пароля",
+  "profileSecurityPasswordSubtitle": "Подтвердите текущий пароль и одноразовый код с почты.",
+  "profileSecurityPasswordAction": "Сменить",
+  "profileSecurityPasswordSheetTitle": "Смена пароля",
+  "profileSecurityPasswordSheetSubtitle": "Сначала подтвердите текущий пароль. Затем мы отправим код на привязанную почту.",
+  "profileSecurityPasswordCurrentLabel": "Текущий пароль",
+  "profileSecurityPasswordCurrentHint": "Введите текущий пароль",
+  "profileSecurityPasswordCodeNotice": "Код отправлен на подтвержденную почту аккаунта.",
+  "profileSecurityPasswordNewLabel": "Новый пароль",
+  "profileSecurityPasswordConfirmLabel": "Повторите новый пароль",
+  "profileSecurityPasswordSendCode": "Отправить код",
+  "profileSecurityPasswordSave": "Сохранить пароль",
+  "profileSecurityPasswordSuccess": "Пароль изменен.",
+  "profileSecurityPasswordChangeFailed": "Не удалось сменить пароль. Проверьте данные и попробуйте снова.",
+  "profileSecurityPasswordMismatchError": "Пароли не совпадают",
+  "profileSecurityPasswordUnchangedError": "Новый пароль должен отличаться от текущего",
+  "profileSecurityPasswordResendCodeCountdown": "Повторно через {time}",
+  "@profileSecurityPasswordResendCodeCountdown": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "profileSecurityTwoFactorTitle": "Дополнительная верификация",
   "profileSecurityTwoFactorSubtitle": "Отдельные сценарии подтверждения входа и чувствительных действий появятся позже.",
   "profileSecurityDataExportTitle": "Экспорт данных",

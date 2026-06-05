@@ -54,6 +54,10 @@ func (h *AuthHandler) Router() http.Handler {
 		r.Post("/register/email/start", h.handleStartEmailRegistration)
 		r.Post("/register/email/verify", h.handleVerifyEmailRegistration)
 		r.Post("/login/password", h.handlePasswordLogin)
+		r.Post("/password/change/start", h.handleStartPasswordChange)
+		r.Post("/password/change/verify", h.handleVerifyPasswordChange)
+		r.Post("/password/reset/start", h.handleStartPasswordReset)
+		r.Post("/password/reset/verify", h.handleVerifyPasswordReset)
 
 		// OAuth
 		r.Post("/google", h.handleGoogleLogin)
@@ -247,6 +251,145 @@ func (h *AuthHandler) handlePasswordLogin(w http.ResponseWriter, r *http.Request
 	}
 
 	h.writeJSON(w, http.StatusOK, result)
+}
+
+type startPasswordResetRequest struct {
+	Identifier string `json:"identifier"`
+}
+
+func (h *AuthHandler) handleStartPasswordReset(w http.ResponseWriter, r *http.Request) {
+	var req startPasswordResetRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.writeError(w, r, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if strings.TrimSpace(req.Identifier) == "" {
+		h.writeError(w, r, http.StatusBadRequest, "identifier is required")
+		return
+	}
+
+	if err := h.auth.StartPasswordReset(r.Context(), req.Identifier, deviceFromRequest(r)); err != nil {
+		switch {
+		case errors.Is(err, model.ErrRateLimited), errors.Is(err, model.ErrOTPRateLimit):
+			h.writeError(w, r, http.StatusTooManyRequests, "too many requests, try again later")
+		case errors.Is(err, model.ErrInvalidCredentials):
+			h.writeError(w, r, http.StatusBadRequest, "identifier is required")
+		default:
+			h.logger.Error().Err(err).Msg("start password reset failed")
+			h.writeError(w, r, http.StatusInternalServerError, "password reset failed")
+		}
+		return
+	}
+
+	h.writeJSON(w, http.StatusOK, map[string]string{
+		"message": "if the account exists, a password reset code was sent",
+	})
+}
+
+type verifyPasswordResetRequest struct {
+	Identifier string `json:"identifier"`
+	Code       string `json:"code"`
+	Password   string `json:"password"`
+}
+
+func (h *AuthHandler) handleVerifyPasswordReset(w http.ResponseWriter, r *http.Request) {
+	var req verifyPasswordResetRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.writeError(w, r, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if err := h.auth.VerifyPasswordReset(r.Context(), req.Identifier, req.Code, req.Password, deviceFromRequest(r)); err != nil {
+		switch {
+		case errors.Is(err, model.ErrPasswordRequired):
+			h.writeError(w, r, http.StatusBadRequest, "password is required")
+		case errors.Is(err, model.ErrPasswordWeak):
+			h.writeError(w, r, http.StatusBadRequest, "password is too weak")
+		case errors.Is(err, model.ErrInvalidCredentials):
+			h.writeError(w, r, http.StatusBadRequest, "identifier is required")
+		case errors.Is(err, model.ErrInvalidOTP):
+			h.writeError(w, r, http.StatusUnauthorized, "invalid or expired OTP code")
+		case errors.Is(err, model.ErrRateLimited):
+			h.writeError(w, r, http.StatusTooManyRequests, "too many requests, try again later")
+		default:
+			h.logger.Error().Err(err).Msg("verify password reset failed")
+			h.writeError(w, r, http.StatusInternalServerError, "password reset failed")
+		}
+		return
+	}
+
+	h.writeJSON(w, http.StatusOK, map[string]string{
+		"message": "password reset successfully",
+	})
+}
+
+type startPasswordChangeRequest struct {
+	CurrentPassword string `json:"current_password"`
+}
+
+func (h *AuthHandler) handleStartPasswordChange(w http.ResponseWriter, r *http.Request) {
+	var req startPasswordChangeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.writeError(w, r, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if err := h.auth.StartPasswordChange(r.Context(), bearerTokenFromRequest(r), req.CurrentPassword, deviceFromRequest(r)); err != nil {
+		h.handlePasswordChangeError(w, r, err, "start password change failed")
+		return
+	}
+
+	h.writeJSON(w, http.StatusOK, map[string]string{
+		"message": "password change code sent successfully",
+	})
+}
+
+type verifyPasswordChangeRequest struct {
+	CurrentPassword string `json:"current_password"`
+	Code            string `json:"code"`
+	NewPassword     string `json:"new_password"`
+}
+
+func (h *AuthHandler) handleVerifyPasswordChange(w http.ResponseWriter, r *http.Request) {
+	var req verifyPasswordChangeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.writeError(w, r, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if err := h.auth.VerifyPasswordChange(r.Context(), bearerTokenFromRequest(r), req.CurrentPassword, req.Code, req.NewPassword, deviceFromRequest(r)); err != nil {
+		h.handlePasswordChangeError(w, r, err, "verify password change failed")
+		return
+	}
+
+	h.writeJSON(w, http.StatusOK, map[string]string{
+		"message": "password changed successfully",
+	})
+}
+
+func (h *AuthHandler) handlePasswordChangeError(w http.ResponseWriter, r *http.Request, err error, logMessage string) {
+	switch {
+	case errors.Is(err, model.ErrPasswordRequired):
+		h.writeError(w, r, http.StatusBadRequest, "password is required")
+	case errors.Is(err, model.ErrPasswordWeak):
+		h.writeError(w, r, http.StatusBadRequest, "password is too weak")
+	case errors.Is(err, model.ErrPasswordUnchanged):
+		h.writeError(w, r, http.StatusBadRequest, "new password must differ from current password")
+	case errors.Is(err, model.ErrInvalidOTP):
+		h.writeError(w, r, http.StatusUnauthorized, "invalid or expired OTP code")
+	case errors.Is(err, model.ErrInvalidCredentials):
+		h.writeError(w, r, http.StatusUnauthorized, "invalid credentials")
+	case errors.Is(err, model.ErrEmailNotVerified):
+		h.writeError(w, r, http.StatusConflict, "verified email is required")
+	case errors.Is(err, model.ErrUserBlocked):
+		h.writeError(w, r, http.StatusForbidden, "account is blocked")
+	case errors.Is(err, model.ErrRateLimited), errors.Is(err, model.ErrOTPRateLimit):
+		h.writeError(w, r, http.StatusTooManyRequests, "too many requests, try again later")
+	default:
+		h.logger.Error().Err(err).Msg(logMessage)
+		h.writeError(w, r, http.StatusInternalServerError, "password change failed")
+	}
 }
 
 // --- OAuth ---
@@ -449,6 +592,31 @@ var authErrorMessages = map[string]map[string]localizedError{
 			message: "Проверьте никнейм или email и пароль.",
 			code:    "auth.invalid_credentials",
 		},
+		"identifier is required": {
+			title:   "Укажите email или никнейм",
+			message: "Введите email или никнейм аккаунта.",
+			code:    "auth.identifier_required",
+		},
+		"password reset failed": {
+			title:   "Не удалось восстановить пароль",
+			message: "Попробуйте повторить восстановление чуть позже.",
+			code:    "auth.password_reset_failed",
+		},
+		"password change failed": {
+			title:   "Не удалось сменить пароль",
+			message: "Попробуйте повторить смену пароля чуть позже.",
+			code:    "auth.password_change_failed",
+		},
+		"new password must differ from current password": {
+			title:   "Пароль уже используется",
+			message: "Новый пароль должен отличаться от текущего.",
+			code:    "auth.password_unchanged",
+		},
+		"verified email is required": {
+			title:   "Нужен подтвержденный email",
+			message: "Сменить пароль можно только для аккаунта с подтвержденной почтой.",
+			code:    "auth.verified_email_required",
+		},
 		"id_token is required": {
 			title:   "Токен обязателен",
 			message: "OAuth id_token обязателен.",
@@ -536,6 +704,31 @@ var authErrorMessages = map[string]map[string]localizedError{
 			message: "Check your nickname or email and password.",
 			code:    "auth.invalid_credentials",
 		},
+		"identifier is required": {
+			title:   "Email or nickname is required",
+			message: "Enter the account email or nickname.",
+			code:    "auth.identifier_required",
+		},
+		"password reset failed": {
+			title:   "Password reset failed",
+			message: "Please try resetting the password again later.",
+			code:    "auth.password_reset_failed",
+		},
+		"password change failed": {
+			title:   "Password change failed",
+			message: "Please try changing the password again later.",
+			code:    "auth.password_change_failed",
+		},
+		"new password must differ from current password": {
+			title:   "Password is already in use",
+			message: "The new password must be different from the current one.",
+			code:    "auth.password_unchanged",
+		},
+		"verified email is required": {
+			title:   "Verified email required",
+			message: "Password changes require a verified account email.",
+			code:    "auth.verified_email_required",
+		},
 		"id_token is required": {
 			title:   "Token is required",
 			message: "OAuth id_token is required.",
@@ -622,6 +815,31 @@ var authErrorMessages = map[string]map[string]localizedError{
 			title:   "Кіру деректері қате",
 			message: "Никнейм немесе email және құпиясөзді тексеріңіз.",
 			code:    "auth.invalid_credentials",
+		},
+		"identifier is required": {
+			title:   "Email немесе никнейм қажет",
+			message: "Аккаунт email-ін немесе никнеймін енгізіңіз.",
+			code:    "auth.identifier_required",
+		},
+		"password reset failed": {
+			title:   "Құпиясөзді қалпына келтіру сәтсіз",
+			message: "Құпиясөзді қалпына келтіруді кейінірек қайталаңыз.",
+			code:    "auth.password_reset_failed",
+		},
+		"password change failed": {
+			title:   "Құпиясөзді ауыстыру сәтсіз",
+			message: "Құпиясөзді ауыстыруды кейінірек қайталаңыз.",
+			code:    "auth.password_change_failed",
+		},
+		"new password must differ from current password": {
+			title:   "Құпиясөз қолданылып тұр",
+			message: "Жаңа құпиясөз қазіргі құпиясөзден өзгеше болуы керек.",
+			code:    "auth.password_unchanged",
+		},
+		"verified email is required": {
+			title:   "Расталған email қажет",
+			message: "Құпиясөзді ауыстыру үшін аккаунт email-і расталған болуы керек.",
+			code:    "auth.verified_email_required",
 		},
 		"id_token is required": {
 			title:   "Токен қажет",
@@ -757,6 +975,18 @@ func jsonContentType(next http.Handler) http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 		next.ServeHTTP(w, r)
 	})
+}
+
+func bearerTokenFromRequest(r *http.Request) string {
+	header := strings.TrimSpace(r.Header.Get("Authorization"))
+	if header == "" {
+		return ""
+	}
+	parts := strings.Fields(header)
+	if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+		return ""
+	}
+	return strings.TrimSpace(parts[1])
 }
 
 // deviceFromRequest extracts client device metadata. Mobile is expected to send

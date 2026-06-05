@@ -149,6 +149,9 @@ class ApiClient {
 
   bool _requiresAuth(RequestOptions options) {
     final requiresAuthFromExtra = options.extra['requiresAuth'];
+    if (requiresAuthFromExtra == true) {
+      return true;
+    }
     if (requiresAuthFromExtra == false) {
       return false;
     }
@@ -424,6 +427,48 @@ class ApiClient {
       data: {'email': email, 'code': code},
     );
     return AuthResult.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<void> startPasswordReset(String identifier) async {
+    await _dio.post(
+      '/auth/password/reset/start',
+      data: {'identifier': identifier},
+    );
+  }
+
+  Future<void> verifyPasswordReset(
+    String identifier,
+    String code,
+    String password,
+  ) async {
+    await _dio.post(
+      '/auth/password/reset/verify',
+      data: {'identifier': identifier, 'code': code, 'password': password},
+    );
+  }
+
+  Future<void> startPasswordChange(String currentPassword) async {
+    await _dio.post(
+      '/auth/password/change/start',
+      data: {'current_password': currentPassword},
+      options: Options(extra: {'requiresAuth': true}),
+    );
+  }
+
+  Future<void> verifyPasswordChange(
+    String currentPassword,
+    String code,
+    String newPassword,
+  ) async {
+    await _dio.post(
+      '/auth/password/change/verify',
+      data: {
+        'current_password': currentPassword,
+        'code': code,
+        'new_password': newPassword,
+      },
+      options: Options(extra: {'requiresAuth': true}),
+    );
   }
 
   Future<AuthResult> loginWithGoogle(String idToken) async {

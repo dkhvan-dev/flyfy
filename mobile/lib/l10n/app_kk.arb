@@ -24,6 +24,35 @@
   "authLoginFailed": "Кіру мүмкін болмады. Деректерді тексеріп, қайта көріңіз.",
   "authRegistrationFailed": "Тіркеуді бастау мүмкін болмады. Деректерді тексеріп, қайта көріңіз.",
   "authPasswordMismatchError": "Құпиясөздер сәйкес емес",
+  "authForgotPasswordAction": "Құпиясөзді ұмыттыңыз ба?",
+  "passwordResetTitle": "Қолжетімділікті қалпына келтіру",
+  "passwordResetRequestDescription": "Email немесе никнейм енгізіңіз. Аккаунт табылса, код байланыстырылған поштаға жіберіледі.",
+  "passwordResetVerifyDescription": "Хаттағы кодты енгізіп, аккаунтқа жаңа құпиясөз қойыңыз.",
+  "passwordResetIdentifierLabel": "Email немесе никнейм",
+  "passwordResetIdentifierHint": "@nomad немесе traveler@example.com",
+  "passwordResetIdentifierRequiredError": "Email немесе никнейм енгізіңіз",
+  "passwordResetCodeLabel": "Растау коды",
+  "passwordResetCodeHint": "6 цифр",
+  "passwordResetCodeRequiredError": "Растау кодын енгізіңіз",
+  "passwordResetNewPasswordLabel": "Жаңа құпиясөз",
+  "passwordResetConfirmPasswordLabel": "Жаңа құпиясөзді қайталаңыз",
+  "passwordResetSendCodeAction": "Код жіберу",
+  "passwordResetResendCodeAction": "Қайта жіберу",
+  "passwordResetResendCodeCountdown": "{time} кейін қайта жіберу",
+  "@passwordResetResendCodeCountdown": {
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "00:59"
+      }
+    }
+  },
+  "passwordResetSavePasswordAction": "Құпиясөзді сақтау",
+  "passwordResetBackToLogin": "Кіруге оралу",
+  "passwordResetStartFailed": "Қалпына келтіру кодын жіберу мүмкін болмады. Қайталап көріңіз.",
+  "passwordResetVerifyFailed": "Құпиясөзді жаңарту мүмкін болмады. Кодты тексеріп, қайта көріңіз.",
+  "passwordResetSentNotice": "Аккаунт табылса, код байланыстырылған поштаға жіберілді.",
+  "passwordResetSuccess": "Құпиясөз жаңартылды. Жаңа құпиясөзбен кіріңіз.",
   "emailRequiredError": "Email енгізіңіз",
   "emailInvalidError": "Дұрыс email енгізіңіз",
   "passwordRequiredError": "Құпиясөз енгізіңіз",
@@ -407,6 +436,30 @@
   "profileSecurityHeroSubtitle": "Мұнда аккаунт қорғанысы, деректерді экспорттау және құпиялылық баптаулары жиналады.",
   "profileSecurityAccountSection": "Аккаунт қорғанысы",
   "profileSecurityDataSection": "Деректер және құпиялылық",
+  "profileSecurityPasswordTitle": "Құпиясөзді ауыстыру",
+  "profileSecurityPasswordSubtitle": "Қазіргі құпиясөзді және поштадағы бір реттік кодты растаңыз.",
+  "profileSecurityPasswordAction": "Ауыстыру",
+  "profileSecurityPasswordSheetTitle": "Құпиясөзді ауыстыру",
+  "profileSecurityPasswordSheetSubtitle": "Алдымен қазіргі құпиясөзді растаңыз. Содан кейін байланыстырылған поштаға код жібереміз.",
+  "profileSecurityPasswordCurrentLabel": "Қазіргі құпиясөз",
+  "profileSecurityPasswordCurrentHint": "Қазіргі құпиясөзді енгізіңіз",
+  "profileSecurityPasswordCodeNotice": "Код аккаунттың расталған поштасына жіберілді.",
+  "profileSecurityPasswordNewLabel": "Жаңа құпиясөз",
+  "profileSecurityPasswordConfirmLabel": "Жаңа құпиясөзді қайталаңыз",
+  "profileSecurityPasswordSendCode": "Код жіберу",
+  "profileSecurityPasswordSave": "Құпиясөзді сақтау",
+  "profileSecurityPasswordSuccess": "Құпиясөз өзгертілді.",
+  "profileSecurityPasswordChangeFailed": "Құпиясөзді ауыстыру мүмкін болмады. Деректерді тексеріп, қайта көріңіз.",
+  "profileSecurityPasswordMismatchError": "Құпиясөздер сәйкес емес",
+  "profileSecurityPasswordUnchangedError": "Жаңа құпиясөз қазіргі құпиясөзден өзгеше болуы керек",
+  "profileSecurityPasswordResendCodeCountdown": "{time} кейін қайта жіберу",
+  "@profileSecurityPasswordResendCodeCountdown": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "profileSecurityTwoFactorTitle": "Қосымша тексеру",
   "profileSecurityTwoFactorSubtitle": "Қосымша кіру тексерістері мен сезімтал әрекеттерді растау кейінірек қосылады.",
   "profileSecurityDataExportTitle": "Деректерді экспорттау",

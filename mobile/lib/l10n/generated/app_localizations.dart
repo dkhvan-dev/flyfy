@@ -244,6 +244,132 @@ abstract class AppLocalizations {
   /// **'Passwords do not match'**
   String get authPasswordMismatchError;
 
+  /// No description provided for @authForgotPasswordAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot password?'**
+  String get authForgotPasswordAction;
+
+  /// No description provided for @passwordResetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recover access'**
+  String get passwordResetTitle;
+
+  /// No description provided for @passwordResetRequestDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your email or nickname. If the account exists, we will send a code to the linked email.'**
+  String get passwordResetRequestDescription;
+
+  /// No description provided for @passwordResetVerifyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the code from the email and set a new account password.'**
+  String get passwordResetVerifyDescription;
+
+  /// No description provided for @passwordResetIdentifierLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email or nickname'**
+  String get passwordResetIdentifierLabel;
+
+  /// No description provided for @passwordResetIdentifierHint.
+  ///
+  /// In en, this message translates to:
+  /// **'@nomad or traveler@example.com'**
+  String get passwordResetIdentifierHint;
+
+  /// No description provided for @passwordResetIdentifierRequiredError.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your email or nickname'**
+  String get passwordResetIdentifierRequiredError;
+
+  /// No description provided for @passwordResetCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification code'**
+  String get passwordResetCodeLabel;
+
+  /// No description provided for @passwordResetCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'6 digits'**
+  String get passwordResetCodeHint;
+
+  /// No description provided for @passwordResetCodeRequiredError.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the verification code'**
+  String get passwordResetCodeRequiredError;
+
+  /// No description provided for @passwordResetNewPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get passwordResetNewPasswordLabel;
+
+  /// No description provided for @passwordResetConfirmPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat new password'**
+  String get passwordResetConfirmPasswordLabel;
+
+  /// No description provided for @passwordResetSendCodeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Send code'**
+  String get passwordResetSendCodeAction;
+
+  /// No description provided for @passwordResetResendCodeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend code'**
+  String get passwordResetResendCodeAction;
+
+  /// No description provided for @passwordResetResendCodeCountdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend in {time}'**
+  String passwordResetResendCodeCountdown(String time);
+
+  /// No description provided for @passwordResetSavePasswordAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Save password'**
+  String get passwordResetSavePasswordAction;
+
+  /// No description provided for @passwordResetBackToLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to login'**
+  String get passwordResetBackToLogin;
+
+  /// No description provided for @passwordResetStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send the recovery code. Try again.'**
+  String get passwordResetStartFailed;
+
+  /// No description provided for @passwordResetVerifyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update the password. Check the code and try again.'**
+  String get passwordResetVerifyFailed;
+
+  /// No description provided for @passwordResetSentNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'If the account exists, the code was sent to the linked email.'**
+  String get passwordResetSentNotice;
+
+  /// No description provided for @passwordResetSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Password updated. Sign in with the new password.'**
+  String get passwordResetSuccess;
+
   /// No description provided for @emailRequiredError.
   ///
   /// In en, this message translates to:
@@ -2313,6 +2439,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Data & privacy'**
   String get profileSecurityDataSection;
+
+  /// No description provided for @profileSecurityPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change password'**
+  String get profileSecurityPasswordTitle;
+
+  /// No description provided for @profileSecurityPasswordSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm your current password and a one-time email code.'**
+  String get profileSecurityPasswordSubtitle;
+
+  /// No description provided for @profileSecurityPasswordAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get profileSecurityPasswordAction;
+
+  /// No description provided for @profileSecurityPasswordSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change password'**
+  String get profileSecurityPasswordSheetTitle;
+
+  /// No description provided for @profileSecurityPasswordSheetSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'First confirm your current password. Then we will send a code to the linked email.'**
+  String get profileSecurityPasswordSheetSubtitle;
+
+  /// No description provided for @profileSecurityPasswordCurrentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Current password'**
+  String get profileSecurityPasswordCurrentLabel;
+
+  /// No description provided for @profileSecurityPasswordCurrentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter current password'**
+  String get profileSecurityPasswordCurrentHint;
+
+  /// No description provided for @profileSecurityPasswordCodeNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'The code was sent to the verified account email.'**
+  String get profileSecurityPasswordCodeNotice;
+
+  /// No description provided for @profileSecurityPasswordNewLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get profileSecurityPasswordNewLabel;
+
+  /// No description provided for @profileSecurityPasswordConfirmLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat new password'**
+  String get profileSecurityPasswordConfirmLabel;
+
+  /// No description provided for @profileSecurityPasswordSendCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Send code'**
+  String get profileSecurityPasswordSendCode;
+
+  /// No description provided for @profileSecurityPasswordSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save password'**
+  String get profileSecurityPasswordSave;
+
+  /// No description provided for @profileSecurityPasswordSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Password changed.'**
+  String get profileSecurityPasswordSuccess;
+
+  /// No description provided for @profileSecurityPasswordChangeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not change the password. Check the details and try again.'**
+  String get profileSecurityPasswordChangeFailed;
+
+  /// No description provided for @profileSecurityPasswordMismatchError.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get profileSecurityPasswordMismatchError;
+
+  /// No description provided for @profileSecurityPasswordUnchangedError.
+  ///
+  /// In en, this message translates to:
+  /// **'The new password must be different from the current one'**
+  String get profileSecurityPasswordUnchangedError;
+
+  /// No description provided for @profileSecurityPasswordResendCodeCountdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend in {time}'**
+  String profileSecurityPasswordResendCodeCountdown(String time);
 
   /// No description provided for @profileSecurityTwoFactorTitle.
   ///

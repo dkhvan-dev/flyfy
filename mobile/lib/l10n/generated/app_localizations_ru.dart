@@ -84,6 +84,78 @@ class AppLocalizationsRu extends AppLocalizations {
   String get authPasswordMismatchError => 'Пароли не совпадают';
 
   @override
+  String get authForgotPasswordAction => 'Забыли пароль?';
+
+  @override
+  String get passwordResetTitle => 'Восстановление доступа';
+
+  @override
+  String get passwordResetRequestDescription =>
+      'Введите email или никнейм. Если аккаунт найден, мы отправим код на привязанную почту.';
+
+  @override
+  String get passwordResetVerifyDescription =>
+      'Введите код из письма и задайте новый пароль для аккаунта.';
+
+  @override
+  String get passwordResetIdentifierLabel => 'Email или никнейм';
+
+  @override
+  String get passwordResetIdentifierHint => '@nomad или traveler@example.com';
+
+  @override
+  String get passwordResetIdentifierRequiredError =>
+      'Введите email или никнейм';
+
+  @override
+  String get passwordResetCodeLabel => 'Код подтверждения';
+
+  @override
+  String get passwordResetCodeHint => '6 цифр';
+
+  @override
+  String get passwordResetCodeRequiredError => 'Введите код подтверждения';
+
+  @override
+  String get passwordResetNewPasswordLabel => 'Новый пароль';
+
+  @override
+  String get passwordResetConfirmPasswordLabel => 'Повторите новый пароль';
+
+  @override
+  String get passwordResetSendCodeAction => 'Отправить код';
+
+  @override
+  String get passwordResetResendCodeAction => 'Отправить повторно';
+
+  @override
+  String passwordResetResendCodeCountdown(String time) {
+    return 'Повторно через $time';
+  }
+
+  @override
+  String get passwordResetSavePasswordAction => 'Сохранить пароль';
+
+  @override
+  String get passwordResetBackToLogin => 'Вернуться ко входу';
+
+  @override
+  String get passwordResetStartFailed =>
+      'Не удалось отправить код восстановления. Попробуйте еще раз.';
+
+  @override
+  String get passwordResetVerifyFailed =>
+      'Не удалось обновить пароль. Проверьте код и попробуйте снова.';
+
+  @override
+  String get passwordResetSentNotice =>
+      'Если аккаунт найден, код отправлен на привязанную почту.';
+
+  @override
+  String get passwordResetSuccess =>
+      'Пароль обновлен. Войдите с новым паролем.';
+
+  @override
   String get emailRequiredError => 'Введите email';
 
   @override
@@ -1239,6 +1311,64 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get profileSecurityDataSection => 'Данные и конфиденциальность';
+
+  @override
+  String get profileSecurityPasswordTitle => 'Смена пароля';
+
+  @override
+  String get profileSecurityPasswordSubtitle =>
+      'Подтвердите текущий пароль и одноразовый код с почты.';
+
+  @override
+  String get profileSecurityPasswordAction => 'Сменить';
+
+  @override
+  String get profileSecurityPasswordSheetTitle => 'Смена пароля';
+
+  @override
+  String get profileSecurityPasswordSheetSubtitle =>
+      'Сначала подтвердите текущий пароль. Затем мы отправим код на привязанную почту.';
+
+  @override
+  String get profileSecurityPasswordCurrentLabel => 'Текущий пароль';
+
+  @override
+  String get profileSecurityPasswordCurrentHint => 'Введите текущий пароль';
+
+  @override
+  String get profileSecurityPasswordCodeNotice =>
+      'Код отправлен на подтвержденную почту аккаунта.';
+
+  @override
+  String get profileSecurityPasswordNewLabel => 'Новый пароль';
+
+  @override
+  String get profileSecurityPasswordConfirmLabel => 'Повторите новый пароль';
+
+  @override
+  String get profileSecurityPasswordSendCode => 'Отправить код';
+
+  @override
+  String get profileSecurityPasswordSave => 'Сохранить пароль';
+
+  @override
+  String get profileSecurityPasswordSuccess => 'Пароль изменен.';
+
+  @override
+  String get profileSecurityPasswordChangeFailed =>
+      'Не удалось сменить пароль. Проверьте данные и попробуйте снова.';
+
+  @override
+  String get profileSecurityPasswordMismatchError => 'Пароли не совпадают';
+
+  @override
+  String get profileSecurityPasswordUnchangedError =>
+      'Новый пароль должен отличаться от текущего';
+
+  @override
+  String profileSecurityPasswordResendCodeCountdown(String time) {
+    return 'Повторно через $time';
+  }
 
   @override
   String get profileSecurityTwoFactorTitle => 'Дополнительная верификация';

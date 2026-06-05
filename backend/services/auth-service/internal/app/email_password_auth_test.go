@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"kz/inflap/backend/services/auth-service/internal/domain/model"
+	"kz/inflap/backend/services/auth-service/internal/domain/port"
 )
 
 func TestStartEmailRegistrationStoresEmailOTPAndPendingPassword(t *testing.T) {
@@ -176,5 +177,359 @@ func TestPasswordLoginRejectsUnknownNicknameWithoutEnumeration(t *testing.T) {
 	}
 	if result != nil {
 		t.Fatalf("PasswordLogin() result = %#v, want nil", result)
+	}
+}
+
+func TestStartPasswordResetSendsOTPForEmailWithoutSigningIn(t *testing.T) {
+	userRepo := newInMemoryUserRepository()
+	userID := uuid.New()
+	userRepo.byID[userID] = &model.AuthUser{
+		ID:            userID,
+		Email:         strPtr("traveler@example.com"),
+		PasswordHash:  mustPasswordHash(t, "travel42Pass"),
+		EmailVerified: true,
+		Role:          model.RoleTourist,
+		IsActive:      true,
+	}
+	userRepo.byEmail["traveler@example.com"] = userRepo.byID[userID]
+	otpStore := &spyOTPStore{}
+	emailSender := &spyEmailOTPSender{}
+	uc := newTestEmailAuthUseCase(userRepo, otpStore, emailSender, nil)
+
+	err := uc.StartPasswordReset(context.Background(), "  Traveler@Example.COM ", model.DeviceInfo{})
+
+	if err != nil {
+		t.Fatalf("StartPasswordReset() error = %v", err)
+	}
+	if otpStore.lastStoreDestination != "password_reset:traveler@example.com" {
+		t.Fatalf("OTP destination = %q, want password_reset:traveler@example.com", otpStore.lastStoreDestination)
+	}
+	if emailSender.lastEmail != "traveler@example.com" {
+		t.Fatalf("email sender destination = %q, want traveler@example.com", emailSender.lastEmail)
+	}
+}
+
+func TestStartPasswordResetSendsOTPForUnverifiedPendingEmail(t *testing.T) {
+	userRepo := newInMemoryUserRepository()
+	userID := uuid.New()
+	userRepo.byID[userID] = &model.AuthUser{
+		ID:            userID,
+		Email:         strPtr("traveler@example.com"),
+		PasswordHash:  mustPasswordHash(t, "travel42Pass"),
+		EmailVerified: false,
+		Role:          model.RoleTourist,
+		IsActive:      true,
+	}
+	userRepo.byEmail["traveler@example.com"] = userRepo.byID[userID]
+	otpStore := &spyOTPStore{}
+	emailSender := &spyEmailOTPSender{}
+	uc := newTestEmailAuthUseCase(userRepo, otpStore, emailSender, nil)
+
+	err := uc.StartPasswordReset(context.Background(), "Traveler@Example.COM", model.DeviceInfo{})
+
+	if err != nil {
+		t.Fatalf("StartPasswordReset() error = %v", err)
+	}
+	if otpStore.lastStoreDestination != "password_reset:traveler@example.com" {
+		t.Fatalf("OTP destination = %q, want password_reset:traveler@example.com", otpStore.lastStoreDestination)
+	}
+	if emailSender.lastEmail != "traveler@example.com" {
+		t.Fatalf("email sender destination = %q, want traveler@example.com", emailSender.lastEmail)
+	}
+}
+
+func TestStartPasswordResetChecksOTPRateLimitBeforeSending(t *testing.T) {
+	userRepo := newInMemoryUserRepository()
+	userID := uuid.New()
+	userRepo.byID[userID] = &model.AuthUser{
+		ID:            userID,
+		Email:         strPtr("traveler@example.com"),
+		PasswordHash:  mustPasswordHash(t, "travel42Pass"),
+		EmailVerified: true,
+		Role:          model.RoleTourist,
+		IsActive:      true,
+	}
+	userRepo.byEmail["traveler@example.com"] = userRepo.byID[userID]
+	otpStore := &spyOTPStore{rateLimitErr: errors.New("too many requests")}
+	emailSender := &spyEmailOTPSender{}
+	uc := newTestEmailAuthUseCase(userRepo, otpStore, emailSender, nil)
+
+	err := uc.StartPasswordReset(context.Background(), "traveler@example.com", model.DeviceInfo{})
+
+	if !errors.Is(err, model.ErrOTPRateLimit) {
+		t.Fatalf("StartPasswordReset() error = %v, want %v", err, model.ErrOTPRateLimit)
+	}
+	if otpStore.lastRateLimitDestination != "password_reset:traveler@example.com" {
+		t.Fatalf("rate limit destination = %q, want password_reset:traveler@example.com", otpStore.lastRateLimitDestination)
+	}
+	if otpStore.lastStoreDestination != "" {
+		t.Fatalf("OTP destination = %q, want empty when rate-limited", otpStore.lastStoreDestination)
+	}
+	if emailSender.lastEmail != "" {
+		t.Fatalf("email sender destination = %q, want empty when rate-limited", emailSender.lastEmail)
+	}
+}
+
+func TestStartPasswordResetDoesNotRevealMissingIdentifier(t *testing.T) {
+	userRepo := newInMemoryUserRepository()
+	otpStore := &spyOTPStore{}
+	emailSender := &spyEmailOTPSender{}
+	uc := newTestEmailAuthUseCase(userRepo, otpStore, emailSender, &stubNicknameResolver{})
+
+	err := uc.StartPasswordReset(context.Background(), "missing_nickname", model.DeviceInfo{})
+
+	if err != nil {
+		t.Fatalf("StartPasswordReset() error = %v, want nil for non-enumerating response", err)
+	}
+	if otpStore.lastStoreDestination != "" {
+		t.Fatalf("OTP destination = %q, want empty for missing account", otpStore.lastStoreDestination)
+	}
+	if emailSender.lastEmail != "" {
+		t.Fatalf("email sender destination = %q, want empty for missing account", emailSender.lastEmail)
+	}
+}
+
+func TestVerifyPasswordResetUpdatesPasswordAndAllowsLogin(t *testing.T) {
+	userRepo := newInMemoryUserRepository()
+	userID := uuid.New()
+	userRepo.byID[userID] = &model.AuthUser{
+		ID:            userID,
+		Email:         strPtr("traveler@example.com"),
+		PasswordHash:  mustPasswordHash(t, "travel42Pass"),
+		EmailVerified: true,
+		Role:          model.RoleTourist,
+		IsActive:      true,
+	}
+	userRepo.byEmail["traveler@example.com"] = userRepo.byID[userID]
+	otpStore := &spyOTPStore{verifyResult: true}
+	uc := newTestEmailAuthUseCase(userRepo, otpStore, &spyEmailOTPSender{}, nil)
+
+	err := uc.VerifyPasswordReset(
+		context.Background(),
+		"TRAVELER@example.com",
+		"123456",
+		"newTravel42Pass",
+		model.DeviceInfo{},
+	)
+
+	if err != nil {
+		t.Fatalf("VerifyPasswordReset() error = %v", err)
+	}
+	if otpStore.lastVerifyDestination != "password_reset:traveler@example.com" {
+		t.Fatalf("OTP verify destination = %q, want password_reset:traveler@example.com", otpStore.lastVerifyDestination)
+	}
+	if _, err := uc.PasswordLogin(context.Background(), "traveler@example.com", "travel42Pass", model.DeviceInfo{}); !errors.Is(err, model.ErrInvalidCredentials) {
+		t.Fatalf("PasswordLogin() with old password error = %v, want %v", err, model.ErrInvalidCredentials)
+	}
+	if result, err := uc.PasswordLogin(context.Background(), "traveler@example.com", "newTravel42Pass", model.DeviceInfo{}); err != nil || result == nil {
+		t.Fatalf("PasswordLogin() with new password result=%#v error=%v, want success", result, err)
+	}
+}
+
+func TestVerifyPasswordResetMarksPendingEmailVerified(t *testing.T) {
+	userRepo := newInMemoryUserRepository()
+	userID := uuid.New()
+	userRepo.byID[userID] = &model.AuthUser{
+		ID:            userID,
+		Email:         strPtr("traveler@example.com"),
+		PasswordHash:  mustPasswordHash(t, "travel42Pass"),
+		EmailVerified: false,
+		Role:          model.RoleTourist,
+		IsActive:      true,
+	}
+	userRepo.byEmail["traveler@example.com"] = userRepo.byID[userID]
+	otpStore := &spyOTPStore{verifyResult: true}
+	uc := newTestEmailAuthUseCase(userRepo, otpStore, &spyEmailOTPSender{}, nil)
+
+	err := uc.VerifyPasswordReset(
+		context.Background(),
+		"traveler@example.com",
+		"123456",
+		"newTravel42Pass",
+		model.DeviceInfo{},
+	)
+
+	if err != nil {
+		t.Fatalf("VerifyPasswordReset() error = %v", err)
+	}
+	if !userRepo.byID[userID].EmailVerified {
+		t.Fatal("VerifyPasswordReset() did not mark pending email as verified")
+	}
+	if result, err := uc.PasswordLogin(context.Background(), "traveler@example.com", "newTravel42Pass", model.DeviceInfo{}); err != nil || result == nil {
+		t.Fatalf("PasswordLogin() after reset result=%#v error=%v, want success", result, err)
+	}
+}
+
+func TestStartPasswordResetAcceptsNicknameIdentifierViaResolver(t *testing.T) {
+	userRepo := newInMemoryUserRepository()
+	userID := uuid.New()
+	userRepo.byID[userID] = &model.AuthUser{
+		ID:            userID,
+		Email:         strPtr("traveler@example.com"),
+		PasswordHash:  mustPasswordHash(t, "travel42Pass"),
+		EmailVerified: true,
+		Role:          model.RoleTourist,
+		IsActive:      true,
+	}
+	resolver := &stubNicknameResolver{
+		users: map[string]uuid.UUID{"nomad_aru": userID},
+	}
+	otpStore := &spyOTPStore{}
+	emailSender := &spyEmailOTPSender{}
+	uc := newTestEmailAuthUseCase(userRepo, otpStore, emailSender, resolver)
+
+	err := uc.StartPasswordReset(context.Background(), "Nomad_Aru", model.DeviceInfo{})
+
+	if err != nil {
+		t.Fatalf("StartPasswordReset() error = %v", err)
+	}
+	if otpStore.lastStoreDestination != "password_reset:traveler@example.com" {
+		t.Fatalf("OTP destination = %q, want password_reset:traveler@example.com", otpStore.lastStoreDestination)
+	}
+	if emailSender.lastEmail != "traveler@example.com" {
+		t.Fatalf("email sender destination = %q, want traveler@example.com", emailSender.lastEmail)
+	}
+}
+
+func TestStartPasswordChangeSendsOTPAfterCurrentPasswordCheck(t *testing.T) {
+	userRepo := newInMemoryUserRepository()
+	userID := uuid.New()
+	userRepo.byID[userID] = &model.AuthUser{
+		ID:            userID,
+		Email:         strPtr("traveler@example.com"),
+		PasswordHash:  mustPasswordHash(t, "travel42Pass"),
+		EmailVerified: true,
+		Role:          model.RoleTourist,
+		IsActive:      true,
+	}
+	userRepo.byEmail["traveler@example.com"] = userRepo.byID[userID]
+	otpStore := &spyOTPStore{}
+	emailSender := &spyEmailOTPSender{}
+	uc := newTestEmailAuthUseCase(userRepo, otpStore, emailSender, nil)
+	uc.tokenClient = stubTokenClient{
+		accessClaims: &port.TokenClaims{Subject: userID.String(), Role: string(model.RoleTourist)},
+	}
+
+	err := uc.StartPasswordChange(context.Background(), "access-token", "travel42Pass", model.DeviceInfo{})
+
+	if err != nil {
+		t.Fatalf("StartPasswordChange() error = %v", err)
+	}
+	wantDestination := "password_change:" + userID.String()
+	if otpStore.lastRateLimitDestination != wantDestination {
+		t.Fatalf("rate limit destination = %q, want %q", otpStore.lastRateLimitDestination, wantDestination)
+	}
+	if otpStore.lastStoreDestination != wantDestination {
+		t.Fatalf("OTP destination = %q, want %q", otpStore.lastStoreDestination, wantDestination)
+	}
+	if emailSender.lastEmail != "traveler@example.com" {
+		t.Fatalf("email sender destination = %q, want traveler@example.com", emailSender.lastEmail)
+	}
+}
+
+func TestStartPasswordChangeRejectsWrongCurrentPassword(t *testing.T) {
+	userRepo := newInMemoryUserRepository()
+	userID := uuid.New()
+	userRepo.byID[userID] = &model.AuthUser{
+		ID:            userID,
+		Email:         strPtr("traveler@example.com"),
+		PasswordHash:  mustPasswordHash(t, "travel42Pass"),
+		EmailVerified: true,
+		Role:          model.RoleTourist,
+		IsActive:      true,
+	}
+	otpStore := &spyOTPStore{}
+	emailSender := &spyEmailOTPSender{}
+	uc := newTestEmailAuthUseCase(userRepo, otpStore, emailSender, nil)
+	uc.tokenClient = stubTokenClient{
+		accessClaims: &port.TokenClaims{Subject: userID.String(), Role: string(model.RoleTourist)},
+	}
+
+	err := uc.StartPasswordChange(context.Background(), "access-token", "wrongTravel42Pass", model.DeviceInfo{})
+
+	if !errors.Is(err, model.ErrInvalidCredentials) {
+		t.Fatalf("StartPasswordChange() error = %v, want %v", err, model.ErrInvalidCredentials)
+	}
+	if otpStore.lastStoreDestination != "" {
+		t.Fatalf("OTP destination = %q, want empty for wrong current password", otpStore.lastStoreDestination)
+	}
+	if emailSender.lastEmail != "" {
+		t.Fatalf("email sender destination = %q, want empty for wrong current password", emailSender.lastEmail)
+	}
+}
+
+func TestVerifyPasswordChangeUpdatesPasswordAfterOTP(t *testing.T) {
+	userRepo := newInMemoryUserRepository()
+	userID := uuid.New()
+	userRepo.byID[userID] = &model.AuthUser{
+		ID:            userID,
+		Email:         strPtr("traveler@example.com"),
+		PasswordHash:  mustPasswordHash(t, "travel42Pass"),
+		EmailVerified: true,
+		Role:          model.RoleTourist,
+		IsActive:      true,
+	}
+	userRepo.byEmail["traveler@example.com"] = userRepo.byID[userID]
+	otpStore := &spyOTPStore{verifyResult: true}
+	uc := newTestEmailAuthUseCase(userRepo, otpStore, &spyEmailOTPSender{}, nil)
+	uc.tokenClient = stubTokenClient{
+		accessClaims: &port.TokenClaims{Subject: userID.String(), Role: string(model.RoleTourist)},
+	}
+
+	err := uc.VerifyPasswordChange(
+		context.Background(),
+		"access-token",
+		"travel42Pass",
+		"123456",
+		"newTravel42Pass",
+		model.DeviceInfo{},
+	)
+
+	if err != nil {
+		t.Fatalf("VerifyPasswordChange() error = %v", err)
+	}
+	wantDestination := "password_change:" + userID.String()
+	if otpStore.lastVerifyDestination != wantDestination {
+		t.Fatalf("OTP verify destination = %q, want %q", otpStore.lastVerifyDestination, wantDestination)
+	}
+	if _, err := uc.PasswordLogin(context.Background(), "traveler@example.com", "travel42Pass", model.DeviceInfo{}); !errors.Is(err, model.ErrInvalidCredentials) {
+		t.Fatalf("PasswordLogin() with old password error = %v, want %v", err, model.ErrInvalidCredentials)
+	}
+	if result, err := uc.PasswordLogin(context.Background(), "traveler@example.com", "newTravel42Pass", model.DeviceInfo{}); err != nil || result == nil {
+		t.Fatalf("PasswordLogin() with new password result=%#v error=%v, want success", result, err)
+	}
+}
+
+func TestVerifyPasswordChangeRejectsReusedPassword(t *testing.T) {
+	userRepo := newInMemoryUserRepository()
+	userID := uuid.New()
+	userRepo.byID[userID] = &model.AuthUser{
+		ID:            userID,
+		Email:         strPtr("traveler@example.com"),
+		PasswordHash:  mustPasswordHash(t, "travel42Pass"),
+		EmailVerified: true,
+		Role:          model.RoleTourist,
+		IsActive:      true,
+	}
+	otpStore := &spyOTPStore{verifyResult: true}
+	uc := newTestEmailAuthUseCase(userRepo, otpStore, &spyEmailOTPSender{}, nil)
+	uc.tokenClient = stubTokenClient{
+		accessClaims: &port.TokenClaims{Subject: userID.String(), Role: string(model.RoleTourist)},
+	}
+
+	err := uc.VerifyPasswordChange(
+		context.Background(),
+		"access-token",
+		"travel42Pass",
+		"123456",
+		"travel42Pass",
+		model.DeviceInfo{},
+	)
+
+	if !errors.Is(err, model.ErrPasswordUnchanged) {
+		t.Fatalf("VerifyPasswordChange() error = %v, want %v", err, model.ErrPasswordUnchanged)
+	}
+	if otpStore.verifyCalls != 0 {
+		t.Fatalf("OTP store was called %d times, want 0 for reused password", otpStore.verifyCalls)
 	}
 }

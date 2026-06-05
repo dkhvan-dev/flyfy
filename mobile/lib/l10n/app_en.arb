@@ -24,6 +24,35 @@
   "authLoginFailed": "Could not sign in. Check your details and try again.",
   "authRegistrationFailed": "Could not start registration. Check your details and try again.",
   "authPasswordMismatchError": "Passwords do not match",
+  "authForgotPasswordAction": "Forgot password?",
+  "passwordResetTitle": "Recover access",
+  "passwordResetRequestDescription": "Enter your email or nickname. If the account exists, we will send a code to the linked email.",
+  "passwordResetVerifyDescription": "Enter the code from the email and set a new account password.",
+  "passwordResetIdentifierLabel": "Email or nickname",
+  "passwordResetIdentifierHint": "@nomad or traveler@example.com",
+  "passwordResetIdentifierRequiredError": "Enter your email or nickname",
+  "passwordResetCodeLabel": "Verification code",
+  "passwordResetCodeHint": "6 digits",
+  "passwordResetCodeRequiredError": "Enter the verification code",
+  "passwordResetNewPasswordLabel": "New password",
+  "passwordResetConfirmPasswordLabel": "Repeat new password",
+  "passwordResetSendCodeAction": "Send code",
+  "passwordResetResendCodeAction": "Resend code",
+  "passwordResetResendCodeCountdown": "Resend in {time}",
+  "@passwordResetResendCodeCountdown": {
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "00:59"
+      }
+    }
+  },
+  "passwordResetSavePasswordAction": "Save password",
+  "passwordResetBackToLogin": "Back to login",
+  "passwordResetStartFailed": "Could not send the recovery code. Try again.",
+  "passwordResetVerifyFailed": "Could not update the password. Check the code and try again.",
+  "passwordResetSentNotice": "If the account exists, the code was sent to the linked email.",
+  "passwordResetSuccess": "Password updated. Sign in with the new password.",
   "emailRequiredError": "Enter your email",
   "emailInvalidError": "Enter a valid email",
   "passwordRequiredError": "Enter your password",
@@ -407,6 +436,30 @@
   "profileSecurityHeroSubtitle": "This section will collect account protection tools, data export, and privacy controls.",
   "profileSecurityAccountSection": "Account protection",
   "profileSecurityDataSection": "Data & privacy",
+  "profileSecurityPasswordTitle": "Change password",
+  "profileSecurityPasswordSubtitle": "Confirm your current password and a one-time email code.",
+  "profileSecurityPasswordAction": "Change",
+  "profileSecurityPasswordSheetTitle": "Change password",
+  "profileSecurityPasswordSheetSubtitle": "First confirm your current password. Then we will send a code to the linked email.",
+  "profileSecurityPasswordCurrentLabel": "Current password",
+  "profileSecurityPasswordCurrentHint": "Enter current password",
+  "profileSecurityPasswordCodeNotice": "The code was sent to the verified account email.",
+  "profileSecurityPasswordNewLabel": "New password",
+  "profileSecurityPasswordConfirmLabel": "Repeat new password",
+  "profileSecurityPasswordSendCode": "Send code",
+  "profileSecurityPasswordSave": "Save password",
+  "profileSecurityPasswordSuccess": "Password changed.",
+  "profileSecurityPasswordChangeFailed": "Could not change the password. Check the details and try again.",
+  "profileSecurityPasswordMismatchError": "Passwords do not match",
+  "profileSecurityPasswordUnchangedError": "The new password must be different from the current one",
+  "profileSecurityPasswordResendCodeCountdown": "Resend in {time}",
+  "@profileSecurityPasswordResendCodeCountdown": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "profileSecurityTwoFactorTitle": "Additional verification",
   "profileSecurityTwoFactorSubtitle": "Extra sign-in checks and sensitive action confirmation will be added later.",
   "profileSecurityDataExportTitle": "Data export",

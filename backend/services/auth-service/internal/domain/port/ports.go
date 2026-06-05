@@ -29,6 +29,18 @@ type Authenticator interface {
 	// PasswordLogin authenticates by email or nickname and password.
 	PasswordLogin(ctx context.Context, identifier, password string, device model.DeviceInfo) (*model.AuthResult, error)
 
+	// StartPasswordReset sends a reset OTP to the account email, if an account exists.
+	StartPasswordReset(ctx context.Context, identifier string, device model.DeviceInfo) error
+
+	// VerifyPasswordReset verifies a reset OTP and replaces the account password.
+	VerifyPasswordReset(ctx context.Context, identifier, code, password string, device model.DeviceInfo) error
+
+	// StartPasswordChange sends a sensitive-action OTP for an authenticated password change.
+	StartPasswordChange(ctx context.Context, accessToken, currentPassword string, device model.DeviceInfo) error
+
+	// VerifyPasswordChange verifies a sensitive-action OTP and replaces the authenticated user's password.
+	VerifyPasswordChange(ctx context.Context, accessToken, currentPassword, code, newPassword string, device model.DeviceInfo) error
+
 	// GoogleLogin authenticates a user via Google ID Token.
 	GoogleLogin(ctx context.Context, idToken string, device model.DeviceInfo) (*model.AuthResult, error)
 

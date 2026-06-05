@@ -15,6 +15,7 @@ var (
 	ErrEmailAlreadyExists       = errors.New("email is already registered")
 	ErrEmailNotVerified         = errors.New("email is not verified")
 	ErrInvalidCredentials       = errors.New("invalid credentials")
+	ErrPasswordUnchanged        = errors.New("new password must differ from current password")
 	ErrNicknameLoginUnavailable = errors.New("nickname login is temporarily unavailable")
 
 	// OTP errors

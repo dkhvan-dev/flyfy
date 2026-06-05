@@ -53,6 +53,8 @@ class AuthProvider extends ChangeNotifier {
   bool _isVerifyingOtp = false;
   bool _isPasswordLoginLoading = false;
   bool _isEmailRegistrationLoading = false;
+  bool _isPasswordResetLoading = false;
+  bool _isPasswordChangeLoading = false;
   bool _isGoogleLoading = false;
   bool _isAppleLoading = false;
 
@@ -64,6 +66,8 @@ class AuthProvider extends ChangeNotifier {
   bool get isVerifyingOtp => _isVerifyingOtp;
   bool get isPasswordLoginLoading => _isPasswordLoginLoading;
   bool get isEmailRegistrationLoading => _isEmailRegistrationLoading;
+  bool get isPasswordResetLoading => _isPasswordResetLoading;
+  bool get isPasswordChangeLoading => _isPasswordChangeLoading;
   bool get isGoogleLoading => _isGoogleLoading;
   bool get isAppleLoading => _isAppleLoading;
 
@@ -246,6 +250,90 @@ class AuthProvider extends ChangeNotifier {
       return false;
     } finally {
       _isVerifyingOtp = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> startPasswordReset(String identifier) async {
+    _isPasswordResetLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _apiClient.startPasswordReset(identifier);
+      return true;
+    } on DioException catch (e) {
+      _errorMessage = DioErrorMapper.toMessage(e);
+      return false;
+    } catch (_) {
+      return false;
+    } finally {
+      _isPasswordResetLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> verifyPasswordReset(
+    String identifier,
+    String code,
+    String password,
+  ) async {
+    _isPasswordResetLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _apiClient.verifyPasswordReset(identifier, code, password);
+      return true;
+    } on DioException catch (e) {
+      _errorMessage = DioErrorMapper.toMessage(e);
+      return false;
+    } catch (_) {
+      return false;
+    } finally {
+      _isPasswordResetLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> startPasswordChange(String currentPassword) async {
+    _isPasswordChangeLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _apiClient.startPasswordChange(currentPassword);
+      return true;
+    } on DioException catch (e) {
+      _errorMessage = DioErrorMapper.toMessage(e);
+      return false;
+    } catch (_) {
+      return false;
+    } finally {
+      _isPasswordChangeLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> verifyPasswordChange(
+    String currentPassword,
+    String code,
+    String newPassword,
+  ) async {
+    _isPasswordChangeLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _apiClient.verifyPasswordChange(currentPassword, code, newPassword);
+      return true;
+    } on DioException catch (e) {
+      _errorMessage = DioErrorMapper.toMessage(e);
+      return false;
+    } catch (_) {
+      return false;
+    } finally {
+      _isPasswordChangeLoading = false;
       notifyListeners();
     }
   }

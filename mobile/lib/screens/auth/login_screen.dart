@@ -536,6 +536,31 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () => context.push('/password-reset'),
+              icon: Icon(
+                Icons.lock_reset_rounded,
+                size: authScaled(context, 18, min: 16, max: 18),
+              ),
+              label: Text(
+                l10n.authForgotPasswordAction,
+                overflow: TextOverflow.ellipsis,
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.accent,
+                padding: EdgeInsets.symmetric(
+                  horizontal: authScaled(context, 10, min: 8, max: 10),
+                  vertical: authScaled(context, 6, min: 4, max: 6),
+                ),
+                textStyle: TextStyle(
+                  fontSize: authScaled(context, 14, min: 12, max: 14),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
           const SizedBox(height: 14),
           Consumer<AuthProvider>(
             builder: (context, auth, _) => _PrimaryAuthButton(

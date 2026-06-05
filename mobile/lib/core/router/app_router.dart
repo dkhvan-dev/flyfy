@@ -8,6 +8,7 @@ import '../../features/stories/models/story_vm.dart';
 import '../../providers/auth_provider.dart';
 import '../../screens/auth/login_screen.dart';
 import '../../screens/auth/otp_screen.dart';
+import '../../screens/auth/password_reset_screen.dart';
 import '../../screens/home/home_screen.dart';
 import '../../screens/stories/create_story_screen.dart';
 import '../../screens/stories/story_details_screen.dart';
@@ -73,7 +74,10 @@ class AppRouter {
           return '/login?from=${Uri.encodeComponent(location)}';
         }
 
-        if (isLoggedIn && (location == '/login' || location == '/otp')) {
+        if (isLoggedIn &&
+            (location == '/login' ||
+                location == '/otp' ||
+                location == '/password-reset')) {
           return '/';
         }
 
@@ -99,6 +103,11 @@ class AppRouter {
               OtpScreen(phone: phone, email: email, mode: mode, from: from),
             );
           },
+        ),
+        GoRoute(
+          path: '/password-reset',
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const PasswordResetScreen()),
         ),
         GoRoute(
           path: '/stories',
@@ -583,7 +592,10 @@ class AppRouter {
   }
 
   static bool _isPublicRoute(String location) {
-    if (location == '/' || location == '/login' || location == '/otp') {
+    if (location == '/' ||
+        location == '/login' ||
+        location == '/otp' ||
+        location == '/password-reset') {
       return true;
     }
 

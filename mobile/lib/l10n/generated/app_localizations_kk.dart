@@ -84,6 +84,79 @@ class AppLocalizationsKk extends AppLocalizations {
   String get authPasswordMismatchError => 'Құпиясөздер сәйкес емес';
 
   @override
+  String get authForgotPasswordAction => 'Құпиясөзді ұмыттыңыз ба?';
+
+  @override
+  String get passwordResetTitle => 'Қолжетімділікті қалпына келтіру';
+
+  @override
+  String get passwordResetRequestDescription =>
+      'Email немесе никнейм енгізіңіз. Аккаунт табылса, код байланыстырылған поштаға жіберіледі.';
+
+  @override
+  String get passwordResetVerifyDescription =>
+      'Хаттағы кодты енгізіп, аккаунтқа жаңа құпиясөз қойыңыз.';
+
+  @override
+  String get passwordResetIdentifierLabel => 'Email немесе никнейм';
+
+  @override
+  String get passwordResetIdentifierHint =>
+      '@nomad немесе traveler@example.com';
+
+  @override
+  String get passwordResetIdentifierRequiredError =>
+      'Email немесе никнейм енгізіңіз';
+
+  @override
+  String get passwordResetCodeLabel => 'Растау коды';
+
+  @override
+  String get passwordResetCodeHint => '6 цифр';
+
+  @override
+  String get passwordResetCodeRequiredError => 'Растау кодын енгізіңіз';
+
+  @override
+  String get passwordResetNewPasswordLabel => 'Жаңа құпиясөз';
+
+  @override
+  String get passwordResetConfirmPasswordLabel => 'Жаңа құпиясөзді қайталаңыз';
+
+  @override
+  String get passwordResetSendCodeAction => 'Код жіберу';
+
+  @override
+  String get passwordResetResendCodeAction => 'Қайта жіберу';
+
+  @override
+  String passwordResetResendCodeCountdown(String time) {
+    return '$time кейін қайта жіберу';
+  }
+
+  @override
+  String get passwordResetSavePasswordAction => 'Құпиясөзді сақтау';
+
+  @override
+  String get passwordResetBackToLogin => 'Кіруге оралу';
+
+  @override
+  String get passwordResetStartFailed =>
+      'Қалпына келтіру кодын жіберу мүмкін болмады. Қайталап көріңіз.';
+
+  @override
+  String get passwordResetVerifyFailed =>
+      'Құпиясөзді жаңарту мүмкін болмады. Кодты тексеріп, қайта көріңіз.';
+
+  @override
+  String get passwordResetSentNotice =>
+      'Аккаунт табылса, код байланыстырылған поштаға жіберілді.';
+
+  @override
+  String get passwordResetSuccess =>
+      'Құпиясөз жаңартылды. Жаңа құпиясөзбен кіріңіз.';
+
+  @override
   String get emailRequiredError => 'Email енгізіңіз';
 
   @override
@@ -1244,6 +1317,66 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get profileSecurityDataSection => 'Деректер және құпиялылық';
+
+  @override
+  String get profileSecurityPasswordTitle => 'Құпиясөзді ауыстыру';
+
+  @override
+  String get profileSecurityPasswordSubtitle =>
+      'Қазіргі құпиясөзді және поштадағы бір реттік кодты растаңыз.';
+
+  @override
+  String get profileSecurityPasswordAction => 'Ауыстыру';
+
+  @override
+  String get profileSecurityPasswordSheetTitle => 'Құпиясөзді ауыстыру';
+
+  @override
+  String get profileSecurityPasswordSheetSubtitle =>
+      'Алдымен қазіргі құпиясөзді растаңыз. Содан кейін байланыстырылған поштаға код жібереміз.';
+
+  @override
+  String get profileSecurityPasswordCurrentLabel => 'Қазіргі құпиясөз';
+
+  @override
+  String get profileSecurityPasswordCurrentHint =>
+      'Қазіргі құпиясөзді енгізіңіз';
+
+  @override
+  String get profileSecurityPasswordCodeNotice =>
+      'Код аккаунттың расталған поштасына жіберілді.';
+
+  @override
+  String get profileSecurityPasswordNewLabel => 'Жаңа құпиясөз';
+
+  @override
+  String get profileSecurityPasswordConfirmLabel =>
+      'Жаңа құпиясөзді қайталаңыз';
+
+  @override
+  String get profileSecurityPasswordSendCode => 'Код жіберу';
+
+  @override
+  String get profileSecurityPasswordSave => 'Құпиясөзді сақтау';
+
+  @override
+  String get profileSecurityPasswordSuccess => 'Құпиясөз өзгертілді.';
+
+  @override
+  String get profileSecurityPasswordChangeFailed =>
+      'Құпиясөзді ауыстыру мүмкін болмады. Деректерді тексеріп, қайта көріңіз.';
+
+  @override
+  String get profileSecurityPasswordMismatchError => 'Құпиясөздер сәйкес емес';
+
+  @override
+  String get profileSecurityPasswordUnchangedError =>
+      'Жаңа құпиясөз қазіргі құпиясөзден өзгеше болуы керек';
+
+  @override
+  String profileSecurityPasswordResendCodeCountdown(String time) {
+    return '$time кейін қайта жіберу';
+  }
 
   @override
   String get profileSecurityTwoFactorTitle => 'Қосымша тексеру';

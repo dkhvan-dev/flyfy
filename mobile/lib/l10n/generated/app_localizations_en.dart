@@ -84,6 +84,78 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authPasswordMismatchError => 'Passwords do not match';
 
   @override
+  String get authForgotPasswordAction => 'Forgot password?';
+
+  @override
+  String get passwordResetTitle => 'Recover access';
+
+  @override
+  String get passwordResetRequestDescription =>
+      'Enter your email or nickname. If the account exists, we will send a code to the linked email.';
+
+  @override
+  String get passwordResetVerifyDescription =>
+      'Enter the code from the email and set a new account password.';
+
+  @override
+  String get passwordResetIdentifierLabel => 'Email or nickname';
+
+  @override
+  String get passwordResetIdentifierHint => '@nomad or traveler@example.com';
+
+  @override
+  String get passwordResetIdentifierRequiredError =>
+      'Enter your email or nickname';
+
+  @override
+  String get passwordResetCodeLabel => 'Verification code';
+
+  @override
+  String get passwordResetCodeHint => '6 digits';
+
+  @override
+  String get passwordResetCodeRequiredError => 'Enter the verification code';
+
+  @override
+  String get passwordResetNewPasswordLabel => 'New password';
+
+  @override
+  String get passwordResetConfirmPasswordLabel => 'Repeat new password';
+
+  @override
+  String get passwordResetSendCodeAction => 'Send code';
+
+  @override
+  String get passwordResetResendCodeAction => 'Resend code';
+
+  @override
+  String passwordResetResendCodeCountdown(String time) {
+    return 'Resend in $time';
+  }
+
+  @override
+  String get passwordResetSavePasswordAction => 'Save password';
+
+  @override
+  String get passwordResetBackToLogin => 'Back to login';
+
+  @override
+  String get passwordResetStartFailed =>
+      'Could not send the recovery code. Try again.';
+
+  @override
+  String get passwordResetVerifyFailed =>
+      'Could not update the password. Check the code and try again.';
+
+  @override
+  String get passwordResetSentNotice =>
+      'If the account exists, the code was sent to the linked email.';
+
+  @override
+  String get passwordResetSuccess =>
+      'Password updated. Sign in with the new password.';
+
+  @override
   String get emailRequiredError => 'Enter your email';
 
   @override
@@ -1235,6 +1307,64 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileSecurityDataSection => 'Data & privacy';
+
+  @override
+  String get profileSecurityPasswordTitle => 'Change password';
+
+  @override
+  String get profileSecurityPasswordSubtitle =>
+      'Confirm your current password and a one-time email code.';
+
+  @override
+  String get profileSecurityPasswordAction => 'Change';
+
+  @override
+  String get profileSecurityPasswordSheetTitle => 'Change password';
+
+  @override
+  String get profileSecurityPasswordSheetSubtitle =>
+      'First confirm your current password. Then we will send a code to the linked email.';
+
+  @override
+  String get profileSecurityPasswordCurrentLabel => 'Current password';
+
+  @override
+  String get profileSecurityPasswordCurrentHint => 'Enter current password';
+
+  @override
+  String get profileSecurityPasswordCodeNotice =>
+      'The code was sent to the verified account email.';
+
+  @override
+  String get profileSecurityPasswordNewLabel => 'New password';
+
+  @override
+  String get profileSecurityPasswordConfirmLabel => 'Repeat new password';
+
+  @override
+  String get profileSecurityPasswordSendCode => 'Send code';
+
+  @override
+  String get profileSecurityPasswordSave => 'Save password';
+
+  @override
+  String get profileSecurityPasswordSuccess => 'Password changed.';
+
+  @override
+  String get profileSecurityPasswordChangeFailed =>
+      'Could not change the password. Check the details and try again.';
+
+  @override
+  String get profileSecurityPasswordMismatchError => 'Passwords do not match';
+
+  @override
+  String get profileSecurityPasswordUnchangedError =>
+      'The new password must be different from the current one';
+
+  @override
+  String profileSecurityPasswordResendCodeCountdown(String time) {
+    return 'Resend in $time';
+  }
 
   @override
   String get profileSecurityTwoFactorTitle => 'Additional verification';
