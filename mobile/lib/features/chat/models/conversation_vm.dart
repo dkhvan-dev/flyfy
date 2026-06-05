@@ -77,6 +77,7 @@ class ConversationVm {
     LastMessagePreview? lastMessage,
     List<ParticipantInfo>? participants,
     Object? mutedUntil = _copyWithSentinel,
+    DateTime? lastActivityAt,
   }) {
     return ConversationVm(
       id: id,
@@ -94,7 +95,7 @@ class ConversationVm {
           : mutedUntil as String?,
       messagingAvailableUntil: messagingAvailableUntil,
       canSendMessages: canSendMessages,
-      lastActivityAt: lastActivityAt,
+      lastActivityAt: lastActivityAt ?? this.lastActivityAt,
     );
   }
 

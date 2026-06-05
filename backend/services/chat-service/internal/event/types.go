@@ -25,6 +25,7 @@ func New(eventType string, conversationID uuid.UUID, payload any) Event {
 
 type MessageSentPayload struct {
 	MessageID                 uuid.UUID  `json:"messageId"`
+	ClientMessageID           *uuid.UUID `json:"clientMessageId,omitempty"`
 	SenderUserID              uuid.UUID  `json:"senderUserId"`
 	SenderDisplayName         string     `json:"senderDisplayName"`
 	SenderAvatarFileID        *string    `json:"senderAvatarFileId,omitempty"`

@@ -9,6 +9,7 @@ type Message struct {
 	ID                        uuid.UUID
 	ConversationID            uuid.UUID
 	SenderUserID              uuid.UUID
+	ClientMessageID           *uuid.UUID
 	Type                      string // "text", "file", "sticker", "system"
 	Content                   string
 	StickerID                 *uuid.UUID

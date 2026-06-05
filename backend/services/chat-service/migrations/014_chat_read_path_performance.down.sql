@@ -1,0 +1,3 @@
+DROP INDEX CONCURRENTLY IF EXISTS idx_cp_active_conversation_joined;
+DROP INDEX CONCURRENTLY IF EXISTS idx_messages_unread_active_conversation_sent_id;
+DROP INDEX CONCURRENTLY IF EXISTS idx_message_files_message_position;

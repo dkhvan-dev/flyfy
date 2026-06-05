@@ -3,12 +3,14 @@ package repository
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"kz/inflap/backend/services/chat-service/internal/domain/model"
@@ -47,8 +49,9 @@ func (r *PGChatRepository) WithTx(ctx context.Context, fn func(repo port.ChatTxR
 
 const conversationColumns = `id, type, title, avatar_file_id, activity_id, excursion_schedule_slot_id, pinned_message_id, messaging_available_until, created_at, last_activity_at`
 const conversationSelectColumns = `c.id, c.type, c.title, c.avatar_file_id, c.activity_id, c.excursion_schedule_slot_id, c.pinned_message_id, c.messaging_available_until, c.created_at, c.last_activity_at`
-const messageColumns = `id, conversation_id, sender_user_id, type, content, sticker_id, sticker_file_id, sticker_payload, reply_to_message_id, forwarded_from_message_id, forwarded_from_sender_user_id, forwarded_from_sender_name, forward_count, edited_at, deleted_at, moderation_status, moderation_reason_codes, moderation_risk_score, moderation_triggered_at, moderation_reviewed_at, moderation_reviewed_by, moderation_public_comment, moderation_internal_comment, moderation_revision, sent_at`
-const messageSelectColumns = `m.id, m.conversation_id, m.sender_user_id, m.type, m.content, m.sticker_id, m.sticker_file_id, m.sticker_payload, m.reply_to_message_id, m.forwarded_from_message_id, m.forwarded_from_sender_user_id, m.forwarded_from_sender_name, m.forward_count, m.edited_at, m.deleted_at, m.moderation_status, m.moderation_reason_codes, m.moderation_risk_score, m.moderation_triggered_at, m.moderation_reviewed_at, m.moderation_reviewed_by, m.moderation_public_comment, m.moderation_internal_comment, m.moderation_revision, m.sent_at`
+const messageColumns = `id, conversation_id, sender_user_id, client_message_id, type, content, sticker_id, sticker_file_id, sticker_payload, reply_to_message_id, forwarded_from_message_id, forwarded_from_sender_user_id, forwarded_from_sender_name, forward_count, edited_at, deleted_at, moderation_status, moderation_reason_codes, moderation_risk_score, moderation_triggered_at, moderation_reviewed_at, moderation_reviewed_by, moderation_public_comment, moderation_internal_comment, moderation_revision, sent_at`
+const messageSelectColumns = `m.id, m.conversation_id, m.sender_user_id, m.client_message_id, m.type, m.content, m.sticker_id, m.sticker_file_id, m.sticker_payload, m.reply_to_message_id, m.forwarded_from_message_id, m.forwarded_from_sender_user_id, m.forwarded_from_sender_name, m.forward_count, m.edited_at, m.deleted_at, m.moderation_status, m.moderation_reason_codes, m.moderation_risk_score, m.moderation_triggered_at, m.moderation_reviewed_at, m.moderation_reviewed_by, m.moderation_public_comment, m.moderation_internal_comment, m.moderation_revision, m.sent_at`
+const chatNotificationOutboxColumns = `id, event_type, conversation_id, message_id, actor_user_id, reaction_emoji, attempts, next_attempt_at, locked_at, processed_at, failed_at, last_error, created_at, updated_at`
 
 func scanConversation(row pgx.Row) (*model.Conversation, error) {
 	var c model.Conversation
@@ -149,7 +152,7 @@ func scanMessage(row pgx.Row) (*model.Message, error) {
 	var moderationPublicComment *string
 	var moderationInternalComment *string
 	err := row.Scan(
-		&m.ID, &m.ConversationID, &m.SenderUserID, &m.Type, &m.Content,
+		&m.ID, &m.ConversationID, &m.SenderUserID, &m.ClientMessageID, &m.Type, &m.Content,
 		&m.StickerID, &m.StickerFileID, &stickerPayload,
 		&m.ReplyToMessageID, &m.ForwardedFromMessageID,
 		&m.ForwardedFromSenderUserID, &forwardedFromSenderName,
@@ -201,6 +204,41 @@ func scanMessageReaction(row pgx.Row) (*model.MessageReaction, error) {
 		return nil, fmt.Errorf("scan message reaction: %w", err)
 	}
 	return &reaction, nil
+}
+
+func scanChatNotificationOutbox(row pgx.Row) (*model.ChatNotificationOutbox, error) {
+	var item model.ChatNotificationOutbox
+	var reactionEmoji *string
+	var lastError *string
+	err := row.Scan(
+		&item.ID,
+		&item.EventType,
+		&item.ConversationID,
+		&item.MessageID,
+		&item.ActorUserID,
+		&reactionEmoji,
+		&item.Attempts,
+		&item.NextAttemptAt,
+		&item.LockedAt,
+		&item.ProcessedAt,
+		&item.FailedAt,
+		&lastError,
+		&item.CreatedAt,
+		&item.UpdatedAt,
+	)
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("scan chat notification outbox: %w", err)
+	}
+	if reactionEmoji != nil {
+		item.ReactionEmoji = *reactionEmoji
+	}
+	if lastError != nil {
+		item.LastError = *lastError
+	}
+	return &item, nil
 }
 
 func stickerPayloadJSON(payload *model.StickerPayload) any {
@@ -255,9 +293,36 @@ func decodeStickerPayload(data []byte) *model.StickerPayload {
 	return &payload
 }
 
+func isDuplicateClientMessageID(err error) bool {
+	if err == nil {
+		return false
+	}
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) {
+		return false
+	}
+	return pgErr.Code == "23505" && pgErr.ConstraintName == "uq_messages_client_message_id"
+}
+
 func (r *PGChatRepository) GetMessageByID(ctx context.Context, messageID uuid.UUID) (*model.Message, error) {
 	row := r.pool.QueryRow(ctx,
 		`SELECT `+messageColumns+` FROM messages WHERE id = $1`, messageID)
+	return scanMessage(row)
+}
+
+func (r *PGChatRepository) GetMessageByClientMessageID(
+	ctx context.Context,
+	conversationID uuid.UUID,
+	senderUserID uuid.UUID,
+	clientMessageID uuid.UUID,
+) (*model.Message, error) {
+	row := r.pool.QueryRow(ctx, `
+		SELECT `+messageColumns+`
+		FROM messages
+		WHERE conversation_id = $1
+		  AND sender_user_id = $2
+		  AND client_message_id = $3
+	`, conversationID, senderUserID, clientMessageID)
 	return scanMessage(row)
 }
 
@@ -305,7 +370,7 @@ func (r *PGChatRepository) ListMessages(ctx context.Context, filter port.Message
 		var moderationPublicComment *string
 		var moderationInternalComment *string
 		if err := rows.Scan(
-			&m.ID, &m.ConversationID, &m.SenderUserID, &m.Type, &m.Content,
+			&m.ID, &m.ConversationID, &m.SenderUserID, &m.ClientMessageID, &m.Type, &m.Content,
 			&m.StickerID, &m.StickerFileID, &stickerPayload,
 			&m.ReplyToMessageID, &m.ForwardedFromMessageID,
 			&m.ForwardedFromSenderUserID, &forwardedFromSenderName,
@@ -347,6 +412,38 @@ func (r *PGChatRepository) GetLastMessage(ctx context.Context, conversationID uu
 	return scanMessage(row)
 }
 
+func (r *PGChatRepository) ListLastMessagesByConversationIDs(
+	ctx context.Context,
+	conversationIDs []uuid.UUID,
+) (map[uuid.UUID]*model.Message, error) {
+	result := make(map[uuid.UUID]*model.Message, len(conversationIDs))
+	if len(conversationIDs) == 0 {
+		return result, nil
+	}
+
+	rows, err := r.pool.Query(ctx, `
+		SELECT DISTINCT ON (conversation_id) `+messageColumns+`
+		FROM messages
+		WHERE conversation_id = ANY($1::uuid[])
+		ORDER BY conversation_id, sent_at DESC, id DESC
+	`, conversationIDs)
+	if err != nil {
+		return nil, fmt.Errorf("list last messages by conversation ids: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		message, err := scanMessage(rows)
+		if err != nil {
+			return nil, err
+		}
+		if message != nil {
+			result[message.ConversationID] = message
+		}
+	}
+	return result, rows.Err()
+}
+
 func (r *PGChatRepository) GetMessageFileIDs(ctx context.Context, messageID uuid.UUID) ([]string, error) {
 	rows, err := r.pool.Query(ctx,
 		`SELECT file_id FROM message_files WHERE message_id = $1 ORDER BY position`, messageID)
@@ -364,6 +461,37 @@ func (r *PGChatRepository) GetMessageFileIDs(ctx context.Context, messageID uuid
 		ids = append(ids, id)
 	}
 	return ids, rows.Err()
+}
+
+func (r *PGChatRepository) ListMessageFileIDs(
+	ctx context.Context,
+	messageIDs []uuid.UUID,
+) (map[uuid.UUID][]string, error) {
+	result := make(map[uuid.UUID][]string, len(messageIDs))
+	if len(messageIDs) == 0 {
+		return result, nil
+	}
+
+	rows, err := r.pool.Query(ctx, `
+		SELECT message_id, file_id
+		FROM message_files
+		WHERE message_id = ANY($1::uuid[])
+		ORDER BY message_id, position
+	`, messageIDs)
+	if err != nil {
+		return nil, fmt.Errorf("list message file ids: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var messageID uuid.UUID
+		var fileID string
+		if err := rows.Scan(&messageID, &fileID); err != nil {
+			return nil, fmt.Errorf("scan message file id: %w", err)
+		}
+		result[messageID] = append(result[messageID], fileID)
+	}
+	return result, rows.Err()
 }
 
 func (r *PGChatRepository) ListMessageReactionSummaries(
@@ -501,6 +629,7 @@ func (r *PGChatRepository) ListPinnedMessagesByConversationID(
 			&pin.Message.ID,
 			&pin.Message.ConversationID,
 			&pin.Message.SenderUserID,
+			&pin.Message.ClientMessageID,
 			&pin.Message.Type,
 			&pin.Message.Content,
 			&pin.Message.StickerID,
@@ -547,6 +676,102 @@ func (r *PGChatRepository) ListPinnedMessagesByConversationID(
 		pins = append(pins, pin)
 	}
 	return pins, rows.Err()
+}
+
+func (r *PGChatRepository) ClaimDueChatNotificationOutbox(
+	ctx context.Context,
+	now time.Time,
+	limit int,
+) ([]*model.ChatNotificationOutbox, error) {
+	if limit <= 0 || limit > 500 {
+		limit = 100
+	}
+	rows, err := r.pool.Query(ctx, `
+		WITH due AS (
+			SELECT id
+			FROM chat_notification_outbox
+			WHERE processed_at IS NULL
+			  AND failed_at IS NULL
+			  AND next_attempt_at <= $1
+			  AND (locked_at IS NULL OR locked_at < $1 - INTERVAL '2 minutes')
+			ORDER BY next_attempt_at ASC, created_at ASC
+			LIMIT $2
+			FOR UPDATE SKIP LOCKED
+		)
+		UPDATE chat_notification_outbox outbox
+		SET locked_at = $1,
+		    attempts = attempts + 1,
+		    updated_at = $1
+		FROM due
+		WHERE outbox.id = due.id
+		RETURNING `+chatNotificationOutboxColumns+`
+	`, now, limit)
+	if err != nil {
+		return nil, fmt.Errorf("claim chat notification outbox: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]*model.ChatNotificationOutbox, 0, limit)
+	for rows.Next() {
+		item, err := scanChatNotificationOutbox(rows)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (r *PGChatRepository) MarkChatNotificationOutboxSent(
+	ctx context.Context,
+	outboxID uuid.UUID,
+	sentAt time.Time,
+) error {
+	_, err := r.pool.Exec(ctx, `
+		UPDATE chat_notification_outbox
+		SET processed_at = $2,
+		    locked_at = NULL,
+		    updated_at = $2
+		WHERE id = $1
+	`, outboxID, sentAt)
+	return err
+}
+
+func (r *PGChatRepository) RetryChatNotificationOutbox(
+	ctx context.Context,
+	outboxID uuid.UUID,
+	nextAttemptAt time.Time,
+	lastError string,
+) error {
+	_, err := r.pool.Exec(ctx, `
+		UPDATE chat_notification_outbox
+		SET next_attempt_at = $2,
+		    locked_at = NULL,
+		    last_error = NULLIF($3, ''),
+		    updated_at = now()
+		WHERE id = $1
+		  AND processed_at IS NULL
+		  AND failed_at IS NULL
+	`, outboxID, nextAttemptAt, strings.TrimSpace(lastError))
+	return err
+}
+
+func (r *PGChatRepository) FailChatNotificationOutbox(
+	ctx context.Context,
+	outboxID uuid.UUID,
+	failedAt time.Time,
+	lastError string,
+) error {
+	_, err := r.pool.Exec(ctx, `
+		UPDATE chat_notification_outbox
+		SET failed_at = $2,
+		    locked_at = NULL,
+		    last_error = NULLIF($3, ''),
+		    updated_at = $2
+		WHERE id = $1
+		  AND processed_at IS NULL
+	`, outboxID, failedAt, strings.TrimSpace(lastError))
+	return err
 }
 
 func (r *PGChatRepository) ListFlaggedMessagesForModeration(
@@ -668,7 +893,8 @@ func scanMessageWithTrailingConversation(row pgx.Row) (*model.ChatMessageModerat
 	var conversationTitle *string
 	item := &model.ChatMessageModerationItem{}
 	err := row.Scan(
-		&message.ID, &message.ConversationID, &message.SenderUserID, &message.Type, &message.Content,
+		&message.ID, &message.ConversationID, &message.SenderUserID, &message.ClientMessageID,
+		&message.Type, &message.Content,
 		&message.StickerID, &message.StickerFileID, &stickerPayload,
 		&message.ReplyToMessageID, &message.ForwardedFromMessageID,
 		&message.ForwardedFromSenderUserID, &forwardedFromSenderName,
@@ -834,6 +1060,42 @@ func (r *PGChatRepository) GetParticipant(ctx context.Context, conversationID, u
 	return &p, nil
 }
 
+func (r *PGChatRepository) ListParticipantsByConversationUserIDs(
+	ctx context.Context,
+	conversationIDs []uuid.UUID,
+	userID uuid.UUID,
+) (map[uuid.UUID]*model.Participant, error) {
+	result := make(map[uuid.UUID]*model.Participant, len(conversationIDs))
+	if len(conversationIDs) == 0 {
+		return result, nil
+	}
+
+	rows, err := r.pool.Query(ctx, `
+		SELECT DISTINCT ON (conversation_id)
+		       id, conversation_id, user_id, role, last_read_msg_id, muted_until, joined_at, left_at
+		FROM conversation_participants
+		WHERE conversation_id = ANY($1::uuid[])
+		  AND user_id = $2
+		  AND left_at IS NULL
+		ORDER BY conversation_id, joined_at DESC
+	`, conversationIDs, userID)
+	if err != nil {
+		return nil, fmt.Errorf("list participants by conversation user ids: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		participant, err := scanParticipant(rows)
+		if err != nil {
+			return nil, err
+		}
+		if participant != nil {
+			result[participant.ConversationID] = participant
+		}
+	}
+	return result, rows.Err()
+}
+
 func (r *PGChatRepository) ListParticipantsByConversationID(ctx context.Context, conversationID uuid.UUID) ([]*model.Participant, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT id, conversation_id, user_id, role, last_read_msg_id, muted_until, joined_at, left_at
@@ -848,16 +1110,46 @@ func (r *PGChatRepository) ListParticipantsByConversationID(ctx context.Context,
 
 	var participants []*model.Participant
 	for rows.Next() {
-		var p model.Participant
-		if err := rows.Scan(
-			&p.ID, &p.ConversationID, &p.UserID, &p.Role, &p.LastReadMsgID,
-			&p.MutedUntil, &p.JoinedAt, &p.LeftAt,
-		); err != nil {
-			return nil, fmt.Errorf("scan participant: %w", err)
+		participant, err := scanParticipant(rows)
+		if err != nil {
+			return nil, err
 		}
-		participants = append(participants, &p)
+		participants = append(participants, participant)
 	}
 	return participants, rows.Err()
+}
+
+func (r *PGChatRepository) ListParticipantsByConversationIDs(
+	ctx context.Context,
+	conversationIDs []uuid.UUID,
+) (map[uuid.UUID][]*model.Participant, error) {
+	result := make(map[uuid.UUID][]*model.Participant, len(conversationIDs))
+	if len(conversationIDs) == 0 {
+		return result, nil
+	}
+
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, conversation_id, user_id, role, last_read_msg_id, muted_until, joined_at, left_at
+		FROM conversation_participants
+		WHERE conversation_id = ANY($1::uuid[])
+		  AND left_at IS NULL
+		ORDER BY conversation_id, joined_at
+	`, conversationIDs)
+	if err != nil {
+		return nil, fmt.Errorf("list participants by conversation ids: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		participant, err := scanParticipant(rows)
+		if err != nil {
+			return nil, err
+		}
+		if participant != nil {
+			result[participant.ConversationID] = append(result[participant.ConversationID], participant)
+		}
+	}
+	return result, rows.Err()
 }
 
 func (r *PGChatRepository) CountActiveParticipants(ctx context.Context, conversationID uuid.UUID) (int, error) {
@@ -866,6 +1158,38 @@ func (r *PGChatRepository) CountActiveParticipants(ctx context.Context, conversa
 		`SELECT COUNT(*) FROM conversation_participants WHERE conversation_id = $1 AND left_at IS NULL`,
 		conversationID).Scan(&count)
 	return count, err
+}
+
+func (r *PGChatRepository) CountActiveParticipantsByConversationIDs(
+	ctx context.Context,
+	conversationIDs []uuid.UUID,
+) (map[uuid.UUID]int, error) {
+	result := make(map[uuid.UUID]int, len(conversationIDs))
+	if len(conversationIDs) == 0 {
+		return result, nil
+	}
+
+	rows, err := r.pool.Query(ctx, `
+		SELECT conversation_id, COUNT(*)::int
+		FROM conversation_participants
+		WHERE conversation_id = ANY($1::uuid[])
+		  AND left_at IS NULL
+		GROUP BY conversation_id
+	`, conversationIDs)
+	if err != nil {
+		return nil, fmt.Errorf("count active participants by conversation ids: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var conversationID uuid.UUID
+		var count int
+		if err := rows.Scan(&conversationID, &count); err != nil {
+			return nil, fmt.Errorf("scan participant count: %w", err)
+		}
+		result[conversationID] = count
+	}
+	return result, rows.Err()
 }
 
 func (r *PGChatRepository) GetUnreadCount(ctx context.Context, conversationID, userID uuid.UUID) (int, error) {
@@ -891,6 +1215,64 @@ func (r *PGChatRepository) GetUnreadCount(ctx context.Context, conversationID, u
 		  )
 	`, conversationID, userID).Scan(&count)
 	return count, err
+}
+
+func (r *PGChatRepository) ListUnreadCountsByConversationIDs(
+	ctx context.Context,
+	conversationIDs []uuid.UUID,
+	userID uuid.UUID,
+) (map[uuid.UUID]int, error) {
+	result := make(map[uuid.UUID]int, len(conversationIDs))
+	if len(conversationIDs) == 0 {
+		return result, nil
+	}
+
+	rows, err := r.pool.Query(ctx, `
+		SELECT m.conversation_id, COUNT(*)::int
+		FROM messages m
+		JOIN conversation_participants cp
+		  ON cp.conversation_id = m.conversation_id
+		 AND cp.user_id = $2
+		 AND cp.left_at IS NULL
+		LEFT JOIN messages last_read
+		  ON last_read.id = cp.last_read_msg_id
+		 AND last_read.conversation_id = m.conversation_id
+		WHERE m.conversation_id = ANY($1::uuid[])
+		  AND m.sender_user_id != $2
+		  AND m.type != 'system'
+		  AND m.deleted_at IS NULL
+		  AND (
+		    cp.last_read_msg_id IS NULL
+		    OR last_read.id IS NULL
+		    OR (m.sent_at, m.id) > (last_read.sent_at, last_read.id)
+		  )
+		GROUP BY m.conversation_id
+	`, conversationIDs, userID)
+	if err != nil {
+		return nil, fmt.Errorf("list unread counts by conversation ids: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var conversationID uuid.UUID
+		var count int
+		if err := rows.Scan(&conversationID, &count); err != nil {
+			return nil, fmt.Errorf("scan unread count: %w", err)
+		}
+		result[conversationID] = count
+	}
+	return result, rows.Err()
+}
+
+func scanParticipant(row pgx.Row) (*model.Participant, error) {
+	var p model.Participant
+	if err := row.Scan(
+		&p.ID, &p.ConversationID, &p.UserID, &p.Role, &p.LastReadMsgID,
+		&p.MutedUntil, &p.JoinedAt, &p.LeftAt,
+	); err != nil {
+		return nil, fmt.Errorf("scan participant: %w", err)
+	}
+	return &p, nil
 }
 
 func (r *PGChatRepository) IsUserBlocked(ctx context.Context, blockerUserID, blockedUserID uuid.UUID) (bool, error) {
@@ -1047,7 +1429,7 @@ func (tx *pgChatTxRepository) UpdateParticipant(ctx context.Context, p *model.Pa
 func (tx *pgChatTxRepository) CreateMessage(ctx context.Context, msg *model.Message) error {
 	_, err := tx.tx.Exec(ctx, `
 		INSERT INTO messages (
-			id, conversation_id, sender_user_id, type, content, sticker_id,
+			id, conversation_id, sender_user_id, client_message_id, type, content, sticker_id,
 			sticker_file_id, sticker_payload, reply_to_message_id,
 			forwarded_from_message_id, forwarded_from_sender_user_id,
 			forwarded_from_sender_name, forward_count, edited_at, deleted_at,
@@ -1057,9 +1439,9 @@ func (tx *pgChatTxRepository) CreateMessage(ctx context.Context, msg *model.Mess
 			sent_at
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
-		        $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
-	`, msg.ID, msg.ConversationID, msg.SenderUserID, msg.Type, msg.Content,
-		msg.StickerID, msg.StickerFileID, stickerPayloadJSON(msg.StickerPayload),
+		        $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
+	`, msg.ID, msg.ConversationID, msg.SenderUserID, msg.ClientMessageID,
+		msg.Type, msg.Content, msg.StickerID, msg.StickerFileID, stickerPayloadJSON(msg.StickerPayload),
 		msg.ReplyToMessageID, msg.ForwardedFromMessageID,
 		msg.ForwardedFromSenderUserID, nullableString(msg.ForwardedFromSenderName),
 		msg.ForwardCount, msg.EditedAt, msg.DeletedAt,
@@ -1069,6 +1451,9 @@ func (tx *pgChatTxRepository) CreateMessage(ctx context.Context, msg *model.Mess
 		msg.ModerationReviewedBy, nullableString(msg.ModerationPublicComment),
 		nullableString(msg.ModerationInternalComment), defaultMessageModerationRevision(msg.ModerationRevision),
 		msg.SentAt)
+	if isDuplicateClientMessageID(err) {
+		return port.ErrDuplicateClientMessageID
+	}
 	return err
 }
 
@@ -1161,6 +1546,25 @@ func (tx *pgChatTxRepository) DeleteConversationPinsByMessageID(
 		return 0, err
 	}
 	return tag.RowsAffected(), nil
+}
+
+func (tx *pgChatTxRepository) CreateChatNotificationOutbox(
+	ctx context.Context,
+	item *model.ChatNotificationOutbox,
+) error {
+	if item == nil {
+		return nil
+	}
+	_, err := tx.tx.Exec(ctx, `
+		INSERT INTO chat_notification_outbox (
+			id, event_type, conversation_id, message_id, actor_user_id,
+			reaction_emoji, attempts, next_attempt_at, created_at, updated_at
+		)
+		VALUES ($1, $2, $3, $4, $5, NULLIF($6, ''), $7, $8, $9, $10)
+		ON CONFLICT DO NOTHING
+	`, item.ID, item.EventType, item.ConversationID, item.MessageID, item.ActorUserID,
+		strings.TrimSpace(item.ReactionEmoji), item.Attempts, item.NextAttemptAt, item.CreatedAt, item.UpdatedAt)
+	return err
 }
 
 func (tx *pgChatTxRepository) GetLastMessage(ctx context.Context, conversationID uuid.UUID) (*model.Message, error) {

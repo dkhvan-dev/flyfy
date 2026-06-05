@@ -1,5 +1,6 @@
 class MessageVm {
   final String id;
+  final String? clientMessageId;
   final String senderUserId;
   final String senderDisplayName;
   final String? senderAvatarFileId;
@@ -23,6 +24,7 @@ class MessageVm {
 
   const MessageVm({
     required this.id,
+    this.clientMessageId,
     required this.senderUserId,
     required this.senderDisplayName,
     this.senderAvatarFileId,
@@ -84,6 +86,7 @@ class MessageVm {
   }) {
     return MessageVm(
       id: id,
+      clientMessageId: clientMessageId,
       senderUserId: senderUserId,
       senderDisplayName: senderDisplayName ?? this.senderDisplayName,
       senderAvatarFileId: senderAvatarFileId ?? this.senderAvatarFileId,
@@ -114,6 +117,7 @@ class MessageVm {
   factory MessageVm.fromJson(Map<String, dynamic> json) {
     return MessageVm(
       id: (json['id'] ?? json['messageId']) as String,
+      clientMessageId: json['clientMessageId']?.toString(),
       senderUserId: json['senderUserId'] as String,
       senderDisplayName: json['senderDisplayName'] as String,
       senderAvatarFileId: json['senderAvatarFileId'] as String?,

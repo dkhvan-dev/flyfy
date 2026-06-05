@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
@@ -10,6 +11,7 @@ import '../features/chat/models/sticker_pack_vm.dart';
 import '../features/chat/models/user_block_status_vm.dart';
 
 const _conversationMuteDuration = Duration(days: 3650);
+const _conversationListCacheTtl = Duration(seconds: 15);
 
 class ChatProvider extends ChangeNotifier {
   ChatProvider({ChatApi? chatApi, ChatWsService? wsService})
@@ -23,6 +25,8 @@ class ChatProvider extends ChangeNotifier {
   List<ConversationVm> _conversations = [];
   bool _conversationsLoading = false;
   String? _conversationsError;
+  Future<void>? _conversationsLoadFuture;
+  DateTime? _conversationsLoadedAt;
 
   List<ConversationVm> get conversations => _conversations;
   bool get conversationsLoading => _conversationsLoading;
@@ -37,6 +41,8 @@ class ChatProvider extends ChangeNotifier {
   bool _loadingMoreMessages = false;
   bool _hasMoreMessages = true;
   final Map<String, String> _lastMarkedReadMessageIds = {};
+  final Map<String, _CachedConversationState> _conversationStateCache = {};
+  int _openConversationRequestSeq = 0;
 
   ConversationDetail? get activeConversation => _activeConversation;
   List<MessageVm> get messages => _messages;
@@ -48,6 +54,7 @@ class ChatProvider extends ChangeNotifier {
 
   // ── WebSocket ──────────────────────────────────────────────────
   StreamSubscription<ChatEvent>? _eventSubscription;
+  Timer? _conversationsRefreshTimer;
   bool get wsConnected => _wsService.isConnected;
 
   void connectWebSocket() {
@@ -63,13 +70,40 @@ class ChatProvider extends ChangeNotifier {
 
   // ── Conversations ──────────────────────────────────────────────
 
-  Future<void> loadConversations() async {
+  Future<void> loadConversations({bool forceRefresh = false}) {
+    final inFlight = _conversationsLoadFuture;
+    if (inFlight != null) {
+      return inFlight;
+    }
+    if (!forceRefresh && _hasFreshConversationListCache) {
+      return Future<void>.value();
+    }
+
+    late final Future<void> future;
+    future = _loadConversationsFromApi().whenComplete(() {
+      if (identical(_conversationsLoadFuture, future)) {
+        _conversationsLoadFuture = null;
+      }
+    });
+    _conversationsLoadFuture = future;
+    return future;
+  }
+
+  bool get _hasFreshConversationListCache {
+    final loadedAt = _conversationsLoadedAt;
+    if (_conversations.isEmpty || loadedAt == null) return false;
+    return DateTime.now().toUtc().difference(loadedAt) <
+        _conversationListCacheTtl;
+  }
+
+  Future<void> _loadConversationsFromApi() async {
     _conversationsLoading = true;
     _conversationsError = null;
     notifyListeners();
 
     try {
       _conversations = await _chatApi.listConversations();
+      _conversationsLoadedAt = DateTime.now().toUtc();
       _conversationsError = null;
     } catch (e) {
       _conversationsError = e.toString();
@@ -104,6 +138,7 @@ class ChatProvider extends ChangeNotifier {
       _activeConversation = _activeConversation!.copyWith(
         mutedUntil: mutedUntilWire,
       );
+      _cacheActiveConversationState();
     }
     notifyListeners();
 
@@ -151,6 +186,7 @@ class ChatProvider extends ChangeNotifier {
           hasBlockedMe: status.hasBlockedMe,
           canSendMessages: !status.hasBlockedMe,
         );
+        _cacheActiveConversationState();
         notifyListeners();
       }
       return status;
@@ -163,28 +199,57 @@ class ChatProvider extends ChangeNotifier {
   // ── Active chat ────────────────────────────────────────────────
 
   Future<void> openConversation(String conversationId) async {
-    _messagesLoading = true;
+    final normalizedId = conversationId.trim();
+    if (normalizedId.isEmpty) return;
+
+    final requestSeq = ++_openConversationRequestSeq;
+    final cached = _conversationStateCache[normalizedId];
+    if (cached != null) {
+      _activeConversation = cached.detail;
+      _messages = cached.messages;
+      _hasMoreMessages = cached.hasMoreMessages;
+      _messagesLoading = false;
+    } else {
+      _messagesLoading = true;
+      _messages = [];
+      _hasMoreMessages = true;
+      _activeConversation = null;
+    }
     _messagesError = null;
-    _messages = [];
-    _hasMoreMessages = true;
-    _activeConversation = null;
     notifyListeners();
 
     try {
-      _activeConversation = await _chatApi.getConversation(conversationId);
-      _messages = _uniqueMessages(await _chatApi.listMessages(conversationId));
-      _hasMoreMessages = _messages.length >= 30;
-      _lastMarkedReadMessageIds.remove(conversationId);
+      final detailFuture = _chatApi.getConversation(normalizedId);
+      final messagesFuture = _chatApi.listMessages(normalizedId);
+      final detail = await detailFuture;
+      final messages = _uniqueMessages(await messagesFuture);
+      final hasMoreMessages = messages.length >= 30;
+      _cacheConversationState(
+        detail: detail,
+        messages: messages,
+        hasMoreMessages: hasMoreMessages,
+      );
+      if (requestSeq != _openConversationRequestSeq) return;
+
+      _activeConversation = detail;
+      _messages = messages;
+      _hasMoreMessages = hasMoreMessages;
+      _lastMarkedReadMessageIds.remove(normalizedId);
       _messagesError = null;
     } catch (e) {
-      _messagesError = e.toString();
+      if (requestSeq == _openConversationRequestSeq) {
+        _messagesError = e.toString();
+      }
     } finally {
-      _messagesLoading = false;
-      notifyListeners();
+      if (requestSeq == _openConversationRequestSeq) {
+        _messagesLoading = false;
+        notifyListeners();
+      }
     }
   }
 
   Future<void> openConversationByActivity(String activityId) async {
+    final requestSeq = ++_openConversationRequestSeq;
     _messagesLoading = true;
     _messagesError = null;
     _messages = [];
@@ -193,20 +258,30 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _activeConversation = await _chatApi.getConversationByActivity(
-        activityId,
+      final detail = await _chatApi.getConversationByActivity(activityId);
+      final messages = _uniqueMessages(await _chatApi.listMessages(detail.id));
+      final hasMoreMessages = messages.length >= 30;
+      _cacheConversationState(
+        detail: detail,
+        messages: messages,
+        hasMoreMessages: hasMoreMessages,
       );
-      _messages = _uniqueMessages(
-        await _chatApi.listMessages(_activeConversation!.id),
-      );
-      _hasMoreMessages = _messages.length >= 30;
-      _lastMarkedReadMessageIds.remove(_activeConversation!.id);
+      if (requestSeq != _openConversationRequestSeq) return;
+
+      _activeConversation = detail;
+      _messages = messages;
+      _hasMoreMessages = hasMoreMessages;
+      _lastMarkedReadMessageIds.remove(detail.id);
       _messagesError = null;
     } catch (e) {
-      _messagesError = e.toString();
+      if (requestSeq == _openConversationRequestSeq) {
+        _messagesError = e.toString();
+      }
     } finally {
-      _messagesLoading = false;
-      notifyListeners();
+      if (requestSeq == _openConversationRequestSeq) {
+        _messagesLoading = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -219,6 +294,7 @@ class ChatProvider extends ChangeNotifier {
     }
 
     _loadingMoreMessages = true;
+    notifyListeners();
     final cursor = _messages.last.id;
     try {
       final older = await _chatApi.listMessages(
@@ -227,13 +303,14 @@ class ChatProvider extends ChangeNotifier {
       );
       if (older.isNotEmpty) {
         _messages = _uniqueMessages([..._messages, ...older]);
-        notifyListeners();
       }
       _hasMoreMessages = older.length >= 30;
+      _cacheActiveConversationState();
     } catch (e) {
       debugPrint('loadMoreMessages error: $e');
     } finally {
       _loadingMoreMessages = false;
+      notifyListeners();
     }
   }
 
@@ -280,8 +357,11 @@ class ChatProvider extends ChangeNotifier {
         fileIds: normalizedFileIds,
         stickerId: normalizedStickerId.isEmpty ? null : normalizedStickerId,
         replyToMessageId: replyToMessageId,
+        clientMessageId: _newClientMessageId(),
       );
       _messages = _uniqueMessages([msg, ..._messages]);
+      _upsertConversationPreviewFromMessage(_activeConversation!.id, msg);
+      _cacheActiveConversationState();
       return true;
     } catch (e) {
       debugPrint('sendMessage error: $e');
@@ -322,6 +402,7 @@ class ChatProvider extends ChangeNotifier {
       );
       if (normalizedTargetId == sourceConversation.id) {
         _messages = _uniqueMessages([forwarded, ..._messages]);
+        _upsertConversationPreviewFromMessage(sourceConversation.id, forwarded);
       }
       _messages = _messages
           .map(
@@ -330,8 +411,9 @@ class ChatProvider extends ChangeNotifier {
                 : item,
           )
           .toList(growable: false);
+      _cacheActiveConversationState();
       notifyListeners();
-      unawaited(loadConversations());
+      _scheduleConversationsRefresh();
       return true;
     } catch (e) {
       debugPrint('forwardMessageToConversation error: $e');
@@ -367,8 +449,9 @@ class ChatProvider extends ChangeNotifier {
           .where((pin) => pin.id != messageId)
           .toList(growable: false),
     );
+    _cacheActiveConversationState();
     notifyListeners();
-    unawaited(loadConversations());
+    _scheduleConversationsRefresh();
     return result;
   }
 
@@ -383,6 +466,7 @@ class ChatProvider extends ChangeNotifier {
       emoji,
     );
     _updateMessageReactions(messageId, reactions);
+    _cacheActiveConversationState();
     notifyListeners();
   }
 
@@ -398,6 +482,7 @@ class ChatProvider extends ChangeNotifier {
     _activeConversation = _activeConversation!.copyWith(
       pinnedMessages: pinnedMessages,
     );
+    _cacheActiveConversationState();
     notifyListeners();
   }
 
@@ -413,6 +498,7 @@ class ChatProvider extends ChangeNotifier {
     _activeConversation = _activeConversation!.copyWith(
       pinnedMessages: pinnedMessages,
     );
+    _cacheActiveConversationState();
     notifyListeners();
   }
 
@@ -427,6 +513,7 @@ class ChatProvider extends ChangeNotifier {
 
     _lastMarkedReadMessageIds[conversationId] = latestMessageId;
     _activeConversation = _activeConversation!.copyWith(unreadCount: 0);
+    _cacheActiveConversationState();
     _conversations = _conversations
         .map((c) => c.id == conversationId ? c.copyWith(unreadCount: 0) : c)
         .toList();
@@ -472,6 +559,7 @@ class ChatProvider extends ChangeNotifier {
       default:
         break;
     }
+    _cacheActiveConversationState();
     notifyListeners();
   }
 
@@ -489,10 +577,12 @@ class ChatProvider extends ChangeNotifier {
           : _uniqueMessages([msg, ..._messages]);
     }
 
-    // Update conversation list preview
-    final idx = _conversations.indexWhere((c) => c.id == event.conversationId);
-    if (idx >= 0) {
-      loadConversations();
+    final updated = _upsertConversationPreviewFromMessage(
+      event.conversationId,
+      msg,
+    );
+    if (!updated) {
+      _scheduleConversationsRefresh();
     }
   }
 
@@ -547,7 +637,7 @@ class ChatProvider extends ChangeNotifier {
       );
     }
 
-    unawaited(loadConversations());
+    _scheduleConversationsRefresh();
   }
 
   void _onMessageReactionUpdated(ChatEvent event) {
@@ -718,6 +808,72 @@ class ChatProvider extends ChangeNotifier {
         .toList();
   }
 
+  bool _upsertConversationPreviewFromMessage(
+    String conversationId,
+    MessageVm message,
+  ) {
+    final idx = _conversations.indexWhere((c) => c.id == conversationId);
+    if (idx < 0) return false;
+
+    final preview = LastMessagePreview(
+      id: message.id,
+      senderUserId: message.senderUserId,
+      senderDisplayName: message.senderDisplayName,
+      type: message.type,
+      contentPreview: message.content,
+      fileIds: message.fileIds,
+      stickerId: message.stickerId,
+      stickerFileId: message.stickerFileId,
+      deletedAt: message.deletedAt,
+      moderationStatus: message.moderationStatus,
+      moderationPublicComment: message.moderationPublicComment,
+      sentAt: message.sentAt,
+    );
+    final updated = _conversations[idx].copyWith(
+      lastMessage: preview,
+      lastActivityAt: message.sentAt,
+    );
+    _conversations =
+        [
+          for (var index = 0; index < _conversations.length; index++)
+            if (index == idx) updated else _conversations[index],
+        ]..sort((a, b) {
+          final byActivity = b.lastActivityAt.compareTo(a.lastActivityAt);
+          if (byActivity != 0) return byActivity;
+          return b.id.compareTo(a.id);
+        });
+    return true;
+  }
+
+  void _scheduleConversationsRefresh() {
+    if (_conversationsRefreshTimer?.isActive ?? false) return;
+    _conversationsRefreshTimer = Timer(const Duration(seconds: 2), () {
+      unawaited(loadConversations(forceRefresh: true));
+    });
+  }
+
+  void _cacheActiveConversationState() {
+    final active = _activeConversation;
+    if (active == null) return;
+    _cacheConversationState(
+      detail: active,
+      messages: _messages,
+      hasMoreMessages: _hasMoreMessages,
+    );
+  }
+
+  void _cacheConversationState({
+    required ConversationDetail detail,
+    required List<MessageVm> messages,
+    required bool hasMoreMessages,
+  }) {
+    _conversationStateCache[detail.id] = _CachedConversationState(
+      detail: detail,
+      messages: List<MessageVm>.unmodifiable(messages),
+      hasMoreMessages: hasMoreMessages,
+    );
+  }
+
   List<MessageVm> _uniqueMessages(List<MessageVm> items) {
     final seen = <String>{};
     final result = <MessageVm>[];
@@ -734,10 +890,37 @@ class ChatProvider extends ChangeNotifier {
     return result;
   }
 
+  String _newClientMessageId() {
+    final random = Random.secure();
+    final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    String hex(int value) => value.toRadixString(16).padLeft(2, '0');
+    final value = bytes.map(hex).join();
+    return '${value.substring(0, 8)}-'
+        '${value.substring(8, 12)}-'
+        '${value.substring(12, 16)}-'
+        '${value.substring(16, 20)}-'
+        '${value.substring(20)}';
+  }
+
   @override
   void dispose() {
     _eventSubscription?.cancel();
+    _conversationsRefreshTimer?.cancel();
     _wsService.dispose();
     super.dispose();
   }
+}
+
+class _CachedConversationState {
+  const _CachedConversationState({
+    required this.detail,
+    required this.messages,
+    required this.hasMoreMessages,
+  });
+
+  final ConversationDetail detail;
+  final List<MessageVm> messages;
+  final bool hasMoreMessages;
 }

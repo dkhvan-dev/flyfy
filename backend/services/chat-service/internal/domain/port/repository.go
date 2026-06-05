@@ -2,10 +2,13 @@ package port
 
 import (
 	"context"
+	"errors"
 	"github.com/google/uuid"
 	"kz/inflap/backend/services/chat-service/internal/domain/model"
 	"time"
 )
+
+var ErrDuplicateClientMessageID = errors.New("duplicate client message id")
 
 type ActivityLifecycle struct {
 	ActivityID  uuid.UUID
@@ -60,6 +63,7 @@ type ChatTxRepository interface {
 	CreateConversationPin(ctx context.Context, pin *model.ConversationPin) error
 	DeleteConversationPin(ctx context.Context, conversationID, messageID uuid.UUID) (bool, error)
 	DeleteConversationPinsByMessageID(ctx context.Context, messageID uuid.UUID) (int64, error)
+	CreateChatNotificationOutbox(ctx context.Context, item *model.ChatNotificationOutbox) error
 	GetLastMessage(ctx context.Context, conversationID uuid.UUID) (*model.Message, error)
 	GetPreviousMessage(
 		ctx context.Context,
@@ -96,6 +100,7 @@ type ChatRepository interface {
 	GetConversationByActivityID(ctx context.Context, activityID uuid.UUID) (*model.Conversation, error)
 	GetConversationByExcursionScheduleSlotID(ctx context.Context, slotID uuid.UUID) (*model.Conversation, error)
 	GetMessageByID(ctx context.Context, messageID uuid.UUID) (*model.Message, error)
+	GetMessageByClientMessageID(ctx context.Context, conversationID, senderUserID, clientMessageID uuid.UUID) (*model.Message, error)
 	ListMessages(ctx context.Context, filter MessageFilter) ([]*model.Message, error)
 	ListMessageReactionSummaries(
 		ctx context.Context,
@@ -107,12 +112,22 @@ type ChatRepository interface {
 		messageIDs []uuid.UUID,
 	) (map[uuid.UUID][]model.MessageReadReceipt, error)
 	ListParticipantsByConversationID(ctx context.Context, conversationID uuid.UUID) ([]*model.Participant, error)
+	ListParticipantsByConversationIDs(ctx context.Context, conversationIDs []uuid.UUID) (map[uuid.UUID][]*model.Participant, error)
 	GetParticipant(ctx context.Context, conversationID, userID uuid.UUID) (*model.Participant, error)
+	ListParticipantsByConversationUserIDs(ctx context.Context, conversationIDs []uuid.UUID, userID uuid.UUID) (map[uuid.UUID]*model.Participant, error)
 	CountActiveParticipants(ctx context.Context, conversationID uuid.UUID) (int, error)
+	CountActiveParticipantsByConversationIDs(ctx context.Context, conversationIDs []uuid.UUID) (map[uuid.UUID]int, error)
 	GetUnreadCount(ctx context.Context, conversationID, userID uuid.UUID) (int, error)
+	ListUnreadCountsByConversationIDs(ctx context.Context, conversationIDs []uuid.UUID, userID uuid.UUID) (map[uuid.UUID]int, error)
 	GetLastMessage(ctx context.Context, conversationID uuid.UUID) (*model.Message, error)
+	ListLastMessagesByConversationIDs(ctx context.Context, conversationIDs []uuid.UUID) (map[uuid.UUID]*model.Message, error)
 	GetMessageFileIDs(ctx context.Context, messageID uuid.UUID) ([]string, error)
+	ListMessageFileIDs(ctx context.Context, messageIDs []uuid.UUID) (map[uuid.UUID][]string, error)
 	ListPinnedMessagesByConversationID(ctx context.Context, conversationID uuid.UUID) ([]*model.ConversationPin, error)
+	ClaimDueChatNotificationOutbox(ctx context.Context, now time.Time, limit int) ([]*model.ChatNotificationOutbox, error)
+	MarkChatNotificationOutboxSent(ctx context.Context, outboxID uuid.UUID, sentAt time.Time) error
+	RetryChatNotificationOutbox(ctx context.Context, outboxID uuid.UUID, nextAttemptAt time.Time, lastError string) error
+	FailChatNotificationOutbox(ctx context.Context, outboxID uuid.UUID, failedAt time.Time, lastError string) error
 	IsUserBlocked(ctx context.Context, blockerUserID, blockedUserID uuid.UUID) (bool, error)
 	ListUserIDsBlockingUser(ctx context.Context, blockedUserID uuid.UUID, candidateBlockerUserIDs []uuid.UUID) (map[uuid.UUID]bool, error)
 	UpsertUserBlock(ctx context.Context, block *model.UserBlock) error

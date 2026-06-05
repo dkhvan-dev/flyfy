@@ -24,6 +24,46 @@ func enrichParticipants(ctx context.Context, resolver port.UserProfileResolver, 
 	}
 
 	profiles := loadPublicProfiles(ctx, resolver, userIDs)
+	applyProfilesToParticipants(profiles, participants)
+}
+
+func enrichParticipantsAndMessages(
+	ctx context.Context,
+	resolver port.UserProfileResolver,
+	participants []*model.Participant,
+	messages []*model.Message,
+) {
+	if resolver == nil {
+		defaultParticipants(participants)
+		defaultMessages(messages)
+		return
+	}
+
+	userIDs := make([]uuid.UUID, 0, len(participants)+len(messages))
+	for _, participant := range participants {
+		if participant != nil && participant.UserID != uuid.Nil {
+			userIDs = append(userIDs, participant.UserID)
+		}
+	}
+	for _, message := range messages {
+		if message == nil {
+			continue
+		}
+		if message.SenderUserID == uuid.Nil {
+			continue
+		}
+		userIDs = append(userIDs, message.SenderUserID)
+	}
+
+	profiles := loadPublicProfiles(ctx, resolver, userIDs)
+	applyProfilesToParticipants(profiles, participants)
+	applyProfilesToMessages(profiles, messages)
+}
+
+func applyProfilesToParticipants(
+	profiles map[uuid.UUID]port.PublicUserProfile,
+	participants []*model.Participant,
+) {
 	for _, participant := range participants {
 		if participant == nil {
 			continue
@@ -69,6 +109,13 @@ func enrichMessages(ctx context.Context, resolver port.UserProfileResolver, mess
 	}
 
 	profiles := loadPublicProfiles(ctx, resolver, userIDs)
+	applyProfilesToMessages(profiles, messages)
+}
+
+func applyProfilesToMessages(
+	profiles map[uuid.UUID]port.PublicUserProfile,
+	messages []*model.Message,
+) {
 	for _, message := range messages {
 		if message == nil {
 			continue
@@ -96,6 +143,14 @@ func enrichMessages(ctx context.Context, resolver port.UserProfileResolver, mess
 			message.SenderAvatarFileID = profile.AvatarFileID
 		}
 	}
+}
+
+func defaultParticipants(participants []*model.Participant) {
+	applyProfilesToParticipants(nil, participants)
+}
+
+func defaultMessages(messages []*model.Message) {
+	applyProfilesToMessages(nil, messages)
 }
 
 func displayNameForUser(ctx context.Context, resolver port.UserProfileResolver, userID uuid.UUID, fallback string) string {

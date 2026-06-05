@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"regexp"
 	"strings"
 	"time"
@@ -92,6 +93,7 @@ func newMessageUseCase(
 type SendMessageInput struct {
 	ConversationID      uuid.UUID
 	SenderUserID        uuid.UUID
+	ClientMessageID     *uuid.UUID
 	StickerAccessUserID *uuid.UUID
 	SenderDisplayName   string
 	Type                string
@@ -226,6 +228,11 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 	if participant == nil || participant.LeftAt != nil {
 		return nil, ErrNotParticipant
 	}
+	if existing, err := u.existingClientMessage(ctx, input); err != nil {
+		return nil, err
+	} else if existing != nil {
+		return existing, nil
+	}
 	if err := u.ensureDirectRecipientAllowsMessage(ctx, conv, input.SenderUserID); err != nil {
 		return nil, err
 	}
@@ -262,6 +269,7 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 		ID:                    uuid.New(),
 		ConversationID:        input.ConversationID,
 		SenderUserID:          input.SenderUserID,
+		ClientMessageID:       normalizedClientMessageID(input.ClientMessageID),
 		Type:                  messageType,
 		Content:               input.Content,
 		StickerID:             stickerID,
@@ -292,9 +300,24 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 			return err
 		}
 		conv.LastActivityAt = now
-		return txRepo.UpdateConversation(ctx, conv)
+		if err := txRepo.UpdateConversation(ctx, conv); err != nil {
+			return err
+		}
+		return txRepo.CreateChatNotificationOutbox(ctx, newChatNotificationOutbox(
+			chatNotificationEventMessage,
+			input.ConversationID,
+			msg.ID,
+			input.SenderUserID,
+			"",
+			now,
+		))
 	})
 	if err != nil {
+		if existing, existingErr := u.existingClientMessage(ctx, input); existingErr != nil {
+			return nil, existingErr
+		} else if existing != nil && errors.Is(err, port.ErrDuplicateClientMessageID) {
+			return existing, nil
+		}
 		return nil, err
 	}
 
@@ -302,11 +325,10 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 	msg.SenderDisplayName = input.SenderDisplayName
 	enrichMessages(ctx, u.profileResolver, []*model.Message{msg})
 
-	u.notifyChatMessageSent(ctx, conv, msg)
-
 	go func() {
 		evt := event.New("message.sent", input.ConversationID, event.MessageSentPayload{
 			MessageID:                 msg.ID,
+			ClientMessageID:           msg.ClientMessageID,
 			SenderUserID:              msg.SenderUserID,
 			SenderDisplayName:         msg.SenderDisplayName,
 			SenderAvatarFileID:        msg.SenderAvatarFileID,
@@ -328,6 +350,36 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 	}()
 
 	return msg, nil
+}
+
+func (u *MessageUseCase) existingClientMessage(ctx context.Context, input SendMessageInput) (*model.Message, error) {
+	clientMessageID := normalizedClientMessageID(input.ClientMessageID)
+	if clientMessageID == nil || *clientMessageID == uuid.Nil {
+		return nil, nil
+	}
+	msg, err := u.repo.GetMessageByClientMessageID(
+		ctx,
+		input.ConversationID,
+		input.SenderUserID,
+		*clientMessageID,
+	)
+	if err != nil || msg == nil {
+		return msg, err
+	}
+	fileIDs, err := u.repo.GetMessageFileIDs(ctx, msg.ID)
+	if err != nil {
+		return nil, err
+	}
+	msg.FileIDs = fileIDs
+	enrichMessages(ctx, u.profileResolver, []*model.Message{msg})
+	return msg, nil
+}
+
+func normalizedClientMessageID(value *uuid.UUID) *uuid.UUID {
+	if value == nil || *value == uuid.Nil {
+		return nil
+	}
+	return value
 }
 
 func (u *MessageUseCase) ForwardMessage(ctx context.Context, input ForwardMessageInput) (*model.Message, error) {
@@ -440,7 +492,17 @@ func (u *MessageUseCase) ForwardMessage(ctx context.Context, input ForwardMessag
 			return ErrConversationNotFound
 		}
 		conv.LastActivityAt = now
-		return txRepo.UpdateConversation(ctx, conv)
+		if err := txRepo.UpdateConversation(ctx, conv); err != nil {
+			return err
+		}
+		return txRepo.CreateChatNotificationOutbox(ctx, newChatNotificationOutbox(
+			chatNotificationEventMessage,
+			input.TargetConversationID,
+			forwarded.ID,
+			input.SenderUserID,
+			"",
+			now,
+		))
 	})
 	if err != nil {
 		return nil, err
@@ -448,8 +510,6 @@ func (u *MessageUseCase) ForwardMessage(ctx context.Context, input ForwardMessag
 
 	forwarded.FileIDs = fileIDs
 	enrichMessages(ctx, u.profileResolver, []*model.Message{forwarded})
-
-	u.notifyChatMessageSent(ctx, targetConversation, forwarded)
 
 	go func() {
 		evt := event.New("message.sent", input.TargetConversationID, event.MessageSentPayload{
@@ -833,22 +893,30 @@ func (u *MessageUseCase) ToggleReaction(
 	}
 
 	now := time.Now().UTC()
-	reactionAdded := true
 	err = u.repo.WithTx(ctx, func(txRepo port.ChatTxRepository) error {
 		current, err := txRepo.GetMessageReactionForUpdate(ctx, messageID, actorUserID)
 		if err != nil {
 			return err
 		}
 		if current != nil && current.Emoji == reactionEmoji {
-			reactionAdded = false
 			return txRepo.DeleteMessageReaction(ctx, messageID, actorUserID)
 		}
-		return txRepo.SetMessageReaction(ctx, &model.MessageReaction{
+		if err := txRepo.SetMessageReaction(ctx, &model.MessageReaction{
 			MessageID: messageID,
 			UserID:    actorUserID,
 			Emoji:     reactionEmoji,
 			ReactedAt: now,
-		})
+		}); err != nil {
+			return err
+		}
+		return txRepo.CreateChatNotificationOutbox(ctx, newChatNotificationOutbox(
+			chatNotificationEventReaction,
+			conversationID,
+			messageID,
+			actorUserID,
+			reactionEmoji,
+			now,
+		))
 	})
 	if err != nil {
 		return nil, err
@@ -863,10 +931,6 @@ func (u *MessageUseCase) ToggleReaction(
 		return nil, err
 	}
 	reactions := reactionsByMessage[messageID]
-
-	if reactionAdded {
-		u.notifyMessageReaction(ctx, conv, msg, actorUserID, reactionEmoji)
-	}
 
 	go func() {
 		evt := event.New(

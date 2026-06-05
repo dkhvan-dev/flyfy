@@ -129,12 +129,15 @@ class ChatApi {
     List<String>? fileIds,
     String? stickerId,
     String? replyToMessageId,
+    String? clientMessageId,
   }) async {
     final response = await _apiClient.dio.post(
       '/chat/conversations/$conversationId/messages',
       data: {
         'content': content,
         'type': type,
+        if ((clientMessageId ?? '').trim().isNotEmpty)
+          'clientMessageId': clientMessageId!.trim(),
         if (fileIds != null && fileIds.isNotEmpty) 'fileIds': fileIds,
         if ((stickerId ?? '').trim().isNotEmpty) 'stickerId': stickerId!.trim(),
         'replyToMessageId': ?replyToMessageId,

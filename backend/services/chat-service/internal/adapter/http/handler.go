@@ -750,6 +750,16 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request, convID uui
 		return
 	}
 
+	var clientMessageID *uuid.UUID
+	if req.ClientMessageID != nil && strings.TrimSpace(*req.ClientMessageID) != "" {
+		parsed, err := uuid.Parse(strings.TrimSpace(*req.ClientMessageID))
+		if err != nil || parsed == uuid.Nil {
+			writeError(w, r, http.StatusBadRequest, "invalid client message id")
+			return
+		}
+		clientMessageID = &parsed
+	}
+
 	var replyTo *uuid.UUID
 	if req.ReplyToMessageID != nil {
 		parsed, err := uuid.Parse(strings.TrimSpace(*req.ReplyToMessageID))
@@ -780,6 +790,7 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request, convID uui
 	msg, err := h.messageUC.SendMessage(r.Context(), app.SendMessageInput{
 		ConversationID:      convID,
 		SenderUserID:        actorUserID,
+		ClientMessageID:     clientMessageID,
 		StickerAccessUserID: stickerAccessUserID,
 		Type:                req.Type,
 		Content:             req.Content,
@@ -1183,6 +1194,7 @@ func messageResponseFromModel(m *model.Message) dto.MessageResponse {
 	}
 	item := dto.MessageResponse{
 		ID:                        m.ID.String(),
+		ClientMessageID:           uuidPtrToString(m.ClientMessageID),
 		SenderUserID:              m.SenderUserID.String(),
 		SenderDisplayName:         m.SenderDisplayName,
 		SenderAvatarFileID:        m.SenderAvatarFileID,

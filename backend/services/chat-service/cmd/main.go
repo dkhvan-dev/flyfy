@@ -113,6 +113,27 @@ func main() {
 	)
 	conversationUC.SetNotificationSender(notificationClient)
 	messageUC.SetNotificationSender(notificationClient)
+	notificationDispatcher := app.NewChatNotificationDispatcher(
+		repo,
+		notificationClient,
+		actorResolver,
+		app.ChatNotificationDispatcherConfig{
+			BatchSize:      cfg.NotificationOutbox.BatchSize,
+			MaxAttempts:    cfg.NotificationOutbox.MaxAttempts,
+			BaseRetryDelay: cfg.NotificationOutbox.BaseRetryDelay,
+			MaxRetryDelay:  cfg.NotificationOutbox.MaxRetryDelay,
+		},
+	)
+	notificationWorkerCtx, stopNotificationWorker := context.WithCancel(context.Background())
+	defer stopNotificationWorker()
+	if cfg.NotificationOutbox.Enabled {
+		go runChatNotificationOutboxWorker(
+			notificationWorkerCtx,
+			notificationDispatcher,
+			cfg.NotificationOutbox.PollInterval,
+			cfg.NotificationOutbox.BatchSize,
+		)
+	}
 	var trustClient *grpcclient.Client
 	if cfg.Trust.Enabled {
 		trustClient, err = grpcclient.New(
@@ -206,6 +227,7 @@ func main() {
 	defer cancel()
 
 	log.Info().Str("service", cfg.App.Name).Msg("shutting down")
+	stopNotificationWorker()
 
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
 		log.Error().Err(err).Msg("http shutdown failed")
@@ -253,4 +275,40 @@ func newPostgresPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, er
 	}
 
 	return pool, nil
+}
+
+func runChatNotificationOutboxWorker(
+	ctx context.Context,
+	dispatcher *app.ChatNotificationDispatcher,
+	pollInterval time.Duration,
+	batchSize int,
+) {
+	if dispatcher == nil {
+		return
+	}
+	if pollInterval <= 0 {
+		pollInterval = 500 * time.Millisecond
+	}
+	if batchSize <= 0 {
+		batchSize = 100
+	}
+
+	ticker := time.NewTicker(pollInterval)
+	defer ticker.Stop()
+
+	for {
+		processed, err := dispatcher.DispatchDue(ctx, time.Now().UTC(), batchSize)
+		if err != nil && ctx.Err() == nil {
+			log.Error().Err(err).Msg("chat notification outbox dispatch failed")
+		}
+		if processed == batchSize {
+			continue
+		}
+
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+		}
+	}
 }

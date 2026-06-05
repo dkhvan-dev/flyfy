@@ -3,6 +3,7 @@ package dto
 type SendMessageRequest struct {
 	Content          string   `json:"content"`
 	Type             string   `json:"type"`
+	ClientMessageID  *string  `json:"clientMessageId,omitempty"`
 	FileIDs          []string `json:"fileIds"`
 	StickerID        *string  `json:"stickerId,omitempty"`
 	ReplyToMessageID *string  `json:"replyToMessageId"`
@@ -26,6 +27,7 @@ type ReactMessageRequest struct {
 
 type MessageResponse struct {
 	ID                        string                   `json:"id"`
+	ClientMessageID           *string                  `json:"clientMessageId,omitempty"`
 	SenderUserID              string                   `json:"senderUserId"`
 	SenderDisplayName         string                   `json:"senderDisplayName"`
 	SenderAvatarFileID        *string                  `json:"senderAvatarFileId,omitempty"`

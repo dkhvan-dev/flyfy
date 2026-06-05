@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 	"time"
 
@@ -234,7 +233,56 @@ func TestSendMessageStoresTextContent(t *testing.T) {
 	}
 }
 
-func TestSendMessageNotifiesEligibleParticipants(t *testing.T) {
+func TestSendMessageReturnsExistingMessageForDuplicateClientMessageID(t *testing.T) {
+	t.Parallel()
+
+	conversationID := uuid.New()
+	senderID := uuid.New()
+	clientMessageID := uuid.New()
+	existingMessageID := uuid.New()
+	sentAt := time.Now().UTC().Add(-time.Minute)
+	repo := newFakeMessageRepo(conversationID, senderID)
+	repo.messagesByClientMessageID = map[[3]uuid.UUID]*model.Message{
+		{conversationID, senderID, clientMessageID}: {
+			ID:              existingMessageID,
+			ConversationID:  conversationID,
+			SenderUserID:    senderID,
+			ClientMessageID: &clientMessageID,
+			Type:            messageTypeText,
+			Content:         "already stored",
+			SentAt:          sentAt,
+		},
+	}
+	notifications := &fakeChatNotificationSender{}
+	useCase := NewMessageUseCase(repo, &fakeEventPublisher{}, nil)
+	useCase.SetNotificationSender(notifications)
+
+	msg, err := useCase.SendMessage(context.Background(), SendMessageInput{
+		ConversationID:  conversationID,
+		SenderUserID:    senderID,
+		ClientMessageID: &clientMessageID,
+		Type:            "text",
+		Content:         "retried payload",
+	})
+	if err != nil {
+		t.Fatalf("SendMessage error: %v", err)
+	}
+
+	if msg.ID != existingMessageID {
+		t.Fatalf("message ID = %s, want existing %s", msg.ID, existingMessageID)
+	}
+	if msg.Content != "already stored" {
+		t.Fatalf("Content = %q, want existing content", msg.Content)
+	}
+	if repo.createMessageCalls != 0 {
+		t.Fatalf("CreateMessage calls = %d, want duplicate retry to skip insert", repo.createMessageCalls)
+	}
+	if len(notifications.sent) != 0 {
+		t.Fatalf("duplicate retry must not send push notification, got %#v", notifications.sent)
+	}
+}
+
+func TestSendMessageEnqueuesNotificationOutboxWithoutCallingNotificationService(t *testing.T) {
 	t.Parallel()
 
 	conversationID := uuid.New()
@@ -304,30 +352,19 @@ func TestSendMessageNotifiesEligibleParticipants(t *testing.T) {
 		t.Fatalf("SendMessage error: %v", err)
 	}
 
-	notification := notifications.take(t)
-	if notification.IdempotencyKey != fmt.Sprintf("chat-message-%s", msg.ID) {
-		t.Fatalf("IdempotencyKey = %q, want message-scoped key", notification.IdempotencyKey)
+	notifications.expectNone(t)
+	if len(repo.createdNotificationOutbox) != 1 {
+		t.Fatalf("outbox entries = %d, want one", len(repo.createdNotificationOutbox))
 	}
-	if notification.ConversationID != conversationID {
-		t.Fatalf("ConversationID = %s, want %s", notification.ConversationID, conversationID)
+	item := repo.createdNotificationOutbox[0]
+	if item.EventType != chatNotificationEventMessage {
+		t.Fatalf("EventType = %q, want %q", item.EventType, chatNotificationEventMessage)
 	}
-	if notification.MessageID != msg.ID {
-		t.Fatalf("MessageID = %s, want %s", notification.MessageID, msg.ID)
+	if item.ConversationID != conversationID || item.MessageID != msg.ID || item.ActorUserID != senderID {
+		t.Fatalf("outbox target = conversation %s message %s actor %s", item.ConversationID, item.MessageID, item.ActorUserID)
 	}
-	if notification.SenderUserID != senderID {
-		t.Fatalf("SenderUserID = %s, want %s", notification.SenderUserID, senderID)
-	}
-	if notification.SenderDisplayName != "Aigerim" {
-		t.Fatalf("SenderDisplayName = %q, want Aigerim", notification.SenderDisplayName)
-	}
-	if notification.Body != "Meet near the north gate" {
-		t.Fatalf("Body = %q, want message content", notification.Body)
-	}
-	if len(notification.RecipientUserIDs) != 1 || notification.RecipientUserIDs[0] != recipientID {
-		t.Fatalf("RecipientUserIDs = %v, want only active unmuted non-blocking recipient %s", notification.RecipientUserIDs, recipientID)
-	}
-	if repo.blockListLookupCount != 1 {
-		t.Fatalf("block list lookups = %d, want one bulk lookup", repo.blockListLookupCount)
+	if repo.blockListLookupCount != 0 {
+		t.Fatalf("send path block list lookups = %d, want async dispatcher to resolve recipients", repo.blockListLookupCount)
 	}
 	if repo.blockLookupCount != 0 {
 		t.Fatalf("per-recipient block lookups = %d, want none for notification fanout", repo.blockLookupCount)
@@ -421,7 +458,7 @@ func TestSendMessageRejectsDirectMessageWhenRecipientBlockedSender(t *testing.T)
 	}
 }
 
-func TestToggleReactionNotifiesOriginalMessageSender(t *testing.T) {
+func TestToggleReactionEnqueuesOriginalMessageSenderNotificationOutbox(t *testing.T) {
 	t.Parallel()
 
 	conversationID := uuid.New()
@@ -481,27 +518,19 @@ func TestToggleReactionNotifiesOriginalMessageSender(t *testing.T) {
 		t.Fatalf("ToggleReaction error: %v", err)
 	}
 
-	notification := notifications.take(t)
-	if notification.EventType != "chat_reaction" {
-		t.Fatalf("EventType = %q, want chat_reaction", notification.EventType)
+	notifications.expectNone(t)
+	if len(repo.createdNotificationOutbox) != 1 {
+		t.Fatalf("outbox entries = %d, want one", len(repo.createdNotificationOutbox))
 	}
-	if notification.IdempotencyKey != "chat-reaction-"+messageID.String()+"-"+actorUserID.String()+"-👍" {
-		t.Fatalf("IdempotencyKey = %q", notification.IdempotencyKey)
+	item := repo.createdNotificationOutbox[0]
+	if item.EventType != chatNotificationEventReaction {
+		t.Fatalf("EventType = %q, want %q", item.EventType, chatNotificationEventReaction)
 	}
-	if notification.ConversationID != conversationID || notification.MessageID != messageID {
-		t.Fatalf("notification target = conversation %s message %s", notification.ConversationID, notification.MessageID)
+	if item.ConversationID != conversationID || item.MessageID != messageID || item.ActorUserID != actorUserID {
+		t.Fatalf("outbox target = conversation %s message %s actor %s", item.ConversationID, item.MessageID, item.ActorUserID)
 	}
-	if notification.SenderUserID != actorUserID || notification.SenderDisplayName != "Aigerim" {
-		t.Fatalf("notification actor = %s/%q", notification.SenderUserID, notification.SenderDisplayName)
-	}
-	if notification.ReactionEmoji != "👍" {
-		t.Fatalf("ReactionEmoji = %q, want thumbs up", notification.ReactionEmoji)
-	}
-	if notification.Body != "Reacted 👍 to your message" {
-		t.Fatalf("Body = %q, want reaction body", notification.Body)
-	}
-	if len(notification.RecipientUserIDs) != 1 || notification.RecipientUserIDs[0] != messageSenderID {
-		t.Fatalf("RecipientUserIDs = %v, want only message sender %s", notification.RecipientUserIDs, messageSenderID)
+	if item.ReactionEmoji != "👍" {
+		t.Fatalf("ReactionEmoji = %q, want thumbs up", item.ReactionEmoji)
 	}
 }
 
@@ -687,19 +716,56 @@ func TestForwardMessageRejectsDirectTargetWhenRecipientBlockedSender(t *testing.
 }
 
 type fakeMessageRepo struct {
-	conversationID                 uuid.UUID
-	senderID                       uuid.UUID
-	conversation                   *model.Conversation
-	participant                    *model.Participant
-	createdMessage                 *model.Message
-	conversationsByID              map[uuid.UUID]*model.Conversation
-	conversationsByExcursionSlotID map[uuid.UUID]*model.Conversation
-	participantsByConversationUser map[[2]uuid.UUID]*model.Participant
-	createdParticipants            []*model.Participant
-	messagesByID                   map[uuid.UUID]*model.Message
-	blockedPairs                   map[[2]uuid.UUID]bool
-	blockLookupCount               int
-	blockListLookupCount           int
+	conversationID                                uuid.UUID
+	senderID                                      uuid.UUID
+	conversation                                  *model.Conversation
+	participant                                   *model.Participant
+	createdMessage                                *model.Message
+	createMessageCalls                            int
+	listConversations                             []*model.Conversation
+	conversationsByID                             map[uuid.UUID]*model.Conversation
+	conversationsByExcursionSlotID                map[uuid.UUID]*model.Conversation
+	participantsByConversationUser                map[[2]uuid.UUID]*model.Participant
+	participantsByConversation                    map[uuid.UUID][]*model.Participant
+	createdParticipants                           []*model.Participant
+	messagesByID                                  map[uuid.UUID]*model.Message
+	messagesByClientMessageID                     map[[3]uuid.UUID]*model.Message
+	lastMessagesByConversation                    map[uuid.UUID]*model.Message
+	messageFileIDs                                map[uuid.UUID][]string
+	unreadCountsByConversation                    map[uuid.UUID]int
+	activeParticipantCountsByConversation         map[uuid.UUID]int
+	createdNotificationOutbox                     []*model.ChatNotificationOutbox
+	claimedNotificationOutbox                     []*model.ChatNotificationOutbox
+	sentNotificationOutboxIDs                     []uuid.UUID
+	retriedNotificationOutbox                     []notificationOutboxRetry
+	failedNotificationOutbox                      []notificationOutboxFailure
+	blockedPairs                                  map[[2]uuid.UUID]bool
+	blockLookupCount                              int
+	blockListLookupCount                          int
+	listParticipantsCalls                         int
+	listParticipantsByConversationIDsCalls        int
+	getParticipantCalls                           int
+	listParticipantsByConversationUserIDsCalls    int
+	countActiveParticipantsCalls                  int
+	countActiveParticipantsByConversationIDsCalls int
+	getUnreadCountCalls                           int
+	listUnreadCountsByConversationIDsCalls        int
+	getLastMessageCalls                           int
+	listLastMessagesByConversationIDsCalls        int
+	getMessageFileIDsCalls                        int
+	listMessageFileIDsCalls                       int
+}
+
+type notificationOutboxRetry struct {
+	id            uuid.UUID
+	nextAttemptAt time.Time
+	lastError     string
+}
+
+type notificationOutboxFailure struct {
+	id        uuid.UUID
+	failedAt  time.Time
+	lastError string
 }
 
 func newFakeMessageRepo(conversationID, senderID uuid.UUID) *fakeMessageRepo {
@@ -733,6 +799,7 @@ func (r *fakeMessageRepo) GetConversationByID(_ context.Context, conversationID 
 }
 
 func (r *fakeMessageRepo) GetParticipant(_ context.Context, conversationID, userID uuid.UUID) (*model.Participant, error) {
+	r.getParticipantCalls++
 	if r.participantsByConversationUser != nil {
 		return r.participantsByConversationUser[[2]uuid.UUID{conversationID, userID}], nil
 	}
@@ -744,10 +811,14 @@ func (r *fakeMessageRepo) WithTx(ctx context.Context, fn func(repo port.ChatTxRe
 }
 
 func (r *fakeMessageRepo) CreateMessage(_ context.Context, msg *model.Message) error {
+	r.createMessageCalls++
 	copyValue := *msg
 	r.createdMessage = &copyValue
 	if r.messagesByID != nil {
 		r.messagesByID[msg.ID] = &copyValue
+	}
+	if r.messagesByClientMessageID != nil && msg.ClientMessageID != nil {
+		r.messagesByClientMessageID[[3]uuid.UUID{msg.ConversationID, msg.SenderUserID, *msg.ClientMessageID}] = &copyValue
 	}
 	return nil
 }
@@ -782,7 +853,7 @@ func (r *fakeMessageRepo) UpdateConversation(_ context.Context, conv *model.Conv
 }
 
 func (r *fakeMessageRepo) ListConversationsByUserID(context.Context, port.ConversationFilter) ([]*model.Conversation, error) {
-	return nil, nil
+	return r.listConversations, nil
 }
 
 func (r *fakeMessageRepo) FindDirectConversation(context.Context, uuid.UUID, uuid.UUID) (*model.Conversation, error) {
@@ -810,6 +881,18 @@ func (r *fakeMessageRepo) GetMessageByID(_ context.Context, messageID uuid.UUID)
 	return nil, nil
 }
 
+func (r *fakeMessageRepo) GetMessageByClientMessageID(
+	_ context.Context,
+	conversationID uuid.UUID,
+	senderUserID uuid.UUID,
+	clientMessageID uuid.UUID,
+) (*model.Message, error) {
+	if r.messagesByClientMessageID == nil {
+		return nil, nil
+	}
+	return r.messagesByClientMessageID[[3]uuid.UUID{conversationID, senderUserID, clientMessageID}], nil
+}
+
 func (r *fakeMessageRepo) ListMessages(context.Context, port.MessageFilter) ([]*model.Message, error) {
 	return nil, nil
 }
@@ -830,6 +913,10 @@ func (r *fakeMessageRepo) ListMessageReadReceipts(
 }
 
 func (r *fakeMessageRepo) ListParticipantsByConversationID(_ context.Context, conversationID uuid.UUID) ([]*model.Participant, error) {
+	r.listParticipantsCalls++
+	if r.participantsByConversation != nil {
+		return r.participantsByConversation[conversationID], nil
+	}
 	if r.participantsByConversationUser != nil {
 		participants := make([]*model.Participant, 0, len(r.participantsByConversationUser))
 		for key, participant := range r.participantsByConversationUser {
@@ -840,6 +927,52 @@ func (r *fakeMessageRepo) ListParticipantsByConversationID(_ context.Context, co
 		return participants, nil
 	}
 	return nil, nil
+}
+
+func (r *fakeMessageRepo) ListParticipantsByConversationIDs(
+	_ context.Context,
+	conversationIDs []uuid.UUID,
+) (map[uuid.UUID][]*model.Participant, error) {
+	r.listParticipantsByConversationIDsCalls++
+	result := make(map[uuid.UUID][]*model.Participant, len(conversationIDs))
+	if r.participantsByConversation != nil {
+		for _, conversationID := range conversationIDs {
+			result[conversationID] = r.participantsByConversation[conversationID]
+		}
+		return result, nil
+	}
+	if r.participantsByConversationUser != nil {
+		for key, participant := range r.participantsByConversationUser {
+			result[key[0]] = append(result[key[0]], participant)
+		}
+	}
+	return result, nil
+}
+
+func (r *fakeMessageRepo) ListParticipantsByConversationUserIDs(
+	_ context.Context,
+	conversationIDs []uuid.UUID,
+	userID uuid.UUID,
+) (map[uuid.UUID]*model.Participant, error) {
+	r.listParticipantsByConversationUserIDsCalls++
+	result := make(map[uuid.UUID]*model.Participant, len(conversationIDs))
+	for _, conversationID := range conversationIDs {
+		if r.participantsByConversationUser != nil {
+			if participant := r.participantsByConversationUser[[2]uuid.UUID{conversationID, userID}]; participant != nil {
+				result[conversationID] = participant
+				continue
+			}
+		}
+		if r.participantsByConversation != nil {
+			for _, participant := range r.participantsByConversation[conversationID] {
+				if participant != nil && participant.UserID == userID {
+					result[conversationID] = participant
+					break
+				}
+			}
+		}
+	}
+	return result, nil
 }
 
 func (r *fakeMessageRepo) IsUserBlocked(_ context.Context, blockerUserID, blockedUserID uuid.UUID) (bool, error) {
@@ -875,27 +1008,151 @@ func (r *fakeMessageRepo) DeleteUserBlock(_ context.Context, blockerUserID, bloc
 	return nil
 }
 
-func (r *fakeMessageRepo) CountActiveParticipants(context.Context, uuid.UUID) (int, error) {
+func (r *fakeMessageRepo) CountActiveParticipants(_ context.Context, conversationID uuid.UUID) (int, error) {
+	r.countActiveParticipantsCalls++
+	if r.activeParticipantCountsByConversation != nil {
+		return r.activeParticipantCountsByConversation[conversationID], nil
+	}
 	return 1, nil
 }
 
-func (r *fakeMessageRepo) GetUnreadCount(context.Context, uuid.UUID, uuid.UUID) (int, error) {
+func (r *fakeMessageRepo) CountActiveParticipantsByConversationIDs(
+	_ context.Context,
+	conversationIDs []uuid.UUID,
+) (map[uuid.UUID]int, error) {
+	r.countActiveParticipantsByConversationIDsCalls++
+	result := make(map[uuid.UUID]int, len(conversationIDs))
+	for _, conversationID := range conversationIDs {
+		if r.activeParticipantCountsByConversation != nil {
+			result[conversationID] = r.activeParticipantCountsByConversation[conversationID]
+			continue
+		}
+		if r.participantsByConversation != nil {
+			result[conversationID] = len(r.participantsByConversation[conversationID])
+			continue
+		}
+		result[conversationID] = 1
+	}
+	return result, nil
+}
+
+func (r *fakeMessageRepo) GetUnreadCount(_ context.Context, conversationID, _ uuid.UUID) (int, error) {
+	r.getUnreadCountCalls++
+	if r.unreadCountsByConversation != nil {
+		return r.unreadCountsByConversation[conversationID], nil
+	}
 	return 0, nil
 }
 
-func (r *fakeMessageRepo) GetLastMessage(context.Context, uuid.UUID) (*model.Message, error) {
+func (r *fakeMessageRepo) ListUnreadCountsByConversationIDs(
+	_ context.Context,
+	conversationIDs []uuid.UUID,
+	_ uuid.UUID,
+) (map[uuid.UUID]int, error) {
+	r.listUnreadCountsByConversationIDsCalls++
+	result := make(map[uuid.UUID]int, len(conversationIDs))
+	for _, conversationID := range conversationIDs {
+		if r.unreadCountsByConversation != nil {
+			result[conversationID] = r.unreadCountsByConversation[conversationID]
+		}
+	}
+	return result, nil
+}
+
+func (r *fakeMessageRepo) GetLastMessage(_ context.Context, conversationID uuid.UUID) (*model.Message, error) {
+	r.getLastMessageCalls++
+	if r.lastMessagesByConversation != nil {
+		return r.lastMessagesByConversation[conversationID], nil
+	}
 	return nil, nil
 }
 
+func (r *fakeMessageRepo) ListLastMessagesByConversationIDs(
+	_ context.Context,
+	conversationIDs []uuid.UUID,
+) (map[uuid.UUID]*model.Message, error) {
+	r.listLastMessagesByConversationIDsCalls++
+	result := make(map[uuid.UUID]*model.Message, len(conversationIDs))
+	for _, conversationID := range conversationIDs {
+		if r.lastMessagesByConversation != nil {
+			result[conversationID] = r.lastMessagesByConversation[conversationID]
+		}
+	}
+	return result, nil
+}
+
 func (r *fakeMessageRepo) GetMessageFileIDs(_ context.Context, messageID uuid.UUID) ([]string, error) {
+	r.getMessageFileIDsCalls++
+	if r.messageFileIDs != nil {
+		return r.messageFileIDs[messageID], nil
+	}
 	if r.messagesByID != nil && r.messagesByID[messageID] != nil {
 		return r.messagesByID[messageID].FileIDs, nil
 	}
 	return nil, nil
 }
 
+func (r *fakeMessageRepo) ListMessageFileIDs(
+	_ context.Context,
+	messageIDs []uuid.UUID,
+) (map[uuid.UUID][]string, error) {
+	r.listMessageFileIDsCalls++
+	result := make(map[uuid.UUID][]string, len(messageIDs))
+	for _, messageID := range messageIDs {
+		if r.messageFileIDs != nil {
+			result[messageID] = r.messageFileIDs[messageID]
+			continue
+		}
+		if r.messagesByID != nil && r.messagesByID[messageID] != nil {
+			result[messageID] = r.messagesByID[messageID].FileIDs
+		}
+	}
+	return result, nil
+}
+
 func (r *fakeMessageRepo) ListPinnedMessagesByConversationID(context.Context, uuid.UUID) ([]*model.ConversationPin, error) {
 	return nil, nil
+}
+
+func (r *fakeMessageRepo) ClaimDueChatNotificationOutbox(
+	context.Context,
+	time.Time,
+	int,
+) ([]*model.ChatNotificationOutbox, error) {
+	return r.claimedNotificationOutbox, nil
+}
+
+func (r *fakeMessageRepo) MarkChatNotificationOutboxSent(_ context.Context, outboxID uuid.UUID, _ time.Time) error {
+	r.sentNotificationOutboxIDs = append(r.sentNotificationOutboxIDs, outboxID)
+	return nil
+}
+
+func (r *fakeMessageRepo) RetryChatNotificationOutbox(
+	_ context.Context,
+	outboxID uuid.UUID,
+	nextAttemptAt time.Time,
+	lastError string,
+) error {
+	r.retriedNotificationOutbox = append(r.retriedNotificationOutbox, notificationOutboxRetry{
+		id:            outboxID,
+		nextAttemptAt: nextAttemptAt,
+		lastError:     lastError,
+	})
+	return nil
+}
+
+func (r *fakeMessageRepo) FailChatNotificationOutbox(
+	_ context.Context,
+	outboxID uuid.UUID,
+	failedAt time.Time,
+	lastError string,
+) error {
+	r.failedNotificationOutbox = append(r.failedNotificationOutbox, notificationOutboxFailure{
+		id:        outboxID,
+		failedAt:  failedAt,
+		lastError: lastError,
+	})
+	return nil
 }
 
 func (r *fakeMessageRepo) ListFlaggedMessagesForModeration(
@@ -1026,6 +1283,15 @@ func (r *fakeMessageRepo) DeleteConversationPinsByMessageID(context.Context, uui
 	return 0, nil
 }
 
+func (r *fakeMessageRepo) CreateChatNotificationOutbox(_ context.Context, item *model.ChatNotificationOutbox) error {
+	if item == nil {
+		return nil
+	}
+	copyValue := *item
+	r.createdNotificationOutbox = append(r.createdNotificationOutbox, &copyValue)
+	return nil
+}
+
 func (r *fakeMessageRepo) GetPreviousMessage(context.Context, uuid.UUID, time.Time, uuid.UUID) (*model.Message, error) {
 	return nil, nil
 }
@@ -1080,12 +1346,14 @@ func (fakeEventPublisher) Close() error                                       { 
 
 type fakeUserProfileResolver struct {
 	profiles map[uuid.UUID]port.PublicUserProfile
+	calls    int
 }
 
 func (f *fakeUserProfileResolver) GetPublicProfilesByUserIDs(
 	_ context.Context,
 	userIDs []uuid.UUID,
 ) (map[uuid.UUID]port.PublicUserProfile, error) {
+	f.calls++
 	result := make(map[uuid.UUID]port.PublicUserProfile)
 	for _, userID := range userIDs {
 		if profile, ok := f.profiles[userID]; ok {
@@ -1097,6 +1365,7 @@ func (f *fakeUserProfileResolver) GetPublicProfilesByUserIDs(
 
 type fakeChatNotificationSender struct {
 	sent chan port.ChatNotification
+	err  error
 }
 
 func newFakeChatNotificationSender() *fakeChatNotificationSender {
@@ -1107,6 +1376,9 @@ func (f *fakeChatNotificationSender) SendChatMessageNotification(
 	_ context.Context,
 	notification port.ChatNotification,
 ) error {
+	if f.err != nil {
+		return f.err
+	}
 	f.sent <- notification
 	return nil
 }

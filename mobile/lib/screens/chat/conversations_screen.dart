@@ -83,7 +83,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                   child: RefreshIndicator(
                     color: AppColors.accent,
                     backgroundColor: const Color(0xFF1a0d03),
-                    onRefresh: () => chat.loadConversations(),
+                    onRefresh: () => chat.loadConversations(forceRefresh: true),
                     child: conversations.isEmpty
                         ? _buildFilteredEmptyList(context)
                         : ListView.separated(
@@ -125,7 +125,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios_new, size: 20),
         color: AppColors.textPrimary,
-        onPressed: () => context.pop(),
+        onPressed: () => _handleBack(context),
       ),
       title: Text(
         l10n.chatListTitle,
@@ -138,6 +138,14 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
       ),
       centerTitle: true,
     );
+  }
+
+  void _handleBack(BuildContext context) {
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+    context.go('/');
   }
 
   Widget _buildSearchField(BuildContext context) {

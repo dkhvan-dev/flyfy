@@ -677,22 +677,94 @@ func (u *ConversationUseCase) ListConversations(ctx context.Context, actorUserID
 		return nil, err
 	}
 
+	if len(convs) == 0 {
+		return convs, nil
+	}
+
+	conversationIDs := make([]uuid.UUID, 0, len(convs))
 	for _, conv := range convs {
-		conv.Participants, _ = u.repo.ListParticipantsByConversationID(ctx, conv.ID)
-		enrichParticipants(ctx, u.profileResolver, conv.Participants)
-
-		conv.LastMessage, _ = u.repo.GetLastMessage(ctx, conv.ID)
-		if conv.LastMessage != nil {
-			conv.LastMessage.FileIDs, _ = u.repo.GetMessageFileIDs(ctx, conv.LastMessage.ID)
-			enrichMessages(ctx, u.profileResolver, []*model.Message{conv.LastMessage})
+		if conv != nil && conv.ID != uuid.Nil {
+			conversationIDs = append(conversationIDs, conv.ID)
 		}
-		conv.UnreadCount, _ = u.repo.GetUnreadCount(ctx, conv.ID, actorUserID)
-		count, _ := u.repo.CountActiveParticipants(ctx, conv.ID)
-		conv.ParticipantCount = count
+	}
+	if len(conversationIDs) == 0 {
+		return convs, nil
+	}
 
-		participant, _ := u.repo.GetParticipant(ctx, conv.ID, actorUserID)
-		if participant != nil {
-			conv.MutedUntil = participant.MutedUntil
+	var allParticipants []*model.Participant
+	participantsByConversation, err := u.repo.ListParticipantsByConversationIDs(ctx, conversationIDs)
+	if err == nil {
+		for _, conv := range convs {
+			if conv == nil {
+				continue
+			}
+			conv.Participants = participantsByConversation[conv.ID]
+			allParticipants = append(allParticipants, conv.Participants...)
+		}
+	} else {
+		log.Warn().Err(err).Msg("failed to batch load chat participants")
+	}
+
+	var lastMessages []*model.Message
+	lastMessagesByConversation, err := u.repo.ListLastMessagesByConversationIDs(ctx, conversationIDs)
+	if err == nil {
+		messageIDs := make([]uuid.UUID, 0, len(lastMessagesByConversation))
+		for _, message := range lastMessagesByConversation {
+			if message != nil && message.ID != uuid.Nil {
+				messageIDs = append(messageIDs, message.ID)
+			}
+		}
+		messageFileIDs, fileErr := u.repo.ListMessageFileIDs(ctx, messageIDs)
+		if fileErr != nil {
+			log.Warn().Err(fileErr).Msg("failed to batch load chat message files")
+		}
+		for _, conv := range convs {
+			if conv == nil {
+				continue
+			}
+			message := lastMessagesByConversation[conv.ID]
+			if message == nil {
+				continue
+			}
+			if fileErr == nil {
+				message.FileIDs = messageFileIDs[message.ID]
+			}
+			conv.LastMessage = message
+			lastMessages = append(lastMessages, message)
+		}
+	} else {
+		log.Warn().Err(err).Msg("failed to batch load chat last messages")
+	}
+
+	enrichParticipantsAndMessages(ctx, u.profileResolver, allParticipants, lastMessages)
+
+	unreadCounts, err := u.repo.ListUnreadCountsByConversationIDs(ctx, conversationIDs, actorUserID)
+	if err != nil {
+		log.Warn().Err(err).Msg("failed to batch load chat unread counts")
+	}
+	participantCounts, err := u.repo.CountActiveParticipantsByConversationIDs(ctx, conversationIDs)
+	if err != nil {
+		log.Warn().Err(err).Msg("failed to batch count chat participants")
+	}
+	actorParticipants, err := u.repo.ListParticipantsByConversationUserIDs(ctx, conversationIDs, actorUserID)
+	if err != nil {
+		log.Warn().Err(err).Msg("failed to batch load chat actor participants")
+	}
+
+	for _, conv := range convs {
+		if conv == nil {
+			continue
+		}
+		if unreadCounts != nil {
+			conv.UnreadCount = unreadCounts[conv.ID]
+		}
+		if participantCounts != nil {
+			conv.ParticipantCount = participantCounts[conv.ID]
+		}
+		if actorParticipants != nil {
+			if participant := actorParticipants[conv.ID]; participant != nil {
+				conv.MutedUntil = participant.MutedUntil
+			}
 		}
 	}
 
@@ -889,13 +961,23 @@ func (u *ConversationUseCase) PinMessage(
 
 	now := time.Now().UTC()
 	err = u.repo.WithTx(ctx, func(txRepo port.ChatTxRepository) error {
-		return txRepo.CreateConversationPin(ctx, &model.ConversationPin{
+		if err := txRepo.CreateConversationPin(ctx, &model.ConversationPin{
 			ID:             uuid.New(),
 			ConversationID: conversationID,
 			MessageID:      messageID,
 			PinnedByUserID: actorUserID,
 			PinnedAt:       now,
-		})
+		}); err != nil {
+			return err
+		}
+		return txRepo.CreateChatNotificationOutbox(ctx, newChatNotificationOutbox(
+			chatNotificationEventPin,
+			conversationID,
+			messageID,
+			actorUserID,
+			"",
+			now,
+		))
 	})
 	if err != nil {
 		return nil, err
@@ -905,8 +987,6 @@ func (u *ConversationUseCase) PinMessage(
 	if err != nil {
 		return nil, err
 	}
-
-	u.notifyMessagePinned(ctx, conv, msg, actorUserID)
 
 	publishedPins := pins
 	go func() {

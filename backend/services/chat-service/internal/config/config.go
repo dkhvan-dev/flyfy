@@ -10,19 +10,20 @@ import (
 )
 
 type Config struct {
-	App             AppConfig
-	HTTP            HTTPConfig
-	GRPC            GRPCConfig
-	DB              DBConfig
-	Log             LogConfig
-	Security        SecurityConfig
-	NATS            NATSConfig
-	Redis           RedisConfig
-	UserService     UserServiceConfig
-	ActivityService ActivityServiceConfig
-	StickerService  StickerServiceConfig
-	Notification    NotificationServiceConfig
-	Trust           TrustServiceConfig
+	App                AppConfig
+	HTTP               HTTPConfig
+	GRPC               GRPCConfig
+	DB                 DBConfig
+	Log                LogConfig
+	Security           SecurityConfig
+	NATS               NATSConfig
+	Redis              RedisConfig
+	UserService        UserServiceConfig
+	ActivityService    ActivityServiceConfig
+	StickerService     StickerServiceConfig
+	Notification       NotificationServiceConfig
+	NotificationOutbox ChatNotificationOutboxConfig
+	Trust              TrustServiceConfig
 }
 
 type AppConfig struct {
@@ -124,6 +125,15 @@ type StickerServiceConfig struct {
 type NotificationServiceConfig struct {
 	HTTPURL        string        `env:"NOTIFICATION_SERVICE_HTTP_URL, default=http://notification-service:8097"`
 	RequestTimeout time.Duration `env:"NOTIFICATION_SERVICE_REQUEST_TIMEOUT, default=3s"`
+}
+
+type ChatNotificationOutboxConfig struct {
+	Enabled        bool          `env:"CHAT_NOTIFICATION_OUTBOX_ENABLED, default=true"`
+	PollInterval   time.Duration `env:"CHAT_NOTIFICATION_OUTBOX_POLL_INTERVAL, default=500ms"`
+	BatchSize      int           `env:"CHAT_NOTIFICATION_OUTBOX_BATCH_SIZE, default=100"`
+	MaxAttempts    int           `env:"CHAT_NOTIFICATION_OUTBOX_MAX_ATTEMPTS, default=8"`
+	BaseRetryDelay time.Duration `env:"CHAT_NOTIFICATION_OUTBOX_BASE_RETRY_DELAY, default=2s"`
+	MaxRetryDelay  time.Duration `env:"CHAT_NOTIFICATION_OUTBOX_MAX_RETRY_DELAY, default=5m"`
 }
 
 type TrustServiceConfig struct {
