@@ -11,6 +11,7 @@ type AuthProvider string
 
 const (
 	ProviderPhone  AuthProvider = "phone"
+	ProviderEmail  AuthProvider = "email"
 	ProviderGoogle AuthProvider = "google"
 	ProviderApple  AuthProvider = "apple"
 )
@@ -27,12 +28,15 @@ const (
 
 // AuthUser represents a user in the auth system.
 type AuthUser struct {
-	ID        uuid.UUID `json:"id"`
-	Phone     *string   `json:"phone,omitempty"`
-	Role      UserRole  `json:"role"`
-	IsActive  bool      `json:"is_active"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID            uuid.UUID `json:"id"`
+	Phone         *string   `json:"phone,omitempty"`
+	Email         *string   `json:"email,omitempty"`
+	PasswordHash  *string   `json:"password_hash,omitempty"`
+	EmailVerified bool      `json:"email_verified"`
+	Role          UserRole  `json:"role"`
+	IsActive      bool      `json:"is_active"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }
 
 // AuthProviderLink represents an OAuth provider linked to a user.

@@ -25,6 +25,81 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authByPhone => 'Sign in with Phone';
 
   @override
+  String get authLoginTab => 'Login';
+
+  @override
+  String get authRegisterTab => 'Register';
+
+  @override
+  String get authLoginTitle => 'Sign in to your account';
+
+  @override
+  String get authRegisterTitle => 'Create your account';
+
+  @override
+  String get authIdentifierLabel => 'Nickname or email';
+
+  @override
+  String get authIdentifierHint => '@nomad or traveler@example.com';
+
+  @override
+  String get authIdentifierRequiredError => 'Enter your nickname or email';
+
+  @override
+  String get authEmailLabel => 'Email';
+
+  @override
+  String get authEmailHint => 'traveler@example.com';
+
+  @override
+  String get passwordLabel => 'Password';
+
+  @override
+  String get passwordHint => 'At least 8 characters';
+
+  @override
+  String get authConfirmPasswordLabel => 'Repeat password';
+
+  @override
+  String get authLoginAction => 'Log in';
+
+  @override
+  String get authRegisterAction => 'Register';
+
+  @override
+  String get authShowPassword => 'Show password';
+
+  @override
+  String get authHidePassword => 'Hide password';
+
+  @override
+  String get authLoginFailed =>
+      'Could not sign in. Check your details and try again.';
+
+  @override
+  String get authRegistrationFailed =>
+      'Could not start registration. Check your details and try again.';
+
+  @override
+  String get authPasswordMismatchError => 'Passwords do not match';
+
+  @override
+  String get emailRequiredError => 'Enter your email';
+
+  @override
+  String get emailInvalidError => 'Enter a valid email';
+
+  @override
+  String get passwordRequiredError => 'Enter your password';
+
+  @override
+  String get passwordWeakError =>
+      'Password must contain at least 8 characters, letters, and digits';
+
+  @override
+  String get skip => 'Skip';
+
+  @override
   String get termsAgreementText =>
       'By continuing, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>';
 
@@ -38,7 +113,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get verifyYourPhone => 'Verify your phone';
 
   @override
+  String get verifyYourEmail => 'Verify your email';
+
+  @override
   String get enterAuthCode => 'Enter the 6-digit code we just sent to\n';
+
+  @override
+  String get enterEmailAuthCode => 'Enter the 6-digit code we just sent to\n';
 
   @override
   String get didntReceiveOTP => 'Didn\'t receive the code?';
@@ -530,6 +611,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileNicknameTaken => 'This nickname is already taken';
+
+  @override
+  String get profileNicknameOneTimeHint =>
+      'Nickname can be set only once. After saving, it cannot be changed.';
+
+  @override
+  String get profileNicknameChecking => 'Checking nickname...';
+
+  @override
+  String get profileNicknameAvailable => 'Nickname is available';
+
+  @override
+  String get profileNicknameCheckFailed =>
+      'Could not check nickname. Try again.';
 
   @override
   String get firstNameLabel => 'First name';

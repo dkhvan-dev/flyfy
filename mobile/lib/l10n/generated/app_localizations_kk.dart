@@ -25,6 +25,81 @@ class AppLocalizationsKk extends AppLocalizations {
   String get authByPhone => 'Телефон нөмірі арқылы кіру';
 
   @override
+  String get authLoginTab => 'Кіру';
+
+  @override
+  String get authRegisterTab => 'Тіркелу';
+
+  @override
+  String get authLoginTitle => 'Аккаунтқа кіріңіз';
+
+  @override
+  String get authRegisterTitle => 'Аккаунт жасаңыз';
+
+  @override
+  String get authIdentifierLabel => 'Никнейм немесе email';
+
+  @override
+  String get authIdentifierHint => '@nomad немесе traveler@example.com';
+
+  @override
+  String get authIdentifierRequiredError => 'Никнейм немесе email енгізіңіз';
+
+  @override
+  String get authEmailLabel => 'Email';
+
+  @override
+  String get authEmailHint => 'traveler@example.com';
+
+  @override
+  String get passwordLabel => 'Құпиясөз';
+
+  @override
+  String get passwordHint => 'Кемінде 8 таңба';
+
+  @override
+  String get authConfirmPasswordLabel => 'Құпиясөзді қайталаңыз';
+
+  @override
+  String get authLoginAction => 'Кіру';
+
+  @override
+  String get authRegisterAction => 'Тіркелу';
+
+  @override
+  String get authShowPassword => 'Құпиясөзді көрсету';
+
+  @override
+  String get authHidePassword => 'Құпиясөзді жасыру';
+
+  @override
+  String get authLoginFailed =>
+      'Кіру мүмкін болмады. Деректерді тексеріп, қайта көріңіз.';
+
+  @override
+  String get authRegistrationFailed =>
+      'Тіркеуді бастау мүмкін болмады. Деректерді тексеріп, қайта көріңіз.';
+
+  @override
+  String get authPasswordMismatchError => 'Құпиясөздер сәйкес емес';
+
+  @override
+  String get emailRequiredError => 'Email енгізіңіз';
+
+  @override
+  String get emailInvalidError => 'Дұрыс email енгізіңіз';
+
+  @override
+  String get passwordRequiredError => 'Құпиясөз енгізіңіз';
+
+  @override
+  String get passwordWeakError =>
+      'Құпиясөз кемінде 8 таңбадан, әріптерден және сандардан тұруы керек';
+
+  @override
+  String get skip => 'Өткізу';
+
+  @override
   String get termsAgreementText =>
       '<terms>Пайдалану шарттары</terms> мен <privacy>Құпиялылық саясаты</privacy> арқылы жалғастыра отырып, сіз келісесіз';
 
@@ -39,8 +114,15 @@ class AppLocalizationsKk extends AppLocalizations {
   String get verifyYourPhone => 'Телефон нөміріңізді растаңыз';
 
   @override
+  String get verifyYourEmail => 'Email-ді растаңыз';
+
+  @override
   String get enterAuthCode =>
       'Жаңа ғана мына нөмірге жіберген 6 таңбалы кодты енгізіңіз:\n';
+
+  @override
+  String get enterEmailAuthCode =>
+      'Жаңа ғана мына email-ге жіберген 6 таңбалы кодты енгізіңіз:\n';
 
   @override
   String get didntReceiveOTP => 'Кодты алмадыңыз ба?';
@@ -534,6 +616,20 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get profileNicknameTaken => 'Бұл никнейм бос емес';
+
+  @override
+  String get profileNicknameOneTimeHint =>
+      'Никнеймді тек бір рет қоюға болады. Сақталғаннан кейін оны өзгерту мүмкін емес.';
+
+  @override
+  String get profileNicknameChecking => 'Никнейм тексеріліп жатыр...';
+
+  @override
+  String get profileNicknameAvailable => 'Никнейм бос';
+
+  @override
+  String get profileNicknameCheckFailed =>
+      'Никнеймді тексеру мүмкін болмады. Қайталап көріңіз.';
 
   @override
   String get firstNameLabel => 'Аты';

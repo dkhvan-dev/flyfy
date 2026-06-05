@@ -70,6 +70,26 @@ services:
     networks:
       - inflap-network
 
+  auth-postgres-migrator:
+    image: postgres:17-alpine
+    container_name: auth-postgres-migrator
+    environment:
+      PGHOST: auth-postgres
+      PGPORT: 5432
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: auth_service
+      POSTGRES_PASSWORD: auth_secret_dev
+    volumes:
+      - ./init-scripts/002_auth_service_migrate.sh:/usr/local/bin/002_auth_service_migrate.sh:ro
+      - ../backend/services/auth-service/migrations:/migrations/auth-service:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/002_auth_service_migrate.sh"]
+    depends_on:
+      auth-postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - inflap-network
+
   # ============================================
   # File Manager PostgreSQL
   # ============================================
@@ -660,18 +680,32 @@ services:
       OTP_LENGTH: 6
       OTP_TTL: 5m
       OTP_MAX_ATTEMPTS: 5
+      EMAIL_OTP_FROM_ADDRESS: "Inflap <dkhvan.developer@gmail.com>"
+      EMAIL_SMTP_HOST: smtp.gmail.com
+      EMAIL_SMTP_PORT: 587
+      EMAIL_SMTP_USERNAME: dkhvan.developer@gmail.com
+      EMAIL_SMTP_PASSWORD: ${AUTH_EMAIL_SMTP_PASSWORD:-}
+      EMAIL_SMTP_TIMEOUT: 8s
 
       ANTI_FRAUD_ENABLED: "true"
       ANTI_FRAUD_BASE_URL: http://anti-fraud-service:8096
       ANTI_FRAUD_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       ANTI_FRAUD_SIGNAL_HASH_KEY: dev-anti-fraud-signal-hash-key-change-me
       ANTI_FRAUD_TIMEOUT: 800ms
+
+      USER_SERVICE_GRPC_TARGET: dns:///user-service:9094
+      USER_SERVICE_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      USER_SERVICE_CALLER_NAME: auth-service
     depends_on:
       auth-postgres:
         condition: service_healthy
+      auth-postgres-migrator:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       token-service:
+        condition: service_started
+      user-service:
         condition: service_started
       anti-fraud-service:
         condition: service_started

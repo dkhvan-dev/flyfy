@@ -20,9 +20,11 @@ type Config struct {
 
 	// Token Service (S2S)
 	TokenService TokenServiceConfig
+	UserService  UserServiceConfig
 
 	// OTP
 	OTP      OTPConfig
+	Email    EmailConfig
 	Security AuthSecurityConfig
 
 	// OAuth
@@ -63,10 +65,25 @@ type TokenServiceConfig struct {
 	ServiceSecret string `env:"TOKEN_SERVICE_SECRET, default=auth-service-secret"`
 }
 
+type UserServiceConfig struct {
+	GRPCTarget           string `env:"USER_SERVICE_GRPC_TARGET, default=dns:///user-service:9094"`
+	InternalServiceToken string `env:"USER_SERVICE_INTERNAL_SERVICE_TOKEN"`
+	ServiceName          string `env:"USER_SERVICE_CALLER_NAME, default=auth-service"`
+}
+
 type OTPConfig struct {
 	Length      int           `env:"OTP_LENGTH, default=6"`
 	TTL         time.Duration `env:"OTP_TTL, default=5m"`
 	MaxAttempts int           `env:"OTP_MAX_ATTEMPTS, default=5"`
+}
+
+type EmailConfig struct {
+	OTPFromAddress string        `env:"EMAIL_OTP_FROM_ADDRESS, default=dkhvan.developer@gmail.com"`
+	SMTPHost       string        `env:"EMAIL_SMTP_HOST, default="`
+	SMTPPort       int           `env:"EMAIL_SMTP_PORT, default=587"`
+	SMTPUsername   string        `env:"EMAIL_SMTP_USERNAME, default="`
+	SMTPPassword   string        `env:"EMAIL_SMTP_PASSWORD, default="`
+	SMTPTimeout    time.Duration `env:"EMAIL_SMTP_TIMEOUT, default=8s"`
 }
 
 type AuthSecurityConfig struct {

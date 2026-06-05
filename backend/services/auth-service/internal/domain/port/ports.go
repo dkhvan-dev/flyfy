@@ -20,6 +20,15 @@ type Authenticator interface {
 	// VerifyOTPAndLogin verifies the OTP code and returns tokens.
 	VerifyOTPAndLogin(ctx context.Context, phone, code string, device model.DeviceInfo) (*model.AuthResult, error)
 
+	// StartEmailRegistration sends an OTP for email/password registration.
+	StartEmailRegistration(ctx context.Context, email, password string, device model.DeviceInfo) error
+
+	// VerifyEmailRegistration verifies an email OTP and returns tokens.
+	VerifyEmailRegistration(ctx context.Context, email, code string, device model.DeviceInfo) (*model.AuthResult, error)
+
+	// PasswordLogin authenticates by email or nickname and password.
+	PasswordLogin(ctx context.Context, identifier, password string, device model.DeviceInfo) (*model.AuthResult, error)
+
 	// GoogleLogin authenticates a user via Google ID Token.
 	GoogleLogin(ctx context.Context, idToken string, device model.DeviceInfo) (*model.AuthResult, error)
 
@@ -40,6 +49,12 @@ type UserRepository interface {
 	// FindByPhone returns a user by phone number.
 	FindByPhone(ctx context.Context, phone string) (*model.AuthUser, error)
 
+	// FindByEmail returns a user by normalized email.
+	FindByEmail(ctx context.Context, email string) (*model.AuthUser, error)
+
+	// FindByID returns a user by auth/user id.
+	FindByID(ctx context.Context, userID uuid.UUID) (*model.AuthUser, error)
+
 	// FindByProvider returns a user by OAuth provider + provider ID.
 	FindByProvider(ctx context.Context, provider model.AuthProvider, providerID string) (*model.AuthUser, error)
 
@@ -48,6 +63,12 @@ type UserRepository interface {
 
 	// LinkProvider links an OAuth provider to an existing user.
 	LinkProvider(ctx context.Context, link *model.AuthProviderLink) error
+
+	// UpdateEmailVerification marks a user's email as verified or unverified.
+	UpdateEmailVerification(ctx context.Context, userID uuid.UUID, verified bool) error
+
+	// UpdatePasswordHash replaces the password hash for an existing auth user.
+	UpdatePasswordHash(ctx context.Context, userID uuid.UUID, passwordHash string) error
 }
 
 // OTPStore manages OTP codes (storage + rate limiting).
@@ -66,6 +87,14 @@ type OTPStore interface {
 type OTPSender interface {
 	// Send delivers the OTP code to the phone number.
 	Send(ctx context.Context, phone, code string) error
+}
+
+type EmailOTPSender interface {
+	SendEmailOTP(ctx context.Context, email, code string) error
+}
+
+type NicknameResolver interface {
+	ResolveUserIDByNickname(ctx context.Context, nickname string) (uuid.UUID, error)
 }
 
 // OAuthVerifier verifies OAuth ID tokens from a specific provider.

@@ -16,6 +16,7 @@ func TestServerExposesAdminUserReadRPCs(t *testing.T) {
 	var _ interface {
 		ListAdminUsers(context.Context, *userv1.ListAdminUsersRequest) (*userv1.ListAdminUsersResponse, error)
 		GetAdminUserDetail(context.Context, *userv1.GetAdminUserDetailRequest) (*userv1.GetAdminUserDetailResponse, error)
+		ResolveUserByNickname(context.Context, *userv1.ResolveUserByNicknameRequest) (*userv1.ResolveUserByNicknameResponse, error)
 	} = NewServer(nil)
 }
 

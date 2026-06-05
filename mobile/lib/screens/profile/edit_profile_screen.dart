@@ -76,6 +76,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   bool _isSaving = false;
   bool _isResolvingLocation = false;
   bool _isUploadingAvatar = false;
+  bool _isCheckingNickname = false;
+  bool _isNicknameTaken = false;
+  bool _isNicknameAvailable = false;
+  String? _nicknameAvailabilityError;
+  String? _lastCheckedNickname;
+  Timer? _nicknameAvailabilityDebounce;
+  int _nicknameAvailabilityRequestId = 0;
 
   @override
   void initState() {
@@ -90,7 +97,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _lastNameController = TextEditingController(text: profile?.lastName ?? '')
       ..addListener(_handlePreviewChanged);
     _nicknameController = TextEditingController(text: _initialNickname)
-      ..addListener(_handlePreviewChanged);
+      ..addListener(_handleNicknameChanged);
     _bioController = TextEditingController(text: profile?.bio ?? '');
     _countryCodeController = TextEditingController(
       text: profile?.countryCode ?? '',
@@ -127,6 +134,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   void dispose() {
+    _nicknameAvailabilityDebounce?.cancel();
     _firstNameController.dispose();
     _lastNameController.dispose();
     _nicknameController.dispose();
@@ -152,6 +160,90 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  void _handleNicknameChanged() {
+    _handlePreviewChanged();
+    _scheduleNicknameAvailabilityCheck();
+  }
+
+  void _scheduleNicknameAvailabilityCheck() {
+    if (_isNicknameLocked) return;
+
+    final nickname = _nicknameController.text.trim();
+    _nicknameAvailabilityDebounce?.cancel();
+    _nicknameAvailabilityRequestId++;
+
+    if (nickname.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _isCheckingNickname = false;
+        _isNicknameTaken = false;
+        _isNicknameAvailable = false;
+        _nicknameAvailabilityError = null;
+        _lastCheckedNickname = null;
+      });
+      return;
+    }
+
+    setState(() {
+      _isCheckingNickname = false;
+      _isNicknameTaken = false;
+      _isNicknameAvailable = false;
+      _nicknameAvailabilityError = null;
+      _lastCheckedNickname = null;
+    });
+
+    _nicknameAvailabilityDebounce = Timer(
+      const Duration(milliseconds: 450),
+      () => unawaited(_checkNicknameAvailability(nickname)),
+    );
+  }
+
+  Future<void> _checkNicknameAvailability(String nickname) async {
+    final requestId = ++_nicknameAvailabilityRequestId;
+    if (!mounted || _isNicknameLocked) return;
+
+    setState(() {
+      _isCheckingNickname = true;
+      _isNicknameTaken = false;
+      _isNicknameAvailable = false;
+      _nicknameAvailabilityError = null;
+      _lastCheckedNickname = nickname;
+    });
+
+    try {
+      final available = await _profileApi.isNicknameAvailable(nickname);
+      if (!mounted ||
+          requestId != _nicknameAvailabilityRequestId ||
+          _nicknameController.text.trim() != nickname) {
+        return;
+      }
+
+      setState(() {
+        _isCheckingNickname = false;
+        _isNicknameTaken = !available;
+        _isNicknameAvailable = available;
+        _nicknameAvailabilityError = null;
+        _lastCheckedNickname = nickname;
+      });
+    } catch (_) {
+      if (!mounted ||
+          requestId != _nicknameAvailabilityRequestId ||
+          _nicknameController.text.trim() != nickname) {
+        return;
+      }
+
+      setState(() {
+        _isCheckingNickname = false;
+        _isNicknameTaken = false;
+        _isNicknameAvailable = false;
+        _nicknameAvailabilityError = AppLocalizations.of(
+          context,
+        )!.profileNicknameCheckFailed;
+        _lastCheckedNickname = nickname;
+      });
+    }
+  }
+
   void _handleCountrySearchChanged() {
     final nextQuery = _countrySearchController.text.trim();
     if (nextQuery == _countrySearchQuery) return;
@@ -174,6 +266,35 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   bool get _isNicknameLocked => _initialNickname.isNotEmpty;
+
+  String _nicknameSupportingText(AppLocalizations l10n) {
+    final lines = <String>[l10n.profileNicknameOneTimeHint];
+    final currentNickname = _nicknameController.text.trim();
+
+    if (!_isNicknameLocked && currentNickname.isNotEmpty) {
+      if (_isCheckingNickname) {
+        lines.add(l10n.profileNicknameChecking);
+      } else if (_isNicknameAvailable &&
+          _lastCheckedNickname == currentNickname) {
+        lines.add(l10n.profileNicknameAvailable);
+      } else if (_nicknameAvailabilityError != null &&
+          _lastCheckedNickname == currentNickname) {
+        lines.add(_nicknameAvailabilityError!);
+      }
+    }
+
+    return lines.join('\n');
+  }
+
+  String? _nicknameErrorText(AppLocalizations l10n) {
+    final currentNickname = _nicknameController.text.trim();
+    if (!_isNicknameLocked &&
+        _isNicknameTaken &&
+        _lastCheckedNickname == currentNickname) {
+      return l10n.profileNicknameTaken;
+    }
+    return null;
+  }
 
   Future<void> _loadCountries() {
     if (_countries.isNotEmpty) return Future.value();
@@ -1039,14 +1160,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             controller: _nicknameController,
                             hintText: l10n.nicknameLabel,
                             readOnly: _isNicknameLocked,
-                            helperText: _isNicknameLocked
-                                ? l10n.profileNicknameLockedDescription
-                                : null,
+                            helperText: _nicknameSupportingText(l10n),
+                            errorText: _nicknameErrorText(l10n),
                             textCapitalization: TextCapitalization.none,
                             validator: (value) {
                               if (!_isNicknameLocked &&
                                   (value ?? '').trim().isEmpty) {
                                 return l10n.nicknameRequired;
+                              }
+                              if (_nicknameErrorText(l10n) != null) {
+                                return l10n.profileNicknameTaken;
                               }
                               return null;
                             },
@@ -2398,6 +2521,7 @@ class _StyledTextField extends StatelessWidget {
     this.validator,
     this.readOnly = false,
     this.helperText,
+    this.errorText,
     this.textCapitalization = TextCapitalization.sentences,
     this.minLines = 1,
     this.maxLines = 1,
@@ -2408,6 +2532,7 @@ class _StyledTextField extends StatelessWidget {
   final String? Function(String?)? validator;
   final bool readOnly;
   final String? helperText;
+  final String? errorText;
   final TextCapitalization textCapitalization;
   final int minLines;
   final int maxLines;
@@ -2433,6 +2558,8 @@ class _StyledTextField extends StatelessWidget {
         hintText: hintText,
         helperText: helperText,
         helperMaxLines: 3,
+        errorText: errorText,
+        errorMaxLines: 3,
         hintStyle: TextStyle(
           color: profileTextMuted,
           fontSize: profileScaled(context, 15, min: 14, max: 16),

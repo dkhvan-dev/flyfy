@@ -264,6 +264,14 @@ class ApiClient {
     return response.data as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> nicknameAvailability(String nickname) async {
+    final response = await _dio.get(
+      '/users/nickname-availability',
+      queryParameters: {'nickname': nickname},
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
   Future<void> updatePresence() async {
     await _dio.post('/users/me/presence');
   }
@@ -388,6 +396,32 @@ class ApiClient {
     final response = await _dio.post(
       '/auth/phone/verify',
       data: {'phone': phone, 'code': code},
+    );
+    return AuthResult.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<AuthResult> loginWithPassword(
+    String identifier,
+    String password,
+  ) async {
+    final response = await _dio.post(
+      '/auth/login/password',
+      data: {'identifier': identifier, 'password': password},
+    );
+    return AuthResult.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<void> startEmailRegistration(String email, String password) async {
+    await _dio.post(
+      '/auth/register/email/start',
+      data: {'email': email, 'password': password},
+    );
+  }
+
+  Future<AuthResult> verifyEmailRegistration(String email, String code) async {
+    final response = await _dio.post(
+      '/auth/register/email/verify',
+      data: {'email': email, 'code': code},
     );
     return AuthResult.fromJson(response.data as Map<String, dynamic>);
   }

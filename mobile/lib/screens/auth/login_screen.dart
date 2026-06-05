@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'dart:ui';
-import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
 import '../../core/ui/app_colors.dart';
-import '../../providers/auth_provider.dart';
-import '../../providers/session_provider.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/session_provider.dart';
 import 'auth_responsive.dart';
 import 'terms_agreement_text.dart';
+
+enum _AuthEntryMode { login, register }
 
 class LoginScreen extends StatefulWidget {
   final String? from;
@@ -20,50 +21,152 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _phoneController = TextEditingController();
-  final _phoneFocusNode = FocusNode();
-  bool _showPhoneValidation = false;
+  final _identifierController = TextEditingController();
+  final _loginPasswordController = TextEditingController();
+  final _registerEmailController = TextEditingController();
+  final _registerPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
-  void _submit() async {
+  final _identifierFocusNode = FocusNode();
+  final _loginPasswordFocusNode = FocusNode();
+  final _registerEmailFocusNode = FocusNode();
+  final _registerPasswordFocusNode = FocusNode();
+  final _confirmPasswordFocusNode = FocusNode();
+
+  _AuthEntryMode _mode = _AuthEntryMode.login;
+  bool _showLoginValidation = false;
+  bool _showRegisterValidation = false;
+  bool _obscureLoginPassword = true;
+  bool _obscureRegisterPassword = true;
+  bool _obscureConfirmPassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    for (final controller in [
+      _identifierController,
+      _loginPasswordController,
+      _registerEmailController,
+      _registerPasswordController,
+      _confirmPasswordController,
+    ]) {
+      controller.addListener(_handleFormChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final controller in [
+      _identifierController,
+      _loginPasswordController,
+      _registerEmailController,
+      _registerPasswordController,
+      _confirmPasswordController,
+    ]) {
+      controller.removeListener(_handleFormChanged);
+      controller.dispose();
+    }
+    _identifierFocusNode.dispose();
+    _loginPasswordFocusNode.dispose();
+    _registerEmailFocusNode.dispose();
+    _registerPasswordFocusNode.dispose();
+    _confirmPasswordFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _handleFormChanged() {
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  Future<void> _submitLogin() async {
     final ctx = context;
     final l10n = AppLocalizations.of(ctx)!;
-    final validationMessage = _phoneValidationMessage(l10n);
-    if (validationMessage != null) {
-      setState(() {
-        _showPhoneValidation = true;
-      });
-      _phoneFocusNode.requestFocus();
+    setState(() => _showLoginValidation = true);
+
+    final identifierError = _identifierValidationMessage(l10n);
+    final passwordError = _passwordValidationMessage(
+      l10n,
+      _loginPasswordController.text,
+    );
+    if (identifierError != null) {
+      _identifierFocusNode.requestFocus();
       return;
     }
-
-    final phone = _normalizedPhone();
-    if (phone.isEmpty) {
+    if (passwordError != null) {
+      _loginPasswordFocusNode.requestFocus();
       return;
     }
 
     final auth = ctx.read<AuthProvider>();
-    final success = await auth.sendOtp(phone);
+    final success = await auth.loginWithPassword(
+      _identifierController.text.trim(),
+      _loginPasswordController.text.trim(),
+    );
 
     if (!ctx.mounted) return;
+    if (success) {
+      await _completeAuthenticatedEntry(ctx, auth);
+      return;
+    }
 
+    await showErrorDialog(
+      ctx,
+      title: l10n.error,
+      message: auth.errorMessage ?? l10n.authLoginFailed,
+    );
+  }
+
+  Future<void> _submitRegistration() async {
+    final ctx = context;
+    final l10n = AppLocalizations.of(ctx)!;
+    setState(() => _showRegisterValidation = true);
+
+    final emailError = _emailValidationMessage(l10n);
+    final passwordError = _passwordValidationMessage(
+      l10n,
+      _registerPasswordController.text,
+    );
+    final confirmError = _confirmPasswordValidationMessage(l10n);
+    if (emailError != null) {
+      _registerEmailFocusNode.requestFocus();
+      return;
+    }
+    if (passwordError != null) {
+      _registerPasswordFocusNode.requestFocus();
+      return;
+    }
+    if (confirmError != null) {
+      _confirmPasswordFocusNode.requestFocus();
+      return;
+    }
+
+    final email = _registerEmailController.text.trim();
+    final auth = ctx.read<AuthProvider>();
+    final success = await auth.startEmailRegistration(
+      email,
+      _registerPasswordController.text.trim(),
+    );
+
+    if (!ctx.mounted) return;
     if (success) {
       final uri = Uri(
         path: '/otp',
         queryParameters: {
-          'phone': phone,
-          if (widget.from != null && widget.from!.isNotEmpty)
-            'from': widget.from!,
+          'mode': 'emailRegistration',
+          'email': email,
+          if (widget.from?.isNotEmpty == true) 'from': widget.from!,
         },
       );
-
       ctx.push(uri.toString());
-    } else {
-      await showErrorDialog(
-        ctx,
-        title: l10n.error,
-        message: auth.errorMessage ?? l10n.otpSendFailed,
-      );
+      return;
     }
+
+    await showErrorDialog(
+      ctx,
+      title: l10n.error,
+      message: auth.errorMessage ?? l10n.authRegistrationFailed,
+    );
   }
 
   @override
@@ -73,10 +176,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     final isCompact = screenWidth < 375 || textScale > 1.02;
     final isNarrow = screenWidth < 360 || textScale > 1.08;
-    final phoneErrorText = _showPhoneValidation
-        ? _phoneValidationMessage(l10n)
-        : null;
-    final canSubmitPhone = _isPhoneValid();
 
     return Scaffold(
       body: AuthResponsiveTextScope(
@@ -94,8 +193,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    AppColors.background.withValues(alpha: 0.2),
-                    AppColors.background.withValues(alpha: 0.9),
+                    AppColors.background.withValues(alpha: 0.15),
+                    AppColors.background.withValues(alpha: 0.92),
                   ],
                 ),
               ),
@@ -113,17 +212,17 @@ class _LoginScreenState extends State<LoginScreen> {
                     min: 16,
                     max: 28,
                   );
-                  final cardPadding = authScaled(
+                  final panelPadding = authScaled(
                     context,
-                    compactHeight ? 22 : 30,
+                    compactHeight ? 20 : 28,
                     min: 18,
-                    max: 32,
+                    max: 30,
                   );
-                  final bottomCardPadding = authScaled(
+                  final bottomPanelPadding = authScaled(
                     context,
-                    keyboardOpen ? 18 : (compactHeight ? 28 : 48),
+                    keyboardOpen ? 16 : (compactHeight ? 24 : 40),
                     min: 14,
-                    max: 52,
+                    max: 44,
                   );
                   final titleSize = authScaled(
                     context,
@@ -131,14 +230,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     min: 24,
                     max: 32,
                   );
-                  final sectionGap = authScaled(
-                    context,
-                    keyboardOpen ? 20 : (compactHeight ? 24 : 32),
-                    min: 18,
-                    max: 34,
-                  );
                   final logoSize = authScaled(context, 40, min: 34, max: 40);
-                  final cardRadius = authScaled(context, 24, min: 18, max: 24);
 
                   return AnimatedPadding(
                     duration: const Duration(milliseconds: 220),
@@ -165,7 +257,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               padding: EdgeInsets.symmetric(
                                 vertical: authScaled(
                                   context,
-                                  isCompact ? 20 : 24,
+                                  isCompact ? 18 : 24,
                                   min: 16,
                                   max: 24,
                                 ),
@@ -217,7 +309,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                             ),
                                             fontWeight: FontWeight.w800,
                                             color: AppColors.textPrimary,
-                                            letterSpacing: -1,
                                           ),
                                         ),
                                       ],
@@ -226,7 +317,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   TextButton(
                                     onPressed: () => context.go('/'),
                                     child: Text(
-                                      'Skip',
+                                      l10n.skip,
                                       style: TextStyle(
                                         color: AppColors.textPrimary.withValues(
                                           alpha: 0.8,
@@ -246,476 +337,128 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             Padding(
                               padding: EdgeInsets.only(
-                                bottom: bottomCardPadding,
+                                bottom: bottomPanelPadding,
                               ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(cardRadius),
-                                child: BackdropFilter(
-                                  filter: ImageFilter.blur(
-                                    sigmaX: 12,
-                                    sigmaY: 12,
+                              child: Container(
+                                padding: EdgeInsets.all(panelPadding),
+                                decoration: BoxDecoration(
+                                  color: AppColors.background.withValues(
+                                    alpha: 0.72,
                                   ),
-                                  child: Container(
-                                    padding: EdgeInsets.all(cardPadding),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.background.withValues(
-                                        alpha: 0.4,
-                                      ),
-                                      border: Border.all(
-                                        color: AppColors.accent.withValues(
-                                          alpha: 0.1,
-                                        ),
-                                      ),
-                                      borderRadius: BorderRadius.circular(
-                                        cardRadius,
+                                  border: Border.all(
+                                    color: AppColors.accent.withValues(
+                                      alpha: 0.12,
+                                    ),
+                                  ),
+                                  borderRadius: BorderRadius.circular(
+                                    authScaled(context, 24, min: 18, max: 24),
+                                  ),
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Text(
+                                      _mode == _AuthEntryMode.login
+                                          ? l10n.authLoginTitle
+                                          : l10n.authRegisterTitle,
+                                      style: TextStyle(
+                                        fontSize: titleSize,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.textPrimary,
+                                        height: 1.1,
                                       ),
                                     ),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
+                                    SizedBox(
+                                      height: authScaled(
+                                        context,
+                                        8,
+                                        min: 6,
+                                        max: 8,
+                                      ),
+                                    ),
+                                    Text(
+                                      l10n.welcomeDescription,
+                                      style: TextStyle(
+                                        fontSize: authScaled(
+                                          context,
+                                          15,
+                                          min: 13,
+                                          max: 15,
+                                        ),
+                                        fontWeight: FontWeight.w500,
+                                        color: AppColors.textSecondary,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      height: authScaled(
+                                        context,
+                                        20,
+                                        min: 16,
+                                        max: 22,
+                                      ),
+                                    ),
+                                    _AuthModeSwitch(
+                                      mode: _mode,
+                                      onChanged: (mode) {
+                                        FocusScope.of(context).unfocus();
+                                        setState(() {
+                                          _mode = mode;
+                                          _showLoginValidation = false;
+                                          _showRegisterValidation = false;
+                                        });
+                                      },
+                                    ),
+                                    SizedBox(
+                                      height: authScaled(
+                                        context,
+                                        20,
+                                        min: 16,
+                                        max: 22,
+                                      ),
+                                    ),
+                                    IndexedStack(
+                                      index: _mode == _AuthEntryMode.login
+                                          ? 0
+                                          : 1,
+                                      sizing: StackFit.loose,
                                       children: [
-                                        Text(
-                                          l10n.welcomeTitle,
-                                          style: TextStyle(
-                                            fontSize: titleSize,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.textPrimary,
-                                            height: 1.1,
-                                            letterSpacing: -0.5,
-                                          ),
-                                        ),
-                                        SizedBox(
-                                          height: authScaled(
+                                        _AuthModePane(
+                                          isActive:
+                                              _mode == _AuthEntryMode.login,
+                                          child: _buildLoginForm(
                                             context,
-                                            8,
-                                            min: 6,
-                                            max: 8,
+                                            l10n,
+                                            isNarrow,
                                           ),
                                         ),
-                                        Text(
-                                          l10n.welcomeDescription,
-                                          style: TextStyle(
-                                            fontSize: authScaled(
-                                              context,
-                                              16,
-                                              min: 14,
-                                              max: 16,
-                                            ),
-                                            fontWeight: FontWeight.w500,
-                                            color: AppColors.textSecondary,
-                                            height: 1.4,
-                                          ),
-                                        ),
-                                        SizedBox(height: sectionGap),
-                                        TextField(
-                                          controller: _phoneController,
-                                          focusNode: _phoneFocusNode,
-                                          keyboardType: TextInputType.phone,
-                                          textInputAction: TextInputAction.done,
-                                          onTapOutside: (_) =>
-                                              FocusScope.of(context).unfocus(),
-                                          onSubmitted: (_) => _submit(),
-                                          style: const TextStyle(
-                                            color: AppColors.textPrimary,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                          inputFormatters: [
-                                            FilteringTextInputFormatter.allow(
-                                              RegExp(r'[0-9+]'),
-                                            ),
-                                            LengthLimitingTextInputFormatter(
-                                              16,
-                                            ),
-                                            _PhonePrefixFormatter(),
-                                          ],
-                                          decoration: InputDecoration(
-                                            labelStyle: const TextStyle(
-                                              color: AppColors.textSecondary,
-                                            ),
-                                            hintText: '+7 705 169 8779',
-                                            hintStyle: const TextStyle(
-                                              color: AppColors.textCaption,
-                                            ),
-                                            errorText: phoneErrorText,
-                                            filled: true,
-                                            fillColor: Colors.white.withValues(
-                                              alpha: 0.05,
-                                            ),
-                                            contentPadding:
-                                                EdgeInsets.symmetric(
-                                                  horizontal: authScaled(
-                                                    context,
-                                                    20,
-                                                    min: 16,
-                                                    max: 20,
-                                                  ),
-                                                  vertical: authScaled(
-                                                    context,
-                                                    16,
-                                                    min: 14,
-                                                    max: 16,
-                                                  ),
-                                                ),
-                                            border: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                    authScaled(
-                                                      context,
-                                                      16,
-                                                      min: 14,
-                                                      max: 16,
-                                                    ),
-                                                  ),
-                                              borderSide: BorderSide(
-                                                color: Colors.white.withValues(
-                                                  alpha: 0.1,
-                                                ),
-                                              ),
-                                            ),
-                                            enabledBorder: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                    authScaled(
-                                                      context,
-                                                      16,
-                                                      min: 14,
-                                                      max: 16,
-                                                    ),
-                                                  ),
-                                              borderSide: BorderSide(
-                                                color: Colors.white.withValues(
-                                                  alpha: 0.1,
-                                                ),
-                                              ),
-                                            ),
-                                            prefixIcon: const Icon(
-                                              Icons.phone_iphone,
-                                              color: AppColors.accent,
-                                            ),
-                                          ),
-                                        ),
-                                        SizedBox(
-                                          height: authScaled(
+                                        _AuthModePane(
+                                          isActive:
+                                              _mode == _AuthEntryMode.register,
+                                          child: _buildRegisterForm(
                                             context,
-                                            12,
-                                            min: 10,
-                                            max: 12,
+                                            l10n,
+                                            isNarrow,
                                           ),
-                                        ),
-                                        Consumer<AuthProvider>(
-                                          builder: (consumerContext, auth, _) {
-                                            if (auth.isSendingOtp) {
-                                              return Container(
-                                                height: authScaled(
-                                                  context,
-                                                  56,
-                                                  min: 50,
-                                                  max: 56,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: AppColors.accent,
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                        999,
-                                                      ),
-                                                ),
-                                                alignment: Alignment.center,
-                                                child: const SizedBox(
-                                                  width: 24,
-                                                  height: 24,
-                                                  child:
-                                                      CircularProgressIndicator(
-                                                        color: AppColors
-                                                            .background,
-                                                        strokeWidth: 2.5,
-                                                      ),
-                                                ),
-                                              );
-                                            }
-
-                                            return Semantics(
-                                              container: true,
-                                              button: true,
-                                              enabled: canSubmitPhone,
-                                              label: l10n.authByPhone,
-                                              onTap: canSubmitPhone
-                                                  ? _submit
-                                                  : null,
-                                              child: ExcludeSemantics(
-                                                child: ElevatedButton(
-                                                  onPressed: canSubmitPhone
-                                                      ? _submit
-                                                      : null,
-                                                  style: ElevatedButton.styleFrom(
-                                                    backgroundColor:
-                                                        AppColors.accent,
-                                                    foregroundColor:
-                                                        AppColors.background,
-                                                    padding:
-                                                        EdgeInsets.symmetric(
-                                                          vertical: authScaled(
-                                                            context,
-                                                            16,
-                                                            min: 14,
-                                                            max: 16,
-                                                          ),
-                                                        ),
-                                                    shape: RoundedRectangleBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            999,
-                                                          ),
-                                                    ),
-                                                    elevation: 0,
-                                                  ),
-                                                  child: Row(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .center,
-                                                    children: [
-                                                      const Icon(
-                                                        Icons.sms_rounded,
-                                                        size: 20,
-                                                        color: AppColors
-                                                            .textPrimary,
-                                                      ),
-                                                      SizedBox(
-                                                        width: authScaled(
-                                                          context,
-                                                          8,
-                                                          min: 6,
-                                                          max: 8,
-                                                        ),
-                                                      ),
-                                                      Text(
-                                                        l10n.authByPhone,
-                                                        style: TextStyle(
-                                                          color: AppColors
-                                                              .textPrimary,
-                                                          fontSize: authScaled(
-                                                            context,
-                                                            16,
-                                                            min: 14,
-                                                            max: 16,
-                                                          ),
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                        const SizedBox(height: 12),
-                                        Consumer<AuthProvider>(
-                                          builder: (consumerContext, auth, _) {
-                                            final isAnyOAuthLoading =
-                                                auth.isGoogleLoading ||
-                                                auth.isAppleLoading;
-
-                                            if (isNarrow) {
-                                              return Column(
-                                                children: [
-                                                  _OAuthButton(
-                                                    icon: Icons.g_mobiledata,
-                                                    label: 'Google',
-                                                    isLoading:
-                                                        auth.isGoogleLoading,
-                                                    onPressed: isAnyOAuthLoading
-                                                        ? null
-                                                        : () async {
-                                                            final ctx = context;
-                                                            final authProvider =
-                                                                ctx
-                                                                    .read<
-                                                                      AuthProvider
-                                                                    >();
-                                                            final success =
-                                                                await authProvider
-                                                                    .loginWithGoogle(
-                                                                      'mock_google_token',
-                                                                    );
-
-                                                            if (!ctx.mounted) {
-                                                              return;
-                                                            }
-                                                            if (success) {
-                                                              await _completeAuthenticatedEntry(
-                                                                ctx,
-                                                                authProvider,
-                                                              );
-                                                            } else {
-                                                              await showErrorDialog(
-                                                                ctx,
-                                                                title:
-                                                                    l10n.error,
-                                                                message:
-                                                                    authProvider
-                                                                        .errorMessage ??
-                                                                    l10n.googleLoginFailed,
-                                                              );
-                                                            }
-                                                          },
-                                                  ),
-                                                  const SizedBox(height: 12),
-                                                  _OAuthButton(
-                                                    icon: Icons.apple,
-                                                    label: 'Apple',
-                                                    isLoading:
-                                                        auth.isAppleLoading,
-                                                    onPressed: isAnyOAuthLoading
-                                                        ? null
-                                                        : () async {
-                                                            final ctx = context;
-                                                            final authProvider =
-                                                                ctx
-                                                                    .read<
-                                                                      AuthProvider
-                                                                    >();
-                                                            final success =
-                                                                await authProvider
-                                                                    .loginWithApple(
-                                                                      'mock_apple_token',
-                                                                    );
-
-                                                            if (!ctx.mounted) {
-                                                              return;
-                                                            }
-                                                            if (success) {
-                                                              await _completeAuthenticatedEntry(
-                                                                ctx,
-                                                                authProvider,
-                                                              );
-                                                            } else {
-                                                              await showErrorDialog(
-                                                                ctx,
-                                                                title:
-                                                                    l10n.error,
-                                                                message:
-                                                                    authProvider
-                                                                        .errorMessage ??
-                                                                    l10n.appleLoginFailed,
-                                                              );
-                                                            }
-                                                          },
-                                                  ),
-                                                ],
-                                              );
-                                            }
-
-                                            return Row(
-                                              children: [
-                                                Expanded(
-                                                  child: _OAuthButton(
-                                                    icon: Icons.g_mobiledata,
-                                                    label: 'Google',
-                                                    isLoading:
-                                                        auth.isGoogleLoading,
-                                                    onPressed: isAnyOAuthLoading
-                                                        ? null
-                                                        : () async {
-                                                            final ctx = context;
-                                                            final authProvider =
-                                                                ctx
-                                                                    .read<
-                                                                      AuthProvider
-                                                                    >();
-                                                            final success =
-                                                                await authProvider
-                                                                    .loginWithGoogle(
-                                                                      'mock_google_token',
-                                                                    );
-
-                                                            if (!ctx.mounted) {
-                                                              return;
-                                                            }
-                                                            if (success) {
-                                                              await _completeAuthenticatedEntry(
-                                                                ctx,
-                                                                authProvider,
-                                                              );
-                                                            } else {
-                                                              await showErrorDialog(
-                                                                ctx,
-                                                                title:
-                                                                    l10n.error,
-                                                                message:
-                                                                    authProvider
-                                                                        .errorMessage ??
-                                                                    l10n.googleLoginFailed,
-                                                              );
-                                                            }
-                                                          },
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Expanded(
-                                                  child: _OAuthButton(
-                                                    icon: Icons.apple,
-                                                    label: 'Apple',
-                                                    isLoading:
-                                                        auth.isAppleLoading,
-                                                    onPressed: isAnyOAuthLoading
-                                                        ? null
-                                                        : () async {
-                                                            final ctx = context;
-                                                            final authProvider =
-                                                                ctx
-                                                                    .read<
-                                                                      AuthProvider
-                                                                    >();
-                                                            final success =
-                                                                await authProvider
-                                                                    .loginWithApple(
-                                                                      'mock_apple_token',
-                                                                    );
-
-                                                            if (!ctx.mounted) {
-                                                              return;
-                                                            }
-                                                            if (success) {
-                                                              await _completeAuthenticatedEntry(
-                                                                ctx,
-                                                                authProvider,
-                                                              );
-                                                            } else {
-                                                              await showErrorDialog(
-                                                                ctx,
-                                                                title:
-                                                                    l10n.error,
-                                                                message:
-                                                                    authProvider
-                                                                        .errorMessage ??
-                                                                    l10n.appleLoginFailed,
-                                                              );
-                                                            }
-                                                          },
-                                                  ),
-                                                ),
-                                              ],
-                                            );
-                                          },
-                                        ),
-                                        SizedBox(
-                                          height: authScaled(
-                                            context,
-                                            24,
-                                            min: 18,
-                                            max: 24,
-                                          ),
-                                        ),
-                                        TermsAgreementRichText(
-                                          text: l10n.termsAgreementText,
-                                          onTermsTap: () {},
-                                          onPrivacyTap: () {},
                                         ),
                                       ],
                                     ),
-                                  ),
+                                    SizedBox(
+                                      height: authScaled(
+                                        context,
+                                        22,
+                                        min: 18,
+                                        max: 24,
+                                      ),
+                                    ),
+                                    TermsAgreementRichText(
+                                      text: l10n.termsAgreementText,
+                                      onTermsTap: () {},
+                                      onPrivacyTap: () {},
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -727,85 +470,311 @@ class _LoginScreenState extends State<LoginScreen> {
                 },
               ),
             ),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                height: authScaled(context, 4, min: 3, max: 4),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.transparent,
-                      AppColors.accent.withValues(alpha: 0.5),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
       ),
     );
   }
 
-  @override
-  void initState() {
-    super.initState();
+  Widget _buildLoginForm(
+    BuildContext context,
+    AppLocalizations l10n,
+    bool isNarrow,
+  ) {
+    final identifierError = _showLoginValidation
+        ? _identifierValidationMessage(l10n)
+        : null;
+    final passwordError = _showLoginValidation
+        ? _passwordValidationMessage(l10n, _loginPasswordController.text)
+        : null;
+    final canSubmit =
+        identifierError == null &&
+        passwordError == null &&
+        _identifierController.text.trim().isNotEmpty &&
+        _loginPasswordController.text.trim().isNotEmpty;
 
-    _phoneController.addListener(_handlePhoneChanged);
-    _phoneFocusNode.addListener(() {
-      if (_phoneFocusNode.hasFocus && _phoneController.text.isEmpty) {
-        _phoneController.value = const TextEditingValue(
-          text: '+',
-          selection: TextSelection.collapsed(offset: 1),
+    return _AuthFieldsScrollView(
+      child: Column(
+        key: const ValueKey('login-form'),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _AuthTextField(
+            controller: _identifierController,
+            focusNode: _identifierFocusNode,
+            label: l10n.authIdentifierLabel,
+            hint: l10n.authIdentifierHint,
+            icon: Icons.alternate_email_rounded,
+            errorText: identifierError,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.username, AutofillHints.email],
+            onSubmitted: (_) => _loginPasswordFocusNode.requestFocus(),
+          ),
+          const SizedBox(height: 12),
+          _AuthTextField(
+            controller: _loginPasswordController,
+            focusNode: _loginPasswordFocusNode,
+            label: l10n.passwordLabel,
+            hint: l10n.passwordHint,
+            icon: Icons.lock_outline_rounded,
+            errorText: passwordError,
+            obscureText: _obscureLoginPassword,
+            textInputAction: TextInputAction.done,
+            autofillHints: const [AutofillHints.password],
+            onSubmitted: (_) => _submitLogin(),
+            suffixIcon: IconButton(
+              tooltip: _obscureLoginPassword
+                  ? l10n.authShowPassword
+                  : l10n.authHidePassword,
+              onPressed: () => setState(() {
+                _obscureLoginPassword = !_obscureLoginPassword;
+              }),
+              icon: Icon(
+                _obscureLoginPassword
+                    ? Icons.visibility_off_rounded
+                    : Icons.visibility_rounded,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Consumer<AuthProvider>(
+            builder: (context, auth, _) => _PrimaryAuthButton(
+              label: l10n.authLoginAction,
+              icon: Icons.login_rounded,
+              isLoading: auth.isPasswordLoginLoading,
+              onPressed: canSubmit ? _submitLogin : null,
+            ),
+          ),
+          SizedBox(height: authScaled(context, 14, min: 12, max: 16)),
+          _buildOAuthButtons(context, l10n, isNarrow),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRegisterForm(
+    BuildContext context,
+    AppLocalizations l10n,
+    bool isNarrow,
+  ) {
+    final emailError = _showRegisterValidation
+        ? _emailValidationMessage(l10n)
+        : null;
+    final passwordError = _showRegisterValidation
+        ? _passwordValidationMessage(l10n, _registerPasswordController.text)
+        : null;
+    final confirmError = _showRegisterValidation
+        ? _confirmPasswordValidationMessage(l10n)
+        : null;
+    final canSubmit =
+        emailError == null &&
+        passwordError == null &&
+        confirmError == null &&
+        _registerEmailController.text.trim().isNotEmpty &&
+        _registerPasswordController.text.trim().isNotEmpty &&
+        _confirmPasswordController.text.trim().isNotEmpty;
+
+    return _AuthFieldsScrollView(
+      child: Column(
+        key: const ValueKey('register-form'),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _AuthTextField(
+            controller: _registerEmailController,
+            focusNode: _registerEmailFocusNode,
+            label: l10n.authEmailLabel,
+            hint: l10n.authEmailHint,
+            icon: Icons.mail_outline_rounded,
+            errorText: emailError,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.email],
+            onSubmitted: (_) => _registerPasswordFocusNode.requestFocus(),
+          ),
+          const SizedBox(height: 12),
+          _AuthTextField(
+            controller: _registerPasswordController,
+            focusNode: _registerPasswordFocusNode,
+            label: l10n.passwordLabel,
+            hint: l10n.passwordHint,
+            icon: Icons.lock_outline_rounded,
+            errorText: passwordError,
+            obscureText: _obscureRegisterPassword,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.newPassword],
+            onSubmitted: (_) => _confirmPasswordFocusNode.requestFocus(),
+            suffixIcon: IconButton(
+              tooltip: _obscureRegisterPassword
+                  ? l10n.authShowPassword
+                  : l10n.authHidePassword,
+              onPressed: () => setState(() {
+                _obscureRegisterPassword = !_obscureRegisterPassword;
+              }),
+              icon: Icon(
+                _obscureRegisterPassword
+                    ? Icons.visibility_off_rounded
+                    : Icons.visibility_rounded,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _AuthTextField(
+            controller: _confirmPasswordController,
+            focusNode: _confirmPasswordFocusNode,
+            label: l10n.authConfirmPasswordLabel,
+            hint: l10n.passwordHint,
+            icon: Icons.check_circle_outline_rounded,
+            errorText: confirmError,
+            obscureText: _obscureConfirmPassword,
+            textInputAction: TextInputAction.done,
+            autofillHints: const [AutofillHints.newPassword],
+            onSubmitted: (_) => _submitRegistration(),
+            suffixIcon: IconButton(
+              tooltip: _obscureConfirmPassword
+                  ? l10n.authShowPassword
+                  : l10n.authHidePassword,
+              onPressed: () => setState(() {
+                _obscureConfirmPassword = !_obscureConfirmPassword;
+              }),
+              icon: Icon(
+                _obscureConfirmPassword
+                    ? Icons.visibility_off_rounded
+                    : Icons.visibility_rounded,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Consumer<AuthProvider>(
+            builder: (context, auth, _) => _PrimaryAuthButton(
+              label: l10n.authRegisterAction,
+              icon: Icons.person_add_alt_1_rounded,
+              isLoading: auth.isEmailRegistrationLoading,
+              onPressed: canSubmit ? _submitRegistration : null,
+            ),
+          ),
+          SizedBox(height: authScaled(context, 14, min: 12, max: 16)),
+          _buildOAuthButtons(context, l10n, isNarrow),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOAuthButtons(
+    BuildContext context,
+    AppLocalizations l10n,
+    bool isNarrow,
+  ) {
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        final isAnyOAuthLoading = auth.isGoogleLoading || auth.isAppleLoading;
+        final buttons = [
+          _OAuthButton(
+            icon: Icons.g_mobiledata,
+            label: 'Google',
+            isLoading: auth.isGoogleLoading,
+            onPressed: isAnyOAuthLoading
+                ? null
+                : () => _submitOAuth(
+                    context,
+                    provider: _OAuthProvider.google,
+                    fallbackError: l10n.googleLoginFailed,
+                  ),
+          ),
+          _OAuthButton(
+            icon: Icons.apple,
+            label: 'Apple',
+            isLoading: auth.isAppleLoading,
+            onPressed: isAnyOAuthLoading
+                ? null
+                : () => _submitOAuth(
+                    context,
+                    provider: _OAuthProvider.apple,
+                    fallbackError: l10n.appleLoginFailed,
+                  ),
+          ),
+        ];
+
+        if (isNarrow) {
+          return Column(
+            children: [buttons[0], const SizedBox(height: 10), buttons[1]],
+          );
+        }
+
+        return Row(
+          children: [
+            Expanded(child: buttons[0]),
+            const SizedBox(width: 10),
+            Expanded(child: buttons[1]),
+          ],
         );
-      }
-    });
+      },
+    );
   }
 
-  @override
-  void dispose() {
-    _phoneController.removeListener(_handlePhoneChanged);
-    _phoneController.dispose();
-    _phoneFocusNode.dispose();
-    super.dispose();
-  }
+  Future<void> _submitOAuth(
+    BuildContext ctx, {
+    required _OAuthProvider provider,
+    required String fallbackError,
+  }) async {
+    final l10n = AppLocalizations.of(ctx)!;
+    final authProvider = ctx.read<AuthProvider>();
+    final success = provider == _OAuthProvider.google
+        ? await authProvider.loginWithGoogle('mock_google_token')
+        : await authProvider.loginWithApple('mock_apple_token');
 
-  void _handlePhoneChanged() {
-    if (!mounted) return;
-    setState(() {
-      // Rebuild is needed both for button enabled state and inline validation.
-    });
-  }
-
-  String _normalizedPhone() {
-    final digits = _extractPhoneDigits(_phoneController.text);
-    if (digits.isEmpty) {
-      return '';
+    if (!ctx.mounted) return;
+    if (success) {
+      await _completeAuthenticatedEntry(ctx, authProvider);
+      return;
     }
-    return '+$digits';
+
+    await showErrorDialog(
+      ctx,
+      title: l10n.error,
+      message: authProvider.errorMessage ?? fallbackError,
+    );
   }
 
-  bool _isPhoneValid() {
-    final digits = _extractPhoneDigits(_phoneController.text);
-    return digits.length >= 10 && digits.length <= 15;
-  }
-
-  String? _phoneValidationMessage(AppLocalizations l10n) {
-    final digits = _extractPhoneDigits(_phoneController.text);
-    if (digits.isEmpty) {
-      return l10n.phoneRequiredError;
-    }
-    if (digits.length < 10 || digits.length > 15) {
-      return l10n.phoneInvalidError;
+  String? _identifierValidationMessage(AppLocalizations l10n) {
+    if (_identifierController.text.trim().isEmpty) {
+      return l10n.authIdentifierRequiredError;
     }
     return null;
   }
 
-  String _extractPhoneDigits(String value) {
-    return value.replaceAll(RegExp(r'[^0-9]'), '');
+  String? _emailValidationMessage(AppLocalizations l10n) {
+    final email = _registerEmailController.text.trim();
+    if (email.isEmpty) {
+      return l10n.emailRequiredError;
+    }
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+      return l10n.emailInvalidError;
+    }
+    return null;
+  }
+
+  String? _passwordValidationMessage(AppLocalizations l10n, String value) {
+    final password = value.trim();
+    if (password.isEmpty) {
+      return l10n.passwordRequiredError;
+    }
+    if (password.length < 8 ||
+        !RegExp(r'[A-Za-zА-Яа-я]').hasMatch(password) ||
+        !RegExp(r'\d').hasMatch(password)) {
+      return l10n.passwordWeakError;
+    }
+    return null;
+  }
+
+  String? _confirmPasswordValidationMessage(AppLocalizations l10n) {
+    if (_confirmPasswordController.text.trim().isEmpty) {
+      return l10n.passwordRequiredError;
+    }
+    if (_confirmPasswordController.text.trim() !=
+        _registerPasswordController.text.trim()) {
+      return l10n.authPasswordMismatchError;
+    }
+    return null;
   }
 
   Future<void> _completeAuthenticatedEntry(
@@ -820,6 +789,245 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!ctx.mounted) return;
 
     ctx.go(widget.from ?? '/');
+  }
+}
+
+enum _OAuthProvider { google, apple }
+
+class _AuthModePane extends StatelessWidget {
+  final bool isActive;
+  final Widget child;
+
+  const _AuthModePane({required this.isActive, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return TickerMode(
+      enabled: isActive,
+      child: IgnorePointer(
+        ignoring: !isActive,
+        child: ExcludeFocus(excluding: !isActive, child: child),
+      ),
+    );
+  }
+}
+
+class _AuthFieldsScrollView extends StatelessWidget {
+  final Widget child;
+
+  const _AuthFieldsScrollView({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final minContentWidth = authScaled(context, 312, min: 286, max: 320);
+        final availableWidth = constraints.hasBoundedWidth
+            ? constraints.maxWidth
+            : minContentWidth;
+        final contentWidth = availableWidth < minContentWidth
+            ? minContentWidth
+            : availableWidth;
+        final floatingLabelReserve = authScaled(context, 8, min: 6, max: 8);
+
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          clipBehavior: Clip.hardEdge,
+          child: Padding(
+            padding: EdgeInsets.only(top: floatingLabelReserve),
+            child: SizedBox(width: contentWidth, child: child),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _AuthModeSwitch extends StatelessWidget {
+  final _AuthEntryMode mode;
+  final ValueChanged<_AuthEntryMode> onChanged;
+
+  const _AuthModeSwitch({required this.mode, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return SegmentedButton<_AuthEntryMode>(
+      segments: [
+        ButtonSegment<_AuthEntryMode>(
+          value: _AuthEntryMode.login,
+          label: Text(l10n.authLoginTab, overflow: TextOverflow.ellipsis),
+          icon: const Icon(Icons.login_rounded),
+        ),
+        ButtonSegment<_AuthEntryMode>(
+          value: _AuthEntryMode.register,
+          label: Text(l10n.authRegisterTab, overflow: TextOverflow.ellipsis),
+          icon: const Icon(Icons.person_add_alt_1_rounded),
+        ),
+      ],
+      selected: {mode},
+      showSelectedIcon: false,
+      onSelectionChanged: (selection) => onChanged(selection.first),
+      style: ButtonStyle(
+        foregroundColor: WidgetStateProperty.all(AppColors.textPrimary),
+        iconColor: WidgetStateProperty.all(AppColors.textPrimary),
+        backgroundColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? AppColors.accent
+              : Colors.white.withValues(alpha: 0.06),
+        ),
+        side: WidgetStateProperty.all(
+          BorderSide(color: AppColors.accent.withValues(alpha: 0.18)),
+        ),
+      ),
+    );
+  }
+}
+
+class _AuthTextField extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final String label;
+  final String hint;
+  final IconData icon;
+  final String? errorText;
+  final bool obscureText;
+  final TextInputType keyboardType;
+  final TextInputAction textInputAction;
+  final Iterable<String>? autofillHints;
+  final Widget? suffixIcon;
+  final ValueChanged<String>? onSubmitted;
+
+  const _AuthTextField({
+    required this.controller,
+    required this.focusNode,
+    required this.label,
+    required this.hint,
+    required this.icon,
+    required this.errorText,
+    this.obscureText = false,
+    this.keyboardType = TextInputType.text,
+    this.textInputAction = TextInputAction.next,
+    this.autofillHints,
+    this.suffixIcon,
+    this.onSubmitted,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      focusNode: focusNode,
+      keyboardType: keyboardType,
+      textInputAction: textInputAction,
+      obscureText: obscureText,
+      maxLines: 1,
+      scrollPhysics: const BouncingScrollPhysics(),
+      autofillHints: autofillHints,
+      onSubmitted: onSubmitted,
+      onTapOutside: (_) => FocusScope.of(context).unfocus(),
+      style: const TextStyle(
+        color: AppColors.textPrimary,
+        fontWeight: FontWeight.w600,
+      ),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: AppColors.textSecondary),
+        hintText: hint,
+        hintStyle: const TextStyle(color: AppColors.textCaption),
+        errorText: errorText,
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: 0.05),
+        prefixIcon: Icon(icon, color: AppColors.accent),
+        suffixIcon: suffixIcon,
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: authScaled(context, 18, min: 14, max: 18),
+          vertical: authScaled(context, 15, min: 13, max: 15),
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(
+            authScaled(context, 16, min: 14, max: 16),
+          ),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(
+            authScaled(context, 16, min: 14, max: 16),
+          ),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(
+            authScaled(context, 16, min: 14, max: 16),
+          ),
+          borderSide: const BorderSide(color: AppColors.accent, width: 1.4),
+        ),
+      ),
+    );
+  }
+}
+
+class _PrimaryAuthButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback? onPressed;
+  final bool isLoading;
+
+  const _PrimaryAuthButton({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+    this.isLoading = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final buttonHeight = authScaled(context, 56, min: 50, max: 56);
+    if (isLoading) {
+      return Container(
+        height: buttonHeight,
+        decoration: BoxDecoration(
+          color: AppColors.accent,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        alignment: Alignment.center,
+        child: const SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(
+            color: AppColors.background,
+            strokeWidth: 2.5,
+          ),
+        ),
+      );
+    }
+
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 20, color: AppColors.textPrimary),
+      label: Text(
+        label,
+        overflow: TextOverflow.ellipsis,
+        maxLines: 1,
+        style: TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: authScaled(context, 16, min: 14, max: 16),
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.accent,
+        foregroundColor: AppColors.background,
+        disabledBackgroundColor: AppColors.accent.withValues(alpha: 0.45),
+        minimumSize: Size(double.infinity, buttonHeight),
+        padding: EdgeInsets.symmetric(
+          horizontal: authScaled(context, 16, min: 12, max: 18),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+        elevation: 0,
+      ),
+    );
   }
 }
 
@@ -838,9 +1046,9 @@ class _OAuthButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final buttonHeight = authScaled(context, 56, min: 50, max: 56);
+    final buttonHeight = authScaled(context, 54, min: 48, max: 54);
     final iconSize = authScaled(context, 24, min: 20, max: 24);
-    final labelSize = authScaled(context, 16, min: 14, max: 16);
+    final labelSize = authScaled(context, 15, min: 13, max: 15);
 
     return Material(
       color: Colors.white.withValues(alpha: 0.1),
@@ -884,31 +1092,6 @@ class _OAuthButton extends StatelessWidget {
                 ),
         ),
       ),
-    );
-  }
-}
-
-class _PhonePrefixFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    var text = newValue.text;
-
-    if (text.isEmpty) {
-      return const TextEditingValue(
-        text: '+',
-        selection: TextSelection.collapsed(offset: 1),
-      );
-    }
-
-    text = text.replaceAll('+', '');
-    text = '+$text';
-
-    return TextEditingValue(
-      text: text,
-      selection: TextSelection.collapsed(offset: text.length),
     );
   }
 }

@@ -147,6 +147,6 @@ Payment scope: без реальной интеграции с платежно�
 | Run | Command | Result |
 | --- | --- | --- |
 | API live | `TMP_DIR=/private/tmp/inflap_activity_suite_latest bash scripts/qa/run_activity_api_flow.sh` | PASS for ACT-001..ACT-052, ACT-055..ACT-057, ACT-059..ACT-069, ACT-072..ACT-075 |
-| Backend | `GOWORK=off GOCACHE=/private/tmp/flyfy-go-build go test ./...` in `backend/services/activity-service` | PASS |
+| Backend | `GOWORK=off GOCACHE=/private/tmp/inflap-go-build go test ./...` in `backend/services/activity-service` | PASS |
 | Mobile activity bundle | `flutter test` for activity API/provider/feature/source tests | PASS, 77 tests |
 | UI smoke | XcodeBuildMCP simulator snapshot/tap on create activity category flow | PASS for ACT-087, ACT-089, ACT-090 |

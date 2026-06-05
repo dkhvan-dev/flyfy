@@ -37,6 +37,7 @@ type UserRepository interface {
 	GetAdminUserDetail(ctx context.Context, userID uuid.UUID) (model.AdminUserDetail, error)
 
 	GetProfileByUserID(ctx context.Context, userID uuid.UUID) (*model.UserProfile, error)
+	GetUserIDByNickname(ctx context.Context, nickname string) (uuid.UUID, error)
 	IsNicknameTaken(ctx context.Context, nickname string, excludeUserID uuid.UUID) (bool, error)
 	GetSettingsByUserID(ctx context.Context, userID uuid.UUID) (*model.UserSettings, error)
 	GetReputationByUserID(ctx context.Context, userID uuid.UUID) (*model.UserReputation, error)

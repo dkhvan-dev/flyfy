@@ -19,6 +19,7 @@ import (
 	"kz/inflap/backend/services/auth-service/internal/adapter/otp"
 	"kz/inflap/backend/services/auth-service/internal/adapter/repository"
 	"kz/inflap/backend/services/auth-service/internal/adapter/tokenclient"
+	"kz/inflap/backend/services/auth-service/internal/adapter/userservice"
 	"kz/inflap/backend/services/auth-service/internal/app"
 	"kz/inflap/backend/services/auth-service/internal/config"
 	"kz/inflap/backend/services/auth-service/internal/domain/port"
@@ -102,6 +103,21 @@ func main() {
 		Str("service_id", cfg.TokenService.ServiceID).
 		Msg("token-service client initialized")
 
+	var nicknameResolver port.NicknameResolver
+	if cfg.UserService.InternalServiceToken == "" {
+		logger.Warn().Msg("user-service internal token is not configured; nickname password login is disabled")
+	} else {
+		userClient, err := userservice.New(cfg.UserService)
+		if err != nil {
+			logger.Fatal().Err(err).Msg("failed to create user-service client")
+		}
+		defer userClient.Close()
+		nicknameResolver = userClient
+		logger.Info().
+			Str("target", cfg.UserService.GRPCTarget).
+			Msg("user-service client initialized")
+	}
+
 	// --- Application (use cases) ---
 	fraudClient, err := newFraudEvaluator(cfg)
 	if err != nil {
@@ -121,6 +137,15 @@ func main() {
 		cfg.Env,
 		logger,
 	)
+	authUC.SetEmailOTPSender(otp.NewEmailOTPSender(otp.EmailSenderConfig{
+		FromAddress:  cfg.Email.OTPFromAddress,
+		SMTPHost:     cfg.Email.SMTPHost,
+		SMTPPort:     cfg.Email.SMTPPort,
+		SMTPUsername: cfg.Email.SMTPUsername,
+		SMTPPassword: cfg.Email.SMTPPassword,
+		SMTPTimeout:  cfg.Email.SMTPTimeout,
+	}, logger))
+	authUC.SetNicknameResolver(nicknameResolver)
 
 	// --- HTTP Server ---
 	authHandler := httpAdapter.NewAuthHandler(authUC, logger)

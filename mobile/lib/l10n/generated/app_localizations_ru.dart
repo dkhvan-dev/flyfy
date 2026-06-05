@@ -25,6 +25,81 @@ class AppLocalizationsRu extends AppLocalizations {
   String get authByPhone => 'Войти по номеру телефона';
 
   @override
+  String get authLoginTab => 'Вход';
+
+  @override
+  String get authRegisterTab => 'Регистрация';
+
+  @override
+  String get authLoginTitle => 'Войдите в аккаунт';
+
+  @override
+  String get authRegisterTitle => 'Создайте аккаунт';
+
+  @override
+  String get authIdentifierLabel => 'Никнейм или email';
+
+  @override
+  String get authIdentifierHint => '@nomad или traveler@example.com';
+
+  @override
+  String get authIdentifierRequiredError => 'Введите никнейм или email';
+
+  @override
+  String get authEmailLabel => 'Email';
+
+  @override
+  String get authEmailHint => 'traveler@example.com';
+
+  @override
+  String get passwordLabel => 'Пароль';
+
+  @override
+  String get passwordHint => 'Минимум 8 символов';
+
+  @override
+  String get authConfirmPasswordLabel => 'Повторите пароль';
+
+  @override
+  String get authLoginAction => 'Войти';
+
+  @override
+  String get authRegisterAction => 'Зарегистрироваться';
+
+  @override
+  String get authShowPassword => 'Показать пароль';
+
+  @override
+  String get authHidePassword => 'Скрыть пароль';
+
+  @override
+  String get authLoginFailed =>
+      'Не удалось войти. Проверьте данные и попробуйте снова.';
+
+  @override
+  String get authRegistrationFailed =>
+      'Не удалось начать регистрацию. Проверьте данные и попробуйте снова.';
+
+  @override
+  String get authPasswordMismatchError => 'Пароли не совпадают';
+
+  @override
+  String get emailRequiredError => 'Введите email';
+
+  @override
+  String get emailInvalidError => 'Введите корректный email';
+
+  @override
+  String get passwordRequiredError => 'Введите пароль';
+
+  @override
+  String get passwordWeakError =>
+      'Пароль должен содержать минимум 8 символов, буквы и цифры';
+
+  @override
+  String get skip => 'Пропустить';
+
+  @override
   String get termsAgreementText =>
       'Продолжая, вы соглашаетесь с нашими <terms>Условиями использования</terms> и <privacy>Политикой конфиденциальности</privacy>';
 
@@ -38,8 +113,15 @@ class AppLocalizationsRu extends AppLocalizations {
   String get verifyYourPhone => 'Подтвердите свой номер телефона';
 
   @override
+  String get verifyYourEmail => 'Подтвердите email';
+
+  @override
   String get enterAuthCode =>
       'Введите 6-значный код, который мы только что отправили на номер\n';
+
+  @override
+  String get enterEmailAuthCode =>
+      'Введите 6-значный код, который мы только что отправили на email\n';
 
   @override
   String get didntReceiveOTP => 'Не получили код?';
@@ -533,6 +615,20 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get profileNicknameTaken => 'Этот никнейм уже занят';
+
+  @override
+  String get profileNicknameOneTimeHint =>
+      'Никнейм можно задать только один раз. После сохранения он не меняется.';
+
+  @override
+  String get profileNicknameChecking => 'Проверяем никнейм...';
+
+  @override
+  String get profileNicknameAvailable => 'Никнейм свободен';
+
+  @override
+  String get profileNicknameCheckFailed =>
+      'Не удалось проверить никнейм. Попробуйте еще раз.';
 
   @override
   String get firstNameLabel => 'Имя';

@@ -318,6 +318,20 @@ func (s *Server) FilterFriendUserIds(
 	return resp, nil
 }
 
+func (s *Server) ResolveUserByNickname(
+	ctx context.Context,
+	req *userv1.ResolveUserByNicknameRequest,
+) (*userv1.ResolveUserByNicknameResponse, error) {
+	userID, err := s.useCase.ResolveUserIDByNickname(ctx, req.GetNickname())
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	return &userv1.ResolveUserByNicknameResponse{
+		UserId: userID.String(),
+	}, nil
+}
+
 func (s *Server) GetUserBySubject(
 	ctx context.Context,
 	req *userv1.GetUserBySubjectRequest,

@@ -179,3 +179,19 @@ func TestUpdateProfileRejectsTakenNickname(t *testing.T) {
 		t.Fatalf("error = %v, want %v", err, ErrNicknameAlreadyTaken)
 	}
 }
+
+func TestResolveUserIDByNicknameUsesCaseInsensitiveNickname(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+	repo := newFriendshipTestRepository(userID)
+	repo.nicknameOwners["@nomad_aru"] = userID
+	useCase := NewUserUseCase(repo, nil)
+
+	got, err := useCase.ResolveUserIDByNickname(ctx, "  @Nomad_Aru ")
+	if err != nil {
+		t.Fatalf("ResolveUserIDByNickname() error = %v", err)
+	}
+	if got != userID {
+		t.Fatalf("user id = %s, want %s", got, userID)
+	}
+}

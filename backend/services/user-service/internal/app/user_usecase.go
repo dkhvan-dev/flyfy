@@ -262,6 +262,49 @@ func (u *UserUseCase) GetAggregateBySubject(ctx context.Context, subjectID strin
 	return u.getAggregateByUserIDForViewer(ctx, user.ID, &user.ID)
 }
 
+func (u *UserUseCase) ResolveUserIDByNickname(ctx context.Context, nickname string) (uuid.UUID, error) {
+	nickname = strings.TrimSpace(nickname)
+	if nickname == "" {
+		return uuid.Nil, ErrNicknameRequired
+	}
+
+	userID, err := u.repo.GetUserIDByNickname(ctx, nickname)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("get user id by nickname: %w", err)
+	}
+	if userID == uuid.Nil {
+		return uuid.Nil, ErrUserNotFound
+	}
+	return userID, nil
+}
+
+func (u *UserUseCase) CheckNicknameAvailability(ctx context.Context, subjectID string, nickname string) (bool, error) {
+	subjectID = strings.TrimSpace(subjectID)
+	if subjectID == "" {
+		return false, ErrInvalidSubjectID
+	}
+
+	nickname = strings.TrimSpace(nickname)
+	if nickname == "" {
+		return false, ErrNicknameRequired
+	}
+
+	user, err := u.repo.GetUserBySubject(ctx, subjectID)
+	if err != nil {
+		return false, fmt.Errorf("get user by subject: %w", err)
+	}
+	if user == nil || user.IsDeleted {
+		return false, ErrUserNotFound
+	}
+
+	taken, err := u.repo.IsNicknameTaken(ctx, nickname, user.ID)
+	if err != nil {
+		return false, fmt.Errorf("check nickname uniqueness: %w", err)
+	}
+
+	return !taken, nil
+}
+
 func (u *UserUseCase) FollowUser(
 	ctx context.Context,
 	followerUserID uuid.UUID,

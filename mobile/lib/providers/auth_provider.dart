@@ -47,8 +47,12 @@ class AuthProvider extends ChangeNotifier {
   String? _errorMessage;
   String? _lastPrimaryPhoneHint;
   String? _lastPrimaryEmailHint;
+  String? _pendingEmailRegistrationEmail;
+  String? _pendingEmailRegistrationPassword;
   bool _isSendingOtp = false;
   bool _isVerifyingOtp = false;
+  bool _isPasswordLoginLoading = false;
+  bool _isEmailRegistrationLoading = false;
   bool _isGoogleLoading = false;
   bool _isAppleLoading = false;
 
@@ -58,6 +62,8 @@ class AuthProvider extends ChangeNotifier {
   String? get lastPrimaryEmailHint => _lastPrimaryEmailHint;
   bool get isSendingOtp => _isSendingOtp;
   bool get isVerifyingOtp => _isVerifyingOtp;
+  bool get isPasswordLoginLoading => _isPasswordLoginLoading;
+  bool get isEmailRegistrationLoading => _isEmailRegistrationLoading;
   bool get isGoogleLoading => _isGoogleLoading;
   bool get isAppleLoading => _isAppleLoading;
 
@@ -110,6 +116,126 @@ class AuthProvider extends ChangeNotifier {
 
       _lastPrimaryPhoneHint = result.primaryPhoneHint ?? phone;
       _lastPrimaryEmailHint = result.primaryEmailHint;
+      _clearPendingEmailRegistration();
+
+      _state = AuthState.authenticated;
+      return true;
+    } on DioException catch (e) {
+      _errorMessage = DioErrorMapper.toMessage(e);
+      return false;
+    } catch (_) {
+      return false;
+    } finally {
+      _isVerifyingOtp = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> loginWithPassword(String identifier, String password) async {
+    _isPasswordLoginLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final result = await _apiClient.loginWithPassword(identifier, password);
+      await _secureStorage.saveTokens(
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+        sessionId: result.sessionId,
+      );
+
+      _lastPrimaryPhoneHint = result.primaryPhoneHint;
+      _lastPrimaryEmailHint = result.primaryEmailHint;
+      _clearPendingEmailRegistration();
+
+      _state = AuthState.authenticated;
+      return true;
+    } on DioException catch (e) {
+      _errorMessage = DioErrorMapper.toMessage(e);
+      return false;
+    } catch (_) {
+      return false;
+    } finally {
+      _isPasswordLoginLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> startEmailRegistration(String email, String password) async {
+    final normalizedEmail = email.trim();
+    final normalizedPassword = password.trim();
+    _isEmailRegistrationLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _apiClient.startEmailRegistration(
+        normalizedEmail,
+        normalizedPassword,
+      );
+      _lastPrimaryEmailHint = normalizedEmail;
+      _pendingEmailRegistrationEmail = normalizedEmail;
+      _pendingEmailRegistrationPassword = password.trim();
+      return true;
+    } on DioException catch (e) {
+      _errorMessage = DioErrorMapper.toMessage(e);
+      return false;
+    } catch (_) {
+      return false;
+    } finally {
+      _isEmailRegistrationLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> resendEmailRegistrationCode(String email) async {
+    final normalizedEmail = email.trim();
+    final pendingEmail = _pendingEmailRegistrationEmail;
+    final password = _pendingEmailRegistrationPassword;
+    if (normalizedEmail.isEmpty ||
+        pendingEmail == null ||
+        pendingEmail != normalizedEmail ||
+        password == null ||
+        password.isEmpty) {
+      return false;
+    }
+
+    _isEmailRegistrationLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final email = normalizedEmail;
+      await _apiClient.startEmailRegistration(email, password);
+      _lastPrimaryEmailHint = email;
+      return true;
+    } on DioException catch (e) {
+      _errorMessage = DioErrorMapper.toMessage(e);
+      return false;
+    } catch (_) {
+      return false;
+    } finally {
+      _isEmailRegistrationLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> verifyEmailRegistration(String email, String code) async {
+    _isVerifyingOtp = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final result = await _apiClient.verifyEmailRegistration(email, code);
+      await _secureStorage.saveTokens(
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+        sessionId: result.sessionId,
+      );
+
+      _lastPrimaryPhoneHint = result.primaryPhoneHint;
+      _lastPrimaryEmailHint = result.primaryEmailHint ?? email.trim();
+      _clearPendingEmailRegistration();
 
       _state = AuthState.authenticated;
       return true;
@@ -139,6 +265,7 @@ class AuthProvider extends ChangeNotifier {
 
       _lastPrimaryPhoneHint = result.primaryPhoneHint;
       _lastPrimaryEmailHint = result.primaryEmailHint;
+      _clearPendingEmailRegistration();
 
       _state = AuthState.authenticated;
       return true;
@@ -168,6 +295,7 @@ class AuthProvider extends ChangeNotifier {
 
       _lastPrimaryPhoneHint = result.primaryPhoneHint;
       _lastPrimaryEmailHint = result.primaryEmailHint;
+      _clearPendingEmailRegistration();
 
       _state = AuthState.authenticated;
       return true;
@@ -196,6 +324,7 @@ class AuthProvider extends ChangeNotifier {
       await _secureStorage.deleteTokens();
       _lastPrimaryPhoneHint = null;
       _lastPrimaryEmailHint = null;
+      _clearPendingEmailRegistration();
       _state = AuthState.unauthenticated;
       notifyListeners();
     }
@@ -205,8 +334,14 @@ class AuthProvider extends ChangeNotifier {
     await _secureStorage.deleteTokens();
     _lastPrimaryPhoneHint = null;
     _lastPrimaryEmailHint = null;
+    _clearPendingEmailRegistration();
     _state = AuthState.unauthenticated;
     notifyListeners();
+  }
+
+  void _clearPendingEmailRegistration() {
+    _pendingEmailRegistrationEmail = null;
+    _pendingEmailRegistrationPassword = null;
   }
 
   @override

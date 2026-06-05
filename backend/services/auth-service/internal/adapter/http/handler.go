@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	"errors"
 	"net"
 	"net/http"
 	"strings"
@@ -48,6 +49,11 @@ func (h *AuthHandler) Router() http.Handler {
 		// Phone OTP
 		r.Post("/phone/send-code", h.handleSendOTP)
 		r.Post("/phone/verify", h.handleVerifyOTP)
+
+		// Email/password
+		r.Post("/register/email/start", h.handleStartEmailRegistration)
+		r.Post("/register/email/verify", h.handleVerifyEmailRegistration)
+		r.Post("/login/password", h.handlePasswordLogin)
 
 		// OAuth
 		r.Post("/google", h.handleGoogleLogin)
@@ -128,6 +134,114 @@ func (h *AuthHandler) handleVerifyOTP(w http.ResponseWriter, r *http.Request) {
 		default:
 			h.logger.Error().Err(err).Msg("verify OTP failed")
 			h.writeError(w, r, http.StatusInternalServerError, "verification failed")
+		}
+		return
+	}
+
+	h.writeJSON(w, http.StatusOK, result)
+}
+
+// --- Email/Password ---
+
+type startEmailRegistrationRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (h *AuthHandler) handleStartEmailRegistration(w http.ResponseWriter, r *http.Request) {
+	var req startEmailRegistrationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.writeError(w, r, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if err := h.auth.StartEmailRegistration(r.Context(), req.Email, req.Password, deviceFromRequest(r)); err != nil {
+		switch {
+		case errors.Is(err, model.ErrEmailRequired):
+			h.writeError(w, r, http.StatusBadRequest, "email is required")
+		case errors.Is(err, model.ErrEmailInvalid):
+			h.writeError(w, r, http.StatusBadRequest, "email is invalid")
+		case errors.Is(err, model.ErrPasswordRequired):
+			h.writeError(w, r, http.StatusBadRequest, "password is required")
+		case errors.Is(err, model.ErrPasswordWeak):
+			h.writeError(w, r, http.StatusBadRequest, "password is too weak")
+		case errors.Is(err, model.ErrEmailAlreadyExists):
+			h.writeError(w, r, http.StatusConflict, "email is already registered")
+		case errors.Is(err, model.ErrRateLimited), errors.Is(err, model.ErrOTPRateLimit):
+			h.writeError(w, r, http.StatusTooManyRequests, "too many requests, try again later")
+		default:
+			h.logger.Error().Err(err).Msg("start email registration failed")
+			h.writeError(w, r, http.StatusInternalServerError, "registration failed")
+		}
+		return
+	}
+
+	h.writeJSON(w, http.StatusOK, map[string]string{
+		"message": "OTP code sent successfully",
+	})
+}
+
+type verifyEmailRegistrationRequest struct {
+	Email string `json:"email"`
+	Code  string `json:"code"`
+}
+
+func (h *AuthHandler) handleVerifyEmailRegistration(w http.ResponseWriter, r *http.Request) {
+	var req verifyEmailRegistrationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.writeError(w, r, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	result, err := h.auth.VerifyEmailRegistration(r.Context(), req.Email, req.Code, deviceFromRequest(r))
+	if err != nil {
+		switch {
+		case errors.Is(err, model.ErrEmailRequired):
+			h.writeError(w, r, http.StatusBadRequest, "email is required")
+		case errors.Is(err, model.ErrEmailInvalid):
+			h.writeError(w, r, http.StatusBadRequest, "email is invalid")
+		case errors.Is(err, model.ErrInvalidOTP), errors.Is(err, model.ErrInvalidCredentials):
+			h.writeError(w, r, http.StatusUnauthorized, "invalid or expired OTP code")
+		case errors.Is(err, model.ErrUserBlocked):
+			h.writeError(w, r, http.StatusForbidden, "account is blocked")
+		case errors.Is(err, model.ErrRateLimited):
+			h.writeError(w, r, http.StatusTooManyRequests, "too many requests, try again later")
+		case errors.Is(err, model.ErrTokenServiceUnavailable):
+			h.writeError(w, r, http.StatusServiceUnavailable, "service temporarily unavailable")
+		default:
+			h.logger.Error().Err(err).Msg("verify email registration failed")
+			h.writeError(w, r, http.StatusInternalServerError, "verification failed")
+		}
+		return
+	}
+
+	h.writeJSON(w, http.StatusOK, result)
+}
+
+type passwordLoginRequest struct {
+	Identifier string `json:"identifier"`
+	Password   string `json:"password"`
+}
+
+func (h *AuthHandler) handlePasswordLogin(w http.ResponseWriter, r *http.Request) {
+	var req passwordLoginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.writeError(w, r, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	result, err := h.auth.PasswordLogin(r.Context(), req.Identifier, req.Password, deviceFromRequest(r))
+	if err != nil {
+		switch {
+		case errors.Is(err, model.ErrInvalidCredentials):
+			h.writeError(w, r, http.StatusUnauthorized, "invalid credentials")
+		case errors.Is(err, model.ErrRateLimited):
+			h.writeError(w, r, http.StatusTooManyRequests, "too many requests, try again later")
+		case errors.Is(err, model.ErrTokenServiceUnavailable):
+			h.writeError(w, r, http.StatusServiceUnavailable, "service temporarily unavailable")
+		default:
+			h.logger.Error().Err(err).Msg("password login failed")
+			h.writeError(w, r, http.StatusInternalServerError, "authentication failed")
 		}
 		return
 	}
@@ -305,6 +419,36 @@ var authErrorMessages = map[string]map[string]localizedError{
 			message: "Телефон и код подтверждения обязательны.",
 			code:    "auth.phone_code_required",
 		},
+		"email is required": {
+			title:   "Укажите email",
+			message: "Электронная почта обязательна.",
+			code:    "auth.email_required",
+		},
+		"email is invalid": {
+			title:   "Некорректный email",
+			message: "Проверьте адрес электронной почты.",
+			code:    "auth.email_invalid",
+		},
+		"password is required": {
+			title:   "Укажите пароль",
+			message: "Пароль обязателен.",
+			code:    "auth.password_required",
+		},
+		"password is too weak": {
+			title:   "Слабый пароль",
+			message: "Пароль должен содержать минимум 8 символов, буквы и цифры.",
+			code:    "auth.password_weak",
+		},
+		"email is already registered": {
+			title:   "Email уже зарегистрирован",
+			message: "Войдите в аккаунт или используйте другой email.",
+			code:    "auth.email_already_registered",
+		},
+		"invalid credentials": {
+			title:   "Неверные данные входа",
+			message: "Проверьте никнейм или email и пароль.",
+			code:    "auth.invalid_credentials",
+		},
 		"id_token is required": {
 			title:   "Токен обязателен",
 			message: "OAuth id_token обязателен.",
@@ -362,6 +506,36 @@ var authErrorMessages = map[string]map[string]localizedError{
 			message: "Phone and verification code are required.",
 			code:    "auth.phone_code_required",
 		},
+		"email is required": {
+			title:   "Email is required",
+			message: "Email address is required.",
+			code:    "auth.email_required",
+		},
+		"email is invalid": {
+			title:   "Email is invalid",
+			message: "Check the email address.",
+			code:    "auth.email_invalid",
+		},
+		"password is required": {
+			title:   "Password is required",
+			message: "Password is required.",
+			code:    "auth.password_required",
+		},
+		"password is too weak": {
+			title:   "Password is too weak",
+			message: "Use at least 8 characters with letters and digits.",
+			code:    "auth.password_weak",
+		},
+		"email is already registered": {
+			title:   "Email is already registered",
+			message: "Sign in or use another email address.",
+			code:    "auth.email_already_registered",
+		},
+		"invalid credentials": {
+			title:   "Invalid sign-in details",
+			message: "Check your nickname or email and password.",
+			code:    "auth.invalid_credentials",
+		},
 		"id_token is required": {
 			title:   "Token is required",
 			message: "OAuth id_token is required.",
@@ -418,6 +592,36 @@ var authErrorMessages = map[string]map[string]localizedError{
 			title:   "Телефон мен код қажет",
 			message: "Телефон және растау коды міндетті.",
 			code:    "auth.phone_code_required",
+		},
+		"email is required": {
+			title:   "Email қажет",
+			message: "Электрондық пошта міндетті.",
+			code:    "auth.email_required",
+		},
+		"email is invalid": {
+			title:   "Email қате",
+			message: "Электрондық пошта мекенжайын тексеріңіз.",
+			code:    "auth.email_invalid",
+		},
+		"password is required": {
+			title:   "Құпиясөз қажет",
+			message: "Құпиясөз міндетті.",
+			code:    "auth.password_required",
+		},
+		"password is too weak": {
+			title:   "Құпиясөз әлсіз",
+			message: "Кемінде 8 таңба, әріптер және сандар қолданыңыз.",
+			code:    "auth.password_weak",
+		},
+		"email is already registered": {
+			title:   "Email тіркелген",
+			message: "Аккаунтқа кіріңіз немесе басқа email қолданыңыз.",
+			code:    "auth.email_already_registered",
+		},
+		"invalid credentials": {
+			title:   "Кіру деректері қате",
+			message: "Никнейм немесе email және құпиясөзді тексеріңіз.",
+			code:    "auth.invalid_credentials",
 		},
 		"id_token is required": {
 			title:   "Токен қажет",

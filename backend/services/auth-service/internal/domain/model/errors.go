@@ -7,6 +7,16 @@ var (
 	ErrUserNotFound = errors.New("user not found")
 	ErrUserBlocked  = errors.New("user account is blocked")
 
+	// Email/password auth errors
+	ErrEmailRequired            = errors.New("email is required")
+	ErrEmailInvalid             = errors.New("email is invalid")
+	ErrPasswordRequired         = errors.New("password is required")
+	ErrPasswordWeak             = errors.New("password is too weak")
+	ErrEmailAlreadyExists       = errors.New("email is already registered")
+	ErrEmailNotVerified         = errors.New("email is not verified")
+	ErrInvalidCredentials       = errors.New("invalid credentials")
+	ErrNicknameLoginUnavailable = errors.New("nickname login is temporarily unavailable")
+
 	// OTP errors
 	ErrInvalidOTP    = errors.New("invalid or expired OTP code")
 	ErrOTPExpired    = errors.New("OTP code has expired")

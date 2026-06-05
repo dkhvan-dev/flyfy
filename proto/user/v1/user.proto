@@ -18,6 +18,7 @@ service UserService {
   rpc GetPublicProfilesByUserIds(GetPublicProfilesByUserIdsRequest) returns (GetPublicProfilesByUserIdsResponse);
   rpc ListPublicUserIdsByCountryCodes(ListPublicUserIdsByCountryCodesRequest) returns (ListPublicUserIdsByCountryCodesResponse);
   rpc FilterFriendUserIds(FilterFriendUserIdsRequest) returns (FilterFriendUserIdsResponse);
+  rpc ResolveUserByNickname(ResolveUserByNicknameRequest) returns (ResolveUserByNicknameResponse);
   rpc GetUserBySubject(GetUserBySubjectRequest) returns (GetUserBySubjectResponse);
   rpc ListAdminUsers(ListAdminUsersRequest) returns (ListAdminUsersResponse);
   rpc GetAdminUserDetail(GetAdminUserDetailRequest) returns (GetAdminUserDetailResponse);
@@ -215,6 +216,14 @@ message FilterFriendUserIdsRequest {
 
 message FilterFriendUserIdsResponse {
   repeated string friend_user_ids = 1;
+}
+
+message ResolveUserByNicknameRequest {
+  string nickname = 1;
+}
+
+message ResolveUserByNicknameResponse {
+  string user_id = 1;
 }
 
 message GetUserBySubjectRequest {

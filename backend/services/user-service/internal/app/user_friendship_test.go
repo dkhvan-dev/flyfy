@@ -465,6 +465,10 @@ func (r *friendshipTestRepository) IsNicknameTaken(_ context.Context, nickname s
 	return false, nil
 }
 
+func (r *friendshipTestRepository) GetUserIDByNickname(_ context.Context, nickname string) (uuid.UUID, error) {
+	return r.nicknameOwners[strings.ToLower(strings.TrimSpace(nickname))], nil
+}
+
 func (r *friendshipTestRepository) GetSettingsByUserID(_ context.Context, userID uuid.UUID) (*model.UserSettings, error) {
 	return &model.UserSettings{
 		UserID:                    userID,

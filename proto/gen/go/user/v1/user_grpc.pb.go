@@ -30,6 +30,7 @@ const (
 	UserService_GetPublicProfilesByUserIds_FullMethodName      = "/user.v1.UserService/GetPublicProfilesByUserIds"
 	UserService_ListPublicUserIdsByCountryCodes_FullMethodName = "/user.v1.UserService/ListPublicUserIdsByCountryCodes"
 	UserService_FilterFriendUserIds_FullMethodName             = "/user.v1.UserService/FilterFriendUserIds"
+	UserService_ResolveUserByNickname_FullMethodName           = "/user.v1.UserService/ResolveUserByNickname"
 	UserService_GetUserBySubject_FullMethodName                = "/user.v1.UserService/GetUserBySubject"
 	UserService_ListAdminUsers_FullMethodName                  = "/user.v1.UserService/ListAdminUsers"
 	UserService_GetAdminUserDetail_FullMethodName              = "/user.v1.UserService/GetAdminUserDetail"
@@ -50,6 +51,7 @@ type UserServiceClient interface {
 	GetPublicProfilesByUserIds(ctx context.Context, in *GetPublicProfilesByUserIdsRequest, opts ...grpc.CallOption) (*GetPublicProfilesByUserIdsResponse, error)
 	ListPublicUserIdsByCountryCodes(ctx context.Context, in *ListPublicUserIdsByCountryCodesRequest, opts ...grpc.CallOption) (*ListPublicUserIdsByCountryCodesResponse, error)
 	FilterFriendUserIds(ctx context.Context, in *FilterFriendUserIdsRequest, opts ...grpc.CallOption) (*FilterFriendUserIdsResponse, error)
+	ResolveUserByNickname(ctx context.Context, in *ResolveUserByNicknameRequest, opts ...grpc.CallOption) (*ResolveUserByNicknameResponse, error)
 	GetUserBySubject(ctx context.Context, in *GetUserBySubjectRequest, opts ...grpc.CallOption) (*GetUserBySubjectResponse, error)
 	ListAdminUsers(ctx context.Context, in *ListAdminUsersRequest, opts ...grpc.CallOption) (*ListAdminUsersResponse, error)
 	GetAdminUserDetail(ctx context.Context, in *GetAdminUserDetailRequest, opts ...grpc.CallOption) (*GetAdminUserDetailResponse, error)
@@ -173,6 +175,16 @@ func (c *userServiceClient) FilterFriendUserIds(ctx context.Context, in *FilterF
 	return out, nil
 }
 
+func (c *userServiceClient) ResolveUserByNickname(ctx context.Context, in *ResolveUserByNicknameRequest, opts ...grpc.CallOption) (*ResolveUserByNicknameResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResolveUserByNicknameResponse)
+	err := c.cc.Invoke(ctx, UserService_ResolveUserByNickname_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *userServiceClient) GetUserBySubject(ctx context.Context, in *GetUserBySubjectRequest, opts ...grpc.CallOption) (*GetUserBySubjectResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetUserBySubjectResponse)
@@ -218,6 +230,7 @@ type UserServiceServer interface {
 	GetPublicProfilesByUserIds(context.Context, *GetPublicProfilesByUserIdsRequest) (*GetPublicProfilesByUserIdsResponse, error)
 	ListPublicUserIdsByCountryCodes(context.Context, *ListPublicUserIdsByCountryCodesRequest) (*ListPublicUserIdsByCountryCodesResponse, error)
 	FilterFriendUserIds(context.Context, *FilterFriendUserIdsRequest) (*FilterFriendUserIdsResponse, error)
+	ResolveUserByNickname(context.Context, *ResolveUserByNicknameRequest) (*ResolveUserByNicknameResponse, error)
 	GetUserBySubject(context.Context, *GetUserBySubjectRequest) (*GetUserBySubjectResponse, error)
 	ListAdminUsers(context.Context, *ListAdminUsersRequest) (*ListAdminUsersResponse, error)
 	GetAdminUserDetail(context.Context, *GetAdminUserDetailRequest) (*GetAdminUserDetailResponse, error)
@@ -263,6 +276,9 @@ func (UnimplementedUserServiceServer) ListPublicUserIdsByCountryCodes(context.Co
 }
 func (UnimplementedUserServiceServer) FilterFriendUserIds(context.Context, *FilterFriendUserIdsRequest) (*FilterFriendUserIdsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method FilterFriendUserIds not implemented")
+}
+func (UnimplementedUserServiceServer) ResolveUserByNickname(context.Context, *ResolveUserByNicknameRequest) (*ResolveUserByNicknameResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResolveUserByNickname not implemented")
 }
 func (UnimplementedUserServiceServer) GetUserBySubject(context.Context, *GetUserBySubjectRequest) (*GetUserBySubjectResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetUserBySubject not implemented")
@@ -492,6 +508,24 @@ func _UserService_FilterFriendUserIds_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_ResolveUserByNickname_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResolveUserByNicknameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ResolveUserByNickname(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ResolveUserByNickname_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ResolveUserByNickname(ctx, req.(*ResolveUserByNicknameRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _UserService_GetUserBySubject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetUserBySubjectRequest)
 	if err := dec(in); err != nil {
@@ -596,6 +630,10 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "FilterFriendUserIds",
 			Handler:    _UserService_FilterFriendUserIds_Handler,
+		},
+		{
+			MethodName: "ResolveUserByNickname",
+			Handler:    _UserService_ResolveUserByNickname_Handler,
 		},
 		{
 			MethodName: "GetUserBySubject",

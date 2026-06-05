@@ -469,6 +469,33 @@ func (r *PGUserRepository) IsNicknameTaken(
 	return exists, nil
 }
 
+func (r *PGUserRepository) GetUserIDByNickname(ctx context.Context, nickname string) (uuid.UUID, error) {
+	nickname = strings.TrimSpace(nickname)
+	if nickname == "" {
+		return uuid.Nil, nil
+	}
+
+	const query = `
+		SELECT p.user_id
+		FROM user_profiles p
+		JOIN users u ON u.id = p.user_id
+		WHERE LOWER(BTRIM(p.nickname)) = LOWER(BTRIM($1))
+		  AND u.is_deleted = FALSE
+		LIMIT 1
+	`
+
+	var userID uuid.UUID
+	err := r.pool.QueryRow(ctx, query, nickname).Scan(&userID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return uuid.Nil, nil
+		}
+		return uuid.Nil, fmt.Errorf("select user id by nickname: %w", err)
+	}
+
+	return userID, nil
+}
+
 func (r *PGUserRepository) GetProfileByUserID(ctx context.Context, userID uuid.UUID) (*model.UserProfile, error) {
 	const query = `
 		SELECT

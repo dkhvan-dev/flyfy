@@ -92,8 +92,12 @@ class AppRouter {
           path: '/otp',
           builder: (context, state) {
             final phone = state.uri.queryParameters['phone'] ?? '';
+            final email = state.uri.queryParameters['email'] ?? '';
+            final mode = state.uri.queryParameters['mode'] ?? 'phone';
             final from = state.uri.queryParameters['from'];
-            return _withAndroidBackSwipe(OtpScreen(phone: phone, from: from));
+            return _withAndroidBackSwipe(
+              OtpScreen(phone: phone, email: email, mode: mode, from: from),
+            );
           },
         ),
         GoRoute(

@@ -35,6 +35,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/users/me", h.GetMe)
 	mux.HandleFunc("POST /v1/users/me/presence", h.UpdateMyPresence)
 	mux.HandleFunc("PUT /v1/users/me/profile", h.UpdateMyProfile)
+	mux.HandleFunc("GET /v1/users/nickname-availability", h.CheckNicknameAvailability)
 	mux.HandleFunc("GET /v1/users/", h.GetUserByID)
 	mux.HandleFunc("POST /v1/users/", h.handleUserActions)
 	mux.HandleFunc("DELETE /v1/users/", h.handleUserActions)
@@ -108,6 +109,34 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, toInitMeResponse(aggregate))
+}
+
+func (h *Handler) CheckNicknameAvailability(w http.ResponseWriter, r *http.Request) {
+	subject := strings.TrimSpace(SubjectFromContext(r.Context()))
+	if subject == "" {
+		writeError(w, http.StatusUnauthorized, "missing authenticated subject")
+		return
+	}
+
+	nickname := strings.TrimSpace(r.URL.Query().Get("nickname"))
+	available, err := h.useCase.CheckNicknameAvailability(r.Context(), subject, nickname)
+	if err != nil {
+		switch {
+		case errors.Is(err, app.ErrNicknameRequired):
+			writeError(w, http.StatusBadRequest, err.Error())
+		case errors.Is(err, app.ErrInvalidSubjectID):
+			writeError(w, http.StatusBadRequest, err.Error())
+		case errors.Is(err, app.ErrUserNotFound):
+			writeError(w, http.StatusNotFound, err.Error())
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to check nickname availability")
+		}
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]bool{
+		"available": available,
+	})
 }
 
 func (h *Handler) UpdateMyPresence(w http.ResponseWriter, r *http.Request) {

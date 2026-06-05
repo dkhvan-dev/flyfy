@@ -130,6 +130,150 @@ abstract class AppLocalizations {
   /// **'Sign in with Phone'**
   String get authByPhone;
 
+  /// No description provided for @authLoginTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Login'**
+  String get authLoginTab;
+
+  /// No description provided for @authRegisterTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Register'**
+  String get authRegisterTab;
+
+  /// No description provided for @authLoginTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to your account'**
+  String get authLoginTitle;
+
+  /// No description provided for @authRegisterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your account'**
+  String get authRegisterTitle;
+
+  /// No description provided for @authIdentifierLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Nickname or email'**
+  String get authIdentifierLabel;
+
+  /// No description provided for @authIdentifierHint.
+  ///
+  /// In en, this message translates to:
+  /// **'@nomad or traveler@example.com'**
+  String get authIdentifierHint;
+
+  /// No description provided for @authIdentifierRequiredError.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your nickname or email'**
+  String get authIdentifierRequiredError;
+
+  /// No description provided for @authEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get authEmailLabel;
+
+  /// No description provided for @authEmailHint.
+  ///
+  /// In en, this message translates to:
+  /// **'traveler@example.com'**
+  String get authEmailHint;
+
+  /// No description provided for @passwordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get passwordLabel;
+
+  /// No description provided for @passwordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 8 characters'**
+  String get passwordHint;
+
+  /// No description provided for @authConfirmPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat password'**
+  String get authConfirmPasswordLabel;
+
+  /// No description provided for @authLoginAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Log in'**
+  String get authLoginAction;
+
+  /// No description provided for @authRegisterAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Register'**
+  String get authRegisterAction;
+
+  /// No description provided for @authShowPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Show password'**
+  String get authShowPassword;
+
+  /// No description provided for @authHidePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide password'**
+  String get authHidePassword;
+
+  /// No description provided for @authLoginFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not sign in. Check your details and try again.'**
+  String get authLoginFailed;
+
+  /// No description provided for @authRegistrationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start registration. Check your details and try again.'**
+  String get authRegistrationFailed;
+
+  /// No description provided for @authPasswordMismatchError.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get authPasswordMismatchError;
+
+  /// No description provided for @emailRequiredError.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your email'**
+  String get emailRequiredError;
+
+  /// No description provided for @emailInvalidError.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email'**
+  String get emailInvalidError;
+
+  /// No description provided for @passwordRequiredError.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your password'**
+  String get passwordRequiredError;
+
+  /// No description provided for @passwordWeakError.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must contain at least 8 characters, letters, and digits'**
+  String get passwordWeakError;
+
+  /// No description provided for @skip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get skip;
+
   /// No description provided for @termsAgreementText.
   ///
   /// In en, this message translates to:
@@ -154,11 +298,23 @@ abstract class AppLocalizations {
   /// **'Verify your phone'**
   String get verifyYourPhone;
 
+  /// No description provided for @verifyYourEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your email'**
+  String get verifyYourEmail;
+
   /// No description provided for @enterAuthCode.
   ///
   /// In en, this message translates to:
   /// **'Enter the 6-digit code we just sent to\n'**
   String get enterAuthCode;
+
+  /// No description provided for @enterEmailAuthCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 6-digit code we just sent to\n'**
+  String get enterEmailAuthCode;
 
   /// No description provided for @didntReceiveOTP.
   ///
@@ -1041,6 +1197,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This nickname is already taken'**
   String get profileNicknameTaken;
+
+  /// No description provided for @profileNicknameOneTimeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Nickname can be set only once. After saving, it cannot be changed.'**
+  String get profileNicknameOneTimeHint;
+
+  /// No description provided for @profileNicknameChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking nickname...'**
+  String get profileNicknameChecking;
+
+  /// No description provided for @profileNicknameAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Nickname is available'**
+  String get profileNicknameAvailable;
+
+  /// No description provided for @profileNicknameCheckFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not check nickname. Try again.'**
+  String get profileNicknameCheckFailed;
 
   /// No description provided for @firstNameLabel.
   ///

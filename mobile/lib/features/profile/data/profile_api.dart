@@ -20,6 +20,11 @@ class ProfileApi {
     return UserProfileVm.fromJson(data);
   }
 
+  Future<bool> isNicknameAvailable(String nickname) async {
+    final data = await _apiClient.nicknameAvailability(nickname);
+    return data['available'] == true;
+  }
+
   Future<void> updatePresence() async {
     await _apiClient.updatePresence();
   }

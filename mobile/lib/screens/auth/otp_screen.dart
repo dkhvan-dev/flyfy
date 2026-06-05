@@ -16,9 +16,17 @@ import 'terms_agreement_text.dart';
 
 class OtpScreen extends StatefulWidget {
   final String phone;
+  final String email;
+  final String mode;
   final String? from;
 
-  const OtpScreen({super.key, required this.phone, this.from});
+  const OtpScreen({
+    super.key,
+    this.phone = '',
+    this.email = '',
+    this.mode = 'phone',
+    this.from,
+  });
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
@@ -111,7 +119,9 @@ class _OtpScreenState extends State<OtpScreen> {
     _isSubmitting = true;
     bool success = false;
     try {
-      success = await auth.verifyOtp(widget.phone, code);
+      success = widget.mode == 'emailRegistration'
+          ? await auth.verifyEmailRegistration(widget.email, code)
+          : await auth.verifyOtp(widget.phone, code);
     } finally {
       _isSubmitting = false;
     }
@@ -120,10 +130,15 @@ class _OtpScreenState extends State<OtpScreen> {
 
     if (success) {
       final updatedAuth = ctx.read<AuthProvider>();
+      final emailHint = widget.mode == 'emailRegistration'
+          ? updatedAuth.lastPrimaryEmailHint ?? widget.email
+          : updatedAuth.lastPrimaryEmailHint;
 
       await ctx.read<SessionProvider>().restoreSession(
-        primaryPhoneHint: updatedAuth.lastPrimaryPhoneHint ?? widget.phone,
-        primaryEmailHint: updatedAuth.lastPrimaryEmailHint,
+        primaryPhoneHint: widget.mode == 'emailRegistration'
+            ? updatedAuth.lastPrimaryPhoneHint
+            : updatedAuth.lastPrimaryPhoneHint ?? widget.phone,
+        primaryEmailHint: emailHint,
       );
 
       if (!ctx.mounted) return;
@@ -138,6 +153,34 @@ class _OtpScreenState extends State<OtpScreen> {
     }
   }
 
+  Future<void> _resendCode() async {
+    if (_remainingSeconds > 0) return;
+
+    final ctx = context;
+    final l10n = AppLocalizations.of(ctx)!;
+    final auth = ctx.read<AuthProvider>();
+    final success = widget.mode == 'emailRegistration'
+        ? await auth.resendEmailRegistrationCode(widget.email)
+        : await auth.sendOtp(widget.phone);
+
+    if (!ctx.mounted) return;
+
+    if (success) {
+      _codeController.clear();
+      setState(() {
+        _startCountdown();
+      });
+      _focusNode.requestFocus();
+      return;
+    }
+
+    await showErrorDialog(
+      ctx,
+      title: l10n.error,
+      message: auth.errorMessage ?? l10n.otpSendFailed,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -146,6 +189,8 @@ class _OtpScreenState extends State<OtpScreen> {
     final textScale = mediaQuery.textScaler.scale(1);
     final isCompact = screenWidth < 375 || textScale > 1.02;
     final isUltraCompact = screenWidth < 350 || textScale > 1.12;
+    final isEmailRegistration = widget.mode == 'emailRegistration';
+    final destination = isEmailRegistration ? widget.email : widget.phone;
 
     return Scaffold(
       body: AuthResponsiveTextScope(
@@ -375,7 +420,6 @@ class _OtpScreenState extends State<OtpScreen> {
                                               ),
                                               fontWeight: FontWeight.bold,
                                               color: AppColors.accent,
-                                              letterSpacing: -0.5,
                                             ),
                                           ),
                                         ),
@@ -385,13 +429,14 @@ class _OtpScreenState extends State<OtpScreen> {
                                 ),
                                 SizedBox(height: headerTopGap),
                                 Text(
-                                  l10n.verifyYourPhone,
+                                  isEmailRegistration
+                                      ? l10n.verifyYourEmail
+                                      : l10n.verifyYourPhone,
                                   style: TextStyle(
                                     fontSize: titleSize,
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.textPrimary,
                                     height: 1.2,
-                                    letterSpacing: -0.5,
                                   ),
                                   textAlign: TextAlign.left,
                                 ),
@@ -411,9 +456,12 @@ class _OtpScreenState extends State<OtpScreen> {
                                       height: 1.5,
                                     ),
                                     children: [
-                                      TextSpan(text: l10n.enterAuthCode),
+                                      if (isEmailRegistration)
+                                        TextSpan(text: l10n.enterEmailAuthCode)
+                                      else
+                                        TextSpan(text: l10n.enterAuthCode),
                                       TextSpan(
-                                        text: widget.phone,
+                                        text: destination,
                                         style: const TextStyle(
                                           color: AppColors.accent,
                                           fontWeight: FontWeight.w600,
@@ -597,38 +645,95 @@ class _OtpScreenState extends State<OtpScreen> {
                                   ],
                                 ),
                                 SizedBox(height: timerGap),
-                                Wrap(
-                                  alignment: WrapAlignment.center,
-                                  crossAxisAlignment: WrapCrossAlignment.center,
-                                  spacing: 4,
-                                  runSpacing: 4,
-                                  children: [
-                                    Text(
-                                      l10n.didntReceiveOTP,
-                                      style: TextStyle(
-                                        color: AppColors.textSecondary,
-                                        fontSize: authScaled(
-                                          context,
-                                          14,
-                                          min: 12,
-                                          max: 14,
+                                Consumer<AuthProvider>(
+                                  builder: (context, auth, _) {
+                                    final isResending = isEmailRegistration
+                                        ? auth.isEmailRegistrationLoading
+                                        : auth.isSendingOtp;
+                                    final canResend =
+                                        _remainingSeconds == 0 && !isResending;
+
+                                    return Wrap(
+                                      alignment: WrapAlignment.center,
+                                      crossAxisAlignment:
+                                          WrapCrossAlignment.center,
+                                      spacing: 4,
+                                      runSpacing: 4,
+                                      children: [
+                                        Text(
+                                          l10n.didntReceiveOTP,
+                                          style: TextStyle(
+                                            color: AppColors.textSecondary,
+                                            fontSize: authScaled(
+                                              context,
+                                              14,
+                                              min: 12,
+                                              max: 14,
+                                            ),
+                                          ),
                                         ),
-                                      ),
-                                    ),
-                                    Text(
-                                      l10n.resendCode,
-                                      style: TextStyle(
-                                        color: AppColors.accent,
-                                        fontSize: authScaled(
-                                          context,
-                                          14,
-                                          min: 12,
-                                          max: 14,
+                                        TextButton(
+                                          onPressed: canResend
+                                              ? _resendCode
+                                              : null,
+                                          style: TextButton.styleFrom(
+                                            foregroundColor: AppColors.accent,
+                                            disabledForegroundColor:
+                                                AppColors.textCaption,
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: authScaled(
+                                                context,
+                                                6,
+                                                min: 4,
+                                                max: 6,
+                                              ),
+                                              vertical: authScaled(
+                                                context,
+                                                2,
+                                                min: 0,
+                                                max: 2,
+                                              ),
+                                            ),
+                                            minimumSize: const Size(0, 36),
+                                            tapTargetSize: MaterialTapTargetSize
+                                                .shrinkWrap,
+                                          ),
+                                          child: isResending
+                                              ? SizedBox(
+                                                  width: authScaled(
+                                                    context,
+                                                    16,
+                                                    min: 14,
+                                                    max: 16,
+                                                  ),
+                                                  height: authScaled(
+                                                    context,
+                                                    16,
+                                                    min: 14,
+                                                    max: 16,
+                                                  ),
+                                                  child:
+                                                      const CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                        color: AppColors.accent,
+                                                      ),
+                                                )
+                                              : Text(
+                                                  l10n.resendCode,
+                                                  style: TextStyle(
+                                                    fontSize: authScaled(
+                                                      context,
+                                                      14,
+                                                      min: 12,
+                                                      max: 14,
+                                                    ),
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
                                         ),
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
+                                      ],
+                                    );
+                                  },
                                 ),
                               ],
                             ),
