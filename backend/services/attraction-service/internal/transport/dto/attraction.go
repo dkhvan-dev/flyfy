@@ -91,7 +91,7 @@ type CreateReviewRequest struct {
 
 type AuthorResponse struct {
 	UserID       string  `json:"userId"`
-	DisplayName  *string `json:"displayName,omitempty"`
+	Nickname     *string `json:"nickname,omitempty"`
 	AvatarFileID *string `json:"avatarFileId,omitempty"`
 }
 

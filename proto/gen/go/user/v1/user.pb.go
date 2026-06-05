@@ -307,7 +307,7 @@ type UpdateUserProfileRequest struct {
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	FirstName     string                 `protobuf:"bytes,2,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
 	LastName      string                 `protobuf:"bytes,3,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
-	DisplayName   string                 `protobuf:"bytes,4,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	Nickname      string                 `protobuf:"bytes,4,opt,name=nickname,proto3" json:"nickname,omitempty"`
 	Bio           string                 `protobuf:"bytes,5,opt,name=bio,proto3" json:"bio,omitempty"`
 	BirthDate     string                 `protobuf:"bytes,6,opt,name=birth_date,json=birthDate,proto3" json:"birth_date,omitempty"`            // YYYY-MM-DD
 	AvatarFileId  string                 `protobuf:"bytes,7,opt,name=avatar_file_id,json=avatarFileId,proto3" json:"avatar_file_id,omitempty"` // UUID
@@ -371,9 +371,9 @@ func (x *UpdateUserProfileRequest) GetLastName() string {
 	return ""
 }
 
-func (x *UpdateUserProfileRequest) GetDisplayName() string {
+func (x *UpdateUserProfileRequest) GetNickname() string {
 	if x != nil {
-		return x.DisplayName
+		return x.Nickname
 	}
 	return ""
 }
@@ -675,7 +675,7 @@ type UserProfile struct {
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	FirstName     string                 `protobuf:"bytes,2,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
 	LastName      string                 `protobuf:"bytes,3,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
-	DisplayName   string                 `protobuf:"bytes,4,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	Nickname      string                 `protobuf:"bytes,4,opt,name=nickname,proto3" json:"nickname,omitempty"`
 	Bio           string                 `protobuf:"bytes,5,opt,name=bio,proto3" json:"bio,omitempty"`
 	BirthDate     string                 `protobuf:"bytes,6,opt,name=birth_date,json=birthDate,proto3" json:"birth_date,omitempty"`
 	AvatarFileId  string                 `protobuf:"bytes,7,opt,name=avatar_file_id,json=avatarFileId,proto3" json:"avatar_file_id,omitempty"`
@@ -743,9 +743,9 @@ func (x *UserProfile) GetLastName() string {
 	return ""
 }
 
-func (x *UserProfile) GetDisplayName() string {
+func (x *UserProfile) GetNickname() string {
 	if x != nil {
-		return x.DisplayName
+		return x.Nickname
 	}
 	return ""
 }
@@ -1469,7 +1469,7 @@ func (x *ListPublicProfilesResponse) GetItems() []*PublicProfile {
 type PublicProfile struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	DisplayName   string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	Nickname      string                 `protobuf:"bytes,2,opt,name=nickname,proto3" json:"nickname,omitempty"`
 	Bio           string                 `protobuf:"bytes,3,opt,name=bio,proto3" json:"bio,omitempty"`
 	AvatarFileId  string                 `protobuf:"bytes,4,opt,name=avatar_file_id,json=avatarFileId,proto3" json:"avatar_file_id,omitempty"`
 	CountryCode   string                 `protobuf:"bytes,5,opt,name=country_code,json=countryCode,proto3" json:"country_code,omitempty"`
@@ -1520,9 +1520,9 @@ func (x *PublicProfile) GetUserId() string {
 	return ""
 }
 
-func (x *PublicProfile) GetDisplayName() string {
+func (x *PublicProfile) GetNickname() string {
 	if x != nil {
-		return x.DisplayName
+		return x.Nickname
 	}
 	return ""
 }
@@ -2069,7 +2069,7 @@ func (x *ListAdminUsersRequest) GetLastActiveTo() *timestamppb.Timestamp {
 type AdminUserListItem struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	DisplayName   string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	Nickname      string                 `protobuf:"bytes,2,opt,name=nickname,proto3" json:"nickname,omitempty"`
 	MaskedPhone   string                 `protobuf:"bytes,3,opt,name=masked_phone,json=maskedPhone,proto3" json:"masked_phone,omitempty"`
 	MaskedEmail   string                 `protobuf:"bytes,4,opt,name=masked_email,json=maskedEmail,proto3" json:"masked_email,omitempty"`
 	CountryCode   string                 `protobuf:"bytes,5,opt,name=country_code,json=countryCode,proto3" json:"country_code,omitempty"`
@@ -2119,9 +2119,9 @@ func (x *AdminUserListItem) GetUserId() string {
 	return ""
 }
 
-func (x *AdminUserListItem) GetDisplayName() string {
+func (x *AdminUserListItem) GetNickname() string {
 	if x != nil {
-		return x.DisplayName
+		return x.Nickname
 	}
 	return ""
 }
@@ -2281,7 +2281,7 @@ func (x *GetAdminUserDetailRequest) GetUserId() string {
 type AdminUserDetail struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	DisplayName   string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	Nickname      string                 `protobuf:"bytes,2,opt,name=nickname,proto3" json:"nickname,omitempty"`
 	MaskedPhone   string                 `protobuf:"bytes,3,opt,name=masked_phone,json=maskedPhone,proto3" json:"masked_phone,omitempty"`
 	MaskedEmail   string                 `protobuf:"bytes,4,opt,name=masked_email,json=maskedEmail,proto3" json:"masked_email,omitempty"`
 	CountryCode   string                 `protobuf:"bytes,5,opt,name=country_code,json=countryCode,proto3" json:"country_code,omitempty"`
@@ -2332,9 +2332,9 @@ func (x *AdminUserDetail) GetUserId() string {
 	return ""
 }
 
-func (x *AdminUserDetail) GetDisplayName() string {
+func (x *AdminUserDetail) GetNickname() string {
 	if x != nil {
-		return x.DisplayName
+		return x.Nickname
 	}
 	return ""
 }
@@ -2465,13 +2465,13 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\x15GetUserProfileRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\"H\n" +
 	"\x16GetUserProfileResponse\x12.\n" +
-	"\aprofile\x18\x01 \x01(\v2\x14.user.v1.UserProfileR\aprofile\"\xfb\x02\n" +
+	"\aprofile\x18\x01 \x01(\v2\x14.user.v1.UserProfileR\aprofile\"\xf4\x02\n" +
 	"\x18UpdateUserProfileRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1d\n" +
 	"\n" +
 	"first_name\x18\x02 \x01(\tR\tfirstName\x12\x1b\n" +
-	"\tlast_name\x18\x03 \x01(\tR\blastName\x12!\n" +
-	"\fdisplay_name\x18\x04 \x01(\tR\vdisplayName\x12\x10\n" +
+	"\tlast_name\x18\x03 \x01(\tR\blastName\x12\x1a\n" +
+	"\bnickname\x18\x04 \x01(\tR\bnickname\x12\x10\n" +
 	"\x03bio\x18\x05 \x01(\tR\x03bio\x12\x1d\n" +
 	"\n" +
 	"birth_date\x18\x06 \x01(\tR\tbirthDate\x12$\n" +
@@ -2508,13 +2508,13 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"updated_at\x18\t \x01(\tR\tupdatedAt\x12 \n" +
 	"\flast_seen_at\x18\n" +
 	" \x01(\tR\n" +
-	"lastSeenAt\"\xeb\x03\n" +
+	"lastSeenAt\"\xe4\x03\n" +
 	"\vUserProfile\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1d\n" +
 	"\n" +
 	"first_name\x18\x02 \x01(\tR\tfirstName\x12\x1b\n" +
-	"\tlast_name\x18\x03 \x01(\tR\blastName\x12!\n" +
-	"\fdisplay_name\x18\x04 \x01(\tR\vdisplayName\x12\x10\n" +
+	"\tlast_name\x18\x03 \x01(\tR\blastName\x12\x1a\n" +
+	"\bnickname\x18\x04 \x01(\tR\bnickname\x12\x10\n" +
 	"\x03bio\x18\x05 \x01(\tR\x03bio\x12\x1d\n" +
 	"\n" +
 	"birth_date\x18\x06 \x01(\tR\tbirthDate\x12$\n" +
@@ -2587,10 +2587,10 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\x05limit\x18\x01 \x01(\x05R\x05limit\x12\x16\n" +
 	"\x06offset\x18\x02 \x01(\x05R\x06offset\"J\n" +
 	"\x1aListPublicProfilesResponse\x12,\n" +
-	"\x05items\x18\x01 \x03(\v2\x16.user.v1.PublicProfileR\x05items\"\xdb\x02\n" +
+	"\x05items\x18\x01 \x03(\v2\x16.user.v1.PublicProfileR\x05items\"\xd4\x02\n" +
 	"\rPublicProfile\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12!\n" +
-	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x10\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1a\n" +
+	"\bnickname\x18\x02 \x01(\tR\bnickname\x12\x10\n" +
 	"\x03bio\x18\x03 \x01(\tR\x03bio\x12$\n" +
 	"\x0eavatar_file_id\x18\x04 \x01(\tR\favatarFileId\x12!\n" +
 	"\fcountry_code\x18\x05 \x01(\tR\vcountryCode\x12\x16\n" +
@@ -2634,10 +2634,10 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"created_to\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedTo\x12D\n" +
 	"\x10last_active_from\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\x0elastActiveFrom\x12@\n" +
 	"\x0elast_active_to\x18\n" +
-	" \x01(\v2\x1a.google.protobuf.TimestampR\flastActiveTo\"\x95\x03\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\flastActiveTo\"\x8e\x03\n" +
 	"\x11AdminUserListItem\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12!\n" +
-	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12!\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1a\n" +
+	"\bnickname\x18\x02 \x01(\tR\bnickname\x12!\n" +
 	"\fmasked_phone\x18\x03 \x01(\tR\vmaskedPhone\x12!\n" +
 	"\fmasked_email\x18\x04 \x01(\tR\vmaskedEmail\x12!\n" +
 	"\fcountry_code\x18\x05 \x01(\tR\vcountryCode\x12\x14\n" +
@@ -2652,10 +2652,10 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\x05users\x18\x01 \x03(\v2\x1a.user.v1.AdminUserListItemR\x05users\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"4\n" +
 	"\x19GetAdminUserDetailRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"\xce\x03\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"\xc7\x03\n" +
 	"\x0fAdminUserDetail\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12!\n" +
-	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12!\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1a\n" +
+	"\bnickname\x18\x02 \x01(\tR\bnickname\x12!\n" +
 	"\fmasked_phone\x18\x03 \x01(\tR\vmaskedPhone\x12!\n" +
 	"\fmasked_email\x18\x04 \x01(\tR\vmaskedEmail\x12!\n" +
 	"\fcountry_code\x18\x05 \x01(\tR\vcountryCode\x12\x14\n" +

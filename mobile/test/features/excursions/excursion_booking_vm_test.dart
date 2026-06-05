@@ -25,7 +25,7 @@ void main() {
       'status': 'REQUESTED',
       'author': {
         'userId': 'tourist-1',
-        'displayName': '@booking_author',
+        'nickname': '@booking_author',
         'avatarFileId': 'booking-avatar-1',
       },
       'review': {
@@ -39,7 +39,7 @@ void main() {
         'guideDisplayName': 'Aruzhan',
         'author': {
           'userId': 'tourist-1',
-          'displayName': '@nomad_aru',
+          'nickname': '@nomad_aru',
           'avatarFileId': 'avatar-1',
         },
         'rating': 4.5,
@@ -55,7 +55,7 @@ void main() {
         'guideDisplayName': 'Aruzhan',
         'author': {
           'userId': 'tourist-1',
-          'displayName': '@nomad_aru',
+          'nickname': '@nomad_aru',
           'avatarFileId': 'avatar-1',
         },
         'rating': 5,
@@ -69,7 +69,7 @@ void main() {
     expect(booking.review?.rating, 4.5);
     expect(booking.review?.guideDisplayName, 'Aruzhan');
     expect(booking.review?.author.userId, 'tourist-1');
-    expect(booking.review?.author.displayName, '@nomad_aru');
+    expect(booking.review?.author.nickname, '@nomad_aru');
     expect(booking.review?.author.avatarFileId, 'avatar-1');
     expect(booking.guideReview?.id, 'guide-review-1');
     expect(booking.guideReview?.rating, 5);
@@ -77,9 +77,9 @@ void main() {
       booking.guideReview?.comment,
       'Thoughtful pacing and clear stories.',
     );
-    expect(booking.guideReview?.author.displayName, '@nomad_aru');
+    expect(booking.guideReview?.author.nickname, '@nomad_aru');
     expect(booking.author.userId, 'tourist-1');
-    expect(booking.author.displayName, '@booking_author');
+    expect(booking.author.nickname, '@booking_author');
     expect(booking.author.avatarFileId, 'booking-avatar-1');
     expect(booking.landmarkId, 'attraction-1');
     expect(booking.scheduleSlotId, 'slot-1');

@@ -2427,9 +2427,9 @@ class _GuideAttendanceParticipantRow extends StatelessWidget {
 }
 
 String _guideAttendanceParticipantName(ExcursionBookingVm booking) {
-  final displayName = booking.author.displayName?.trim();
-  if (displayName != null && displayName.isNotEmpty) {
-    return displayName;
+  final nickname = booking.author.nickname?.trim();
+  if (nickname != null && nickname.isNotEmpty) {
+    return nickname;
   }
   final userId = booking.touristUserId.trim();
   if (userId.isNotEmpty) {
@@ -3095,12 +3095,12 @@ class _GuideBookingAuthorRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final displayName = booking.author.resolvedDisplayName.isNotEmpty
+    final nickname = booking.author.resolvedDisplayName.isNotEmpty
         ? booking.author.resolvedDisplayName
         : booking.touristUserId;
-    final initial = displayName.trim().isEmpty
+    final initial = nickname.trim().isEmpty
         ? '?'
-        : displayName.trim().characters.first.toUpperCase();
+        : nickname.trim().characters.first.toUpperCase();
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -3128,7 +3128,7 @@ class _GuideBookingAuthorRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  displayName,
+                  nickname,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(

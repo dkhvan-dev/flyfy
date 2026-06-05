@@ -580,7 +580,7 @@ func toAuthorResponse(author app.StoryAuthor) dto.AuthorResponse {
 
 	return dto.AuthorResponse{
 		UserID:       author.UserID.String(),
-		DisplayName:  author.DisplayName,
+		Nickname:     author.Nickname,
 		AvatarFileID: avatarFileID,
 		CountryCode:  author.CountryCode,
 		Locale:       author.Locale,

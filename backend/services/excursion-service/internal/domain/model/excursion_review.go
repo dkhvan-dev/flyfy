@@ -45,7 +45,7 @@ type ExcursionReview struct {
 
 type ExcursionReviewAuthor struct {
 	UserID       uuid.UUID
-	DisplayName  *string
+	Nickname     *string
 	AvatarFileID *uuid.UUID
 }
 

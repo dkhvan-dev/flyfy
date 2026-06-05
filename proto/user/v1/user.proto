@@ -55,7 +55,7 @@ message UpdateUserProfileRequest {
   string user_id = 1;
   string first_name = 2;
   string last_name = 3;
-  string display_name = 4;
+  string nickname = 4;
   string bio = 5;
   string birth_date = 6;     // YYYY-MM-DD
   string avatar_file_id = 7; // UUID
@@ -97,7 +97,7 @@ message UserProfile {
   string user_id = 1;
   string first_name = 2;
   string last_name = 3;
-  string display_name = 4;
+  string nickname = 4;
   string bio = 5;
   string birth_date = 6;
   string avatar_file_id = 7;
@@ -180,7 +180,7 @@ message PublicProfile {
   reserved 8;
 
   string user_id = 1;
-  string display_name = 2;
+  string nickname = 2;
   string bio = 3;
   string avatar_file_id = 4;
   string country_code = 5;
@@ -240,7 +240,7 @@ message ListAdminUsersRequest {
 
 message AdminUserListItem {
   string user_id = 1;
-  string display_name = 2;
+  string nickname = 2;
   string masked_phone = 3;
   string masked_email = 4;
   string country_code = 5;
@@ -262,7 +262,7 @@ message GetAdminUserDetailRequest {
 
 message AdminUserDetail {
   string user_id = 1;
-  string display_name = 2;
+  string nickname = 2;
   string masked_phone = 3;
   string masked_email = 4;
   string country_code = 5;

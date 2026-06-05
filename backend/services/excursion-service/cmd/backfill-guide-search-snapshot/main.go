@@ -113,14 +113,14 @@ func backfill(
 				continue
 			}
 
-			displayName := strings.TrimSpace(permission.DisplayName)
+			guideDisplayName := strings.TrimSpace(permission.GuideDisplayName)
 			nickname := strings.TrimSpace(permission.Nickname)
 			firstName := strings.TrimSpace(permission.FirstName)
 			lastName := strings.TrimSpace(permission.LastName)
 			searchText := strings.TrimSpace(permission.GuideSearchText)
 			if searchText == "" {
 				searchText = strings.TrimSpace(strings.Join([]string{
-					displayName,
+					guideDisplayName,
 					nickname,
 					firstName,
 					lastName,
@@ -131,7 +131,7 @@ func backfill(
 			if dryRun {
 				log.Info().
 					Stringer("guideUserID", guideUserID).
-					Str("displayName", displayName).
+					Str("guideDisplayName", guideDisplayName).
 					Str("nickname", nickname).
 					Str("firstName", firstName).
 					Str("lastName", lastName).
@@ -204,7 +204,7 @@ func updateGuideSnapshot(
 	permission port.GuideExcursionPermission,
 	searchText string,
 ) (int64, error) {
-	displayName := strings.TrimSpace(permission.DisplayName)
+	guideDisplayName := strings.TrimSpace(permission.GuideDisplayName)
 	nickname := strings.TrimSpace(permission.Nickname)
 	firstName := strings.TrimSpace(permission.FirstName)
 	lastName := strings.TrimSpace(permission.LastName)
@@ -216,7 +216,7 @@ func updateGuideSnapshot(
 		  AND deleted_at IS NULL
 		  AND (guide_display_name IS DISTINCT FROM $2 OR guide_search_text IS DISTINCT FROM $3)
 	`
-	offerTag, err := pool.Exec(ctx, offerQuery, guideUserID, displayName, searchText)
+	offerTag, err := pool.Exec(ctx, offerQuery, guideUserID, guideDisplayName, searchText)
 	if err != nil {
 		return 0, err
 	}
@@ -250,7 +250,7 @@ func updateGuideSnapshot(
 		permission.RatingAvg,
 		permission.ReviewsCount,
 		permission.ExperienceYears,
-		displayName,
+		guideDisplayName,
 		nickname,
 		firstName,
 		lastName,

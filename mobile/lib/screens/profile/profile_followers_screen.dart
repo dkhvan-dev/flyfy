@@ -422,9 +422,7 @@ class _FollowerRow extends StatelessWidget {
       isOnline: follower.isOnline,
       lastSeenAt: follower.lastSeenAt,
     );
-    final displayName = follower.displayNameOrFallback(
-      l10n.chatUserFallbackName,
-    );
+    final nickname = follower.nicknameOrFallback(l10n.chatUserFallbackName);
 
     return Material(
       color: Colors.transparent,
@@ -448,7 +446,7 @@ class _FollowerRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      displayName,
+                      nickname,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(

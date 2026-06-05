@@ -10,7 +10,7 @@ type PublicUserProfile struct {
 	UserID       uuid.UUID
 	FirstName    *string
 	LastName     *string
-	DisplayName  *string
+	Nickname     *string
 	AvatarFileID *uuid.UUID
 	CountryCode  *string
 	Locale       string

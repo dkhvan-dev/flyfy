@@ -19,25 +19,25 @@ func TestToProtoAggregateIncludesPublicUserProfile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewGuideProfile() error = %v", err)
 	}
-	displayName := "Aruzhan T."
+	nickname := "Aruzhan T."
 	firstName := "Aruzhan"
 	lastName := "Tulegenova"
 
 	got := toProtoAggregate(&app.GuideAggregate{
 		Profile: profile,
 		UserProfile: &app.PublicUserProfile{
-			UserID:      userID,
-			FirstName:   &firstName,
-			LastName:    &lastName,
-			DisplayName: &displayName,
+			UserID:    userID,
+			FirstName: &firstName,
+			LastName:  &lastName,
+			Nickname:  &nickname,
 		},
 	})
 
 	if got.GetUserProfile() == nil {
 		t.Fatal("user profile is nil, want public user profile in guide aggregate proto")
 	}
-	if got.GetUserProfile().GetDisplayName() != displayName {
-		t.Fatalf("display name = %q, want %q", got.GetUserProfile().GetDisplayName(), displayName)
+	if got.GetUserProfile().GetNickname() != nickname {
+		t.Fatalf("nickname = %q, want %q", got.GetUserProfile().GetNickname(), nickname)
 	}
 	if got.GetUserProfile().GetFirstName() != firstName {
 		t.Fatalf("first name = %q, want %q", got.GetUserProfile().GetFirstName(), firstName)

@@ -2112,7 +2112,7 @@ class _ExcursionOffersSectionState extends State<_ExcursionOffersSection> {
     final profile = widget.offerProfiles[offer.guideUserId];
     final firstName = (profile?.firstName ?? '').trim();
     final lastName = (profile?.lastName ?? '').trim();
-    final displayName = (profile?.displayName ?? '').trim();
+    final nickname = (profile?.nickname ?? '').trim();
     final values = <String>[
       offer.id,
       offer.guideProfileId,
@@ -2136,14 +2136,14 @@ class _ExcursionOffersSectionState extends State<_ExcursionOffersSection> {
         profile.userId,
         profile.preferredName,
         profile.initials,
-        displayName,
+        nickname,
         firstName,
         lastName,
         [firstName, lastName].where((value) => value.isNotEmpty).join(' '),
         [lastName, firstName].where((value) => value.isNotEmpty).join(' '),
         if (firstName.isNotEmpty && lastName.isNotEmpty)
           '$lastName ${firstName.substring(0, 1)}',
-        if (displayName.startsWith('@')) displayName.substring(1),
+        if (nickname.startsWith('@')) nickname.substring(1),
         profile.primaryPhone ?? '',
         profile.primaryEmail ?? '',
         profile.bio ?? '',
@@ -2162,14 +2162,14 @@ class _ExcursionOffersSectionState extends State<_ExcursionOffersSection> {
     return widget.offerProfiles.values.any((profile) {
       final firstName = (profile.firstName ?? '').trim();
       final lastName = (profile.lastName ?? '').trim();
-      final displayName = (profile.displayName ?? '').trim();
+      final nickname = (profile.nickname ?? '').trim();
       final profileHaystack = _normalizeOfferSearchText(
         [
           profile.userId,
           profile.preferredName,
           profile.initials,
-          displayName,
-          if (displayName.startsWith('@')) displayName.substring(1),
+          nickname,
+          if (nickname.startsWith('@')) nickname.substring(1),
           firstName,
           lastName,
           [firstName, lastName].where((value) => value.isNotEmpty).join(' '),

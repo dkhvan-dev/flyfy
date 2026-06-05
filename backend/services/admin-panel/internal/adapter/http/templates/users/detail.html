@@ -5,7 +5,7 @@
   <div class="section-head">
     <div>
       <p class="eyebrow">{{t .Locale "users.detailEyebrow"}} <code>{{shortID .Data.User.UserID}}</code></p>
-      <h1>{{if .Data.User.DisplayName}}{{.Data.User.DisplayName}}{{else}}{{t .Locale "label.user"}}{{end}}</h1>
+      <h1>{{if .Data.User.Nickname}}{{.Data.User.Nickname}}{{else}}{{t .Locale "label.user"}}{{end}}</h1>
     </div>
     <a class="button" href="/admin/users">{{t .Locale "users.backToList"}}</a>
   </div>

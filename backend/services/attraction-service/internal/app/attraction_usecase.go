@@ -45,7 +45,7 @@ const (
 
 type AttractionAuthor struct {
 	UserID       uuid.UUID
-	DisplayName  *string
+	Nickname     *string
 	AvatarFileID *uuid.UUID
 }
 
@@ -1051,7 +1051,7 @@ func (u *AttractionUseCase) toAttractionView(ctx context.Context, attraction *mo
 	profiles, err := u.users.GetPublicUserProfiles(ctx, []uuid.UUID{attraction.AuthorUserID})
 	if err == nil {
 		if p, ok := profiles[attraction.AuthorUserID]; ok {
-			author.DisplayName = p.DisplayName
+			author.Nickname = p.Nickname
 			author.AvatarFileID = p.AvatarFileID
 		}
 	}
@@ -1068,7 +1068,7 @@ func (u *AttractionUseCase) toReviewView(ctx context.Context, review *model.Attr
 	profiles, err := u.users.GetPublicUserProfiles(ctx, []uuid.UUID{review.AuthorUserID})
 	if err == nil {
 		if p, ok := profiles[review.AuthorUserID]; ok {
-			author.DisplayName = p.DisplayName
+			author.Nickname = p.Nickname
 			author.AvatarFileID = p.AvatarFileID
 		}
 	}

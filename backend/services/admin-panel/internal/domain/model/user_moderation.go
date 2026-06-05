@@ -21,7 +21,7 @@ type AdminUserListFilter struct {
 
 type AdminUserListItem struct {
 	UserID                  uuid.UUID
-	DisplayName             string
+	Nickname                string
 	MaskedPhone             string
 	MaskedEmail             string
 	CountryCode             string
@@ -43,7 +43,7 @@ type AdminUserListPage struct {
 
 type AdminUserDetail struct {
 	UserID                  uuid.UUID
-	DisplayName             string
+	Nickname                string
 	MaskedPhone             string
 	MaskedEmail             string
 	CountryCode             string

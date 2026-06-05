@@ -75,9 +75,9 @@ func (c *Client) GetUserProfileProjections(ctx context.Context, userIDs []uuid.U
 		if parseErr != nil {
 			continue
 		}
-		var displayName *string
-		if value := strings.TrimSpace(item.GetDisplayName()); value != "" {
-			displayName = &value
+		var nickname *string
+		if value := strings.TrimSpace(item.GetNickname()); value != "" {
+			nickname = &value
 		}
 		var avatarFileID *uuid.UUID
 		if value := strings.TrimSpace(item.GetAvatarFileId()); value != "" {
@@ -87,7 +87,7 @@ func (c *Client) GetUserProfileProjections(ctx context.Context, userIDs []uuid.U
 		}
 		result[userID] = port.UserProfileProjection{
 			UserID:       userID,
-			DisplayName:  displayName,
+			Nickname:     nickname,
 			AvatarFileID: avatarFileID,
 		}
 	}

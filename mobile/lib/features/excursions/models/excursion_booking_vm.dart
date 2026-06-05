@@ -442,12 +442,12 @@ class ExcursionReviewVm {
 class ExcursionReviewAuthorVm {
   const ExcursionReviewAuthorVm({
     required this.userId,
-    this.displayName,
+    this.nickname,
     this.avatarFileId,
   });
 
   final String userId;
-  final String? displayName;
+  final String? nickname;
   final String? avatarFileId;
 
   factory ExcursionReviewAuthorVm.fromJson(
@@ -457,12 +457,12 @@ class ExcursionReviewAuthorVm {
     final userId = _string(json['userId']);
     return ExcursionReviewAuthorVm(
       userId: userId.isEmpty ? fallbackUserId : userId,
-      displayName: _nullableString(json['displayName']),
+      nickname: _nullableString(json['nickname']),
       avatarFileId: _nullableString(json['avatarFileId']),
     );
   }
 
-  String get resolvedDisplayName => (displayName ?? '').trim();
+  String get resolvedDisplayName => (nickname ?? '').trim();
   String get resolvedAvatarFileId => (avatarFileId ?? '').trim();
 }
 

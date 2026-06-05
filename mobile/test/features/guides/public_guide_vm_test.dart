@@ -20,7 +20,7 @@ void main() {
           'reviewsCount': 12,
           'languageCodes': ['en', 'ru'],
         },
-        'userProfile': {'displayName': 'Aruzhan'},
+        'userProfile': {'nickname': 'Aruzhan'},
         'excursionLanguageCodes': ['ru', 'kk', 'ru', ''],
       });
 
@@ -29,13 +29,13 @@ void main() {
     },
   );
 
-  test('prefers guide legal surname and first name over display nickname', () {
+  test('prefers guide legal surname and first name over nickname', () {
     final guide = PublicGuideVm.fromJson({
       'guideProfile': {'id': 'guide-profile-id', 'userId': 'guide-user-id'},
       'userProfile': {
         'firstName': 'Аружан',
         'lastName': 'Тулегенова',
-        'displayName': '@nomad_aru',
+        'nickname': '@nomad_aru',
       },
     });
 

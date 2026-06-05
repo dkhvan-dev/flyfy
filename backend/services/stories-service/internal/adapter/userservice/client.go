@@ -132,10 +132,10 @@ func (c *Client) GetPublicUserProfiles(ctx context.Context, userIDs []uuid.UUID)
 			}
 		}
 
-		var displayName *string
-		if strings.TrimSpace(item.GetDisplayName()) != "" {
-			v := strings.TrimSpace(item.GetDisplayName())
-			displayName = &v
+		var nickname *string
+		if strings.TrimSpace(item.GetNickname()) != "" {
+			v := strings.TrimSpace(item.GetNickname())
+			nickname = &v
 		}
 
 		var countryCode *string
@@ -146,7 +146,7 @@ func (c *Client) GetPublicUserProfiles(ctx context.Context, userIDs []uuid.UUID)
 
 		result[userID] = app.PublicUserProfile{
 			UserID:       userID,
-			DisplayName:  displayName,
+			Nickname:     nickname,
 			AvatarFileID: avatarFileID,
 			CountryCode:  countryCode,
 			Locale:       item.GetLocale(),

@@ -1009,7 +1009,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileIncompleteDescription.
   ///
   /// In en, this message translates to:
-  /// **'Fill in your first name, last name, and country to unlock all Inflap features'**
+  /// **'Fill in your nickname, first name, last name, and country to unlock all Inflap features'**
   String get profileIncompleteDescription;
 
   /// No description provided for @fillNowButton.
@@ -1036,11 +1036,11 @@ abstract class AppLocalizations {
   /// **'Failed to save profile'**
   String get profileSaveFailed;
 
-  /// No description provided for @profileDisplayNameTaken.
+  /// No description provided for @profileNicknameTaken.
   ///
   /// In en, this message translates to:
-  /// **'This display name is already taken'**
-  String get profileDisplayNameTaken;
+  /// **'This nickname is already taken'**
+  String get profileNicknameTaken;
 
   /// No description provided for @firstNameLabel.
   ///
@@ -1054,11 +1054,23 @@ abstract class AppLocalizations {
   /// **'Last name'**
   String get lastNameLabel;
 
-  /// No description provided for @displayNameLabel.
+  /// No description provided for @nicknameLabel.
   ///
   /// In en, this message translates to:
-  /// **'Display name'**
-  String get displayNameLabel;
+  /// **'Nickname'**
+  String get nicknameLabel;
+
+  /// No description provided for @nicknameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter nickname'**
+  String get nicknameRequired;
+
+  /// No description provided for @profileNicknameLockedDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Nickname can be set only once. After saving, it cannot be changed.'**
+  String get profileNicknameLockedDescription;
 
   /// No description provided for @bioLabel.
   ///
@@ -1093,7 +1105,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileRequiredDescription.
   ///
   /// In en, this message translates to:
-  /// **'To continue, enter your first name, last name, and country in your profile. This helps reduce fake accounts and increases trust between users.'**
+  /// **'To continue, enter your nickname, first name, last name, and country in your profile. This helps reduce fake accounts and increases trust between users.'**
   String get profileRequiredDescription;
 
   /// No description provided for @myProfileTitle.

@@ -60,7 +60,7 @@ func (r *PGUserRepository) CreateUserAggregate(
 
 	const profileQuery = `
 		INSERT INTO user_profiles (
-			user_id, first_name, last_name, display_name, bio, birth_date,
+			user_id, first_name, last_name, nickname, bio, birth_date,
 			avatar_file_id, city_id, country_code, locale, timezone, currency,
 			is_profile_completed, created_at, updated_at
 		) VALUES (
@@ -75,7 +75,7 @@ func (r *PGUserRepository) CreateUserAggregate(
 		profile.UserID,
 		profile.FirstName,
 		profile.LastName,
-		profile.DisplayName,
+		profile.Nickname,
 		profile.Bio,
 		profile.BirthDate,
 		profile.AvatarFileID,
@@ -291,10 +291,10 @@ func (r *PGUserRepository) GetAdminUserDetail(
 		SELECT
 			u.id,
 			COALESCE(
-				NULLIF(BTRIM(p.display_name), ''),
+				NULLIF(BTRIM(p.nickname), ''),
 				NULLIF(BTRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''),
 				u.id::text
-			) AS display_name,
+			) AS nickname,
 			COALESCE(u.primary_phone, '') AS primary_phone,
 			COALESCE(u.primary_email, '') AS primary_email,
 			COALESCE(p.country_code, '') AS country_code,
@@ -309,7 +309,7 @@ func (r *PGUserRepository) GetAdminUserDetail(
 		LEFT JOIN user_system_roles r ON r.user_id = u.id
 		WHERE u.id = $1
 		  AND u.is_deleted = FALSE
-		GROUP BY u.id, p.display_name, p.first_name, p.last_name, p.country_code
+		GROUP BY u.id, p.nickname, p.first_name, p.last_name, p.country_code
 		LIMIT 1
 	`
 
@@ -318,7 +318,7 @@ func (r *PGUserRepository) GetAdminUserDetail(
 	var item model.AdminUserDetail
 	err := row.Scan(
 		&item.UserID,
-		&item.DisplayName,
+		&item.Nickname,
 		&item.MaskedPhone,
 		&item.MaskedEmail,
 		&item.CountryCode,
@@ -357,7 +357,7 @@ func buildAdminUsersQuery(
 			u.id::text = %s
 			OR COALESCE(u.primary_phone, '') ILIKE '%%' || %s || '%%'
 			OR COALESCE(u.primary_email, '') ILIKE '%%' || %s || '%%'
-			OR COALESCE(p.display_name, '') ILIKE '%%' || %s || '%%'
+			OR COALESCE(p.nickname, '') ILIKE '%%' || %s || '%%'
 			OR COALESCE(p.first_name, '') ILIKE '%%' || %s || '%%'
 			OR COALESCE(p.last_name, '') ILIKE '%%' || %s || '%%'
 			OR BTRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')) ILIKE '%%' || %s || '%%'
@@ -396,10 +396,10 @@ func buildAdminUsersQuery(
 		SELECT
 			u.id,
 			COALESCE(
-				NULLIF(BTRIM(p.display_name), ''),
+				NULLIF(BTRIM(p.nickname), ''),
 				NULLIF(BTRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''),
 				u.id::text
-			) AS display_name,
+			) AS nickname,
 			COALESCE(u.primary_phone, '') AS primary_phone,
 			COALESCE(u.primary_email, '') AS primary_email,
 			COALESCE(p.country_code, '') AS country_code,
@@ -412,7 +412,7 @@ func buildAdminUsersQuery(
 		LEFT JOIN user_profiles p ON p.user_id = u.id
 		LEFT JOIN user_system_roles r ON r.user_id = u.id
 		WHERE ` + strings.Join(where, "\n\t\t  AND ") + `
-		GROUP BY u.id, p.display_name, p.first_name, p.last_name, p.country_code
+		GROUP BY u.id, p.nickname, p.first_name, p.last_name, p.country_code
 		ORDER BY u.created_at DESC, u.id DESC
 		LIMIT ` + limitPlaceholder
 
@@ -427,7 +427,7 @@ func scanAdminUserListItem(row adminUserListScanner) (model.AdminUserListItem, e
 	var item model.AdminUserListItem
 	if err := row.Scan(
 		&item.UserID,
-		&item.DisplayName,
+		&item.Nickname,
 		&item.MaskedPhone,
 		&item.MaskedEmail,
 		&item.CountryCode,
@@ -442,13 +442,13 @@ func scanAdminUserListItem(row adminUserListScanner) (model.AdminUserListItem, e
 	return item, nil
 }
 
-func (r *PGUserRepository) IsDisplayNameTaken(
+func (r *PGUserRepository) IsNicknameTaken(
 	ctx context.Context,
-	displayName string,
+	nickname string,
 	excludeUserID uuid.UUID,
 ) (bool, error) {
-	displayName = strings.TrimSpace(displayName)
-	if displayName == "" {
+	nickname = strings.TrimSpace(nickname)
+	if nickname == "" {
 		return false, nil
 	}
 
@@ -456,14 +456,14 @@ func (r *PGUserRepository) IsDisplayNameTaken(
 		SELECT EXISTS (
 			SELECT 1
 			FROM user_profiles
-			WHERE LOWER(BTRIM(display_name)) = LOWER(BTRIM($1))
+			WHERE LOWER(BTRIM(nickname)) = LOWER(BTRIM($1))
 			  AND user_id <> $2
 		)
 	`
 
 	var exists bool
-	if err := r.pool.QueryRow(ctx, query, displayName, excludeUserID).Scan(&exists); err != nil {
-		return false, fmt.Errorf("check display name existence: %w", err)
+	if err := r.pool.QueryRow(ctx, query, nickname, excludeUserID).Scan(&exists); err != nil {
+		return false, fmt.Errorf("check nickname existence: %w", err)
 	}
 
 	return exists, nil
@@ -472,7 +472,7 @@ func (r *PGUserRepository) IsDisplayNameTaken(
 func (r *PGUserRepository) GetProfileByUserID(ctx context.Context, userID uuid.UUID) (*model.UserProfile, error) {
 	const query = `
 		SELECT
-			p.user_id, p.first_name, p.last_name, p.display_name, p.bio, p.birth_date,
+			p.user_id, p.first_name, p.last_name, p.nickname, p.bio, p.birth_date,
 			p.avatar_file_id, p.city_id, p.country_code, p.locale, p.timezone, p.currency,
 			p.is_profile_completed,
 			COALESCE(u.last_seen_at >= NOW() - INTERVAL '2 minutes', FALSE) AS is_online,
@@ -488,7 +488,7 @@ func (r *PGUserRepository) GetProfileByUserID(ctx context.Context, userID uuid.U
 		&profile.UserID,
 		&profile.FirstName,
 		&profile.LastName,
-		&profile.DisplayName,
+		&profile.Nickname,
 		&profile.Bio,
 		&profile.BirthDate,
 		&profile.AvatarFileID,
@@ -753,7 +753,7 @@ func (r *PGUserRepository) UpdateProfile(ctx context.Context, profile *model.Use
 		SET
 			first_name = $2,
 			last_name = $3,
-			display_name = $4,
+			nickname = $4,
 			bio = $5,
 			birth_date = $6,
 			avatar_file_id = $7,
@@ -773,7 +773,7 @@ func (r *PGUserRepository) UpdateProfile(ctx context.Context, profile *model.Use
 		profile.UserID,
 		profile.FirstName,
 		profile.LastName,
-		profile.DisplayName,
+		profile.Nickname,
 		profile.Bio,
 		profile.BirthDate,
 		profile.AvatarFileID,
@@ -786,8 +786,16 @@ func (r *PGUserRepository) UpdateProfile(ctx context.Context, profile *model.Use
 	)
 	if err != nil {
 		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23505" && pgErr.ConstraintName == "uq_user_profiles_display_name_ci" {
-			return app.ErrDisplayNameAlreadyTaken
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" && pgErr.ConstraintName == "uq_user_profiles_nickname_ci" {
+			return app.ErrNicknameAlreadyTaken
+		}
+		if errors.As(err, &pgErr) && pgErr.Code == "23514" {
+			switch pgErr.ConstraintName {
+			case "user_profiles_nickname_immutable":
+				return app.ErrNicknameImmutable
+			case "user_profiles_nickname_not_blank":
+				return app.ErrNicknameRequired
+			}
 		}
 		return fmt.Errorf("update profile: %w", err)
 	}
@@ -1013,7 +1021,7 @@ func (r *PGUserRepository) HasRole(ctx context.Context, userID uuid.UUID, role e
 func (r *PGUserRepository) ListPublicProfiles(ctx context.Context, limit int, offset int) ([]*model.UserProfile, error) {
 	const query = `
 		SELECT
-			p.user_id, p.first_name, p.last_name, p.display_name, p.bio, p.birth_date,
+			p.user_id, p.first_name, p.last_name, p.nickname, p.bio, p.birth_date,
 			p.avatar_file_id, p.city_id, p.country_code, p.locale, p.timezone, p.currency,
 			p.is_profile_completed,
 			COALESCE(u.last_seen_at >= NOW() - INTERVAL '2 minutes', FALSE) AS is_online,
@@ -1039,7 +1047,7 @@ func (r *PGUserRepository) ListPublicProfiles(ctx context.Context, limit int, of
 			&profile.UserID,
 			&profile.FirstName,
 			&profile.LastName,
-			&profile.DisplayName,
+			&profile.Nickname,
 			&profile.Bio,
 			&profile.BirthDate,
 			&profile.AvatarFileID,
@@ -1069,7 +1077,7 @@ func (r *PGUserRepository) GetPublicProfilesByUserIDs(ctx context.Context, userI
 
 	const query = `
 		SELECT
-			p.user_id, p.first_name, p.last_name, p.display_name, p.bio, p.birth_date,
+			p.user_id, p.first_name, p.last_name, p.nickname, p.bio, p.birth_date,
 			p.avatar_file_id, p.city_id, p.country_code, p.locale, p.timezone, p.currency,
 			p.is_profile_completed,
 			COALESCE(u.last_seen_at >= NOW() - INTERVAL '2 minutes', FALSE) AS is_online,
@@ -1094,7 +1102,7 @@ func (r *PGUserRepository) GetPublicProfilesByUserIDs(ctx context.Context, userI
 			&item.UserID,
 			&item.FirstName,
 			&item.LastName,
-			&item.DisplayName,
+			&item.Nickname,
 			&item.Bio,
 			&item.BirthDate,
 			&item.AvatarFileID,
@@ -1161,7 +1169,7 @@ func (r *PGUserRepository) ListFollowersByUserID(
 ) ([]*model.UserProfile, error) {
 	const query = `
 		SELECT
-			p.user_id, p.first_name, p.last_name, p.display_name, p.bio, p.birth_date,
+			p.user_id, p.first_name, p.last_name, p.nickname, p.bio, p.birth_date,
 			p.avatar_file_id, p.city_id, p.country_code, p.locale, p.timezone, p.currency,
 			p.is_profile_completed,
 			COALESCE(u.last_seen_at >= NOW() - INTERVAL '2 minutes', FALSE) AS is_online,
@@ -1174,7 +1182,7 @@ func (r *PGUserRepository) ListFollowersByUserID(
 		  AND u.is_deleted = FALSE
 		  AND (
 			$2 = ''
-			OR COALESCE(p.display_name, '') ILIKE '%' || $2 || '%'
+			OR COALESCE(p.nickname, '') ILIKE '%' || $2 || '%'
 			OR COALESCE(p.first_name, '') ILIKE '%' || $2 || '%'
 			OR COALESCE(p.last_name, '') ILIKE '%' || $2 || '%'
 			OR TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')) ILIKE '%' || $2 || '%'
@@ -1214,7 +1222,7 @@ func (r *PGUserRepository) ListFriendsByUserID(
 	)
 	query := `
 		SELECT
-			p.user_id, p.first_name, p.last_name, p.display_name, p.bio, p.birth_date,
+			p.user_id, p.first_name, p.last_name, p.nickname, p.bio, p.birth_date,
 			p.avatar_file_id, p.city_id, p.country_code, p.locale, p.timezone, p.currency,
 			p.is_profile_completed,
 			COALESCE(u.last_seen_at >= NOW() - INTERVAL '2 minutes', FALSE) AS is_online,
@@ -1232,7 +1240,7 @@ func (r *PGUserRepository) ListFriendsByUserID(
 		  AND u.is_deleted = FALSE
 		  AND (
 			$2 = ''
-			OR COALESCE(p.display_name, '') ILIKE '%' || $2 || '%'
+			OR COALESCE(p.nickname, '') ILIKE '%' || $2 || '%'
 			OR COALESCE(p.first_name, '') ILIKE '%' || $2 || '%'
 			OR COALESCE(p.last_name, '') ILIKE '%' || $2 || '%'
 			OR TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')) ILIKE '%' || $2 || '%'
@@ -1272,7 +1280,7 @@ func (r *PGUserRepository) ListIncomingFriendRequestsByUserID(
 ) ([]*model.UserFriendRequest, error) {
 	const query = `
 		SELECT
-			p.user_id, p.first_name, p.last_name, p.display_name, p.bio, p.birth_date,
+			p.user_id, p.first_name, p.last_name, p.nickname, p.bio, p.birth_date,
 			p.avatar_file_id, p.city_id, p.country_code, p.locale, p.timezone, p.currency,
 			p.is_profile_completed,
 			COALESCE(u.last_seen_at >= NOW() - INTERVAL '2 minutes', FALSE) AS is_online,
@@ -1287,7 +1295,7 @@ func (r *PGUserRepository) ListIncomingFriendRequestsByUserID(
 		  AND u.is_deleted = FALSE
 		  AND (
 			$2 = ''
-			OR COALESCE(p.display_name, '') ILIKE '%' || $2 || '%'
+			OR COALESCE(p.nickname, '') ILIKE '%' || $2 || '%'
 			OR COALESCE(p.first_name, '') ILIKE '%' || $2 || '%'
 			OR COALESCE(p.last_name, '') ILIKE '%' || $2 || '%'
 			OR TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')) ILIKE '%' || $2 || '%'
@@ -1327,7 +1335,7 @@ func (r *PGUserRepository) ListFollowingByUserID(
 	)
 	query := `
 		SELECT
-			p.user_id, p.first_name, p.last_name, p.display_name, p.bio, p.birth_date,
+			p.user_id, p.first_name, p.last_name, p.nickname, p.bio, p.birth_date,
 			p.avatar_file_id, p.city_id, p.country_code, p.locale, p.timezone, p.currency,
 			p.is_profile_completed,
 			COALESCE(u.last_seen_at >= NOW() - INTERVAL '2 minutes', FALSE) AS is_online,
@@ -1340,7 +1348,7 @@ func (r *PGUserRepository) ListFollowingByUserID(
 		  AND u.is_deleted = FALSE
 		  AND (
 			$2 = ''
-			OR COALESCE(p.display_name, '') ILIKE '%' || $2 || '%'
+			OR COALESCE(p.nickname, '') ILIKE '%' || $2 || '%'
 			OR COALESCE(p.first_name, '') ILIKE '%' || $2 || '%'
 			OR COALESCE(p.last_name, '') ILIKE '%' || $2 || '%'
 			OR TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')) ILIKE '%' || $2 || '%'
@@ -1383,7 +1391,7 @@ func buildProfileConnectionOrderClause(
 		sortDirection = "ASC"
 	}
 
-	nameExpr := "LOWER(COALESCE(NULLIF(p.display_name, ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.user_id::text))"
+	nameExpr := "LOWER(COALESCE(NULLIF(p.nickname, ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.user_id::text))"
 	onlineExpr := "COALESCE(u.last_seen_at >= NOW() - INTERVAL '2 minutes', FALSE)"
 
 	switch strings.ToLower(strings.TrimSpace(sort)) {
@@ -1419,7 +1427,7 @@ func scanProfileListRows(rows pgx.Rows, itemName string) ([]*model.UserProfile, 
 			&item.UserID,
 			&item.FirstName,
 			&item.LastName,
-			&item.DisplayName,
+			&item.Nickname,
 			&item.Bio,
 			&item.BirthDate,
 			&item.AvatarFileID,
@@ -1451,7 +1459,7 @@ func scanFriendRequestListRows(rows pgx.Rows) ([]*model.UserFriendRequest, error
 			&profile.UserID,
 			&profile.FirstName,
 			&profile.LastName,
-			&profile.DisplayName,
+			&profile.Nickname,
 			&profile.Bio,
 			&profile.BirthDate,
 			&profile.AvatarFileID,

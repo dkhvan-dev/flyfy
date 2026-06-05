@@ -111,7 +111,7 @@ func publicProfileFromProto(userID uuid.UUID, item *userv1.PublicProfile) port.P
 
 	return port.PublicUserProfile{
 		UserID:       userID,
-		DisplayName:  strings.TrimSpace(item.GetDisplayName()),
+		DisplayName:  strings.TrimSpace(item.GetNickname()),
 		AvatarFileID: avatarFileID,
 		IsOnline:     item.GetIsOnline(),
 		LastSeenAt:   parseOptionalRFC3339(item.GetLastSeenAt()),
@@ -124,7 +124,7 @@ func userProfileFromProto(userID uuid.UUID, profile *userv1.UserProfile) port.Pu
 		avatarFileID = &v
 	}
 
-	displayName := strings.TrimSpace(profile.GetDisplayName())
+	displayName := strings.TrimSpace(profile.GetNickname())
 	if displayName == "" {
 		displayName = strings.TrimSpace(strings.Join([]string{
 			strings.TrimSpace(profile.GetFirstName()),

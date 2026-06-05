@@ -49,7 +49,7 @@ func TestListAdminUsersMasksSensitiveIdentityValues(t *testing.T) {
 		listItems: []model.AdminUserListItem{
 			{
 				UserID:        userID,
-				DisplayName:   "Aruzhan",
+				Nickname:      "Aruzhan",
 				MaskedPhone:   "+77011234567",
 				MaskedEmail:   "aru@example.com",
 				AccountStatus: string("ACTIVE"),
@@ -90,7 +90,7 @@ func TestGetAdminUserDetailMasksSensitiveIdentityValues(t *testing.T) {
 	repo := &adminUserTestRepository{
 		detail: model.AdminUserDetail{
 			UserID:        userID,
-			DisplayName:   "Aruzhan",
+			Nickname:      "Aruzhan",
 			MaskedPhone:   "+77011234567",
 			MaskedEmail:   "aru@example.com",
 			AccountStatus: "ACTIVE",

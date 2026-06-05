@@ -301,20 +301,24 @@ func TestSendFriendRequestRejectsSelf(t *testing.T) {
 }
 
 type friendshipTestRepository struct {
-	users       map[uuid.UUID]*model.User
-	bySubject   map[string]uuid.UUID
-	friendships map[string]*model.UserFriendship
-	follows     map[string]struct{}
-	roles       map[uuid.UUID]map[enum.SystemRole]struct{}
+	users          map[uuid.UUID]*model.User
+	bySubject      map[string]uuid.UUID
+	profiles       map[uuid.UUID]*model.UserProfile
+	nicknameOwners map[string]uuid.UUID
+	friendships    map[string]*model.UserFriendship
+	follows        map[string]struct{}
+	roles          map[uuid.UUID]map[enum.SystemRole]struct{}
 }
 
 func newFriendshipTestRepository(userIDs ...uuid.UUID) *friendshipTestRepository {
 	repo := &friendshipTestRepository{
-		users:       make(map[uuid.UUID]*model.User, len(userIDs)),
-		bySubject:   make(map[string]uuid.UUID, len(userIDs)),
-		friendships: make(map[string]*model.UserFriendship),
-		follows:     make(map[string]struct{}),
-		roles:       make(map[uuid.UUID]map[enum.SystemRole]struct{}, len(userIDs)),
+		users:          make(map[uuid.UUID]*model.User, len(userIDs)),
+		bySubject:      make(map[string]uuid.UUID, len(userIDs)),
+		profiles:       make(map[uuid.UUID]*model.UserProfile, len(userIDs)),
+		nicknameOwners: make(map[string]uuid.UUID),
+		friendships:    make(map[string]*model.UserFriendship),
+		follows:        make(map[string]struct{}),
+		roles:          make(map[uuid.UUID]map[enum.SystemRole]struct{}, len(userIDs)),
 	}
 	for index, userID := range userIDs {
 		subject := userID.String()
@@ -453,16 +457,31 @@ func (r *friendshipTestRepository) GetProfileByUserID(_ context.Context, userID 
 	return r.profileForUserID(userID), nil
 }
 
-func (r *friendshipTestRepository) IsDisplayNameTaken(context.Context, string, uuid.UUID) (bool, error) {
+func (r *friendshipTestRepository) IsNicknameTaken(_ context.Context, nickname string, excludeUserID uuid.UUID) (bool, error) {
+	ownerUserID, ok := r.nicknameOwners[strings.ToLower(strings.TrimSpace(nickname))]
+	if ok && ownerUserID != excludeUserID {
+		return true, nil
+	}
 	return false, nil
 }
 
-func (r *friendshipTestRepository) GetSettingsByUserID(context.Context, uuid.UUID) (*model.UserSettings, error) {
-	return nil, nil
+func (r *friendshipTestRepository) GetSettingsByUserID(_ context.Context, userID uuid.UUID) (*model.UserSettings, error) {
+	return &model.UserSettings{
+		UserID:                    userID,
+		NotificationsPushEnabled:  true,
+		NotificationsEmailEnabled: true,
+		NotificationsSMSEnabled:   true,
+		CreatedAt:                 time.Now().UTC(),
+		UpdatedAt:                 time.Now().UTC(),
+	}, nil
 }
 
-func (r *friendshipTestRepository) GetReputationByUserID(context.Context, uuid.UUID) (*model.UserReputation, error) {
-	return nil, nil
+func (r *friendshipTestRepository) GetReputationByUserID(_ context.Context, userID uuid.UUID) (*model.UserReputation, error) {
+	return &model.UserReputation{
+		UserID:    userID,
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+	}, nil
 }
 
 func (r *friendshipTestRepository) ListRolesByUserID(context.Context, uuid.UUID) ([]*model.UserSystemRole, error) {
@@ -477,7 +496,12 @@ func (r *friendshipTestRepository) IsFollowing(context.Context, uuid.UUID, uuid.
 	return false, nil
 }
 
-func (r *friendshipTestRepository) UpdateProfile(context.Context, *model.UserProfile) error {
+func (r *friendshipTestRepository) UpdateProfile(_ context.Context, profile *model.UserProfile) error {
+	profileCopy := *profile
+	r.profiles[profile.UserID] = &profileCopy
+	if profile.Nickname != nil {
+		r.nicknameOwners[strings.ToLower(strings.TrimSpace(*profile.Nickname))] = profile.UserID
+	}
 	return nil
 }
 
@@ -610,14 +634,18 @@ func (r *friendshipTestRepository) ListFollowingByUserID(
 }
 
 func (r *friendshipTestRepository) profileForUserID(userID uuid.UUID) *model.UserProfile {
+	if profile := r.profiles[userID]; profile != nil {
+		profileCopy := *profile
+		return &profileCopy
+	}
 	name := "User " + userID.String()[:8]
 	return &model.UserProfile{
-		UserID:      userID,
-		DisplayName: &name,
-		Locale:      "en",
-		Timezone:    "UTC",
-		CreatedAt:   time.Now().UTC(),
-		UpdatedAt:   time.Now().UTC(),
+		UserID:    userID,
+		Nickname:  &name,
+		Locale:    "en",
+		Timezone:  "UTC",
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
 	}
 }
 

@@ -17,7 +17,7 @@ class PublicGuideVm {
     this.experienceYears,
     this.firstName,
     this.lastName,
-    this.displayName,
+    this.nickname,
     this.avatarFileId,
     this.countryCode,
   });
@@ -39,7 +39,7 @@ class PublicGuideVm {
   final List<String> excursionLanguageCodes;
   final String? firstName;
   final String? lastName;
-  final String? displayName;
+  final String? nickname;
   final String? avatarFileId;
   final String? countryCode;
 
@@ -89,7 +89,7 @@ class PublicGuideVm {
       ),
       firstName: _nullableString(userProfile['firstName']),
       lastName: _nullableString(userProfile['lastName']),
-      displayName: _nullableString(userProfile['displayName']),
+      nickname: _nullableString(userProfile['nickname']),
       avatarFileId: _nullableString(userProfile['avatarFileId']),
       countryCode: _nullableString(userProfile['countryCode']),
     );
@@ -115,7 +115,7 @@ class PublicGuideVm {
           excursionLanguageCodes ?? this.excursionLanguageCodes,
       firstName: firstName,
       lastName: lastName,
-      displayName: displayName,
+      nickname: nickname,
       avatarFileId: avatarFileId,
       countryCode: countryCode,
     );
@@ -130,7 +130,7 @@ class PublicGuideVm {
     ].where((value) => value.isNotEmpty).join(' ');
     if (legalName.isNotEmpty) return legalName;
 
-    final display = displayName?.trim() ?? '';
+    final display = nickname?.trim() ?? '';
     if (display.isNotEmpty) return display;
 
     final shortId = userId.replaceAll('-', '');

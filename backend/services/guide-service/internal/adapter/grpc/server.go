@@ -259,7 +259,7 @@ func toProtoPublicUserProfile(profile *app.PublicUserProfile) *guidev1.PublicUse
 	}
 	return &guidev1.PublicUserProfile{
 		UserId:       profile.UserID.String(),
-		DisplayName:  valueOrEmpty(profile.DisplayName),
+		Nickname:     valueOrEmpty(profile.Nickname),
 		AvatarFileId: avatarFileID,
 		CountryCode:  valueOrEmpty(profile.CountryCode),
 		Locale:       profile.Locale,

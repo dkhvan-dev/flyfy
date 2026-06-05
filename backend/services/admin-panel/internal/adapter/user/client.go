@@ -136,7 +136,7 @@ func adminUserListItemFromProto(item *userv1.AdminUserListItem) model.AdminUserL
 	userID, _ := uuid.Parse(strings.TrimSpace(item.GetUserId()))
 	return model.AdminUserListItem{
 		UserID:        userID,
-		DisplayName:   item.GetDisplayName(),
+		Nickname:      item.GetNickname(),
 		MaskedPhone:   item.GetMaskedPhone(),
 		MaskedEmail:   item.GetMaskedEmail(),
 		CountryCode:   item.GetCountryCode(),
@@ -158,7 +158,7 @@ func adminUserDetailFromProto(item *userv1.AdminUserDetail) (model.AdminUserDeta
 	}
 	return model.AdminUserDetail{
 		UserID:        userID,
-		DisplayName:   item.GetDisplayName(),
+		Nickname:      item.GetNickname(),
 		MaskedPhone:   item.GetMaskedPhone(),
 		MaskedEmail:   item.GetMaskedEmail(),
 		CountryCode:   item.GetCountryCode(),

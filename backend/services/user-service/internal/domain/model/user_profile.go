@@ -19,7 +19,7 @@ type UserProfile struct {
 	UserID             uuid.UUID  `json:"user_id"`
 	FirstName          *string    `json:"first_name,omitempty"`
 	LastName           *string    `json:"last_name,omitempty"`
-	DisplayName        *string    `json:"display_name,omitempty"`
+	Nickname           *string    `json:"nickname,omitempty"`
 	Bio                *string    `json:"bio,omitempty"`
 	BirthDate          *time.Time `json:"birth_date,omitempty"`
 	AvatarFileID       *uuid.UUID `json:"avatar_file_id,omitempty"`
@@ -79,7 +79,7 @@ func (p *UserProfile) Validate() error {
 type UpdateUserProfileParams struct {
 	FirstName    *string
 	LastName     *string
-	DisplayName  *string
+	Nickname     *string
 	Bio          *string
 	BirthDate    *time.Time
 	AvatarFileID *uuid.UUID
@@ -97,7 +97,7 @@ func (p *UserProfile) ApplyUpdate(params UpdateUserProfileParams) error {
 
 	p.FirstName = normalizeOptionalString(params.FirstName)
 	p.LastName = normalizeOptionalString(params.LastName)
-	p.DisplayName = normalizeOptionalString(params.DisplayName)
+	p.Nickname = normalizeOptionalString(params.Nickname)
 	p.Bio = normalizeOptionalString(params.Bio)
 	p.BirthDate = params.BirthDate
 	p.AvatarFileID = params.AvatarFileID

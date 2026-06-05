@@ -417,7 +417,7 @@ func (u *ExcursionUseCase) CreateExcursion(ctx context.Context, input CreateExcu
 		GuideRatingAvg:       permission.RatingAvg,
 		GuideReviewsCount:    permission.ReviewsCount,
 		GuideExperienceYears: permission.ExperienceYears,
-		GuideDisplayName:     permission.DisplayName,
+		GuideDisplayName:     permission.GuideDisplayName,
 		GuideNickname:        permission.Nickname,
 		GuideFirstName:       permission.FirstName,
 		GuideLastName:        permission.LastName,
@@ -514,7 +514,7 @@ func (u *ExcursionUseCase) UpdateExcursion(ctx context.Context, input UpdateExcu
 		permission.RatingAvg,
 		permission.ReviewsCount,
 		permission.ExperienceYears,
-		permission.DisplayName,
+		permission.GuideDisplayName,
 		permission.Nickname,
 		permission.FirstName,
 		permission.LastName,
@@ -643,7 +643,7 @@ func (u *ExcursionUseCase) PublishExcursion(ctx context.Context, excursionID uui
 		permission.RatingAvg,
 		permission.ReviewsCount,
 		permission.ExperienceYears,
-		permission.DisplayName,
+		permission.GuideDisplayName,
 		permission.Nickname,
 		permission.FirstName,
 		permission.LastName,
@@ -2722,7 +2722,7 @@ func (u *ExcursionUseCase) enrichExcursionReviewAuthors(ctx context.Context, ite
 			continue
 		}
 		item.Author.UserID = item.TouristUserID
-		item.Author.DisplayName = profile.DisplayName
+		item.Author.Nickname = profile.Nickname
 		item.Author.AvatarFileID = profile.AvatarFileID
 	}
 }
@@ -2768,7 +2768,7 @@ func (u *ExcursionUseCase) enrichGuideReviewAuthors(ctx context.Context, items [
 		}
 		item.Author.UserID = item.TouristUserID
 		if profile, ok := profiles[item.TouristUserID]; ok {
-			item.Author.DisplayName = profile.DisplayName
+			item.Author.Nickname = profile.Nickname
 			item.Author.AvatarFileID = profile.AvatarFileID
 		}
 	}
@@ -2809,7 +2809,7 @@ func (u *ExcursionUseCase) enrichExcursionBookingAuthors(ctx context.Context, it
 			continue
 		}
 		item.Author.UserID = item.Booking.TouristUserID
-		item.Author.DisplayName = profile.DisplayName
+		item.Author.Nickname = profile.Nickname
 		item.Author.AvatarFileID = profile.AvatarFileID
 	}
 }

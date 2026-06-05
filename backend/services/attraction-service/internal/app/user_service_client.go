@@ -8,7 +8,7 @@ import (
 
 type PublicUserProfile struct {
 	UserID       uuid.UUID
-	DisplayName  *string
+	Nickname     *string
 	AvatarFileID *uuid.UUID
 	CountryCode  *string
 	Locale       string

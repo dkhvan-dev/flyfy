@@ -364,7 +364,7 @@ void main() {
       expect(source, contains('_normalizeOfferSearchText'));
       expect(source, contains('_queryMatchesResolvedGuideProfile'));
       expect(source, contains('localizedExcursionLanguageLabel(l10n, code)'));
-      expect(source, contains('profile.displayName'));
+      expect(source, contains('profile.nickname'));
       expect(source, contains('profile.primaryPhone'));
       expect(source, contains('_ExcursionOffersFilterSheet'));
       expect(source, contains('availableDate'));

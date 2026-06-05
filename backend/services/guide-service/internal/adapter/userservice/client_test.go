@@ -23,12 +23,12 @@ func TestGetPublicUserProfilesMapsLegalNameFields(t *testing.T) {
 	userv1.RegisterUserServiceServer(server, &publicProfilesServer{
 		items: []*userv1.PublicProfile{
 			{
-				UserId:      userID.String(),
-				FirstName:   firstName,
-				LastName:    lastName,
-				DisplayName: "@nomad_aru",
-				Locale:      "ru",
-				Timezone:    "Asia/Almaty",
+				UserId:    userID.String(),
+				FirstName: firstName,
+				LastName:  lastName,
+				Nickname:  "@nomad_aru",
+				Locale:    "ru",
+				Timezone:  "Asia/Almaty",
 			},
 		},
 	})

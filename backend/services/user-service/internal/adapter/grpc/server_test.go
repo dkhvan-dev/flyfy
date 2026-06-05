@@ -22,15 +22,15 @@ func TestServerExposesAdminUserReadRPCs(t *testing.T) {
 func TestToProtoPublicProfileIncludesLegalNameFields(t *testing.T) {
 	firstName := "Aruzhan"
 	lastName := "Tulegenova"
-	displayName := "@nomad_aru"
+	nickname := "@nomad_aru"
 
 	got := toProtoPublicProfile(&model.UserProfile{
-		UserID:      uuid.New(),
-		FirstName:   &firstName,
-		LastName:    &lastName,
-		DisplayName: &displayName,
-		Locale:      "ru",
-		Timezone:    "Asia/Almaty",
+		UserID:    uuid.New(),
+		FirstName: &firstName,
+		LastName:  &lastName,
+		Nickname:  &nickname,
+		Locale:    "ru",
+		Timezone:  "Asia/Almaty",
 	})
 
 	if got.GetFirstName() != firstName {
@@ -39,8 +39,8 @@ func TestToProtoPublicProfileIncludesLegalNameFields(t *testing.T) {
 	if got.GetLastName() != lastName {
 		t.Fatalf("last name = %q, want %q", got.GetLastName(), lastName)
 	}
-	if got.GetDisplayName() != displayName {
-		t.Fatalf("display name = %q, want %q", got.GetDisplayName(), displayName)
+	if got.GetNickname() != nickname {
+		t.Fatalf("nickname = %q, want %q", got.GetNickname(), nickname)
 	}
 }
 
@@ -80,7 +80,7 @@ func TestToProtoAdminUserListItemMapsTimestamps(t *testing.T) {
 
 	got := toProtoAdminUserListItem(model.AdminUserListItem{
 		UserID:        userID,
-		DisplayName:   "Aruzhan",
+		Nickname:      "Aruzhan",
 		MaskedPhone:   "+7******67",
 		MaskedEmail:   "a***@***",
 		CountryCode:   "KZ",
@@ -91,7 +91,7 @@ func TestToProtoAdminUserListItemMapsTimestamps(t *testing.T) {
 		LastActiveAt:  &lastActiveAt,
 	})
 
-	if got.GetUserId() != userID.String() || got.GetDisplayName() != "Aruzhan" {
+	if got.GetUserId() != userID.String() || got.GetNickname() != "Aruzhan" {
 		t.Fatalf("basic response fields = %+v", got)
 	}
 	if got.GetCreatedAt().AsTime() != createdAt {

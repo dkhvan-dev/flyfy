@@ -21,7 +21,9 @@ func mapError(err error) error {
 		errors.Is(err, model.ErrInvalidLocale),
 		errors.Is(err, model.ErrInvalidTimezone),
 		errors.Is(err, model.ErrInvalidCurrency),
-		errors.Is(err, model.ErrInvalidSystemRole):
+		errors.Is(err, model.ErrInvalidSystemRole),
+		errors.Is(err, app.ErrNicknameRequired),
+		errors.Is(err, app.ErrNicknameImmutable):
 		return status.Error(codes.InvalidArgument, err.Error())
 
 	case errors.Is(err, app.ErrUserNotFound),
@@ -32,6 +34,7 @@ func mapError(err error) error {
 
 	case errors.Is(err, app.ErrUserAlreadyExists),
 		errors.Is(err, app.ErrRoleAlreadyGranted),
+		errors.Is(err, app.ErrNicknameAlreadyTaken),
 		errors.Is(err, repository.ErrConflict):
 		return status.Error(codes.AlreadyExists, err.Error())
 

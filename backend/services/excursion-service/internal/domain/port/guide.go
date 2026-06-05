@@ -7,17 +7,17 @@ import (
 )
 
 type GuideExcursionPermission struct {
-	GuideProfileID  uuid.UUID
-	GuideUserID     uuid.UUID
-	Allowed         bool
-	RatingAvg       float64
-	ReviewsCount    int
-	ExperienceYears int
-	DisplayName     string
-	Nickname        string
-	FirstName       string
-	LastName        string
-	GuideSearchText string
+	GuideProfileID   uuid.UUID
+	GuideUserID      uuid.UUID
+	Allowed          bool
+	RatingAvg        float64
+	ReviewsCount     int
+	ExperienceYears  int
+	GuideDisplayName string
+	Nickname         string
+	FirstName        string
+	LastName         string
+	GuideSearchText  string
 }
 
 type GuideVerifier interface {

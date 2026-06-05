@@ -1,7 +1,7 @@
 class ProfileFollowerVm {
   const ProfileFollowerVm({
     required this.userId,
-    this.displayName,
+    this.nickname,
     this.avatarFileId,
     this.isOnline = false,
     this.lastSeenAt,
@@ -9,7 +9,7 @@ class ProfileFollowerVm {
   });
 
   final String userId;
-  final String? displayName;
+  final String? nickname;
   final String? avatarFileId;
   final bool isOnline;
   final DateTime? lastSeenAt;
@@ -18,7 +18,7 @@ class ProfileFollowerVm {
   factory ProfileFollowerVm.fromJson(Map<String, dynamic> json) {
     return ProfileFollowerVm(
       userId: json['userId']?.toString() ?? '',
-      displayName: json['displayName']?.toString(),
+      nickname: json['nickname']?.toString(),
       avatarFileId: json['avatarFileId']?.toString(),
       isOnline: json['isOnline'] == true,
       lastSeenAt: DateTime.tryParse(json['lastSeenAt']?.toString() ?? ''),
@@ -26,13 +26,13 @@ class ProfileFollowerVm {
     );
   }
 
-  String displayNameOrFallback(String fallback) {
-    final value = (displayName ?? '').trim();
+  String nicknameOrFallback(String fallback) {
+    final value = (nickname ?? '').trim();
     return value.isEmpty ? fallback : value;
   }
 
   String get initials {
-    final source = (displayName ?? '').trim();
+    final source = (nickname ?? '').trim();
     if (source.isEmpty) return 'U';
 
     final parts = source

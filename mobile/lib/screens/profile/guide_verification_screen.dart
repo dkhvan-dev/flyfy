@@ -574,7 +574,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
         UpdateProfileRequest(
           firstName: nameParts.$1,
           lastName: nameParts.$2,
-          displayName: profile.displayName,
+          nickname: profile.nickname,
           bio: profile.bio,
           birthDate: _birthDate,
           avatarFileId: profile.avatarFileId,

@@ -36,7 +36,7 @@ type UserProfileResponse struct {
 	UserID             string  `json:"userId"`
 	FirstName          *string `json:"firstName,omitempty"`
 	LastName           *string `json:"lastName,omitempty"`
-	DisplayName        *string `json:"displayName,omitempty"`
+	Nickname           *string `json:"nickname,omitempty"`
 	Bio                *string `json:"bio,omitempty"`
 	BirthDate          *string `json:"birthDate,omitempty"`
 	AvatarFileID       *string `json:"avatarFileId,omitempty"`
@@ -76,7 +76,7 @@ type UserReputationResponse struct {
 type UpdateMyProfileRequest struct {
 	FirstName    *string `json:"firstName,omitempty"`
 	LastName     *string `json:"lastName,omitempty"`
-	DisplayName  *string `json:"displayName,omitempty"`
+	Nickname     *string `json:"nickname,omitempty"`
 	Bio          *string `json:"bio,omitempty"`
 	BirthDate    *string `json:"birthDate,omitempty"`    // YYYY-MM-DD
 	AvatarFileID *string `json:"avatarFileId,omitempty"` // UUID
@@ -101,7 +101,7 @@ type GrantRoleRequest struct {
 
 type PublicProfileResponse struct {
 	UserID       string  `json:"userId"`
-	DisplayName  *string `json:"displayName,omitempty"`
+	Nickname     *string `json:"nickname,omitempty"`
 	Bio          *string `json:"bio,omitempty"`
 	AvatarFileID *string `json:"avatarFileId,omitempty"`
 	CountryCode  *string `json:"countryCode,omitempty"`
@@ -113,7 +113,7 @@ type PublicProfileResponse struct {
 
 type FollowersListItemResponse struct {
 	UserID       string  `json:"userId"`
-	DisplayName  *string `json:"displayName,omitempty"`
+	Nickname     *string `json:"nickname,omitempty"`
 	AvatarFileID *string `json:"avatarFileId,omitempty"`
 	IsOnline     bool    `json:"isOnline"`
 	LastSeenAt   *string `json:"lastSeenAt,omitempty"`

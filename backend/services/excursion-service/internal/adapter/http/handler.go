@@ -1810,7 +1810,7 @@ func toExcursionBookingListItemResponse(item *model.ExcursionBookingListItem) dt
 		}
 		response.Author = &dto.ReviewAuthorResponse{
 			UserID:       item.Author.UserID.String(),
-			DisplayName:  item.Author.DisplayName,
+			Nickname:     item.Author.Nickname,
 			AvatarFileID: avatarFileID,
 		}
 	}
@@ -1913,7 +1913,7 @@ func toExcursionReviewResponse(item *model.ExcursionReview, guideDisplayName str
 		TouristUserID:     item.TouristUserID.String(),
 		Author: dto.ReviewAuthorResponse{
 			UserID:       authorUserID.String(),
-			DisplayName:  item.Author.DisplayName,
+			Nickname:     item.Author.Nickname,
 			AvatarFileID: authorAvatarFileID,
 		},
 		Rating:      item.Rating,
@@ -1947,7 +1947,7 @@ func toGuideReviewResponse(item *model.GuideReview) *dto.GuideReviewResponse {
 		TouristUserID:  item.TouristUserID.String(),
 		Author: dto.ReviewAuthorResponse{
 			UserID:       authorUserID.String(),
-			DisplayName:  item.Author.DisplayName,
+			Nickname:     item.Author.Nickname,
 			AvatarFileID: authorAvatarFileID,
 		},
 		Rating:      item.Rating,

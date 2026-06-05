@@ -8,7 +8,7 @@ import (
 
 type UserProfileProjection struct {
 	UserID       uuid.UUID
-	DisplayName  *string
+	Nickname     *string
 	AvatarFileID *uuid.UUID
 }
 

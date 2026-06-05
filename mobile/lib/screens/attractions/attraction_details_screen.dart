@@ -2134,7 +2134,7 @@ class _ReviewCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            review.author.displayName ??
+                            review.author.nickname ??
                                 l10n.attractionTravelerFallback,
                             style: TextStyle(
                               color: AppColors.textPrimary,

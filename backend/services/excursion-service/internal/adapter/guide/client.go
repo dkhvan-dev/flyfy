@@ -68,15 +68,15 @@ func (c *Client) VerifyExcursionGuide(ctx context.Context, userID uuid.UUID) (po
 	userProfile := resp.GetAggregate().GetUserProfile()
 	firstName := strings.TrimSpace(userProfile.GetFirstName())
 	lastName := strings.TrimSpace(userProfile.GetLastName())
-	nickname := normalizeGuideNamePart(userProfile.GetDisplayName())
+	nickname := normalizeGuideNamePart(userProfile.GetNickname())
 	displayName := guideDisplayName(
 		nickname,
 		firstName,
 		lastName,
 	)
 	searchText := guideSearchText(
-		nickname,
 		displayName,
+		nickname,
 		firstName,
 		lastName,
 		fullName(firstName, lastName),
@@ -93,24 +93,24 @@ func (c *Client) VerifyExcursionGuide(ctx context.Context, userID uuid.UUID) (po
 		profile.GetIsExcursionGuideAvailable()
 
 	return port.GuideExcursionPermission{
-		GuideProfileID:  profileID,
-		GuideUserID:     profileUserID,
-		Allowed:         allowed,
-		RatingAvg:       profile.GetRatingAvg(),
-		ReviewsCount:    int(profile.GetReviewsCount()),
-		ExperienceYears: int(profile.GetExperienceYears()),
-		DisplayName:     displayName,
-		Nickname:        nickname,
-		FirstName:       firstName,
-		LastName:        lastName,
-		GuideSearchText: searchText,
+		GuideProfileID:   profileID,
+		GuideUserID:      profileUserID,
+		Allowed:          allowed,
+		RatingAvg:        profile.GetRatingAvg(),
+		ReviewsCount:     int(profile.GetReviewsCount()),
+		ExperienceYears:  int(profile.GetExperienceYears()),
+		GuideDisplayName: displayName,
+		Nickname:         nickname,
+		FirstName:        firstName,
+		LastName:         lastName,
+		GuideSearchText:  searchText,
 	}, nil
 }
 
-func guideDisplayName(displayName string, firstName string, lastName string) string {
-	displayName = normalizeGuideNamePart(displayName)
-	if displayName != "" {
-		return displayName
+func guideDisplayName(nickname string, firstName string, lastName string) string {
+	nickname = normalizeGuideNamePart(nickname)
+	if nickname != "" {
+		return nickname
 	}
 	return fullName(firstName, lastName)
 }

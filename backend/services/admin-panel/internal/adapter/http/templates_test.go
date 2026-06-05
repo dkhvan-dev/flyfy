@@ -258,7 +258,7 @@ func TestRendererRendersUserModerationViews(t *testing.T) {
 			Items: []model.AdminUserListItem{
 				{
 					UserID:                  userID,
-					DisplayName:             "Aruzhan Traveler",
+					Nickname:                "Aruzhan Traveler",
 					MaskedPhone:             "+7******67",
 					MaskedEmail:             "a***@***",
 					CountryCode:             "KZ",
@@ -318,7 +318,7 @@ func TestRendererRendersUserModerationViews(t *testing.T) {
 	pageData.Data = NewAdminUserDetailViewData(model.AdminUserDetailPage{
 		User: model.AdminUserDetail{
 			UserID:                  userID,
-			DisplayName:             "Aruzhan Traveler",
+			Nickname:                "Aruzhan Traveler",
 			MaskedPhone:             "+7******67",
 			MaskedEmail:             "a***@***",
 			CountryCode:             "KZ",

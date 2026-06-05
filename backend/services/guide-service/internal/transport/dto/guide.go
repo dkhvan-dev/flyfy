@@ -214,7 +214,7 @@ type PublicUserCard struct {
 	UserID       string  `json:"userId"`
 	FirstName    *string `json:"firstName,omitempty"`
 	LastName     *string `json:"lastName,omitempty"`
-	DisplayName  *string `json:"displayName,omitempty"`
+	Nickname     *string `json:"nickname,omitempty"`
 	AvatarFileID *string `json:"avatarFileId,omitempty"`
 	CountryCode  *string `json:"countryCode,omitempty"`
 	Locale       string  `json:"locale"`

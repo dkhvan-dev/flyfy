@@ -527,7 +527,7 @@ type UpdateProfileInput struct {
 	UserID       uuid.UUID
 	FirstName    *string
 	LastName     *string
-	DisplayName  *string
+	Nickname     *string
 	Bio          *string
 	BirthDate    *time.Time
 	AvatarFileID *uuid.UUID
@@ -547,6 +547,29 @@ func (u *UserUseCase) UpdateProfile(ctx context.Context, userID uuid.UUID, input
 		return nil, ErrProfileNotFound
 	}
 
+	currentNickname := normalizeOptionalString(profile.Nickname)
+	inputNickname := normalizeOptionalString(input.Nickname)
+	nextNickname := currentNickname
+	if currentNickname != nil {
+		if inputNickname != nil && *inputNickname != *currentNickname {
+			return nil, ErrNicknameImmutable
+		}
+	} else {
+		if inputNickname == nil {
+			return nil, ErrNicknameRequired
+		}
+
+		taken, err := u.repo.IsNicknameTaken(ctx, *inputNickname, userID)
+		if err != nil {
+			return nil, fmt.Errorf("check nickname uniqueness: %w", err)
+		}
+		if taken {
+			return nil, ErrNicknameAlreadyTaken
+		}
+
+		nextNickname = inputNickname
+	}
+
 	if avatarFileID := input.AvatarFileID; avatarFileID != nil {
 		avatarChanged := profile.AvatarFileID == nil || *profile.AvatarFileID != *avatarFileID
 		if avatarChanged {
@@ -559,23 +582,9 @@ func (u *UserUseCase) UpdateProfile(ctx context.Context, userID uuid.UUID, input
 		}
 	}
 
-	nextDisplayName := profile.DisplayName
-	if input.DisplayName != nil {
-		nextDisplayName = normalizeOptionalString(input.DisplayName)
-	}
-	if nextDisplayName != nil {
-		taken, err := u.repo.IsDisplayNameTaken(ctx, *nextDisplayName, userID)
-		if err != nil {
-			return nil, fmt.Errorf("check display name uniqueness: %w", err)
-		}
-		if taken {
-			return nil, ErrDisplayNameAlreadyTaken
-		}
-	}
-
 	profile.FirstName = normalizeOptionalString(input.FirstName)
 	profile.LastName = normalizeOptionalString(input.LastName)
-	profile.DisplayName = normalizeOptionalString(input.DisplayName)
+	profile.Nickname = nextNickname
 	profile.Bio = normalizeOptionalString(input.Bio)
 	profile.BirthDate = input.BirthDate
 	profile.AvatarFileID = input.AvatarFileID
@@ -1161,5 +1170,10 @@ func computeProfileCompleted(profile *model.UserProfile) bool {
 		countryCode = strings.TrimSpace(*profile.CountryCode)
 	}
 
-	return firstName != "" && lastName != "" && countryCode != ""
+	nickname := ""
+	if profile.Nickname != nil {
+		nickname = strings.TrimSpace(*profile.Nickname)
+	}
+
+	return firstName != "" && lastName != "" && nickname != "" && countryCode != ""
 }

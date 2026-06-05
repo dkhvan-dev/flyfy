@@ -37,7 +37,7 @@ var (
 
 type StoryAuthor struct {
 	UserID       uuid.UUID
-	DisplayName  *string
+	Nickname     *string
 	AvatarFileID *uuid.UUID
 	CountryCode  *string
 	Locale       string
@@ -1060,7 +1060,7 @@ func (u *StoryUseCase) buildCommentViews(
 func toStoryAuthor(userID uuid.UUID, profile PublicUserProfile) StoryAuthor {
 	return StoryAuthor{
 		UserID:       userID,
-		DisplayName:  profile.DisplayName,
+		Nickname:     profile.Nickname,
 		AvatarFileID: profile.AvatarFileID,
 		CountryCode:  profile.CountryCode,
 		Locale:       profile.Locale,

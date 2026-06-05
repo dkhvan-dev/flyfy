@@ -225,7 +225,7 @@ message PublicUserProfile {
   reserved 7;
 
   string user_id = 1;
-  string display_name = 2;
+  string nickname = 2;
   string avatar_file_id = 3;
   string country_code = 4;
   string locale = 5;

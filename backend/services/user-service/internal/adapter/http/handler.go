@@ -379,7 +379,7 @@ func (h *Handler) writeProfileConnectionsPage(
 
 		resp = append(resp, dto.FollowersListItemResponse{
 			UserID:       item.UserID.String(),
-			DisplayName:  item.DisplayName,
+			Nickname:     item.Nickname,
 			AvatarFileID: avatarFileID,
 			IsOnline:     item.IsOnline,
 			LastSeenAt:   lastSeenAt,
@@ -416,7 +416,7 @@ func (h *Handler) writeFriendRequestsPage(
 
 		resp = append(resp, dto.FollowersListItemResponse{
 			UserID:       item.Profile.UserID.String(),
-			DisplayName:  item.Profile.DisplayName,
+			Nickname:     item.Profile.Nickname,
 			AvatarFileID: avatarFileID,
 			IsOnline:     item.Profile.IsOnline,
 			LastSeenAt:   lastSeenAt,
@@ -476,7 +476,7 @@ func (h *Handler) UpdateMyProfile(w http.ResponseWriter, r *http.Request) {
 		UserID:       aggregate.User.ID,
 		FirstName:    req.FirstName,
 		LastName:     req.LastName,
-		DisplayName:  req.DisplayName,
+		Nickname:     req.Nickname,
 		Bio:          req.Bio,
 		BirthDate:    birthDate,
 		AvatarFileID: avatarFileID,
@@ -495,7 +495,9 @@ func (h *Handler) UpdateMyProfile(w http.ResponseWriter, r *http.Request) {
 			errors.Is(err, app.ErrAvatarFileNotFound),
 			errors.Is(err, app.ErrAvatarFileNotReady),
 			errors.Is(err, app.ErrAvatarFileNotAllowed),
-			errors.Is(err, app.ErrDisplayNameAlreadyTaken):
+			errors.Is(err, app.ErrNicknameRequired),
+			errors.Is(err, app.ErrNicknameImmutable),
+			errors.Is(err, app.ErrNicknameAlreadyTaken):
 			writeError(w, http.StatusBadRequest, err.Error())
 		case errors.Is(err, app.ErrProfileNotFound):
 			writeError(w, http.StatusNotFound, err.Error())
@@ -586,7 +588,7 @@ func toUserProfileResponse(profile *model.UserProfile) dto.UserProfileResponse {
 		UserID:             profile.UserID.String(),
 		FirstName:          profile.FirstName,
 		LastName:           profile.LastName,
-		DisplayName:        profile.DisplayName,
+		Nickname:           profile.Nickname,
 		Bio:                profile.Bio,
 		BirthDate:          birthDate,
 		AvatarFileID:       avatarFileID,
@@ -1082,7 +1084,7 @@ func (h *Handler) ListPublicProfiles(w http.ResponseWriter, r *http.Request) {
 
 		resp = append(resp, dto.PublicProfileResponse{
 			UserID:       item.UserID.String(),
-			DisplayName:  item.DisplayName,
+			Nickname:     item.Nickname,
 			Bio:          item.Bio,
 			AvatarFileID: avatarFileID,
 			CountryCode:  item.CountryCode,

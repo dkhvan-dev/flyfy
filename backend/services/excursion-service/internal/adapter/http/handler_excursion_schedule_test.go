@@ -122,7 +122,9 @@ func TestUpdateGuideScheduleSlotParsesRequest(t *testing.T) {
 func TestListPublicExcursionScheduleParsesQuery(t *testing.T) {
 	productID := uuid.New()
 	offerID := uuid.New()
-	startAt := time.Date(2026, 6, 2, 9, 0, 0, 0, time.UTC)
+	startAt := time.Now().UTC().Add(48 * time.Hour).Truncate(time.Second)
+	from := startAt.Add(-24 * time.Hour)
+	to := startAt.Add(7 * 24 * time.Hour)
 	repo := &excursionScheduleHTTPRepoStub{
 		offer: &model.ExcursionOffer{
 			ID:             offerID,
@@ -157,7 +159,7 @@ func TestListPublicExcursionScheduleParsesQuery(t *testing.T) {
 	handler.Register(mux)
 	req := httptest.NewRequest(
 		http.MethodGet,
-		"/v1/excursion-products/"+productID.String()+"/schedule?offerId="+offerID.String()+"&from=2026-06-01T00:00:00Z&to=2026-06-08T00:00:00Z&seats=3",
+		"/v1/excursion-products/"+productID.String()+"/schedule?offerId="+offerID.String()+"&from="+from.Format(time.RFC3339)+"&to="+to.Format(time.RFC3339)+"&seats=3",
 		nil,
 	)
 	rec := httptest.NewRecorder()

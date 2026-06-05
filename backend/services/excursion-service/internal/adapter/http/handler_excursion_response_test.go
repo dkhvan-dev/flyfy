@@ -55,7 +55,7 @@ func TestExcursionResponseUsesProductCoverWhenOfferCoverIsMissing(t *testing.T) 
 		t.Fatalf("cover image url = %v, want nil when only product cover is available", *response.CoverImageURL)
 	}
 	if response.GuideDisplayName != "Aruzhan T." {
-		t.Fatalf("guide display name = %q, want snapshot display name", response.GuideDisplayName)
+		t.Fatalf("guide nickname = %q, want snapshot nickname", response.GuideDisplayName)
 	}
 	if response.GuideNickname != "@nomad_aru" {
 		t.Fatalf("guide nickname = %q, want snapshot nickname", response.GuideNickname)
@@ -107,7 +107,7 @@ func TestExcursionResponseUsesProductCoverImageURLWhenFileCoverIsMissing(t *test
 func TestExcursionReviewResponseIncludesAuthorProjection(t *testing.T) {
 	authorUserID := uuid.New()
 	avatarFileID := uuid.New()
-	displayName := "@nomad_aru"
+	nickname := "@nomad_aru"
 	review := &model.ExcursionReview{
 		ID:             uuid.New(),
 		BookingID:      uuid.New(),
@@ -118,7 +118,7 @@ func TestExcursionReviewResponseIncludesAuthorProjection(t *testing.T) {
 		TouristUserID:  authorUserID,
 		Author: model.ExcursionReviewAuthor{
 			UserID:       authorUserID,
-			DisplayName:  &displayName,
+			Nickname:     &nickname,
 			AvatarFileID: &avatarFileID,
 		},
 		Rating:    5,
@@ -135,8 +135,8 @@ func TestExcursionReviewResponseIncludesAuthorProjection(t *testing.T) {
 	if response.Author.UserID != authorUserID.String() {
 		t.Fatalf("author user id = %q, want %s", response.Author.UserID, authorUserID)
 	}
-	if response.Author.DisplayName == nil || *response.Author.DisplayName != displayName {
-		t.Fatalf("author display name = %v, want %s", response.Author.DisplayName, displayName)
+	if response.Author.Nickname == nil || *response.Author.Nickname != nickname {
+		t.Fatalf("author nickname = %v, want %s", response.Author.Nickname, nickname)
 	}
 	if response.Author.AvatarFileID == nil || *response.Author.AvatarFileID != avatarFileID.String() {
 		t.Fatalf("author avatar file id = %v, want %s", response.Author.AvatarFileID, avatarFileID)

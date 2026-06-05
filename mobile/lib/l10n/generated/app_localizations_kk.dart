@@ -518,7 +518,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get profileIncompleteDescription =>
-      'Inflap мүмкіндіктерін толық пайдалану үшін атыңызды, тегіңізді және еліңізді толтырыңыз';
+      'Inflap мүмкіндіктерін толық пайдалану үшін никнеймді, атыңызды, тегіңізді және еліңізді толтырыңыз';
 
   @override
   String get fillNowButton => 'Толтыру';
@@ -533,7 +533,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get profileSaveFailed => 'Профильді сақтау сәтсіз аяқталды';
 
   @override
-  String get profileDisplayNameTaken => 'Бұл көрсетілетін ат бос емес';
+  String get profileNicknameTaken => 'Бұл никнейм бос емес';
 
   @override
   String get firstNameLabel => 'Аты';
@@ -542,7 +542,14 @@ class AppLocalizationsKk extends AppLocalizations {
   String get lastNameLabel => 'Тегі';
 
   @override
-  String get displayNameLabel => 'Көрсетілетін ат';
+  String get nicknameLabel => 'Никнейм';
+
+  @override
+  String get nicknameRequired => 'Никнеймді енгізіңіз';
+
+  @override
+  String get profileNicknameLockedDescription =>
+      'Никнеймді тек бір рет қоюға болады. Сақталғаннан кейін оны өзгерту мүмкін емес.';
 
   @override
   String get bioLabel => 'Өзі туралы';
@@ -561,7 +568,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get profileRequiredDescription =>
-      'Жалғастыру үшін профиліңізде атыңызды, тегіңізді және еліңізді көрсетіңіз. Бұл жалған аккаунттарды азайтып, пайдаланушылар арасындағы сенімді арттырады.';
+      'Жалғастыру үшін профиліңізде никнеймді, атыңызды, тегіңізді және еліңізді көрсетіңіз. Бұл жалған аккаунттарды азайтып, пайдаланушылар арасындағы сенімді арттырады.';
 
   @override
   String get myProfileTitle => 'Менің профилім';

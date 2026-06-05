@@ -4607,7 +4607,7 @@ class _InviteFriendRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final title = friend.displayNameOrFallback('user_${friend.userId}');
+    final title = friend.nicknameOrFallback('user_${friend.userId}');
 
     return Material(
       color: Colors.transparent,

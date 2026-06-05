@@ -1413,14 +1413,14 @@ func TestCreateExcursionPersistsGuideSearchSnapshot(t *testing.T) {
 	actorUserID := uuid.New()
 	uc := NewExcursionUseCase(repo, guideVerifierStub{
 		result: port.GuideExcursionPermission{
-			GuideProfileID:  guideProfileID,
-			GuideUserID:     actorUserID,
-			Allowed:         true,
-			DisplayName:     "Aruzhan T.",
-			Nickname:        "@aru_t",
-			FirstName:       "Aruzhan",
-			LastName:        "Khan",
-			GuideSearchText: "Aruzhan T. @aru_t local canyon expert",
+			GuideProfileID:   guideProfileID,
+			GuideUserID:      actorUserID,
+			Allowed:          true,
+			GuideDisplayName: "Aruzhan T.",
+			Nickname:         "@aru_t",
+			FirstName:        "Aruzhan",
+			LastName:         "Khan",
+			GuideSearchText:  "Aruzhan T. @aru_t local canyon expert",
 		},
 	}, nil)
 
@@ -1449,7 +1449,7 @@ func TestCreateExcursionPersistsGuideSearchSnapshot(t *testing.T) {
 		t.Fatalf("CreateExcursion() error = %v", err)
 	}
 	if aggregate.Excursion.GuideDisplayName != "Aruzhan T." {
-		t.Fatalf("guide display name = %q, want snapshot display name", aggregate.Excursion.GuideDisplayName)
+		t.Fatalf("guide nickname = %q, want snapshot nickname", aggregate.Excursion.GuideDisplayName)
 	}
 	if aggregate.Excursion.GuideSearchText != "Aruzhan T. @aru_t local canyon expert" {
 		t.Fatalf("guide search text = %q, want snapshot search text", aggregate.Excursion.GuideSearchText)
@@ -2287,7 +2287,7 @@ func TestSaveBookingReviewsRejectsNonAuthor(t *testing.T) {
 func TestListExcursionReviewsProjectsAuthorFromUnifiedProfile(t *testing.T) {
 	touristUserID := uuid.New()
 	avatarFileID := uuid.New()
-	displayName := "@nomad_aru"
+	nickname := "@nomad_aru"
 	review := &model.ExcursionReview{
 		ID:             uuid.New(),
 		BookingID:      uuid.New(),
@@ -2306,7 +2306,7 @@ func TestListExcursionReviewsProjectsAuthorFromUnifiedProfile(t *testing.T) {
 		profiles: map[uuid.UUID]port.UserProfileProjection{
 			touristUserID: {
 				UserID:       touristUserID,
-				DisplayName:  &displayName,
+				Nickname:     &nickname,
 				AvatarFileID: &avatarFileID,
 			},
 		},
@@ -2328,8 +2328,8 @@ func TestListExcursionReviewsProjectsAuthorFromUnifiedProfile(t *testing.T) {
 	if got.UserID != touristUserID {
 		t.Fatalf("author user id = %s, want %s", got.UserID, touristUserID)
 	}
-	if got.DisplayName == nil || *got.DisplayName != displayName {
-		t.Fatalf("author display name = %v, want %s", got.DisplayName, displayName)
+	if got.Nickname == nil || *got.Nickname != nickname {
+		t.Fatalf("author nickname = %v, want %s", got.Nickname, nickname)
 	}
 	if got.AvatarFileID == nil || *got.AvatarFileID != avatarFileID {
 		t.Fatalf("author avatar file id = %v, want %s", got.AvatarFileID, avatarFileID)
@@ -2343,7 +2343,7 @@ func TestListMyGuideExcursionBookingsProjectsAuthorFromUnifiedProfile(t *testing
 	guideUserID := uuid.New()
 	touristUserID := uuid.New()
 	avatarFileID := uuid.New()
-	displayName := "@booking_author"
+	nickname := "@booking_author"
 	booking := &model.ExcursionBooking{
 		ID:               uuid.New(),
 		ProductID:        uuid.New(),
@@ -2371,7 +2371,7 @@ func TestListMyGuideExcursionBookingsProjectsAuthorFromUnifiedProfile(t *testing
 		profiles: map[uuid.UUID]port.UserProfileProjection{
 			touristUserID: {
 				UserID:       touristUserID,
-				DisplayName:  &displayName,
+				Nickname:     &nickname,
 				AvatarFileID: &avatarFileID,
 			},
 		},
@@ -2395,8 +2395,8 @@ func TestListMyGuideExcursionBookingsProjectsAuthorFromUnifiedProfile(t *testing
 	if got.UserID != touristUserID {
 		t.Fatalf("author user id = %s, want %s", got.UserID, touristUserID)
 	}
-	if got.DisplayName == nil || *got.DisplayName != displayName {
-		t.Fatalf("author display name = %v, want %s", got.DisplayName, displayName)
+	if got.Nickname == nil || *got.Nickname != nickname {
+		t.Fatalf("author nickname = %v, want %s", got.Nickname, nickname)
 	}
 	if got.AvatarFileID == nil || *got.AvatarFileID != avatarFileID {
 		t.Fatalf("author avatar file id = %v, want %s", got.AvatarFileID, avatarFileID)
@@ -3376,11 +3376,11 @@ func TestListPublicExcursionScheduleFiltersBookableSlotsBySeats(t *testing.T) {
 	offerID := uuid.New()
 	productID := uuid.New()
 	guideUserID := uuid.New()
-	from := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	availableStart := time.Now().UTC().Add(48 * time.Hour).Truncate(time.Second)
+	from := availableStart.Add(-24 * time.Hour)
 	to := from.Add(7 * 24 * time.Hour)
-	availableStart := time.Date(2026, 6, 2, 9, 0, 0, 0, time.UTC)
-	fullStart := time.Date(2026, 6, 3, 9, 0, 0, 0, time.UTC)
-	closedStart := time.Date(2026, 6, 4, 9, 0, 0, 0, time.UTC)
+	fullStart := availableStart.Add(24 * time.Hour)
+	closedStart := availableStart.Add(48 * time.Hour)
 	repo := &excursionRepoStub{
 		gotOffer: &model.ExcursionOffer{
 			ID:             offerID,

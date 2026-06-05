@@ -613,7 +613,7 @@ func toPublicUserCard(profile *app.PublicUserProfile) *dto.PublicUserCard {
 		UserID:       profile.UserID.String(),
 		FirstName:    profile.FirstName,
 		LastName:     profile.LastName,
-		DisplayName:  profile.DisplayName,
+		Nickname:     profile.Nickname,
 		AvatarFileID: avatarFileID,
 		CountryCode:  profile.CountryCode,
 		Locale:       profile.Locale,
@@ -732,20 +732,20 @@ func (h *Handler) toAdminGuideApplicationResponse(ctx context.Context, aggregate
 
 	var firstName string
 	var lastName string
-	var displayName string
+	var nickname string
 	var countryCode string
 	var locale string
 	var timezone string
 	if userProfile != nil {
 		firstName = optionalString(userProfile.FirstName)
 		lastName = optionalString(userProfile.LastName)
-		displayName = optionalString(userProfile.DisplayName)
+		nickname = optionalString(userProfile.Nickname)
 		countryCode = optionalString(userProfile.CountryCode)
 		locale = userProfile.Locale
 		timezone = userProfile.Timezone
 	}
-	if displayName == "" {
-		displayName = strings.TrimSpace(strings.Join([]string{firstName, lastName}, " "))
+	if nickname == "" {
+		nickname = strings.TrimSpace(strings.Join([]string{firstName, lastName}, " "))
 	}
 
 	var baseCityID string
@@ -794,7 +794,7 @@ func (h *Handler) toAdminGuideApplicationResponse(ctx context.Context, aggregate
 		ID:                        request.ID.String(),
 		GuideProfileID:            profile.ID.String(),
 		GuideUserID:               profile.UserID.String(),
-		GuideDisplayName:          displayName,
+		GuideDisplayName:          nickname,
 		FirstName:                 firstName,
 		LastName:                  lastName,
 		CountryCode:               countryCode,
@@ -840,20 +840,20 @@ func (h *Handler) toAdminActiveGuideResponse(card *app.PublicGuideCard) dto.Admi
 
 	var firstName string
 	var lastName string
-	var displayName string
+	var nickname string
 	var countryCode string
 	var locale string
 	var timezone string
 	if userProfile != nil {
 		firstName = optionalString(userProfile.FirstName)
 		lastName = optionalString(userProfile.LastName)
-		displayName = optionalString(userProfile.DisplayName)
+		nickname = optionalString(userProfile.Nickname)
 		countryCode = optionalString(userProfile.CountryCode)
 		locale = userProfile.Locale
 		timezone = userProfile.Timezone
 	}
-	if displayName == "" {
-		displayName = strings.TrimSpace(strings.Join([]string{firstName, lastName}, " "))
+	if nickname == "" {
+		nickname = strings.TrimSpace(strings.Join([]string{firstName, lastName}, " "))
 	}
 
 	var baseCityID string
@@ -882,7 +882,7 @@ func (h *Handler) toAdminActiveGuideResponse(card *app.PublicGuideCard) dto.Admi
 		ID:                        profile.ID.String(),
 		GuideProfileID:            profile.ID.String(),
 		GuideUserID:               profile.UserID.String(),
-		GuideDisplayName:          displayName,
+		GuideDisplayName:          nickname,
 		FirstName:                 firstName,
 		LastName:                  lastName,
 		CountryCode:               countryCode,

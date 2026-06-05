@@ -63,8 +63,8 @@ func (r *UserResolver) DisplayNameForUserID(ctx context.Context, userID uuid.UUI
 	}
 
 	profile := aggregate.GetProfile()
-	if displayName := strings.TrimSpace(profile.GetDisplayName()); displayName != "" {
-		return displayName, nil
+	if nickname := strings.TrimSpace(profile.GetNickname()); nickname != "" {
+		return nickname, nil
 	}
 
 	fullName := strings.TrimSpace(strings.Join([]string{

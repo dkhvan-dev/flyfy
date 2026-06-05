@@ -2,7 +2,7 @@ class UpdateProfileRequest {
   UpdateProfileRequest({
     required this.firstName,
     required this.lastName,
-    this.displayName,
+    this.nickname,
     this.bio,
     this.birthDate,
     this.avatarFileId,
@@ -14,7 +14,7 @@ class UpdateProfileRequest {
 
   final String firstName;
   final String lastName;
-  final String? displayName;
+  final String? nickname;
   final String? bio;
   final DateTime? birthDate;
   final String? avatarFileId;
@@ -27,8 +27,7 @@ class UpdateProfileRequest {
     return {
       'firstName': firstName.trim(),
       'lastName': lastName.trim(),
-      if ((displayName ?? '').trim().isNotEmpty)
-        'displayName': displayName!.trim(),
+      if ((nickname ?? '').trim().isNotEmpty) 'nickname': nickname!.trim(),
       if ((bio ?? '').trim().isNotEmpty) 'bio': bio!.trim(),
       if (birthDate != null)
         'birthDate':

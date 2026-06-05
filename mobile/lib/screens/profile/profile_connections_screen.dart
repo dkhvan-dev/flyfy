@@ -1315,7 +1315,7 @@ class _ConnectionUserRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final displayName = user.displayNameOrFallback(l10n.chatUserFallbackName);
+    final nickname = user.nicknameOrFallback(l10n.chatUserFallbackName);
     final presence = chatPresenceStatusLabelForValues(
       l10n,
       isOnline: user.isOnline,
@@ -1343,7 +1343,7 @@ class _ConnectionUserRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      displayName,
+                      nickname,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(

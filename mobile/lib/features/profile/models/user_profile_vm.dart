@@ -34,7 +34,7 @@ class UserProfileVm {
     this.primaryEmail,
     this.firstName,
     this.lastName,
-    this.displayName,
+    this.nickname,
     this.bio,
     this.birthDate,
     this.avatarFileId,
@@ -58,7 +58,7 @@ class UserProfileVm {
   final String? primaryEmail;
   final String? firstName;
   final String? lastName;
-  final String? displayName;
+  final String? nickname;
   final String? bio;
   final DateTime? birthDate;
   final String? avatarFileId;
@@ -83,7 +83,7 @@ class UserProfileVm {
       primaryEmail: user['primaryEmail']?.toString(),
       firstName: profile['firstName']?.toString(),
       lastName: profile['lastName']?.toString(),
-      displayName: profile['displayName']?.toString(),
+      nickname: profile['nickname']?.toString(),
       bio: profile['bio']?.toString(),
       birthDate: DateTime.tryParse(profile['birthDate']?.toString() ?? ''),
       avatarFileId: profile['avatarFileId']?.toString(),
@@ -126,7 +126,7 @@ class UserProfileVm {
       primaryEmail: primaryEmail,
       firstName: firstName,
       lastName: lastName,
-      displayName: displayName,
+      nickname: nickname,
       bio: bio,
       birthDate: birthDate,
       avatarFileId: avatarFileId,
@@ -142,7 +142,7 @@ class UserProfileVm {
   }
 
   String get preferredName {
-    final display = (displayName ?? '').trim();
+    final display = (nickname ?? '').trim();
     if (display.isNotEmpty) return display;
 
     final first = (firstName ?? '').trim();

@@ -33,6 +33,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _firstNameFieldKey = GlobalKey();
   final _lastNameFieldKey = GlobalKey();
+  final _nicknameFieldKey = GlobalKey();
   final _countryFieldKey = GlobalKey();
   final _profileApi = ProfileApi();
   final _fileApi = FileApi();
@@ -42,7 +43,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   late final TextEditingController _firstNameController;
   late final TextEditingController _lastNameController;
-  late final TextEditingController _displayNameController;
+  late final TextEditingController _nicknameController;
   late final TextEditingController _bioController;
   late final TextEditingController _countryCodeController;
   late final TextEditingController _countrySearchController;
@@ -52,6 +53,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final TextEditingController _currencySearchController;
 
   late String _localeCode;
+  late final String _initialNickname;
   List<ReferenceCountry> _countries = const [];
   Map<String, Set<String>> _countrySearchAliases = const {};
   List<ReferenceTimezone> _timezones = const [];
@@ -81,14 +83,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     final profile = context.read<SessionProvider>().profile;
     final appLocaleCode = context.read<LocaleProvider>().locale.languageCode;
+    _initialNickname = (profile?.nickname ?? '').trim();
 
     _firstNameController = TextEditingController(text: profile?.firstName ?? '')
       ..addListener(_handlePreviewChanged);
     _lastNameController = TextEditingController(text: profile?.lastName ?? '')
       ..addListener(_handlePreviewChanged);
-    _displayNameController = TextEditingController(
-      text: profile?.displayName ?? '',
-    )..addListener(_handlePreviewChanged);
+    _nicknameController = TextEditingController(text: _initialNickname)
+      ..addListener(_handlePreviewChanged);
     _bioController = TextEditingController(text: profile?.bio ?? '');
     _countryCodeController = TextEditingController(
       text: profile?.countryCode ?? '',
@@ -127,7 +129,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void dispose() {
     _firstNameController.dispose();
     _lastNameController.dispose();
-    _displayNameController.dispose();
+    _nicknameController.dispose();
     _bioController.dispose();
     _countryCodeController.dispose();
     _countrySearchController
@@ -170,6 +172,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     setState(() => _currencySearchQuery = nextQuery);
   }
+
+  bool get _isNicknameLocked => _initialNickname.isNotEmpty;
 
   Future<void> _loadCountries() {
     if (_countries.isNotEmpty) return Future.value();
@@ -655,7 +659,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         UpdateProfileRequest(
           firstName: _firstNameController.text,
           lastName: _lastNameController.text,
-          displayName: _displayNameController.text,
+          nickname: _isNicknameLocked ? null : _nicknameController.text,
           bio: _bioController.text,
           avatarFileId: _avatarFileId,
           countryCode: _countryCodeController.text,
@@ -677,8 +681,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (data is Map<String, dynamic>) {
         final backendError = data['error']?.toString();
         if (backendError != null && backendError.trim().isNotEmpty) {
-          if (backendError.trim() == 'display name is already taken') {
-            message = l10n.profileDisplayNameTaken;
+          final normalizedBackendError = backendError.trim();
+          if (normalizedBackendError == 'nickname is already taken') {
+            message = l10n.profileNicknameTaken;
+          } else if (normalizedBackendError == 'nickname is required') {
+            message = l10n.nicknameRequired;
+          } else if (normalizedBackendError == 'nickname cannot be changed') {
+            message = l10n.profileNicknameLockedDescription;
           } else {
             message = backendError;
           }
@@ -711,6 +720,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     if (_lastNameController.text.trim().isEmpty) {
       await _scrollToField(_lastNameFieldKey);
+      return;
+    }
+
+    if (!_isNicknameLocked && _nicknameController.text.trim().isEmpty) {
+      await _scrollToField(_nicknameFieldKey);
       return;
     }
 
@@ -874,7 +888,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   String _previewName(UserProfileVm? profile) {
-    final display = _displayNameController.text.trim();
+    final display = _nicknameController.text.trim();
     if (display.isNotEmpty) {
       return display;
     }
@@ -1019,10 +1033,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           height: profileScaled(context, 16, min: 14, max: 18),
                         ),
                         _LabeledInput(
-                          label: l10n.displayNameLabel,
+                          key: _nicknameFieldKey,
+                          label: l10n.nicknameLabel,
                           child: _StyledTextField(
-                            controller: _displayNameController,
-                            hintText: l10n.displayNameLabel,
+                            controller: _nicknameController,
+                            hintText: l10n.nicknameLabel,
+                            readOnly: _isNicknameLocked,
+                            helperText: _isNicknameLocked
+                                ? l10n.profileNicknameLockedDescription
+                                : null,
+                            textCapitalization: TextCapitalization.none,
+                            validator: (value) {
+                              if (!_isNicknameLocked &&
+                                  (value ?? '').trim().isEmpty) {
+                                return l10n.nicknameRequired;
+                              }
+                              return null;
+                            },
                           ),
                         ),
                         SizedBox(
@@ -2369,6 +2396,9 @@ class _StyledTextField extends StatelessWidget {
     required this.controller,
     required this.hintText,
     this.validator,
+    this.readOnly = false,
+    this.helperText,
+    this.textCapitalization = TextCapitalization.sentences,
     this.minLines = 1,
     this.maxLines = 1,
   });
@@ -2376,6 +2406,9 @@ class _StyledTextField extends StatelessWidget {
   final TextEditingController controller;
   final String hintText;
   final String? Function(String?)? validator;
+  final bool readOnly;
+  final String? helperText;
+  final TextCapitalization textCapitalization;
   final int minLines;
   final int maxLines;
 
@@ -2388,15 +2421,18 @@ class _StyledTextField extends StatelessWidget {
     return TextFormField(
       controller: controller,
       validator: validator,
+      readOnly: readOnly,
       minLines: minLines,
       maxLines: maxLines,
-      textCapitalization: TextCapitalization.sentences,
+      textCapitalization: textCapitalization,
       style: TextStyle(
         color: AppColors.textPrimary,
         fontSize: profileScaled(context, 15, min: 14, max: 16),
       ),
       decoration: InputDecoration(
         hintText: hintText,
+        helperText: helperText,
+        helperMaxLines: 3,
         hintStyle: TextStyle(
           color: profileTextMuted,
           fontSize: profileScaled(context, 15, min: 14, max: 16),

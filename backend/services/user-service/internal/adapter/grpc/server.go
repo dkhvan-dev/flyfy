@@ -115,7 +115,7 @@ func (s *Server) UpdateUserProfile(
 		UserID:       userID,
 		FirstName:    stringPtrOrNil(req.GetFirstName()),
 		LastName:     stringPtrOrNil(req.GetLastName()),
-		DisplayName:  stringPtrOrNil(req.GetDisplayName()),
+		Nickname:     stringPtrOrNil(req.GetNickname()),
 		Bio:          stringPtrOrNil(req.GetBio()),
 		BirthDate:    birthDate,
 		AvatarFileID: avatarFileID,
@@ -451,7 +451,7 @@ func toProtoProfile(profile *model.UserProfile) *userv1.UserProfile {
 		UserId:       profile.UserID.String(),
 		FirstName:    valueOrEmpty(profile.FirstName),
 		LastName:     valueOrEmpty(profile.LastName),
-		DisplayName:  valueOrEmpty(profile.DisplayName),
+		Nickname:     valueOrEmpty(profile.Nickname),
 		Bio:          valueOrEmpty(profile.Bio),
 		BirthDate:    birthDate,
 		AvatarFileId: avatarFileID,
@@ -509,7 +509,7 @@ func toProtoPublicProfile(profile *model.UserProfile) *userv1.PublicProfile {
 		UserId:       profile.UserID.String(),
 		FirstName:    valueOrEmpty(profile.FirstName),
 		LastName:     valueOrEmpty(profile.LastName),
-		DisplayName:  valueOrEmpty(profile.DisplayName),
+		Nickname:     valueOrEmpty(profile.Nickname),
 		Bio:          valueOrEmpty(profile.Bio),
 		AvatarFileId: avatarFileID,
 		CountryCode:  valueOrEmpty(profile.CountryCode),
@@ -523,7 +523,7 @@ func toProtoPublicProfile(profile *model.UserProfile) *userv1.PublicProfile {
 func toProtoAdminUserListItem(item model.AdminUserListItem) *userv1.AdminUserListItem {
 	return &userv1.AdminUserListItem{
 		UserId:        item.UserID.String(),
-		DisplayName:   item.DisplayName,
+		Nickname:      item.Nickname,
 		MaskedPhone:   item.MaskedPhone,
 		MaskedEmail:   item.MaskedEmail,
 		CountryCode:   item.CountryCode,
@@ -538,7 +538,7 @@ func toProtoAdminUserListItem(item model.AdminUserListItem) *userv1.AdminUserLis
 func toProtoAdminUserDetail(item model.AdminUserDetail) *userv1.AdminUserDetail {
 	return &userv1.AdminUserDetail{
 		UserId:        item.UserID.String(),
-		DisplayName:   item.DisplayName,
+		Nickname:      item.Nickname,
 		MaskedPhone:   item.MaskedPhone,
 		MaskedEmail:   item.MaskedEmail,
 		CountryCode:   item.CountryCode,

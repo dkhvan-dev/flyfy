@@ -18,7 +18,9 @@ var (
 	ErrAvatarFileNotReady   = errors.New("avatar file is not ready")
 	ErrAvatarFileNotAllowed = errors.New("avatar file is not allowed")
 
-	ErrDisplayNameAlreadyTaken      = errors.New("display name is already taken")
+	ErrNicknameRequired             = errors.New("nickname is required")
+	ErrNicknameImmutable            = errors.New("nickname cannot be changed")
+	ErrNicknameAlreadyTaken         = errors.New("nickname is already taken")
 	ErrCannotFollowSelf             = errors.New("you cannot follow yourself")
 	ErrFollowFeatureUnavailable     = errors.New("follow feature is temporarily unavailable")
 	ErrCannotFriendSelf             = errors.New("you cannot add yourself as a friend")

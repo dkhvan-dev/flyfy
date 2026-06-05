@@ -37,7 +37,7 @@ void main() {
                 'userId': 'user-1',
                 'firstName': 'Julian',
                 'lastName': 'Vane',
-                'displayName': '@julian_guide',
+                'nickname': '@julian_guide',
                 'avatarFileId': 'avatar-file-id',
                 'locale': 'en',
                 'timezone': 'Asia/Almaty',
@@ -113,7 +113,7 @@ void main() {
       expect(page.items, hasLength(1));
       expect(page.items.single.firstName, 'Julian');
       expect(page.items.single.lastName, 'Vane');
-      expect(page.items.single.displayName, '@julian_guide');
+      expect(page.items.single.nickname, '@julian_guide');
       expect(page.items.single.preferredName, 'Vane Julian');
       expect(page.items.single.avatarFileId, 'avatar-file-id');
       expect(page.items.single.languageCodes, ['en']);

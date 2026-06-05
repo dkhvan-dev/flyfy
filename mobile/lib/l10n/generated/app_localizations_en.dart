@@ -514,7 +514,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileIncompleteDescription =>
-      'Fill in your first name, last name, and country to unlock all Inflap features';
+      'Fill in your nickname, first name, last name, and country to unlock all Inflap features';
 
   @override
   String get fillNowButton => 'Fill now';
@@ -529,7 +529,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileSaveFailed => 'Failed to save profile';
 
   @override
-  String get profileDisplayNameTaken => 'This display name is already taken';
+  String get profileNicknameTaken => 'This nickname is already taken';
 
   @override
   String get firstNameLabel => 'First name';
@@ -538,7 +538,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lastNameLabel => 'Last name';
 
   @override
-  String get displayNameLabel => 'Display name';
+  String get nicknameLabel => 'Nickname';
+
+  @override
+  String get nicknameRequired => 'Enter nickname';
+
+  @override
+  String get profileNicknameLockedDescription =>
+      'Nickname can be set only once. After saving, it cannot be changed.';
 
   @override
   String get bioLabel => 'About';
@@ -557,7 +564,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileRequiredDescription =>
-      'To continue, enter your first name, last name, and country in your profile. This helps reduce fake accounts and increases trust between users.';
+      'To continue, enter your nickname, first name, last name, and country in your profile. This helps reduce fake accounts and increases trust between users.';
 
   @override
   String get myProfileTitle => 'My Profile';

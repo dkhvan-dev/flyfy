@@ -2048,7 +2048,7 @@ func (x *PublicGuideCard) GetUserProfile() *PublicUserProfile {
 type PublicUserProfile struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	DisplayName   string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	Nickname      string                 `protobuf:"bytes,2,opt,name=nickname,proto3" json:"nickname,omitempty"`
 	AvatarFileId  string                 `protobuf:"bytes,3,opt,name=avatar_file_id,json=avatarFileId,proto3" json:"avatar_file_id,omitempty"`
 	CountryCode   string                 `protobuf:"bytes,4,opt,name=country_code,json=countryCode,proto3" json:"country_code,omitempty"`
 	Locale        string                 `protobuf:"bytes,5,opt,name=locale,proto3" json:"locale,omitempty"`
@@ -2096,9 +2096,9 @@ func (x *PublicUserProfile) GetUserId() string {
 	return ""
 }
 
-func (x *PublicUserProfile) GetDisplayName() string {
+func (x *PublicUserProfile) GetNickname() string {
 	if x != nil {
-		return x.DisplayName
+		return x.Nickname
 	}
 	return ""
 }
@@ -2305,10 +2305,10 @@ const file_guide_v1_guide_proto_rawDesc = "" +
 	"created_at\x18\x06 \x01(\tR\tcreatedAt\"\x8e\x01\n" +
 	"\x0fPublicGuideCard\x12;\n" +
 	"\rguide_profile\x18\x01 \x01(\v2\x16.guide.v1.GuideProfileR\fguideProfile\x12>\n" +
-	"\fuser_profile\x18\x02 \x01(\v2\x1b.guide.v1.PublicUserProfileR\vuserProfile\"\x8e\x02\n" +
+	"\fuser_profile\x18\x02 \x01(\v2\x1b.guide.v1.PublicUserProfileR\vuserProfile\"\x87\x02\n" +
 	"\x11PublicUserProfile\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12!\n" +
-	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12$\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1a\n" +
+	"\bnickname\x18\x02 \x01(\tR\bnickname\x12$\n" +
 	"\x0eavatar_file_id\x18\x03 \x01(\tR\favatarFileId\x12!\n" +
 	"\fcountry_code\x18\x04 \x01(\tR\vcountryCode\x12\x16\n" +
 	"\x06locale\x18\x05 \x01(\tR\x06locale\x12\x1a\n" +

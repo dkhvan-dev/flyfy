@@ -80,7 +80,7 @@
           {{range .Data.Items}}
             <tr>
               <td>
-                <strong>{{if .Item.DisplayName}}{{.Item.DisplayName}}{{else}}{{t $.Locale "label.user"}}{{end}}</strong>
+                <strong>{{if .Item.Nickname}}{{.Item.Nickname}}{{else}}{{t $.Locale "label.user"}}{{end}}</strong>
                 <span class="muted block"><code>{{shortID .Item.UserID}}</code> · {{.Item.CountryCode}}</span>
                 <span class="muted block">{{t $.Locale "label.trust"}}: {{.TrustText}}</span>
               </td>

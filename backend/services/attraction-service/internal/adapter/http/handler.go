@@ -692,7 +692,7 @@ func toAttractionResponse(v *app.AttractionView) *dto.AttractionResponse {
 		Media:             media,
 		Author: dto.AuthorResponse{
 			UserID:       v.Author.UserID.String(),
-			DisplayName:  v.Author.DisplayName,
+			Nickname:     v.Author.Nickname,
 			AvatarFileID: avatarFileID,
 		},
 		CreatedAt: a.CreatedAt.UTC().Format(time.RFC3339),
@@ -732,7 +732,7 @@ func toReviewResponse(v *app.ReviewView) *dto.ReviewResponse {
 		Media:        media,
 		Author: dto.AuthorResponse{
 			UserID:       v.Author.UserID.String(),
-			DisplayName:  v.Author.DisplayName,
+			Nickname:     v.Author.Nickname,
 			AvatarFileID: avatarFileID,
 		},
 		CreatedAt: r.CreatedAt.UTC().Format(time.RFC3339),

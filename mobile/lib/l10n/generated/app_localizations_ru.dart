@@ -517,7 +517,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get profileIncompleteDescription =>
-      'Заполните имя, фамилию и страну, чтобы пользоваться всеми возможностями Inflap';
+      'Заполните никнейм, имя, фамилию и страну, чтобы пользоваться всеми возможностями Inflap';
 
   @override
   String get fillNowButton => 'Заполнить';
@@ -532,7 +532,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileSaveFailed => 'Не удалось сохранить профиль';
 
   @override
-  String get profileDisplayNameTaken => 'Это отображаемое имя уже занято';
+  String get profileNicknameTaken => 'Этот никнейм уже занят';
 
   @override
   String get firstNameLabel => 'Имя';
@@ -541,7 +541,14 @@ class AppLocalizationsRu extends AppLocalizations {
   String get lastNameLabel => 'Фамилия';
 
   @override
-  String get displayNameLabel => 'Отображаемое имя';
+  String get nicknameLabel => 'Никнейм';
+
+  @override
+  String get nicknameRequired => 'Укажите никнейм';
+
+  @override
+  String get profileNicknameLockedDescription =>
+      'Никнейм можно задать только один раз. После сохранения он не меняется.';
 
   @override
   String get bioLabel => 'О себе';
@@ -560,7 +567,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get profileRequiredDescription =>
-      'Чтобы продолжить, укажите имя, фамилию и страну в профиле. Это помогает снизить количество фейковых аккаунтов и повышает доверие между пользователями.';
+      'Чтобы продолжить, укажите никнейм, имя, фамилию и страну в профиле. Это помогает снизить количество фейковых аккаунтов и повышает доверие между пользователями.';
 
   @override
   String get myProfileTitle => 'Мой профиль';

@@ -25,7 +25,7 @@ func TestListPublicGuidesAppliesSearchFilterSortAndReturnsTotal(t *testing.T) {
 	now := time.Date(2026, 5, 11, 9, 30, 0, 0, time.UTC)
 	headline := "Almaty mountain guide"
 	about := "Trail, city, and cultural routes"
-	displayName := "Aruzhan Guide"
+	nickname := "Aruzhan Guide"
 	firstName := "Aruzhan"
 	lastName := "Tulegenova"
 
@@ -81,12 +81,12 @@ func TestListPublicGuidesAppliesSearchFilterSortAndReturnsTotal(t *testing.T) {
 		&publicUserClientStub{
 			profiles: map[uuid.UUID]app.PublicUserProfile{
 				userID: {
-					UserID:      userID,
-					FirstName:   &firstName,
-					LastName:    &lastName,
-					DisplayName: &displayName,
-					Locale:      "en",
-					Timezone:    "Asia/Almaty",
+					UserID:    userID,
+					FirstName: &firstName,
+					LastName:  &lastName,
+					Nickname:  &nickname,
+					Locale:    "en",
+					Timezone:  "Asia/Almaty",
 				},
 			},
 		},
@@ -149,10 +149,10 @@ func TestListPublicGuidesAppliesSearchFilterSortAndReturnsTotal(t *testing.T) {
 				ExperienceYears int     `json:"experienceYears"`
 			} `json:"guideProfile"`
 			UserProfile *struct {
-				UserID      string  `json:"userId"`
-				FirstName   *string `json:"firstName"`
-				LastName    *string `json:"lastName"`
-				DisplayName *string `json:"displayName"`
+				UserID    string  `json:"userId"`
+				FirstName *string `json:"firstName"`
+				LastName  *string `json:"lastName"`
+				Nickname  *string `json:"nickname"`
 			} `json:"userProfile"`
 			Languages []struct {
 				LanguageCode string `json:"languageCode"`
@@ -178,8 +178,8 @@ func TestListPublicGuidesAppliesSearchFilterSortAndReturnsTotal(t *testing.T) {
 	if payload.Items[0].GuideProfile.ID != profileID.String() {
 		t.Fatalf("unexpected guide id: %s", payload.Items[0].GuideProfile.ID)
 	}
-	if payload.Items[0].UserProfile == nil || payload.Items[0].UserProfile.DisplayName == nil ||
-		*payload.Items[0].UserProfile.DisplayName != displayName {
+	if payload.Items[0].UserProfile == nil || payload.Items[0].UserProfile.Nickname == nil ||
+		*payload.Items[0].UserProfile.Nickname != nickname {
 		t.Fatalf("expected public user profile, got %#v", payload.Items[0].UserProfile)
 	}
 	if payload.Items[0].UserProfile.FirstName == nil ||
@@ -245,7 +245,7 @@ func TestListActiveGuidesForAdminReturnsReadableGuideItems(t *testing.T) {
 	userID := uuid.MustParse("22222222-2222-2222-2222-222222222222")
 	now := time.Date(2026, 5, 25, 9, 30, 0, 0, time.UTC)
 	headline := "Almaty mountain guide"
-	displayName := "Aruzhan Guide"
+	nickname := "Aruzhan Guide"
 	firstName := "Aruzhan"
 	lastName := "Tulegenova"
 	repo := &publicGuideRepositoryStub{
@@ -273,12 +273,12 @@ func TestListActiveGuidesForAdminReturnsReadableGuideItems(t *testing.T) {
 		&publicUserClientStub{
 			profiles: map[uuid.UUID]app.PublicUserProfile{
 				userID: {
-					UserID:      userID,
-					FirstName:   &firstName,
-					LastName:    &lastName,
-					DisplayName: &displayName,
-					Locale:      "ru",
-					Timezone:    "Asia/Almaty",
+					UserID:    userID,
+					FirstName: &firstName,
+					LastName:  &lastName,
+					Nickname:  &nickname,
+					Locale:    "ru",
+					Timezone:  "Asia/Almaty",
 				},
 			},
 		},
@@ -315,7 +315,7 @@ func TestListActiveGuidesForAdminReturnsReadableGuideItems(t *testing.T) {
 	if item.GuideProfileID != profileID.String() || item.GuideUserID != userID.String() {
 		t.Fatalf("unexpected ids: %#v", item)
 	}
-	if item.GuideDisplayName != displayName || item.FirstName != firstName || item.LastName != lastName {
+	if item.GuideDisplayName != nickname || item.FirstName != firstName || item.LastName != lastName {
 		t.Fatalf("expected readable guide identity, got %#v", item)
 	}
 	if item.GuideStatus != string(enum.GuideStatusActive) || item.Headline != headline {

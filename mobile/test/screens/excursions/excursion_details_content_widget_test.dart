@@ -449,7 +449,7 @@ final _guideProfile1 = UserProfileVm(
   friendshipStatus: UserFriendshipStatus.none,
   firstName: 'Aruzhan',
   lastName: 'Sadykova',
-  displayName: '@aru_guide',
+  nickname: '@aru_guide',
 );
 
 final _guideProfile2 = UserProfileVm(

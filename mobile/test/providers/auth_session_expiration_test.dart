@@ -113,7 +113,7 @@ class _FakeProfileApi extends ProfileApi {
       followersCount: 0,
       isFollowedByMe: false,
       friendshipStatus: UserFriendshipStatus.none,
-      displayName: 'Test User',
+      nickname: 'Test User',
     );
   }
 }

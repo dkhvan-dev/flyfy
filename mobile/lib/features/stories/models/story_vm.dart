@@ -39,7 +39,7 @@ class StoryAuthorVm {
     required this.userId,
     required this.locale,
     required this.timezone,
-    this.displayName,
+    this.nickname,
     this.avatarFileId,
     this.countryCode,
   });
@@ -47,14 +47,14 @@ class StoryAuthorVm {
   final String userId;
   final String locale;
   final String timezone;
-  final String? displayName;
+  final String? nickname;
   final String? avatarFileId;
   final String? countryCode;
 
   factory StoryAuthorVm.fromJson(Map<String, dynamic> json) {
     return StoryAuthorVm(
       userId: json['userId']?.toString() ?? '',
-      displayName: json['displayName']?.toString(),
+      nickname: json['nickname']?.toString(),
       avatarFileId: json['avatarFileId']?.toString(),
       countryCode: json['countryCode']?.toString(),
       locale: json['locale']?.toString() ?? 'ru',
@@ -63,7 +63,7 @@ class StoryAuthorVm {
   }
 
   String get preferredName {
-    final value = (displayName ?? '').trim();
+    final value = (nickname ?? '').trim();
     if (value.isNotEmpty) {
       return value;
     }

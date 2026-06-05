@@ -36,18 +36,18 @@ class AttractionMediaVm {
 class AttractionAuthorVm {
   const AttractionAuthorVm({
     required this.userId,
-    this.displayName,
+    this.nickname,
     this.avatarFileId,
   });
 
   final String userId;
-  final String? displayName;
+  final String? nickname;
   final String? avatarFileId;
 
   factory AttractionAuthorVm.fromJson(Map<String, dynamic> json) {
     return AttractionAuthorVm(
       userId: json['userId'] as String? ?? '',
-      displayName: json['displayName'] as String?,
+      nickname: json['nickname'] as String?,
       avatarFileId: json['avatarFileId'] as String?,
     );
   }
