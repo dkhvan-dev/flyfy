@@ -5,6 +5,7 @@ import 'package:inflap/features/excursions/models/excursion_schedule_vm.dart';
 import 'package:inflap/features/excursions/models/excursion_vm.dart';
 import 'package:inflap/l10n/generated/app_localizations.dart';
 import 'package:inflap/screens/excursions/excursion_booking_screen.dart';
+import 'package:intl/intl.dart';
 
 void main() {
   testWidgets('renders booking content with schedule, travelers and summary', (
@@ -47,7 +48,10 @@ void main() {
     expect(find.text('Booking Excursion'), findsOneWidget);
     expect(find.text('Almaty Mountain Escape'), findsOneWidget);
     expect(find.text('Schedule'), findsOneWidget);
-    expect(find.text('Jun 1, 2026'), findsWidgets);
+    expect(
+      find.text(DateFormat.yMMMd('en').format(_slot.startAt)),
+      findsWidgets,
+    );
     expect(find.text('08:00'), findsWidgets);
     expect(find.text('Travelers'), findsOneWidget);
     expect(find.text('Adults'), findsOneWidget);
@@ -141,7 +145,13 @@ void main() {
 
     expect(find.text('Select an available time'), findsOneWidget);
 
-    await tester.tap(find.text('10:00').last);
+    final slotChip = find.descendant(
+      of: find.byType(BottomSheet),
+      matching: find.byKey(const ValueKey('booking-slot-chip-slot-2')),
+    );
+    expect(slotChip, findsOneWidget);
+
+    await tester.tap(slotChip);
     await tester.pumpAndSettle();
 
     expect(selected?.id, 'slot-2');
@@ -212,12 +222,18 @@ const _excursion = ExcursionVm(
   meetingPoint: 'Hotel pickup',
 );
 
+final _slotDate = DateTime(DateTime.now().year + 1, 6, 1);
+final _slotStart = DateTime(_slotDate.year, _slotDate.month, _slotDate.day, 8);
+final _slotEnd = _slotStart.add(const Duration(hours: 3));
+final _laterSlotStart = _slotStart.add(const Duration(hours: 2));
+final _laterSlotEnd = _laterSlotStart.add(const Duration(hours: 3));
+
 final _slot = ExcursionScheduleSlotVm(
   id: 'slot-1',
   offerId: 'offer-1',
   productId: 'excursion-1',
-  startAt: DateTime(2026, 6, 1, 8),
-  endAt: DateTime(2026, 6, 1, 11),
+  startAt: _slotStart,
+  endAt: _slotEnd,
   timezone: 'Asia/Almaty',
   capacity: 4,
   bookedSeats: 1,
@@ -229,8 +245,8 @@ final _laterSlot = ExcursionScheduleSlotVm(
   id: 'slot-2',
   offerId: 'offer-1',
   productId: 'excursion-1',
-  startAt: DateTime(2026, 6, 1, 10),
-  endAt: DateTime(2026, 6, 1, 13),
+  startAt: _laterSlotStart,
+  endAt: _laterSlotEnd,
   timezone: 'Asia/Almaty',
   capacity: 6,
   bookedSeats: 0,

@@ -136,7 +136,10 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       _populateFromExcursion(initialExcursion);
     } else if (!_isEditMode && !_didApplyHomeLocation) {
       _didApplyHomeLocation = true;
-      unawaited(_applyHomeLocation());
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(_applyHomeLocation());
+      });
     }
   }
 

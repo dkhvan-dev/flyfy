@@ -946,6 +946,7 @@ class _BookingSlotSelector extends StatelessWidget {
             children: [
               for (final slot in grouped[i].slots)
                 _BookingSlotChip(
+                  key: ValueKey('booking-slot-chip-${slot.id}'),
                   slot: slot,
                   selected: selectedSlot?.id == slot.id,
                   enabled: slot.isBookableForBooking(travelers),
@@ -975,6 +976,7 @@ class _BookingSlotSelector extends StatelessWidget {
 
 class _BookingSlotChip extends StatelessWidget {
   const _BookingSlotChip({
+    super.key,
     required this.slot,
     required this.selected,
     required this.enabled,

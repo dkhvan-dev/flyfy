@@ -173,13 +173,20 @@ void main() {
       final homeSource = await File(
         'lib/screens/home/home_screen.dart',
       ).readAsString();
+      final serviceCatalogSource = await File(
+        'lib/features/services/service_catalog.dart',
+      ).readAsString();
 
       expect(routerSource, contains("path: '/guides'"));
       expect(routerSource, contains('GuidesScreen'));
       expect(routerSource, contains("location == '/guides'"));
-      expect(homeSource, contains('void _openGuides()'));
-      expect(homeSource, contains("context.push('/guides')"));
-      expect(homeSource, contains('onTap: _openGuides'));
+      expect(serviceCatalogSource, contains("route: '/guides'"));
+      expect(
+        homeSource,
+        contains('void _openService(TravelServiceEntry service)'),
+      );
+      expect(homeSource, contains('context.push(service.route)'));
+      expect(homeSource, contains('onServiceTap: _openService'));
     },
   );
 }
