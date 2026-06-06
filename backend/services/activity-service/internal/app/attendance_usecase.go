@@ -370,8 +370,7 @@ func (u *AttendanceUseCase) syncAttendanceProof(
 		}
 
 		if !canParticipantCheckIn(participant.Status) &&
-			participant.Status != enum.ParticipantStatusCheckedIn &&
-			participant.Status != enum.ParticipantStatusAttended {
+			participant.Status != enum.ParticipantStatusCheckedIn {
 			attempt, attemptErr := buildRejectedAttendanceAttempt(
 				input,
 				actorUserID,
@@ -394,12 +393,8 @@ func (u *AttendanceUseCase) syncAttendanceProof(
 		}
 
 		if participant.Status == enum.ParticipantStatusCheckedIn ||
-			participant.Status == enum.ParticipantStatusAttended ||
 			participant.CheckedInAt != nil {
 			checkedInAt := participant.CheckedInAt
-			if checkedInAt == nil {
-				checkedInAt = participant.AttendedAt
-			}
 
 			attempt, attemptErr := model.NewAttendanceSyncAttempt(
 				model.NewAttendanceSyncAttemptParams{

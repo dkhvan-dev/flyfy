@@ -13,7 +13,6 @@ type ParticipantResponse struct {
 	PaidAt                *string `json:"paidAt,omitempty"`
 	AttendanceConfirmedAt *string `json:"attendanceConfirmedAt,omitempty"`
 	CheckedInAt           *string `json:"checkedInAt,omitempty"`
-	AttendedAt            *string `json:"attendedAt,omitempty"`
 	CancelledAt           *string `json:"cancelledAt,omitempty"`
 	CancelledByUserID     *string `json:"cancelledByUserId,omitempty"`
 	CancelReason          *string `json:"cancelReason,omitempty"`

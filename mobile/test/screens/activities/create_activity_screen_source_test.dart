@@ -412,6 +412,46 @@ void main() {
     },
   );
 
+  test(
+    'create activity cover placeholder decorations scale with available space',
+    () async {
+      final source = await File(
+        'lib/screens/activities/create_activity_screen.dart',
+      ).readAsString();
+
+      final placeholderStart = source.indexOf(
+        'Widget _buildPlaceholder({required bool hasPreview})',
+      );
+      final nextMethodStart = source.indexOf('@override', placeholderStart);
+      expect(placeholderStart, isNonNegative);
+      expect(nextMethodStart, greaterThan(placeholderStart));
+
+      final placeholderSource = source.substring(
+        placeholderStart,
+        nextMethodStart,
+      );
+      expect(placeholderSource, contains('LayoutBuilder('));
+      expect(placeholderSource, contains('constraints.biggest.shortestSide'));
+      expect(placeholderSource, isNot(contains('width: 138')));
+      expect(placeholderSource, isNot(contains('height: 138')));
+      expect(placeholderSource, isNot(contains('width: 150')));
+      expect(placeholderSource, isNot(contains('height: 150')));
+    },
+  );
+
+  test('create activity picker list height follows screen height', () async {
+    final source = await File(
+      'lib/screens/activities/create_activity_screen.dart',
+    ).readAsString();
+
+    final sheetStart = source.indexOf('class _CategoryPickerSheet');
+    expect(sheetStart, isNonNegative);
+    final sheetSource = source.substring(sheetStart);
+
+    expect(sheetSource, contains('MediaQuery.sizeOf(context).height'));
+    expect(sheetSource, isNot(contains('maxHeight: 360')));
+  });
+
   test('edit activity locks meeting address one hour before start', () async {
     final source = await File(
       'lib/screens/activities/create_activity_screen.dart',

@@ -1873,9 +1873,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get participantStatusCheckedIn => 'Checked in';
 
   @override
-  String get participantStatusAttended => 'Attended';
-
-  @override
   String get participantStatusNoShow => 'No show';
 
   @override
@@ -4272,9 +4269,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myActivitiesRecreateButton => 'Recreate';
 
   @override
-  String get myActivitiesOpenButton => 'Open Activity';
-
-  @override
   String get myActivitiesRetryButton => 'Try Again';
 
   @override
@@ -4892,13 +4886,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get activityReviewUnavailable =>
-      'Reviews are available only to attended participants after the activity is completed.';
+      'Reviews are available only to checked-in participants after the activity is completed.';
 
   @override
   String get activityReviewSaved => 'Review saved';
 
   @override
   String get activityReviewSaveFailed => 'Could not save review';
+
+  @override
+  String get activityReviewPublishConfirmTitle => 'Publish review?';
+
+  @override
+  String get activityReviewPublishConfirmDescription =>
+      'After publishing, your activity and organizer ratings will be visible in reviews.';
+
+  @override
+  String get activityReviewPublishConfirmButton => 'Publish review';
 
   @override
   String get activityPerPerson => '/ person';

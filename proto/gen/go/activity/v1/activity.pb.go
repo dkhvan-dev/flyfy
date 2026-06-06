@@ -398,7 +398,6 @@ type ActivityParticipant struct {
 	PaidAt                string                 `protobuf:"bytes,9,opt,name=paid_at,json=paidAt,proto3" json:"paid_at,omitempty"`
 	AttendanceConfirmedAt string                 `protobuf:"bytes,10,opt,name=attendance_confirmed_at,json=attendanceConfirmedAt,proto3" json:"attendance_confirmed_at,omitempty"`
 	CheckedInAt           string                 `protobuf:"bytes,11,opt,name=checked_in_at,json=checkedInAt,proto3" json:"checked_in_at,omitempty"`
-	AttendedAt            string                 `protobuf:"bytes,12,opt,name=attended_at,json=attendedAt,proto3" json:"attended_at,omitempty"`
 	CancelledAt           string                 `protobuf:"bytes,13,opt,name=cancelled_at,json=cancelledAt,proto3" json:"cancelled_at,omitempty"`
 	CancelledByUserId     string                 `protobuf:"bytes,14,opt,name=cancelled_by_user_id,json=cancelledByUserId,proto3" json:"cancelled_by_user_id,omitempty"`
 	CancelReason          string                 `protobuf:"bytes,15,opt,name=cancel_reason,json=cancelReason,proto3" json:"cancel_reason,omitempty"`
@@ -511,13 +510,6 @@ func (x *ActivityParticipant) GetAttendanceConfirmedAt() string {
 func (x *ActivityParticipant) GetCheckedInAt() string {
 	if x != nil {
 		return x.CheckedInAt
-	}
-	return ""
-}
-
-func (x *ActivityParticipant) GetAttendedAt() string {
-	if x != nil {
-		return x.AttendedAt
 	}
 	return ""
 }
@@ -1252,7 +1244,7 @@ const file_activity_v1_activity_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18( \x01(\tR\tcreatedAt\x12\x1d\n" +
 	"\n" +
-	"updated_at\x18) \x01(\tR\tupdatedAt\"\xcd\x04\n" +
+	"updated_at\x18) \x01(\tR\tupdatedAt\"\xbf\x04\n" +
 	"\x13ActivityParticipant\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\vactivity_id\x18\x02 \x01(\tR\n" +
@@ -1267,16 +1259,14 @@ const file_activity_v1_activity_proto_rawDesc = "" +
 	"\apaid_at\x18\t \x01(\tR\x06paidAt\x126\n" +
 	"\x17attendance_confirmed_at\x18\n" +
 	" \x01(\tR\x15attendanceConfirmedAt\x12\"\n" +
-	"\rchecked_in_at\x18\v \x01(\tR\vcheckedInAt\x12\x1f\n" +
-	"\vattended_at\x18\f \x01(\tR\n" +
-	"attendedAt\x12!\n" +
+	"\rchecked_in_at\x18\v \x01(\tR\vcheckedInAt\x12!\n" +
 	"\fcancelled_at\x18\r \x01(\tR\vcancelledAt\x12/\n" +
 	"\x14cancelled_by_user_id\x18\x0e \x01(\tR\x11cancelledByUserId\x12#\n" +
 	"\rcancel_reason\x18\x0f \x01(\tR\fcancelReason\x12\x1d\n" +
 	"\n" +
 	"created_at\x18\x10 \x01(\tR\tcreatedAt\x12\x1d\n" +
 	"\n" +
-	"updated_at\x18\x11 \x01(\tR\tupdatedAt\"9\n" +
+	"updated_at\x18\x11 \x01(\tR\tupdatedAtJ\x04\b\f\x10\rR\vattended_at\"9\n" +
 	"\x16GetActivityByIdRequest\x12\x1f\n" +
 	"\vactivity_id\x18\x01 \x01(\tR\n" +
 	"activityId\"L\n" +

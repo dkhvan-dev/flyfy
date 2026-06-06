@@ -169,4 +169,201 @@ void main() {
       expect(cardSource, isNot(contains('fallbackText: locationText')));
     },
   );
+
+  test(
+    'attended completed activities expose activity and organizer review action',
+    () async {
+      final source = await File(
+        'lib/screens/activities/my_activities_screen.dart',
+      ).readAsString();
+
+      expect(
+        source,
+        contains("import '../../core/network/activity_api.dart';"),
+      );
+      expect(
+        source,
+        contains(
+          "import '../../features/activities/models/activity_review_vm.dart';",
+        ),
+      );
+      expect(
+        source,
+        contains(
+          "import '../../features/activities/models/activity_participant_vm.dart';",
+        ),
+      );
+      expect(source, contains("import 'widgets/activity_review_sheet.dart';"));
+      expect(
+        source,
+        contains('final ActivityApi _activityApi = ActivityApi();'),
+      );
+      expect(
+        source,
+        contains(
+          'Future<void> _openReviewSheet(ActivityListItemVm item) async',
+        ),
+      );
+      expect(
+        RegExp(
+          r'_activityApi\.getActivityReviews\(\s*activityId:\s*item\.id,\s*limit:\s*1000,?\s*\)',
+        ).hasMatch(source),
+        isTrue,
+      );
+      expect(
+        RegExp(
+          r'_activityApi\.getActivityParticipants\(\s*item\.id,\s*limit: 1000,\s*\)',
+        ).hasMatch(source),
+        isTrue,
+      );
+      expect(source, contains('bool _isReviewableParticipant('));
+      expect(source, contains("case 'CHECKED_IN':"));
+      expect(source, isNot(contains("case 'ATTENDED':")));
+      expect(source, contains('_isReviewableParticipant(currentParticipant)'));
+      expect(
+        RegExp(
+          r'_activityApi\.getActivityOrganizerReviews\(\s*activityId:\s*item\.id,\s*limit:\s*1000,?\s*\)',
+        ).hasMatch(source),
+        isTrue,
+      );
+      expect(source, contains('showActivityReviewSheet('));
+      expect(
+        source,
+        contains('_activityApi.saveActivityReviews(item.id, request)'),
+      );
+      expect(source, contains('l10n.activityReviewSaved'));
+      expect(source, contains('l10n.activityReviewSaveFailed'));
+      expect(
+        source,
+        contains('bool _canReviewActivity(ActivityListItemVm item)'),
+      );
+      expect(
+        RegExp(
+          r'_activeTab == _MyActivitiesTab\.attended\s*&&\s*_canReviewActivity\(item\)',
+        ).hasMatch(source),
+        isTrue,
+      );
+
+      final cardStart = source.indexOf('class _MyActivitiesCard');
+      final coverStart = source.indexOf('class _ActivityCover');
+      expect(cardStart, isNonNegative);
+      expect(coverStart, greaterThan(cardStart));
+
+      final cardSource = source.substring(cardStart, coverStart);
+      expect(cardSource, contains('final VoidCallback? onReviewTap;'));
+      expect(cardSource, contains('final bool hasReview;'));
+      expect(cardSource, contains('l10n.activityReviewWriteButton'));
+      expect(cardSource, contains('l10n.activityReviewEditButton'));
+      expect(cardSource, contains('Icons.star_rounded'));
+    },
+  );
+
+  test('review action label switches to edit after user has a review', () async {
+    final source = await File(
+      'lib/screens/activities/my_activities_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('final Set<String> _reviewedActivityIds = {};'));
+    expect(
+      source,
+      contains(
+        'final Map<String, ActivityReviewVm> _activityReviewCache = {};',
+      ),
+    );
+    expect(
+      source,
+      contains(
+        'final Map<String, ActivityOrganizerReviewVm> _organizerReviewCache = {};',
+      ),
+    );
+    expect(
+      RegExp(
+        r'hasReview:\s*_reviewedActivityIds\.contains\(\s*item\.id\s*,?\s*\)',
+      ).hasMatch(source),
+      isTrue,
+    );
+    expect(
+      RegExp(
+        r'label:\s*hasReview\s*\?\s*l10n\.activityReviewEditButton\s*:\s*l10n\.activityReviewWriteButton',
+      ).hasMatch(source),
+      isTrue,
+    );
+    expect(
+      RegExp(r'_setActivityReviewState\(\s*item\.id,').hasMatch(source),
+      isTrue,
+    );
+  });
+
+  test(
+    'review edit opens from cached reviews before network prefetch',
+    () async {
+      final source = await File(
+        'lib/screens/activities/my_activities_screen.dart',
+      ).readAsString();
+
+      final methodStart = source.indexOf(
+        'Future<void> _openReviewSheet(ActivityListItemVm item) async',
+      );
+      final nextMethodStart = source.indexOf(
+        'void _handleSearchChanged()',
+        methodStart,
+      );
+      expect(methodStart, isNonNegative);
+      expect(nextMethodStart, greaterThan(methodStart));
+
+      final methodSource = source.substring(methodStart, nextMethodStart);
+      final cacheBranchStart = methodSource.indexOf(
+        '_reviewStateLoadedActivityIds.contains(item.id)',
+      );
+      final editorStart = methodSource.indexOf('_showReviewEditor(');
+      final participantsFetchStart = methodSource.indexOf(
+        '_activityApi.getActivityParticipants(',
+      );
+
+      expect(cacheBranchStart, isNonNegative);
+      expect(editorStart, greaterThan(cacheBranchStart));
+      expect(participantsFetchStart, greaterThan(editorStart));
+      expect(methodSource, contains('return;'));
+    },
+  );
+
+  test(
+    'my activities cards open details by tap instead of open button',
+    () async {
+      final source = await File(
+        'lib/screens/activities/my_activities_screen.dart',
+      ).readAsString();
+
+      final cardStart = source.indexOf('class _MyActivitiesCard');
+      final coverStart = source.indexOf('class _ActivityCover');
+      expect(cardStart, isNonNegative);
+      expect(coverStart, greaterThan(cardStart));
+
+      final cardSource = source.substring(cardStart, coverStart);
+      expect(cardSource, contains('onCardTap'));
+      expect(cardSource, isNot(contains('myActivitiesOpenButton')));
+      expect(cardSource, isNot(contains('Icons.open_in_new_rounded')));
+    },
+  );
+
+  test(
+    'my activities loading skeleton avoids fixed content dimensions',
+    () async {
+      final source = await File(
+        'lib/screens/activities/my_activities_screen.dart',
+      ).readAsString();
+
+      final skeletonStart = source.indexOf('class _MyActivitiesSkeletonCard');
+      final filterSheetStart = source.indexOf('class _MyActivitiesFilterSheet');
+      expect(skeletonStart, isNonNegative);
+      expect(filterSheetStart, greaterThan(skeletonStart));
+
+      final skeletonSource = source.substring(skeletonStart, filterSheetStart);
+      expect(skeletonSource, contains('AspectRatio('));
+      expect(skeletonSource, contains('LayoutBuilder('));
+      expect(skeletonSource, contains('constraints.maxWidth'));
+      expect(skeletonSource, isNot(contains('height: compact ? 188 : 210')));
+      expect(skeletonSource, isNot(contains('_SkeletonLine(width: 180')));
+    },
+  );
 }

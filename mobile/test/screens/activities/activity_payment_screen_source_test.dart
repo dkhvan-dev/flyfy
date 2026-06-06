@@ -45,4 +45,20 @@ void main() {
     expect(footerSource, contains('maxLines: 2'));
     expect(footerSource, isNot(contains('height: compact ? 70 : 78')));
   });
+
+  test('activity payment summary media is aspect-ratio based', () async {
+    final source = await File(
+      'lib/screens/activities/activity_payment_screen.dart',
+    ).readAsString();
+
+    final summaryStart = source.indexOf('class _SummaryCard');
+    final contentStart = source.indexOf('class _SummaryTextContent');
+    expect(summaryStart, isNonNegative);
+    expect(contentStart, greaterThan(summaryStart));
+
+    final summarySource = source.substring(summaryStart, contentStart);
+    expect(summarySource, contains('AspectRatio('));
+    expect(summarySource, isNot(contains('height: compact ? 154 : 126')));
+    expect(summarySource, isNot(contains('SizedBox(width: 132')));
+  });
 }

@@ -1404,7 +1404,6 @@ func toParticipantResponse(item *model.ActivityParticipant) dto.ParticipantRespo
 		PaidAt:                formatOptionalTime(item.PaidAt),
 		AttendanceConfirmedAt: formatOptionalTime(item.AttendanceConfirmedAt),
 		CheckedInAt:           formatOptionalTime(item.CheckedInAt),
-		AttendedAt:            formatOptionalTime(item.AttendedAt),
 		CancelledAt:           formatOptionalTime(item.CancelledAt),
 		CancelledByUserID:     formatOptionalUUID(item.CancelledByUserID),
 		CancelReason:          item.CancelReason,

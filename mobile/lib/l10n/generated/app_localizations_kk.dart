@@ -1890,9 +1890,6 @@ class AppLocalizationsKk extends AppLocalizations {
   String get participantStatusCheckedIn => 'Келгені белгіленді';
 
   @override
-  String get participantStatusAttended => 'Қатысты';
-
-  @override
   String get participantStatusNoShow => 'Келмеді';
 
   @override
@@ -4307,9 +4304,6 @@ class AppLocalizationsKk extends AppLocalizations {
   String get myActivitiesRecreateButton => 'Қайта жасау';
 
   @override
-  String get myActivitiesOpenButton => 'Белсенділікті ашу';
-
-  @override
   String get myActivitiesRetryButton => 'Қайталау';
 
   @override
@@ -4932,13 +4926,23 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get activityReviewUnavailable =>
-      'Пікірлер белсенділік аяқталғаннан кейін тек қатысқаны расталған қатысушыларға қолжетімді.';
+      'Пікірлер белсенділік аяқталғаннан кейін тек келгені белгіленген қатысушыларға қолжетімді.';
 
   @override
   String get activityReviewSaved => 'Пікір сақталды';
 
   @override
   String get activityReviewSaveFailed => 'Пікірді сақтау мүмкін болмады';
+
+  @override
+  String get activityReviewPublishConfirmTitle => 'Пікірді жариялау керек пе?';
+
+  @override
+  String get activityReviewPublishConfirmDescription =>
+      'Жарияланғаннан кейін белсенділік пен ұйымдастырушыға берген бағаларыңыз пікірлерде көрінеді.';
+
+  @override
+  String get activityReviewPublishConfirmButton => 'Жариялау';
 
   @override
   String get activityPerPerson => '/ адам';

@@ -117,6 +117,36 @@ void main() {
     },
   );
 
+  test(
+    'activity details meeting card disables native map on iOS read-only view',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activity_details_screen.dart',
+      ).readAsString();
+
+      final helperStart = source.indexOf('bool _isIosPlatform');
+      expect(helperStart, isNonNegative);
+      final helperEnd = source.indexOf('class ', helperStart);
+      expect(helperEnd, greaterThan(helperStart));
+
+      final helperSource = source.substring(helperStart, helperEnd);
+      expect(helperSource, contains('TargetPlatform.iOS'));
+      expect(helperSource, contains('Theme.of(context).platform'));
+
+      final mapCardStart = source.indexOf('class _MeetingMapCard');
+      final fallbackCardStart = source.indexOf(
+        'class _MeetingLocationFallbackCard',
+        mapCardStart,
+      );
+      expect(mapCardStart, isNonNegative);
+      expect(fallbackCardStart, greaterThan(mapCardStart));
+
+      final mapCardSource = source.substring(mapCardStart, fallbackCardStart);
+      expect(mapCardSource, contains('nativeMapEnabled:'));
+      expect(mapCardSource, contains('!_isIosPlatform(context)'));
+    },
+  );
+
   test('details screen does not look up providers from dispose', () async {
     final source = await File(
       'lib/screens/activities/activity_details_screen.dart',
@@ -262,6 +292,42 @@ void main() {
     },
   );
 
+  test('details reviews section displays organizer reviews', () async {
+    final source = await File(
+      'lib/screens/activities/activity_details_screen.dart',
+    ).readAsString();
+
+    final usageStart = source.indexOf('_ActivityReviewsSection(');
+    final usageEnd = source.indexOf('),', usageStart);
+    expect(usageStart, isNonNegative);
+    expect(usageEnd, greaterThan(usageStart));
+
+    final usageSource = source.substring(usageStart, usageEnd);
+    expect(usageSource, contains('activityReviews: _activityReviews'));
+    expect(usageSource, contains('organizerReviews: _organizerReviews'));
+    expect(usageSource, contains('hasMyReview:'));
+
+    final sectionStart = source.indexOf('class _ActivityReviewsSection');
+    final nextSectionStart = source.indexOf(
+      'class _ActivityReviewGroupTitle',
+      sectionStart,
+    );
+    expect(sectionStart, isNonNegative);
+    expect(nextSectionStart, greaterThan(sectionStart));
+
+    final sectionSource = source.substring(sectionStart, nextSectionStart);
+    expect(sectionSource, contains('final List<ActivityReviewVm>'));
+    expect(
+      sectionSource,
+      contains('final List<ActivityOrganizerReviewVm> organizerReviews;'),
+    );
+    expect(sectionSource, contains('final bool hasMyReview;'));
+    expect(sectionSource, contains('activityReviews.isNotEmpty ||'));
+    expect(sectionSource, contains('organizerReviews.isNotEmpty'));
+    expect(sectionSource, contains('activityOrganizerReviewsTitle'));
+    expect(sectionSource, contains('activityReviewOrganizerLabel'));
+  });
+
   test(
     'host card opens profile from the card and shows activity rating',
     () async {
@@ -293,6 +359,78 @@ void main() {
       );
       expect(usageSource, contains('onTap: ()'));
       expect(usageSource, isNot(contains('buttonLabel: l10n.profileTitle')));
+    },
+  );
+
+  test('details stat card lets localized user time text wrap fully', () async {
+    final source = await File(
+      'lib/screens/activities/activity_details_screen.dart',
+    ).readAsString();
+
+    final cardStart = source.indexOf('class _DetailsStatCard');
+    final nextClassStart = source.indexOf('class ', cardStart + 1);
+    expect(cardStart, isNonNegative);
+    expect(nextClassStart, greaterThan(cardStart));
+
+    final cardSource = source.substring(cardStart, nextClassStart);
+    expect(source, contains('timeDisplayYourTime(startUserTime)'));
+    expect(source, contains('timeDisplayYourTime(endUserTime)'));
+    expect(cardSource, isNot(contains('maxLines: dense ? 3 : 2')));
+    expect(cardSource, isNot(contains('TextOverflow.fade')));
+  });
+
+  test(
+    'activity review skeleton cards grow from content instead of fixed height',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activity_details_screen.dart',
+      ).readAsString();
+
+      final skeletonStart = source.indexOf('class _ActivityReviewSkeletonCard');
+      final nextClassStart = source.indexOf('class ', skeletonStart + 1);
+      expect(skeletonStart, isNonNegative);
+      expect(nextClassStart, greaterThan(skeletonStart));
+
+      final skeletonSource = source.substring(skeletonStart, nextClassStart);
+      expect(skeletonSource, contains('padding:'));
+      expect(skeletonSource, contains('Column('));
+      expect(skeletonSource, isNot(contains('height: 116')));
+    },
+  );
+
+  test(
+    'meeting protected notice overlay scrolls within constrained map height',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activity_details_screen.dart',
+      ).readAsString();
+
+      final overlayStart = source.indexOf(
+        'class _ProtectedMeetingNoticeOverlay',
+      );
+      final nextClassStart = source.indexOf('class ', overlayStart + 1);
+      expect(overlayStart, isNonNegative);
+      expect(nextClassStart, greaterThan(overlayStart));
+
+      final overlaySource = source.substring(overlayStart, nextClassStart);
+      expect(overlaySource, contains('LayoutBuilder('));
+      expect(overlaySource, contains('SingleChildScrollView('));
+      expect(overlaySource, contains('ConstrainedBox('));
+      expect(overlaySource, contains('constraints.hasBoundedHeight'));
+      expect(overlaySource, contains('minHeight: minHeight'));
+      expect(overlaySource, contains('mainAxisSize: MainAxisSize.min'));
+      expect(overlaySource, contains('activitySensitiveDetailsProtected'));
+
+      final sectionStart = source.indexOf('class _MeetingSection');
+      final mapCardStart = source.indexOf(
+        'class _MeetingMapCard',
+        sectionStart,
+      );
+      expect(sectionStart, isNonNegative);
+      expect(mapCardStart, greaterThan(sectionStart));
+
+      final sectionSource = source.substring(sectionStart, mapCardStart);
+      expect(sectionSource, contains('_ProtectedMeetingNoticeOverlay('));
     },
   );
 }

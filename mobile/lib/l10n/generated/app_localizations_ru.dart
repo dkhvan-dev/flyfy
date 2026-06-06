@@ -1875,9 +1875,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get participantStatusCheckedIn => 'Отметился';
 
   @override
-  String get participantStatusAttended => 'Посетил';
-
-  @override
   String get participantStatusNoShow => 'Не пришел';
 
   @override
@@ -4294,9 +4291,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get myActivitiesRecreateButton => 'Повторить';
 
   @override
-  String get myActivitiesOpenButton => 'Открыть активность';
-
-  @override
   String get myActivitiesRetryButton => 'Повторить';
 
   @override
@@ -4914,13 +4908,23 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get activityReviewUnavailable =>
-      'Отзывы доступны только участникам с подтвержденным посещением после завершения активности.';
+      'Отзывы доступны только участникам, которые отметились, после завершения активности.';
 
   @override
   String get activityReviewSaved => 'Отзыв сохранен';
 
   @override
   String get activityReviewSaveFailed => 'Не удалось сохранить отзыв';
+
+  @override
+  String get activityReviewPublishConfirmTitle => 'Опубликовать отзыв?';
+
+  @override
+  String get activityReviewPublishConfirmDescription =>
+      'После публикации ваши оценки активности и организатора будут видны в отзывах.';
+
+  @override
+  String get activityReviewPublishConfirmButton => 'Опубликовать';
 
   @override
   String get activityPerPerson => '/ чел.';

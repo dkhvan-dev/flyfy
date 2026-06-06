@@ -1338,7 +1338,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     final reviewParticipant = _reviewParticipantForCurrentUser(currentUserId);
     final canWriteActivityReview =
         status == 'COMPLETED' &&
-        reviewParticipant?.normalizedStatus == 'ATTENDED';
+        reviewParticipant?.normalizedStatus == 'CHECKED_IN';
     final canWriteOrganizerReview =
         canWriteActivityReview && currentUserId != activity.hostUserId.trim();
     final isDraft = status == 'DRAFT';
@@ -1617,7 +1617,9 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                             loadFailed: _reviewsError != null,
                             canWriteReview: canWriteActivityReview,
                             isSavingReview: _isSavingReviews,
-                            currentUserId: currentUserId,
+                            hasMyReview:
+                                _myActivityReview(currentUserId) != null ||
+                                _myOrganizerReview(currentUserId) != null,
                             onWriteReviewTap: canWriteActivityReview
                                 ? () => _openActivityReviewsSheet(
                                     activity: activity,
@@ -3576,8 +3578,6 @@ class _DetailsStatCard extends StatelessWidget {
           SizedBox(height: dense ? 5 : 6),
           Text(
             item.value,
-            maxLines: dense ? 3 : 2,
-            overflow: TextOverflow.fade,
             style: const TextStyle(
               color: _DetailsColors.text,
               fontSize: 13,
@@ -3756,45 +3756,7 @@ class _MeetingSection extends StatelessWidget {
                     activity: activity,
                   ),
                 if (showProtectedNotice)
-                  Container(
-                    color: Colors.black.withValues(alpha: 0.26),
-                    padding: const EdgeInsets.all(20),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: BackdropFilter(
-                        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              width: 54,
-                              height: 54,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.12),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.lock_outline_rounded,
-                                color: Colors.white,
-                                size: 26,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              l10n.activitySensitiveDetailsProtected,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                height: 1.45,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                  _ProtectedMeetingNoticeOverlay(l10n: l10n),
                 Positioned(
                   left: 16,
                   top: 16,
@@ -3934,6 +3896,72 @@ class _MeetingSection extends StatelessWidget {
   }
 }
 
+class _ProtectedMeetingNoticeOverlay extends StatelessWidget {
+  const _ProtectedMeetingNoticeOverlay({required this.l10n});
+
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.black.withValues(alpha: 0.26),
+      padding: const EdgeInsets.all(20),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final minHeight = constraints.hasBoundedHeight
+                  ? constraints.maxHeight
+                  : 0.0;
+
+              return SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: minHeight),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 54,
+                          height: 54,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.lock_outline_rounded,
+                            color: Colors.white,
+                            size: 26,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          l10n.activitySensitiveDetailsProtected,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            height: 1.45,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _MeetingMapCard extends StatelessWidget {
   const _MeetingMapCard({required this.point});
 
@@ -3941,8 +3969,19 @@ class _MeetingMapCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppMapCard(target: point, hasMarker: true, initialZoom: 15.4);
+    return AppMapCard(
+      target: point,
+      hasMarker: true,
+      initialZoom: 15.4,
+      // MapLibre iOS 0.3.x can emit late native callbacks after a
+      // read-only platform view is disposed; keep details cards static there.
+      nativeMapEnabled: !_isIosPlatform(context),
+    );
   }
+}
+
+bool _isIosPlatform(BuildContext context) {
+  return Theme.of(context).platform == TargetPlatform.iOS;
 }
 
 class _MeetingLocationFallbackCard extends StatelessWidget {
@@ -5246,7 +5285,7 @@ class _ActivityReviewsSection extends StatelessWidget {
     required this.loadFailed,
     required this.canWriteReview,
     required this.isSavingReview,
-    required this.currentUserId,
+    required this.hasMyReview,
     required this.onWriteReviewTap,
   });
 
@@ -5256,7 +5295,7 @@ class _ActivityReviewsSection extends StatelessWidget {
   final bool loadFailed;
   final bool canWriteReview;
   final bool isSavingReview;
-  final String currentUserId;
+  final bool hasMyReview;
   final VoidCallback? onWriteReviewTap;
 
   @override
@@ -5264,17 +5303,6 @@ class _ActivityReviewsSection extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final hasReviews =
         activityReviews.isNotEmpty || organizerReviews.isNotEmpty;
-    final hasMyReview =
-        activityReviews.any(
-          (item) =>
-              item.author.userId.trim() == currentUserId ||
-              item.authorUserId.trim() == currentUserId,
-        ) ||
-        organizerReviews.any(
-          (item) =>
-              item.author.userId.trim() == currentUserId ||
-              item.authorUserId.trim() == currentUserId,
-        );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -5581,11 +5609,75 @@ class _ActivityReviewSkeletonCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 116,
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.045),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Flexible(flex: 1, child: _ActivityReviewSkeletonDot()),
+              const SizedBox(width: 10),
+              Expanded(
+                flex: 8,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    _ActivityReviewSkeletonLine(widthFactor: 0.52),
+                    SizedBox(height: 6),
+                    _ActivityReviewSkeletonLine(widthFactor: 0.34),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          const _ActivityReviewSkeletonLine(widthFactor: 0.92),
+          const SizedBox(height: 8),
+          const _ActivityReviewSkeletonLine(widthFactor: 0.72),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActivityReviewSkeletonDot extends StatelessWidget {
+  const _ActivityReviewSkeletonDot();
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 1,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white.withValues(alpha: 0.07),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActivityReviewSkeletonLine extends StatelessWidget {
+  const _ActivityReviewSkeletonLine({required this.widthFactor});
+
+  final double widthFactor;
+
+  @override
+  Widget build(BuildContext context) {
+    return FractionallySizedBox(
+      alignment: Alignment.centerLeft,
+      widthFactor: widthFactor,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: const SizedBox(width: double.infinity, height: 10),
       ),
     );
   }

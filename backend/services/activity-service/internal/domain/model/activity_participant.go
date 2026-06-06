@@ -29,7 +29,6 @@ type ActivityParticipant struct {
 	PaidAt                *time.Time
 	AttendanceConfirmedAt *time.Time
 	CheckedInAt           *time.Time
-	AttendedAt            *time.Time
 	CancelledAt           *time.Time
 	CancelledByUserID     *uuid.UUID
 	CancelReason          *string
@@ -105,9 +104,6 @@ func (p *ActivityParticipant) SetStatus(status enum.ParticipantStatus, now time.
 	case enum.ParticipantStatusCheckedIn:
 		ts := now.UTC()
 		p.CheckedInAt = &ts
-	case enum.ParticipantStatusAttended:
-		ts := now.UTC()
-		p.AttendedAt = &ts
 	case enum.ParticipantStatusCancelled:
 		ts := now.UTC()
 		p.CancelledAt = &ts

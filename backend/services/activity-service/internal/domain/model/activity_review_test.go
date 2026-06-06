@@ -12,7 +12,7 @@ import (
 
 func TestNewActivityReviewAllowsRatingOnlyReview(t *testing.T) {
 	activityID := uuid.New()
-	participant := validReviewParticipant(t, activityID, uuid.New(), enum.ParticipantStatusAttended)
+	participant := validReviewParticipant(t, activityID, uuid.New(), enum.ParticipantStatusCheckedIn)
 	activity := validReviewActivity(activityID, uuid.New())
 
 	review, err := NewActivityReview(NewActivityReviewParams{
@@ -38,7 +38,7 @@ func TestNewActivityReviewAllowsRatingOnlyReview(t *testing.T) {
 
 func TestNewActivityReviewRejectsInvalidRatingAndLongComment(t *testing.T) {
 	activityID := uuid.New()
-	participant := validReviewParticipant(t, activityID, uuid.New(), enum.ParticipantStatusAttended)
+	participant := validReviewParticipant(t, activityID, uuid.New(), enum.ParticipantStatusCheckedIn)
 	activity := validReviewActivity(activityID, uuid.New())
 
 	_, err := NewActivityReview(NewActivityReviewParams{
@@ -65,7 +65,7 @@ func TestNewActivityReviewRejectsInvalidRatingAndLongComment(t *testing.T) {
 func TestActivityOrganizerReviewRejectsSelfReview(t *testing.T) {
 	hostUserID := uuid.New()
 	activityID := uuid.New()
-	participant := validReviewParticipant(t, activityID, hostUserID, enum.ParticipantStatusAttended)
+	participant := validReviewParticipant(t, activityID, hostUserID, enum.ParticipantStatusCheckedIn)
 	activity := validReviewActivity(activityID, hostUserID)
 
 	_, err := NewActivityOrganizerReview(NewActivityOrganizerReviewParams{
@@ -82,7 +82,7 @@ func TestActivityOrganizerReviewRejectsSelfReview(t *testing.T) {
 
 func TestActivityReviewUpdateAndSoftDelete(t *testing.T) {
 	activityID := uuid.New()
-	participant := validReviewParticipant(t, activityID, uuid.New(), enum.ParticipantStatusAttended)
+	participant := validReviewParticipant(t, activityID, uuid.New(), enum.ParticipantStatusCheckedIn)
 	activity := validReviewActivity(activityID, uuid.New())
 	review, err := NewActivityReview(NewActivityReviewParams{
 		Activity:    activity,

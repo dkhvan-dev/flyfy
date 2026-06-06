@@ -28,7 +28,6 @@ String formatActivityStatus(String value, AppLocalizations l10n) {
     case 'DECLINED':
     case 'EXPIRED':
     case 'CHECKED_IN':
-    case 'ATTENDED':
     case 'NO_SHOW':
       return formatParticipantStatus(value, l10n);
     default:
@@ -94,8 +93,6 @@ String formatParticipantStatus(String value, AppLocalizations l10n) {
       return l10n.participantStatusExpired;
     case 'CHECKED_IN':
       return l10n.participantStatusCheckedIn;
-    case 'ATTENDED':
-      return l10n.participantStatusAttended;
     case 'NO_SHOW':
       return l10n.participantStatusNoShow;
     default:

@@ -277,7 +277,6 @@ func toProtoParticipant(item *model.ActivityParticipant) *activityv1.ActivityPar
 		PaidAt:                timePtrToValue(item.PaidAt),
 		AttendanceConfirmedAt: timePtrToValue(item.AttendanceConfirmedAt),
 		CheckedInAt:           timePtrToValue(item.CheckedInAt),
-		AttendedAt:            timePtrToValue(item.AttendedAt),
 		CancelledAt:           timePtrToValue(item.CancelledAt),
 		CancelledByUserId:     uuidPtrToValue(item.CancelledByUserID),
 		CancelReason:          valueOrEmpty(item.CancelReason),

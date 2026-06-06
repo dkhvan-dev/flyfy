@@ -75,7 +75,8 @@ class _ActivityReviewSheetState extends State<_ActivityReviewSheet> {
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context)!;
     final activityMutation = _activityEnabled
         ? ActivityReviewMutationRequest(
             rating: _activityRating,
@@ -106,10 +107,101 @@ class _ActivityReviewSheetState extends State<_ActivityReviewSheet> {
 
     if (activityMutation == null && organizerMutation == null) {
       setState(() {
-        _errorText = AppLocalizations.of(
-          context,
-        )!.myExcursionsReviewSelectOneError;
+        _errorText = l10n.myExcursionsReviewSelectOneError;
       });
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.72),
+      builder: (dialogContext) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  const Color(0xFF2B1808).withValues(alpha: 0.99),
+                  const Color(0xFF201208),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: const Color(0xFF3B260D)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.36),
+                  blurRadius: 24,
+                  offset: const Offset(0, 14),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.activityReviewPublishConfirmTitle,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    l10n.activityReviewPublishConfirmDescription,
+                    style: const TextStyle(
+                      color: Color(0xFFB9A88F),
+                      fontSize: 14,
+                      height: 1.35,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.of(dialogContext).pop(false),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.accent,
+                          ),
+                          child: Text(l10n.cancelButton),
+                        ),
+                        FilledButton(
+                          onPressed: () =>
+                              Navigator.of(dialogContext).pop(true),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.accent,
+                            foregroundColor: AppColors.textPrimary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                          ),
+                          child: Text(l10n.activityReviewPublishConfirmButton),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    if (!mounted || confirmed != true) {
       return;
     }
 
@@ -202,7 +294,7 @@ class _ActivityReviewSheetState extends State<_ActivityReviewSheet> {
                     onPressed: _submit,
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.accent,
-                      foregroundColor: const Color(0xFF201208),
+                      foregroundColor: AppColors.textPrimary,
                       minimumSize: const Size.fromHeight(50),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -255,19 +347,22 @@ class _ActivityReviewEditor extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SwitchListTile.adaptive(
-              value: enabled,
-              contentPadding: EdgeInsets.zero,
-              activeThumbColor: AppColors.accent,
-              title: Text(
-                title,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
+            Material(
+              color: Colors.transparent,
+              child: SwitchListTile.adaptive(
+                value: enabled,
+                contentPadding: EdgeInsets.zero,
+                activeThumbColor: AppColors.accent,
+                title: Text(
+                  title,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
+                onChanged: onEnabledChanged,
               ),
-              onChanged: onEnabledChanged,
             ),
             IgnorePointer(
               ignoring: !enabled,

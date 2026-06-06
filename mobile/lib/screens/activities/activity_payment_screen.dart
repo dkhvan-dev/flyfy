@@ -529,7 +529,6 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final image = Container(
-      height: compact ? 154 : 126,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(36),
         gradient: const LinearGradient(
@@ -611,12 +610,13 @@ class _SummaryCard extends StatelessWidget {
                   dateLabel: dateLabel,
                 ),
                 const SizedBox(height: 14),
-                image,
+                AspectRatio(aspectRatio: 2.2, child: image),
               ],
             )
           : Row(
               children: [
                 Expanded(
+                  flex: 3,
                   child: _SummaryTextContent(
                     hostLabel: hostLabel,
                     activityTitle: activity.title,
@@ -624,7 +624,10 @@ class _SummaryCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 14),
-                SizedBox(width: 132, child: image),
+                Flexible(
+                  flex: 2,
+                  child: AspectRatio(aspectRatio: 1.05, child: image),
+                ),
               ],
             ),
     );

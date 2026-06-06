@@ -15,7 +15,6 @@ const (
 	ParticipantStatusCancelledByActivity ParticipantStatus = "CANCELLED_BY_ACTIVITY"
 	ParticipantStatusExpired             ParticipantStatus = "EXPIRED"
 	ParticipantStatusCheckedIn           ParticipantStatus = "CHECKED_IN"
-	ParticipantStatusAttended            ParticipantStatus = "ATTENDED"
 	ParticipantStatusNoShow              ParticipantStatus = "NO_SHOW"
 )
 
@@ -33,7 +32,6 @@ func (v ParticipantStatus) IsValid() bool {
 		ParticipantStatusCancelledByActivity,
 		ParticipantStatusExpired,
 		ParticipantStatusCheckedIn,
-		ParticipantStatusAttended,
 		ParticipantStatusNoShow:
 		return true
 	default:

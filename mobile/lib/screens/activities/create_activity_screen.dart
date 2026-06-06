@@ -4639,62 +4639,71 @@ class _CoverUploadCard extends StatelessWidget {
   }
 
   Widget _buildPlaceholder({required bool hasPreview}) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF3A240D), Color(0xFF181109)],
-        ),
-      ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Positioned(
-            top: -36,
-            right: -30,
-            child: Container(
-              width: 138,
-              height: 138,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.accent.withValues(alpha: 0.17),
-              ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final baseSize = constraints.biggest.shortestSide;
+        final accentCircleSize = baseSize * 0.54;
+        final glowCircleSize = baseSize * 0.58;
+        final actionCircleSize = baseSize * 0.27;
+
+        return DecoratedBox(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF3A240D), Color(0xFF181109)],
             ),
           ),
-          Positioned(
-            left: -26,
-            bottom: -44,
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.05),
-              ),
-            ),
-          ),
-          if (!hasPreview)
-            Center(
-              child: Container(
-                width: 68,
-                height: 68,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.08),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.14),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Positioned(
+                top: -accentCircleSize * 0.26,
+                right: -accentCircleSize * 0.22,
+                child: Container(
+                  width: accentCircleSize,
+                  height: accentCircleSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.accent.withValues(alpha: 0.17),
                   ),
                 ),
-                child: Icon(
-                  Icons.add_photo_alternate_rounded,
-                  color: Colors.white.withValues(alpha: 0.92),
-                  size: 32,
+              ),
+              Positioned(
+                left: -glowCircleSize * 0.17,
+                bottom: -glowCircleSize * 0.29,
+                child: Container(
+                  width: glowCircleSize,
+                  height: glowCircleSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.05),
+                  ),
                 ),
               ),
-            ),
-        ],
-      ),
+              if (!hasPreview)
+                Center(
+                  child: Container(
+                    width: actionCircleSize,
+                    height: actionCircleSize,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.08),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.14),
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.add_photo_alternate_rounded,
+                      color: Colors.white.withValues(alpha: 0.92),
+                      size: actionCircleSize * 0.47,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -4879,6 +4888,8 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final maxListHeight = MediaQuery.sizeOf(context).height * 0.42;
+
     return Padding(
       padding: EdgeInsets.only(
         left: 16,
@@ -4922,7 +4933,7 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                 ),
                 const SizedBox(height: 8),
                 ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 360),
+                  constraints: BoxConstraints(maxHeight: maxListHeight),
                   child: ListView.separated(
                     shrinkWrap: true,
                     itemCount: widget.items.length,

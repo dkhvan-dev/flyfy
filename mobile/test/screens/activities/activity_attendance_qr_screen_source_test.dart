@@ -37,4 +37,21 @@ void main() {
       expect(source, isNot(contains('height: 360')));
     },
   );
+
+  test(
+    'activity attendance QR image sizes itself from available space',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activity_attendance_qr_screen.dart',
+      ).readAsString();
+
+      final bodyStart = source.indexOf('Widget _buildQrBody');
+      expect(bodyStart, isNonNegative);
+      final bodySource = source.substring(bodyStart);
+
+      expect(bodySource, contains('LayoutBuilder('));
+      expect(bodySource, contains('constraints.biggest.shortestSide'));
+      expect(bodySource, isNot(contains('size: 280')));
+    },
+  );
 }

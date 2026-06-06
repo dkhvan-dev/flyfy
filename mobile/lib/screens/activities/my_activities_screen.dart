@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -7,8 +8,10 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:inflap/core/ui/app_colors.dart';
 
+import '../../core/network/activity_api.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_list_screen_header.dart';
+import '../../core/ui/error_dialog.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
 import '../../core/ui/pagination_bar.dart';
 import '../../core/time/app_time.dart';
@@ -18,6 +21,8 @@ import '../../features/activities/activity_formatters.dart';
 import '../../features/activities/activity_taxonomy_resolver.dart';
 import '../../features/activities/models/activity_category_vm.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
+import '../../features/activities/models/activity_participant_vm.dart';
+import '../../features/activities/models/activity_review_vm.dart';
 import '../../features/profile/profile_completion_gate.dart';
 import '../../features/profile/profile_guard_result.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -26,6 +31,7 @@ import '../../providers/home_location_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
 import '../../shared/widgets/app_localized_location_text.dart';
+import 'widgets/activity_review_sheet.dart';
 
 enum _MyActivitiesTab { hosted, attended }
 
@@ -59,6 +65,12 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
+  final ActivityApi _activityApi = ActivityApi();
+  final Set<String> _reviewedActivityIds = {};
+  final Set<String> _reviewStateLoadedActivityIds = {};
+  final Map<String, ActivityReviewVm> _activityReviewCache = {};
+  final Map<String, ActivityOrganizerReviewVm> _organizerReviewCache = {};
+  String? _lastReviewStateSyncKey;
   _MyActivitiesTab _activeTab = _MyActivitiesTab.hosted;
   _MyActivitiesFilters _filters = const _MyActivitiesFilters();
   String _searchQuery = '';
@@ -152,6 +164,359 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(l10n.comingSoon)));
+  }
+
+  bool _canReviewActivity(ActivityListItemVm item) {
+    return item.status.trim().toUpperCase() == 'COMPLETED';
+  }
+
+  ActivityReviewVm? _myActivityReview(
+    List<ActivityReviewVm> reviews,
+    String currentUserId,
+  ) {
+    final normalizedCurrentUserId = currentUserId.trim();
+    if (normalizedCurrentUserId.isEmpty) return null;
+
+    for (final review in reviews) {
+      if (review.author.userId.trim() == normalizedCurrentUserId ||
+          review.authorUserId.trim() == normalizedCurrentUserId) {
+        return review;
+      }
+    }
+    return null;
+  }
+
+  ActivityOrganizerReviewVm? _myOrganizerReview(
+    List<ActivityOrganizerReviewVm> reviews,
+    String currentUserId,
+  ) {
+    final normalizedCurrentUserId = currentUserId.trim();
+    if (normalizedCurrentUserId.isEmpty) return null;
+
+    for (final review in reviews) {
+      if (review.author.userId.trim() == normalizedCurrentUserId ||
+          review.authorUserId.trim() == normalizedCurrentUserId) {
+        return review;
+      }
+    }
+    return null;
+  }
+
+  ActivityParticipantVm? _currentReviewParticipant(
+    List<ActivityParticipantVm> participants,
+    String currentUserId,
+  ) {
+    final normalizedCurrentUserId = currentUserId.trim();
+    if (normalizedCurrentUserId.isEmpty) return null;
+
+    for (final participant in participants) {
+      if (participant.userId.trim() == normalizedCurrentUserId) {
+        return participant;
+      }
+    }
+    return null;
+  }
+
+  bool _isActivityReviewConflict(Object error) {
+    return error is DioException && error.response?.statusCode == 409;
+  }
+
+  bool _isReviewableParticipant(ActivityParticipantVm? participant) {
+    switch (participant?.normalizedStatus) {
+      case 'CHECKED_IN':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  void _storeActivityReviewState(
+    String activityId, {
+    ActivityReviewVm? activityReview,
+    ActivityOrganizerReviewVm? organizerReview,
+  }) {
+    _reviewStateLoadedActivityIds.add(activityId);
+    if (activityReview != null || organizerReview != null) {
+      _reviewedActivityIds.add(activityId);
+    } else {
+      _reviewedActivityIds.remove(activityId);
+    }
+
+    if (activityReview != null) {
+      _activityReviewCache[activityId] = activityReview;
+    } else {
+      _activityReviewCache.remove(activityId);
+    }
+
+    if (organizerReview != null) {
+      _organizerReviewCache[activityId] = organizerReview;
+    } else {
+      _organizerReviewCache.remove(activityId);
+    }
+  }
+
+  void _setActivityReviewState(
+    String activityId, {
+    ActivityReviewVm? activityReview,
+    ActivityOrganizerReviewVm? organizerReview,
+  }) {
+    if (!mounted) return;
+
+    setState(() {
+      _storeActivityReviewState(
+        activityId,
+        activityReview: activityReview,
+        organizerReview: organizerReview,
+      );
+    });
+  }
+
+  void _scheduleReviewStateSyncForPage(
+    List<ActivityListItemVm> items,
+    String currentUserId,
+  ) {
+    if (_activeTab != _MyActivitiesTab.attended ||
+        currentUserId.trim().isEmpty) {
+      return;
+    }
+
+    final activityIds = items
+        .where(_canReviewActivity)
+        .map((item) => item.id.trim())
+        .where((id) => id.isNotEmpty)
+        .toList(growable: false);
+    if (activityIds.isEmpty) return;
+
+    final syncKey = '$currentUserId:${activityIds.join(',')}';
+    if (_lastReviewStateSyncKey == syncKey) return;
+    _lastReviewStateSyncKey = syncKey;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_syncReviewStateForItems(activityIds, currentUserId, syncKey));
+    });
+  }
+
+  Future<void> _syncReviewStateForItems(
+    List<String> activityIds,
+    String currentUserId,
+    String syncKey,
+  ) async {
+    final pendingActivityIds = activityIds
+        .where((id) => !_reviewStateLoadedActivityIds.contains(id))
+        .toList(growable: false);
+    if (pendingActivityIds.isEmpty) return;
+
+    final updates = <String, _CachedActivityReviewState>{};
+    var hasFailures = false;
+
+    await Future.wait(
+      pendingActivityIds.map((activityId) async {
+        try {
+          final results = await Future.wait<Object>([
+            _activityApi.getActivityReviews(
+              activityId: activityId,
+              limit: 1000,
+            ),
+            _activityApi.getActivityOrganizerReviews(
+              activityId: activityId,
+              limit: 1000,
+            ),
+          ]);
+          final activityReviewsPage = results[0] as ActivityReviewsPage;
+          final organizerReviewsPage =
+              results[1] as ActivityOrganizerReviewsPage;
+          updates[activityId] = _CachedActivityReviewState(
+            activityReview: _myActivityReview(
+              activityReviewsPage.items,
+              currentUserId,
+            ),
+            organizerReview: _myOrganizerReview(
+              organizerReviewsPage.items,
+              currentUserId,
+            ),
+          );
+        } catch (_) {
+          hasFailures = true;
+        }
+      }),
+    );
+
+    if (!mounted) return;
+    if (updates.isEmpty) {
+      if (hasFailures && _lastReviewStateSyncKey == syncKey) {
+        _lastReviewStateSyncKey = null;
+      }
+      return;
+    }
+
+    setState(() {
+      for (final entry in updates.entries) {
+        _storeActivityReviewState(
+          entry.key,
+          activityReview: entry.value.activityReview,
+          organizerReview: entry.value.organizerReview,
+        );
+      }
+      if (hasFailures && _lastReviewStateSyncKey == syncKey) {
+        _lastReviewStateSyncKey = null;
+      }
+    });
+  }
+
+  Future<void> _openReviewSheet(ActivityListItemVm item) async {
+    final l10n = AppLocalizations.of(context)!;
+    final currentUserId =
+        context.read<SessionProvider>().profile?.userId.trim() ?? '';
+    if (currentUserId.isEmpty) {
+      context.push(
+        Uri(
+          path: '/login',
+          queryParameters: {'from': '/me/activities'},
+        ).toString(),
+      );
+      return;
+    }
+
+    if (!_canReviewActivity(item)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.activityReviewUnavailable)));
+      return;
+    }
+
+    if (_reviewedActivityIds.contains(item.id) &&
+        _reviewStateLoadedActivityIds.contains(item.id)) {
+      await _showReviewEditor(
+        item: item,
+        currentUserId: currentUserId,
+        existingActivityReview: _activityReviewCache[item.id],
+        existingOrganizerReview: _organizerReviewCache[item.id],
+        l10n: l10n,
+      );
+      return;
+    }
+
+    late final List<ActivityParticipantVm> participants;
+    try {
+      participants = await _activityApi.getActivityParticipants(
+        item.id,
+        limit: 1000,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.activityReviewsLoadFailed,
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    final currentParticipant = _currentReviewParticipant(
+      participants,
+      currentUserId,
+    );
+    if (!_isReviewableParticipant(currentParticipant)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.activityReviewUnavailable)));
+      return;
+    }
+
+    late final ActivityReviewsPage activityReviewsPage;
+    late final ActivityOrganizerReviewsPage organizerReviewsPage;
+    try {
+      final results = await Future.wait<Object>([
+        _activityApi.getActivityReviews(activityId: item.id, limit: 1000),
+        _activityApi.getActivityOrganizerReviews(
+          activityId: item.id,
+          limit: 1000,
+        ),
+      ]);
+      activityReviewsPage = results[0] as ActivityReviewsPage;
+      organizerReviewsPage = results[1] as ActivityOrganizerReviewsPage;
+    } catch (_) {
+      if (!mounted) return;
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.activityReviewsLoadFailed,
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    final existingActivityReview = _myActivityReview(
+      activityReviewsPage.items,
+      currentUserId,
+    );
+    final existingOrganizerReview = _myOrganizerReview(
+      organizerReviewsPage.items,
+      currentUserId,
+    );
+    final hadExistingReview =
+        existingActivityReview != null || existingOrganizerReview != null;
+    if (_reviewedActivityIds.contains(item.id) != hadExistingReview ||
+        _activityReviewCache[item.id] != existingActivityReview ||
+        _organizerReviewCache[item.id] != existingOrganizerReview) {
+      _setActivityReviewState(
+        item.id,
+        activityReview: existingActivityReview,
+        organizerReview: existingOrganizerReview,
+      );
+    }
+
+    await _showReviewEditor(
+      item: item,
+      currentUserId: currentUserId,
+      existingActivityReview: existingActivityReview,
+      existingOrganizerReview: existingOrganizerReview,
+      l10n: l10n,
+    );
+  }
+
+  Future<void> _showReviewEditor({
+    required ActivityListItemVm item,
+    required String currentUserId,
+    required ActivityReviewVm? existingActivityReview,
+    required ActivityOrganizerReviewVm? existingOrganizerReview,
+    required AppLocalizations l10n,
+  }) async {
+    final request = await showActivityReviewSheet(
+      context,
+      activityReview: existingActivityReview,
+      organizerReview: existingOrganizerReview,
+      allowOrganizerReview: item.hostUserId.trim() != currentUserId,
+    );
+    if (request == null || !mounted) return;
+
+    try {
+      final result = await _activityApi.saveActivityReviews(item.id, request);
+      if (!mounted) return;
+      _setActivityReviewState(
+        item.id,
+        activityReview: result.activityReview,
+        organizerReview: result.organizerReview,
+      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.activityReviewSaved)));
+    } catch (error) {
+      if (!mounted) return;
+      if (_isActivityReviewConflict(error)) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.activityReviewUnavailable)));
+        return;
+      }
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.activityReviewSaveFailed,
+      );
+    }
   }
 
   void _handleSearchChanged() {
@@ -537,6 +902,10 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                 currentPage: _activePage,
                 pageSize: _pageSize,
               );
+              _scheduleReviewStateSyncForPage(
+                paginatedItems.items,
+                currentUserId,
+              );
               final errorMessage = _activeError(provider);
               final isInitialLoading =
                   state == ActivitiesState.loading && items.isEmpty;
@@ -625,45 +994,56 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                             i < paginatedItems.items.length;
                             i++
                           ) ...[
-                            _MyActivitiesCard(
-                              item: paginatedItems.items[i],
-                              tab: _activeTab,
-                              localeName: localeName,
-                              categoryLabel: _activityCategoryLabel(
-                                paginatedItems.items[i],
-                                provider.categoryItems,
-                                locale.languageCode,
-                              ),
-                              onPrimaryTap: () {
-                                if (_activeTab == _MyActivitiesTab.attended) {
-                                  _openDetails(paginatedItems.items[i]);
-                                  return;
-                                }
-
-                                final status = paginatedItems.items[i].status
-                                    .toUpperCase();
-                                if (status == 'COMPLETED' ||
-                                    status == 'CANCELLED' ||
-                                    status == 'ARCHIVED') {
-                                  _openDetails(paginatedItems.items[i]);
-                                  return;
-                                }
-                                _openEdit(paginatedItems.items[i]);
-                              },
-                              onSecondaryTap:
-                                  _activeTab == _MyActivitiesTab.hosted
-                                  ? () {
-                                      final item = paginatedItems.items[i];
-                                      if (item.status.toUpperCase() ==
-                                          'CANCELLED') {
-                                        _openRepeat(item);
-                                        return;
-                                      }
-                                      _showComingSoon();
+                            Builder(
+                              builder: (context) {
+                                final item = paginatedItems.items[i];
+                                return _MyActivitiesCard(
+                                  item: item,
+                                  tab: _activeTab,
+                                  localeName: localeName,
+                                  categoryLabel: _activityCategoryLabel(
+                                    item,
+                                    provider.categoryItems,
+                                    locale.languageCode,
+                                  ),
+                                  onPrimaryTap: () {
+                                    if (_activeTab ==
+                                        _MyActivitiesTab.attended) {
+                                      _openDetails(item);
+                                      return;
                                     }
-                                  : null,
-                              onCardTap: () =>
-                                  _openDetails(paginatedItems.items[i]),
+
+                                    final status = item.status.toUpperCase();
+                                    if (status == 'COMPLETED' ||
+                                        status == 'CANCELLED' ||
+                                        status == 'ARCHIVED') {
+                                      _openDetails(item);
+                                      return;
+                                    }
+                                    _openEdit(item);
+                                  },
+                                  onSecondaryTap:
+                                      _activeTab == _MyActivitiesTab.hosted
+                                      ? () {
+                                          if (item.status.toUpperCase() ==
+                                              'CANCELLED') {
+                                            _openRepeat(item);
+                                            return;
+                                          }
+                                          _showComingSoon();
+                                        }
+                                      : null,
+                                  onReviewTap:
+                                      _activeTab == _MyActivitiesTab.attended &&
+                                          _canReviewActivity(item)
+                                      ? () => _openReviewSheet(item)
+                                      : null,
+                                  hasReview: _reviewedActivityIds.contains(
+                                    item.id,
+                                  ),
+                                  onCardTap: () => _openDetails(item),
+                                );
+                              },
                             ),
                             if (i != paginatedItems.items.length - 1)
                               SizedBox(height: layout.cardSpacing),
@@ -755,6 +1135,16 @@ class _FilterStatusOption {
   final String key;
   final String label;
   final int count;
+}
+
+class _CachedActivityReviewState {
+  const _CachedActivityReviewState({
+    required this.activityReview,
+    required this.organizerReview,
+  });
+
+  final ActivityReviewVm? activityReview;
+  final ActivityOrganizerReviewVm? organizerReview;
 }
 
 class _MyActivityMetaData {
@@ -1097,7 +1487,9 @@ class _MyActivitiesCard extends StatelessWidget {
     required this.categoryLabel,
     required this.onPrimaryTap,
     required this.onCardTap,
+    this.hasReview = false,
     this.onSecondaryTap,
+    this.onReviewTap,
   });
 
   final ActivityListItemVm item;
@@ -1106,7 +1498,9 @@ class _MyActivitiesCard extends StatelessWidget {
   final String categoryLabel;
   final VoidCallback onPrimaryTap;
   final VoidCallback onCardTap;
+  final bool hasReview;
   final VoidCallback? onSecondaryTap;
+  final VoidCallback? onReviewTap;
 
   bool get _isHostedReadOnly =>
       tab == _MyActivitiesTab.hosted &&
@@ -1322,64 +1716,36 @@ class _MyActivitiesCard extends StatelessWidget {
     required bool stackPrimaryActions,
   }) {
     if (tab == _MyActivitiesTab.attended) {
-      return SizedBox(
-        width: double.infinity,
-        child: _CardActionButton(
-          label: l10n.myActivitiesOpenButton,
-          icon: Icons.open_in_new_rounded,
-          onTap: onPrimaryTap,
-          variant: _CardActionVariant.primary,
-        ),
-      );
-    }
-
-    if (_isHostedReadOnly) {
-      if (stackPrimaryActions) {
-        return Column(
-          children: [
-            SizedBox(
-              width: double.infinity,
-              child: _CardActionButton(
-                label: l10n.myActivitiesOpenButton,
-                icon: Icons.open_in_new_rounded,
-                onTap: onPrimaryTap,
-                variant: _CardActionVariant.primary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: _CardActionButton(
-                label: l10n.myActivitiesRecreateButton,
-                icon: Icons.copy_rounded,
-                onTap: onSecondaryTap,
-                variant: _CardActionVariant.secondary,
-              ),
-            ),
-          ],
+      if (onReviewTap != null) {
+        return SizedBox(
+          width: double.infinity,
+          child: _CardActionButton(
+            label: hasReview
+                ? l10n.activityReviewEditButton
+                : l10n.activityReviewWriteButton,
+            icon: Icons.star_rounded,
+            onTap: onReviewTap,
+            variant: _CardActionVariant.primary,
+          ),
         );
       }
 
-      return Row(
-        children: [
-          Expanded(
-            child: _CardActionButton(
-              label: l10n.myActivitiesOpenButton,
-              icon: Icons.open_in_new_rounded,
-              onTap: onPrimaryTap,
-              variant: _CardActionVariant.primary,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _CardActionButton(
-              label: l10n.myActivitiesRecreateButton,
-              icon: Icons.copy_rounded,
-              onTap: onSecondaryTap,
-              variant: _CardActionVariant.secondary,
-            ),
-          ),
-        ],
+      return const SizedBox.shrink();
+    }
+
+    if (_isHostedReadOnly) {
+      if (onSecondaryTap == null) {
+        return const SizedBox.shrink();
+      }
+
+      return SizedBox(
+        width: double.infinity,
+        child: _CardActionButton(
+          label: l10n.myActivitiesRecreateButton,
+          icon: Icons.copy_rounded,
+          onTap: onSecondaryTap,
+          variant: _CardActionVariant.secondary,
+        ),
       );
     }
 
@@ -1827,12 +2193,14 @@ class _MyActivitiesSkeletonCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Container(
-            height: compact ? 188 : 210,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(34),
+          AspectRatio(
+            aspectRatio: 1.55,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(34),
+                ),
               ),
             ),
           ),
@@ -1842,7 +2210,11 @@ class _MyActivitiesSkeletonCard extends StatelessWidget {
               children: [
                 _SkeletonLine(width: double.infinity, height: 22),
                 const SizedBox(height: 12),
-                const _SkeletonLine(width: 180, height: 16),
+                const FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: 0.58,
+                  child: _SkeletonLine(width: double.infinity, height: 16),
+                ),
                 const SizedBox(height: 18),
                 Row(
                   children: const [
@@ -1870,16 +2242,32 @@ class _SkeletonLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        width: width == 0 ? null : width,
-        height: height,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.07),
-          borderRadius: BorderRadius.circular(999),
-        ),
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : null;
+        final double? lineWidth;
+        if (availableWidth == null) {
+          lineWidth = width == 0 || width == double.infinity ? null : width;
+        } else if (width == 0 || width == double.infinity) {
+          lineWidth = availableWidth;
+        } else {
+          lineWidth = width.clamp(0, availableWidth).toDouble();
+        }
+
+        return Align(
+          alignment: Alignment.centerLeft,
+          child: Container(
+            width: lineWidth,
+            height: height,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.07),
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+        );
+      },
     );
   }
 }

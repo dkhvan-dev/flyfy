@@ -3466,12 +3466,6 @@ abstract class AppLocalizations {
   /// **'Checked in'**
   String get participantStatusCheckedIn;
 
-  /// No description provided for @participantStatusAttended.
-  ///
-  /// In en, this message translates to:
-  /// **'Attended'**
-  String get participantStatusAttended;
-
   /// No description provided for @participantStatusNoShow.
   ///
   /// In en, this message translates to:
@@ -7822,12 +7816,6 @@ abstract class AppLocalizations {
   /// **'Recreate'**
   String get myActivitiesRecreateButton;
 
-  /// No description provided for @myActivitiesOpenButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Open Activity'**
-  String get myActivitiesOpenButton;
-
   /// No description provided for @myActivitiesRetryButton.
   ///
   /// In en, this message translates to:
@@ -8939,7 +8927,7 @@ abstract class AppLocalizations {
   /// No description provided for @activityReviewUnavailable.
   ///
   /// In en, this message translates to:
-  /// **'Reviews are available only to attended participants after the activity is completed.'**
+  /// **'Reviews are available only to checked-in participants after the activity is completed.'**
   String get activityReviewUnavailable;
 
   /// No description provided for @activityReviewSaved.
@@ -8953,6 +8941,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not save review'**
   String get activityReviewSaveFailed;
+
+  /// No description provided for @activityReviewPublishConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish review?'**
+  String get activityReviewPublishConfirmTitle;
+
+  /// No description provided for @activityReviewPublishConfirmDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'After publishing, your activity and organizer ratings will be visible in reviews.'**
+  String get activityReviewPublishConfirmDescription;
+
+  /// No description provided for @activityReviewPublishConfirmButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish review'**
+  String get activityReviewPublishConfirmButton;
 
   /// No description provided for @activityPerPerson.
   ///

@@ -312,20 +312,25 @@ class _ActivityAttendanceQrScreenState
               borderRadius: BorderRadius.circular(28),
             ),
             padding: const EdgeInsets.all(18),
-            child: Center(
-              child: QrImageView(
-                data: _token!,
-                backgroundColor: Colors.white,
-                eyeStyle: const QrEyeStyle(
-                  eyeShape: QrEyeShape.square,
-                  color: Colors.black,
-                ),
-                dataModuleStyle: const QrDataModuleStyle(
-                  color: Colors.black,
-                  dataModuleShape: QrDataModuleShape.square,
-                ),
-                size: 280,
-              ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final qrSize = constraints.biggest.shortestSide;
+                return Center(
+                  child: QrImageView(
+                    data: _token!,
+                    backgroundColor: Colors.white,
+                    eyeStyle: const QrEyeStyle(
+                      eyeShape: QrEyeShape.square,
+                      color: Colors.black,
+                    ),
+                    dataModuleStyle: const QrDataModuleStyle(
+                      color: Colors.black,
+                      dataModuleShape: QrDataModuleShape.square,
+                    ),
+                    size: qrSize,
+                  ),
+                );
+              },
             ),
           ),
         ),

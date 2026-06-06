@@ -2071,11 +2071,19 @@ func (u *ActivityUseCase) applyActivityOrganizerReviewMutation(
 }
 
 func isActivityParticipantReviewable(activity *model.Activity, participant *model.ActivityParticipant) bool {
-	return activity != nil &&
-		participant != nil &&
-		activity.Status == enum.ActivityStatusCompleted &&
-		participant.ActivityID == activity.ID &&
-		participant.Status == enum.ParticipantStatusAttended
+	if activity == nil ||
+		participant == nil ||
+		activity.Status != enum.ActivityStatusCompleted ||
+		participant.ActivityID != activity.ID {
+		return false
+	}
+
+	switch participant.Status {
+	case enum.ParticipantStatusCheckedIn:
+		return true
+	default:
+		return false
+	}
 }
 
 func (u *ActivityUseCase) ListActivityReviews(ctx context.Context, filter port.ActivityReviewFilter) ([]*model.ActivityReview, error) {

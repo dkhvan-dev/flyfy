@@ -2571,7 +2571,7 @@ func TestExtendActivityRejectsBeforeStart(t *testing.T) {
 	}
 }
 
-func TestSaveActivityReviewsCreatesBothReviewTypesForAttendedParticipant(t *testing.T) {
+func TestSaveActivityReviewsCreatesBothReviewTypesForCheckedInParticipant(t *testing.T) {
 	t.Parallel()
 
 	activityID := uuid.New()
@@ -2579,7 +2579,7 @@ func TestSaveActivityReviewsCreatesBothReviewTypesForAttendedParticipant(t *test
 	actorUserID := uuid.New()
 	activity := validActivity(t, activityID, hostUserID)
 	activity.Status = enum.ActivityStatusCompleted
-	participant := validParticipant(t, activityID, actorUserID, enum.ParticipantStatusAttended)
+	participant := validParticipant(t, activityID, actorUserID, enum.ParticipantStatusCheckedIn)
 	var createdActivityReview *model.ActivityReview
 	var createdOrganizerReview *model.ActivityOrganizerReview
 
@@ -2638,7 +2638,56 @@ func TestSaveActivityReviewsCreatesBothReviewTypesForAttendedParticipant(t *test
 	}
 }
 
-func TestSaveActivityReviewsRejectsNotCompletedOrNotAttended(t *testing.T) {
+func TestSaveActivityReviewsCreatesReviewsForCheckedInParticipant(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	hostUserID := uuid.New()
+	actorUserID := uuid.New()
+	activity := validActivity(t, activityID, hostUserID)
+	activity.Status = enum.ActivityStatusCompleted
+	participant := validParticipant(t, activityID, actorUserID, enum.ParticipantStatusCheckedIn)
+	var createdActivityReview *model.ActivityReview
+
+	repo := &activityRepoStub{
+		getActivityByID: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+			return activity, nil
+		},
+		getParticipantByActivityAndUser: func(ctx context.Context, requestedActivityID uuid.UUID, requestedUserID uuid.UUID) (*model.ActivityParticipant, error) {
+			return participant, nil
+		},
+		withTx: func(ctx context.Context, fn func(repo port.ActivityTxRepository) error) error {
+			return fn(&activityTxRepoStub{
+				createActivityReview: func(ctx context.Context, item *model.ActivityReview) error {
+					createdActivityReview = item
+					return nil
+				},
+			})
+		},
+	}
+
+	uc := NewActivityUseCase(repo)
+	result, err := uc.SaveActivityReviews(context.Background(), SaveActivityReviewsInput{
+		ActorUserID: actorUserID,
+		ActivityID:  activityID,
+		ActivityReview: &ActivityReviewMutationInput{
+			Rating:  5,
+			Comment: "checked in and completed",
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("SaveActivityReviews() error = %v", err)
+	}
+	if result == nil || result.ActivityReview == nil {
+		t.Fatalf("SaveActivityReviews() result = %+v, want activity review", result)
+	}
+	if createdActivityReview == nil || createdActivityReview.ParticipantID != participant.ID {
+		t.Fatalf("created activity review = %+v, want participant %s", createdActivityReview, participant.ID)
+	}
+}
+
+func TestSaveActivityReviewsRejectsNotCompletedOrNotCheckedIn(t *testing.T) {
 	t.Parallel()
 
 	activityID := uuid.New()
@@ -2677,7 +2726,7 @@ func TestSaveActivityReviewsRejectsNotCompletedOrNotAttended(t *testing.T) {
 		},
 	})
 	if !errors.Is(err, ErrActivityNotReviewable) {
-		t.Fatalf("SaveActivityReviews() non-attended error = %v, want %v", err, ErrActivityNotReviewable)
+		t.Fatalf("SaveActivityReviews() non-checked-in error = %v, want %v", err, ErrActivityNotReviewable)
 	}
 }
 
@@ -2688,7 +2737,7 @@ func TestSaveActivityReviewsRejectsOrganizerSelfReview(t *testing.T) {
 	hostUserID := uuid.New()
 	activity := validActivity(t, activityID, hostUserID)
 	activity.Status = enum.ActivityStatusCompleted
-	participant := validParticipant(t, activityID, hostUserID, enum.ParticipantStatusAttended)
+	participant := validParticipant(t, activityID, hostUserID, enum.ParticipantStatusCheckedIn)
 
 	repo := &activityRepoStub{
 		getActivityByID: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {

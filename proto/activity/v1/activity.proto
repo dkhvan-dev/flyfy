@@ -70,6 +70,9 @@ message Activity {
 }
 
 message ActivityParticipant {
+  reserved 12;
+  reserved "attended_at";
+
   string id = 1;
   string activity_id = 2;
   string user_id = 3;
@@ -82,7 +85,6 @@ message ActivityParticipant {
   string paid_at = 9;
   string attendance_confirmed_at = 10;
   string checked_in_at = 11;
-  string attended_at = 12;
   string cancelled_at = 13;
   string cancelled_by_user_id = 14;
   string cancel_reason = 15;
