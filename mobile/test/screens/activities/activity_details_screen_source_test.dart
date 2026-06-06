@@ -213,6 +213,55 @@ void main() {
     },
   );
 
+  test('details footer hides total price block for free activities', () async {
+    final source = await File(
+      'lib/screens/activities/activity_details_screen.dart',
+    ).readAsString();
+
+    final actionBarStart = source.indexOf('class _DetailsActionBar');
+    final priceBlockStart = source.indexOf('class _FooterPriceBlock');
+    expect(actionBarStart, isNonNegative);
+    expect(priceBlockStart, greaterThan(actionBarStart));
+
+    final actionBarSource = source.substring(actionBarStart, priceBlockStart);
+
+    expect(actionBarSource, contains('final showPriceBlock ='));
+    expect(actionBarSource, contains('!activity.isFree'));
+    expect(actionBarSource, contains('if (!showPriceBlock)'));
+    expect(actionBarSource, contains('width: double.infinity'));
+    expect(actionBarSource, contains('if (showPriceBlock) ...['));
+    expect(
+      actionBarSource,
+      isNot(contains('activity.isFree\n        ? l10n.freeLabel')),
+    );
+  });
+
+  test(
+    'details screen shows reviews section only for completed activities',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activity_details_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('final showReviewsSection ='));
+      expect(source, contains("status == 'COMPLETED';"));
+
+      final meetingSectionStart = source.indexOf('_MeetingSection(');
+      final reviewsSectionStart = source.indexOf('_ActivityReviewsSection(');
+      expect(meetingSectionStart, isNonNegative);
+      expect(reviewsSectionStart, greaterThan(meetingSectionStart));
+
+      final betweenMeetingAndReviews = source.substring(
+        meetingSectionStart,
+        reviewsSectionStart,
+      );
+      expect(
+        betweenMeetingAndReviews,
+        contains('if (showReviewsSection) ...['),
+      );
+    },
+  );
+
   test(
     'host card opens profile from the card and shows activity rating',
     () async {

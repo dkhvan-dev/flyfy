@@ -1775,6 +1775,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityPaymentMethodTitle => 'Payment Method';
 
   @override
+  String get activityPaymentMockNoticeTitle => 'Sandbox checkout';
+
+  @override
+  String get activityPaymentMockNoticeBody =>
+      'Real payments are not connected yet. This screen only simulates a successful payment so the activity flow can be tested end to end.';
+
+  @override
+  String get activityPaymentSandboxMethodLabel => 'Sandbox confirmation';
+
+  @override
   String activityPaymentHostedBy(Object host) {
     return 'Hosted by $host';
   }
@@ -1799,7 +1809,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String activityPaymentConfirmButton(Object amount) {
-    return 'Confirm & Pay $amount';
+    return 'Confirm mock payment $amount';
   }
 
   @override
@@ -1807,10 +1817,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Secure 256-bit SSL encrypted payment';
 
   @override
-  String get activityPaymentPayButton => 'Pay';
+  String get activityPaymentMockSecureNote =>
+      'No card will be charged while payments are in sandbox mode.';
 
   @override
-  String get activityPaymentSuccess => 'Payment marked as paid';
+  String get activityPaymentPayButton => 'Mock payment';
+
+  @override
+  String get activityPaymentSuccess => 'Mock payment marked as paid';
 
   @override
   String get activityPaymentStatusLabel => 'Payment';

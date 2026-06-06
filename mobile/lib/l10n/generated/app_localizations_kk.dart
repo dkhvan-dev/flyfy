@@ -1792,6 +1792,16 @@ class AppLocalizationsKk extends AppLocalizations {
   String get activityPaymentMethodTitle => 'Төлем тәсілі';
 
   @override
+  String get activityPaymentMockNoticeTitle => 'Тест checkout';
+
+  @override
+  String get activityPaymentMockNoticeBody =>
+      'Нақты төлем жүйесі әлі қосылған жоқ. Бұл экран белсенділік flow-ын толық тексеру үшін сәтті төлемді ғана имитациялайды.';
+
+  @override
+  String get activityPaymentSandboxMethodLabel => 'Тест растауы';
+
+  @override
   String activityPaymentHostedBy(Object host) {
     return 'Ұйымдастырушы: $host';
   }
@@ -1816,7 +1826,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String activityPaymentConfirmButton(Object amount) {
-    return '$amount сомасын растау және төлеу';
+    return '$amount тест төлемін растау';
   }
 
   @override
@@ -1824,10 +1834,14 @@ class AppLocalizationsKk extends AppLocalizations {
       '256-биттік SSL шифрлауымен қорғалған төлем';
 
   @override
-  String get activityPaymentPayButton => 'Төлеу';
+  String get activityPaymentMockSecureNote =>
+      'Тест режимінде картадан ақша алынбайды.';
 
   @override
-  String get activityPaymentSuccess => 'Төлем сәтті деп белгіленді';
+  String get activityPaymentPayButton => 'Тест төлемі';
+
+  @override
+  String get activityPaymentSuccess => 'Тест төлемі сәтті деп белгіленді';
 
   @override
   String get activityPaymentStatusLabel => 'Төлем';

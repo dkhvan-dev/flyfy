@@ -1334,6 +1334,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
         ? null
         : _participantStatusLabel(currentParticipant, l10n);
     final status = activity.status.toUpperCase();
+    final showReviewsSection = status == 'COMPLETED';
     final reviewParticipant = _reviewParticipantForCurrentUser(currentUserId);
     final canWriteActivityReview =
         status == 'COMPLETED' &&
@@ -1607,24 +1608,27 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                             );
                           },
                         ),
-                        const SizedBox(height: 22),
-                        _ActivityReviewsSection(
-                          activityReviews: _activityReviews,
-                          organizerReviews: _organizerReviews,
-                          isLoading: _reviewsLoading,
-                          loadFailed: _reviewsError != null,
-                          canWriteReview: canWriteActivityReview,
-                          isSavingReview: _isSavingReviews,
-                          currentUserId: currentUserId,
-                          onWriteReviewTap: canWriteActivityReview
-                              ? () => _openActivityReviewsSheet(
-                                  activity: activity,
-                                  currentUserId: currentUserId,
-                                  canWriteReview: canWriteActivityReview,
-                                  allowOrganizerReview: canWriteOrganizerReview,
-                                )
-                              : null,
-                        ),
+                        if (showReviewsSection) ...[
+                          const SizedBox(height: 22),
+                          _ActivityReviewsSection(
+                            activityReviews: _activityReviews,
+                            organizerReviews: _organizerReviews,
+                            isLoading: _reviewsLoading,
+                            loadFailed: _reviewsError != null,
+                            canWriteReview: canWriteActivityReview,
+                            isSavingReview: _isSavingReviews,
+                            currentUserId: currentUserId,
+                            onWriteReviewTap: canWriteActivityReview
+                                ? () => _openActivityReviewsSheet(
+                                    activity: activity,
+                                    currentUserId: currentUserId,
+                                    canWriteReview: canWriteActivityReview,
+                                    allowOrganizerReview:
+                                        canWriteOrganizerReview,
+                                  )
+                                : null,
+                          ),
+                        ],
                       ],
                     ),
                   );
@@ -5627,9 +5631,8 @@ class _DetailsActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locale = Localizations.localeOf(context).toString();
-    final priceLabel = activity.isFree
-        ? l10n.freeLabel
-        : activity.formattedPriceLabel(locale);
+    final showPriceBlock = !activity.isFree;
+    final priceLabel = activity.formattedPriceLabel(locale);
     final shouldShowPaymentAction =
         isJoined && !isOwner && !activity.isFree && !isPaid && onPay != null;
     final canShowChatAction = isJoined && canOpenChat && onOpenChat != null;
@@ -5730,91 +5733,83 @@ class _DetailsActionBar extends StatelessWidget {
             final stackVertically =
                 constraints.maxWidth < 390 ||
                 (secondaryAction != null && constraints.maxWidth < 430);
+            Widget primaryButton() {
+              return _FooterButton(
+                spec: primaryAction,
+                isBusy: isBusy && pendingAction == primaryAction.action,
+              );
+            }
+
+            Widget secondaryButton() {
+              final action = secondaryAction;
+              if (action == null) {
+                return const SizedBox.shrink();
+              }
+              return _FooterButton(
+                spec: action,
+                isBusy: isBusy && pendingAction == action.action,
+              );
+            }
+
+            Widget footerActions() {
+              if (secondaryAction == null) {
+                return SizedBox(width: double.infinity, child: primaryButton());
+              }
+
+              if (stackVertically) {
+                return Column(
+                  children: [
+                    SizedBox(width: double.infinity, child: secondaryButton()),
+                    const SizedBox(height: 8),
+                    SizedBox(width: double.infinity, child: primaryButton()),
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: secondaryButton()),
+                  const SizedBox(width: 8),
+                  Expanded(child: primaryButton()),
+                ],
+              );
+            }
+
+            if (!showPriceBlock) {
+              return footerActions();
+            }
+
             if (stackVertically) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _FooterPriceBlock(
-                    label: priceBlockLabel,
-                    value: priceBlockValue,
-                    labelColor: priceBlockLabelColor,
-                    valueColor: priceBlockValueColor,
-                  ),
-                  const SizedBox(height: 10),
-                  if (secondaryAction == null)
-                    SizedBox(
-                      width: double.infinity,
-                      child: _FooterButton(
-                        spec: primaryAction,
-                        isBusy: isBusy && pendingAction == primaryAction.action,
-                      ),
-                    )
-                  else
-                    Column(
-                      children: [
-                        SizedBox(
-                          width: double.infinity,
-                          child: _FooterButton(
-                            spec: secondaryAction,
-                            isBusy:
-                                isBusy &&
-                                pendingAction == secondaryAction.action,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        SizedBox(
-                          width: double.infinity,
-                          child: _FooterButton(
-                            spec: primaryAction,
-                            isBusy:
-                                isBusy && pendingAction == primaryAction.action,
-                          ),
-                        ),
-                      ],
+                  if (showPriceBlock) ...[
+                    _FooterPriceBlock(
+                      label: priceBlockLabel,
+                      value: priceBlockValue,
+                      labelColor: priceBlockLabelColor,
+                      valueColor: priceBlockValueColor,
                     ),
+                    const SizedBox(height: 10),
+                  ],
+                  footerActions(),
                 ],
               );
             }
 
             return Row(
               children: [
-                _FooterPriceBlock(
-                  label: priceBlockLabel,
-                  value: priceBlockValue,
-                  labelColor: priceBlockLabelColor,
-                  valueColor: priceBlockValueColor,
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: secondaryAction == null
-                      ? _FooterButton(
-                          spec: primaryAction,
-                          isBusy:
-                              isBusy && pendingAction == primaryAction.action,
-                        )
-                      : Row(
-                          children: [
-                            Expanded(
-                              child: _FooterButton(
-                                spec: secondaryAction,
-                                isBusy:
-                                    isBusy &&
-                                    pendingAction == secondaryAction.action,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: _FooterButton(
-                                spec: primaryAction,
-                                isBusy:
-                                    isBusy &&
-                                    pendingAction == primaryAction.action,
-                              ),
-                            ),
-                          ],
-                        ),
-                ),
+                if (showPriceBlock) ...[
+                  _FooterPriceBlock(
+                    label: priceBlockLabel,
+                    value: priceBlockValue,
+                    labelColor: priceBlockLabelColor,
+                    valueColor: priceBlockValueColor,
+                  ),
+                  const SizedBox(width: 14),
+                ],
+                Expanded(child: footerActions()),
               ],
             );
           },

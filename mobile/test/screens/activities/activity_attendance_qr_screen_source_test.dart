@@ -19,4 +19,22 @@ void main() {
       expect(source, contains('refreshAt.difference(DateTime.now().toUtc())'));
     },
   );
+
+  test(
+    'activity attendance QR screen constrains long titles and loading states',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activity_attendance_qr_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('maxLines: 2'));
+      expect(source, contains('overflow: TextOverflow.ellipsis'));
+      expect(source, contains('_qrBodyHeight(context)'));
+      expect(
+        source,
+        contains('final screenHeight = MediaQuery.sizeOf(context).height'),
+      );
+      expect(source, isNot(contains('height: 360')));
+    },
+  );
 }

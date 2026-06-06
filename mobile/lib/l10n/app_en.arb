@@ -613,6 +613,9 @@
   "activityPaymentSummaryTitle": "Activity Summary",
   "activityPaymentBreakdownTitle": "Price Breakdown",
   "activityPaymentMethodTitle": "Payment Method",
+  "activityPaymentMockNoticeTitle": "Sandbox checkout",
+  "activityPaymentMockNoticeBody": "Real payments are not connected yet. This screen only simulates a successful payment so the activity flow can be tested end to end.",
+  "activityPaymentSandboxMethodLabel": "Sandbox confirmation",
   "activityPaymentHostedBy": "Hosted by {host}",
   "@activityPaymentHostedBy": {
     "placeholders": {
@@ -625,15 +628,16 @@
   "activityPaymentCardHolderFallback": "Inflap Member",
   "activityPaymentApplePayLabel": "Apple Pay",
   "activityPaymentGooglePayLabel": "Google Pay",
-  "activityPaymentConfirmButton": "Confirm & Pay {amount}",
+  "activityPaymentConfirmButton": "Confirm mock payment {amount}",
   "@activityPaymentConfirmButton": {
     "placeholders": {
       "amount": {}
     }
   },
   "activityPaymentSecureNote": "Secure 256-bit SSL encrypted payment",
-  "activityPaymentPayButton": "Pay",
-  "activityPaymentSuccess": "Payment marked as paid",
+  "activityPaymentMockSecureNote": "No card will be charged while payments are in sandbox mode.",
+  "activityPaymentPayButton": "Mock payment",
+  "activityPaymentSuccess": "Mock payment marked as paid",
   "activityPaymentStatusLabel": "Payment",
   "activityPaymentPaidValue": "PAID",
   "activityParticipantFallbackName": "Participant",

@@ -11,7 +11,6 @@ import '../../features/activities/activity_currency.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
-import '../../providers/session_provider.dart';
 
 class ActivityPaymentRouteArgs {
   const ActivityPaymentRouteArgs({
@@ -39,10 +38,7 @@ class ActivityPaymentScreen extends StatefulWidget {
   State<ActivityPaymentScreen> createState() => _ActivityPaymentScreenState();
 }
 
-enum _PaymentMethod { savedCard, applePay, googlePay }
-
 class _ActivityPaymentScreenState extends State<ActivityPaymentScreen> {
-  _PaymentMethod _selectedMethod = _PaymentMethod.savedCard;
   ActivityListItemVm? _activity;
   String? _hostName;
   String? _loadError;
@@ -151,14 +147,9 @@ class _ActivityPaymentScreenState extends State<ActivityPaymentScreen> {
     }
 
     final locale = Localizations.localeOf(context).toLanguageTag();
-    final sessionProfile = context.watch<SessionProvider>().profile;
     final hostName = (_hostName ?? '').trim().isNotEmpty
         ? _hostName!.trim()
         : l10n.activityDetailsHostFallbackName;
-    final cardHolderName =
-        (sessionProfile?.preferredName ?? '').trim().isNotEmpty
-        ? sessionProfile!.preferredName
-        : l10n.activityPaymentCardHolderFallback;
     final compact = MediaQuery.sizeOf(context).width < 360;
     final totalLabel = formatActivityMoney(
       amount: activity.priceAmount,
@@ -207,6 +198,11 @@ class _ActivityPaymentScreenState extends State<ActivityPaymentScreen> {
                               _PaymentTopBar(
                                 title: l10n.activityPaymentScreenTitle,
                               ),
+                              const SizedBox(height: 18),
+                              _PaymentModeNotice(
+                                title: l10n.activityPaymentMockNoticeTitle,
+                                body: l10n.activityPaymentMockNoticeBody,
+                              ),
                               const SizedBox(height: 22),
                               _PaymentSectionTitle(
                                 title: l10n.activityPaymentSummaryTitle,
@@ -249,40 +245,8 @@ class _ActivityPaymentScreenState extends State<ActivityPaymentScreen> {
                                 title: l10n.activityPaymentMethodTitle,
                               ),
                               const SizedBox(height: 14),
-                              _SavedCardOption(
-                                label: l10n.activityPaymentSavedCardLabel,
-                                holderName: cardHolderName,
-                                selected:
-                                    _selectedMethod == _PaymentMethod.savedCard,
-                                onTap: () {
-                                  setState(() {
-                                    _selectedMethod = _PaymentMethod.savedCard;
-                                  });
-                                },
-                              ),
-                              const SizedBox(height: 14),
-                              _PaymentMethodOption(
-                                title: l10n.activityPaymentApplePayLabel,
-                                logo: _PaymentLogo.apple,
-                                selected:
-                                    _selectedMethod == _PaymentMethod.applePay,
-                                onTap: () {
-                                  setState(() {
-                                    _selectedMethod = _PaymentMethod.applePay;
-                                  });
-                                },
-                              ),
-                              const SizedBox(height: 14),
-                              _PaymentMethodOption(
-                                title: l10n.activityPaymentGooglePayLabel,
-                                logo: _PaymentLogo.google,
-                                selected:
-                                    _selectedMethod == _PaymentMethod.googlePay,
-                                onTap: () {
-                                  setState(() {
-                                    _selectedMethod = _PaymentMethod.googlePay;
-                                  });
-                                },
+                              _SandboxPaymentMethodOption(
+                                label: l10n.activityPaymentSandboxMethodLabel,
                               ),
                             ],
                           ),
@@ -311,8 +275,6 @@ abstract final class _PaymentColors {
   static const text = Color(0xFFF5F2EF);
   static const muted = Color(0xFFAEB9D6);
   static const stroke = Color(0x42FF9900);
-  static const savedCardStart = Color(0xFF1F3153);
-  static const savedCardEnd = Color(0xFF1C2C49);
 }
 
 class _PaymentFooter extends StatelessWidget {
@@ -350,54 +312,62 @@ class _PaymentFooter extends StatelessWidget {
             children: [
               SizedBox(
                 width: double.infinity,
-                height: compact ? 70 : 78,
-                child: ElevatedButton(
-                  onPressed: isSubmitting ? null : onConfirm,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.accent,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: AppColors.accent,
-                    disabledForegroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: compact ? 64 : 70),
+                  child: ElevatedButton(
+                    onPressed: isSubmitting ? null : onConfirm,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.accent,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: AppColors.accent,
+                      disabledForegroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
+                      ),
                     ),
-                  ),
-                  child: isSubmitting
-                      ? const SizedBox(
-                          width: 28,
-                          height: 28,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.8,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Flexible(
-                              child: Text(
-                                l10n.activityPaymentConfirmButton(totalLabel),
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: compact ? 20 : 24,
-                                  height: 1,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: -0.5,
+                    child: isSubmitting
+                        ? const SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.8,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Flexible(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    l10n.activityPaymentConfirmButton(
+                                      totalLabel,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    style: TextStyle(
+                                      fontSize: compact ? 18 : 22,
+                                      height: 1.05,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0,
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            const Icon(Icons.arrow_forward_rounded, size: 22),
-                          ],
-                        ),
+                              const SizedBox(width: 12),
+                              const Icon(Icons.arrow_forward_rounded, size: 22),
+                            ],
+                          ),
+                  ),
                 ),
               ),
               const SizedBox(height: 14),
               Text(
-                l10n.activityPaymentSecureNote,
+                l10n.activityPaymentMockSecureNote,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: Color(0xFF7D8BAD),
@@ -409,6 +379,72 @@ class _PaymentFooter extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _PaymentModeNotice extends StatelessWidget {
+  const _PaymentModeNotice({required this.title, required this.body});
+
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
+      decoration: BoxDecoration(
+        color: AppColors.accent.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.28)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: AppColors.accent.withValues(alpha: 0.18),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.science_rounded,
+              color: AppColors.accent,
+              size: 19,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: _PaymentColors.text,
+                    fontSize: 14,
+                    height: 1.2,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  body,
+                  style: TextStyle(
+                    color: _PaymentColors.text.withValues(alpha: 0.72),
+                    fontSize: 12,
+                    height: 1.38,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -771,286 +807,70 @@ class _BreakdownRow extends StatelessWidget {
   }
 }
 
-class _PaymentMethodOption extends StatelessWidget {
-  const _PaymentMethodOption({
-    required this.title,
-    required this.logo,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String title;
-  final _PaymentLogo logo;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(34),
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(34),
-            border: Border.all(
-              color: selected ? AppColors.accent : _PaymentColors.stroke,
-              width: selected ? 2 : 1.5,
-            ),
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF4F2C08), Color(0xFF3C2006)],
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-            child: Row(
-              children: [
-                _MethodLogo(logo: logo),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      height: 1.1,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                ),
-                _RadioIndicator(selected: selected),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SavedCardOption extends StatelessWidget {
-  const _SavedCardOption({
-    required this.label,
-    required this.holderName,
-    required this.selected,
-    required this.onTap,
-  });
+class _SandboxPaymentMethodOption extends StatelessWidget {
+  const _SandboxPaymentMethodOption({required this.label});
 
   final String label;
-  final String holderName;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(34),
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(34),
-            border: Border.all(
-              color: selected
-                  ? AppColors.accent.withValues(alpha: 0.74)
-                  : const Color(0x59597CBE),
-              width: selected ? 2 : 1.4,
-            ),
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                _PaymentColors.savedCardStart,
-                _PaymentColors.savedCardEnd,
-              ],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.accent.withValues(alpha: 0.14),
-                blurRadius: 28,
-                offset: const Offset(0, 16),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        label,
-                        style: const TextStyle(
-                          color: AppColors.accent,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.9,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const _CardNetworkBadge(),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  holderName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    height: 1.15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 28),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        '•••• •••• •••• 8812',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          height: 1,
-                          letterSpacing: 1.8,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const _MasterCardBadge(),
-                    const SizedBox(width: 12),
-                    _RadioIndicator(selected: selected),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MethodLogo extends StatelessWidget {
-  const _MethodLogo({required this.logo});
-
-  final _PaymentLogo logo;
-
-  @override
-  Widget build(BuildContext context) {
-    final isApple = logo == _PaymentLogo.apple;
-    return Container(
-      constraints: const BoxConstraints(minWidth: 102),
-      height: 50,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: isApple ? Colors.black : const Color(0xFFF5F5F7),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      alignment: Alignment.center,
-      child: isApple
-          ? const Text(
-              'Apple Pay',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 19,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.5,
-              ),
-            )
-          : RichText(
-              text: const TextSpan(
-                children: [
-                  TextSpan(
-                    text: 'G',
-                    style: TextStyle(
-                      color: Color(0xFF4285F4),
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  TextSpan(
-                    text: 'Pay',
-                    style: TextStyle(
-                      color: Color(0xFF202124),
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-    );
-  }
-}
-
-class _CardNetworkBadge extends StatelessWidget {
-  const _CardNetworkBadge();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 42,
-      height: 42,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 2),
-      ),
-      child: Center(
-        child: Container(
-          width: 12,
-          height: 20,
-          decoration: const BoxDecoration(
-            border: Border(left: BorderSide(color: AppColors.accent, width: 3)),
-          ),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: AppColors.accent, width: 1.5),
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF4F2C08), Color(0xFF3C2006)],
         ),
       ),
-    );
-  }
-}
-
-class _MasterCardBadge extends StatelessWidget {
-  const _MasterCardBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 78,
-      height: 40,
-      child: Stack(
+      child: Row(
         children: [
-          Positioned(
-            left: 0,
-            top: 0,
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: const BoxDecoration(
-                color: Color(0xFFE44B44),
-                shape: BoxShape.circle,
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppColors.accent.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              Icons.check_circle_rounded,
+              color: AppColors.accent,
+              size: 26,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                height: 1.18,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0,
               ),
             ),
           ),
-          Positioned(
-            right: 0,
-            top: 0,
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: const BoxDecoration(
-                color: Color(0xFFD6A400),
-                shape: BoxShape.circle,
+          const SizedBox(width: 12),
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.accent, width: 3),
+            ),
+            child: Center(
+              child: Container(
+                width: 14,
+                height: 14,
+                decoration: const BoxDecoration(
+                  color: AppColors.accent,
+                  shape: BoxShape.circle,
+                ),
               ),
             ),
           ),
@@ -1059,38 +879,6 @@ class _MasterCardBadge extends StatelessWidget {
     );
   }
 }
-
-class _RadioIndicator extends StatelessWidget {
-  const _RadioIndicator({required this.selected});
-
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: AppColors.accent, width: 4),
-      ),
-      child: selected
-          ? Center(
-              child: Container(
-                width: 18,
-                height: 18,
-                decoration: const BoxDecoration(
-                  color: AppColors.accent,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            )
-          : null,
-    );
-  }
-}
-
-enum _PaymentLogo { apple, google }
 
 String _formatPaymentDateTime(DateTime value, String timezone, String locale) {
   final zoned = eventDateTime(value, timezone);

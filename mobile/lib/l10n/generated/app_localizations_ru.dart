@@ -1777,6 +1777,16 @@ class AppLocalizationsRu extends AppLocalizations {
   String get activityPaymentMethodTitle => 'Способ оплаты';
 
   @override
+  String get activityPaymentMockNoticeTitle => 'Тестовый checkout';
+
+  @override
+  String get activityPaymentMockNoticeBody =>
+      'Реальная платежная система пока не подключена. Этот экран только имитирует успешную оплату, чтобы можно было проверить flow активности до конца.';
+
+  @override
+  String get activityPaymentSandboxMethodLabel => 'Тестовое подтверждение';
+
+  @override
   String activityPaymentHostedBy(Object host) {
     return 'Организатор: $host';
   }
@@ -1801,7 +1811,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String activityPaymentConfirmButton(Object amount) {
-    return 'Подтвердить и оплатить $amount';
+    return 'Подтвердить тестовую оплату $amount';
   }
 
   @override
@@ -1809,10 +1819,14 @@ class AppLocalizationsRu extends AppLocalizations {
       'Безопасная оплата с 256-битным SSL-шифрованием';
 
   @override
-  String get activityPaymentPayButton => 'Оплатить';
+  String get activityPaymentMockSecureNote =>
+      'Пока включен тестовый режим, карта не будет списана.';
 
   @override
-  String get activityPaymentSuccess => 'Оплата отмечена как успешная';
+  String get activityPaymentPayButton => 'Тестовая оплата';
+
+  @override
+  String get activityPaymentSuccess => 'Тестовая оплата отмечена как успешная';
 
   @override
   String get activityPaymentStatusLabel => 'Оплата';

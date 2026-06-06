@@ -117,6 +117,7 @@ class _ActivityAttendanceQrScreenState
           ? provider.selectedActivity
           : null,
     );
+    final compact = MediaQuery.sizeOf(context).width < 360;
 
     return Scaffold(
       backgroundColor: const Color(0xFF130A03),
@@ -156,9 +157,11 @@ class _ActivityAttendanceQrScreenState
               Text(
                 activity?.title ?? l10n.activityAttendanceQrFallbackTitle,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
                   color: Colors.white,
-                  fontSize: 28,
+                  fontSize: compact ? 24 : 28,
                   fontWeight: FontWeight.w900,
                   height: 1.06,
                 ),
@@ -256,9 +259,9 @@ class _ActivityAttendanceQrScreenState
 
   Widget _buildQrBody(BuildContext context, AppLocalizations l10n) {
     if (_isLoading) {
-      return const SizedBox(
-        height: 360,
-        child: Center(
+      return SizedBox(
+        height: _qrBodyHeight(context),
+        child: const Center(
           child: CircularProgressIndicator(color: AppColors.accent),
         ),
       );
@@ -266,7 +269,7 @@ class _ActivityAttendanceQrScreenState
 
     if (_error != null || (_token ?? '').isEmpty) {
       return SizedBox(
-        height: 360,
+        height: _qrBodyHeight(context),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -338,5 +341,10 @@ class _ActivityAttendanceQrScreenState
         ),
       ],
     );
+  }
+
+  double _qrBodyHeight(BuildContext context) {
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    return (screenHeight * 0.42).clamp(260.0, 360.0);
   }
 }

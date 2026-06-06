@@ -613,6 +613,9 @@
   "activityPaymentSummaryTitle": "Белсенділік туралы мәлімет",
   "activityPaymentBreakdownTitle": "Сома құрамы",
   "activityPaymentMethodTitle": "Төлем тәсілі",
+  "activityPaymentMockNoticeTitle": "Тест checkout",
+  "activityPaymentMockNoticeBody": "Нақты төлем жүйесі әлі қосылған жоқ. Бұл экран белсенділік flow-ын толық тексеру үшін сәтті төлемді ғана имитациялайды.",
+  "activityPaymentSandboxMethodLabel": "Тест растауы",
   "activityPaymentHostedBy": "Ұйымдастырушы: {host}",
   "@activityPaymentHostedBy": {
     "placeholders": {
@@ -625,15 +628,16 @@
   "activityPaymentCardHolderFallback": "Inflap қатысушысы",
   "activityPaymentApplePayLabel": "Apple Pay",
   "activityPaymentGooglePayLabel": "Google Pay",
-  "activityPaymentConfirmButton": "{amount} сомасын растау және төлеу",
+  "activityPaymentConfirmButton": "{amount} тест төлемін растау",
   "@activityPaymentConfirmButton": {
     "placeholders": {
       "amount": {}
     }
   },
   "activityPaymentSecureNote": "256-биттік SSL шифрлауымен қорғалған төлем",
-  "activityPaymentPayButton": "Төлеу",
-  "activityPaymentSuccess": "Төлем сәтті деп белгіленді",
+  "activityPaymentMockSecureNote": "Тест режимінде картадан ақша алынбайды.",
+  "activityPaymentPayButton": "Тест төлемі",
+  "activityPaymentSuccess": "Тест төлемі сәтті деп белгіленді",
   "activityPaymentStatusLabel": "Төлем",
   "activityPaymentPaidValue": "ТӨЛЕНДІ",
   "activityParticipantFallbackName": "Қатысушы",

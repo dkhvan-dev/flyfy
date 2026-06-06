@@ -3286,6 +3286,24 @@ abstract class AppLocalizations {
   /// **'Payment Method'**
   String get activityPaymentMethodTitle;
 
+  /// No description provided for @activityPaymentMockNoticeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sandbox checkout'**
+  String get activityPaymentMockNoticeTitle;
+
+  /// No description provided for @activityPaymentMockNoticeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Real payments are not connected yet. This screen only simulates a successful payment so the activity flow can be tested end to end.'**
+  String get activityPaymentMockNoticeBody;
+
+  /// No description provided for @activityPaymentSandboxMethodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sandbox confirmation'**
+  String get activityPaymentSandboxMethodLabel;
+
   /// No description provided for @activityPaymentHostedBy.
   ///
   /// In en, this message translates to:
@@ -3331,7 +3349,7 @@ abstract class AppLocalizations {
   /// No description provided for @activityPaymentConfirmButton.
   ///
   /// In en, this message translates to:
-  /// **'Confirm & Pay {amount}'**
+  /// **'Confirm mock payment {amount}'**
   String activityPaymentConfirmButton(Object amount);
 
   /// No description provided for @activityPaymentSecureNote.
@@ -3340,16 +3358,22 @@ abstract class AppLocalizations {
   /// **'Secure 256-bit SSL encrypted payment'**
   String get activityPaymentSecureNote;
 
+  /// No description provided for @activityPaymentMockSecureNote.
+  ///
+  /// In en, this message translates to:
+  /// **'No card will be charged while payments are in sandbox mode.'**
+  String get activityPaymentMockSecureNote;
+
   /// No description provided for @activityPaymentPayButton.
   ///
   /// In en, this message translates to:
-  /// **'Pay'**
+  /// **'Mock payment'**
   String get activityPaymentPayButton;
 
   /// No description provided for @activityPaymentSuccess.
   ///
   /// In en, this message translates to:
-  /// **'Payment marked as paid'**
+  /// **'Mock payment marked as paid'**
   String get activityPaymentSuccess;
 
   /// No description provided for @activityPaymentStatusLabel.

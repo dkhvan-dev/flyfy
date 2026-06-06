@@ -613,6 +613,9 @@
   "activityPaymentSummaryTitle": "Сводка активности",
   "activityPaymentBreakdownTitle": "Состав суммы",
   "activityPaymentMethodTitle": "Способ оплаты",
+  "activityPaymentMockNoticeTitle": "Тестовый checkout",
+  "activityPaymentMockNoticeBody": "Реальная платежная система пока не подключена. Этот экран только имитирует успешную оплату, чтобы можно было проверить flow активности до конца.",
+  "activityPaymentSandboxMethodLabel": "Тестовое подтверждение",
   "activityPaymentHostedBy": "Организатор: {host}",
   "@activityPaymentHostedBy": {
     "placeholders": {
@@ -625,15 +628,16 @@
   "activityPaymentCardHolderFallback": "Участник Inflap",
   "activityPaymentApplePayLabel": "Apple Pay",
   "activityPaymentGooglePayLabel": "Google Pay",
-  "activityPaymentConfirmButton": "Подтвердить и оплатить {amount}",
+  "activityPaymentConfirmButton": "Подтвердить тестовую оплату {amount}",
   "@activityPaymentConfirmButton": {
     "placeholders": {
       "amount": {}
     }
   },
   "activityPaymentSecureNote": "Безопасная оплата с 256-битным SSL-шифрованием",
-  "activityPaymentPayButton": "Оплатить",
-  "activityPaymentSuccess": "Оплата отмечена как успешная",
+  "activityPaymentMockSecureNote": "Пока включен тестовый режим, карта не будет списана.",
+  "activityPaymentPayButton": "Тестовая оплата",
+  "activityPaymentSuccess": "Тестовая оплата отмечена как успешная",
   "activityPaymentStatusLabel": "Оплата",
   "activityPaymentPaidValue": "ОПЛАЧЕНО",
   "activityParticipantFallbackName": "Участник",
