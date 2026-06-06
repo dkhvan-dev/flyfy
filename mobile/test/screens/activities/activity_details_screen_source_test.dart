@@ -362,22 +362,101 @@ void main() {
     },
   );
 
-  test('details stat card lets localized user time text wrap fully', () async {
+  test('details screen separates schedule from compact stats grid', () async {
     final source = await File(
       'lib/screens/activities/activity_details_screen.dart',
     ).readAsString();
 
-    final cardStart = source.indexOf('class _DetailsStatCard');
-    final nextClassStart = source.indexOf('class ', cardStart + 1);
-    expect(cardStart, isNonNegative);
-    expect(nextClassStart, greaterThan(cardStart));
+    final scheduleStart = source.indexOf('class _ActivityScheduleCard');
+    expect(scheduleStart, isNonNegative);
+    final scheduleEnd = source.indexOf('class _ScheduleTimeRow', scheduleStart);
+    expect(scheduleEnd, greaterThan(scheduleStart));
 
-    final cardSource = source.substring(cardStart, nextClassStart);
-    expect(source, contains('timeDisplayYourTime(startUserTime)'));
-    expect(source, contains('timeDisplayYourTime(endUserTime)'));
-    expect(cardSource, isNot(contains('maxLines: dense ? 3 : 2')));
-    expect(cardSource, isNot(contains('TextOverflow.fade')));
+    final scheduleSource = source.substring(scheduleStart, scheduleEnd);
+    expect(scheduleSource, contains('l10n.activityDateAndTime'));
+    expect(scheduleSource, contains('l10n.createStartAtLabel'));
+    expect(scheduleSource, contains('l10n.createEndAtLabel'));
+    expect(scheduleSource, contains('timeDisplayYourTime(startUserTime)'));
+    expect(scheduleSource, contains('timeDisplayYourTime(endUserTime)'));
+    expect(scheduleSource, contains('userTimeText:'));
+
+    final statsStart = source.indexOf('class _StatsGrid');
+    final statsEnd = source.indexOf('class _DetailsStatItem', statsStart);
+    expect(statsStart, isNonNegative);
+    expect(statsEnd, greaterThan(statsStart));
+
+    final statsSource = source.substring(statsStart, statsEnd);
+    expect(statsSource, isNot(contains('timeDisplayYourTime')));
+    expect(statsSource, isNot(contains('createStartAtLabel')));
+    expect(statsSource, isNot(contains('createEndAtLabel')));
+    expect(statsSource, contains('activityPrice'));
+    expect(statsSource, contains('activityFormatLabel'));
+    expect(statsSource, contains('activityCapacity'));
+    expect(statsSource, contains('activitiesFilterVisibility'));
   });
+
+  test(
+    'details schedule prefers device timezone before profile timezone',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activity_details_screen.dart',
+      ).readAsString();
+
+      expect(
+        source,
+        contains("import '../../core/device/device_context_service.dart';"),
+      );
+      expect(
+        source,
+        contains('final DeviceContextService _deviceContextService'),
+      );
+      expect(source, contains('String? _deviceTimezone;'));
+      expect(source, contains('Future<void> _loadDeviceTimezone() async'));
+      expect(source, contains('_deviceContextService.getLocalTimezone()'));
+
+      final helperStart = source.indexOf(
+        'String? _resolveActivityScheduleUserTimezone',
+      );
+      final scheduleStart = source.indexOf('class _ActivityScheduleCard');
+      expect(helperStart, isNonNegative);
+      expect(scheduleStart, greaterThan(helperStart));
+
+      final helperSource = source.substring(helperStart, scheduleStart);
+      expect(helperSource, contains('deviceTimezone'));
+      expect(helperSource, contains('profileTimezone'));
+      expect(
+        helperSource,
+        contains(
+          'return _normalizeActivityScheduleTimezone(deviceTimezone) ??',
+        ),
+      );
+      expect(
+        helperSource,
+        contains('_normalizeActivityScheduleTimezone(profileTimezone);'),
+      );
+
+      final usageStart = source.indexOf('_ActivityScheduleCard(');
+      final statsStart = source.indexOf('_StatsGrid(', usageStart);
+      expect(usageStart, isNonNegative);
+      expect(statsStart, greaterThan(usageStart));
+
+      final usageSource = source.substring(usageStart, statsStart);
+      expect(usageSource, contains('userTimezone: scheduleUserTimezone'));
+
+      final scheduleEnd = source.indexOf(
+        'class _ScheduleTimeRow',
+        scheduleStart,
+      );
+      expect(scheduleEnd, greaterThan(scheduleStart));
+
+      final scheduleSource = source.substring(scheduleStart, scheduleEnd);
+      expect(scheduleSource, contains('required this.userTimezone'));
+      expect(
+        scheduleSource,
+        isNot(contains('context.watch<SessionProvider>().profile?.timezone')),
+      );
+    },
+  );
 
   test(
     'activity review skeleton cards grow from content instead of fixed height',

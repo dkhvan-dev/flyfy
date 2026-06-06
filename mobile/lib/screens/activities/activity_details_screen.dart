@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/device/device_context_service.dart';
 import '../../core/network/activity_api.dart';
 import '../../core/network/file_api.dart';
 import '../../core/time/app_time.dart';
@@ -67,6 +68,8 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   static const double _backSwipeMinVelocity = 700;
 
   final ActivityApi _activityApi = ActivityApi();
+  final DeviceContextService _deviceContextService =
+      const DeviceContextService();
   final ProfileApi _profileApi = ProfileApi();
 
   bool _participantsLoading = true;
@@ -83,11 +86,13 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   bool _isTrackingBackSwipe = false;
   bool _isInitialLoadPending = true;
   double _backSwipeDistance = 0;
+  String? _deviceTimezone;
   ActivityProvider? _activityProvider;
 
   @override
   void initState() {
     super.initState();
+    unawaited(_loadDeviceTimezone());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshScreen();
     });
@@ -112,6 +117,16 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       provider?.clearSelectedActivity(activityId: activityId);
       provider?.resetActionState();
     });
+  }
+
+  Future<void> _loadDeviceTimezone() async {
+    final timezone = await _deviceContextService.getLocalTimezone();
+    if (!mounted) return;
+
+    final normalized = _normalizeActivityScheduleTimezone(timezone);
+    if (normalized == null || normalized == _deviceTimezone) return;
+
+    setState(() => _deviceTimezone = normalized);
   }
 
   Future<void> _refreshScreen() async {
@@ -1247,6 +1262,10 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     final session = context.watch<SessionProvider>();
     final activity = _visibleActivity(provider);
     final currentUserId = (session.profile?.userId ?? '').trim();
+    final scheduleUserTimezone = _resolveActivityScheduleUserTimezone(
+      deviceTimezone: _deviceTimezone,
+      profileTimezone: session.profile?.timezone,
+    );
 
     if ((_isInitialLoadPending || provider.state == ActivitiesState.loading) &&
         activity == null) {
@@ -1528,6 +1547,13 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                           },
                         ),
                         const SizedBox(height: 22),
+                        _ActivityScheduleCard(
+                          activity: activity,
+                          l10n: l10n,
+                          compact: compact,
+                          userTimezone: scheduleUserTimezone,
+                        ),
+                        SizedBox(height: compact ? 10 : 12),
                         _StatsGrid(
                           activity: activity,
                           l10n: l10n,
@@ -3399,21 +3425,38 @@ String _formatRating(double value) {
   return value.toStringAsFixed(1);
 }
 
-class _StatsGrid extends StatelessWidget {
-  const _StatsGrid({
+String? _resolveActivityScheduleUserTimezone({
+  required String? deviceTimezone,
+  required String? profileTimezone,
+}) {
+  return _normalizeActivityScheduleTimezone(deviceTimezone) ??
+      _normalizeActivityScheduleTimezone(profileTimezone);
+}
+
+String? _normalizeActivityScheduleTimezone(String? timezone) {
+  final normalized = timezone?.trim();
+  if (normalized == null || normalized.isEmpty) return null;
+  return normalized;
+}
+
+class _ActivityScheduleCard extends StatelessWidget {
+  const _ActivityScheduleCard({
     required this.activity,
     required this.l10n,
     required this.compact,
+    required this.userTimezone,
   });
 
   final ActivityListItemVm activity;
   final AppLocalizations l10n;
   final bool compact;
+  final String? userTimezone;
 
   @override
   Widget build(BuildContext context) {
     final locale = Localizations.localeOf(context).toString();
-    final userTimezone = context.watch<SessionProvider>().profile?.timezone;
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final dense = compact || textScale > 1.1;
     final startText = formatEventDateTime(
       activity.startAt,
       timezoneId: activity.timezone,
@@ -3436,6 +3479,201 @@ class _StatsGrid extends StatelessWidget {
       userTimezoneId: userTimezone,
       localeName: locale,
     );
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(16, dense ? 15 : 17, 16, dense ? 15 : 17),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.accent.withValues(alpha: 0.12),
+            Colors.white.withValues(alpha: 0.04),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.16)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withValues(alpha: 0.16),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.accent.withValues(alpha: 0.18),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.schedule_rounded,
+                  color: AppColors.accent,
+                  size: 21,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  l10n.activityDateAndTime,
+                  style: const TextStyle(
+                    color: _DetailsColors.text,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    height: 1.2,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: dense ? 14 : 16),
+          _ScheduleTimeRow(
+            label: l10n.createStartAtLabel,
+            timeText: startText,
+            userTimeText: startUserTime == null
+                ? null
+                : l10n.timeDisplayYourTime(startUserTime),
+            icon: Icons.play_arrow_rounded,
+            dense: dense,
+          ),
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: dense ? 10 : 12),
+            child: Divider(
+              height: 1,
+              color: Colors.white.withValues(alpha: 0.08),
+            ),
+          ),
+          _ScheduleTimeRow(
+            label: l10n.createEndAtLabel,
+            timeText: endText,
+            userTimeText: endUserTime == null
+                ? null
+                : l10n.timeDisplayYourTime(endUserTime),
+            icon: Icons.flag_rounded,
+            dense: dense,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ScheduleTimeRow extends StatelessWidget {
+  const _ScheduleTimeRow({
+    required this.label,
+    required this.timeText,
+    required this.userTimeText,
+    required this.icon,
+    required this.dense,
+  });
+
+  final String label;
+  final String timeText;
+  final String? userTimeText;
+  final IconData icon;
+  final bool dense;
+
+  @override
+  Widget build(BuildContext context) {
+    final userTime = userTimeText;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.06),
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+          child: Icon(icon, color: AppColors.accent, size: 17),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label.toUpperCase(),
+                style: const TextStyle(
+                  color: _DetailsColors.subtle,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  height: 1.2,
+                  letterSpacing: 0,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                timeText,
+                style: TextStyle(
+                  color: _DetailsColors.text,
+                  fontSize: dense ? 14 : 15,
+                  fontWeight: FontWeight.w800,
+                  height: 1.28,
+                  letterSpacing: 0,
+                ),
+              ),
+              if (userTime != null) ...[
+                const SizedBox(height: 7),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.07),
+                      ),
+                    ),
+                    child: Text(
+                      userTime,
+                      style: const TextStyle(
+                        color: _DetailsColors.muted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        height: 1.25,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatsGrid extends StatelessWidget {
+  const _StatsGrid({
+    required this.activity,
+    required this.l10n,
+    required this.compact,
+  });
+
+  final ActivityListItemVm activity;
+  final AppLocalizations l10n;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = Localizations.localeOf(context).toString();
     final pricingText = activity.isFree
         ? l10n.freeLabel
         : '${activity.formattedPriceLabel(locale)} ${l10n.activityPerPerson}';
@@ -3450,20 +3688,6 @@ class _StatsGrid extends StatelessWidget {
         : l10n.createVisibilityPublic;
 
     final items = [
-      _DetailsStatItem(
-        icon: Icons.calendar_today_outlined,
-        label: l10n.createStartAtLabel,
-        value: startUserTime == null
-            ? startText
-            : '$startText\n${l10n.timeDisplayYourTime(startUserTime)}',
-      ),
-      _DetailsStatItem(
-        icon: Icons.event_available_rounded,
-        label: l10n.createEndAtLabel,
-        value: endUserTime == null
-            ? endText
-            : '$endText\n${l10n.timeDisplayYourTime(endUserTime)}',
-      ),
       _DetailsStatItem(
         icon: Icons.payments_outlined,
         label: l10n.activityPrice,
@@ -3515,8 +3739,6 @@ class _StatsGrid extends StatelessWidget {
               buildRow(0),
               SizedBox(height: verticalSpacing),
               buildRow(2),
-              SizedBox(height: verticalSpacing),
-              buildRow(4),
             ],
           ),
         );
