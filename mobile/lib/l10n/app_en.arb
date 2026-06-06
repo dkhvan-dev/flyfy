@@ -116,6 +116,12 @@
   "profileTimezone": "Time zone",
   "profileTimezoneSearchHint": "Search time zone, city, or UTC",
   "profileTimezoneNoResults": "No time zones found",
+  "profileTimezoneRecommendedForCountry": "Recommended for {country}",
+  "@profileTimezoneRecommendedForCountry": {
+    "placeholders": {
+      "country": {}
+    }
+  },
   "profileCountry": "Country",
   "profileCurrency": "Currency",
   "profileCurrencySearchHint": "Search currency, code, or symbol",

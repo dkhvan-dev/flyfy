@@ -191,6 +191,7 @@ void main() {
       expect(referenceApiSource, contains('class ReferenceTimezone'));
       expect(l10nSource, contains('profileTimezoneSearchHint'));
       expect(l10nSource, contains('profileTimezoneNoResults'));
+      expect(l10nSource, contains('profileTimezoneRecommendedForCountry'));
       expect(source, contains('_timezoneSearchController'));
       expect(source, contains('List<ReferenceTimezone> _timezones'));
       expect(
@@ -201,10 +202,12 @@ void main() {
       expect(source, contains('withDefaultReferenceTimezone('));
       expect(source, contains('timezoneSearchAliasMap('));
       expect(source, contains('timezoneFilterSearchHaystack('));
+      expect(source, contains('recommendedReferenceTimezonesForCountry('));
       expect(source, contains('referenceTimezoneLabel('));
       expect(source, contains('lang: timezoneLabelLang'));
       expect(source, contains('_selectedTimezone()'));
       expect(source, contains('_visibleTimezones()'));
+      expect(source, contains('_recommendedTimezonesForSelectedCountry()'));
       expect(source, contains('_selectTimezone'));
       expect(source, contains('class _ProfileTimezoneSearchField'));
 
@@ -217,6 +220,7 @@ void main() {
         timezoneSection,
         contains('visibleTimezones: _visibleTimezones()'),
       );
+      expect(timezoneSection, contains('recommendedTimezones:'));
       expect(
         timezoneSection,
         contains('searchHint: l10n.profileTimezoneSearchHint'),
@@ -225,6 +229,7 @@ void main() {
         timezoneSection,
         contains('emptyLabel: l10n.profileTimezoneNoResults'),
       );
+      expect(timezoneSection, contains('profileTimezoneRecommendedForCountry'));
       expect(timezoneSection, isNot(contains('_StyledTextField(')));
     },
   );

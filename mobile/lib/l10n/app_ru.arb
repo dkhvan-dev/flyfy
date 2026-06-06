@@ -116,6 +116,12 @@
   "profileTimezone": "Часовой пояс",
   "profileTimezoneSearchHint": "Поиск часового пояса, города или UTC",
   "profileTimezoneNoResults": "Часовые пояса не найдены",
+  "profileTimezoneRecommendedForCountry": "Рекомендуется для {country}",
+  "@profileTimezoneRecommendedForCountry": {
+    "placeholders": {
+      "country": {}
+    }
+  },
   "profileCountry": "Страна",
   "profileCurrency": "Валюта",
   "profileCurrencySearchHint": "Поиск валюты, кода или символа",

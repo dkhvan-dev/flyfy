@@ -319,6 +319,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileTimezoneNoResults => 'No time zones found';
 
   @override
+  String profileTimezoneRecommendedForCountry(Object country) {
+    return 'Recommended for $country';
+  }
+
+  @override
   String get profileCountry => 'Country';
 
   @override

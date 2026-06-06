@@ -46,11 +46,17 @@ Map<String, Set<String>> timezoneSearchAliasMap(
       timezoneAliases.add(offset);
       timezoneAliases.add('UTC$offset');
       timezoneAliases.add('GMT$offset');
+      timezoneAliases.addAll(_timezoneOffsetSearchAliases(offset));
     }
 
     final city = timezoneId.split('/').last.replaceAll('_', ' ').trim();
     if (city.isNotEmpty) {
       timezoneAliases.add(city);
+    }
+
+    final curatedAliases = _timezoneSearchAliasesById[timezoneId];
+    if (curatedAliases != null) {
+      timezoneAliases.addAll(curatedAliases);
     }
   }
   return aliases;
@@ -130,6 +136,26 @@ ReferenceTimezone? resolveReferenceTimezoneForLocation({
   return _findTimezoneById(timezones, normalizedDeviceTimezoneId);
 }
 
+List<ReferenceTimezone> recommendedReferenceTimezonesForCountry({
+  required List<ReferenceTimezone> timezones,
+  String? countryCode,
+}) {
+  final normalizedCountryCode = normalizeReferenceCountryCode(countryCode);
+  final timezoneIds =
+      _recommendedTimezoneIdsByCountryCode[normalizedCountryCode] ??
+      const <String>[];
+  if (timezoneIds.isEmpty || timezones.isEmpty) return const [];
+
+  final recommended = <ReferenceTimezone>[];
+  for (final timezoneId in timezoneIds) {
+    final timezone = _findTimezoneById(timezones, timezoneId);
+    if (timezone != null) {
+      recommended.add(timezone);
+    }
+  }
+  return recommended;
+}
+
 String localizedReferenceTimezoneFallbackName(String timezoneId, String lang) {
   final city = timezoneId.split('/').last.replaceAll('_', ' ').trim();
   if (city.isEmpty || city == timezoneId) return timezoneId;
@@ -177,6 +203,35 @@ String _stripGenericTimezoneWords(String value) {
       .trim();
 }
 
+Set<String> _timezoneOffsetSearchAliases(String offset) {
+  final trimmed = offset.trim();
+  final match = RegExp(
+    r'^([+-])0?(\d{1,2})(?::?(\d{2}))?$',
+  ).firstMatch(trimmed);
+  if (match == null) return const <String>{};
+
+  final sign = match.group(1)!;
+  final hours = int.parse(match.group(2)!);
+  final minutes = match.group(3);
+  final compactOffset = '$sign$hours';
+  final aliases = <String>{
+    compactOffset,
+    'UTC$compactOffset',
+    'GMT$compactOffset',
+    'UTC $compactOffset',
+    'GMT $compactOffset',
+  };
+
+  if (minutes != null && minutes != '00') {
+    aliases
+      ..add('$compactOffset:$minutes')
+      ..add('UTC$compactOffset:$minutes')
+      ..add('GMT$compactOffset:$minutes');
+  }
+
+  return aliases;
+}
+
 ReferenceTimezone? _findTimezoneBySearchQuery(
   List<ReferenceTimezone> timezones,
   Map<String, Set<String>> aliases,
@@ -213,6 +268,45 @@ const _defaultTimezoneIdByCountryCode = <String, String>{
   'SG': 'Asia/Singapore',
   'TR': 'Europe/Istanbul',
   'UZ': 'Asia/Tashkent',
+  'VN': 'Asia/Ho_Chi_Minh',
+};
+
+const _recommendedTimezoneIdsByCountryCode = <String, List<String>>{
+  'AE': ['Asia/Dubai'],
+  'CN': ['Asia/Shanghai'],
+  'IN': ['Asia/Kolkata'],
+  'JP': ['Asia/Tokyo'],
+  'KG': ['Asia/Bishkek'],
+  'KR': ['Asia/Seoul'],
+  'KZ': [
+    'Asia/Almaty',
+    'Asia/Aqtau',
+    'Asia/Aqtobe',
+    'Asia/Atyrau',
+    'Asia/Oral',
+    'Asia/Qyzylorda',
+  ],
+  'SG': ['Asia/Singapore'],
+  'TR': ['Europe/Istanbul'],
+  'UZ': ['Asia/Tashkent'],
+  'VN': ['Asia/Ho_Chi_Minh'],
+};
+
+const _timezoneSearchAliasesById = <String, Set<String>>{
+  'Asia/Ho_Chi_Minh': {
+    'Vietnam',
+    'Viet Nam',
+    'Вьетнам',
+    'Ханой',
+    'Hanoi',
+    'Ho Chi Minh',
+    'Ho Chi Minh City',
+    'Хошимин',
+    'Saigon',
+    'Сайгон',
+    'UTC+7',
+    'GMT+7',
+  },
 };
 
 const _timezonePlaceNamesById = <String, Map<String, String>>{
@@ -235,6 +329,11 @@ const _timezonePlaceNamesById = <String, Map<String, String>>{
   'Asia/Seoul': {'en': 'Seoul', 'ru': 'Сеул', 'kk': 'Сеул'},
   'Asia/Shanghai': {'en': 'Shanghai', 'ru': 'Шанхай', 'kk': 'Шанхай'},
   'Asia/Singapore': {'en': 'Singapore', 'ru': 'Сингапур', 'kk': 'Сингапур'},
+  'Asia/Ho_Chi_Minh': {
+    'en': 'Vietnam, Ho Chi Minh City / Hanoi',
+    'ru': 'Вьетнам, Хошимин / Ханой',
+    'kk': 'Вьетнам, Хошимин / Ханой',
+  },
   'Asia/Kolkata': {'en': 'India', 'ru': 'Индия', 'kk': 'Үндістан'},
   'America/New_York': {'en': 'New York', 'ru': 'Нью-Йорк', 'kk': 'Нью-Йорк'},
   'America/Chicago': {'en': 'Chicago', 'ru': 'Чикаго', 'kk': 'Чикаго'},

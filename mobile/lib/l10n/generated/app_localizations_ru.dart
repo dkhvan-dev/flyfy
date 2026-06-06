@@ -322,6 +322,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileTimezoneNoResults => 'Часовые пояса не найдены';
 
   @override
+  String profileTimezoneRecommendedForCountry(Object country) {
+    return 'Рекомендуется для $country';
+  }
+
+  @override
   String get profileCountry => 'Страна';
 
   @override

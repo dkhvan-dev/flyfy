@@ -682,6 +682,12 @@ abstract class AppLocalizations {
   /// **'No time zones found'**
   String get profileTimezoneNoResults;
 
+  /// No description provided for @profileTimezoneRecommendedForCountry.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended for {country}'**
+  String profileTimezoneRecommendedForCountry(Object country);
+
   /// No description provided for @profileCountry.
   ///
   /// In en, this message translates to:

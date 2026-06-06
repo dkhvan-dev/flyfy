@@ -171,6 +171,15 @@
     }
   },
   {
+    "id": "Asia/Ho_Chi_Minh",
+    "utcOffset": "+07:00",
+    "name": {
+      "en": "Vietnam, Ho Chi Minh City / Hanoi",
+      "ru": "Вьетнам, Хошимин / Ханой",
+      "kk": "Вьетнам, Хошимин / Ханой"
+    }
+  },
+  {
     "id": "Asia/Kolkata",
     "utcOffset": "+05:30",
     "name": {

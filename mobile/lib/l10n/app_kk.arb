@@ -116,6 +116,12 @@
   "profileTimezone": "Уақыт белдеуі",
   "profileTimezoneSearchHint": "Уақыт белдеуін, қаланы немесе UTC іздеу",
   "profileTimezoneNoResults": "Уақыт белдеулері табылмады",
+  "profileTimezoneRecommendedForCountry": "{country} үшін ұсынылады",
+  "@profileTimezoneRecommendedForCountry": {
+    "placeholders": {
+      "country": {}
+    }
+  },
   "profileCountry": "Ел",
   "profileCurrency": "Валюта",
   "profileCurrencySearchHint": "Валютаны, кодты немесе таңбаны іздеу",

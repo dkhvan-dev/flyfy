@@ -325,6 +325,11 @@ class AppLocalizationsKk extends AppLocalizations {
   String get profileTimezoneNoResults => 'Уақыт белдеулері табылмады';
 
   @override
+  String profileTimezoneRecommendedForCountry(Object country) {
+    return '$country үшін ұсынылады';
+  }
+
+  @override
   String get profileCountry => 'Ел';
 
   @override
