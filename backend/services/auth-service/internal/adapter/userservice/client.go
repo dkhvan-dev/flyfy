@@ -76,7 +76,12 @@ func (c *Client) ResolveUserIDByNickname(ctx context.Context, nickname string) (
 		return uuid.Nil, fmt.Errorf("ResolveUserByNickname RPC: %w", err)
 	}
 
-	userID, err := uuid.Parse(strings.TrimSpace(resp.GetUserId()))
+	authSubjectID := strings.TrimSpace(resp.GetAuthSubjectId())
+	if authSubjectID == "" {
+		authSubjectID = strings.TrimSpace(resp.GetUserId())
+	}
+
+	userID, err := uuid.Parse(authSubjectID)
 	if err != nil {
 		return uuid.Nil, nil
 	}

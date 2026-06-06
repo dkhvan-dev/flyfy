@@ -263,19 +263,41 @@ func (u *UserUseCase) GetAggregateBySubject(ctx context.Context, subjectID strin
 }
 
 func (u *UserUseCase) ResolveUserIDByNickname(ctx context.Context, nickname string) (uuid.UUID, error) {
+	userID, _, err := u.ResolveUserIdentityByNickname(ctx, nickname)
+	return userID, err
+}
+
+func (u *UserUseCase) ResolveUserIdentityByNickname(
+	ctx context.Context,
+	nickname string,
+) (uuid.UUID, string, error) {
 	nickname = strings.TrimSpace(nickname)
 	if nickname == "" {
-		return uuid.Nil, ErrNicknameRequired
+		return uuid.Nil, "", ErrNicknameRequired
 	}
 
 	userID, err := u.repo.GetUserIDByNickname(ctx, nickname)
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("get user id by nickname: %w", err)
+		return uuid.Nil, "", fmt.Errorf("get user id by nickname: %w", err)
 	}
 	if userID == uuid.Nil {
-		return uuid.Nil, ErrUserNotFound
+		return uuid.Nil, "", ErrUserNotFound
 	}
-	return userID, nil
+
+	user, err := u.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		return uuid.Nil, "", fmt.Errorf("get user by nickname user id: %w", err)
+	}
+	if user == nil || user.IsDeleted {
+		return uuid.Nil, "", ErrUserNotFound
+	}
+
+	authSubjectID := strings.TrimSpace(user.AuthSubjectID)
+	if authSubjectID == "" {
+		return uuid.Nil, "", ErrInvalidSubjectID
+	}
+
+	return userID, authSubjectID, nil
 }
 
 func (u *UserUseCase) CheckNicknameAvailability(ctx context.Context, subjectID string, nickname string) (bool, error) {

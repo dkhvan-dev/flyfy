@@ -391,6 +391,45 @@ func TestStartPasswordResetAcceptsNicknameIdentifierViaResolver(t *testing.T) {
 	}
 }
 
+func TestVerifyPasswordResetAcceptsNicknameIdentifierViaResolver(t *testing.T) {
+	userRepo := newInMemoryUserRepository()
+	userID := uuid.New()
+	userRepo.byID[userID] = &model.AuthUser{
+		ID:            userID,
+		Email:         strPtr("traveler@example.com"),
+		PasswordHash:  mustPasswordHash(t, "travel42Pass"),
+		EmailVerified: true,
+		Role:          model.RoleTourist,
+		IsActive:      true,
+	}
+	resolver := &stubNicknameResolver{
+		users: map[string]uuid.UUID{"nomad_aru": userID},
+	}
+	otpStore := &spyOTPStore{verifyResult: true}
+	uc := newTestEmailAuthUseCase(userRepo, otpStore, &spyEmailOTPSender{}, resolver)
+
+	err := uc.VerifyPasswordReset(
+		context.Background(),
+		"Nomad_Aru",
+		"123456",
+		"newTravel42Pass",
+		model.DeviceInfo{},
+	)
+
+	if err != nil {
+		t.Fatalf("VerifyPasswordReset() error = %v", err)
+	}
+	if otpStore.lastVerifyDestination != "password_reset:traveler@example.com" {
+		t.Fatalf("OTP verify destination = %q, want password_reset:traveler@example.com", otpStore.lastVerifyDestination)
+	}
+	if _, err := uc.PasswordLogin(context.Background(), "nomad_aru", "travel42Pass", model.DeviceInfo{}); !errors.Is(err, model.ErrInvalidCredentials) {
+		t.Fatalf("PasswordLogin() with old password error = %v, want %v", err, model.ErrInvalidCredentials)
+	}
+	if result, err := uc.PasswordLogin(context.Background(), "nomad_aru", "newTravel42Pass", model.DeviceInfo{}); err != nil || result == nil {
+		t.Fatalf("PasswordLogin() with new password result=%#v error=%v, want success", result, err)
+	}
+}
+
 func TestStartPasswordChangeSendsOTPAfterCurrentPasswordCheck(t *testing.T) {
 	userRepo := newInMemoryUserRepository()
 	userID := uuid.New()

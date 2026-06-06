@@ -195,3 +195,25 @@ func TestResolveUserIDByNicknameUsesCaseInsensitiveNickname(t *testing.T) {
 		t.Fatalf("user id = %s, want %s", got, userID)
 	}
 }
+
+func TestResolveUserIdentityByNicknameReturnsAuthSubjectID(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+	authSubjectID := uuid.New().String()
+	repo := newFriendshipTestRepository(userID)
+	repo.users[userID].AuthSubjectID = authSubjectID
+	repo.bySubject = map[string]uuid.UUID{authSubjectID: userID}
+	repo.nicknameOwners["@nomad_aru"] = userID
+	useCase := NewUserUseCase(repo, nil)
+
+	gotUserID, gotAuthSubjectID, err := useCase.ResolveUserIdentityByNickname(ctx, "  @Nomad_Aru ")
+	if err != nil {
+		t.Fatalf("ResolveUserIdentityByNickname() error = %v", err)
+	}
+	if gotUserID != userID {
+		t.Fatalf("user id = %s, want %s", gotUserID, userID)
+	}
+	if gotAuthSubjectID != authSubjectID {
+		t.Fatalf("auth subject id = %s, want %s", gotAuthSubjectID, authSubjectID)
+	}
+}

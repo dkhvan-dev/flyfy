@@ -223,7 +223,10 @@ message ResolveUserByNicknameRequest {
 }
 
 message ResolveUserByNicknameResponse {
+  // user_id is the user-service profile aggregate ID.
   string user_id = 1;
+  // auth_subject_id is the auth-service subject ID used in access tokens.
+  string auth_subject_id = 2;
 }
 
 message GetUserBySubjectRequest {

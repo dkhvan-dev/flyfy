@@ -1907,8 +1907,11 @@ func (x *ResolveUserByNicknameRequest) GetNickname() string {
 }
 
 type ResolveUserByNicknameResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// user_id is the user-service profile aggregate ID.
+	UserId string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	// auth_subject_id is the auth-service subject ID used in access tokens.
+	AuthSubjectId string `protobuf:"bytes,2,opt,name=auth_subject_id,json=authSubjectId,proto3" json:"auth_subject_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1946,6 +1949,13 @@ func (*ResolveUserByNicknameResponse) Descriptor() ([]byte, []int) {
 func (x *ResolveUserByNicknameResponse) GetUserId() string {
 	if x != nil {
 		return x.UserId
+	}
+	return ""
+}
+
+func (x *ResolveUserByNicknameResponse) GetAuthSubjectId() string {
+	if x != nil {
+		return x.AuthSubjectId
 	}
 	return ""
 }
@@ -2705,9 +2715,10 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\x1bFilterFriendUserIdsResponse\x12&\n" +
 	"\x0ffriend_user_ids\x18\x01 \x03(\tR\rfriendUserIds\":\n" +
 	"\x1cResolveUserByNicknameRequest\x12\x1a\n" +
-	"\bnickname\x18\x01 \x01(\tR\bnickname\"8\n" +
+	"\bnickname\x18\x01 \x01(\tR\bnickname\"`\n" +
 	"\x1dResolveUserByNicknameResponse\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"8\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12&\n" +
+	"\x0fauth_subject_id\x18\x02 \x01(\tR\rauthSubjectId\"8\n" +
 	"\x17GetUserBySubjectRequest\x12\x1d\n" +
 	"\n" +
 	"subject_id\x18\x01 \x01(\tR\tsubjectId\"P\n" +

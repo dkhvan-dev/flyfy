@@ -322,13 +322,14 @@ func (s *Server) ResolveUserByNickname(
 	ctx context.Context,
 	req *userv1.ResolveUserByNicknameRequest,
 ) (*userv1.ResolveUserByNicknameResponse, error) {
-	userID, err := s.useCase.ResolveUserIDByNickname(ctx, req.GetNickname())
+	userID, authSubjectID, err := s.useCase.ResolveUserIdentityByNickname(ctx, req.GetNickname())
 	if err != nil {
 		return nil, mapError(err)
 	}
 
 	return &userv1.ResolveUserByNicknameResponse{
-		UserId: userID.String(),
+		UserId:        userID.String(),
+		AuthSubjectId: authSubjectID,
 	}, nil
 }
 
