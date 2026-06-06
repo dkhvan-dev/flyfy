@@ -93,7 +93,9 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
   Future<void> _initializeDefaultCityFilter() async {
     final provider = context.read<HomeLocationProvider>();
     if (!provider.isLoaded && !provider.isLoading) {
-      await provider.load();
+      await provider.load(
+        languageCode: Localizations.localeOf(context).languageCode,
+      );
     }
     if (!mounted) return;
     _applyDefaultCityFilter(provider);

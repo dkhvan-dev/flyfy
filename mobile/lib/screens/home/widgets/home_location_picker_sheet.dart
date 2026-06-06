@@ -106,7 +106,7 @@ class _HomeLocationPickerSheetState extends State<HomeLocationPickerSheet> {
 
   Future<void> _clearSelection() async {
     await context.read<HomeLocationProvider>().clearSelection(
-      profile: widget.profile,
+      languageCode: Localizations.localeOf(context).languageCode,
     );
     if (mounted) Navigator.of(context).pop(true);
   }

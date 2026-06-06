@@ -55,7 +55,11 @@ void main() {
       ).readAsString();
 
       expect(source, contains('Future<void> _applyHomeLocation()'));
-      expect(source, contains('await provider.load()'));
+      expect(source, contains('await provider.load('));
+      expect(
+        source,
+        contains('languageCode: Localizations.localeOf(context).languageCode'),
+      );
       expect(source, contains('provider.effectiveLocation'));
       expect(
         source,

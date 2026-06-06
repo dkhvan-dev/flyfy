@@ -147,7 +147,9 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     final provider = context.read<HomeLocationProvider>();
     if (!provider.isLoaded && !provider.isLoading) {
       try {
-        await provider.load();
+        await provider.load(
+          languageCode: Localizations.localeOf(context).languageCode,
+        );
       } catch (_) {
         // Keep the form usable if device location cannot be resolved.
       }

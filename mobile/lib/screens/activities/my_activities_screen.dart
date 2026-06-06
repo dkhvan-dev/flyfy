@@ -177,7 +177,9 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
   Future<void> _initializeDefaultLocationFilter() async {
     final provider = context.read<HomeLocationProvider>();
     if (!provider.isLoaded && !provider.isLoading) {
-      await provider.load();
+      await provider.load(
+        languageCode: Localizations.localeOf(context).languageCode,
+      );
     }
     if (!mounted) return;
     _applyDefaultLocationFilter(provider);

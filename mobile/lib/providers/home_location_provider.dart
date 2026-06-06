@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/device/device_context_service.dart';
 import '../core/network/reference_api.dart';
-import '../features/profile/models/user_profile_vm.dart';
 
 enum HomeLocationSource { manual, detected, profile, fallback }
 
@@ -98,7 +97,6 @@ class HomeLocationProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isDetecting = false;
   String? _errorMessage;
-  String? _profileSignature;
 
   HomeLocationPreference? get selectedLocation => _selectedLocation;
   HomeLocationPreference get effectiveLocation => _effectiveLocation;
@@ -107,13 +105,7 @@ class HomeLocationProvider extends ChangeNotifier {
   bool get isDetecting => _isDetecting;
   String? get errorMessage => _errorMessage;
 
-  bool shouldSyncProfile(UserProfileVm? profile) {
-    if (!_isLoaded || _selectedLocation != null) return false;
-    if (_effectiveLocation.source == HomeLocationSource.detected) return false;
-    return _profileSignature != _profileLocationSignature(profile);
-  }
-
-  Future<void> load({UserProfileVm? profile}) async {
+  Future<void> load({String languageCode = 'en'}) async {
     if (_isLoading) return;
 
     _isLoading = true;
@@ -122,35 +114,22 @@ class HomeLocationProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(storageKey);
     _selectedLocation = _decodeSelectedLocation(raw);
-    _profileSignature = _profileLocationSignature(profile);
     final deviceLocation = _selectedLocation == null
         ? await _detectDeviceLocationPreference(
-            languageCode: 'en',
+            languageCode: languageCode,
             requestPermission: false,
           )
         : null;
     _effectiveLocation =
         _selectedLocation ??
         deviceLocation ??
-        _profileFallback(profile) ??
         HomeLocationPreference.fallback();
     _effectiveLocation = await _resolveCityReference(
       _effectiveLocation,
-      languageCode: 'en',
+      languageCode: languageCode,
     );
     _isLoaded = true;
     _isLoading = false;
-    notifyListeners();
-  }
-
-  void syncProfileFallback(UserProfileVm? profile) {
-    if (!_isLoaded || _selectedLocation != null) return;
-    if (_effectiveLocation.source == HomeLocationSource.detected) return;
-    final signature = _profileLocationSignature(profile);
-    if (_profileSignature == signature) return;
-    _profileSignature = signature;
-    _effectiveLocation =
-        _profileFallback(profile) ?? HomeLocationPreference.fallback();
     notifyListeners();
   }
 
@@ -206,18 +185,20 @@ class HomeLocationProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> clearSelection({UserProfileVm? profile}) async {
+  Future<void> clearSelection({String languageCode = 'en'}) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(storageKey);
     _selectedLocation = null;
-    _profileSignature = _profileLocationSignature(profile);
-    _effectiveLocation =
+    final nextLocation =
         await _detectDeviceLocationPreference(
-          languageCode: 'en',
+          languageCode: languageCode,
           requestPermission: false,
         ) ??
-        _profileFallback(profile) ??
         HomeLocationPreference.fallback();
+    _effectiveLocation = await _resolveCityReference(
+      nextLocation,
+      languageCode: languageCode,
+    );
     _errorMessage = null;
     notifyListeners();
   }
@@ -248,21 +229,6 @@ class HomeLocationProvider extends ChangeNotifier {
     } catch (_) {
       return null;
     }
-  }
-
-  HomeLocationPreference? _profileFallback(UserProfileVm? profile) {
-    if (profile == null) return null;
-
-    final countryCode = profile.countryCode?.trim().toUpperCase();
-    final cityName = _cityFromTimezone(profile.timezone);
-    if ((countryCode ?? '').isEmpty && (cityName ?? '').isEmpty) return null;
-
-    return HomeLocationPreference(
-      source: HomeLocationSource.profile,
-      countryCode: countryCode?.isEmpty == true ? null : countryCode,
-      cityName: cityName,
-      updatedAt: DateTime.now().toUtc(),
-    );
   }
 
   Future<HomeLocationPreference?> _detectDeviceLocationPreference({
@@ -383,20 +349,6 @@ class HomeLocationProvider extends ChangeNotifier {
         first.cityName == second.cityName &&
         first.latitude == second.latitude &&
         first.longitude == second.longitude;
-  }
-
-  String _profileLocationSignature(UserProfileVm? profile) {
-    if (profile == null) return '';
-    return '${profile.countryCode ?? ''}|${profile.timezone}';
-  }
-
-  String? _cityFromTimezone(String? timezone) {
-    final normalized = timezone?.trim();
-    if (normalized == null || normalized.isEmpty || !normalized.contains('/')) {
-      return null;
-    }
-    final city = normalized.split('/').last.trim().replaceAll('_', ' ');
-    return city.isEmpty ? null : city;
   }
 }
 

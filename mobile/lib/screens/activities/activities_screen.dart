@@ -77,14 +77,12 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
 
   Future<void> _initializeDefaultLocationFilter() async {
     final provider = context.read<HomeLocationProvider>();
-    final sessionProvider = context.read<SessionProvider>();
     if (!provider.isLoaded && !provider.isLoading) {
-      await provider.load(profile: sessionProvider.profile);
+      await provider.load(
+        languageCode: Localizations.localeOf(context).languageCode,
+      );
     }
     if (!mounted) return;
-    if (provider.shouldSyncProfile(sessionProvider.profile)) {
-      provider.syncProfileFallback(sessionProvider.profile);
-    }
     _applyDefaultLocationFilter(provider);
   }
 

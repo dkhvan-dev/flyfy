@@ -81,15 +81,9 @@ void main() {
       );
       expect(source, contains('HomeLocationProvider'));
       expect(source, contains('SessionProvider'));
-      expect(source, contains('profile: sessionProvider.profile'));
-      expect(
-        source,
-        contains('provider.shouldSyncProfile(sessionProvider.profile)'),
-      );
-      expect(
-        source,
-        contains('provider.syncProfileFallback(sessionProvider.profile)'),
-      );
+      expect(source, isNot(contains('profile: sessionProvider.profile')));
+      expect(source, isNot(contains('provider.shouldSyncProfile(')));
+      expect(source, isNot(contains('provider.syncProfileFallback(')));
       expect(source, contains('provider.resolveCityReference('));
       expect(
         source,

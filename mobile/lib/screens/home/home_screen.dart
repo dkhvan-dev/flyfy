@@ -96,9 +96,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final provider = context.read<ActivityProvider>();
     final sessionProvider = context.read<SessionProvider>();
     final homeLocationProvider = context.read<HomeLocationProvider>();
+    final languageCode = Localizations.localeOf(context).languageCode;
 
     try {
-      await homeLocationProvider.load(profile: sessionProvider.profile);
+      await homeLocationProvider.load(languageCode: languageCode);
     } catch (_) {
       // Discovery location is a startup convenience; failed storage reads
       // should not block the main feed from loading.
@@ -726,12 +727,7 @@ class _HomeScreenState extends State<HomeScreen> {
         !homeLocationProvider.isLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        context.read<HomeLocationProvider>().load(profile: profile);
-      });
-    } else if (homeLocationProvider.shouldSyncProfile(profile)) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        context.read<HomeLocationProvider>().syncProfileFallback(profile);
+        context.read<HomeLocationProvider>().load(languageCode: languageCode);
       });
     }
     final homeLocation = homeLocationProvider.effectiveLocation;

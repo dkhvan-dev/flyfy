@@ -496,11 +496,12 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       return;
     }
 
-    final sessionProvider = context.read<SessionProvider>();
     final provider = context.read<HomeLocationProvider>();
     if (!provider.isLoaded && !provider.isLoading) {
       try {
-        await provider.load(profile: sessionProvider.profile);
+        await provider.load(
+          languageCode: Localizations.localeOf(context).languageCode,
+        );
       } catch (_) {
         // Keep the form usable if cached location loading fails.
       }

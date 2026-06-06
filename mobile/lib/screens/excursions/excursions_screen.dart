@@ -421,14 +421,12 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
 
   Future<void> _initializeDefaultCityFilter() async {
     final provider = context.read<HomeLocationProvider>();
-    final sessionProvider = context.read<SessionProvider>();
     if (!provider.isLoaded && !provider.isLoading) {
-      await provider.load(profile: sessionProvider.profile);
+      await provider.load(
+        languageCode: Localizations.localeOf(context).languageCode,
+      );
     }
     if (!mounted) return;
-    if (provider.shouldSyncProfile(sessionProvider.profile)) {
-      provider.syncProfileFallback(sessionProvider.profile);
-    }
     final location = await provider.resolveCityReference(
       provider.effectiveLocation,
       languageCode: Localizations.localeOf(context).languageCode,

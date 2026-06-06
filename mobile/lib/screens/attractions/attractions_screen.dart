@@ -125,7 +125,9 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
   Future<void> _initializeDefaultLocationFilter() async {
     final provider = context.read<HomeLocationProvider>();
     if (!provider.isLoaded && !provider.isLoading) {
-      await provider.load();
+      await provider.load(
+        languageCode: Localizations.localeOf(context).languageCode,
+      );
     }
     if (!mounted) return;
     _applyDefaultLocationFilter(provider);

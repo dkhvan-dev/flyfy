@@ -110,9 +110,15 @@ void main() {
 
       expect(
         initSource,
-        contains('final sessionProvider = context.read<SessionProvider>();'),
+        isNot(
+          contains('final sessionProvider = context.read<SessionProvider>();'),
+        ),
       );
-      expect(initSource, contains('profile: sessionProvider.profile'));
+      expect(initSource, isNot(contains('profile: sessionProvider.profile')));
+      expect(
+        initSource,
+        contains('languageCode: Localizations.localeOf(context).languageCode'),
+      );
       expect(
         applySource,
         contains('final location = provider.effectiveLocation'),

@@ -1,7 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inflap/core/device/device_context_service.dart';
 import 'package:inflap/core/network/reference_api.dart';
-import 'package:inflap/features/profile/models/user_profile_vm.dart';
 import 'package:inflap/providers/home_location_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -9,7 +10,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test(
-    'resolveCityReference adds reference city id to profile fallback city',
+    'resolveCityReference adds reference city id to raw city name',
     () async {
       final api = _FakeReferenceApi(
         cities: const [
@@ -37,52 +38,111 @@ void main() {
     },
   );
 
+  test('load prefers silently detected device location', () async {
+    SharedPreferences.setMockInitialValues({});
+    final api = _FakeReferenceApi(
+      cities: const [
+        ReferenceCity(id: 'astana', countryCode: 'KZ', name: 'Астана'),
+      ],
+    );
+    final deviceContext = _FakeDeviceContextService(
+      suggestion: DeviceLocationSuggestion(
+        countryCode: 'KZ',
+        countryName: 'Kazakhstan',
+        cityName: 'Astana',
+        latitude: 51.1605,
+        longitude: 71.4704,
+      ),
+    );
+    final provider = HomeLocationProvider(
+      referenceApi: api,
+      deviceContextService: deviceContext,
+    );
+
+    await provider.load(languageCode: 'ru');
+
+    expect(provider.effectiveLocation.source, HomeLocationSource.detected);
+    expect(provider.effectiveLocation.countryCode, 'KZ');
+    expect(provider.effectiveLocation.cityId, 'astana');
+    expect(provider.effectiveLocation.cityName, 'Астана');
+    expect(deviceContext.requestPermissionValues, [false]);
+    expect(api.queries, ['Astana']);
+    expect(api.languages, ['ru']);
+  });
+
   test(
-    'load prefers silently detected device location over profile fallback',
+    'load uses neutral fallback when device location is unavailable',
     () async {
       SharedPreferences.setMockInitialValues({});
-      final api = _FakeReferenceApi(
-        cities: const [
-          ReferenceCity(id: 'astana', countryCode: 'KZ', name: 'Астана'),
-        ],
-      );
-      final deviceContext = _FakeDeviceContextService(
-        suggestion: DeviceLocationSuggestion(
-          countryCode: 'KZ',
-          countryName: 'Kazakhstan',
-          cityName: 'Astana',
-          latitude: 51.1605,
-          longitude: 71.4704,
-        ),
-      );
+      final api = _FakeReferenceApi(cities: const []);
+      final deviceContext = _FakeDeviceContextService(suggestion: null);
       final provider = HomeLocationProvider(
         referenceApi: api,
         deviceContextService: deviceContext,
       );
 
-      await provider.load(
-        profile: UserProfileVm(
-          userId: 'user-1',
-          status: 'ACTIVE',
-          locale: 'ru',
-          timezone: 'Asia/Almaty',
-          countryCode: 'KZ',
-          isProfileCompleted: true,
-          roles: const [],
-          followersCount: 0,
-          isFollowedByMe: false,
-          friendshipStatus: UserFriendshipStatus.none,
-        ),
-      );
+      await provider.load();
 
-      expect(provider.effectiveLocation.source, HomeLocationSource.detected);
+      expect(provider.effectiveLocation.source, HomeLocationSource.fallback);
       expect(provider.effectiveLocation.countryCode, 'KZ');
-      expect(provider.effectiveLocation.cityId, 'astana');
-      expect(provider.effectiveLocation.cityName, 'Астана');
+      expect(provider.effectiveLocation.cityName, 'Almaty');
       expect(deviceContext.requestPermissionValues, [false]);
-      expect(api.queries, ['Astana']);
+      expect(api.queries, ['Almaty']);
+      expect(api.countryCodes, ['KZ']);
     },
   );
+
+  test('load ignores stored profile-derived location preference', () async {
+    SharedPreferences.setMockInitialValues({
+      HomeLocationProvider.storageKey: jsonEncode({
+        'source': HomeLocationSource.profile.name,
+        'countryCode': 'VN',
+        'cityName': 'Bishkek',
+        'updatedAt': DateTime.utc(2026, 6, 3).toIso8601String(),
+      }),
+    });
+    final api = _FakeReferenceApi(cities: const []);
+    final provider = HomeLocationProvider(
+      referenceApi: api,
+      deviceContextService: _FakeDeviceContextService(suggestion: null),
+    );
+
+    await provider.load();
+
+    expect(provider.effectiveLocation.source, HomeLocationSource.fallback);
+    expect(provider.effectiveLocation.countryCode, 'KZ');
+    expect(provider.effectiveLocation.cityName, 'Almaty');
+    expect(api.queries, ['Almaty']);
+  });
+
+  test('load uses requested language for device location lookup', () async {
+    SharedPreferences.setMockInitialValues({});
+    final api = _FakeReferenceApi(
+      cities: const [
+        ReferenceCity(id: 'almaty', countryCode: 'KZ', name: 'Алматы'),
+      ],
+    );
+    final provider = HomeLocationProvider(
+      referenceApi: api,
+      deviceContextService: _FakeDeviceContextService(
+        suggestion: DeviceLocationSuggestion(
+          countryCode: 'KZ',
+          countryName: 'Kazakhstan',
+          cityName: 'Almaty',
+          latitude: 43.2389,
+          longitude: 76.8897,
+        ),
+      ),
+    );
+
+    await provider.load(languageCode: 'ru');
+
+    expect(provider.effectiveLocation.source, HomeLocationSource.detected);
+    expect(provider.effectiveLocation.cityId, 'almaty');
+    expect(provider.effectiveLocation.cityName, 'Алматы');
+    expect(api.queries, ['Almaty']);
+    expect(api.languages, ['ru']);
+  });
 }
 
 class _FakeReferenceApi extends ReferenceApi {
