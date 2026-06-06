@@ -88,7 +88,7 @@ void main() {
     final slot = await api.createSlot(
       CreateExcursionScheduleSlotRequest(
         offerId: 'offer-1',
-        startAt: DateTime.utc(2026, 6, 1, 8),
+        startAt: DateTime(2026, 6, 1, 13),
         timezone: 'Asia/Almaty',
         capacity: 6,
       ),
@@ -117,7 +117,7 @@ void main() {
       'slot 1',
       UpdateExcursionScheduleSlotRequest(
         offerId: 'offer-2',
-        startAt: DateTime.utc(2026, 6, 5, 9, 30),
+        startAt: DateTime(2026, 6, 5, 14, 30),
         timezone: 'Asia/Almaty',
         capacity: 5,
       ),

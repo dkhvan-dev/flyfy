@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 
 import '../core/network/dio_error_mapper.dart';
 import '../core/network/excursion_schedule_api.dart';
+import '../core/time/app_time.dart';
 import '../features/excursions/models/excursion_schedule_vm.dart';
 
 enum ExcursionScheduleState { initial, loading, success, error }
@@ -84,9 +85,7 @@ class ExcursionScheduleProvider extends ChangeNotifier {
     final target = DateTime(day.year, day.month, day.day);
     final filtered = _slots
         .where((slot) {
-          final localStart = slot.startAt.toLocal();
-          return DateTime(localStart.year, localStart.month, localStart.day) ==
-              target;
+          return eventDateOnly(slot.startAt, slot.timezone) == target;
         })
         .toList(growable: false);
 
@@ -99,7 +98,7 @@ class ExcursionScheduleProvider extends ChangeNotifier {
     try {
       final slot = await _scheduleApi.createSlot(request);
       _upsertSlot(slot);
-      _selectedDate = slot.startAt.toLocal();
+      _selectedDate = eventDateOnly(slot.startAt, slot.timezone);
       _setActionSuccess();
       return true;
     } on DioException catch (e) {
@@ -132,7 +131,10 @@ class ExcursionScheduleProvider extends ChangeNotifier {
       }
       _slots = _sortSlots(nextSlots);
       if (slots.isNotEmpty) {
-        _selectedDate = slots.first.startAt.toLocal();
+        _selectedDate = eventDateOnly(
+          slots.first.startAt,
+          slots.first.timezone,
+        );
       }
       _setActionSuccess();
       return true;
@@ -163,7 +165,7 @@ class ExcursionScheduleProvider extends ChangeNotifier {
     try {
       final slot = await _scheduleApi.updateSlot(trimmedId, request);
       _upsertSlot(slot);
-      _selectedDate = slot.startAt.toLocal();
+      _selectedDate = eventDateOnly(slot.startAt, slot.timezone);
       _setActionSuccess();
       return true;
     } on DioException catch (e) {
@@ -277,7 +279,7 @@ class ExcursionScheduleProvider extends ChangeNotifier {
     List<ExcursionScheduleSlotVm> source,
   ) {
     final sorted = List<ExcursionScheduleSlotVm>.of(source)
-      ..sort((a, b) => a.startAt.toLocal().compareTo(b.startAt.toLocal()));
+      ..sort((a, b) => a.startAt.compareTo(b.startAt));
     return List<ExcursionScheduleSlotVm>.unmodifiable(sorted);
   }
 

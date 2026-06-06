@@ -1,3 +1,5 @@
+import '../../../core/time/app_time.dart';
+
 enum ExcursionScheduleSlotStatus {
   available,
   booked,
@@ -119,7 +121,7 @@ class CreateExcursionScheduleSlotRequest {
   Map<String, dynamic> toJson() {
     return {
       'offerId': offerId.trim(),
-      'startAt': startAt.toUtc().toIso8601String(),
+      'startAt': eventWallClockToUtc(startAt, timezone).toIso8601String(),
       'timezone': timezone.trim(),
       if (capacity != null) 'capacity': capacity,
     };
@@ -142,7 +144,7 @@ class UpdateExcursionScheduleSlotRequest {
   Map<String, dynamic> toJson() {
     return {
       'offerId': offerId.trim(),
-      'startAt': startAt.toUtc().toIso8601String(),
+      'startAt': eventWallClockToUtc(startAt, timezone).toIso8601String(),
       'timezone': timezone.trim(),
       if (capacity != null) 'capacity': capacity,
     };

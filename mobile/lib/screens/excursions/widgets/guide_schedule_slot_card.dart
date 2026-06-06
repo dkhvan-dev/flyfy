@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
+import '../../../core/time/app_time.dart';
 import '../../../core/ui/app_colors.dart';
 import '../../../features/excursions/models/excursion_schedule_vm.dart';
 import '../../../l10n/generated/app_localizations.dart';
@@ -31,10 +31,12 @@ class GuideScheduleSlotCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final locale = l10n.localeName;
-    final start = slot.startAt.toLocal();
-    final end = slot.endAt.toLocal();
-    final timeLabel =
-        '${DateFormat.Hm(locale).format(start)} - ${DateFormat.Hm(locale).format(end)}';
+    final timeLabel = formatEventTimeRange(
+      start: slot.startAt,
+      end: slot.endAt,
+      timezoneId: slot.timezone,
+      localeName: locale,
+    );
     final color = guideScheduleStatusColor(slot);
     final title = slot.title.trim().isEmpty
         ? l10n.serviceExcursions

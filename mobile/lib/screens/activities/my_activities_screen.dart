@@ -11,6 +11,7 @@ import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_list_screen_header.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
 import '../../core/ui/pagination_bar.dart';
+import '../../core/time/app_time.dart';
 import '../../core/utils/pagination.dart';
 import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/activity_formatters.dart';
@@ -1116,9 +1117,11 @@ class _MyActivitiesCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final dateText = DateFormat.MMMd(
-      localeName,
-    ).add_Hm().format(item.startAt.toLocal());
+    final dateText = formatEventDateTime(
+      item.startAt,
+      timezoneId: item.timezone,
+      localeName: localeName,
+    );
     final locationFallbackText = activityLocationFallbackText(item, l10n);
     final normalizedCategoryLabel = categoryLabel.trim();
     final metaItems = <_MyActivityMetaData>[

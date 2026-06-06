@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/time/app_time.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_view.dart';
 import '../../features/activities/activity_currency.dart';
@@ -219,6 +220,7 @@ class _ActivityPaymentScreenState extends State<ActivityPaymentScreen> {
                                 ),
                                 dateLabel: _formatPaymentDateTime(
                                   activity.startAt,
+                                  activity.timezone,
                                   locale,
                                 ),
                               ),
@@ -1090,9 +1092,9 @@ class _RadioIndicator extends StatelessWidget {
 
 enum _PaymentLogo { apple, google }
 
-String _formatPaymentDateTime(DateTime value, String locale) {
-  final local = value.toLocal();
-  final date = DateFormat.MMMd(locale).format(local);
-  final time = DateFormat.jm(locale).format(local);
-  return '$date • $time';
+String _formatPaymentDateTime(DateTime value, String timezone, String locale) {
+  final zoned = eventDateTime(value, timezone);
+  final date = DateFormat.MMMd(locale).format(zoned);
+  final time = DateFormat.jm(locale).format(zoned);
+  return '$date • $time · ${formatUtcOffset(zoned.timeZoneOffset)}';
 }

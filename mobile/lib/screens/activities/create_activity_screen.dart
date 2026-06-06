@@ -15,6 +15,7 @@ import '../../core/device/device_context_service.dart';
 import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
 import '../../core/network/reference_api.dart';
+import '../../core/time/app_time.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/activities/activity_cover_url.dart';
@@ -190,8 +191,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   bool get _shouldRepublishCancelledActivity =>
       widget.isEditMode && _isCancelledActivity;
 
-  DateTime get _meetingAddressEditStartAt =>
-      widget.activity?.startAt.toLocal() ?? _startAt;
+  DateTime get _meetingAddressEditStartAt => widget.activity == null
+      ? _startAt
+      : eventDateTime(widget.activity!.startAt, widget.activity!.timezone);
 
   bool get _canEditMeetingAddress {
     if (!widget.isEditMode) {
@@ -244,6 +246,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     _tagsCtrl.text = a.tags.join(', ');
     _coverFileId = a.coverFileId;
     _format = a.format.toUpperCase();
+    _timezone = a.timezone;
     if (widget.isRepeatMode) {
       _startAt = _defaultStartAt();
       _endAt = _defaultEndAt(_startAt);
@@ -251,7 +254,6 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       _applyExistingSchedule(a);
     }
     _languageCode = a.languageCode;
-    _timezone = a.timezone;
     _capacityType = a.capacityType.toUpperCase();
     _allowsParticipantInvites = a.allowsParticipantInvites;
     if (a.minParticipants != null) {
@@ -301,8 +303,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   }
 
   void _applyExistingSchedule(ActivityListItemVm activity) {
-    _startAt = activity.startAt.toLocal();
-    _endAt = activity.endAt.toLocal();
+    _startAt = eventDateTime(activity.startAt, activity.timezone);
+    _endAt = eventDateTime(activity.endAt, activity.timezone);
   }
 
   @override
@@ -953,15 +955,17 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     }
 
     if (parsedStartAt != null && parsedEndAt != null) {
-      final now = DateTime.now();
+      final nowUtc = DateTime.now().toUtc();
+      final nowInEventTimezone = eventDateTime(nowUtc, _timezone);
+      final parsedStartAtUtc = eventWallClockToUtc(parsedStartAt, _timezone);
       final shouldValidateStartWindow = !widget.isEditMode || _startAtChanged;
       if (shouldValidateStartWindow &&
-          !parsedStartAt.isAfter(now.add(const Duration(hours: 1)))) {
+          !parsedStartAtUtc.isAfter(nowUtc.add(const Duration(hours: 1)))) {
         startError = l10n.createStartAtTooSoonValidation;
       }
 
       if (startError == null && shouldValidateStartWindow) {
-        final maxStartAt = _maxAllowedStartAt(now);
+        final maxStartAt = _maxAllowedStartAt(nowInEventTimezone);
         if (parsedStartAt.isAfter(maxStartAt)) {
           startError = l10n.createStartAtMonthLimitValidation(
             _formatDateTimeInput(maxStartAt),

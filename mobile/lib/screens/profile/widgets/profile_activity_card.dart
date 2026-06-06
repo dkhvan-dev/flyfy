@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
+import '../../../core/time/app_time.dart';
 import '../../../core/ui/app_colors.dart';
 import '../../../features/activities/activity_category_art.dart';
 import '../../../features/activities/activity_cover_url.dart';
@@ -25,9 +25,11 @@ class ProfileActivityCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final localeName = Localizations.localeOf(context).toString();
     final date = item.completedAt ?? item.endAt;
-    final dateText = DateFormat.MMMd(
-      localeName,
-    ).add_Hm().format(date.toLocal());
+    final dateText = formatEventDateTime(
+      date,
+      timezoneId: item.timezone,
+      localeName: localeName,
+    );
     final locationFallbackText = activityLocationFallbackText(item, l10n);
     final priceText = item.isFree
         ? l10n.createPriceFree
@@ -257,7 +259,11 @@ String _compactActivityMetaText(
   String localeName,
 ) {
   final date = item.completedAt ?? item.endAt;
-  final dateText = DateFormat.MMMd(localeName).format(date.toLocal());
+  final dateText = formatEventDate(
+    date,
+    timezoneId: item.timezone,
+    localeName: localeName,
+  );
   final statusText = formatActivityDisplayStatus(item, l10n);
   return '$dateText • $statusText';
 }

@@ -122,6 +122,12 @@
       "country": {}
     }
   },
+  "timeDisplayYourTime": "Ваше время: {time}",
+  "@timeDisplayYourTime": {
+    "placeholders": {
+      "time": {}
+    }
+  },
   "profileCountry": "Страна",
   "profileCurrency": "Валюта",
   "profileCurrencySearchHint": "Поиск валюты, кода или символа",

@@ -122,6 +122,12 @@
       "country": {}
     }
   },
+  "timeDisplayYourTime": "Сіздің уақытыңыз: {time}",
+  "@timeDisplayYourTime": {
+    "placeholders": {
+      "time": {}
+    }
+  },
   "profileCountry": "Ел",
   "profileCurrency": "Валюта",
   "profileCurrencySearchHint": "Валютаны, кодты немесе таңбаны іздеу",

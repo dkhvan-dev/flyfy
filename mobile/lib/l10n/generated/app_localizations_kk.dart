@@ -330,6 +330,11 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
+  String timeDisplayYourTime(Object time) {
+    return 'Сіздің уақытыңыз: $time';
+  }
+
+  @override
   String get profileCountry => 'Ел';
 
   @override

@@ -33,6 +33,7 @@ func (u *ExcursionUseCase) notifyExcursionBookingCreated(
 	ctx context.Context,
 	booking *model.ExcursionBooking,
 	offer *model.ExcursionOffer,
+	slot *model.ExcursionScheduleSlot,
 ) {
 	if u.notificationGateway == nil || booking == nil || booking.GuideUserID == uuid.Nil {
 		return
@@ -53,7 +54,7 @@ func (u *ExcursionUseCase) notifyExcursionBookingCreated(
 			excursionSeatsLabel(booking.TotalSeats),
 		),
 		DeepLink:    excursionBookingsDeepLink(),
-		Data:        excursionBookingNotificationData("booking_created", booking),
+		Data:        excursionBookingNotificationData("booking_created", booking, slot),
 		CollapseKey: fmt.Sprintf("excursion:booking:%s", booking.ID),
 		TTL:         24 * time.Hour,
 	})
@@ -132,7 +133,8 @@ func (u *ExcursionUseCase) notifyExcursionBookingGuestsUpdated(
 		return
 	}
 
-	data := excursionBookingNotificationData("booking_guests_updated", booking)
+	slot := u.excursionBookingScheduleSlotForNotification(ctx, booking)
+	data := excursionBookingNotificationData("booking_guests_updated", booking, slot)
 	data["oldSeats"] = strconv.Itoa(oldSeats)
 
 	dispatchExcursionNotification(ctx, u.notificationGateway, port.ExcursionNotificationInput{
@@ -160,7 +162,8 @@ func (u *ExcursionUseCase) notifyExcursionBookingCancelled(
 		return
 	}
 
-	data := excursionBookingNotificationData("booking_cancelled_by_tourist", booking)
+	slot := u.excursionBookingScheduleSlotForNotification(ctx, booking)
+	data := excursionBookingNotificationData("booking_cancelled_by_tourist", booking, slot)
 	if booking.CancelReason != nil {
 		data["reason"] = strings.TrimSpace(*booking.CancelReason)
 	}
@@ -238,7 +241,8 @@ func (u *ExcursionUseCase) notifyExcursionAttendanceCheckedIn(
 		return
 	}
 
-	data := excursionBookingNotificationData("attendance_checked_in", booking)
+	slot := u.excursionBookingScheduleSlotForNotification(ctx, booking)
+	data := excursionBookingNotificationData("attendance_checked_in", booking, slot)
 	if booking.CheckedInAt != nil {
 		data["checkedInAt"] = booking.CheckedInAt.UTC().Format(timeRFC3339)
 	}
@@ -373,7 +377,34 @@ func dispatchExcursionNotification(
 	}()
 }
 
-func excursionBookingNotificationData(event string, booking *model.ExcursionBooking) map[string]string {
+func (u *ExcursionUseCase) excursionBookingScheduleSlotForNotification(
+	ctx context.Context,
+	booking *model.ExcursionBooking,
+) *model.ExcursionScheduleSlot {
+	if u == nil || u.repo == nil || booking == nil ||
+		booking.ScheduleSlotID == nil || *booking.ScheduleSlotID == uuid.Nil {
+		return nil
+	}
+	slot, err := u.repo.GetExcursionScheduleSlotByID(ctx, *booking.ScheduleSlotID)
+	if err != nil {
+		log.Warn().
+			Err(err).
+			Str("booking_id", booking.ID.String()).
+			Str("schedule_slot_id", booking.ScheduleSlotID.String()).
+			Msg("failed to load excursion schedule slot for notification timezone")
+		return nil
+	}
+	if slot == nil || slot.ProductID != booking.ProductID || slot.OfferID != booking.OfferID {
+		return nil
+	}
+	return slot
+}
+
+func excursionBookingNotificationData(
+	event string,
+	booking *model.ExcursionBooking,
+	slot *model.ExcursionScheduleSlot,
+) map[string]string {
 	data := map[string]string{
 		"excursionEvent": event,
 	}
@@ -386,7 +417,10 @@ func excursionBookingNotificationData(event string, booking *model.ExcursionBook
 	data["excursionId"] = booking.ProductID.String()
 	data["guideUserId"] = booking.GuideUserID.String()
 	data["touristUserId"] = booking.TouristUserID.String()
-	data["scheduledFor"] = booking.ScheduledFor.UTC().Format(timeRFC3339)
+	scheduledFor := booking.ScheduledFor.UTC().Format(timeRFC3339)
+	data["eventStartAt"] = scheduledFor
+	data["startAt"] = scheduledFor
+	data["scheduledFor"] = scheduledFor
 	data["totalSeats"] = strconv.Itoa(booking.TotalSeats)
 	data["adults"] = strconv.Itoa(booking.Adults)
 	data["children"] = strconv.Itoa(booking.Children)
@@ -394,6 +428,7 @@ func excursionBookingNotificationData(event string, booking *model.ExcursionBook
 	if booking.ScheduleSlotID != nil {
 		data["scheduleSlotId"] = booking.ScheduleSlotID.String()
 	}
+	addExcursionScheduleTimezoneData(data, slot)
 	return data
 }
 
@@ -409,13 +444,33 @@ func excursionSlotNotificationData(event string, slot *model.ExcursionScheduleSl
 	data["offerId"] = slot.OfferID.String()
 	data["excursionId"] = slot.ProductID.String()
 	data["guideUserId"] = slot.GuideUserID.String()
-	data["startAt"] = slot.StartAt.UTC().Format(timeRFC3339)
+	startAt := slot.StartAt.UTC().Format(timeRFC3339)
+	data["eventStartAt"] = startAt
+	data["startAt"] = startAt
 	data["endAt"] = slot.EndAt.UTC().Format(timeRFC3339)
 	data["status"] = string(slot.Status)
+	addExcursionScheduleTimezoneData(data, slot)
 	if slot.CancelReason != nil {
 		data["reason"] = strings.TrimSpace(*slot.CancelReason)
 	}
 	return data
+}
+
+func addExcursionScheduleTimezoneData(
+	data map[string]string,
+	slot *model.ExcursionScheduleSlot,
+) {
+	if data == nil || slot == nil {
+		return
+	}
+	timezone := strings.TrimSpace(slot.Timezone)
+	if timezone == "" {
+		return
+	}
+	data["eventTimezone"] = timezone
+	data["timezone"] = timezone
+	data["slotTimezone"] = timezone
+	data["scheduleTimezone"] = timezone
 }
 
 func excursionBookingsDeepLink() string {

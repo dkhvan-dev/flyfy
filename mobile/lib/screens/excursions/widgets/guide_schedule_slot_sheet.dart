@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/device/device_context_service.dart';
+import '../../../core/time/app_time.dart';
 import '../../../core/ui/app_colors.dart';
 import '../../../features/excursions/models/excursion_schedule_vm.dart';
 import '../../../features/excursions/models/excursion_vm.dart';
@@ -43,8 +44,10 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
   @override
   void initState() {
     super.initState();
-    final start =
-        widget.slot?.startAt.toLocal() ?? widget.initialDate ?? DateTime.now();
+    _timezone = widget.slot?.timezone ?? 'Asia/Almaty';
+    final start = widget.slot == null
+        ? widget.initialDate ?? DateTime.now()
+        : eventDateTime(widget.slot!.startAt, _timezone);
     _date = DateTime(start.year, start.month, start.day);
     _time = TimeOfDay.fromDateTime(start);
     _selectedOfferId = widget.slot?.offerId;
@@ -53,7 +56,6 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
     _capacityController = TextEditingController(
       text: widget.slot == null ? '' : widget.slot!.capacity.toString(),
     );
-    _timezone = widget.slot?.timezone ?? 'Asia/Almaty';
     _weekdays = {_isoWeekday(_date)};
     _loadTimezone();
   }
@@ -547,9 +549,10 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
       parsedTime.hour,
       parsedTime.minute,
     );
-    if (startAt.toUtc().isBefore(
-      DateTime.now().toUtc().add(_slotSetupLeadTime),
-    )) {
+    if (eventWallClockToUtc(
+      startAt,
+      _timezone,
+    ).isBefore(DateTime.now().toUtc().add(_slotSetupLeadTime))) {
       setState(() {
         _timeError = l10n.guideCalendarSlotLeadTimeTooSoon;
       });

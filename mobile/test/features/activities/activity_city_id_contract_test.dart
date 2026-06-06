@@ -72,6 +72,25 @@ void main() {
     expect(createJson['subcategorySlug'], 'social-meetup');
     expect(createJson['allowsParticipantInvites'], isTrue);
 
+    final vietnamScheduleJson = CreateActivityRequest(
+      title: 'Morning food walk',
+      description: 'Local breakfast route',
+      format: 'OFFLINE',
+      visibility: 'PUBLIC',
+      categorySlug: 'food-drink',
+      languageCode: 'ru',
+      timezone: 'Asia/Ho_Chi_Minh',
+      startAt: DateTime(2026, 6, 1, 10),
+      endAt: DateTime(2026, 6, 1, 12),
+      capacityType: 'LIMITED',
+      priceType: 'FREE',
+      countryCode: 'VN',
+      cityName: 'Hanoi',
+    ).toJson();
+
+    expect(vietnamScheduleJson['startAt'], '2026-06-01T03:00:00.000Z');
+    expect(vietnamScheduleJson['endAt'], '2026-06-01T05:00:00.000Z');
+
     final updateJson = UpdateActivityRequest(
       subcategorySlug: 'social-meetup',
       hasSubcategorySlug: true,

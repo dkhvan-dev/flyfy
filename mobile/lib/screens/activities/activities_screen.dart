@@ -14,6 +14,7 @@ import '../../core/ui/app_list_screen_header.dart';
 import '../../core/ui/error_view.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
 import '../../core/ui/pagination_bar.dart';
+import '../../core/time/app_time.dart';
 import '../../core/utils/pagination.dart';
 import '../../features/activities/activity_category_art.dart';
 import '../../features/activities/activity_cover_url.dart';
@@ -1335,9 +1336,11 @@ class _DiscoverActivityCard extends StatelessWidget {
     final artSpec = activityCardArtForItem(item);
     final badgeText = item.isFree ? l10n.createPriceFree : item.priceLabel;
     final visibilityBadge = _visibilityBadge(item.visibility, l10n);
-    final dateText = DateFormat.MMMd(
-      locale,
-    ).add_Hm().format(item.startAt.toLocal());
+    final dateText = formatEventDateTime(
+      item.startAt,
+      timezoneId: item.timezone,
+      localeName: locale,
+    );
     final locationFallbackText = activityLocationFallbackText(item, l10n);
     final metaItems = <_CardMetaData>[
       _CardMetaData(
@@ -3207,9 +3210,11 @@ List<MapActivityTarget> _buildActivityMapTargets(
       categoryOptions: categoryOptions,
     );
     final artSpec = activityCardArtForItem(item);
-    final dateLabel = DateFormat.MMMd(
-      localeName,
-    ).add_Hm().format(item.startAt.toLocal());
+    final dateLabel = formatEventDateTime(
+      item.startAt,
+      timezoneId: item.timezone,
+      localeName: localeName,
+    );
     final priceLabel = item.isFree
         ? l10n.createPriceFree
         : item.formattedPriceLabel(localeName);
@@ -3497,7 +3502,7 @@ List<ActivityListItemVm> _applyDiscoverFilters(
         filters.startDate!.month,
         filters.startDate!.day,
       );
-      if (item.startAt.toLocal().isBefore(startBoundary)) {
+      if (eventDateOnly(item.startAt, item.timezone).isBefore(startBoundary)) {
         return false;
       }
     }
@@ -3512,7 +3517,7 @@ List<ActivityListItemVm> _applyDiscoverFilters(
         59,
         999,
       );
-      if (item.startAt.toLocal().isAfter(endBoundary)) {
+      if (eventDateOnly(item.startAt, item.timezone).isAfter(endBoundary)) {
         return false;
       }
     }

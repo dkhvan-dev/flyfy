@@ -59,6 +59,11 @@ func (u *JoinUseCase) notifyParticipantJoined(
 		event = "participant_waitlisted"
 	}
 
+	data := activityNotificationData(event, activity)
+	data["participantId"] = participant.ID.String()
+	data["participantUserId"] = participant.UserID.String()
+	data["status"] = status
+
 	dispatchActivityNotification(ctx, u.notificationGateway, port.ActivityNotificationInput{
 		IdempotencyKey: fmt.Sprintf(
 			"activity:%s:participant:%s:%s",
@@ -72,15 +77,9 @@ func (u *JoinUseCase) notifyParticipantJoined(
 		Title:            title,
 		Body:             body,
 		DeepLink:         activityDeepLink(activity.ID),
-		Data: map[string]string{
-			"activityEvent":     event,
-			"activityId":        activity.ID.String(),
-			"participantId":     participant.ID.String(),
-			"participantUserId": participant.UserID.String(),
-			"status":            status,
-		},
-		CollapseKey: fmt.Sprintf("activity:%s:participants", activity.ID),
-		TTL:         activityNotificationTTL,
+		Data:             data,
+		CollapseKey:      fmt.Sprintf("activity:%s:participants", activity.ID),
+		TTL:              activityNotificationTTL,
 	})
 }
 
@@ -108,6 +107,11 @@ func (u *JoinUseCase) notifyParticipantLeft(
 		body = fmt.Sprintf("A participant cancelled late for %s.", activityNotificationTitle(activity))
 	}
 
+	data := activityNotificationData(event, activity)
+	data["participantId"] = participant.ID.String()
+	data["participantUserId"] = participant.UserID.String()
+	data["status"] = string(participant.Status)
+
 	dispatchActivityNotification(ctx, u.notificationGateway, port.ActivityNotificationInput{
 		IdempotencyKey: fmt.Sprintf(
 			"activity:%s:participant:%s:%s",
@@ -121,15 +125,9 @@ func (u *JoinUseCase) notifyParticipantLeft(
 		Title:            title,
 		Body:             body,
 		DeepLink:         activityDeepLink(activity.ID),
-		Data: map[string]string{
-			"activityEvent":     event,
-			"activityId":        activity.ID.String(),
-			"participantId":     participant.ID.String(),
-			"participantUserId": participant.UserID.String(),
-			"status":            string(participant.Status),
-		},
-		CollapseKey: fmt.Sprintf("activity:%s:participants", activity.ID),
-		TTL:         activityNotificationTTL,
+		Data:             data,
+		CollapseKey:      fmt.Sprintf("activity:%s:participants", activity.ID),
+		TTL:              activityNotificationTTL,
 	})
 }
 
@@ -149,11 +147,8 @@ func (u *ActivityUseCase) notifyActivityCancelled(
 		return
 	}
 
-	data := map[string]string{
-		"activityEvent": "activity_cancelled",
-		"activityId":    activity.ID.String(),
-		"source":        string(source),
-	}
+	data := activityNotificationData("activity_cancelled", activity)
+	data["source"] = string(source)
 	if activity.CancellationReason != nil {
 		data["reason"] = strings.TrimSpace(*activity.CancellationReason)
 	}
@@ -189,6 +184,9 @@ func (u *ActivityUseCase) notifyActivityConfirmed(
 		return
 	}
 
+	data := activityNotificationData("activity_confirmed", activity)
+	data["status"] = string(activity.Status)
+
 	dispatchActivityNotification(ctx, u.notificationGateway, port.ActivityNotificationInput{
 		IdempotencyKey:   fmt.Sprintf("activity:%s:confirmed:%d", activity.ID, activity.Revision),
 		RecipientUserIDs: recipients,
@@ -197,13 +195,9 @@ func (u *ActivityUseCase) notifyActivityConfirmed(
 		Title:            "Activity confirmed",
 		Body:             fmt.Sprintf("%s is confirmed.", activityNotificationTitle(activity)),
 		DeepLink:         activityDeepLink(activity.ID),
-		Data: map[string]string{
-			"activityEvent": "activity_confirmed",
-			"activityId":    activity.ID.String(),
-			"status":        string(activity.Status),
-		},
-		CollapseKey: fmt.Sprintf("activity:%s:lifecycle", activity.ID),
-		TTL:         activityNotificationTTL,
+		Data:             data,
+		CollapseKey:      fmt.Sprintf("activity:%s:lifecycle", activity.ID),
+		TTL:              activityNotificationTTL,
 	})
 }
 
@@ -234,6 +228,9 @@ func (u *ActivityUseCase) notifyActivityCompleted(
 			return
 		}
 
+		data := activityNotificationData("activity_completed", activity)
+		data["status"] = string(activity.Status)
+
 		if err = u.notificationGateway.SendActivityNotification(notifyCtx, port.ActivityNotificationInput{
 			IdempotencyKey:   fmt.Sprintf("activity:%s:completed:%d", activity.ID, activity.Revision),
 			RecipientUserIDs: recipients,
@@ -242,13 +239,9 @@ func (u *ActivityUseCase) notifyActivityCompleted(
 			Title:            "Activity completed",
 			Body:             fmt.Sprintf("%s is complete. You can review your experience.", activityNotificationTitle(activity)),
 			DeepLink:         activityDeepLink(activity.ID),
-			Data: map[string]string{
-				"activityEvent": "activity_completed",
-				"activityId":    activity.ID.String(),
-				"status":        string(activity.Status),
-			},
-			CollapseKey: fmt.Sprintf("activity:%s:lifecycle", activity.ID),
-			TTL:         activityNotificationTTL,
+			Data:             data,
+			CollapseKey:      fmt.Sprintf("activity:%s:lifecycle", activity.ID),
+			TTL:              activityNotificationTTL,
 		}); err != nil {
 			log.Warn().
 				Err(err).
@@ -386,4 +379,29 @@ func activityNotificationTitle(activity *model.Activity) string {
 		return "Activity"
 	}
 	return title
+}
+
+func activityNotificationData(event string, activity *model.Activity) map[string]string {
+	data := map[string]string{"activityEvent": event}
+	if activity == nil {
+		return data
+	}
+
+	data["activityId"] = activity.ID.String()
+	if !activity.StartAt.IsZero() {
+		startAt := activity.StartAt.UTC().Format(timeRFC3339)
+		data["eventStartAt"] = startAt
+		data["startAt"] = startAt
+	}
+	if !activity.EndAt.IsZero() {
+		endAt := activity.EndAt.UTC().Format(timeRFC3339)
+		data["eventEndAt"] = endAt
+		data["endAt"] = endAt
+	}
+	if timezone := strings.TrimSpace(activity.Timezone); timezone != "" {
+		data["eventTimezone"] = timezone
+		data["timezone"] = timezone
+	}
+
+	return data
 }

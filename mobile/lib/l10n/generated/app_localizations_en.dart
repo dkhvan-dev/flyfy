@@ -324,6 +324,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String timeDisplayYourTime(Object time) {
+    return 'Your time: $time';
+  }
+
+  @override
   String get profileCountry => 'Country';
 
   @override

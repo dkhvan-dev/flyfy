@@ -31,6 +31,7 @@ func TestCreateExcursionBookingNotifiesGuide(t *testing.T) {
 
 	productID := uuid.New()
 	offerID := uuid.New()
+	slotID := uuid.New()
 	guideUserID := uuid.New()
 	touristUserID := uuid.New()
 	scheduledFor := time.Now().UTC().Add(48 * time.Hour)
@@ -48,6 +49,20 @@ func TestCreateExcursionBookingNotifiesGuide(t *testing.T) {
 			PriceAmount:    120,
 			Currency:       "USD",
 		},
+		gotScheduleSlot: &model.ExcursionScheduleSlot{
+			ID:             slotID,
+			GuideProfileID: uuid.New(),
+			GuideUserID:    guideUserID,
+			OfferID:        offerID,
+			ProductID:      productID,
+			StartAt:        scheduledFor,
+			EndAt:          scheduledFor.Add(2 * time.Hour),
+			Timezone:       "Asia/Ho_Chi_Minh",
+			Capacity:       8,
+			BookedSeats:    0,
+			Status:         enum.ExcursionScheduleSlotStatusAvailable,
+			Title:          "Big Almaty Lake",
+		},
 	}
 	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil).
 		WithNotificationGateway(excursionNotificationGatewayStub{
@@ -58,12 +73,12 @@ func TestCreateExcursionBookingNotifiesGuide(t *testing.T) {
 		})
 
 	booking, err := uc.CreateExcursionBooking(context.Background(), CreateExcursionBookingInput{
-		ActorUserID:  touristUserID,
-		ProductID:    productID,
-		OfferID:      offerID,
-		ScheduledFor: scheduledFor,
-		Adults:       2,
-		Children:     1,
+		ActorUserID:    touristUserID,
+		ProductID:      productID,
+		OfferID:        offerID,
+		ScheduleSlotID: &slotID,
+		Adults:         2,
+		Children:       1,
 	})
 	if err != nil {
 		t.Fatalf("CreateExcursionBooking() error = %v", err)
@@ -88,6 +103,12 @@ func TestCreateExcursionBookingNotifiesGuide(t *testing.T) {
 		got.Data["totalSeats"] != "3" {
 		t.Fatalf("notification data = %#v", got.Data)
 	}
+	assertExcursionBookingNotificationScheduleData(
+		t,
+		got.Data,
+		booking,
+		repo.gotScheduleSlot,
+	)
 }
 
 func TestCancelGuideScheduleSlotNotifiesBookedTourists(t *testing.T) {
@@ -181,6 +202,7 @@ func TestCancelGuideScheduleSlotNotifiesBookedTourists(t *testing.T) {
 		got.Data["reason"] != "Weather alert" {
 		t.Fatalf("notification data = %#v", got.Data)
 	}
+	assertExcursionSlotNotificationScheduleData(t, got.Data, repo.gotScheduleSlot)
 }
 
 func TestAutoCompleteDueExcursionScheduleSlotsNotifiesParticipantsToReview(t *testing.T) {
@@ -252,6 +274,64 @@ func TestAutoCompleteDueExcursionScheduleSlotsNotifiesParticipantsToReview(t *te
 	if got.Data["excursionEvent"] != "schedule_slot_completed" ||
 		got.Data["scheduleSlotId"] != slotID.String() {
 		t.Fatalf("notification data = %#v", got.Data)
+	}
+	assertExcursionSlotNotificationScheduleData(
+		t,
+		got.Data,
+		repo.completedScheduleSlots[0],
+	)
+}
+
+func assertExcursionBookingNotificationScheduleData(
+	t *testing.T,
+	data map[string]string,
+	booking *model.ExcursionBooking,
+	slot *model.ExcursionScheduleSlot,
+) {
+	t.Helper()
+
+	scheduledFor := booking.ScheduledFor.UTC().Format(timeRFC3339)
+	if data["eventStartAt"] != scheduledFor ||
+		data["startAt"] != scheduledFor ||
+		data["scheduledFor"] != scheduledFor {
+		t.Fatalf("booking schedule data = %#v, want %s", data, scheduledFor)
+	}
+	if data["scheduleSlotId"] != slot.ID.String() {
+		t.Fatalf("scheduleSlotId = %q, want %s", data["scheduleSlotId"], slot.ID)
+	}
+	assertExcursionNotificationTimezoneData(t, data, slot.Timezone)
+}
+
+func assertExcursionSlotNotificationScheduleData(
+	t *testing.T,
+	data map[string]string,
+	slot *model.ExcursionScheduleSlot,
+) {
+	t.Helper()
+
+	startAt := slot.StartAt.UTC().Format(timeRFC3339)
+	if data["eventStartAt"] != startAt || data["startAt"] != startAt {
+		t.Fatalf("slot start data = %#v, want %s", data, startAt)
+	}
+	endAt := slot.EndAt.UTC().Format(timeRFC3339)
+	if data["endAt"] != endAt {
+		t.Fatalf("slot endAt = %q, want %s", data["endAt"], endAt)
+	}
+	assertExcursionNotificationTimezoneData(t, data, slot.Timezone)
+}
+
+func assertExcursionNotificationTimezoneData(
+	t *testing.T,
+	data map[string]string,
+	timezone string,
+) {
+	t.Helper()
+
+	if data["eventTimezone"] != timezone ||
+		data["timezone"] != timezone ||
+		data["slotTimezone"] != timezone ||
+		data["scheduleTimezone"] != timezone {
+		t.Fatalf("timezone data = %#v, want %s", data, timezone)
 	}
 }
 

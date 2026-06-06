@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
+import '../../core/time/app_time.dart';
 import '../../core/ui/app_colors.dart';
 import '../../features/notifications/data/notification_api.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../providers/session_provider.dart';
 
 class NotificationsOverviewScreen extends StatefulWidget {
   const NotificationsOverviewScreen({super.key});
@@ -458,6 +461,7 @@ class _NotificationCategoryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final latest = summary.latest;
+    final eventTimeLabel = _notificationEventTimeLabel(context, latest);
 
     return _InteractivePanel(
       onTap: onTap,
@@ -516,6 +520,20 @@ class _NotificationCategoryTile extends StatelessWidget {
                     ),
                   ),
                 ],
+                if (eventTimeLabel != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    eventTimeLabel,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 10),
                 Text(
                   _formatRelativeTime(context, latest.createdAt),
@@ -554,6 +572,7 @@ class _NotificationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final title = notification.title.isEmpty ? meta.label : notification.title;
+    final eventTimeLabel = _notificationEventTimeLabel(context, notification);
 
     return _InteractivePanel(
       onTap: onTap,
@@ -604,6 +623,20 @@ class _NotificationTile extends StatelessWidget {
                       color: AppColors.textSecondary,
                       fontSize: 14,
                       height: 1.38,
+                    ),
+                  ),
+                ],
+                if (eventTimeLabel != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    eventTimeLabel,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      height: 1.3,
                     ),
                   ),
                 ],
@@ -1006,4 +1039,58 @@ String _formatRelativeTime(BuildContext context, DateTime createdAt) {
     return l10n.notificationsHoursAgo(difference.inHours);
   }
   return l10n.notificationsDaysAgo(difference.inDays);
+}
+
+String? _notificationEventTimeLabel(
+  BuildContext context,
+  UserNotification notification,
+) {
+  final eventInstant = _notificationEventInstant(notification.data);
+  final eventTimezone = _notificationEventTimezone(notification.data);
+  if (eventInstant == null || eventTimezone == null) return null;
+
+  final l10n = AppLocalizations.of(context)!;
+  final localeName = Localizations.localeOf(context).toLanguageTag();
+  final userTimezoneId = context.read<SessionProvider>().profile?.timezone;
+  final primary = formatEventDateTime(
+    eventInstant,
+    timezoneId: eventTimezone,
+    localeName: localeName,
+  );
+  final secondary = formatUserTimezoneHint(
+    instant: eventInstant,
+    eventTimezoneId: eventTimezone,
+    userTimezoneId: userTimezoneId,
+    localeName: localeName,
+  );
+  if (secondary == null) return primary;
+  return '$primary\n${l10n.timeDisplayYourTime(secondary)}';
+}
+
+DateTime? _notificationEventInstant(Map<String, String> data) {
+  for (final key in const [
+    'eventStartAt',
+    'startsAt',
+    'startAt',
+    'scheduledFor',
+  ]) {
+    final raw = data[key]?.trim();
+    if (raw == null || raw.isEmpty) continue;
+    final parsed = DateTime.tryParse(raw);
+    if (parsed != null) return parsed.toUtc();
+  }
+  return null;
+}
+
+String? _notificationEventTimezone(Map<String, String> data) {
+  for (final key in const [
+    'eventTimezone',
+    'timezone',
+    'slotTimezone',
+    'scheduleTimezone',
+  ]) {
+    final raw = data[key]?.trim();
+    if (raw != null && raw.isNotEmpty) return raw;
+  }
+  return null;
 }

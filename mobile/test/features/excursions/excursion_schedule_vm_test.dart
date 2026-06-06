@@ -33,7 +33,7 @@ void main() {
   test('create slot request serializes startAt as UTC ISO', () {
     final request = CreateExcursionScheduleSlotRequest(
       offerId: ' offer-1 ',
-      startAt: DateTime.parse('2026-06-01T13:00:00+05:00'),
+      startAt: DateTime(2026, 6, 1, 13),
       timezone: ' Asia/Almaty ',
       capacity: 8,
     );
@@ -96,7 +96,7 @@ void main() {
   test('update slot request serializes editable fields as UTC ISO', () {
     final request = UpdateExcursionScheduleSlotRequest(
       offerId: ' offer-2 ',
-      startAt: DateTime.parse('2026-06-05T14:30:00+05:00'),
+      startAt: DateTime(2026, 6, 5, 14, 30),
       timezone: ' Asia/Almaty ',
       capacity: 5,
     );

@@ -12,6 +12,7 @@ import '../../core/network/chat_api.dart';
 import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
 import '../../core/network/excursion_api.dart';
+import '../../core/time/app_time.dart';
 import '../../core/ui/app_inline_sort_row.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
@@ -2095,7 +2096,8 @@ class _ExcursionOffersSectionState extends State<_ExcursionOffersSection> {
         _offerDateAvailability[cacheKey] = slots.any(
           (slot) =>
               slot.isAvailableFor(1) &&
-              _dateKey(slot.startAt.toLocal()) == _dateKey(availableDate),
+              _dateKey(eventDateOnly(slot.startAt, slot.timezone)) ==
+                  _dateKey(availableDate),
         );
         _loadingOfferDateAvailability.remove(cacheKey);
       });

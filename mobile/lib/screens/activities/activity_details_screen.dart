@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/network/activity_api.dart';
 import '../../core/network/file_api.dart';
+import '../../core/time/app_time.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../core/ui/error_view.dart';
@@ -3406,9 +3407,29 @@ class _StatsGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locale = Localizations.localeOf(context).toString();
-    final dateFormat = DateFormat.MMMd(locale).add_Hm();
-    final startText = dateFormat.format(activity.startAt.toLocal());
-    final endText = dateFormat.format(activity.endAt.toLocal());
+    final userTimezone = context.watch<SessionProvider>().profile?.timezone;
+    final startText = formatEventDateTime(
+      activity.startAt,
+      timezoneId: activity.timezone,
+      localeName: locale,
+    );
+    final endText = formatEventDateTime(
+      activity.endAt,
+      timezoneId: activity.timezone,
+      localeName: locale,
+    );
+    final startUserTime = formatUserTimezoneHint(
+      instant: activity.startAt,
+      eventTimezoneId: activity.timezone,
+      userTimezoneId: userTimezone,
+      localeName: locale,
+    );
+    final endUserTime = formatUserTimezoneHint(
+      instant: activity.endAt,
+      eventTimezoneId: activity.timezone,
+      userTimezoneId: userTimezone,
+      localeName: locale,
+    );
     final pricingText = activity.isFree
         ? l10n.freeLabel
         : '${activity.formattedPriceLabel(locale)} ${l10n.activityPerPerson}';
@@ -3426,12 +3447,16 @@ class _StatsGrid extends StatelessWidget {
       _DetailsStatItem(
         icon: Icons.calendar_today_outlined,
         label: l10n.createStartAtLabel,
-        value: startText,
+        value: startUserTime == null
+            ? startText
+            : '$startText\n${l10n.timeDisplayYourTime(startUserTime)}',
       ),
       _DetailsStatItem(
         icon: Icons.event_available_rounded,
         label: l10n.createEndAtLabel,
-        value: endText,
+        value: endUserTime == null
+            ? endText
+            : '$endText\n${l10n.timeDisplayYourTime(endUserTime)}',
       ),
       _DetailsStatItem(
         icon: Icons.payments_outlined,

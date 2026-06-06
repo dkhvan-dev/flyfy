@@ -2080,6 +2080,7 @@ func (u *ExcursionUseCase) CreateExcursionBooking(ctx context.Context, input Cre
 		return nil, model.ErrInvalidExcursionBookingGuests
 	}
 	now := time.Now().UTC()
+	var scheduleSlot *model.ExcursionScheduleSlot
 	if input.ScheduleSlotID != nil && *input.ScheduleSlotID != uuid.Nil {
 		slot, err := u.repo.GetExcursionScheduleSlotByID(ctx, *input.ScheduleSlotID)
 		if err != nil {
@@ -2092,6 +2093,7 @@ func (u *ExcursionUseCase) CreateExcursionBooking(ctx context.Context, input Cre
 			return nil, ErrExcursionScheduleUnavailable
 		}
 		input.ScheduledFor = slot.StartAt
+		scheduleSlot = slot
 	}
 	if !input.ScheduledFor.IsZero() && !scheduleStartAllowsExcursionBooking(input.ScheduledFor, now) {
 		return nil, ErrExcursionScheduleUnavailable
@@ -2149,7 +2151,7 @@ func (u *ExcursionUseCase) CreateExcursionBooking(ctx context.Context, input Cre
 		}
 		return nil, fmt.Errorf("create excursion booking: %w", err)
 	}
-	u.notifyExcursionBookingCreated(ctx, booking, offer)
+	u.notifyExcursionBookingCreated(ctx, booking, offer, scheduleSlot)
 	return booking, nil
 }
 

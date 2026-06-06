@@ -1,3 +1,5 @@
+import '../../../core/time/app_time.dart';
+
 class UpdateActivityRequest {
   UpdateActivityRequest({
     this.title,
@@ -102,8 +104,10 @@ class UpdateActivityRequest {
       if (tags != null) ...{'tags': tags, 'hasTags': true},
       if (languageCode != null) 'languageCode': languageCode,
       if (timezone != null) 'timezone': timezone,
-      if (startAt != null) 'startAt': startAt!.toUtc().toIso8601String(),
-      if (endAt != null) 'endAt': endAt!.toUtc().toIso8601String(),
+      if (startAt != null)
+        'startAt': eventWallClockToUtc(startAt!, timezone).toIso8601String(),
+      if (endAt != null)
+        'endAt': eventWallClockToUtc(endAt!, timezone).toIso8601String(),
       if (capacityType != null) 'capacityType': capacityType,
       if (hasMinParticipants) 'hasMinParticipants': true,
       if (minParticipants != null) 'minParticipants': minParticipants,

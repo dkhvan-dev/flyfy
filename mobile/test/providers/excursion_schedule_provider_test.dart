@@ -98,7 +98,7 @@ void main() {
     expect(provider.actionState, ExcursionScheduleActionState.success);
     expect(provider.slots.map((slot) => slot.id), ['created']);
     expect(provider.slots.single.status, ExcursionScheduleSlotStatus.closed);
-    expect(provider.selectedDate, DateTime.utc(2026, 6, 5, 9).toLocal());
+    expect(provider.selectedDate, DateTime(2026, 6, 5));
   });
 
   test(
@@ -121,7 +121,7 @@ void main() {
       );
 
       expect(ok, isTrue);
-      expect(provider.selectedDate, createdAt.toLocal());
+      expect(provider.selectedDate, DateTime(2026, 6, 12));
     },
   );
 }

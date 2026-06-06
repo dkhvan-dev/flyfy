@@ -1,3 +1,5 @@
+import '../../../core/time/app_time.dart';
+
 class CreateActivityRequest {
   CreateActivityRequest({
     required this.title,
@@ -77,8 +79,8 @@ class CreateActivityRequest {
       'tags': tags,
       'languageCode': languageCode,
       'timezone': timezone,
-      'startAt': startAt.toUtc().toIso8601String(),
-      'endAt': endAt.toUtc().toIso8601String(),
+      'startAt': eventWallClockToUtc(startAt, timezone).toIso8601String(),
+      'endAt': eventWallClockToUtc(endAt, timezone).toIso8601String(),
       'capacityType': capacityType,
       'priceType': priceType,
       'allowsParticipantInvites': allowsParticipantInvites,

@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../core/network/attendance_api.dart';
+import '../../core/time/app_time.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
 import '../../core/ui/app_list_screen_header.dart';
@@ -1861,9 +1862,11 @@ class _GuideBookingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final localeName = Localizations.localeOf(context).toString();
     final l10n = AppLocalizations.of(context)!;
-    final dateLabel = DateFormat.yMMMd(
-      localeName,
-    ).add_Hm().format(booking.scheduledFor.toLocal());
+    final dateLabel = formatEventDateTime(
+      booking.scheduledFor,
+      timezoneId: booking.timezone,
+      localeName: localeName,
+    );
     final price = formatLocalizedExcursionMoney(
       amount: booking.totalPriceAmount,
       currency: booking.currency,
@@ -2509,9 +2512,11 @@ class _GuideBookingDetailsSheetState extends State<_GuideBookingDetailsSheet> {
       0,
       (sum, item) => sum + item.totalPriceAmount,
     );
-    final dateLabel = DateFormat.yMMMd(
-      localeName,
-    ).add_Hm().format(primaryBooking.scheduledFor.toLocal());
+    final dateLabel = formatEventDateTime(
+      primaryBooking.scheduledFor,
+      timezoneId: primaryBooking.timezone,
+      localeName: localeName,
+    );
     final totalPrice = formatLocalizedExcursionMoney(
       amount: totalAmount,
       currency: _primaryCurrency(bookings),

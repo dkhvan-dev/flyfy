@@ -327,6 +327,11 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String timeDisplayYourTime(Object time) {
+    return 'Ваше время: $time';
+  }
+
+  @override
   String get profileCountry => 'Страна';
 
   @override

@@ -14,6 +14,7 @@ import '../../core/ui/app_list_screen_header.dart';
 import '../../core/ui/app_list_search_field.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
 import '../../core/ui/pagination_bar.dart';
+import '../../core/time/app_time.dart';
 import '../../core/utils/pagination.dart';
 import '../../features/attractions/data/attraction_api.dart';
 import '../../features/attractions/models/attraction_vm.dart';
@@ -774,9 +775,11 @@ class _MyExcursionBookingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final localeName = Localizations.localeOf(context).toString();
-    final dateLabel = DateFormat.yMMMd(
-      localeName,
-    ).add_Hm().format(booking.scheduledFor.toLocal());
+    final dateLabel = formatEventDateTime(
+      booking.scheduledFor,
+      timezoneId: booking.timezone,
+      localeName: localeName,
+    );
     final guide = booking.guideDisplayName.trim().isEmpty
         ? l10n.myExcursionsGuideFallback
         : booking.guideDisplayName.trim();

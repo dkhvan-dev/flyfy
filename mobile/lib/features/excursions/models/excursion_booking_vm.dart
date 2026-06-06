@@ -32,6 +32,7 @@ class ExcursionBookingVm {
     this.categorySlug,
     this.countryCode,
     this.cityName,
+    this.timezone = 'UTC',
     this.coverFileId,
     this.author = const ExcursionReviewAuthorVm(userId: ''),
     this.review,
@@ -68,6 +69,7 @@ class ExcursionBookingVm {
   final String? coverFileId;
   final ExcursionReviewAuthorVm author;
   final DateTime scheduledFor;
+  final String timezone;
   final int adults;
   final int children;
   final int totalSeats;
@@ -180,6 +182,7 @@ class ExcursionBookingVm {
       coverFileId: coverFileId,
       author: author,
       scheduledFor: scheduledFor,
+      timezone: timezone,
       adults: adults,
       children: children,
       totalSeats: totalSeats,
@@ -233,6 +236,7 @@ class ExcursionBookingVm {
             )
           : ExcursionReviewAuthorVm(userId: _string(json['touristUserId'])),
       scheduledFor: _date(json['scheduledFor']) ?? DateTime.now().toUtc(),
+      timezone: _bookingTimezone(json),
       adults: _int(json['adults']),
       children: _int(json['children']),
       totalSeats: _int(json['totalSeats']),
@@ -588,4 +592,12 @@ DateTime? _date(Object? value) {
   final raw = _string(value);
   if (raw.isEmpty) return null;
   return DateTime.tryParse(raw)?.toUtc();
+}
+
+String _bookingTimezone(Map<String, dynamic> json) {
+  for (final key in const ['timezone', 'slotTimezone', 'scheduleTimezone']) {
+    final value = _string(json[key]);
+    if (value.isNotEmpty) return value;
+  }
+  return 'UTC';
 }

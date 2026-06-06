@@ -93,6 +93,7 @@ func TestJoinActivityNotifiesHostWhenParticipantJoins(t *testing.T) {
 		got.Data["participantUserId"] != participantUserID.String() {
 		t.Fatalf("notification data = %#v", got.Data)
 	}
+	assertActivityNotificationScheduleData(t, got.Data, activity)
 	if !strings.Contains(strings.ToLower(got.Title), "joined") {
 		t.Fatalf("title = %q, want join wording", got.Title)
 	}
@@ -162,6 +163,7 @@ func TestCancelActivityNotifiesParticipantsExceptHostActor(t *testing.T) {
 		got.Data["cancelledByUserId"] != hostUserID.String() {
 		t.Fatalf("notification data = %#v", got.Data)
 	}
+	assertActivityNotificationScheduleData(t, got.Data, activity)
 }
 
 func TestCompleteActivityNotifiesParticipantsAndExcludesHostActor(t *testing.T) {
@@ -214,6 +216,30 @@ func TestCompleteActivityNotifiesParticipantsAndExcludesHostActor(t *testing.T) 
 	if got.Data["activityEvent"] != "activity_completed" ||
 		got.Data["activityId"] != activityID.String() {
 		t.Fatalf("notification data = %#v", got.Data)
+	}
+	assertActivityNotificationScheduleData(t, got.Data, activity)
+}
+
+func assertActivityNotificationScheduleData(
+	t *testing.T,
+	data map[string]string,
+	activity *model.Activity,
+) {
+	t.Helper()
+
+	if data["activityId"] != activity.ID.String() {
+		t.Fatalf("activityId = %q, want %s", data["activityId"], activity.ID)
+	}
+	startAt := activity.StartAt.UTC().Format(timeRFC3339)
+	if data["eventStartAt"] != startAt || data["startAt"] != startAt {
+		t.Fatalf("start time data = %#v, want %s", data, startAt)
+	}
+	endAt := activity.EndAt.UTC().Format(timeRFC3339)
+	if data["eventEndAt"] != endAt || data["endAt"] != endAt {
+		t.Fatalf("end time data = %#v, want %s", data, endAt)
+	}
+	if data["eventTimezone"] != activity.Timezone || data["timezone"] != activity.Timezone {
+		t.Fatalf("timezone data = %#v, want %s", data, activity.Timezone)
 	}
 }
 

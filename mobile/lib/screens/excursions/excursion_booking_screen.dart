@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/time/app_time.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_view.dart';
 import '../../features/excursions/models/create_excursion_booking_request.dart';
@@ -753,7 +754,9 @@ class _BookingScheduleSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context).toLanguageTag();
-    final selectedStart = selectedSlot?.startAt.toLocal();
+    final selectedStart = selectedSlot == null
+        ? null
+        : eventDateTime(selectedSlot!.startAt, selectedSlot!.timezone);
     final dateLabel = selectedStart == null
         ? l10n.excursionBookingSelectSlot
         : DateFormat.yMMMd(locale).format(selectedStart);
@@ -962,8 +965,7 @@ class _BookingSlotSelector extends StatelessWidget {
   List<_SlotsByDay> _groupSlotsByDay(List<ExcursionScheduleSlotVm> slots) {
     final result = <_SlotsByDay>[];
     for (final slot in slots) {
-      final local = slot.startAt.toLocal();
-      final day = DateTime(local.year, local.month, local.day);
+      final day = eventDateOnly(slot.startAt, slot.timezone);
       if (result.isEmpty || result.last.day != day) {
         result.add(_SlotsByDay(day: day, slots: [slot]));
       } else {
@@ -991,10 +993,9 @@ class _BookingSlotChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final localStart = slot.startAt.toLocal();
     final timeLabel = DateFormat.Hm(
       Localizations.localeOf(context).toLanguageTag(),
-    ).format(localStart);
+    ).format(eventDateTime(slot.startAt, slot.timezone));
     final background = selected
         ? AppColors.accent
         : enabled
@@ -1684,9 +1685,11 @@ class _AlreadyBookedNotice extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final localeName = Localizations.localeOf(context).toLanguageTag();
-    final dateLabel = DateFormat.yMMMd(
-      localeName,
-    ).add_Hm().format(booking.scheduledFor.toLocal());
+    final dateLabel = formatEventDateTime(
+      booking.scheduledFor,
+      timezoneId: booking.timezone,
+      localeName: localeName,
+    );
 
     return DecoratedBox(
       decoration: BoxDecoration(

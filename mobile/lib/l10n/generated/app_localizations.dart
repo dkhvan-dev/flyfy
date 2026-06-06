@@ -688,6 +688,12 @@ abstract class AppLocalizations {
   /// **'Recommended for {country}'**
   String profileTimezoneRecommendedForCountry(Object country);
 
+  /// No description provided for @timeDisplayYourTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Your time: {time}'**
+  String timeDisplayYourTime(Object time);
+
   /// No description provided for @profileCountry.
   ///
   /// In en, this message translates to:

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/time/app_time.dart';
 import '../../../core/ui/app_colors.dart';
 import '../../../features/excursions/models/excursion_schedule_vm.dart';
 import 'guide_schedule_slot_card.dart';
@@ -106,8 +107,7 @@ class GuideCalendarDayStrip extends StatelessWidget {
   List<ExcursionScheduleSlotVm> _slotsForDay(DateTime day) {
     return slots
         .where((slot) {
-          final local = slot.startAt.toLocal();
-          return _isSameDay(local, day);
+          return isSameEventDate(slot.startAt, day, slot.timezone);
         })
         .toList(growable: false);
   }
