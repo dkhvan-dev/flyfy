@@ -55,6 +55,8 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /health", h.Health)
 
 	mux.HandleFunc("GET /v1/activity-categories", h.ListActivityCategories)
+	mux.HandleFunc("GET /v1/activity-reviews", h.ListActivityReviews)
+	mux.HandleFunc("GET /v1/activity-organizer-reviews", h.ListActivityOrganizerReviews)
 	mux.HandleFunc("POST /v1/activities", h.CreateActivity)
 	mux.HandleFunc("GET /v1/activities", h.ListActivities)
 
@@ -74,6 +76,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/me/activities/", h.handleMyActivityRoutes)
 	mux.HandleFunc("PATCH /v1/me/activities/", h.handleMyActivityRoutes)
 	mux.HandleFunc("POST /v1/me/activities/", h.handleMyActivityRoutes)
+	mux.HandleFunc("PUT /v1/me/activities/", h.handleMyActivityRoutes)
 }
 
 func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
@@ -155,6 +158,20 @@ func (h *Handler) dispatchActivitySubRoutes(w http.ResponseWriter, r *http.Reque
 	}
 
 	switch parts[1] {
+	case "reviews":
+		if r.Method == http.MethodGet {
+			h.ListActivityReviewsByActivityID(w, r, activityID)
+			return
+		}
+		if r.Method == http.MethodPut && prefix == "/v1/me/activities/" {
+			h.SaveActivityReviews(w, r, activityID)
+			return
+		}
+	case "organizer-reviews":
+		if r.Method == http.MethodGet {
+			h.ListActivityOrganizerReviewsByActivityID(w, r, activityID)
+			return
+		}
 	case "participants":
 		if r.Method == http.MethodGet {
 			h.ListActivityParticipants(w, r, activityID)
@@ -455,7 +472,7 @@ func (h *Handler) GetActivityByID(w http.ResponseWriter, r *http.Request, activi
 		return
 	}
 
-	resp, err := h.toActivityResponse(r.Context(), item)
+	resp, err := h.toActivityDetailResponse(r.Context(), item)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to build activity response")
 		return
@@ -1289,6 +1306,19 @@ func (h *Handler) toActivityResponse(ctx context.Context, item *model.Activity) 
 	}, nil
 }
 
+func (h *Handler) toActivityDetailResponse(ctx context.Context, item *model.Activity) (dto.ActivityResponse, error) {
+	resp, err := h.toActivityResponse(ctx, item)
+	if err != nil {
+		return dto.ActivityResponse{}, err
+	}
+	rating, err := h.activityUC.GetActivityOrganizerRating(ctx, item.HostUserID)
+	if err != nil {
+		return dto.ActivityResponse{}, err
+	}
+	resp.HostActivityRating = &rating
+	return resp, nil
+}
+
 func (h *Handler) GetActivityCover(w http.ResponseWriter, r *http.Request, activityID uuid.UUID) {
 	if _, err := h.activityUC.GetActivityByID(r.Context(), activityID); err != nil {
 		switch {
@@ -1403,6 +1433,12 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, app.ErrAttendanceQRExpired),
 		errors.Is(err, app.ErrAttendanceAlreadyCheckedIn),
 		errors.Is(err, app.ErrAttendanceParticipantInvalid),
+		errors.Is(err, model.ErrInvalidActivityReviewID),
+		errors.Is(err, model.ErrInvalidActivityReviewActivity),
+		errors.Is(err, model.ErrInvalidActivityReviewParticipant),
+		errors.Is(err, model.ErrInvalidActivityReviewAuthor),
+		errors.Is(err, model.ErrInvalidActivityReviewRating),
+		errors.Is(err, model.ErrInvalidActivityReviewComment),
 
 		errors.Is(err, model.ErrInvalidActivityTitle),
 		errors.Is(err, model.ErrInvalidActivityDescription),
@@ -1445,6 +1481,7 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, app.ErrInvalidActorUserID),
 		errors.Is(err, app.ErrActivityInvitationForbidden),
 		errors.Is(err, app.ErrFraudRejected),
+		errors.Is(err, model.ErrActivityOrganizerReviewSelfReview),
 		errors.Is(err, model.ErrOnlyAuthorCanDuplicate):
 		writeError(w, http.StatusForbidden, err.Error())
 
@@ -1472,7 +1509,10 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, app.ErrPriceChangeForbidden),
 		errors.Is(err, app.ErrCriticalFieldsUpdateForbidden),
 		errors.Is(err, app.ErrMeetingAddressUpdateClosed),
-		errors.Is(err, app.ErrModerationStateInvalid):
+		errors.Is(err, app.ErrModerationStateInvalid),
+		errors.Is(err, app.ErrActivityNotReviewable),
+		errors.Is(err, model.ErrActivityReviewAlreadyExists),
+		errors.Is(err, model.ErrActivityOrganizerReviewAlreadyExists):
 		writeError(w, http.StatusConflict, err.Error())
 
 	default:

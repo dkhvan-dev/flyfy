@@ -865,6 +865,311 @@ func (r *PGActivityRepository) UpdateParticipant(ctx context.Context, item *mode
 	return nil
 }
 
+func (r *PGActivityRepository) GetActivityReviewByParticipantID(ctx context.Context, participantID uuid.UUID) (*model.ActivityReview, error) {
+	return getActivityReviewByParticipantID(ctx, r.pool, participantID)
+}
+
+func (r *PGActivityTxRepository) GetActivityReviewByParticipantID(ctx context.Context, participantID uuid.UUID) (*model.ActivityReview, error) {
+	return getActivityReviewByParticipantID(ctx, r.tx, participantID)
+}
+
+func getActivityReviewByParticipantID(
+	ctx context.Context,
+	exec activityDBExecutor,
+	participantID uuid.UUID,
+) (*model.ActivityReview, error) {
+	const query = `
+		SELECT
+			id, participant_id, activity_id, host_user_id, author_user_id,
+			rating, comment, created_at, updated_at, deleted_at
+		FROM activity_reviews
+		WHERE participant_id = $1
+		  AND deleted_at IS NULL
+	`
+	item, err := scanActivityReview(exec.QueryRow(ctx, query, participantID))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get activity review by participant id: %w", err)
+	}
+	return item, nil
+}
+
+func (r *PGActivityTxRepository) CreateActivityReview(ctx context.Context, item *model.ActivityReview) error {
+	return createActivityReview(ctx, r.tx, item)
+}
+
+func createActivityReview(ctx context.Context, exec activityDBExecutor, item *model.ActivityReview) error {
+	const query = `
+		INSERT INTO activity_reviews (
+			id, participant_id, activity_id, host_user_id, author_user_id,
+			rating, comment, created_at, updated_at
+		) VALUES (
+			$1, $2, $3, $4, $5,
+			$6, $7, $8, $9
+		)
+	`
+	_, err := exec.Exec(
+		ctx,
+		query,
+		item.ID,
+		item.ParticipantID,
+		item.ActivityID,
+		item.HostUserID,
+		item.AuthorUserID,
+		item.Rating,
+		item.Comment,
+		item.CreatedAt,
+		item.UpdatedAt,
+	)
+	if err != nil {
+		if isActivityReviewUniqueViolation(err) {
+			return model.ErrActivityReviewAlreadyExists
+		}
+		return fmt.Errorf("insert activity review: %w", err)
+	}
+	return nil
+}
+
+func (r *PGActivityTxRepository) UpdateActivityReview(ctx context.Context, item *model.ActivityReview) error {
+	return updateActivityReview(ctx, r.tx, item)
+}
+
+func updateActivityReview(ctx context.Context, exec activityDBExecutor, item *model.ActivityReview) error {
+	const query = `
+		UPDATE activity_reviews
+		SET rating = $2,
+			comment = $3,
+			updated_at = $4
+		WHERE id = $1
+		  AND author_user_id = $5
+		  AND deleted_at IS NULL
+	`
+	if _, err := exec.Exec(ctx, query, item.ID, item.Rating, item.Comment, item.UpdatedAt, item.AuthorUserID); err != nil {
+		return fmt.Errorf("update activity review: %w", err)
+	}
+	return nil
+}
+
+func (r *PGActivityTxRepository) DeleteActivityReview(ctx context.Context, item *model.ActivityReview) error {
+	return deleteActivityReview(ctx, r.tx, item)
+}
+
+func deleteActivityReview(ctx context.Context, exec activityDBExecutor, item *model.ActivityReview) error {
+	const query = `
+		UPDATE activity_reviews
+		SET deleted_at = $2,
+			updated_at = $3
+		WHERE id = $1
+		  AND author_user_id = $4
+		  AND deleted_at IS NULL
+	`
+	if _, err := exec.Exec(ctx, query, item.ID, item.DeletedAt, item.UpdatedAt, item.AuthorUserID); err != nil {
+		return fmt.Errorf("delete activity review: %w", err)
+	}
+	return nil
+}
+
+func (r *PGActivityRepository) ListActivityReviews(ctx context.Context, filter port.ActivityReviewFilter) ([]*model.ActivityReview, error) {
+	orderBy := "created_at DESC, id ASC"
+	if filter.Sort == port.ActivityReviewSortRatingDesc {
+		orderBy = "rating DESC, created_at DESC, id ASC"
+	}
+	query := `
+		SELECT
+			id, participant_id, activity_id, host_user_id, author_user_id,
+			rating, comment, created_at, updated_at, deleted_at
+		FROM activity_reviews
+		WHERE ($1::uuid IS NULL OR activity_id = $1)
+		  AND ($2::uuid IS NULL OR host_user_id = $2)
+		  AND deleted_at IS NULL
+		ORDER BY ` + orderBy + `
+		LIMIT $3 OFFSET $4
+	`
+	rows, err := r.pool.Query(ctx, query, filter.ActivityID, filter.HostUserID, filter.Limit, filter.Offset)
+	if err != nil {
+		return nil, fmt.Errorf("query activity reviews: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]*model.ActivityReview, 0)
+	for rows.Next() {
+		item, scanErr := scanActivityReview(rows)
+		if scanErr != nil {
+			return nil, fmt.Errorf("scan activity review: %w", scanErr)
+		}
+		items = append(items, item)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate activity reviews: %w", err)
+	}
+	return items, nil
+}
+
+func (r *PGActivityRepository) GetActivityOrganizerReviewByParticipantID(ctx context.Context, participantID uuid.UUID) (*model.ActivityOrganizerReview, error) {
+	return getActivityOrganizerReviewByParticipantID(ctx, r.pool, participantID)
+}
+
+func (r *PGActivityTxRepository) GetActivityOrganizerReviewByParticipantID(ctx context.Context, participantID uuid.UUID) (*model.ActivityOrganizerReview, error) {
+	return getActivityOrganizerReviewByParticipantID(ctx, r.tx, participantID)
+}
+
+func getActivityOrganizerReviewByParticipantID(
+	ctx context.Context,
+	exec activityDBExecutor,
+	participantID uuid.UUID,
+) (*model.ActivityOrganizerReview, error) {
+	const query = `
+		SELECT
+			id, participant_id, activity_id, host_user_id, author_user_id,
+			rating, comment, created_at, updated_at, deleted_at
+		FROM activity_organizer_reviews
+		WHERE participant_id = $1
+		  AND deleted_at IS NULL
+	`
+	item, err := scanActivityOrganizerReview(exec.QueryRow(ctx, query, participantID))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get activity organizer review by participant id: %w", err)
+	}
+	return item, nil
+}
+
+func (r *PGActivityTxRepository) CreateActivityOrganizerReview(ctx context.Context, item *model.ActivityOrganizerReview) error {
+	return createActivityOrganizerReview(ctx, r.tx, item)
+}
+
+func createActivityOrganizerReview(ctx context.Context, exec activityDBExecutor, item *model.ActivityOrganizerReview) error {
+	const query = `
+		INSERT INTO activity_organizer_reviews (
+			id, participant_id, activity_id, host_user_id, author_user_id,
+			rating, comment, created_at, updated_at
+		) VALUES (
+			$1, $2, $3, $4, $5,
+			$6, $7, $8, $9
+		)
+	`
+	_, err := exec.Exec(
+		ctx,
+		query,
+		item.ID,
+		item.ParticipantID,
+		item.ActivityID,
+		item.HostUserID,
+		item.AuthorUserID,
+		item.Rating,
+		item.Comment,
+		item.CreatedAt,
+		item.UpdatedAt,
+	)
+	if err != nil {
+		if isActivityOrganizerReviewUniqueViolation(err) {
+			return model.ErrActivityOrganizerReviewAlreadyExists
+		}
+		return fmt.Errorf("insert activity organizer review: %w", err)
+	}
+	return nil
+}
+
+func (r *PGActivityTxRepository) UpdateActivityOrganizerReview(ctx context.Context, item *model.ActivityOrganizerReview) error {
+	return updateActivityOrganizerReview(ctx, r.tx, item)
+}
+
+func updateActivityOrganizerReview(ctx context.Context, exec activityDBExecutor, item *model.ActivityOrganizerReview) error {
+	const query = `
+		UPDATE activity_organizer_reviews
+		SET rating = $2,
+			comment = $3,
+			updated_at = $4
+		WHERE id = $1
+		  AND author_user_id = $5
+		  AND deleted_at IS NULL
+	`
+	if _, err := exec.Exec(ctx, query, item.ID, item.Rating, item.Comment, item.UpdatedAt, item.AuthorUserID); err != nil {
+		return fmt.Errorf("update activity organizer review: %w", err)
+	}
+	return nil
+}
+
+func (r *PGActivityTxRepository) DeleteActivityOrganizerReview(ctx context.Context, item *model.ActivityOrganizerReview) error {
+	return deleteActivityOrganizerReview(ctx, r.tx, item)
+}
+
+func deleteActivityOrganizerReview(ctx context.Context, exec activityDBExecutor, item *model.ActivityOrganizerReview) error {
+	const query = `
+		UPDATE activity_organizer_reviews
+		SET deleted_at = $2,
+			updated_at = $3
+		WHERE id = $1
+		  AND author_user_id = $4
+		  AND deleted_at IS NULL
+	`
+	if _, err := exec.Exec(ctx, query, item.ID, item.DeletedAt, item.UpdatedAt, item.AuthorUserID); err != nil {
+		return fmt.Errorf("delete activity organizer review: %w", err)
+	}
+	return nil
+}
+
+func (r *PGActivityRepository) ListActivityOrganizerReviews(ctx context.Context, filter port.ActivityOrganizerReviewFilter) ([]*model.ActivityOrganizerReview, error) {
+	orderBy := "created_at DESC, id ASC"
+	if filter.Sort == port.ActivityReviewSortRatingDesc {
+		orderBy = "rating DESC, created_at DESC, id ASC"
+	}
+	query := `
+		SELECT
+			id, participant_id, activity_id, host_user_id, author_user_id,
+			rating, comment, created_at, updated_at, deleted_at
+		FROM activity_organizer_reviews
+		WHERE ($1::uuid IS NULL OR activity_id = $1)
+		  AND ($2::uuid IS NULL OR host_user_id = $2)
+		  AND deleted_at IS NULL
+		ORDER BY ` + orderBy + `
+		LIMIT $3 OFFSET $4
+	`
+	rows, err := r.pool.Query(ctx, query, filter.ActivityID, filter.HostUserID, filter.Limit, filter.Offset)
+	if err != nil {
+		return nil, fmt.Errorf("query activity organizer reviews: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]*model.ActivityOrganizerReview, 0)
+	for rows.Next() {
+		item, scanErr := scanActivityOrganizerReview(rows)
+		if scanErr != nil {
+			return nil, fmt.Errorf("scan activity organizer review: %w", scanErr)
+		}
+		items = append(items, item)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate activity organizer reviews: %w", err)
+	}
+	return items, nil
+}
+
+func (r *PGActivityRepository) GetActivityOrganizerRatingByHostUserID(ctx context.Context, hostUserID uuid.UUID) (float64, error) {
+	const defaultRating = 5.0
+	if hostUserID == uuid.Nil {
+		return defaultRating, nil
+	}
+
+	const query = `
+		SELECT COALESCE(AVG(r.rating)::float8, $2)
+		FROM activity_organizer_reviews r
+		JOIN activities a ON a.id = r.activity_id
+		WHERE r.host_user_id = $1
+		  AND r.deleted_at IS NULL
+		  AND a.status = 'COMPLETED'
+	`
+	var rating float64
+	if err := r.pool.QueryRow(ctx, query, hostUserID, defaultRating).Scan(&rating); err != nil {
+		return 0, fmt.Errorf("get activity organizer rating by host user id: %w", err)
+	}
+	return rating, nil
+}
+
 func (r *PGActivityRepository) CreateParticipantEvent(ctx context.Context, item *model.ParticipantEvent) error {
 	const query = `
 		INSERT INTO activity_participant_events (
@@ -2038,7 +2343,59 @@ func scanAttendanceSyncAttempt(
 	return &item, nil
 }
 
+type activityReviewScanner interface {
+	Scan(dest ...any) error
+}
+
+func scanActivityReview(row activityReviewScanner) (*model.ActivityReview, error) {
+	var item model.ActivityReview
+	err := row.Scan(
+		&item.ID,
+		&item.ParticipantID,
+		&item.ActivityID,
+		&item.HostUserID,
+		&item.AuthorUserID,
+		&item.Rating,
+		&item.Comment,
+		&item.CreatedAt,
+		&item.UpdatedAt,
+		&item.DeletedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	item.Author.UserID = item.AuthorUserID
+	return &item, nil
+}
+
+func scanActivityOrganizerReview(row activityReviewScanner) (*model.ActivityOrganizerReview, error) {
+	var item model.ActivityOrganizerReview
+	err := row.Scan(
+		&item.ID,
+		&item.ParticipantID,
+		&item.ActivityID,
+		&item.HostUserID,
+		&item.AuthorUserID,
+		&item.Rating,
+		&item.Comment,
+		&item.CreatedAt,
+		&item.UpdatedAt,
+		&item.DeletedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	item.Author.UserID = item.AuthorUserID
+	return &item, nil
+}
+
 /* -------------------- helpers -------------------- */
+
+type activityDBExecutor interface {
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
 
 func translateUniqueViolation(err error) error {
 	var pgErr *pgconn.PgError
@@ -2048,6 +2405,27 @@ func translateUniqueViolation(err error) error {
 		}
 	}
 	return err
+}
+
+func isActivityReviewUniqueViolation(err error) bool {
+	return isUniqueViolation(err, "idx_activity_reviews_participant")
+}
+
+func isActivityOrganizerReviewUniqueViolation(err error) bool {
+	return isUniqueViolation(err, "idx_activity_organizer_reviews_participant")
+}
+
+func isUniqueViolation(err error, constraintNames ...string) bool {
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) || pgErr.Code != "23505" {
+		return false
+	}
+	for _, name := range constraintNames {
+		if pgErr.ConstraintName == name {
+			return true
+		}
+	}
+	return false
 }
 
 func optionalActivityCancellationSourceString(source *enum.ActivityCancellationSource) *string {

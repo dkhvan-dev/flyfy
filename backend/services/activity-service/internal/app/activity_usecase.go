@@ -25,6 +25,7 @@ type ActivityUseCase struct {
 	payment             port.ActivityPaymentGateway
 	fraud               port.FraudEvaluator
 	trustPolicy         port.TrustPolicyClient
+	userProfiles        port.UserProfileResolver
 }
 
 func NewActivityUseCase(repo port.ActivityRepository, fileManager ...port.ActivityMediaFileManager) *ActivityUseCase {
@@ -46,6 +47,10 @@ func (u *ActivityUseCase) SetChatGateway(chatGateway port.ActivityChatGateway) {
 
 func (u *ActivityUseCase) SetPaymentGateway(paymentGateway port.ActivityPaymentGateway) {
 	u.payment = paymentGateway
+}
+
+func (u *ActivityUseCase) SetUserProfileResolver(resolver port.UserProfileResolver) {
+	u.userProfiles = resolver
 }
 
 func (u *ActivityUseCase) syncActivityChat(ctx context.Context, item *model.Activity) {
@@ -225,6 +230,35 @@ type UpdateActivityInput struct {
 
 	VisibilityPassword    *string
 	HasVisibilityPassword bool
+}
+
+type ActivityReviewMutationInput struct {
+	Rating  float64
+	Comment string
+	Delete  bool
+}
+
+type SaveActivityReviewsInput struct {
+	ActorUserID     uuid.UUID
+	ActivityID      uuid.UUID
+	ActivityReview  *ActivityReviewMutationInput
+	OrganizerReview *ActivityReviewMutationInput
+}
+
+type ActivityReviewsResult struct {
+	ActivityReview  *model.ActivityReview
+	OrganizerReview *model.ActivityOrganizerReview
+}
+
+type activityReviewMutationRepository interface {
+	CreateActivityReview(ctx context.Context, item *model.ActivityReview) error
+	UpdateActivityReview(ctx context.Context, item *model.ActivityReview) error
+	DeleteActivityReview(ctx context.Context, item *model.ActivityReview) error
+	GetActivityReviewByParticipantID(ctx context.Context, participantID uuid.UUID) (*model.ActivityReview, error)
+	CreateActivityOrganizerReview(ctx context.Context, item *model.ActivityOrganizerReview) error
+	UpdateActivityOrganizerReview(ctx context.Context, item *model.ActivityOrganizerReview) error
+	DeleteActivityOrganizerReview(ctx context.Context, item *model.ActivityOrganizerReview) error
+	GetActivityOrganizerReviewByParticipantID(ctx context.Context, participantID uuid.UUID) (*model.ActivityOrganizerReview, error)
 }
 
 func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivityInput) (*model.Activity, error) {
@@ -1872,6 +1906,322 @@ func hasOtherPriceBlockingParticipants(
 	}
 
 	return false
+}
+
+func (u *ActivityUseCase) SaveActivityReviews(ctx context.Context, input SaveActivityReviewsInput) (*ActivityReviewsResult, error) {
+	if input.ActorUserID == uuid.Nil {
+		return nil, ErrInvalidActorUserID
+	}
+	if input.ActivityID == uuid.Nil {
+		return nil, ErrInvalidActivityID
+	}
+
+	activity, err := u.repo.GetActivityByID(ctx, input.ActivityID)
+	if err != nil {
+		return nil, fmt.Errorf("get activity: %w", err)
+	}
+	if activity == nil {
+		return nil, ErrActivityNotFound
+	}
+
+	participant, err := u.repo.GetParticipantByActivityAndUser(ctx, input.ActivityID, input.ActorUserID)
+	if err != nil {
+		return nil, fmt.Errorf("get activity participant: %w", err)
+	}
+	if participant == nil {
+		return nil, ErrParticipantNotFound
+	}
+	if !isActivityParticipantReviewable(activity, participant) {
+		return nil, ErrActivityNotReviewable
+	}
+	if input.OrganizerReview != nil && participant.UserID == activity.HostUserID {
+		return nil, model.ErrActivityOrganizerReviewSelfReview
+	}
+
+	result := &ActivityReviewsResult{}
+	err = u.repo.WithTx(ctx, func(repo port.ActivityTxRepository) error {
+		if input.ActivityReview != nil {
+			existing, err := repo.GetActivityReviewByParticipantID(ctx, participant.ID)
+			if err != nil {
+				return fmt.Errorf("get activity review: %w", err)
+			}
+			result.ActivityReview, err = u.applyActivityReviewMutation(ctx, repo, activity, participant, existing, *input.ActivityReview)
+			if err != nil {
+				return err
+			}
+		} else {
+			result.ActivityReview, err = repo.GetActivityReviewByParticipantID(ctx, participant.ID)
+			if err != nil {
+				return fmt.Errorf("get activity review: %w", err)
+			}
+		}
+
+		if input.OrganizerReview != nil {
+			existing, err := repo.GetActivityOrganizerReviewByParticipantID(ctx, participant.ID)
+			if err != nil {
+				return fmt.Errorf("get activity organizer review: %w", err)
+			}
+			result.OrganizerReview, err = u.applyActivityOrganizerReviewMutation(ctx, repo, activity, participant, existing, *input.OrganizerReview)
+			if err != nil {
+				return err
+			}
+		} else {
+			result.OrganizerReview, err = repo.GetActivityOrganizerReviewByParticipantID(ctx, participant.ID)
+			if err != nil {
+				return fmt.Errorf("get activity organizer review: %w", err)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if result.ActivityReview != nil {
+		u.enrichActivityReviewAuthors(ctx, []*model.ActivityReview{result.ActivityReview})
+	}
+	if result.OrganizerReview != nil {
+		u.enrichActivityOrganizerReviewAuthors(ctx, []*model.ActivityOrganizerReview{result.OrganizerReview})
+	}
+	return result, nil
+}
+
+func (u *ActivityUseCase) applyActivityReviewMutation(
+	ctx context.Context,
+	repo activityReviewMutationRepository,
+	activity *model.Activity,
+	participant *model.ActivityParticipant,
+	existing *model.ActivityReview,
+	input ActivityReviewMutationInput,
+) (*model.ActivityReview, error) {
+	if input.Delete {
+		if existing == nil {
+			return nil, nil
+		}
+		existing.SoftDelete()
+		if err := repo.DeleteActivityReview(ctx, existing); err != nil {
+			return nil, fmt.Errorf("delete activity review: %w", err)
+		}
+		return nil, nil
+	}
+	if existing != nil {
+		if err := existing.Update(input.Rating, input.Comment); err != nil {
+			return nil, err
+		}
+		if err := repo.UpdateActivityReview(ctx, existing); err != nil {
+			return nil, fmt.Errorf("update activity review: %w", err)
+		}
+		return existing, nil
+	}
+	review, err := model.NewActivityReview(model.NewActivityReviewParams{
+		Activity:    activity,
+		Participant: participant,
+		Rating:      input.Rating,
+		Comment:     input.Comment,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if err := repo.CreateActivityReview(ctx, review); err != nil {
+		return nil, fmt.Errorf("create activity review: %w", err)
+	}
+	return review, nil
+}
+
+func (u *ActivityUseCase) applyActivityOrganizerReviewMutation(
+	ctx context.Context,
+	repo activityReviewMutationRepository,
+	activity *model.Activity,
+	participant *model.ActivityParticipant,
+	existing *model.ActivityOrganizerReview,
+	input ActivityReviewMutationInput,
+) (*model.ActivityOrganizerReview, error) {
+	if input.Delete {
+		if existing == nil {
+			return nil, nil
+		}
+		existing.SoftDelete()
+		if err := repo.DeleteActivityOrganizerReview(ctx, existing); err != nil {
+			return nil, fmt.Errorf("delete activity organizer review: %w", err)
+		}
+		return nil, nil
+	}
+	if existing != nil {
+		if err := existing.Update(input.Rating, input.Comment); err != nil {
+			return nil, err
+		}
+		if err := repo.UpdateActivityOrganizerReview(ctx, existing); err != nil {
+			return nil, fmt.Errorf("update activity organizer review: %w", err)
+		}
+		return existing, nil
+	}
+	review, err := model.NewActivityOrganizerReview(model.NewActivityOrganizerReviewParams{
+		Activity:    activity,
+		Participant: participant,
+		Rating:      input.Rating,
+		Comment:     input.Comment,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if err := repo.CreateActivityOrganizerReview(ctx, review); err != nil {
+		return nil, fmt.Errorf("create activity organizer review: %w", err)
+	}
+	return review, nil
+}
+
+func isActivityParticipantReviewable(activity *model.Activity, participant *model.ActivityParticipant) bool {
+	return activity != nil &&
+		participant != nil &&
+		activity.Status == enum.ActivityStatusCompleted &&
+		participant.ActivityID == activity.ID &&
+		participant.Status == enum.ParticipantStatusAttended
+}
+
+func (u *ActivityUseCase) ListActivityReviews(ctx context.Context, filter port.ActivityReviewFilter) ([]*model.ActivityReview, error) {
+	if filter.ActivityID == nil && filter.HostUserID == nil {
+		return nil, ErrInvalidActivityID
+	}
+	if filter.Limit <= 0 {
+		filter.Limit = 20
+	}
+	if filter.Limit > 100 {
+		filter.Limit = 100
+	}
+	if filter.Offset < 0 {
+		filter.Offset = 0
+	}
+	if filter.Sort == "" {
+		filter.Sort = port.ActivityReviewSortLatest
+	}
+	items, err := u.repo.ListActivityReviews(ctx, filter)
+	if err != nil {
+		return nil, fmt.Errorf("list activity reviews: %w", err)
+	}
+	u.enrichActivityReviewAuthors(ctx, items)
+	return items, nil
+}
+
+func (u *ActivityUseCase) ListActivityOrganizerReviews(ctx context.Context, filter port.ActivityOrganizerReviewFilter) ([]*model.ActivityOrganizerReview, error) {
+	if (filter.ActivityID == nil || *filter.ActivityID == uuid.Nil) &&
+		(filter.HostUserID == nil || *filter.HostUserID == uuid.Nil) {
+		return nil, ErrInvalidActivityID
+	}
+	if filter.Limit <= 0 {
+		filter.Limit = 20
+	}
+	if filter.Limit > 100 {
+		filter.Limit = 100
+	}
+	if filter.Offset < 0 {
+		filter.Offset = 0
+	}
+	if filter.Sort == "" {
+		filter.Sort = port.ActivityReviewSortLatest
+	}
+	items, err := u.repo.ListActivityOrganizerReviews(ctx, filter)
+	if err != nil {
+		return nil, fmt.Errorf("list activity organizer reviews: %w", err)
+	}
+	u.enrichActivityOrganizerReviewAuthors(ctx, items)
+	return items, nil
+}
+
+func (u *ActivityUseCase) GetActivityOrganizerRating(ctx context.Context, hostUserID uuid.UUID) (float64, error) {
+	const defaultRating = 5.0
+	if hostUserID == uuid.Nil {
+		return defaultRating, nil
+	}
+	rating, err := u.repo.GetActivityOrganizerRatingByHostUserID(ctx, hostUserID)
+	if err != nil {
+		return 0, fmt.Errorf("get activity organizer rating: %w", err)
+	}
+	if rating <= 0 {
+		return defaultRating, nil
+	}
+	return rating, nil
+}
+
+func (u *ActivityUseCase) enrichActivityReviewAuthors(ctx context.Context, items []*model.ActivityReview) {
+	ids := activityReviewAuthorIDs(items, nil)
+	if len(ids) == 0 || u.userProfiles == nil {
+		for _, item := range items {
+			if item != nil && item.Author.UserID == uuid.Nil {
+				item.Author.UserID = item.AuthorUserID
+			}
+		}
+		return
+	}
+	profiles, err := u.userProfiles.GetUserProfileProjections(ctx, ids)
+	if err != nil {
+		return
+	}
+	for _, item := range items {
+		if item == nil {
+			continue
+		}
+		item.Author.UserID = item.AuthorUserID
+		if profile, ok := profiles[item.AuthorUserID]; ok {
+			item.Author.Nickname = profile.Nickname
+			item.Author.AvatarFileID = profile.AvatarFileID
+		}
+	}
+}
+
+func (u *ActivityUseCase) enrichActivityOrganizerReviewAuthors(ctx context.Context, items []*model.ActivityOrganizerReview) {
+	ids := activityOrganizerReviewAuthorIDs(items, nil)
+	if len(ids) == 0 || u.userProfiles == nil {
+		for _, item := range items {
+			if item != nil && item.Author.UserID == uuid.Nil {
+				item.Author.UserID = item.AuthorUserID
+			}
+		}
+		return
+	}
+	profiles, err := u.userProfiles.GetUserProfileProjections(ctx, ids)
+	if err != nil {
+		return
+	}
+	for _, item := range items {
+		if item == nil {
+			continue
+		}
+		item.Author.UserID = item.AuthorUserID
+		if profile, ok := profiles[item.AuthorUserID]; ok {
+			item.Author.Nickname = profile.Nickname
+			item.Author.AvatarFileID = profile.AvatarFileID
+		}
+	}
+}
+
+func activityReviewAuthorIDs(activityItems []*model.ActivityReview, organizerItems []*model.ActivityOrganizerReview) []uuid.UUID {
+	seen := make(map[uuid.UUID]struct{})
+	result := make([]uuid.UUID, 0, len(activityItems)+len(organizerItems))
+	for _, item := range activityItems {
+		if item == nil || item.AuthorUserID == uuid.Nil {
+			continue
+		}
+		if _, ok := seen[item.AuthorUserID]; ok {
+			continue
+		}
+		seen[item.AuthorUserID] = struct{}{}
+		result = append(result, item.AuthorUserID)
+	}
+	for _, item := range organizerItems {
+		if item == nil || item.AuthorUserID == uuid.Nil {
+			continue
+		}
+		if _, ok := seen[item.AuthorUserID]; ok {
+			continue
+		}
+		seen[item.AuthorUserID] = struct{}{}
+		result = append(result, item.AuthorUserID)
+	}
+	return result
+}
+
+func activityOrganizerReviewAuthorIDs(items []*model.ActivityOrganizerReview, extra []*model.ActivityReview) []uuid.UUID {
+	return activityReviewAuthorIDs(extra, items)
 }
 
 func (u *ActivityUseCase) ApproveModeration(

@@ -2587,6 +2587,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileDirectGuideReviewsTitle => 'Guide rating';
 
   @override
+  String get profileActivityOrganizerReviewsTitle =>
+      'Activity organizer rating';
+
+  @override
+  String get profileActivityReviewsTitle => 'Activity reviews';
+
+  @override
   String get profileGuideReviewsEmptyTitle => 'No reviews yet';
 
   @override
@@ -2596,6 +2603,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get profileDirectGuideReviewsEmpty =>
       'Direct guide reviews will appear here after travelers rate the guide.';
+
+  @override
+  String get profileActivityOrganizerReviewsEmpty =>
+      'Organizer reviews will appear here after participants rate completed activities.';
+
+  @override
+  String get profileActivityReviewsEmpty =>
+      'Activity reviews will appear here after participants rate completed activities.';
 
   @override
   String get profileGuideReviewsLoadFailed => 'Could not load reviews';
@@ -4819,6 +4834,47 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get excursionReviewSourceAttractionBadge =>
       'Review based on a visited excursion';
+
+  @override
+  String get activityReviewsSectionTitle => 'Reviews';
+
+  @override
+  String get activityReviewsTitle => 'Activity reviews';
+
+  @override
+  String get activityOrganizerReviewsTitle => 'Organizer reviews';
+
+  @override
+  String get activityReviewsEmpty =>
+      'There are no reviews for this activity yet';
+
+  @override
+  String get activityReviewsLoadFailed => 'Could not load activity reviews';
+
+  @override
+  String get activityReviewSheetTitle => 'Rate the activity';
+
+  @override
+  String get activityReviewActivityLabel => 'Activity';
+
+  @override
+  String get activityReviewOrganizerLabel => 'Organizer';
+
+  @override
+  String get activityReviewWriteButton => 'Leave review';
+
+  @override
+  String get activityReviewEditButton => 'Edit review';
+
+  @override
+  String get activityReviewUnavailable =>
+      'Reviews are available only to attended participants after the activity is completed.';
+
+  @override
+  String get activityReviewSaved => 'Review saved';
+
+  @override
+  String get activityReviewSaveFailed => 'Could not save review';
 
   @override
   String get activityPerPerson => '/ person';

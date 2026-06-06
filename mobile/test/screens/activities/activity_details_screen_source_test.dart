@@ -212,4 +212,38 @@ void main() {
       );
     },
   );
+
+  test(
+    'host card opens profile from the card and shows activity rating',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activity_details_screen.dart',
+      ).readAsString();
+
+      final hostCardStart = source.indexOf('class _HostCard');
+      final nextClassStart = source.indexOf('class _StatsGrid', hostCardStart);
+      expect(hostCardStart, isNonNegative);
+      expect(nextClassStart, greaterThan(hostCardStart));
+
+      final hostCardSource = source.substring(hostCardStart, nextClassStart);
+      expect(hostCardSource, contains('required this.activityRating'));
+      expect(hostCardSource, contains('onTap: onTap'));
+      expect(hostCardSource, contains("_formatRating(activityRating)"));
+      expect(hostCardSource, isNot(contains('profileButton')));
+      expect(hostCardSource, isNot(contains('buttonLabel')));
+
+      final hostCardUsageStart = source.indexOf('_HostCard(');
+      final statsStart = source.indexOf('_StatsGrid(', hostCardUsageStart);
+      expect(hostCardUsageStart, isNonNegative);
+      expect(statsStart, greaterThan(hostCardUsageStart));
+
+      final usageSource = source.substring(hostCardUsageStart, statsStart);
+      expect(
+        usageSource,
+        contains('activityRating: activity.hostActivityRating'),
+      );
+      expect(usageSource, contains('onTap: ()'));
+      expect(usageSource, isNot(contains('buttonLabel: l10n.profileTitle')));
+    },
+  );
 }

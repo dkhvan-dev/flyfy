@@ -4,6 +4,7 @@ import '../../features/activities/models/activity_category_vm.dart';
 import '../../features/activities/models/activity_list_page_vm.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/activities/models/activity_participant_vm.dart';
+import '../../features/activities/models/activity_review_vm.dart';
 import '../../features/activities/models/create_activity_request.dart';
 import '../../features/activities/models/update_activity_request.dart';
 import 'api_client.dart';
@@ -230,6 +231,98 @@ class ActivityApi {
     final response = await _apiClient.dio.get('/activities/$activityId');
 
     return ActivityListItemVm.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<ActivityReviewsPage> getActivityReviews({
+    String? activityId,
+    String? hostUserId,
+    String? sort,
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    final endpoint = (activityId ?? '').trim().isNotEmpty
+        ? '/activities/${Uri.encodeComponent(activityId!.trim())}/reviews'
+        : '/activity-reviews';
+    final response = await _apiClient.dio.get(
+      endpoint,
+      queryParameters: <String, dynamic>{
+        if ((hostUserId ?? '').trim().isNotEmpty)
+          'hostUserId': hostUserId!.trim(),
+        if ((sort ?? '').trim().isNotEmpty) 'sort': sort!.trim(),
+        'limit': limit,
+        'offset': offset,
+      },
+      options: Options(extra: const {'requiresAuth': false}),
+    );
+
+    final data = response.data;
+    final items =
+        (data is Map<String, dynamic>
+            ? data['items'] as List<dynamic>?
+            : null) ??
+        const [];
+
+    return ActivityReviewsPage(
+      items: items
+          .whereType<Map<String, dynamic>>()
+          .map(ActivityReviewVm.fromJson)
+          .toList(growable: false),
+      hasMore: data is Map<String, dynamic> && data['hasMore'] == true,
+    );
+  }
+
+  Future<ActivityOrganizerReviewsPage> getActivityOrganizerReviews({
+    String? activityId,
+    String? hostUserId,
+    String? sort,
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    final endpoint = (activityId ?? '').trim().isNotEmpty
+        ? '/activities/${Uri.encodeComponent(activityId!.trim())}/organizer-reviews'
+        : '/activity-organizer-reviews';
+    final response = await _apiClient.dio.get(
+      endpoint,
+      queryParameters: <String, dynamic>{
+        if ((hostUserId ?? '').trim().isNotEmpty)
+          'hostUserId': hostUserId!.trim(),
+        if ((sort ?? '').trim().isNotEmpty) 'sort': sort!.trim(),
+        'limit': limit,
+        'offset': offset,
+      },
+      options: Options(extra: const {'requiresAuth': false}),
+    );
+
+    final data = response.data;
+    final items =
+        (data is Map<String, dynamic>
+            ? data['items'] as List<dynamic>?
+            : null) ??
+        const [];
+
+    return ActivityOrganizerReviewsPage(
+      items: items
+          .whereType<Map<String, dynamic>>()
+          .map(ActivityOrganizerReviewVm.fromJson)
+          .toList(growable: false),
+      hasMore: data is Map<String, dynamic> && data['hasMore'] == true,
+    );
+  }
+
+  Future<ActivityReviewsResultVm> saveActivityReviews(
+    String activityId,
+    SaveActivityReviewsRequest request,
+  ) async {
+    final encodedActivityId = Uri.encodeComponent(activityId.trim());
+    final response = await _apiClient.dio.put(
+      '/me/activities/$encodedActivityId/reviews',
+      data: request.toJson(),
+    );
+
+    final data = response.data;
+    return ActivityReviewsResultVm.fromJson(
+      data is Map<String, dynamic> ? data : const <String, dynamic>{},
+    );
   }
 
   Future<List<ActivityParticipantVm>> getActivityParticipants(

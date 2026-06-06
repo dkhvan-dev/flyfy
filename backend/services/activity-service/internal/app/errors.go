@@ -16,6 +16,7 @@ var (
 	ErrActivityAlreadyCancelled           = errors.New("activity already cancelled")
 	ErrActivityCancellationReasonRequired = errors.New("activity cancellation reason is required")
 	ErrActivityCompletionReasonRequired   = errors.New("activity completion reason is required")
+	ErrActivityNotReviewable              = errors.New("activity is not reviewable")
 
 	ErrActivityNotPublishable           = errors.New("activity is not publishable")
 	ErrActivityNotStartable             = errors.New("activity is not startable")

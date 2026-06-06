@@ -2594,6 +2594,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileDirectGuideReviewsTitle => 'Рейтинг гида';
 
   @override
+  String get profileActivityOrganizerReviewsTitle =>
+      'Рейтинг организатора активностей';
+
+  @override
+  String get profileActivityReviewsTitle => 'Отзывы об активностях';
+
+  @override
   String get profileGuideReviewsEmptyTitle => 'Отзывов пока нет';
 
   @override
@@ -2603,6 +2610,14 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get profileDirectGuideReviewsEmpty =>
       'Прямые отзывы о гиде появятся здесь после отдельных оценок путешественников.';
+
+  @override
+  String get profileActivityOrganizerReviewsEmpty =>
+      'Отзывы об организаторе появятся здесь после оценок участников завершенных активностей.';
+
+  @override
+  String get profileActivityReviewsEmpty =>
+      'Отзывы об активностях появятся здесь после оценок участников завершенных активностей.';
 
   @override
   String get profileGuideReviewsLoadFailed => 'Не удалось загрузить отзывы';
@@ -4841,6 +4856,47 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get excursionReviewSourceAttractionBadge =>
       'Отзыв на основе посещенной экскурсии';
+
+  @override
+  String get activityReviewsSectionTitle => 'Отзывы';
+
+  @override
+  String get activityReviewsTitle => 'Отзывы активности';
+
+  @override
+  String get activityOrganizerReviewsTitle => 'Отзывы организатора';
+
+  @override
+  String get activityReviewsEmpty => 'По этой активности пока нет отзывов';
+
+  @override
+  String get activityReviewsLoadFailed =>
+      'Не удалось загрузить отзывы активности';
+
+  @override
+  String get activityReviewSheetTitle => 'Оцените активность';
+
+  @override
+  String get activityReviewActivityLabel => 'Активность';
+
+  @override
+  String get activityReviewOrganizerLabel => 'Организатор';
+
+  @override
+  String get activityReviewWriteButton => 'Оставить отзыв';
+
+  @override
+  String get activityReviewEditButton => 'Изменить отзыв';
+
+  @override
+  String get activityReviewUnavailable =>
+      'Отзывы доступны только участникам с подтвержденным посещением после завершения активности.';
+
+  @override
+  String get activityReviewSaved => 'Отзыв сохранен';
+
+  @override
+  String get activityReviewSaveFailed => 'Не удалось сохранить отзыв';
 
   @override
   String get activityPerPerson => '/ чел.';

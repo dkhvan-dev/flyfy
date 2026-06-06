@@ -123,6 +123,26 @@ func (s *attendanceRepoStub) CountActivitiesCreatedSince(ctx context.Context, ho
 	return 0, nil
 }
 
+func (s *attendanceRepoStub) GetActivityReviewByParticipantID(ctx context.Context, participantID uuid.UUID) (*model.ActivityReview, error) {
+	return nil, nil
+}
+
+func (s *attendanceRepoStub) GetActivityOrganizerReviewByParticipantID(ctx context.Context, participantID uuid.UUID) (*model.ActivityOrganizerReview, error) {
+	return nil, nil
+}
+
+func (s *attendanceRepoStub) ListActivityReviews(ctx context.Context, filter port.ActivityReviewFilter) ([]*model.ActivityReview, error) {
+	return nil, nil
+}
+
+func (s *attendanceRepoStub) ListActivityOrganizerReviews(ctx context.Context, filter port.ActivityOrganizerReviewFilter) ([]*model.ActivityOrganizerReview, error) {
+	return nil, nil
+}
+
+func (s *attendanceRepoStub) GetActivityOrganizerRatingByHostUserID(ctx context.Context, hostUserID uuid.UUID) (float64, error) {
+	return 5, nil
+}
+
 type attendanceTxRepoStub struct {
 	getAttendanceSyncAttemptByScanIDForUpdate func(ctx context.Context, scanID uuid.UUID) (*model.AttendanceSyncAttempt, error)
 	getAttendanceQRIssueByJTIForUpdate        func(ctx context.Context, jti uuid.UUID) (*model.AttendanceQRIssue, error)
@@ -199,6 +219,38 @@ func (s *attendanceTxRepoStub) CreateActivityEvent(ctx context.Context, item *mo
 }
 
 func (s *attendanceTxRepoStub) UpdateActivity(ctx context.Context, item *model.Activity) error {
+	return nil
+}
+
+func (s *attendanceTxRepoStub) GetActivityReviewByParticipantID(ctx context.Context, participantID uuid.UUID) (*model.ActivityReview, error) {
+	return nil, nil
+}
+
+func (s *attendanceTxRepoStub) GetActivityOrganizerReviewByParticipantID(ctx context.Context, participantID uuid.UUID) (*model.ActivityOrganizerReview, error) {
+	return nil, nil
+}
+
+func (s *attendanceTxRepoStub) CreateActivityReview(ctx context.Context, item *model.ActivityReview) error {
+	return nil
+}
+
+func (s *attendanceTxRepoStub) UpdateActivityReview(ctx context.Context, item *model.ActivityReview) error {
+	return nil
+}
+
+func (s *attendanceTxRepoStub) DeleteActivityReview(ctx context.Context, item *model.ActivityReview) error {
+	return nil
+}
+
+func (s *attendanceTxRepoStub) CreateActivityOrganizerReview(ctx context.Context, item *model.ActivityOrganizerReview) error {
+	return nil
+}
+
+func (s *attendanceTxRepoStub) UpdateActivityOrganizerReview(ctx context.Context, item *model.ActivityOrganizerReview) error {
+	return nil
+}
+
+func (s *attendanceTxRepoStub) DeleteActivityOrganizerReview(ctx context.Context, item *model.ActivityOrganizerReview) error {
 	return nil
 }
 

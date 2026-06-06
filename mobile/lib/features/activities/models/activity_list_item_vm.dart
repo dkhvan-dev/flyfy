@@ -38,6 +38,7 @@ class ActivityListItemVm {
     this.longitude,
     this.coverFileId,
     this.coverImageUrl,
+    this.hostActivityRating = 5.0,
     this.cancellationReason,
     this.cancelledAt,
     this.startedAt,
@@ -83,6 +84,7 @@ class ActivityListItemVm {
   final double? longitude;
   final String? coverFileId;
   final String? coverImageUrl;
+  final double hostActivityRating;
   final String? cancellationReason;
   final DateTime? cancelledAt;
   final DateTime? startedAt;
@@ -139,6 +141,7 @@ class ActivityListItemVm {
       longitude: (json['longitude'] as num?)?.toDouble(),
       coverFileId: json['coverFileId']?.toString(),
       coverImageUrl: json['coverImageUrl']?.toString(),
+      hostActivityRating: _ratingOrDefault(json['hostActivityRating']),
       cancellationReason: json['cancellationReason']?.toString(),
       cancelledAt: DateTime.tryParse(json['cancelledAt']?.toString() ?? ''),
       startedAt: DateTime.tryParse(json['startedAt']?.toString() ?? ''),
@@ -193,4 +196,14 @@ class ActivityListItemVm {
 String? _nullableString(dynamic value) {
   final text = value?.toString().trim() ?? '';
   return text.isEmpty ? null : text;
+}
+
+double _ratingOrDefault(dynamic value) {
+  const defaultRating = 5.0;
+  if (value is num) {
+    final rating = value.toDouble();
+    return rating > 0 ? rating : defaultRating;
+  }
+  final rating = double.tryParse(value?.toString() ?? '');
+  return rating != null && rating > 0 ? rating : defaultRating;
 }

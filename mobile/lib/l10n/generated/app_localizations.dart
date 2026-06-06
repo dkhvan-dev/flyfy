@@ -4816,6 +4816,18 @@ abstract class AppLocalizations {
   /// **'Guide rating'**
   String get profileDirectGuideReviewsTitle;
 
+  /// No description provided for @profileActivityOrganizerReviewsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity organizer rating'**
+  String get profileActivityOrganizerReviewsTitle;
+
+  /// No description provided for @profileActivityReviewsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity reviews'**
+  String get profileActivityReviewsTitle;
+
   /// No description provided for @profileGuideReviewsEmptyTitle.
   ///
   /// In en, this message translates to:
@@ -4833,6 +4845,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Direct guide reviews will appear here after travelers rate the guide.'**
   String get profileDirectGuideReviewsEmpty;
+
+  /// No description provided for @profileActivityOrganizerReviewsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Organizer reviews will appear here after participants rate completed activities.'**
+  String get profileActivityOrganizerReviewsEmpty;
+
+  /// No description provided for @profileActivityReviewsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity reviews will appear here after participants rate completed activities.'**
+  String get profileActivityReviewsEmpty;
 
   /// No description provided for @profileGuideReviewsLoadFailed.
   ///
@@ -8815,6 +8839,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Review based on a visited excursion'**
   String get excursionReviewSourceAttractionBadge;
+
+  /// No description provided for @activityReviewsSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviews'**
+  String get activityReviewsSectionTitle;
+
+  /// No description provided for @activityReviewsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity reviews'**
+  String get activityReviewsTitle;
+
+  /// No description provided for @activityOrganizerReviewsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Organizer reviews'**
+  String get activityOrganizerReviewsTitle;
+
+  /// No description provided for @activityReviewsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no reviews for this activity yet'**
+  String get activityReviewsEmpty;
+
+  /// No description provided for @activityReviewsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load activity reviews'**
+  String get activityReviewsLoadFailed;
+
+  /// No description provided for @activityReviewSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate the activity'**
+  String get activityReviewSheetTitle;
+
+  /// No description provided for @activityReviewActivityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get activityReviewActivityLabel;
+
+  /// No description provided for @activityReviewOrganizerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Organizer'**
+  String get activityReviewOrganizerLabel;
+
+  /// No description provided for @activityReviewWriteButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave review'**
+  String get activityReviewWriteButton;
+
+  /// No description provided for @activityReviewEditButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit review'**
+  String get activityReviewEditButton;
+
+  /// No description provided for @activityReviewUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviews are available only to attended participants after the activity is completed.'**
+  String get activityReviewUnavailable;
+
+  /// No description provided for @activityReviewSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Review saved'**
+  String get activityReviewSaved;
+
+  /// No description provided for @activityReviewSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save review'**
+  String get activityReviewSaveFailed;
 
   /// No description provided for @activityPerPerson.
   ///

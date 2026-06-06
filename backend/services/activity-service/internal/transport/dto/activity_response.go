@@ -1,9 +1,10 @@
 package dto
 
 type ActivityResponse struct {
-	ID               string  `json:"id"`
-	HostUserID       string  `json:"hostUserId"`
-	SourceActivityID *string `json:"sourceActivityId,omitempty"`
+	ID                 string   `json:"id"`
+	HostUserID         string   `json:"hostUserId"`
+	SourceActivityID   *string  `json:"sourceActivityId,omitempty"`
+	HostActivityRating *float64 `json:"hostActivityRating,omitempty"`
 
 	Title       string `json:"title"`
 	Description string `json:"description"`

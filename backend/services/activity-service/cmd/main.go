@@ -78,6 +78,7 @@ func main() {
 	defer fileManagerClient.Close()
 
 	activityUC := app.NewActivityUseCase(repo, fileManagerClient)
+	activityUC.SetUserProfileResolver(actorResolver)
 	var trustClient *grpcclient.Client
 	if cfg.Trust.Enabled {
 		trustClient, err = grpcclient.New(

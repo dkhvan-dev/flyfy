@@ -1,0 +1,17 @@
+DROP INDEX IF EXISTS idx_activity_organizer_reviews_author_created;
+DROP INDEX IF EXISTS idx_activity_organizer_reviews_host_rating_created;
+DROP INDEX IF EXISTS idx_activity_organizer_reviews_host_created;
+DROP INDEX IF EXISTS idx_activity_organizer_reviews_activity_rating_created;
+DROP INDEX IF EXISTS idx_activity_organizer_reviews_activity_created;
+DROP INDEX IF EXISTS idx_activity_organizer_reviews_participant;
+
+DROP TABLE IF EXISTS activity_organizer_reviews;
+
+DROP INDEX IF EXISTS idx_activity_reviews_author_created;
+DROP INDEX IF EXISTS idx_activity_reviews_host_rating_created;
+DROP INDEX IF EXISTS idx_activity_reviews_host_created;
+DROP INDEX IF EXISTS idx_activity_reviews_activity_rating_created;
+DROP INDEX IF EXISTS idx_activity_reviews_activity_created;
+DROP INDEX IF EXISTS idx_activity_reviews_participant;
+
+DROP TABLE IF EXISTS activity_reviews;

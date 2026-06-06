@@ -17,6 +17,12 @@ import (
 
 type activityRepoStub struct {
 	getActivityByID                              func(ctx context.Context, activityID uuid.UUID) (*model.Activity, error)
+	getParticipantByActivityAndUser              func(ctx context.Context, activityID uuid.UUID, userID uuid.UUID) (*model.ActivityParticipant, error)
+	getActivityReviewByParticipantID             func(ctx context.Context, participantID uuid.UUID) (*model.ActivityReview, error)
+	getActivityOrganizerReviewByParticipantID    func(ctx context.Context, participantID uuid.UUID) (*model.ActivityOrganizerReview, error)
+	listActivityReviews                          func(ctx context.Context, filter port.ActivityReviewFilter) ([]*model.ActivityReview, error)
+	listActivityOrganizerReviews                 func(ctx context.Context, filter port.ActivityOrganizerReviewFilter) ([]*model.ActivityOrganizerReview, error)
+	getActivityOrganizerRatingByHostUserID       func(ctx context.Context, hostUserID uuid.UUID) (float64, error)
 	createActivity                               func(ctx context.Context, item *model.Activity) error
 	updateActivity                               func(ctx context.Context, item *model.Activity) error
 	createParticipant                            func(ctx context.Context, item *model.ActivityParticipant) error
@@ -104,6 +110,9 @@ func (s *activityRepoStub) CreateAttendanceQRIssue(ctx context.Context, item *mo
 }
 
 func (s *activityRepoStub) GetParticipantByActivityAndUser(ctx context.Context, activityID uuid.UUID, userID uuid.UUID) (*model.ActivityParticipant, error) {
+	if s.getParticipantByActivityAndUser != nil {
+		return s.getParticipantByActivityAndUser(ctx, activityID, userID)
+	}
 	return nil, nil
 }
 
@@ -112,6 +121,41 @@ func (s *activityRepoStub) ListParticipantsByActivityID(ctx context.Context, act
 		return s.listParticipantsByActivityID(ctx, activityID, limit, offset)
 	}
 	return nil, nil
+}
+
+func (s *activityRepoStub) GetActivityReviewByParticipantID(ctx context.Context, participantID uuid.UUID) (*model.ActivityReview, error) {
+	if s.getActivityReviewByParticipantID != nil {
+		return s.getActivityReviewByParticipantID(ctx, participantID)
+	}
+	return nil, nil
+}
+
+func (s *activityRepoStub) GetActivityOrganizerReviewByParticipantID(ctx context.Context, participantID uuid.UUID) (*model.ActivityOrganizerReview, error) {
+	if s.getActivityOrganizerReviewByParticipantID != nil {
+		return s.getActivityOrganizerReviewByParticipantID(ctx, participantID)
+	}
+	return nil, nil
+}
+
+func (s *activityRepoStub) ListActivityReviews(ctx context.Context, filter port.ActivityReviewFilter) ([]*model.ActivityReview, error) {
+	if s.listActivityReviews != nil {
+		return s.listActivityReviews(ctx, filter)
+	}
+	return nil, nil
+}
+
+func (s *activityRepoStub) ListActivityOrganizerReviews(ctx context.Context, filter port.ActivityOrganizerReviewFilter) ([]*model.ActivityOrganizerReview, error) {
+	if s.listActivityOrganizerReviews != nil {
+		return s.listActivityOrganizerReviews(ctx, filter)
+	}
+	return nil, nil
+}
+
+func (s *activityRepoStub) GetActivityOrganizerRatingByHostUserID(ctx context.Context, hostUserID uuid.UUID) (float64, error) {
+	if s.getActivityOrganizerRatingByHostUserID != nil {
+		return s.getActivityOrganizerRatingByHostUserID(ctx, hostUserID)
+	}
+	return 5, nil
 }
 
 func (s *activityRepoStub) ListHostedActivitiesByUserID(ctx context.Context, userID uuid.UUID, limit int, offset int) ([]*model.Activity, error) {
@@ -171,15 +215,23 @@ func (s *activityRepoStub) CountActivitiesCreatedSince(ctx context.Context, host
 }
 
 type activityTxRepoStub struct {
-	getActivityByIDForUpdate                 func(ctx context.Context, activityID uuid.UUID) (*model.Activity, error)
-	getParticipantByActivityAndUserForUpdate func(ctx context.Context, activityID uuid.UUID, userID uuid.UUID) (*model.ActivityParticipant, error)
-	listParticipantsByActivityIDForUpdate    func(ctx context.Context, activityID uuid.UUID) ([]*model.ActivityParticipant, error)
-	updateActivity                           func(ctx context.Context, item *model.Activity) error
-	createParticipant                        func(ctx context.Context, item *model.ActivityParticipant) error
-	updateParticipant                        func(ctx context.Context, item *model.ActivityParticipant) error
-	createActivityEvent                      func(ctx context.Context, item *model.ActivityEvent) error
-	createParticipantEvent                   func(ctx context.Context, item *model.ParticipantEvent) error
-	countOccupiedSlotsForUpdate              func(ctx context.Context, activityID uuid.UUID) (int, error)
+	getActivityByIDForUpdate                  func(ctx context.Context, activityID uuid.UUID) (*model.Activity, error)
+	getParticipantByActivityAndUserForUpdate  func(ctx context.Context, activityID uuid.UUID, userID uuid.UUID) (*model.ActivityParticipant, error)
+	getActivityReviewByParticipantID          func(ctx context.Context, participantID uuid.UUID) (*model.ActivityReview, error)
+	getActivityOrganizerReviewByParticipantID func(ctx context.Context, participantID uuid.UUID) (*model.ActivityOrganizerReview, error)
+	listParticipantsByActivityIDForUpdate     func(ctx context.Context, activityID uuid.UUID) ([]*model.ActivityParticipant, error)
+	updateActivity                            func(ctx context.Context, item *model.Activity) error
+	createParticipant                         func(ctx context.Context, item *model.ActivityParticipant) error
+	updateParticipant                         func(ctx context.Context, item *model.ActivityParticipant) error
+	createActivityReview                      func(ctx context.Context, item *model.ActivityReview) error
+	updateActivityReview                      func(ctx context.Context, item *model.ActivityReview) error
+	deleteActivityReview                      func(ctx context.Context, item *model.ActivityReview) error
+	createActivityOrganizerReview             func(ctx context.Context, item *model.ActivityOrganizerReview) error
+	updateActivityOrganizerReview             func(ctx context.Context, item *model.ActivityOrganizerReview) error
+	deleteActivityOrganizerReview             func(ctx context.Context, item *model.ActivityOrganizerReview) error
+	createActivityEvent                       func(ctx context.Context, item *model.ActivityEvent) error
+	createParticipantEvent                    func(ctx context.Context, item *model.ParticipantEvent) error
+	countOccupiedSlotsForUpdate               func(ctx context.Context, activityID uuid.UUID) (int, error)
 }
 
 type paymentGatewayStub struct {
@@ -190,8 +242,9 @@ type paymentGatewayStub struct {
 }
 
 type userProfileResolverStub struct {
-	displayNameForUserID func(ctx context.Context, userID uuid.UUID) (string, error)
-	filterFriendUserIDs  func(ctx context.Context, userID uuid.UUID, candidateUserIDs []uuid.UUID) ([]uuid.UUID, error)
+	displayNameForUserID      func(ctx context.Context, userID uuid.UUID) (string, error)
+	filterFriendUserIDs       func(ctx context.Context, userID uuid.UUID, candidateUserIDs []uuid.UUID) ([]uuid.UUID, error)
+	getUserProfileProjections func(ctx context.Context, userIDs []uuid.UUID) (map[uuid.UUID]port.UserProfileProjection, error)
 }
 
 type fraudEvaluatorStub struct {
@@ -241,6 +294,17 @@ func (s userProfileResolverStub) FilterFriendUserIDs(ctx context.Context, userID
 	return candidateUserIDs, nil
 }
 
+func (s userProfileResolverStub) GetUserProfileProjections(ctx context.Context, userIDs []uuid.UUID) (map[uuid.UUID]port.UserProfileProjection, error) {
+	if s.getUserProfileProjections != nil {
+		return s.getUserProfileProjections(ctx, userIDs)
+	}
+	result := make(map[uuid.UUID]port.UserProfileProjection, len(userIDs))
+	for _, userID := range userIDs {
+		result[userID] = port.UserProfileProjection{UserID: userID}
+	}
+	return result, nil
+}
+
 func (s paymentGatewayStub) Authorize(ctx context.Context, input port.PaymentCreateInput) (*port.PaymentTransaction, error) {
 	if s.authorize != nil {
 		return s.authorize(ctx, input)
@@ -283,6 +347,20 @@ func (s *activityTxRepoStub) GetParticipantByActivityAndUserForUpdate(ctx contex
 	return nil, nil
 }
 
+func (s *activityTxRepoStub) GetActivityReviewByParticipantID(ctx context.Context, participantID uuid.UUID) (*model.ActivityReview, error) {
+	if s.getActivityReviewByParticipantID != nil {
+		return s.getActivityReviewByParticipantID(ctx, participantID)
+	}
+	return nil, nil
+}
+
+func (s *activityTxRepoStub) GetActivityOrganizerReviewByParticipantID(ctx context.Context, participantID uuid.UUID) (*model.ActivityOrganizerReview, error) {
+	if s.getActivityOrganizerReviewByParticipantID != nil {
+		return s.getActivityOrganizerReviewByParticipantID(ctx, participantID)
+	}
+	return nil, nil
+}
+
 func (s *activityTxRepoStub) GetAttendanceQRIssueByJTIForUpdate(ctx context.Context, jti uuid.UUID) (*model.AttendanceQRIssue, error) {
 	return nil, nil
 }
@@ -319,6 +397,48 @@ func (s *activityTxRepoStub) CreateParticipant(ctx context.Context, item *model.
 func (s *activityTxRepoStub) UpdateParticipant(ctx context.Context, item *model.ActivityParticipant) error {
 	if s.updateParticipant != nil {
 		return s.updateParticipant(ctx, item)
+	}
+	return nil
+}
+
+func (s *activityTxRepoStub) CreateActivityReview(ctx context.Context, item *model.ActivityReview) error {
+	if s.createActivityReview != nil {
+		return s.createActivityReview(ctx, item)
+	}
+	return nil
+}
+
+func (s *activityTxRepoStub) UpdateActivityReview(ctx context.Context, item *model.ActivityReview) error {
+	if s.updateActivityReview != nil {
+		return s.updateActivityReview(ctx, item)
+	}
+	return nil
+}
+
+func (s *activityTxRepoStub) DeleteActivityReview(ctx context.Context, item *model.ActivityReview) error {
+	if s.deleteActivityReview != nil {
+		return s.deleteActivityReview(ctx, item)
+	}
+	return nil
+}
+
+func (s *activityTxRepoStub) CreateActivityOrganizerReview(ctx context.Context, item *model.ActivityOrganizerReview) error {
+	if s.createActivityOrganizerReview != nil {
+		return s.createActivityOrganizerReview(ctx, item)
+	}
+	return nil
+}
+
+func (s *activityTxRepoStub) UpdateActivityOrganizerReview(ctx context.Context, item *model.ActivityOrganizerReview) error {
+	if s.updateActivityOrganizerReview != nil {
+		return s.updateActivityOrganizerReview(ctx, item)
+	}
+	return nil
+}
+
+func (s *activityTxRepoStub) DeleteActivityOrganizerReview(ctx context.Context, item *model.ActivityOrganizerReview) error {
+	if s.deleteActivityOrganizerReview != nil {
+		return s.deleteActivityOrganizerReview(ctx, item)
 	}
 	return nil
 }
@@ -2448,6 +2568,191 @@ func TestExtendActivityRejectsBeforeStart(t *testing.T) {
 	_, err := uc.ExtendActivity(context.Background(), activityID, actorUserID, 30)
 	if !errors.Is(err, ErrActivityNotExtendable) {
 		t.Fatalf("ExtendActivity() error = %v, want %v", err, ErrActivityNotExtendable)
+	}
+}
+
+func TestSaveActivityReviewsCreatesBothReviewTypesForAttendedParticipant(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	hostUserID := uuid.New()
+	actorUserID := uuid.New()
+	activity := validActivity(t, activityID, hostUserID)
+	activity.Status = enum.ActivityStatusCompleted
+	participant := validParticipant(t, activityID, actorUserID, enum.ParticipantStatusAttended)
+	var createdActivityReview *model.ActivityReview
+	var createdOrganizerReview *model.ActivityOrganizerReview
+
+	repo := &activityRepoStub{
+		getActivityByID: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+			if requestedID != activityID {
+				t.Fatalf("GetActivityByID() id = %s, want %s", requestedID, activityID)
+			}
+			return activity, nil
+		},
+		getParticipantByActivityAndUser: func(ctx context.Context, requestedActivityID uuid.UUID, requestedUserID uuid.UUID) (*model.ActivityParticipant, error) {
+			if requestedActivityID != activityID || requestedUserID != actorUserID {
+				t.Fatalf("GetParticipantByActivityAndUser() = %s/%s, want %s/%s", requestedActivityID, requestedUserID, activityID, actorUserID)
+			}
+			return participant, nil
+		},
+		withTx: func(ctx context.Context, fn func(repo port.ActivityTxRepository) error) error {
+			return fn(&activityTxRepoStub{
+				createActivityReview: func(ctx context.Context, item *model.ActivityReview) error {
+					createdActivityReview = item
+					return nil
+				},
+				createActivityOrganizerReview: func(ctx context.Context, item *model.ActivityOrganizerReview) error {
+					createdOrganizerReview = item
+					return nil
+				},
+			})
+		},
+	}
+
+	uc := NewActivityUseCase(repo)
+	result, err := uc.SaveActivityReviews(context.Background(), SaveActivityReviewsInput{
+		ActorUserID: actorUserID,
+		ActivityID:  activityID,
+		ActivityReview: &ActivityReviewMutationInput{
+			Rating:  4,
+			Comment: "strong group energy",
+		},
+		OrganizerReview: &ActivityReviewMutationInput{
+			Rating:  5,
+			Comment: "thoughtful organizer",
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("SaveActivityReviews() error = %v", err)
+	}
+	if result == nil || result.ActivityReview == nil || result.OrganizerReview == nil {
+		t.Fatalf("SaveActivityReviews() result = %+v, want both reviews", result)
+	}
+	if createdActivityReview == nil || createdActivityReview.ParticipantID != participant.ID {
+		t.Fatalf("created activity review = %+v, want participant %s", createdActivityReview, participant.ID)
+	}
+	if createdOrganizerReview == nil || createdOrganizerReview.HostUserID != hostUserID {
+		t.Fatalf("created organizer review = %+v, want host %s", createdOrganizerReview, hostUserID)
+	}
+}
+
+func TestSaveActivityReviewsRejectsNotCompletedOrNotAttended(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	hostUserID := uuid.New()
+	actorUserID := uuid.New()
+	activity := validActivity(t, activityID, hostUserID)
+	participant := validParticipant(t, activityID, actorUserID, enum.ParticipantStatusApproved)
+
+	repo := &activityRepoStub{
+		getActivityByID: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+			return activity, nil
+		},
+		getParticipantByActivityAndUser: func(ctx context.Context, requestedActivityID uuid.UUID, requestedUserID uuid.UUID) (*model.ActivityParticipant, error) {
+			return participant, nil
+		},
+	}
+
+	uc := NewActivityUseCase(repo)
+	_, err := uc.SaveActivityReviews(context.Background(), SaveActivityReviewsInput{
+		ActorUserID: actorUserID,
+		ActivityID:  activityID,
+		ActivityReview: &ActivityReviewMutationInput{
+			Rating: 5,
+		},
+	})
+	if !errors.Is(err, ErrActivityNotReviewable) {
+		t.Fatalf("SaveActivityReviews() non-completed error = %v, want %v", err, ErrActivityNotReviewable)
+	}
+
+	activity.Status = enum.ActivityStatusCompleted
+	_, err = uc.SaveActivityReviews(context.Background(), SaveActivityReviewsInput{
+		ActorUserID: actorUserID,
+		ActivityID:  activityID,
+		ActivityReview: &ActivityReviewMutationInput{
+			Rating: 5,
+		},
+	})
+	if !errors.Is(err, ErrActivityNotReviewable) {
+		t.Fatalf("SaveActivityReviews() non-attended error = %v, want %v", err, ErrActivityNotReviewable)
+	}
+}
+
+func TestSaveActivityReviewsRejectsOrganizerSelfReview(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	hostUserID := uuid.New()
+	activity := validActivity(t, activityID, hostUserID)
+	activity.Status = enum.ActivityStatusCompleted
+	participant := validParticipant(t, activityID, hostUserID, enum.ParticipantStatusAttended)
+
+	repo := &activityRepoStub{
+		getActivityByID: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+			return activity, nil
+		},
+		getParticipantByActivityAndUser: func(ctx context.Context, requestedActivityID uuid.UUID, requestedUserID uuid.UUID) (*model.ActivityParticipant, error) {
+			return participant, nil
+		},
+	}
+
+	uc := NewActivityUseCase(repo)
+	_, err := uc.SaveActivityReviews(context.Background(), SaveActivityReviewsInput{
+		ActorUserID: hostUserID,
+		ActivityID:  activityID,
+		OrganizerReview: &ActivityReviewMutationInput{
+			Rating: 5,
+		},
+	})
+	if !errors.Is(err, model.ErrActivityOrganizerReviewSelfReview) {
+		t.Fatalf("SaveActivityReviews() error = %v, want %v", err, model.ErrActivityOrganizerReviewSelfReview)
+	}
+}
+
+func TestGetActivityOrganizerRatingDefaultsToFive(t *testing.T) {
+	t.Parallel()
+
+	hostUserID := uuid.New()
+	uc := NewActivityUseCase(&activityRepoStub{
+		getActivityOrganizerRatingByHostUserID: func(ctx context.Context, gotHostUserID uuid.UUID) (float64, error) {
+			if gotHostUserID != hostUserID {
+				t.Fatalf("host user id = %s, want %s", gotHostUserID, hostUserID)
+			}
+			return 5, nil
+		},
+	})
+
+	rating, err := uc.GetActivityOrganizerRating(context.Background(), hostUserID)
+	if err != nil {
+		t.Fatalf("GetActivityOrganizerRating() error = %v", err)
+	}
+	if rating != 5 {
+		t.Fatalf("GetActivityOrganizerRating() = %.1f, want 5.0", rating)
+	}
+}
+
+func TestGetActivityOrganizerRatingReturnsReviewAverage(t *testing.T) {
+	t.Parallel()
+
+	hostUserID := uuid.New()
+	uc := NewActivityUseCase(&activityRepoStub{
+		getActivityOrganizerRatingByHostUserID: func(ctx context.Context, gotHostUserID uuid.UUID) (float64, error) {
+			if gotHostUserID != hostUserID {
+				t.Fatalf("host user id = %s, want %s", gotHostUserID, hostUserID)
+			}
+			return 4.25, nil
+		},
+	})
+
+	rating, err := uc.GetActivityOrganizerRating(context.Background(), hostUserID)
+	if err != nil {
+		t.Fatalf("GetActivityOrganizerRating() error = %v", err)
+	}
+	if rating != 4.25 {
+		t.Fatalf("GetActivityOrganizerRating() = %.2f, want 4.25", rating)
 	}
 }
 

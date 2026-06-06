@@ -180,6 +180,50 @@ func TestGuideReviewsRouteProxiesPublicReadsToExcursionService(t *testing.T) {
 	}
 }
 
+func TestActivityReviewRoutesProxyToActivityService(t *testing.T) {
+	publicReviewPolicy := matchRoutePolicy("/api/v1/activity-reviews?hostUserId=user-1", "/api/v1")
+	if publicReviewPolicy == nil {
+		t.Fatal("expected activity reviews route policy")
+	}
+	if publicReviewPolicy.Upstream != "activity" {
+		t.Fatalf("activity review upstream = %q, want activity", publicReviewPolicy.Upstream)
+	}
+	if publicReviewPolicy.AuthMode != RouteAuthPublic {
+		t.Fatalf("activity review auth mode = %q, want public", publicReviewPolicy.AuthMode)
+	}
+	if publicReviewPolicy.RewritePrefix != "/v1/activity-reviews" {
+		t.Fatalf("activity review rewrite prefix = %q, want /v1/activity-reviews", publicReviewPolicy.RewritePrefix)
+	}
+
+	publicOrganizerReviewPolicy := matchRoutePolicy("/api/v1/activity-organizer-reviews?hostUserId=user-1", "/api/v1")
+	if publicOrganizerReviewPolicy == nil {
+		t.Fatal("expected activity organizer reviews route policy")
+	}
+	if publicOrganizerReviewPolicy.Upstream != "activity" {
+		t.Fatalf("activity organizer review upstream = %q, want activity", publicOrganizerReviewPolicy.Upstream)
+	}
+	if publicOrganizerReviewPolicy.AuthMode != RouteAuthPublic {
+		t.Fatalf("activity organizer review auth mode = %q, want public", publicOrganizerReviewPolicy.AuthMode)
+	}
+	if publicOrganizerReviewPolicy.RewritePrefix != "/v1/activity-organizer-reviews" {
+		t.Fatalf("activity organizer review rewrite prefix = %q, want /v1/activity-organizer-reviews", publicOrganizerReviewPolicy.RewritePrefix)
+	}
+
+	myReviewPolicy := matchRoutePolicy("/api/v1/me/activities/activity-1/reviews", "/api/v1")
+	if myReviewPolicy == nil {
+		t.Fatal("expected my activity reviews route policy")
+	}
+	if myReviewPolicy.Upstream != "activity" {
+		t.Fatalf("my activity review upstream = %q, want activity", myReviewPolicy.Upstream)
+	}
+	if myReviewPolicy.AuthMode != RouteAuthAuthenticated {
+		t.Fatalf("my activity review auth mode = %q, want authenticated", myReviewPolicy.AuthMode)
+	}
+	if myReviewPolicy.RewritePrefix != "/v1/me/activities" {
+		t.Fatalf("my activity review rewrite prefix = %q, want /v1/me/activities", myReviewPolicy.RewritePrefix)
+	}
+}
+
 func TestPublicGuidesRouteDoesNotRequireBearerToken(t *testing.T) {
 	policy := matchRoutePolicy("/api/v1/guides/public", "/api/v1")
 	if policy == nil {

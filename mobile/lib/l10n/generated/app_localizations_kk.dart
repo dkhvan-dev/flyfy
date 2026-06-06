@@ -2610,6 +2610,13 @@ class AppLocalizationsKk extends AppLocalizations {
   String get profileDirectGuideReviewsTitle => 'Гид рейтингі';
 
   @override
+  String get profileActivityOrganizerReviewsTitle =>
+      'Белсенділік ұйымдастырушысы рейтингі';
+
+  @override
+  String get profileActivityReviewsTitle => 'Белсенділік пікірлері';
+
+  @override
   String get profileGuideReviewsEmptyTitle => 'Әзірге пікір жоқ';
 
   @override
@@ -2619,6 +2626,14 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get profileDirectGuideReviewsEmpty =>
       'Гид туралы тікелей пікірлер саяхатшылар бөлек бағалағаннан кейін осында шығады.';
+
+  @override
+  String get profileActivityOrganizerReviewsEmpty =>
+      'Ұйымдастырушы туралы пікірлер аяқталған белсенділіктерден кейін қатысушылар бағалағанда осында шығады.';
+
+  @override
+  String get profileActivityReviewsEmpty =>
+      'Белсенділік пікірлері аяқталған белсенділіктерден кейін қатысушылар бағалағанда осында шығады.';
 
   @override
   String get profileGuideReviewsLoadFailed =>
@@ -4859,6 +4874,47 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get excursionReviewSourceAttractionBadge =>
       'Пікір барған экскурсия негізінде';
+
+  @override
+  String get activityReviewsSectionTitle => 'Пікірлер';
+
+  @override
+  String get activityReviewsTitle => 'Белсенділік пікірлері';
+
+  @override
+  String get activityOrganizerReviewsTitle => 'Ұйымдастырушы пікірлері';
+
+  @override
+  String get activityReviewsEmpty => 'Бұл белсенділік бойынша пікірлер әлі жоқ';
+
+  @override
+  String get activityReviewsLoadFailed =>
+      'Белсенділік пікірлерін жүктеу мүмкін болмады';
+
+  @override
+  String get activityReviewSheetTitle => 'Белсенділікті бағалаңыз';
+
+  @override
+  String get activityReviewActivityLabel => 'Белсенділік';
+
+  @override
+  String get activityReviewOrganizerLabel => 'Ұйымдастырушы';
+
+  @override
+  String get activityReviewWriteButton => 'Пікір қалдыру';
+
+  @override
+  String get activityReviewEditButton => 'Пікірді өзгерту';
+
+  @override
+  String get activityReviewUnavailable =>
+      'Пікірлер белсенділік аяқталғаннан кейін тек қатысқаны расталған қатысушыларға қолжетімді.';
+
+  @override
+  String get activityReviewSaved => 'Пікір сақталды';
+
+  @override
+  String get activityReviewSaveFailed => 'Пікірді сақтау мүмкін болмады';
 
   @override
   String get activityPerPerson => '/ адам';

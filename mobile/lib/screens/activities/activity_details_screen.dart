@@ -21,6 +21,7 @@ import '../../features/activities/activity_taxonomy_resolver.dart';
 import '../../features/activities/models/activity_category_vm.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/activities/models/activity_participant_vm.dart';
+import '../../features/activities/models/activity_review_vm.dart';
 import '../../features/profile/profile_completion_gate.dart';
 import '../../features/profile/profile_guard_result.dart';
 import '../../features/profile/data/profile_api.dart';
@@ -34,6 +35,7 @@ import '../../shared/map/app_map_links.dart';
 import '../../shared/widgets/app_localized_location_text.dart';
 import '../../shared/widgets/app_map_card.dart';
 import 'activity_payment_screen.dart';
+import 'widgets/activity_review_sheet.dart';
 
 class ActivityDetailsScreen extends StatefulWidget {
   const ActivityDetailsScreen({
@@ -69,9 +71,14 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   bool _participantsLoading = true;
   String? _participantsError;
   List<ActivityParticipantVm> _participants = const [];
+  bool _reviewsLoading = true;
+  String? _reviewsError;
+  List<ActivityReviewVm> _activityReviews = const [];
+  List<ActivityOrganizerReviewVm> _organizerReviews = const [];
   Map<String, UserProfileVm> _resolvedProfiles = const {};
   _FooterAction? _pendingAction;
   bool _isPaymentSuccessful = false;
+  bool _isSavingReviews = false;
   bool _isTrackingBackSwipe = false;
   bool _isInitialLoadPending = true;
   double _backSwipeDistance = 0;
@@ -112,6 +119,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       provider.loadActivityDetails(widget.activityId),
       provider.loadActivityCategories(),
       _loadParticipants(),
+      _loadReviews(),
     ]);
     if (!mounted) return;
     setState(() => _isInitialLoadPending = false);
@@ -154,6 +162,34 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       setState(() {
         _participantsLoading = false;
         _participantsError = 'failed';
+      });
+    }
+  }
+
+  Future<void> _loadReviews() async {
+    if (mounted) {
+      setState(() {
+        _reviewsLoading = true;
+        _reviewsError = null;
+      });
+    }
+
+    try {
+      final results = await Future.wait<Object>([
+        _activityApi.getActivityReviews(activityId: widget.activityId),
+        _activityApi.getActivityOrganizerReviews(activityId: widget.activityId),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _activityReviews = (results[0] as ActivityReviewsPage).items;
+        _organizerReviews = (results[1] as ActivityOrganizerReviewsPage).items;
+        _reviewsLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _reviewsLoading = false;
+        _reviewsError = 'failed';
       });
     }
   }
@@ -593,6 +629,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     final futures = <Future<void>>[
       provider.loadActivityDetails(widget.activityId),
       _loadParticipants(),
+      _loadReviews(),
     ];
 
     if (authProvider.state == AuthState.authenticated) {
@@ -1113,6 +1150,95 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     ).showSnackBar(SnackBar(content: Text(l10n.activityInviteFriendsSuccess)));
   }
 
+  ActivityParticipantVm? _reviewParticipantForCurrentUser(
+    String currentUserId,
+  ) {
+    if (currentUserId.trim().isEmpty) {
+      return null;
+    }
+    for (final participant in _participants) {
+      if (participant.userId.trim() == currentUserId.trim()) {
+        return participant;
+      }
+    }
+    return null;
+  }
+
+  ActivityReviewVm? _myActivityReview(String currentUserId) {
+    for (final review in _activityReviews) {
+      if (review.author.userId.trim() == currentUserId ||
+          review.authorUserId.trim() == currentUserId) {
+        return review;
+      }
+    }
+    return null;
+  }
+
+  ActivityOrganizerReviewVm? _myOrganizerReview(String currentUserId) {
+    for (final review in _organizerReviews) {
+      if (review.author.userId.trim() == currentUserId ||
+          review.authorUserId.trim() == currentUserId) {
+        return review;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _openActivityReviewsSheet({
+    required ActivityListItemVm activity,
+    required String currentUserId,
+    required bool canWriteReview,
+    required bool allowOrganizerReview,
+  }) async {
+    final l10n = AppLocalizations.of(context)!;
+    if (context.read<AuthProvider>().state != AuthState.authenticated) {
+      context.push(
+        Uri(
+          path: '/login',
+          queryParameters: {'from': '/activities/${widget.activityId}'},
+        ).toString(),
+      );
+      return;
+    }
+    if (!canWriteReview) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.activityReviewUnavailable)));
+      return;
+    }
+
+    final request = await showActivityReviewSheet(
+      context,
+      activityReview: _myActivityReview(currentUserId),
+      organizerReview: _myOrganizerReview(currentUserId),
+      allowOrganizerReview: allowOrganizerReview,
+    );
+    if (request == null || !mounted) {
+      return;
+    }
+
+    setState(() => _isSavingReviews = true);
+    try {
+      await _activityApi.saveActivityReviews(activity.id, request);
+      await _loadReviews();
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.activityReviewSaved)));
+    } catch (_) {
+      if (!mounted) return;
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.activityReviewSaveFailed,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSavingReviews = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -1207,6 +1333,12 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
         ? null
         : _participantStatusLabel(currentParticipant, l10n);
     final status = activity.status.toUpperCase();
+    final reviewParticipant = _reviewParticipantForCurrentUser(currentUserId);
+    final canWriteActivityReview =
+        status == 'COMPLETED' &&
+        reviewParticipant?.normalizedStatus == 'ATTENDED';
+    final canWriteOrganizerReview =
+        canWriteActivityReview && currentUserId != activity.hostUserId.trim();
     final isDraft = status == 'DRAFT';
     final showPublish = isOwner && isDraft;
     final canLeaveActivity = _canLeaveActivity(
@@ -1368,12 +1500,12 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                           hostName: hostName,
                           avatarUrl: hostAvatarUrl,
                           avatarFallbackText: hostAvatarFallback,
+                          activityRating: activity.hostActivityRating,
                           subtitle: _resolveHostSubtitle(
                             activity: activity,
                             l10n: l10n,
                           ),
-                          buttonLabel: l10n.profileTitle,
-                          onPressed: () {
+                          onTap: () {
                             if (isOwner) {
                               context.push('/profile');
                               return;
@@ -1473,6 +1605,24 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                               l10n.activityDetailsLinkCopied,
                             );
                           },
+                        ),
+                        const SizedBox(height: 22),
+                        _ActivityReviewsSection(
+                          activityReviews: _activityReviews,
+                          organizerReviews: _organizerReviews,
+                          isLoading: _reviewsLoading,
+                          loadFailed: _reviewsError != null,
+                          canWriteReview: canWriteActivityReview,
+                          isSavingReview: _isSavingReviews,
+                          currentUserId: currentUserId,
+                          onWriteReviewTap: canWriteActivityReview
+                              ? () => _openActivityReviewsSheet(
+                                  activity: activity,
+                                  currentUserId: currentUserId,
+                                  canWriteReview: canWriteActivityReview,
+                                  allowOrganizerReview: canWriteOrganizerReview,
+                                )
+                              : null,
                         ),
                       ],
                     ),
@@ -3029,17 +3179,17 @@ class _HostCard extends StatelessWidget {
     required this.hostName,
     required this.avatarUrl,
     required this.avatarFallbackText,
+    required this.activityRating,
     required this.subtitle,
-    required this.buttonLabel,
-    required this.onPressed,
+    required this.onTap,
   });
 
   final String hostName;
   final String? avatarUrl;
   final String avatarFallbackText;
+  final double activityRating;
   final String subtitle;
-  final String buttonLabel;
-  final VoidCallback onPressed;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -3048,9 +3198,8 @@ class _HostCard extends StatelessWidget {
         final avatarSize = _detailsScaled(context, 50, min: 44, max: 54);
         final avatarIcon = _detailsScaled(context, 23, min: 20, max: 25);
         final badgeSize = _detailsScaled(context, 20, min: 17, max: 21);
-        final buttonHeight = _detailsScaled(context, 42, min: 40, max: 44);
         final gap = _detailsScaled(context, 12, min: 9, max: 14);
-        final stackVertically = constraints.maxWidth < 380;
+        final compact = constraints.maxWidth < 360;
         final avatar = Stack(
           clipBehavior: Clip.none,
           children: [
@@ -3121,22 +3270,30 @@ class _HostCard extends StatelessWidget {
         final textBlock = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              hostName,
-              maxLines: stackVertically ? 2 : 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: _DetailsColors.text,
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0,
-              ),
+            Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    hostName,
+                    maxLines: compact ? 2 : 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: _DetailsColors.text,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _HostRatingPill(label: _formatRating(activityRating)),
+              ],
             ),
             if (subtitle.trim().isNotEmpty) ...[
               const SizedBox(height: 4),
               Text(
                 subtitle,
-                maxLines: stackVertically ? 3 : 2,
+                maxLines: compact ? 3 : 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: AppColors.accent,
@@ -3148,76 +3305,91 @@ class _HostCard extends StatelessWidget {
             ],
           ],
         );
-        final profileButton = Material(
+
+        return Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: onPressed,
-            borderRadius: BorderRadius.circular(999),
-            child: Ink(
-              height: buttonHeight,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: AppColors.accent.withValues(alpha: 0.22),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Center(
-                child: Text(
-                  buttonLabel,
-                  style: const TextStyle(
-                    color: AppColors.accent,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.white.withValues(alpha: 0.05),
-                Colors.white.withValues(alpha: 0.04),
-              ],
-            ),
+            onTap: onTap,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-          ),
-          child: stackVertically
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        avatar,
-                        SizedBox(width: gap),
-                        Expanded(child: textBlock),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    SizedBox(width: double.infinity, child: profileButton),
-                  ],
-                )
-              : Row(
-                  children: [
-                    avatar,
-                    SizedBox(width: gap),
-                    Expanded(child: textBlock),
-                    const SizedBox(width: 12),
-                    profileButton,
+            child: Ink(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white.withValues(alpha: 0.05),
+                    Colors.white.withValues(alpha: 0.04),
                   ],
                 ),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+              ),
+              child: Row(
+                children: [
+                  avatar,
+                  SizedBox(width: gap),
+                  Expanded(child: textBlock),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.accent.withValues(alpha: 0.76),
+                    size: _detailsScaled(context, 22, min: 20, max: 24),
+                  ),
+                ],
+              ),
+            ),
+          ),
         );
       },
     );
   }
+}
+
+class _HostRatingPill extends StatelessWidget {
+  const _HostRatingPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 26),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.accent.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.16)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.star_rounded,
+            color: AppColors.accent,
+            size: _detailsScaled(context, 14, min: 12, max: 15),
+          ),
+          const SizedBox(width: 3),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppColors.accent,
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _formatRating(double value) {
+  if (value <= 0) return '5.0';
+  return value.toStringAsFixed(1);
 }
 
 class _StatsGrid extends StatelessWidget {
@@ -5032,6 +5204,359 @@ class _ParticipantAvatar extends StatelessWidget {
                   ),
                 ),
               ),
+      ),
+    );
+  }
+}
+
+class _ActivityReviewsSection extends StatelessWidget {
+  const _ActivityReviewsSection({
+    required this.activityReviews,
+    required this.organizerReviews,
+    required this.isLoading,
+    required this.loadFailed,
+    required this.canWriteReview,
+    required this.isSavingReview,
+    required this.currentUserId,
+    required this.onWriteReviewTap,
+  });
+
+  final List<ActivityReviewVm> activityReviews;
+  final List<ActivityOrganizerReviewVm> organizerReviews;
+  final bool isLoading;
+  final bool loadFailed;
+  final bool canWriteReview;
+  final bool isSavingReview;
+  final String currentUserId;
+  final VoidCallback? onWriteReviewTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final hasReviews =
+        activityReviews.isNotEmpty || organizerReviews.isNotEmpty;
+    final hasMyReview =
+        activityReviews.any(
+          (item) =>
+              item.author.userId.trim() == currentUserId ||
+              item.authorUserId.trim() == currentUserId,
+        ) ||
+        organizerReviews.any(
+          (item) =>
+              item.author.userId.trim() == currentUserId ||
+              item.authorUserId.trim() == currentUserId,
+        );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                l10n.activityReviewsSectionTitle,
+                style: const TextStyle(
+                  color: _DetailsColors.text,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0,
+                ),
+              ),
+            ),
+            if (canWriteReview && onWriteReviewTap != null) ...[
+              const SizedBox(width: 10),
+              TextButton.icon(
+                onPressed: isSavingReview ? null : onWriteReviewTap,
+                icon: isSavingReview
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.rate_review_rounded, size: 18),
+                label: Text(
+                  hasMyReview
+                      ? l10n.activityReviewEditButton
+                      : l10n.activityReviewWriteButton,
+                ),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.accent,
+                  padding: EdgeInsets.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 14),
+        if (isLoading)
+          const _ActivityReviewSkeletonList()
+        else if (loadFailed)
+          _ActivityReviewInfoCard(message: l10n.activityReviewsLoadFailed)
+        else if (!hasReviews)
+          _ActivityReviewInfoCard(message: l10n.activityReviewsEmpty)
+        else ...[
+          if (activityReviews.isNotEmpty) ...[
+            _ActivityReviewGroupTitle(label: l10n.activityReviewsTitle),
+            const SizedBox(height: 10),
+            for (var i = 0; i < activityReviews.length; i++) ...[
+              _ActivityReviewCard(
+                author: activityReviews[i].author,
+                rating: activityReviews[i].rating,
+                comment: activityReviews[i].comment,
+                createdAt: activityReviews[i].createdAt,
+                subtitle: l10n.activityReviewActivityLabel,
+              ),
+              if (i != activityReviews.length - 1) const SizedBox(height: 12),
+            ],
+          ],
+          if (activityReviews.isNotEmpty && organizerReviews.isNotEmpty)
+            const SizedBox(height: 16),
+          if (organizerReviews.isNotEmpty) ...[
+            _ActivityReviewGroupTitle(
+              label: l10n.activityOrganizerReviewsTitle,
+            ),
+            const SizedBox(height: 10),
+            for (var i = 0; i < organizerReviews.length; i++) ...[
+              _ActivityReviewCard(
+                author: organizerReviews[i].author,
+                rating: organizerReviews[i].rating,
+                comment: organizerReviews[i].comment,
+                createdAt: organizerReviews[i].createdAt,
+                subtitle: l10n.activityReviewOrganizerLabel,
+              ),
+              if (i != organizerReviews.length - 1) const SizedBox(height: 12),
+            ],
+          ],
+        ],
+      ],
+    );
+  }
+}
+
+class _ActivityReviewGroupTitle extends StatelessWidget {
+  const _ActivityReviewGroupTitle({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: const TextStyle(
+        color: _DetailsColors.muted,
+        fontSize: 13,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 0,
+      ),
+    );
+  }
+}
+
+class _ActivityReviewCard extends StatelessWidget {
+  const _ActivityReviewCard({
+    required this.author,
+    required this.rating,
+    required this.comment,
+    required this.createdAt,
+    required this.subtitle,
+  });
+
+  final ActivityReviewAuthorVm author;
+  final double rating;
+  final String comment;
+  final DateTime createdAt;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final authorName = author.resolvedDisplayName.isEmpty
+        ? l10n.attractionTravelerFallback
+        : author.resolvedDisplayName;
+    final avatarUrl = author.resolvedAvatarFileId.isEmpty
+        ? null
+        : resolvePublicFileContentUrl(author.resolvedAvatarFileId);
+    final dateText = DateFormat.yMMMd(locale).format(createdAt.toLocal());
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF25160B),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: AppColors.accent.withValues(alpha: 0.15),
+                backgroundImage: avatarUrl == null
+                    ? null
+                    : NetworkImage(avatarUrl),
+                child: avatarUrl == null
+                    ? Text(
+                        _displayInitials(authorName, fallback: 'F'),
+                        style: const TextStyle(
+                          color: AppColors.accent,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      authorName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _DetailsColors.text,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '$subtitle · $dateText',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _DetailsColors.muted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              _ActivityReviewRating(value: rating),
+            ],
+          ),
+          if (comment.trim().isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              comment.trim(),
+              maxLines: 5,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Color(0xFFD7BFAA),
+                fontSize: 14,
+                height: 1.48,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ActivityReviewRating extends StatelessWidget {
+  const _ActivityReviewRating({required this.value});
+
+  final double value;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.accent.withValues(alpha: 0.13),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.star_rounded, color: AppColors.accent, size: 15),
+            const SizedBox(width: 3),
+            Text(
+              value.toStringAsFixed(1),
+              style: const TextStyle(
+                color: AppColors.accent,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActivityReviewInfoCard extends StatelessWidget {
+  const _ActivityReviewInfoCard({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.045),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: Text(
+        message,
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          color: _DetailsColors.muted,
+          fontSize: 13,
+          height: 1.42,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0,
+        ),
+      ),
+    );
+  }
+}
+
+class _ActivityReviewSkeletonList extends StatelessWidget {
+  const _ActivityReviewSkeletonList();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: const [
+        _ActivityReviewSkeletonCard(),
+        SizedBox(height: 12),
+        _ActivityReviewSkeletonCard(),
+      ],
+    );
+  }
+}
+
+class _ActivityReviewSkeletonCard extends StatelessWidget {
+  const _ActivityReviewSkeletonCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 116,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.045),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
     );
   }

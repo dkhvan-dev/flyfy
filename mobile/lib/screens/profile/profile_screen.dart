@@ -18,6 +18,7 @@ import '../../core/reference/currency_filter_utils.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
+import '../../features/activities/models/activity_review_vm.dart';
 import '../../features/chat/models/user_block_status_vm.dart';
 import '../../features/excursions/models/excursion_booking_vm.dart';
 import '../../features/profile/data/guide_api.dart';
@@ -63,6 +64,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<int>? _publishedStoriesCountFuture;
   Future<ExcursionReviewsPage>? _guideReviewsFuture;
   Future<GuideReviewsPage>? _directGuideReviewsFuture;
+  Future<ActivityReviewsPage>? _activityReviewsFuture;
+  Future<ActivityOrganizerReviewsPage>? _activityOrganizerReviewsFuture;
   Future<UserBlockStatusVm>? _blockStatusFuture;
   String _extrasKey = '';
   String _activityCountKey = '';
@@ -71,6 +74,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _publishedStoriesCountKey = '';
   String _guideReviewsKey = '';
   String _directGuideReviewsKey = '';
+  String _activityReviewsKey = '';
+  String _activityOrganizerReviewsKey = '';
   String _blockStatusKey = '';
   String _relationshipOverrideUserId = '';
   String _blockStatusOverrideUserId = '';
@@ -113,6 +118,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _guideReviewsKey = '';
     _directGuideReviewsFuture = null;
     _directGuideReviewsKey = '';
+    _activityReviewsFuture = null;
+    _activityReviewsKey = '';
+    _activityOrganizerReviewsFuture = null;
+    _activityOrganizerReviewsKey = '';
     _blockStatusFuture = null;
     _blockStatusKey = '';
   }
@@ -632,6 +641,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return _directGuideReviewsFuture!;
   }
 
+  Future<ActivityReviewsPage> _activityReviewsFutureFor(UserProfileVm profile) {
+    final key = '${profile.userId.trim()}|rating_desc|10|activity';
+    if (_activityReviewsFuture == null || _activityReviewsKey != key) {
+      _activityReviewsKey = key;
+      _activityReviewsFuture = _activityApi.getActivityReviews(
+        hostUserId: profile.userId.trim(),
+        limit: 10,
+        sort: 'rating_desc',
+      );
+    }
+    return _activityReviewsFuture!;
+  }
+
+  Future<ActivityOrganizerReviewsPage> _activityOrganizerReviewsFutureFor(
+    UserProfileVm profile,
+  ) {
+    final key = '${profile.userId.trim()}|rating_desc|10|activity_organizer';
+    if (_activityOrganizerReviewsFuture == null ||
+        _activityOrganizerReviewsKey != key) {
+      _activityOrganizerReviewsKey = key;
+      _activityOrganizerReviewsFuture = _activityApi
+          .getActivityOrganizerReviews(
+            hostUserId: profile.userId.trim(),
+            limit: 10,
+            sort: 'rating_desc',
+          );
+    }
+    return _activityOrganizerReviewsFuture!;
+  }
+
   Future<void> _openEditProfile() async {
     final updated = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
@@ -759,6 +798,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               !isOwnProfile && extras.guide?.isVerified == true
               ? _directGuideReviewsFutureFor(effectiveProfile)
               : null,
+          activityReviewsFuture: !isOwnProfile
+              ? _activityReviewsFutureFor(effectiveProfile)
+              : null,
+          activityOrganizerReviewsFuture: !isOwnProfile
+              ? _activityOrganizerReviewsFutureFor(effectiveProfile)
+              : null,
           blockStatusFuture: isOwnProfile
               ? null
               : _blockStatusFutureFor(effectiveProfile),
@@ -815,6 +860,8 @@ class _ProfileBody extends StatelessWidget {
     required this.referenceLabels,
     required this.guideReviewsFuture,
     required this.directGuideReviewsFuture,
+    required this.activityReviewsFuture,
+    required this.activityOrganizerReviewsFuture,
     required this.blockStatusFuture,
     required this.recentActivitiesFuture,
     required this.popularStoriesFuture,
@@ -843,6 +890,8 @@ class _ProfileBody extends StatelessWidget {
   final _ProfileReferenceLabels referenceLabels;
   final Future<ExcursionReviewsPage>? guideReviewsFuture;
   final Future<GuideReviewsPage>? directGuideReviewsFuture;
+  final Future<ActivityReviewsPage>? activityReviewsFuture;
+  final Future<ActivityOrganizerReviewsPage>? activityOrganizerReviewsFuture;
   final Future<UserBlockStatusVm>? blockStatusFuture;
   final Future<List<ActivityListItemVm>>? recentActivitiesFuture;
   final Future<List<StoryVm>>? popularStoriesFuture;
@@ -946,6 +995,8 @@ class _ProfileBody extends StatelessWidget {
             isGuideProfile: isGuideProfile,
             guideReviewsFuture: guideReviewsFuture,
             directGuideReviewsFuture: directGuideReviewsFuture,
+            activityReviewsFuture: activityReviewsFuture,
+            activityOrganizerReviewsFuture: activityOrganizerReviewsFuture,
             recentActivitiesFuture: recentActivitiesFuture,
             popularStoriesFuture: popularStoriesFuture,
           ),
@@ -2473,6 +2524,8 @@ class _ForeignProfileSections extends StatelessWidget {
     required this.isGuideProfile,
     required this.guideReviewsFuture,
     required this.directGuideReviewsFuture,
+    required this.activityReviewsFuture,
+    required this.activityOrganizerReviewsFuture,
     required this.recentActivitiesFuture,
     required this.popularStoriesFuture,
   });
@@ -2481,6 +2534,8 @@ class _ForeignProfileSections extends StatelessWidget {
   final bool isGuideProfile;
   final Future<ExcursionReviewsPage>? guideReviewsFuture;
   final Future<GuideReviewsPage>? directGuideReviewsFuture;
+  final Future<ActivityReviewsPage>? activityReviewsFuture;
+  final Future<ActivityOrganizerReviewsPage>? activityOrganizerReviewsFuture;
   final Future<List<ActivityListItemVm>>? recentActivitiesFuture;
   final Future<List<StoryVm>>? popularStoriesFuture;
 
@@ -2497,6 +2552,16 @@ class _ForeignProfileSections extends StatelessWidget {
             SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
           ],
           _GuideExcursionReviewsSection(reviewsFuture: guideReviewsFuture!),
+          SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
+        ],
+        if (activityOrganizerReviewsFuture != null) ...[
+          _ProfileActivityOrganizerReviewsSection(
+            reviewsFuture: activityOrganizerReviewsFuture!,
+          ),
+          SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
+        ],
+        if (activityReviewsFuture != null) ...[
+          _ProfileActivityReviewsSection(reviewsFuture: activityReviewsFuture!),
           SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
         ],
         _ForeignRecentActivitiesSection(
@@ -2739,6 +2804,119 @@ class _ForeignPopularStoriesSkeleton extends StatelessWidget {
   }
 }
 
+class _ProfileActivityOrganizerReviewsSection extends StatelessWidget {
+  const _ProfileActivityOrganizerReviewsSection({required this.reviewsFuture});
+
+  final Future<ActivityOrganizerReviewsPage> reviewsFuture;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ProfileSectionHeading(title: l10n.profileActivityOrganizerReviewsTitle),
+        SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
+        FutureBuilder<ActivityOrganizerReviewsPage>(
+          future: reviewsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const _GuideReviewSkeletonList();
+            }
+            if (snapshot.hasError) {
+              return _PlaceholderShowcaseCard(
+                title: l10n.profileGuideReviewsLoadFailed,
+                subtitle: l10n.profileGuideReviewsLoadFailedHint,
+              );
+            }
+
+            final reviews =
+                snapshot.data?.items ?? const <ActivityOrganizerReviewVm>[];
+            if (reviews.isEmpty) {
+              return _PlaceholderShowcaseCard(
+                title: l10n.profileGuideReviewsEmptyTitle,
+                subtitle: l10n.profileActivityOrganizerReviewsEmpty,
+              );
+            }
+
+            return Column(
+              children: [
+                for (var i = 0; i < reviews.length; i++) ...[
+                  _ProfileActivityReviewCard(
+                    author: reviews[i].author,
+                    rating: reviews[i].rating,
+                    comment: reviews[i].comment,
+                    createdAt: reviews[i].createdAt,
+                    subtitle: l10n.activityReviewOrganizerLabel,
+                  ),
+                  if (i != reviews.length - 1)
+                    SizedBox(height: profileScaled(context, 12, min: 10)),
+                ],
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _ProfileActivityReviewsSection extends StatelessWidget {
+  const _ProfileActivityReviewsSection({required this.reviewsFuture});
+
+  final Future<ActivityReviewsPage> reviewsFuture;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ProfileSectionHeading(title: l10n.profileActivityReviewsTitle),
+        SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
+        FutureBuilder<ActivityReviewsPage>(
+          future: reviewsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const _GuideReviewSkeletonList();
+            }
+            if (snapshot.hasError) {
+              return _PlaceholderShowcaseCard(
+                title: l10n.profileGuideReviewsLoadFailed,
+                subtitle: l10n.profileGuideReviewsLoadFailedHint,
+              );
+            }
+
+            final reviews = snapshot.data?.items ?? const <ActivityReviewVm>[];
+            if (reviews.isEmpty) {
+              return _PlaceholderShowcaseCard(
+                title: l10n.profileGuideReviewsEmptyTitle,
+                subtitle: l10n.profileActivityReviewsEmpty,
+              );
+            }
+
+            return Column(
+              children: [
+                for (var i = 0; i < reviews.length; i++) ...[
+                  _ProfileActivityReviewCard(
+                    author: reviews[i].author,
+                    rating: reviews[i].rating,
+                    comment: reviews[i].comment,
+                    createdAt: reviews[i].createdAt,
+                    subtitle: l10n.activityReviewActivityLabel,
+                  ),
+                  if (i != reviews.length - 1)
+                    SizedBox(height: profileScaled(context, 12, min: 10)),
+                ],
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
 class _DirectGuideReviewsSection extends StatelessWidget {
   const _DirectGuideReviewsSection({required this.reviewsFuture});
 
@@ -2835,6 +3013,123 @@ class _GuideExcursionReviewsSection extends StatelessWidget {
           },
         ),
       ],
+    );
+  }
+}
+
+class _ProfileActivityReviewCard extends StatelessWidget {
+  const _ProfileActivityReviewCard({
+    required this.author,
+    required this.rating,
+    required this.comment,
+    required this.createdAt,
+    required this.subtitle,
+  });
+
+  final ActivityReviewAuthorVm author;
+  final double rating;
+  final String comment;
+  final DateTime createdAt;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final authorName = author.resolvedDisplayName.isEmpty
+        ? l10n.attractionTravelerFallback
+        : author.resolvedDisplayName;
+    final avatarUrl = author.resolvedAvatarFileId.isEmpty
+        ? null
+        : resolvePublicFileContentUrl(author.resolvedAvatarFileId);
+    final dateText = DateFormat.yMMMd(locale).format(createdAt.toLocal());
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(profileScaled(context, 16, min: 14, max: 18)),
+      decoration: profileCardDecoration(
+        context,
+        highlighted: true,
+        radius: profileScaled(context, 22, min: 18, max: 22),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: profileScaled(context, 18, min: 16, max: 20),
+                backgroundColor: AppColors.accent.withValues(alpha: 0.16),
+                backgroundImage: avatarUrl == null
+                    ? null
+                    : NetworkImage(avatarUrl),
+                child: avatarUrl == null
+                    ? Text(
+                        _reviewInitial(authorName),
+                        style: const TextStyle(
+                          color: AppColors.accent,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      )
+                    : null,
+              ),
+              SizedBox(width: profileScaled(context, 12, min: 10, max: 12)),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      authorName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: profileScaled(context, 14, min: 13, max: 15),
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: profileScaled(context, 3, min: 2, max: 4)),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: profileTextMuted,
+                        fontSize: profileScaled(context, 12, min: 11, max: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: profileScaled(context, 10, min: 8, max: 12)),
+              _ProfileReviewRating(value: rating),
+            ],
+          ),
+          if (comment.trim().isNotEmpty) ...[
+            SizedBox(height: profileScaled(context, 12, min: 10, max: 14)),
+            Text(
+              comment.trim(),
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: profileScaled(context, 14, min: 13, max: 15),
+                height: 1.42,
+              ),
+            ),
+          ],
+          SizedBox(height: profileScaled(context, 10, min: 8, max: 12)),
+          Text(
+            dateText,
+            style: TextStyle(
+              color: profileDisabled,
+              fontSize: profileScaled(context, 11, min: 10, max: 11),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

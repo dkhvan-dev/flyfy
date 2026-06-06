@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"kz/inflap/backend/services/activity-service/internal/domain/port"
 	userv1 "kz/inflap/proto/gen/go/user/v1"
 )
 
@@ -105,6 +106,50 @@ func (r *UserResolver) FilterFriendUserIDs(
 		result = append(result, parsed)
 	}
 
+	return result, nil
+}
+
+func (r *UserResolver) GetUserProfileProjections(ctx context.Context, userIDs []uuid.UUID) (map[uuid.UUID]port.UserProfileProjection, error) {
+	rawIDs := make([]string, 0, len(userIDs))
+	for _, id := range userIDs {
+		if id == uuid.Nil {
+			continue
+		}
+		rawIDs = append(rawIDs, id.String())
+	}
+	if len(rawIDs) == 0 {
+		return map[uuid.UUID]port.UserProfileProjection{}, nil
+	}
+
+	resp, err := r.client.GetPublicProfilesByUserIds(ctx, &userv1.GetPublicProfilesByUserIdsRequest{
+		UserIds: rawIDs,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[uuid.UUID]port.UserProfileProjection, len(resp.GetItems()))
+	for _, item := range resp.GetItems() {
+		userID, parseErr := uuid.Parse(strings.TrimSpace(item.GetUserId()))
+		if parseErr != nil {
+			continue
+		}
+		var nickname *string
+		if value := strings.TrimSpace(item.GetNickname()); value != "" {
+			nickname = &value
+		}
+		var avatarFileID *uuid.UUID
+		if value := strings.TrimSpace(item.GetAvatarFileId()); value != "" {
+			if parsed, err := uuid.Parse(value); err == nil {
+				avatarFileID = &parsed
+			}
+		}
+		result[userID] = port.UserProfileProjection{
+			UserID:       userID,
+			Nickname:     nickname,
+			AvatarFileID: avatarFileID,
+		}
+	}
 	return result, nil
 }
 

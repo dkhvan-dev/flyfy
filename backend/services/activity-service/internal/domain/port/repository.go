@@ -46,9 +46,34 @@ type ActivityCompletionStats struct {
 	JoinedCompleted int
 }
 
+type ActivityReviewFilter struct {
+	ActivityID *uuid.UUID
+	HostUserID *uuid.UUID
+	Sort       ActivityReviewSort
+	Limit      int
+	Offset     int
+}
+
+type ActivityOrganizerReviewFilter struct {
+	ActivityID *uuid.UUID
+	HostUserID *uuid.UUID
+	Sort       ActivityReviewSort
+	Limit      int
+	Offset     int
+}
+
+type ActivityReviewSort string
+
+const (
+	ActivityReviewSortLatest     ActivityReviewSort = "latest"
+	ActivityReviewSortRatingDesc ActivityReviewSort = "rating_desc"
+)
+
 type ActivityTxRepository interface {
 	GetActivityByIDForUpdate(ctx context.Context, activityID uuid.UUID) (*model.Activity, error)
 	GetParticipantByActivityAndUserForUpdate(ctx context.Context, activityID uuid.UUID, userID uuid.UUID) (*model.ActivityParticipant, error)
+	GetActivityReviewByParticipantID(ctx context.Context, participantID uuid.UUID) (*model.ActivityReview, error)
+	GetActivityOrganizerReviewByParticipantID(ctx context.Context, participantID uuid.UUID) (*model.ActivityOrganizerReview, error)
 	GetAttendanceQRIssueByJTIForUpdate(ctx context.Context, jti uuid.UUID) (*model.AttendanceQRIssue, error)
 	GetAttendanceSyncAttemptByScanIDForUpdate(ctx context.Context, scanID uuid.UUID) (*model.AttendanceSyncAttempt, error)
 	HasActiveOverlappingJoinedActivity(
@@ -63,6 +88,12 @@ type ActivityTxRepository interface {
 
 	CreateParticipant(ctx context.Context, item *model.ActivityParticipant) error
 	UpdateParticipant(ctx context.Context, item *model.ActivityParticipant) error
+	CreateActivityReview(ctx context.Context, item *model.ActivityReview) error
+	UpdateActivityReview(ctx context.Context, item *model.ActivityReview) error
+	DeleteActivityReview(ctx context.Context, item *model.ActivityReview) error
+	CreateActivityOrganizerReview(ctx context.Context, item *model.ActivityOrganizerReview) error
+	UpdateActivityOrganizerReview(ctx context.Context, item *model.ActivityOrganizerReview) error
+	DeleteActivityOrganizerReview(ctx context.Context, item *model.ActivityOrganizerReview) error
 	CreateAttendanceSyncAttempt(ctx context.Context, item *model.AttendanceSyncAttempt) error
 	UpdateAttendanceSyncAttempt(ctx context.Context, item *model.AttendanceSyncAttempt) error
 
@@ -92,6 +123,11 @@ type ActivityRepository interface {
 
 	GetParticipantByActivityAndUser(ctx context.Context, activityID uuid.UUID, userID uuid.UUID) (*model.ActivityParticipant, error)
 	ListParticipantsByActivityID(ctx context.Context, activityID uuid.UUID, limit int, offset int) ([]*model.ActivityParticipant, error)
+	GetActivityReviewByParticipantID(ctx context.Context, participantID uuid.UUID) (*model.ActivityReview, error)
+	GetActivityOrganizerReviewByParticipantID(ctx context.Context, participantID uuid.UUID) (*model.ActivityOrganizerReview, error)
+	ListActivityReviews(ctx context.Context, filter ActivityReviewFilter) ([]*model.ActivityReview, error)
+	ListActivityOrganizerReviews(ctx context.Context, filter ActivityOrganizerReviewFilter) ([]*model.ActivityOrganizerReview, error)
+	GetActivityOrganizerRatingByHostUserID(ctx context.Context, hostUserID uuid.UUID) (float64, error)
 
 	ListHostedActivitiesByUserID(ctx context.Context, userID uuid.UUID, limit int, offset int) ([]*model.Activity, error)
 	ListJoinedActivitiesByUserID(ctx context.Context, userID uuid.UUID, limit int, offset int) ([]*model.Activity, error)
