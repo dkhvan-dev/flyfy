@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -76,6 +77,33 @@ class HomeLocationPreference {
       updatedAt: DateTime.now().toUtc(),
     );
   }
+
+  static HomeLocationPreference? fromProfile({
+    required String? countryCode,
+    required String? timezone,
+  }) {
+    final normalizedCountryCode = _nullableText(countryCode)?.toUpperCase();
+    final cityName = _cityNameFromTimezone(timezone);
+    if (normalizedCountryCode == null && cityName == null) return null;
+
+    return HomeLocationPreference(
+      source: HomeLocationSource.profile,
+      countryCode: normalizedCountryCode,
+      cityName: cityName,
+      updatedAt: DateTime.now().toUtc(),
+    );
+  }
+
+  static HomeLocationPreference? fromDeviceTimezone(String? timezone) {
+    final cityName = _cityNameFromTimezone(timezone);
+    if (cityName == null) return null;
+
+    return HomeLocationPreference(
+      source: HomeLocationSource.detected,
+      cityName: cityName,
+      updatedAt: DateTime.now().toUtc(),
+    );
+  }
 }
 
 class HomeLocationProvider extends ChangeNotifier {
@@ -92,7 +120,9 @@ class HomeLocationProvider extends ChangeNotifier {
   final DeviceContextService _deviceContextService;
 
   HomeLocationPreference? _selectedLocation;
+  HomeLocationPreference? _profileFallbackLocation;
   HomeLocationPreference _effectiveLocation = HomeLocationPreference.fallback();
+  Future<void>? _loadFuture;
   bool _isLoaded = false;
   bool _isLoading = false;
   bool _isDetecting = false;
@@ -105,31 +135,77 @@ class HomeLocationProvider extends ChangeNotifier {
   bool get isDetecting => _isDetecting;
   String? get errorMessage => _errorMessage;
 
-  Future<void> load({String languageCode = 'en'}) async {
-    if (_isLoading) return;
+  Future<void> load({
+    String languageCode = 'en',
+    HomeLocationPreference? profileFallback,
+  }) {
+    if (profileFallback != null) {
+      _profileFallbackLocation = profileFallback;
+    }
+    final currentLoad = _loadFuture;
+    if (currentLoad != null) return currentLoad;
 
+    final nextLoad = _load(languageCode: languageCode);
+    _loadFuture = nextLoad.whenComplete(() => _loadFuture = null);
+    return _loadFuture!;
+  }
+
+  Future<void> _load({required String languageCode}) async {
     _isLoading = true;
     notifyListeners();
 
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(storageKey);
-    _selectedLocation = _decodeSelectedLocation(raw);
-    final deviceLocation = _selectedLocation == null
-        ? await _detectDeviceLocationPreference(
-            languageCode: languageCode,
-            requestPermission: false,
-          )
-        : null;
-    _effectiveLocation =
-        _selectedLocation ??
-        deviceLocation ??
-        HomeLocationPreference.fallback();
-    _effectiveLocation = await _resolveCityReference(
-      _effectiveLocation,
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(storageKey);
+      _selectedLocation = _decodeSelectedLocation(raw);
+      final deviceLocation = _selectedLocation == null
+          ? await _detectDeviceLocationPreference(
+              languageCode: languageCode,
+              requestPermission: false,
+            )
+          : null;
+      _effectiveLocation =
+          _selectedLocation ??
+          deviceLocation ??
+          _profileFallbackLocation ??
+          HomeLocationPreference.fallback();
+      _effectiveLocation = await _resolveCityReference(
+        _effectiveLocation,
+        languageCode: languageCode,
+      );
+      _isLoaded = true;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> setProfileFallback(
+    HomeLocationPreference? profileFallback, {
+    required String languageCode,
+  }) async {
+    _profileFallbackLocation = profileFallback;
+    if (profileFallback == null || _selectedLocation != null) return;
+
+    final currentLoad = _loadFuture;
+    if (currentLoad != null) {
+      await currentLoad;
+      if (_selectedLocation != null ||
+          _effectiveLocation.source != HomeLocationSource.fallback) {
+        return;
+      }
+    } else if (!_isLoaded ||
+        _effectiveLocation.source != HomeLocationSource.fallback) {
+      return;
+    }
+
+    final resolved = await _resolveCityReference(
+      profileFallback,
       languageCode: languageCode,
     );
-    _isLoaded = true;
-    _isLoading = false;
+    if (_sameLocation(_effectiveLocation, resolved)) return;
+
+    _effectiveLocation = resolved;
     notifyListeners();
   }
 
@@ -194,6 +270,7 @@ class HomeLocationProvider extends ChangeNotifier {
           languageCode: languageCode,
           requestPermission: false,
         ) ??
+        _profileFallbackLocation ??
         HomeLocationPreference.fallback();
     _effectiveLocation = await _resolveCityReference(
       nextLocation,
@@ -239,7 +316,9 @@ class HomeLocationProvider extends ChangeNotifier {
       final suggestion = await _deviceContextService.detectLocationSuggestion(
         requestPermission: requestPermission,
       );
-      if (suggestion == null) return null;
+      if (suggestion == null) {
+        return requestPermission ? null : await _detectDeviceTimezone();
+      }
 
       final cityName = suggestion.cityName?.trim() ?? '';
       final countryCode = suggestion.countryCode?.trim().toUpperCase();
@@ -275,13 +354,19 @@ class HomeLocationProvider extends ChangeNotifier {
       );
       if ((preference.countryCode ?? '').trim().isEmpty &&
           (preference.cityName ?? '').trim().isEmpty) {
-        return null;
+        return requestPermission ? null : await _detectDeviceTimezone();
       }
       return preference;
     } catch (_) {
       if (requestPermission) rethrow;
-      return null;
     }
+
+    return _detectDeviceTimezone();
+  }
+
+  Future<HomeLocationPreference?> _detectDeviceTimezone() async {
+    final timezone = await _deviceContextService.getLocalTimezone();
+    return HomeLocationPreference.fromDeviceTimezone(timezone);
   }
 
   Future<HomeLocationPreference> _resolveCityReference(
@@ -356,6 +441,23 @@ String? _nullableText(Object? value) {
   final text = value?.toString().trim();
   if (text == null || text.isEmpty) return null;
   return text;
+}
+
+String? _cityNameFromTimezone(String? timezone) {
+  final normalized = _nullableText(timezone);
+  if (normalized == null) return null;
+  if (normalized.startsWith('Etc/')) return null;
+
+  final slashIndex = normalized.lastIndexOf('/');
+  final rawCity = slashIndex >= 0
+      ? normalized.substring(slashIndex + 1)
+      : normalized;
+  final city = rawCity.replaceAll('_', ' ').trim();
+  final upperCity = city.toUpperCase();
+  if (city.isEmpty || upperCity == 'UTC' || upperCity.startsWith('GMT')) {
+    return null;
+  }
+  return city;
 }
 
 double? _nullableDouble(Object? value) {

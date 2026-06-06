@@ -114,7 +114,26 @@ class _SuperAppState extends State<SuperApp> {
         ChangeNotifierProvider<AuthProvider>.value(value: _authProvider),
         ChangeNotifierProvider<SessionProvider>.value(value: _sessionProvider),
         ChangeNotifierProvider<LocaleProvider>.value(value: _localeProvider),
-        ChangeNotifierProvider(create: (_) => HomeLocationProvider()),
+        ChangeNotifierProxyProvider2<
+          SessionProvider,
+          LocaleProvider,
+          HomeLocationProvider
+        >(
+          create: (_) => HomeLocationProvider(),
+          update: (_, session, localeProvider, provider) {
+            final homeLocationProvider = provider ?? HomeLocationProvider();
+            unawaited(
+              homeLocationProvider.setProfileFallback(
+                HomeLocationPreference.fromProfile(
+                  countryCode: session.profile?.countryCode,
+                  timezone: session.profile?.timezone,
+                ),
+                languageCode: localeProvider.locale.languageCode,
+              ),
+            );
+            return homeLocationProvider;
+          },
+        ),
         ChangeNotifierProvider(create: (_) => ActivityProvider()),
         ChangeNotifierProvider(create: (_) => ExcursionProvider()),
         ChangeNotifierProvider(create: (_) => ExcursionScheduleProvider()),

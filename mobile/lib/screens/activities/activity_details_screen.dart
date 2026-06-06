@@ -4195,15 +4195,16 @@ class _MeetingMapCard extends StatelessWidget {
       target: point,
       hasMarker: true,
       initialZoom: 15.4,
-      // MapLibre iOS 0.3.x can emit late native callbacks after a
-      // read-only platform view is disposed; keep details cards static there.
-      nativeMapEnabled: !_isIosPlatform(context),
+      // Read-only native map platform views can be unstable when Android/iOS
+      // recreate surfaces after app backgrounding. Keep details cards static.
+      nativeMapEnabled: _shouldUseNativeReadOnlyMeetingMap(context),
     );
   }
 }
 
-bool _isIosPlatform(BuildContext context) {
-  return Theme.of(context).platform == TargetPlatform.iOS;
+bool _shouldUseNativeReadOnlyMeetingMap(BuildContext context) {
+  final platform = Theme.of(context).platform;
+  return platform != TargetPlatform.iOS && platform != TargetPlatform.android;
 }
 
 class _MeetingLocationFallbackCard extends StatelessWidget {

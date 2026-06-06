@@ -118,19 +118,22 @@ void main() {
   );
 
   test(
-    'activity details meeting card disables native map on iOS read-only view',
+    'activity details meeting card disables native map on mobile read-only view',
     () async {
       final source = await File(
         'lib/screens/activities/activity_details_screen.dart',
       ).readAsString();
 
-      final helperStart = source.indexOf('bool _isIosPlatform');
+      final helperStart = source.indexOf(
+        'bool _shouldUseNativeReadOnlyMeetingMap',
+      );
       expect(helperStart, isNonNegative);
       final helperEnd = source.indexOf('class ', helperStart);
       expect(helperEnd, greaterThan(helperStart));
 
       final helperSource = source.substring(helperStart, helperEnd);
       expect(helperSource, contains('TargetPlatform.iOS'));
+      expect(helperSource, contains('TargetPlatform.android'));
       expect(helperSource, contains('Theme.of(context).platform'));
 
       final mapCardStart = source.indexOf('class _MeetingMapCard');
@@ -143,7 +146,10 @@ void main() {
 
       final mapCardSource = source.substring(mapCardStart, fallbackCardStart);
       expect(mapCardSource, contains('nativeMapEnabled:'));
-      expect(mapCardSource, contains('!_isIosPlatform(context)'));
+      expect(
+        mapCardSource,
+        contains('_shouldUseNativeReadOnlyMeetingMap(context)'),
+      );
     },
   );
 

@@ -99,6 +99,72 @@ void main() {
   );
 
   test(
+    'home location provider receives profile fallback from app bootstrap',
+    () async {
+      final mainSource = await File('lib/main.dart').readAsString();
+      final providerSource = await File(
+        'lib/providers/home_location_provider.dart',
+      ).readAsString();
+
+      expect(
+        mainSource,
+        matches(
+          RegExp(
+            r'ChangeNotifierProxyProvider2<\s*SessionProvider,\s*LocaleProvider,\s*HomeLocationProvider\s*>',
+            multiLine: true,
+          ),
+        ),
+      );
+      expect(mainSource, contains('setProfileFallback('));
+      expect(mainSource, contains('session.profile?.countryCode'));
+      expect(mainSource, contains('session.profile?.timezone'));
+      expect(
+        providerSource,
+        contains('static HomeLocationPreference? fromProfile'),
+      );
+      expect(providerSource, contains('HomeLocationSource.profile'));
+    },
+  );
+
+  test(
+    'discover filters retry default location after provider updates',
+    () async {
+      final files = {
+        'activities': await File(
+          'lib/screens/activities/activities_screen.dart',
+        ).readAsString(),
+        'excursions': await File(
+          'lib/screens/excursions/excursions_screen.dart',
+        ).readAsString(),
+        'attractions': await File(
+          'lib/screens/attractions/attractions_screen.dart',
+        ).readAsString(),
+        'guides': await File(
+          'lib/screens/guides/guides_screen.dart',
+        ).readAsString(),
+      };
+
+      for (final entry in files.entries) {
+        expect(
+          entry.value,
+          contains('context.watch<HomeLocationProvider>()'),
+          reason: entry.key,
+        );
+        expect(
+          entry.value,
+          contains('WidgetsBinding.instance.addPostFrameCallback'),
+          reason: entry.key,
+        );
+        expect(
+          entry.value,
+          contains('effectiveLocation.source == HomeLocationSource.fallback'),
+          reason: entry.key,
+        );
+      }
+    },
+  );
+
+  test(
     'discover filters carry city id and city name to local or remote filters',
     () async {
       final activities = await File(

@@ -115,6 +115,20 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     });
   }
 
+  void _scheduleApplyDefaultLocationFilter(HomeLocationProvider provider) {
+    if (_hasAppliedDefaultLocationFilter ||
+        _filters.country != null ||
+        _filters.city != null ||
+        provider.effectiveLocation.source == HomeLocationSource.fallback) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _applyDefaultLocationFilter(provider);
+    });
+  }
+
   @override
   void dispose() {
     _searchController
@@ -420,6 +434,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     final safeBottomInset = MediaQuery.paddingOf(context).bottom;
     final auth = context.watch<AuthProvider>();
     final session = context.watch<SessionProvider>();
+    final locationProvider = context.watch<HomeLocationProvider>();
     final isLoggedIn = auth.state == AuthState.authenticated;
     final profile = session.profile;
     final currentUserId = (profile?.userId ?? '').trim();
@@ -430,6 +445,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
 
     _ensureHostedActivitiesLoaded(currentUserId);
     _ensureGuideBadgeState(currentUserId);
+    _scheduleApplyDefaultLocationFilter(locationProvider);
 
     return Scaffold(
       key: _scaffoldKey,

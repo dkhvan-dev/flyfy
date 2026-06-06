@@ -131,9 +131,9 @@ class _GuidesScreenState extends State<GuidesScreen> {
       return;
     }
 
-    _hasAppliedDefaultCityFilter = true;
     final location = provider.effectiveLocation;
     if (location.source == HomeLocationSource.fallback) return;
+    _hasAppliedDefaultCityFilter = true;
     final country = AppCountryFilterValue.fromParts(
       countryCode: location.countryCode,
     );
@@ -147,6 +147,24 @@ class _GuidesScreenState extends State<GuidesScreen> {
     setState(() {
       _filters = _filters.copyWith(country: country, city: city);
       _currentPage = 1;
+    });
+  }
+
+  void _scheduleApplyDefaultCityFilter(HomeLocationProvider provider) {
+    if (_hasAppliedDefaultCityFilter ||
+        _filters.country != null ||
+        _filters.city != null ||
+        provider.effectiveLocation.source == HomeLocationSource.fallback) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final wasApplied = _hasAppliedDefaultCityFilter;
+      _applyDefaultCityFilter(provider);
+      if (!wasApplied && _hasAppliedDefaultCityFilter) {
+        unawaited(_loadGuides(page: 1));
+      }
     });
   }
 
@@ -296,9 +314,12 @@ class _GuidesScreenState extends State<GuidesScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final locationProvider = context.watch<HomeLocationProvider>();
     final totalPages = math.max(1, (_totalGuides / _pageSize).ceil());
     final activePage = _currentPage.clamp(1, totalPages).toInt();
     final pageGuides = _guides;
+
+    _scheduleApplyDefaultCityFilter(locationProvider);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,

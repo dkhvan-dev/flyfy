@@ -163,6 +163,24 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
     });
   }
 
+  void _scheduleApplyDefaultLocationFilter(HomeLocationProvider provider) {
+    if (_hasAppliedDefaultLocationFilter ||
+        _filters.country != null ||
+        _filters.city != null ||
+        provider.effectiveLocation.source == HomeLocationSource.fallback) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final wasApplied = _hasAppliedDefaultLocationFilter;
+      _applyDefaultLocationFilter(provider);
+      if (!wasApplied && _hasAppliedDefaultLocationFilter) {
+        unawaited(_loadAttractions(page: 1));
+      }
+    });
+  }
+
   Future<void> _loadAttractions({int page = 1}) async {
     if (!mounted) return;
     final normalizedPage = page < 1 ? 1 : page;
@@ -399,6 +417,7 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
 
     final padX = a.scale(24, minFactor: 0.78);
     final locationProvider = context.watch<HomeLocationProvider>();
+    _scheduleApplyDefaultLocationFilter(locationProvider);
     final currentCity = _currentCityValue(locationProvider);
     final mustVisitAttractions = _mustVisitAttractions(currentCity);
     final search = _searchController.text.trim();

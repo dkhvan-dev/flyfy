@@ -459,6 +459,25 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
     setState(() => _filters = _filters.copyWith(country: country, city: city));
   }
 
+  void _scheduleApplyDefaultCityFilter(HomeLocationProvider provider) {
+    if (_hasAppliedDefaultCityFilter ||
+        _filters.country != null ||
+        _filters.city != null ||
+        provider.effectiveLocation.source == HomeLocationSource.fallback) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final location = await provider.resolveCityReference(
+        provider.effectiveLocation,
+        languageCode: Localizations.localeOf(context).languageCode,
+      );
+      if (!mounted) return;
+      _applyDefaultCityFilter(location);
+    });
+  }
+
   void _handleSearchChanged() {
     final nextQuery = _searchController.text.trim();
     if (nextQuery == _searchQuery) return;
@@ -637,7 +656,10 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final profile = context.watch<SessionProvider>().profile;
+    final locationProvider = context.watch<HomeLocationProvider>();
     final canCreateExcursion = profile?.isGuide == true;
+
+    _scheduleApplyDefaultCityFilter(locationProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFF21170D),
