@@ -15,7 +15,7 @@ void main() {
       expect(source, contains('top: floatingLabelReserve'));
       expect(
         source,
-        contains('child: SizedBox(width: contentWidth, child: child)'),
+        contains('child: SizedBox(width: availableWidth, child: child)'),
       );
     },
   );

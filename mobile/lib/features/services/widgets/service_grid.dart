@@ -25,10 +25,16 @@ class ServiceGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
+        if (!width.isFinite || width <= 0) return const SizedBox.shrink();
+
         final isCompact = width < 375;
-        final columnCount = width >= 600 ? 4 : 3;
         final horizontalGap = isCompact ? 12.0 : 24.0;
         final verticalGap = isCompact ? 18.0 : 26.0;
+        var columnCount = width >= 600 ? 4 : 3;
+        while (columnCount > 1 &&
+            width - horizontalGap * (columnCount - 1) <= 0) {
+          columnCount -= 1;
+        }
         final tileWidth =
             (width - horizontalGap * (columnCount - 1)) / columnCount;
 

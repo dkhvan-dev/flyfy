@@ -19,6 +19,18 @@ String formatActivityStatus(String value, AppLocalizations l10n) {
       return l10n.activityStatusCancelled;
     case 'ARCHIVED':
       return l10n.activityStatusArchived;
+    case 'INVITED':
+    case 'REQUESTED':
+    case 'APPROVED':
+    case 'WAITLISTED':
+    case 'PENDING_PAYMENT':
+    case 'CONFIRMED':
+    case 'DECLINED':
+    case 'EXPIRED':
+    case 'CHECKED_IN':
+    case 'ATTENDED':
+    case 'NO_SHOW':
+      return formatParticipantStatus(value, l10n);
     default:
       return value;
   }

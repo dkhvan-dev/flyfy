@@ -47,4 +47,31 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'service grid tolerates transient zero width during startup layout',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 0,
+              child: ServiceGrid(
+                services: const [
+                  TravelServiceEntry(
+                    title: 'Attractions',
+                    icon: Icons.account_balance_rounded,
+                    route: '/attractions',
+                  ),
+                ],
+                onServiceTap: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

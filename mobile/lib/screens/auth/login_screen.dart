@@ -846,23 +846,15 @@ class _AuthFieldsScrollView extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final minContentWidth = authScaled(context, 312, min: 286, max: 320);
-        final availableWidth = constraints.hasBoundedWidth
-            ? constraints.maxWidth
-            : minContentWidth;
-        final contentWidth = availableWidth < minContentWidth
-            ? minContentWidth
-            : availableWidth;
+        final availableWidth =
+            constraints.hasBoundedWidth && constraints.maxWidth.isFinite
+            ? constraints.maxWidth.clamp(0.0, double.infinity).toDouble()
+            : MediaQuery.sizeOf(context).width;
         final floatingLabelReserve = authScaled(context, 8, min: 6, max: 8);
 
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          clipBehavior: Clip.hardEdge,
-          child: Padding(
-            padding: EdgeInsets.only(top: floatingLabelReserve),
-            child: SizedBox(width: contentWidth, child: child),
-          ),
+        return Padding(
+          padding: EdgeInsets.only(top: floatingLabelReserve),
+          child: SizedBox(width: availableWidth, child: child),
         );
       },
     );
