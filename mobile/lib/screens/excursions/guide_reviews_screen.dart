@@ -648,15 +648,24 @@ class _GuideReviewsSkeletonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 124,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minHeight: _guideReviewsSkeletonMinHeight(context),
+      ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+        ),
       ),
     );
   }
+}
+
+double _guideReviewsSkeletonMinHeight(BuildContext context) {
+  final width = MediaQuery.sizeOf(context).width;
+  return (width * 0.32).clamp(108.0, 144.0).toDouble();
 }
 
 String _reviewInitial(String value) {

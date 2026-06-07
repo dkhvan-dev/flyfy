@@ -509,7 +509,10 @@ class _ExcursionSelectLocationScreenState
     return LayoutBuilder(
       builder: (context, constraints) {
         final crossAxisCount = constraints.maxWidth < 330 ? 1 : 2;
-        final aspectRatio = crossAxisCount == 1 ? 0.86 : 0.58;
+        final aspectRatio = _locationGridAspectRatio(
+          context,
+          crossAxisCount: crossAxisCount,
+        );
         return GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -542,37 +545,39 @@ class _LocationTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 74,
-      decoration: BoxDecoration(
-        color: const Color(0xFF21160C).withValues(alpha: 0.96),
-        border: Border(
-          bottom: BorderSide(color: AppColors.accent.withValues(alpha: 0.14)),
-        ),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: onBack,
-            icon: const Icon(Icons.arrow_back_rounded),
-            color: const Color(0xFFFFF8EF),
-            tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: _locationTopBarMinHeight(context)),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: const Color(0xFF21160C).withValues(alpha: 0.96),
+          border: Border(
+            bottom: BorderSide(color: AppColors.accent.withValues(alpha: 0.14)),
           ),
-          Expanded(
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xFFFFF8EF),
-                fontSize: 23,
-                fontWeight: FontWeight.w900,
+        ),
+        child: Row(
+          children: [
+            IconButton(
+              onPressed: onBack,
+              icon: const Icon(Icons.arrow_back_rounded),
+              color: const Color(0xFFFFF8EF),
+              tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+            ),
+            Expanded(
+              child: Text(
+                title,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: const Color(0xFFFFF8EF),
+                  fontSize: _locationTopBarTitleFontSize(context),
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 48),
-        ],
+            SizedBox(width: _locationTopBarSideReserve(context)),
+          ],
+        ),
       ),
     );
   }
@@ -616,7 +621,7 @@ class _AttractionSelectionCard extends StatelessWidget {
     final imageTargetWidth = attractionImageTargetWidth(
       context,
       MediaQuery.sizeOf(context).width / 2,
-      minWidth: 320,
+      minWidth: _locationCardMinWidth(context).round(),
       maxWidth: 760,
     );
 
@@ -718,7 +723,7 @@ class _SelectButton extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       width: double.infinity,
-      height: 42,
+      constraints: const BoxConstraints(minHeight: 48),
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: selected ? AppColors.accent : Colors.transparent,
@@ -783,32 +788,71 @@ class _AttractionGridPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: 4,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 24,
-        crossAxisSpacing: 16,
-        childAspectRatio: 0.58,
-      ),
-      itemBuilder: (context, index) {
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            color: const Color(0xFF2C2014),
-            borderRadius: BorderRadius.circular(26),
-          ),
-          child: const Center(
-            child: CircularProgressIndicator(
-              color: AppColors.accent,
-              strokeWidth: 2,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossAxisCount = constraints.maxWidth < 330 ? 1 : 2;
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: 4,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            mainAxisSpacing: 24,
+            crossAxisSpacing: 16,
+            childAspectRatio: _locationGridAspectRatio(
+              context,
+              crossAxisCount: crossAxisCount,
             ),
           ),
+          itemBuilder: (context, index) {
+            return DecoratedBox(
+              decoration: BoxDecoration(
+                color: const Color(0xFF2C2014),
+                borderRadius: BorderRadius.circular(26),
+              ),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.accent,
+                  strokeWidth: 2,
+                ),
+              ),
+            );
+          },
         );
       },
     );
   }
+}
+
+double _locationTopBarMinHeight(BuildContext context) {
+  final scaledTitleHeight = MediaQuery.textScalerOf(context).scale(23);
+  return (scaledTitleHeight + 48).clamp(64.0, 84.0).toDouble();
+}
+
+double _locationTopBarTitleFontSize(BuildContext context) {
+  final width = MediaQuery.sizeOf(context).width;
+  return (width * 0.058).clamp(20.0, 24.0).toDouble();
+}
+
+double _locationTopBarSideReserve(BuildContext context) {
+  final width = MediaQuery.sizeOf(context).width;
+  return (width * 0.12).clamp(42.0, 52.0).toDouble();
+}
+
+double _locationGridAspectRatio(
+  BuildContext context, {
+  required int crossAxisCount,
+}) {
+  final width = MediaQuery.sizeOf(context).width;
+  if (crossAxisCount == 1) {
+    return (width / 390).clamp(0.82, 0.92).toDouble();
+  }
+  return ((width - 320) / 520).clamp(0.0, 1.0).toDouble() * 0.12 + 0.64;
+}
+
+double _locationCardMinWidth(BuildContext context) {
+  final width = MediaQuery.sizeOf(context).width;
+  return (width * 0.76).clamp(280.0, 340.0).toDouble();
 }
 
 class _LocationStateBlock extends StatelessWidget {
@@ -936,8 +980,8 @@ class _PageCircle extends StatelessWidget {
       borderRadius: BorderRadius.circular(999),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        width: 42,
-        height: 42,
+        width: 48,
+        height: 48,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
@@ -979,7 +1023,7 @@ class _PageDots extends StatelessWidget {
   Widget build(BuildContext context) {
     return const SizedBox(
       width: 28,
-      height: 42,
+      height: 48,
       child: Center(
         child: Text(
           '...',

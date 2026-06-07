@@ -390,6 +390,20 @@ void main() {
     },
   );
 
+  test('excursion grid cards keep a compact responsive aspect ratio', () async {
+    final source = await File(
+      'lib/screens/excursions/excursions_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('_excursionGridAspectRatioForWidth'));
+    expect(source, contains('return 0.70 + normalizedWidth * 0.12'));
+    expect(source, contains('childAspectRatio: _gridAspectRatio(context)'));
+    expect(source, isNot(contains('return 0.56')));
+    expect(source, isNot(contains('return 0.60')));
+    expect(source, isNot(contains('return 0.66')));
+    expect(source, isNot(contains('? 0.63')));
+  });
+
   test(
     'excursion cards show starting price from the cheapest guide offer',
     () async {

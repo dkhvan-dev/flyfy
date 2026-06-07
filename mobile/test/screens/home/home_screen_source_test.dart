@@ -31,6 +31,49 @@ void main() {
     },
   );
 
+  test(
+    'top destinations cards keep media flexible above the fixed footer',
+    () async {
+      final source = await File(
+        'lib/screens/home/home_screen.dart',
+      ).readAsString();
+      final cardStart = source.indexOf('class _TopDestinationAttractionCard');
+      final cardEnd = source.indexOf('class _DestinationBookmarkBadge');
+
+      expect(cardStart, isNonNegative);
+      expect(cardEnd, greaterThan(cardStart));
+
+      final cardSource = source.substring(cardStart, cardEnd);
+
+      expect(cardSource, contains('Flexible('));
+      expect(cardSource, contains('fit: FlexFit.tight'));
+      expect(cardSource, contains('child: AspectRatio('));
+      expect(cardSource, contains('const SizedBox(height: 13)'));
+      expect(cardSource, contains('height: titleBlockHeight'));
+    },
+  );
+
+  test(
+    'top stories reserve runtime layout safety padding for the footer row',
+    () async {
+      final source = await File(
+        'lib/screens/home/home_screen.dart',
+      ).readAsString();
+      final helperStart = source.indexOf('double _homeStoryCardHeight({');
+      final helperEnd = source.indexOf('double _measureHomeStoryTextHeight');
+
+      expect(helperStart, isNonNegative);
+      expect(helperEnd, greaterThan(helperStart));
+
+      final helperSource = source.substring(helperStart, helperEnd);
+
+      expect(helperSource, contains('final safetyPadding ='));
+      expect(helperSource, contains('isCompact ? 12.0 : 14.0'));
+      expect(helperSource, contains('contentBodyHeight + safetyPadding'));
+      expect(helperSource, isNot(contains('contentBodyHeight + 4')));
+    },
+  );
+
   test('language sheet is height constrained and scrollable', () async {
     final source = await File(
       'lib/screens/home/home_screen.dart',

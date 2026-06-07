@@ -87,6 +87,7 @@ class AppListSearchField extends StatelessWidget {
               clipBehavior: Clip.none,
               children: [
                 IconButton(
+                  tooltip: filterTooltip,
                   onPressed: onFilterTap,
                   style: IconButton.styleFrom(
                     backgroundColor: AppColors.accent.withValues(alpha: 0.12),

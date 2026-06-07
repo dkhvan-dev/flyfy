@@ -43,6 +43,16 @@ class CreateExcursionScreen extends StatefulWidget {
   State<CreateExcursionScreen> createState() => _CreateExcursionScreenState();
 }
 
+double _createExcursionLanguageGridMaxHeight(BuildContext context) {
+  final height = MediaQuery.sizeOf(context).height;
+  return (height * 0.26).clamp(176.0, 248.0).toDouble();
+}
+
+double _createExcursionIncludedItemIconBoxSize(BuildContext context) {
+  final width = MediaQuery.sizeOf(context).width;
+  return (width * 0.095).clamp(34.0, 42.0).toDouble();
+}
+
 class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   static const _totalSteps = 3;
   static const LatLng _fallbackMapTarget = LatLng(43.238949, 76.889709);
@@ -2702,7 +2712,11 @@ class _ExcursionLanguagePickerFieldState
                       )
                     else
                       ConstrainedBox(
-                        constraints: const BoxConstraints(maxHeight: 224),
+                        constraints: BoxConstraints(
+                          maxHeight: _createExcursionLanguageGridMaxHeight(
+                            context,
+                          ),
+                        ),
                         child: ListView.separated(
                           shrinkWrap: true,
                           physics: const BouncingScrollPhysics(),
@@ -3145,6 +3159,7 @@ class _ExcursionIncludedTypeOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final iconBoxSize = _createExcursionIncludedItemIconBoxSize(context);
 
     return Material(
       color: selected ? AppColors.accent : const Color(0xFF3A2A1D),
@@ -3157,8 +3172,8 @@ class _ExcursionIncludedTypeOption extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: iconBoxSize,
+                height: iconBoxSize,
                 decoration: BoxDecoration(
                   color: selected
                       ? Colors.white.withValues(alpha: 0.18)

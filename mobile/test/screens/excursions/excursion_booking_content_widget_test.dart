@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inflap/features/excursions/models/excursion_schedule_vm.dart';
 import 'package:inflap/features/excursions/models/excursion_vm.dart';
+import 'package:inflap/core/ui/app_colors.dart';
 import 'package:inflap/l10n/generated/app_localizations.dart';
 import 'package:inflap/screens/excursions/excursion_booking_screen.dart';
 import 'package:intl/intl.dart';
@@ -100,6 +101,74 @@ void main() {
     final timeTop = tester.getTopLeft(find.text('Time Slot')).dy;
 
     expect(timeTop, greaterThan(dateBottom));
+  });
+
+  testWidgets('uses the active accent styling for both date and time cards', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: ExcursionBookingContent(
+            excursion: _excursion,
+            slots: [_slot],
+            selectedSlot: _slot,
+            isScheduleLoading: false,
+            adults: 1,
+            children: 0,
+            maxTravelers: 4,
+            isSubmitting: false,
+            onBackTap: () {},
+            onSelectSlot: (_) {},
+            onReloadSchedule: () {},
+            onIncrementAdults: () {},
+            onDecrementAdults: () {},
+            onIncrementChildren: () {},
+            onDecrementChildren: () {},
+            onConfirm: () {},
+            existingBooking: null,
+            onOpenMyExcursions: () {},
+          ),
+        ),
+      ),
+    );
+
+    final dateLabel = DateFormat.yMMMd('en').format(_slot.startAt);
+    final dateText = tester
+        .widgetList<Text>(find.text(dateLabel))
+        .firstWhere((widget) => widget.style?.fontSize == 17);
+    final timeText = tester
+        .widgetList<Text>(find.text('08:00'))
+        .firstWhere((widget) => widget.style?.fontSize == 17);
+
+    expect(dateText.style?.color, AppColors.accent);
+    expect(timeText.style?.color, AppColors.accent);
+
+    final dateIcon = tester.widget<Icon>(
+      find.byIcon(Icons.calendar_month_rounded),
+    );
+    final timeIcon = tester.widget<Icon>(find.byIcon(Icons.schedule_rounded));
+    final dateIconBox = _scheduleIconBoxFor(
+      tester,
+      find.byIcon(Icons.calendar_month_rounded),
+    );
+    final timeIconBox = _scheduleIconBoxFor(
+      tester,
+      find.byIcon(Icons.schedule_rounded),
+    );
+
+    expect(dateIcon.color, timeIcon.color);
+    expect(
+      (dateIconBox.decoration! as BoxDecoration).color,
+      (timeIconBox.decoration! as BoxDecoration).color,
+    );
   });
 
   testWidgets('opens slot selector from change action and selects slot', (
@@ -203,6 +272,18 @@ void main() {
 
     expect(childIncrementCount, 0);
   });
+}
+
+Container _scheduleIconBoxFor(WidgetTester tester, Finder iconFinder) {
+  return tester
+      .widgetList<Container>(
+        find.ancestor(of: iconFinder, matching: find.byType(Container)),
+      )
+      .firstWhere((container) {
+        final decoration = container.decoration;
+        return decoration is BoxDecoration &&
+            decoration.shape == BoxShape.circle;
+      });
 }
 
 const _excursion = ExcursionVm(

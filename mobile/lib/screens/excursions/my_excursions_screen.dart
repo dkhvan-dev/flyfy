@@ -758,7 +758,7 @@ class _SegmentButton extends StatelessWidget {
       style: FilledButton.styleFrom(
         backgroundColor: active ? AppColors.accent : Colors.transparent,
         foregroundColor: active ? Colors.white : const Color(0xFFCBB8A3),
-        minimumSize: const Size(0, 42),
+        minimumSize: const Size(0, 48),
         padding: const EdgeInsets.symmetric(horizontal: 10),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
       ),
@@ -818,170 +818,183 @@ class _MyExcursionBookingCard extends StatelessWidget {
         landmarkName.isNotEmpty &&
         !_isSameMyExcursionLabel(landmarkName, displayTitle);
     final reviewBadgeRating = booking.reviewBadgeRating;
+    final semanticLabel = [
+      displayTitle.isEmpty ? l10n.myExcursionsUntitled : displayTitle,
+      l10n.myExcursionsGuideLine(guide),
+      dateLabel,
+      l10n.myExcursionsGuests(booking.totalSeats),
+      price,
+      if (booking.isCancelled) l10n.myExcursionsCancelBookingSuccess,
+    ].join(', ');
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Ink(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF2A1D13),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: AppColors.accent.withValues(alpha: 0.13),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(
-                      Icons.explore_rounded,
-                      color: AppColors.accent,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          displayTitle.isEmpty
-                              ? l10n.myExcursionsUntitled
-                              : displayTitle,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w900,
-                            height: 1.16,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          l10n.myExcursionsGuideLine(guide),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFFCBB8A3),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _MetaChip(icon: Icons.event_rounded, label: dateLabel),
-                  _MetaChip(
-                    icon: Icons.group_rounded,
-                    label: l10n.myExcursionsGuests(booking.totalSeats),
-                  ),
-                  _MetaChip(icon: Icons.payments_outlined, label: price),
-                ],
-              ),
-              if (showLandmarkName) ...[
-                const SizedBox(height: 10),
-                Text(
-                  landmarkName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFFDCCAB7),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-              if (onEditGuestsTap != null ||
-                  onCancelTap != null ||
-                  onReviewTap != null ||
-                  booking.isCancelled ||
-                  reviewBadgeRating != null) ...[
-                const SizedBox(height: 14),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  crossAxisAlignment: WrapCrossAlignment.center,
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      onTap: onTap,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Ink(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2A1D13),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (reviewBadgeRating != null)
-                      SizedBox(
-                        width: double.infinity,
-                        child: _ReviewedBadge(rating: reviewBadgeRating),
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: AppColors.accent.withValues(alpha: 0.13),
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                    if (booking.isCancelled)
-                      SizedBox(
-                        width: double.infinity,
-                        child: _CancelledBookingBadge(booking: booking),
+                      child: const Icon(
+                        Icons.explore_rounded,
+                        color: AppColors.accent,
                       ),
-                    if (onEditGuestsTap != null)
-                      OutlinedButton.icon(
-                        onPressed: onEditGuestsTap,
-                        icon: const Icon(Icons.group_add_rounded, size: 18),
-                        label: Text(l10n.myExcursionsEditGuestsButton),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.accent,
-                          side: BorderSide(
-                            color: AppColors.accent.withValues(alpha: 0.45),
-                          ),
-                          minimumSize: const Size(0, 42),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                        ),
-                      ),
-                    if (onCancelTap != null)
-                      OutlinedButton.icon(
-                        onPressed: onCancelTap,
-                        icon: const Icon(Icons.event_busy_rounded, size: 18),
-                        label: Text(l10n.myExcursionsCancelBookingButton),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.destructive,
-                          side: BorderSide(
-                            color: AppColors.destructive.withValues(
-                              alpha: 0.42,
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            displayTitle.isEmpty
+                                ? l10n.myExcursionsUntitled
+                                : displayTitle,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w900,
+                              height: 1.16,
                             ),
                           ),
-                          minimumSize: const Size(0, 42),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(999),
+                          const SizedBox(height: 6),
+                          Text(
+                            l10n.myExcursionsGuideLine(guide),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFFCBB8A3),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                    if (onReviewTap != null)
-                      FilledButton.icon(
-                        onPressed: onReviewTap,
-                        icon: const Icon(Icons.star_rounded, size: 18),
-                        label: Text(l10n.myExcursionsReviewButton),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.accent,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size(0, 42),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                        ),
-                      ),
+                    ),
                   ],
                 ),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _MetaChip(icon: Icons.event_rounded, label: dateLabel),
+                    _MetaChip(
+                      icon: Icons.group_rounded,
+                      label: l10n.myExcursionsGuests(booking.totalSeats),
+                    ),
+                    _MetaChip(icon: Icons.payments_outlined, label: price),
+                  ],
+                ),
+                if (showLandmarkName) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    landmarkName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFFDCCAB7),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+                if (onEditGuestsTap != null ||
+                    onCancelTap != null ||
+                    onReviewTap != null ||
+                    booking.isCancelled ||
+                    reviewBadgeRating != null) ...[
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      if (reviewBadgeRating != null)
+                        SizedBox(
+                          width: double.infinity,
+                          child: _ReviewedBadge(rating: reviewBadgeRating),
+                        ),
+                      if (booking.isCancelled)
+                        SizedBox(
+                          width: double.infinity,
+                          child: _CancelledBookingBadge(booking: booking),
+                        ),
+                      if (onEditGuestsTap != null)
+                        OutlinedButton.icon(
+                          onPressed: onEditGuestsTap,
+                          icon: const Icon(Icons.group_add_rounded, size: 18),
+                          label: Text(l10n.myExcursionsEditGuestsButton),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.accent,
+                            side: BorderSide(
+                              color: AppColors.accent.withValues(alpha: 0.45),
+                            ),
+                            minimumSize: const Size(0, 48),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                          ),
+                        ),
+                      if (onCancelTap != null)
+                        OutlinedButton.icon(
+                          onPressed: onCancelTap,
+                          icon: const Icon(Icons.event_busy_rounded, size: 18),
+                          label: Text(l10n.myExcursionsCancelBookingButton),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.destructive,
+                            side: BorderSide(
+                              color: AppColors.destructive.withValues(
+                                alpha: 0.42,
+                              ),
+                            ),
+                            minimumSize: const Size(0, 48),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                          ),
+                        ),
+                      if (onReviewTap != null)
+                        FilledButton.icon(
+                          onPressed: onReviewTap,
+                          icon: const Icon(Icons.star_rounded, size: 18),
+                          label: Text(l10n.myExcursionsReviewButton),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.accent,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(0, 48),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -1245,6 +1258,9 @@ class _CancelExcursionBookingSheetState
                         ),
                       ),
                       IconButton(
+                        tooltip: MaterialLocalizations.of(
+                          context,
+                        ).closeButtonTooltip,
                         onPressed: _isSubmitting
                             ? null
                             : () => Navigator.of(context).pop(),
@@ -1683,129 +1699,145 @@ class _EditExcursionGuestsSheetState extends State<_EditExcursionGuestsSheet> {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final availableHeight = math.max(180.0, screenHeight - bottom - 24);
+    final maxSheetHeight = math.min(screenHeight * 0.86, availableHeight);
     final quote = _quote;
     final canSubmit = !_isSubmitting && !_isQuoteLoading && quote != null;
     return SafeArea(
       top: false,
       child: Padding(
         padding: EdgeInsets.fromLTRB(12, 0, 12, math.max(12, bottom + 12)),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: const Color(0xFF21150D),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        widget.l10n.myExcursionsEditGuestsTitle,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          height: 1.1,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: maxSheetHeight),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: const Color(0xFF21150D),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            ),
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          widget.l10n.myExcursionsEditGuestsTitle,
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            height: 1.1,
+                          ),
                         ),
                       ),
+                      IconButton(
+                        tooltip: MaterialLocalizations.of(
+                          context,
+                        ).closeButtonTooltip,
+                        onPressed: _isSubmitting
+                            ? null
+                            : () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close_rounded),
+                        color: const Color(0xFFDCCAB7),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    widget.l10n.myExcursionsEditGuestsHint,
+                    style: const TextStyle(
+                      color: Color(0xFFCBB8A3),
+                      height: 1.35,
+                      fontWeight: FontWeight.w600,
                     ),
-                    IconButton(
-                      onPressed: _isSubmitting
-                          ? null
-                          : () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close_rounded),
-                      color: const Color(0xFFDCCAB7),
+                  ),
+                  const SizedBox(height: 16),
+                  _EditGuestsCounterRow(
+                    title: widget.l10n.excursionBookingAdults,
+                    value: _adults,
+                    canIncrement: _totalGuests < _maxGuests && !_isSubmitting,
+                    canDecrement: _adults > 1 && !_isSubmitting,
+                    incrementLabel: '${widget.l10n.excursionBookingAdults}: +1',
+                    decrementLabel: '${widget.l10n.excursionBookingAdults}: -1',
+                    onIncrement: _incrementAdults,
+                    onDecrement: _decrementAdults,
+                  ),
+                  const SizedBox(height: 10),
+                  _EditGuestsCounterRow(
+                    title: widget.l10n.excursionBookingChildren,
+                    value: _children,
+                    canIncrement: _totalGuests < _maxGuests && !_isSubmitting,
+                    canDecrement: _children > 0 && !_isSubmitting,
+                    incrementLabel:
+                        '${widget.l10n.excursionBookingChildren}: +1',
+                    decrementLabel:
+                        '${widget.l10n.excursionBookingChildren}: -1',
+                    onIncrement: _incrementChildren,
+                    onDecrement: _decrementChildren,
+                  ),
+                  const SizedBox(height: 12),
+                  if (_isQuoteLoading)
+                    _QuoteStatusPanel(
+                      icon: Icons.receipt_long_rounded,
+                      title: widget.l10n.myExcursionsGuestsQuoteLoading,
+                      showProgress: true,
+                    )
+                  else if (quote == null)
+                    _QuoteStatusPanel(
+                      icon: Icons.error_outline_rounded,
+                      title: widget.l10n.myExcursionsGuestsQuoteFailed,
+                      actionLabel: widget.l10n.retryButton,
+                      onActionTap: _loadQuote,
+                    )
+                  else
+                    _EditGuestsSettlementPanel(
+                      l10n: widget.l10n,
+                      quote: quote,
+                      formattedAmount: _formatSettlementAmount(
+                        quote.deltaAmount,
+                        quote.currency,
+                      ),
+                    ),
+                  if (_errorMessage != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      _errorMessage!,
+                      style: const TextStyle(
+                        color: Color(0xFFFFC1A8),
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  widget.l10n.myExcursionsEditGuestsHint,
-                  style: const TextStyle(
-                    color: Color(0xFFCBB8A3),
-                    height: 1.35,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _EditGuestsCounterRow(
-                  title: widget.l10n.excursionBookingAdults,
-                  value: _adults,
-                  canIncrement: _totalGuests < _maxGuests && !_isSubmitting,
-                  canDecrement: _adults > 1 && !_isSubmitting,
-                  onIncrement: _incrementAdults,
-                  onDecrement: _decrementAdults,
-                ),
-                const SizedBox(height: 10),
-                _EditGuestsCounterRow(
-                  title: widget.l10n.excursionBookingChildren,
-                  value: _children,
-                  canIncrement: _totalGuests < _maxGuests && !_isSubmitting,
-                  canDecrement: _children > 0 && !_isSubmitting,
-                  onIncrement: _incrementChildren,
-                  onDecrement: _decrementChildren,
-                ),
-                const SizedBox(height: 12),
-                if (_isQuoteLoading)
-                  _QuoteStatusPanel(
-                    icon: Icons.receipt_long_rounded,
-                    title: widget.l10n.myExcursionsGuestsQuoteLoading,
-                    showProgress: true,
-                  )
-                else if (quote == null)
-                  _QuoteStatusPanel(
-                    icon: Icons.error_outline_rounded,
-                    title: widget.l10n.myExcursionsGuestsQuoteFailed,
-                    actionLabel: widget.l10n.retryButton,
-                    onActionTap: _loadQuote,
-                  )
-                else
-                  _EditGuestsSettlementPanel(
-                    l10n: widget.l10n,
-                    quote: quote,
-                    formattedAmount: _formatSettlementAmount(
-                      quote.deltaAmount,
-                      quote.currency,
+                  const SizedBox(height: 18),
+                  FilledButton(
+                    onPressed: canSubmit ? _submit : null,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.accent,
+                      foregroundColor: AppColors.textPrimary,
+                      minimumSize: const Size.fromHeight(52),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
-                  ),
-                if (_errorMessage != null) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    _errorMessage!,
-                    style: const TextStyle(
-                      color: Color(0xFFFFC1A8),
-                      fontWeight: FontWeight.w700,
-                    ),
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.4,
+                              color: AppColors.textPrimary,
+                            ),
+                          )
+                        : Text(_submitLabel()),
                   ),
                 ],
-                const SizedBox(height: 18),
-                FilledButton(
-                  onPressed: canSubmit ? _submit : null,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.accent,
-                    foregroundColor: AppColors.textPrimary,
-                    minimumSize: const Size.fromHeight(52),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: _isSubmitting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.4,
-                            color: AppColors.textPrimary,
-                          ),
-                        )
-                      : Text(_submitLabel()),
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -1895,6 +1927,8 @@ class _EditGuestsCounterRow extends StatelessWidget {
     required this.value,
     required this.canIncrement,
     required this.canDecrement,
+    required this.incrementLabel,
+    required this.decrementLabel,
     required this.onIncrement,
     required this.onDecrement,
   });
@@ -1903,6 +1937,8 @@ class _EditGuestsCounterRow extends StatelessWidget {
   final int value;
   final bool canIncrement;
   final bool canDecrement;
+  final String incrementLabel;
+  final String decrementLabel;
   final VoidCallback onIncrement;
   final VoidCallback onDecrement;
 
@@ -1929,6 +1965,7 @@ class _EditGuestsCounterRow extends StatelessWidget {
           ),
           _EditGuestsCounterButton(
             icon: Icons.remove_rounded,
+            semanticLabel: decrementLabel,
             enabled: canDecrement,
             onTap: onDecrement,
           ),
@@ -1946,6 +1983,7 @@ class _EditGuestsCounterRow extends StatelessWidget {
           ),
           _EditGuestsCounterButton(
             icon: Icons.add_rounded,
+            semanticLabel: incrementLabel,
             enabled: canIncrement,
             onTap: onIncrement,
           ),
@@ -1958,41 +1996,54 @@ class _EditGuestsCounterRow extends StatelessWidget {
 class _EditGuestsCounterButton extends StatelessWidget {
   const _EditGuestsCounterButton({
     required this.icon,
+    required this.semanticLabel,
     required this.enabled,
     required this.onTap,
   });
 
   final IconData icon;
+  final String semanticLabel;
   final bool enabled;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return InkResponse(
-      onTap: enabled ? onTap : null,
-      radius: 24,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: enabled
-              ? AppColors.accent.withValues(alpha: 0.16)
-              : Colors.white.withValues(alpha: 0.04),
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: AppColors.accent.withValues(alpha: enabled ? 0.58 : 0.16),
+    final buttonSize = _myExcursionsCounterButtonSize(context);
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: semanticLabel,
+      child: InkResponse(
+        onTap: enabled ? onTap : null,
+        radius: 24,
+        child: Container(
+          width: buttonSize,
+          height: buttonSize,
+          decoration: BoxDecoration(
+            color: enabled
+                ? AppColors.accent.withValues(alpha: 0.16)
+                : Colors.white.withValues(alpha: 0.04),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: AppColors.accent.withValues(alpha: enabled ? 0.58 : 0.16),
+            ),
           ),
-        ),
-        child: Icon(
-          icon,
-          color: enabled
-              ? AppColors.accent
-              : const Color(0xFFDCCAB7).withValues(alpha: 0.38),
-          size: 20,
+          child: Icon(
+            icon,
+            color: enabled
+                ? AppColors.accent
+                : const Color(0xFFDCCAB7).withValues(alpha: 0.38),
+            size: 20,
+          ),
         ),
       ),
     );
   }
+}
+
+double _myExcursionsCounterButtonSize(BuildContext context) {
+  final width = MediaQuery.sizeOf(context).width;
+  return (width * 0.095).clamp(34.0, 42.0).toDouble();
 }
 
 class _MyExcursionInfoCard extends StatelessWidget {

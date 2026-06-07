@@ -87,12 +87,21 @@ class _TimelineSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 94,
-      decoration: BoxDecoration(
-        color: const Color(0xFF2A2118).withValues(alpha: 0.68),
-        borderRadius: BorderRadius.circular(8),
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minHeight: _guideTimelineSkeletonMinHeight(context),
+      ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: const Color(0xFF2A2118).withValues(alpha: 0.68),
+          borderRadius: BorderRadius.circular(8),
+        ),
       ),
     );
   }
+}
+
+double _guideTimelineSkeletonMinHeight(BuildContext context) {
+  final width = MediaQuery.sizeOf(context).width;
+  return (width * 0.24).clamp(86.0, 112.0).toDouble();
 }

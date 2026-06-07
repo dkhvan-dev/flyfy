@@ -1793,59 +1793,63 @@ class _TopDestinationAttractionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AspectRatio(
-              aspectRatio: 0.74,
-              child: Ink(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.24),
-                      blurRadius: 28,
-                      offset: const Offset(0, 14),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      if (coverUrl == null)
-                        const _AttractionCardImagePlaceholder()
-                      else
-                        _AttractionCardNetworkImage(
-                          imageUrl: coverUrl,
-                          logicalWidth: MediaQuery.sizeOf(context).width * 0.5,
-                        ),
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withValues(alpha: 0.58),
-                            ],
-                            stops: const [0.48, 1],
-                          ),
-                        ),
-                      ),
-                      const Positioned(
-                        top: 9,
-                        right: 9,
-                        child: _DestinationBookmarkBadge(),
-                      ),
-                      Positioned(
-                        left: isCompact ? 12 : 16,
-                        right: isCompact ? 12 : 16,
-                        bottom: 15,
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: _DestinationTag(label: categoryLabel),
-                        ),
+            Flexible(
+              fit: FlexFit.tight,
+              child: AspectRatio(
+                aspectRatio: 0.74,
+                child: Ink(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.24),
+                        blurRadius: 28,
+                        offset: const Offset(0, 14),
                       ),
                     ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        if (coverUrl == null)
+                          const _AttractionCardImagePlaceholder()
+                        else
+                          _AttractionCardNetworkImage(
+                            imageUrl: coverUrl,
+                            logicalWidth:
+                                MediaQuery.sizeOf(context).width * 0.5,
+                          ),
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withValues(alpha: 0.58),
+                              ],
+                              stops: const [0.48, 1],
+                            ),
+                          ),
+                        ),
+                        const Positioned(
+                          top: 9,
+                          right: 9,
+                          child: _DestinationBookmarkBadge(),
+                        ),
+                        Positioned(
+                          left: isCompact ? 12 : 16,
+                          right: isCompact ? 12 : 16,
+                          bottom: 15,
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: _DestinationTag(label: categoryLabel),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -3518,7 +3522,8 @@ double _homeStoryCardHeight({
   }
 
   final verticalPadding = (isCompact ? 13.0 : 14.0) + (isCompact ? 12.0 : 14.0);
-  return imageHeight + verticalPadding + contentBodyHeight + 4;
+  final safetyPadding = isCompact ? 12.0 : 14.0;
+  return imageHeight + verticalPadding + contentBodyHeight + safetyPadding;
 }
 
 double _measureHomeStoryTextHeight({

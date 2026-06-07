@@ -22,4 +22,21 @@ void main() {
     expect(source, contains('IndexedStack('));
     expect(source, isNot(contains('AnimatedSwitcher(')));
   });
+
+  test('oauth buttons expose semantic button targets', () async {
+    final source = await File(
+      'lib/screens/auth/login_screen.dart',
+    ).readAsString();
+    final buttonStart = source.indexOf('class _OAuthButton');
+
+    expect(buttonStart, isNonNegative);
+
+    final buttonSource = source.substring(buttonStart);
+
+    expect(buttonSource, contains('Semantics('));
+    expect(buttonSource, contains('button: true'));
+    expect(buttonSource, contains('enabled: onPressed != null'));
+    expect(buttonSource, contains('label: label'));
+    expect(buttonSource, contains('ExcludeSemantics('));
+  });
 }

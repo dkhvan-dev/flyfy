@@ -686,18 +686,33 @@ class ExcursionDetailsContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.paddingOf(context).bottom;
+    final l10n = AppLocalizations.of(context)!;
     final activeSelectedOffer = selectedOffer;
     final visibleOffers = offers ?? excursion.offers;
     final showBottomBookingNotice =
         !showBookingAction &&
         !showEditOfferAction &&
         bookingUnavailableMessage != null;
-    final scrollBottomPadding =
-        (showBookingAction || showEditOfferAction || showBottomBookingNotice
-            ? 116.0
-            : 24.0) +
-        bottomPadding;
+    final bottomAction = showBookingAction || showEditOfferAction
+        ? _ExcursionCheckoutBar(
+            excursion: excursion,
+            label: showEditOfferAction
+                ? l10n.excursionDetailsEditOffer
+                : l10n.excursionDetailsBook,
+            icon: showEditOfferAction
+                ? Icons.edit_rounded
+                : Icons.arrow_forward_ios_rounded,
+            helperText: showBookingAction
+                ? l10n.excursionDetailsBookingSeatCheckNote
+                : null,
+            showPrice: showCheckoutPrice && showBookingAction,
+            onTap: showEditOfferAction ? onEditOfferTap : onBookTap,
+          )
+        : showBottomBookingNotice
+        ? _ExcursionBookingUnavailableNotice(
+            message: bookingUnavailableMessage!,
+          )
+        : null;
 
     return DecoratedBox(
       decoration: const BoxDecoration(
@@ -717,115 +732,75 @@ class ExcursionDetailsContent extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.only(bottom: scrollBottomPadding),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _ExcursionHero(
+                    excursion: excursion,
+                    localizedLandmark: localizedLandmark,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 26, 24, 0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _ExcursionHero(
+                        _ExcursionStatsGrid(
+                          excursion: excursion,
+                          selectedOffer: activeSelectedOffer,
+                        ),
+                        const SizedBox(height: 40),
+                        _ExcursionExperienceSection(
                           excursion: excursion,
                           localizedLandmark: localizedLandmark,
                         ),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(24, 26, 24, 0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _ExcursionStatsGrid(
-                                excursion: excursion,
-                                selectedOffer: activeSelectedOffer,
-                              ),
-                              const SizedBox(height: 40),
-                              _ExcursionExperienceSection(
-                                excursion: excursion,
-                                localizedLandmark: localizedLandmark,
-                              ),
-                              const SizedBox(height: 44),
-                              _ExcursionOffersSection(
-                                excursion: excursion,
-                                offers: visibleOffers,
-                                selectedOffer: selectedOffer,
-                                currentUserId: currentUserId,
-                                isCurrentUserGuide: isCurrentUserGuide,
-                                enableRemoteOffers: enableRemoteOffers,
-                                offerProfiles: offerProfiles,
-                                showMessageGuide: showMessageGuide,
-                                isMessageGuideLoading: isMessageGuideLoading,
-                                onOfferSelected: onOfferSelected,
-                                onOfferProfileTap: onOfferProfileTap,
-                                onMessageGuideTap: onMessageGuideTap,
-                                onOffersChanged: onOffersChanged,
-                              ),
-                              if (activeSelectedOffer != null &&
-                                  activeSelectedOffer
-                                      .includedItems
-                                      .isNotEmpty) ...[
-                                const SizedBox(height: 44),
-                                _ExcursionSelectedOfferIncludedSection(
-                                  selectedOffer: activeSelectedOffer,
-                                ),
-                              ],
-                              const SizedBox(height: 44),
-                              _ExcursionMapPreview(excursion: excursion),
-                              const SizedBox(height: 44),
-                              _ExcursionItinerarySection(
-                                excursion: excursion,
-                                localizedLandmark: localizedLandmark,
-                              ),
-                              if (excursionReviews.isNotEmpty) ...[
-                                const SizedBox(height: 44),
-                                _ExcursionReviewsSection(
-                                  reviews: excursionReviews,
-                                  currentUserId: currentUserId,
-                                  onReviewLongPress: onReviewLongPress,
-                                ),
-                              ],
-                            ],
-                          ),
+                        const SizedBox(height: 44),
+                        _ExcursionOffersSection(
+                          excursion: excursion,
+                          offers: visibleOffers,
+                          selectedOffer: selectedOffer,
+                          currentUserId: currentUserId,
+                          isCurrentUserGuide: isCurrentUserGuide,
+                          enableRemoteOffers: enableRemoteOffers,
+                          offerProfiles: offerProfiles,
+                          showMessageGuide: showMessageGuide,
+                          isMessageGuideLoading: isMessageGuideLoading,
+                          onOfferSelected: onOfferSelected,
+                          onOfferProfileTap: onOfferProfileTap,
+                          onMessageGuideTap: onMessageGuideTap,
+                          onOffersChanged: onOffersChanged,
                         ),
+                        if (activeSelectedOffer != null &&
+                            activeSelectedOffer.includedItems.isNotEmpty) ...[
+                          const SizedBox(height: 44),
+                          _ExcursionSelectedOfferIncludedSection(
+                            selectedOffer: activeSelectedOffer,
+                          ),
+                        ],
+                        const SizedBox(height: 44),
+                        _ExcursionMapPreview(excursion: excursion),
+                        const SizedBox(height: 44),
+                        _ExcursionItinerarySection(
+                          excursion: excursion,
+                          localizedLandmark: localizedLandmark,
+                        ),
+                        if (excursionReviews.isNotEmpty) ...[
+                          const SizedBox(height: 44),
+                          _ExcursionReviewsSection(
+                            reviews: excursionReviews,
+                            currentUserId: currentUserId,
+                            onReviewLongPress: onReviewLongPress,
+                          ),
+                        ],
                       ],
                     ),
                   ),
-                ),
-                if (showBookingAction || showEditOfferAction)
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: _ExcursionCheckoutBar(
-                      excursion: excursion,
-                      label: showEditOfferAction
-                          ? AppLocalizations.of(
-                              context,
-                            )!.excursionDetailsEditOffer
-                          : AppLocalizations.of(context)!.excursionDetailsBook,
-                      icon: showEditOfferAction
-                          ? Icons.edit_rounded
-                          : Icons.arrow_forward_ios_rounded,
-                      helperText: showBookingAction
-                          ? AppLocalizations.of(
-                              context,
-                            )!.excursionDetailsBookingSeatCheckNote
-                          : null,
-                      showPrice: showCheckoutPrice && showBookingAction,
-                      onTap: showEditOfferAction ? onEditOfferTap : onBookTap,
-                    ),
-                  ),
-                if (showBottomBookingNotice)
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: _ExcursionBookingUnavailableNotice(
-                      message: bookingUnavailableMessage!,
-                    ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
+          ?bottomAction,
         ],
       ),
     );
@@ -914,8 +889,8 @@ class _CircleIconButton extends StatelessWidget {
           onTap: onTap,
           customBorder: const CircleBorder(),
           child: Ink(
-            width: 40,
-            height: 40,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
               color: background,
               shape: BoxShape.circle,
@@ -3143,174 +3118,186 @@ class _ExcursionOfferCard extends StatelessWidget {
     final groupSize = offer.maxGroupSize > 0
         ? l10n.excursionDetailsGroupSizeUpTo(offer.maxGroupSize)
         : '';
+    final semanticLabel = [
+      guideName,
+      _formatOfferPrice(context, offer),
+      if (groupSize.isNotEmpty) groupSize,
+      if (language.isNotEmpty) language,
+    ].join(', ');
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Ink(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: isCurrentUserOffer
-                ? AppColors.success.withValues(alpha: 0.11)
-                : isSelected
-                ? AppColors.accent.withValues(alpha: 0.13)
-                : const Color(0xFF312316),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      onTap: onTap,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Ink(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
               color: isCurrentUserOffer
-                  ? AppColors.success.withValues(alpha: 0.68)
+                  ? AppColors.success.withValues(alpha: 0.11)
                   : isSelected
-                  ? AppColors.accent.withValues(alpha: 0.76)
-                  : Colors.white.withValues(alpha: 0.055),
-            ),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _GuideAvatar(
-                imageUrl: _resolveExcursionGuideAvatarUrl(profile),
-                fallbackText: _displayInitials(guideName, fallback: 'G'),
+                  ? AppColors.accent.withValues(alpha: 0.13)
+                  : const Color(0xFF312316),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: isCurrentUserOffer
+                    ? AppColors.success.withValues(alpha: 0.68)
+                    : isSelected
+                    ? AppColors.accent.withValues(alpha: 0.76)
+                    : Colors.white.withValues(alpha: 0.055),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            guideName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                              height: 1.08,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _GuideAvatar(
+                  imageUrl: _resolveExcursionGuideAvatarUrl(profile),
+                  fallbackText: _displayInitials(guideName, fallback: 'G'),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              guideName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                                height: 1.08,
+                              ),
                             ),
                           ),
-                        ),
-                        if (isCurrentUserOffer || isSelected) ...[
-                          const SizedBox(width: 8),
-                          _SelectedOfferBadge(
-                            label: isCurrentUserOffer
-                                ? l10n.excursionDetailsOfferCurrentUser
-                                : l10n.excursionDetailsOfferSelected,
-                            color: isCurrentUserOffer
-                                ? AppColors.success
-                                : AppColors.accent,
-                          ),
+                          if (isCurrentUserOffer || isSelected) ...[
+                            const SizedBox(width: 8),
+                            _SelectedOfferBadge(
+                              label: isCurrentUserOffer
+                                  ? l10n.excursionDetailsOfferCurrentUser
+                                  : l10n.excursionDetailsOfferSelected,
+                              color: isCurrentUserOffer
+                                  ? AppColors.success
+                                  : AppColors.accent,
+                            ),
+                          ],
                         ],
-                      ],
-                    ),
-                    const SizedBox(height: 9),
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 7,
-                      children: [
-                        _OfferMetaChip(
-                          icon: Icons.payments_rounded,
-                          label: _formatOfferPrice(context, offer),
-                          accent: true,
-                        ),
-                        if (groupSize.isNotEmpty)
-                          _OfferMetaChip(
-                            icon: Icons.group_rounded,
-                            label: groupSize,
-                          ),
-                        if (language.isNotEmpty)
-                          _OfferMetaChip(
-                            icon: Icons.translate_rounded,
-                            label: language,
-                            allowMultiline: true,
-                          ),
-                      ],
-                    ),
-                    if (isSelected &&
-                        (onProfileTap != null || showMessageAction)) ...[
-                      const SizedBox(height: 14),
+                      ),
+                      const SizedBox(height: 9),
                       Wrap(
                         spacing: 10,
-                        runSpacing: 8,
+                        runSpacing: 7,
                         children: [
-                          if (onProfileTap != null)
-                            OutlinedButton.icon(
-                              onPressed: onProfileTap,
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.textPrimary,
-                                side: BorderSide(
-                                  color: Colors.white.withValues(alpha: 0.12),
-                                ),
-                                minimumSize: const Size(0, 40),
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                              ),
-                              icon: const Icon(Icons.person_rounded, size: 16),
-                              label: Text(
-                                l10n.profileTitle,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
+                          _OfferMetaChip(
+                            icon: Icons.payments_rounded,
+                            label: _formatOfferPrice(context, offer),
+                            accent: true,
+                          ),
+                          if (groupSize.isNotEmpty)
+                            _OfferMetaChip(
+                              icon: Icons.group_rounded,
+                              label: groupSize,
                             ),
-                          if (showMessageAction)
-                            OutlinedButton(
-                              onPressed: isMessageActionLoading
-                                  ? null
-                                  : onMessageTap,
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.textPrimary,
-                                side: BorderSide(
-                                  color: AppColors.accent.withValues(
-                                    alpha: 0.55,
-                                  ),
-                                ),
-                                minimumSize: const Size(0, 40),
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                              ),
-                              child: AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 180),
-                                child: isMessageActionLoading
-                                    ? const SizedBox(
-                                        key: ValueKey(
-                                          'offer-message-guide-progress',
-                                        ),
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2.2,
-                                          color: AppColors.accent,
-                                        ),
-                                      )
-                                    : Text(
-                                        l10n.excursionDetailsMessageGuide,
-                                        key: const ValueKey(
-                                          'offer-message-guide-label',
-                                        ),
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w900,
-                                          letterSpacing: 0,
-                                        ),
-                                      ),
-                              ),
+                          if (language.isNotEmpty)
+                            _OfferMetaChip(
+                              icon: Icons.translate_rounded,
+                              label: language,
+                              allowMultiline: true,
                             ),
                         ],
                       ),
+                      if (isSelected &&
+                          (onProfileTap != null || showMessageAction)) ...[
+                        const SizedBox(height: 14),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 8,
+                          children: [
+                            if (onProfileTap != null)
+                              OutlinedButton.icon(
+                                onPressed: onProfileTap,
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.textPrimary,
+                                  side: BorderSide(
+                                    color: Colors.white.withValues(alpha: 0.12),
+                                  ),
+                                  minimumSize: const Size(0, 48),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                ),
+                                icon: const Icon(
+                                  Icons.person_rounded,
+                                  size: 16,
+                                ),
+                                label: Text(
+                                  l10n.profileTitle,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
+                            if (showMessageAction)
+                              OutlinedButton(
+                                onPressed: isMessageActionLoading
+                                    ? null
+                                    : onMessageTap,
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.textPrimary,
+                                  side: BorderSide(
+                                    color: AppColors.accent.withValues(
+                                      alpha: 0.55,
+                                    ),
+                                  ),
+                                  minimumSize: const Size(0, 48),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                ),
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 180),
+                                  child: isMessageActionLoading
+                                      ? const SizedBox(
+                                          key: ValueKey(
+                                            'offer-message-guide-progress',
+                                          ),
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.2,
+                                            color: AppColors.accent,
+                                          ),
+                                        )
+                                      : Text(
+                                          l10n.excursionDetailsMessageGuide,
+                                          key: const ValueKey(
+                                            'offer-message-guide-label',
+                                          ),
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: 0,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -4037,12 +4024,11 @@ class _ExcursionSection extends StatelessWidget {
                 onPressed: onActionTap,
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.accent,
-                  minimumSize: const Size(0, 34),
+                  minimumSize: const Size(0, 48),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
+                    horizontal: 12,
+                    vertical: 8,
                   ),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   textStyle: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
@@ -4228,8 +4214,7 @@ class _ExcursionCheckoutBar extends StatelessWidget {
                   child: Text(
                     helperText!,
                     textAlign: TextAlign.right,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: 3,
                     style: const TextStyle(
                       color: Color(0xFFB8A898),
                       fontSize: 12,

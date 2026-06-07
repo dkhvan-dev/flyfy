@@ -554,7 +554,13 @@ class ExcursionBookingContent extends StatelessWidget {
                               const SizedBox(height: 16),
                             ],
                             _BookingExcursionCard(excursion: excursion),
-                            const SizedBox(height: 42),
+                            SizedBox(
+                              height: _bookingSectionGap(
+                                context,
+                                compact: 30,
+                                regular: 42,
+                              ),
+                            ),
                             _BookingScheduleSection(
                               slots: slots,
                               selectedSlot: selectedSlot,
@@ -566,7 +572,13 @@ class ExcursionBookingContent extends StatelessWidget {
                               onSelectSlot: onSelectSlot,
                               onReload: onReloadSchedule,
                             ),
-                            const SizedBox(height: 38),
+                            SizedBox(
+                              height: _bookingSectionGap(
+                                context,
+                                compact: 28,
+                                regular: 38,
+                              ),
+                            ),
                             _TravelersSection(
                               adults: adults,
                               children: children,
@@ -576,7 +588,13 @@ class ExcursionBookingContent extends StatelessWidget {
                               onIncrementChildren: onIncrementChildren,
                               onDecrementChildren: onDecrementChildren,
                             ),
-                            const SizedBox(height: 52),
+                            SizedBox(
+                              height: _bookingSectionGap(
+                                context,
+                                compact: 34,
+                                regular: 52,
+                              ),
+                            ),
                             _BookingSummarySection(
                               excursion: excursion,
                               adults: adults,
@@ -624,8 +642,8 @@ class _BookingTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return SizedBox(
-      height: 62,
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: _bookingTopBarMinHeight(context)),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14),
         child: Row(
@@ -671,80 +689,138 @@ class _BookingExcursionCard extends StatelessWidget {
       excursion.priceAmount,
       excursion.currency,
     );
+    final cityName = excursion.cityName?.trim() ?? '';
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(22),
-          child: SizedBox(
-            width: 96,
-            height: 96,
-            child: imageUrl.isEmpty
-                ? const _BookingImageFallback()
-                : Image.network(
-                    imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const _BookingImageFallback(),
-                  ),
-          ),
-        ),
-        const SizedBox(width: 20),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                localizedExcursionCategoryLabel(l10n, excursion.categorySlug),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.accent,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w900,
-                  height: 1,
-                ),
-              ),
-              const SizedBox(height: 9),
-              Text(
-                excursion.title,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: _BookingColors.text,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                  height: 0.98,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: price,
-                      style: const TextStyle(
-                        color: _BookingColors.text,
-                        fontWeight: FontWeight.w900,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final imageSize = _bookingCoverImageSize(context, constraints.maxWidth);
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(22),
+              child: SizedBox(
+                width: imageSize,
+                height: imageSize,
+                child: imageUrl.isEmpty
+                    ? const _BookingImageFallback()
+                    : Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const _BookingImageFallback(),
                       ),
+              ),
+            ),
+            SizedBox(width: _bookingInlineGap(context, regular: 20)),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    localizedExcursionCategoryLabel(
+                      l10n,
+                      excursion.categorySlug,
                     ),
-                    TextSpan(text: ' ${l10n.excursionBookingPerPerson}'),
-                  ],
-                ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.accent,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                      height: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 9),
+                  Text(
+                    excursion.title,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: _BookingColors.text,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      height: 0.98,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    price,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.accent,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      if (cityName.isNotEmpty)
+                        _BookingInfoPill(
+                          icon: Icons.place_rounded,
+                          label: cityName,
+                        ),
+                      if (excursion.maxGroupSize > 0)
+                        _BookingInfoPill(
+                          icon: Icons.people_rounded,
+                          label: l10n.excursionDetailsGroupSizeUpTo(
+                            excursion.maxGroupSize,
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _BookingInfoPill extends StatelessWidget {
+  const _BookingInfoPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: _BookingColors.muted, size: 13),
+            const SizedBox(width: 5),
+            Flexible(
+              child: Text(
+                label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: _BookingColors.muted,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
                   height: 1,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -799,6 +875,8 @@ class _BookingScheduleSection extends StatelessWidget {
               icon: Icons.calendar_month_rounded,
               label: l10n.excursionBookingDate,
               value: dateLabel,
+              active: true,
+              highlightValue: true,
               onTap: () => _handleChangeTap(context),
             ),
             const SizedBox(height: 12),
@@ -807,6 +885,7 @@ class _BookingScheduleSection extends StatelessWidget {
               label: l10n.excursionBookingTimeSlot,
               value: timeLabel,
               active: true,
+              highlightValue: true,
               onTap: () => _handleChangeTap(context),
             ),
           ],
@@ -1036,38 +1115,50 @@ class _BookingSlotChip extends StatelessWidget {
         ? _BookingColors.text
         : _BookingColors.muted.withValues(alpha: 0.58);
 
-    return Material(
-      color: background,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(18),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                timeLabel,
-                style: TextStyle(
-                  color: foreground,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                  height: 1,
-                ),
+    return Semantics(
+      button: true,
+      selected: selected,
+      enabled: enabled,
+      label:
+          '$timeLabel, ${l10n.excursionBookingSeatsLeft(slot.availableSeats)}',
+      onTap: enabled ? onTap : null,
+      child: ExcludeSemantics(
+        child: Material(
+          color: background,
+          borderRadius: BorderRadius.circular(18),
+          child: InkWell(
+            onTap: enabled ? onTap : null,
+            borderRadius: BorderRadius.circular(18),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    timeLabel,
+                    style: TextStyle(
+                      color: foreground,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      height: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    l10n.excursionBookingSeatsLeft(slot.availableSeats),
+                    style: TextStyle(
+                      color: foreground.withValues(
+                        alpha: selected ? 0.86 : 0.68,
+                      ),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      height: 1,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 5),
-              Text(
-                l10n.excursionBookingSeatsLeft(slot.availableSeats),
-                style: TextStyle(
-                  color: foreground.withValues(alpha: selected ? 0.86 : 0.68),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  height: 1,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -1083,7 +1174,9 @@ class _BookingScheduleStatePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 86),
+      constraints: BoxConstraints(
+        minHeight: _bookingScheduleStatePanelMinHeight(context),
+      ),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: _BookingColors.panel,
@@ -1298,9 +1391,11 @@ class _BookingFooter extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              SizedBox(
-                width: double.infinity,
-                height: 60,
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: _bookingFooterButtonMinHeight(context),
+                  minWidth: double.infinity,
+                ),
                 child: FilledButton.icon(
                   onPressed: existingBooking != null
                       ? onOpenMyExcursions
@@ -1336,8 +1431,8 @@ class _BookingFooter extends StatelessWidget {
                                     : l10n.excursionBookingConfirmReservation)
                                 .toUpperCase(),
                             key: const ValueKey('booking-confirm'),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
+                            textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w900,
@@ -1355,8 +1450,7 @@ class _BookingFooter extends StatelessWidget {
                         _formatBookingMoney(context, total, excursion.currency),
                       ),
                 textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+                maxLines: 3,
                 style: const TextStyle(
                   color: Color(0x99D6C1B3),
                   fontSize: 13,
@@ -1418,6 +1512,7 @@ class _BookingScheduleCard extends StatelessWidget {
     required this.value,
     required this.onTap,
     this.active = false,
+    this.highlightValue = false,
   });
 
   final IconData icon;
@@ -1425,9 +1520,12 @@ class _BookingScheduleCard extends StatelessWidget {
   final String value;
   final VoidCallback onTap;
   final bool active;
+  final bool highlightValue;
 
   @override
   Widget build(BuildContext context) {
+    final iconBoxSize = _bookingScheduleIconBoxSize(context);
+
     return Material(
       color: _BookingColors.panel,
       borderRadius: BorderRadius.circular(25),
@@ -1439,8 +1537,8 @@ class _BookingScheduleCard extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: iconBoxSize,
+                height: iconBoxSize,
                 decoration: BoxDecoration(
                   color: active
                       ? AppColors.accent.withValues(alpha: 0.16)
@@ -1475,7 +1573,9 @@ class _BookingScheduleCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: active ? AppColors.accent : _BookingColors.text,
+                        color: highlightValue
+                            ? AppColors.accent
+                            : _BookingColors.text,
                         fontSize: 17,
                         fontWeight: FontWeight.w900,
                         height: 1,
@@ -1511,8 +1611,11 @@ class _TravelerCounterRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final valueWidth = _bookingCounterValueWidth(context);
     return Container(
-      constraints: const BoxConstraints(minHeight: 72),
+      constraints: BoxConstraints(
+        minHeight: _bookingCounterRowMinHeight(context),
+      ),
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
       decoration: BoxDecoration(
         color: _BookingColors.panel,
@@ -1540,7 +1643,7 @@ class _TravelerCounterRow extends StatelessWidget {
             onTap: onDecrement,
           ),
           SizedBox(
-            width: 48,
+            width: valueWidth,
             child: Text(
               '$value',
               textAlign: TextAlign.center,
@@ -1580,12 +1683,13 @@ class _CounterButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final filled = emphasized && enabled;
+    final buttonSize = _bookingCounterButtonSize(context);
     return InkResponse(
       onTap: enabled ? onTap : null,
       radius: 26,
       child: Container(
-        width: 36,
-        height: 36,
+        width: buttonSize,
+        height: buttonSize,
         decoration: BoxDecoration(
           color: filled ? AppColors.accent : Colors.transparent,
           shape: BoxShape.circle,
@@ -1766,8 +1870,8 @@ class _AlreadyBookedNotice extends StatelessWidget {
                     onPressed: onOpenMyExcursions,
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.accent,
-                      padding: EdgeInsets.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      minimumSize: const Size(0, 48),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
                     ),
                     child: Text(l10n.excursionBookingOpenMyExcursions),
                   ),
@@ -1885,6 +1989,69 @@ const _sectionTitleStyle = TextStyle(
   fontWeight: FontWeight.w900,
   height: 1,
 );
+
+double _bookingHeightDensity(BuildContext context) {
+  final height = MediaQuery.sizeOf(context).height;
+  return (height / 844).clamp(0.72, 1.0).toDouble();
+}
+
+double _bookingSectionGap(
+  BuildContext context, {
+  required double compact,
+  required double regular,
+}) {
+  final width = MediaQuery.sizeOf(context).width;
+  final base = width < 360 ? compact : regular;
+  return base * _bookingHeightDensity(context);
+}
+
+double _bookingInlineGap(BuildContext context, {required double regular}) {
+  final width = MediaQuery.sizeOf(context).width;
+  final density = (width / 390).clamp(0.74, 1.0).toDouble();
+  return regular * density;
+}
+
+double _bookingTopBarMinHeight(BuildContext context) {
+  final scaledTitleHeight = MediaQuery.textScalerOf(context).scale(18);
+  return (scaledTitleHeight + 44).clamp(56.0, 72.0).toDouble();
+}
+
+double _bookingCoverImageSize(BuildContext context, double availableWidth) {
+  final width = MediaQuery.sizeOf(context).width;
+  final compactLimit = width < 360 ? 84.0 : 96.0;
+  return (availableWidth * 0.27).clamp(74.0, compactLimit).toDouble();
+}
+
+double _bookingScheduleIconBoxSize(BuildContext context) {
+  final width = MediaQuery.sizeOf(context).width;
+  return (width * 0.12).clamp(44.0, 50.0).toDouble();
+}
+
+double _bookingFooterButtonMinHeight(BuildContext context) {
+  final width = MediaQuery.sizeOf(context).width;
+  final textScale = MediaQuery.textScalerOf(context).scale(1);
+  return (width * 0.145 + 8 * textScale).clamp(54.0, 66.0).toDouble();
+}
+
+double _bookingScheduleStatePanelMinHeight(BuildContext context) {
+  final width = MediaQuery.sizeOf(context).width;
+  return (width * 0.22).clamp(78.0, 94.0).toDouble();
+}
+
+double _bookingCounterRowMinHeight(BuildContext context) {
+  final width = MediaQuery.sizeOf(context).width;
+  return (width * 0.18).clamp(64.0, 78.0).toDouble();
+}
+
+double _bookingCounterValueWidth(BuildContext context) {
+  final width = MediaQuery.sizeOf(context).width;
+  return (width * 0.12).clamp(42.0, 54.0).toDouble();
+}
+
+double _bookingCounterButtonSize(BuildContext context) {
+  final width = MediaQuery.sizeOf(context).width;
+  return (width * 0.095).clamp(34.0, 42.0).toDouble();
+}
 
 String _formatBookingMoney(
   BuildContext context,

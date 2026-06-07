@@ -28,7 +28,7 @@ class GuideCalendarDayStrip extends StatelessWidget {
     final locale = Localizations.localeOf(context).toLanguageTag();
 
     return SizedBox(
-      height: 92,
+      height: _guideCalendarDayStripHeight(context),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -41,57 +41,66 @@ class GuideCalendarDayStrip extends StatelessWidget {
               : daySlots.isEmpty
               ? Colors.transparent
               : guideScheduleStatusColor(daySlots.first);
-          return ConstrainedBox(
-            constraints: const BoxConstraints(minWidth: 62),
-            child: Material(
-              color: selected ? AppColors.accent : const Color(0xFF2A2118),
-              borderRadius: BorderRadius.circular(8),
-              child: InkWell(
+          return Semantics(
+            button: true,
+            selected: selected,
+            label: DateFormat.yMMMMEEEEd(locale).format(day),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: _guideCalendarDayCellMinWidth(context),
+              ),
+              child: Material(
+                color: selected ? AppColors.accent : const Color(0xFF2A2118),
                 borderRadius: BorderRadius.circular(8),
-                onTap: () => onDateSelected(day),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        DateFormat.E(locale).format(day),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: selected
-                              ? AppColors.textPrimary
-                              : AppColors.textSecondary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                        ),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () => onDateSelected(day),
+                  child: ExcludeSemantics(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        DateFormat.d(locale).format(day),
-                        style: TextStyle(
-                          color: selected
-                              ? AppColors.textPrimary
-                              : AppColors.textPrimary,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                        ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            DateFormat.E(locale).format(day),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: selected
+                                  ? AppColors.textPrimary
+                                  : AppColors.textSecondary,
+                              fontSize: _guideCalendarWeekdayFontSize(context),
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            DateFormat.d(locale).format(day),
+                            style: TextStyle(
+                              color: selected
+                                  ? AppColors.textPrimary
+                                  : AppColors.textPrimary,
+                              fontSize: _guideCalendarDayFontSize(context),
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 7),
+                          Container(
+                            width: _guideCalendarIndicatorSize(context),
+                            height: _guideCalendarIndicatorSize(context),
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? AppColors.textPrimary
+                                  : indicatorColor,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 7),
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: selected
-                              ? AppColors.textPrimary
-                              : indicatorColor,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -120,4 +129,31 @@ class GuideCalendarDayStrip extends StatelessWidget {
   bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
+}
+
+double _guideCalendarDayStripHeight(BuildContext context) {
+  final scale = MediaQuery.textScalerOf(context).scale(1);
+  return (MediaQuery.sizeOf(context).height * 0.095 + 12 * scale)
+      .clamp(82.0, 104.0)
+      .toDouble();
+}
+
+double _guideCalendarDayCellMinWidth(BuildContext context) {
+  final width = MediaQuery.sizeOf(context).width;
+  return (width * 0.16).clamp(56.0, 72.0).toDouble();
+}
+
+double _guideCalendarWeekdayFontSize(BuildContext context) {
+  final width = MediaQuery.sizeOf(context).width;
+  return (width * 0.031).clamp(11.0, 13.0).toDouble();
+}
+
+double _guideCalendarDayFontSize(BuildContext context) {
+  final width = MediaQuery.sizeOf(context).width;
+  return (width * 0.057).clamp(20.0, 24.0).toDouble();
+}
+
+double _guideCalendarIndicatorSize(BuildContext context) {
+  final width = MediaQuery.sizeOf(context).width;
+  return (width * 0.021).clamp(7.0, 9.0).toDouble();
 }

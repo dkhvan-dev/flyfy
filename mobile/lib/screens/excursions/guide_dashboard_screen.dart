@@ -1530,49 +1530,57 @@ class _GuideDashboardActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFF2A1D13),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.accent.withValues(alpha: 0.20)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: AppColors.accent, size: 21),
+    return Semantics(
+      button: true,
+      label: label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Ink(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2A1D13),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: AppColors.accent.withValues(alpha: 0.20),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
+            ),
+            child: ExcludeSemantics(
+              child: Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: AppColors.accent.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(icon, color: AppColors.accent, size: 21),
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: Color(0xFFD3BFA9),
+                    size: 20,
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: Color(0xFFD3BFA9),
-                size: 20,
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -2201,9 +2209,11 @@ class _ExcursionAttendanceQrSheetState
 
   Widget _buildQrBody(AppLocalizations l10n) {
     if (_isLoading) {
-      return const SizedBox(
-        height: 180,
-        child: Center(
+      return ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: _guideQrLoadingMinHeight(context),
+        ),
+        child: const Center(
           child: CircularProgressIndicator(color: AppColors.accent),
         ),
       );
@@ -3360,235 +3370,247 @@ class _GuideJourneyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
-        child: Ink(
-          decoration: BoxDecoration(
-            color: muted
-                ? const Color(0xFF2A1D13).withValues(alpha: 0.72)
-                : const Color(0xFF2A1D13),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
+    final semanticLabel = [
+      title,
+      statusLabel,
+      if (subtitle.trim().isNotEmpty) subtitle.trim(),
+      for (final item in meta) item.label,
+    ].join(', ');
+
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      onTap: onTap,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(22),
+          child: Ink(
+            decoration: BoxDecoration(
               color: muted
-                  ? Colors.white.withValues(alpha: 0.10)
-                  : Colors.white.withValues(alpha: 0.05),
-              style: muted ? BorderStyle.solid : BorderStyle.solid,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.14),
-                blurRadius: 22,
-                offset: const Offset(0, 14),
+                  ? const Color(0xFF2A1D13).withValues(alpha: 0.72)
+                  : const Color(0xFF2A1D13),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: muted
+                    ? Colors.white.withValues(alpha: 0.10)
+                    : Colors.white.withValues(alpha: 0.05),
+                style: muted ? BorderStyle.solid : BorderStyle.solid,
               ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(22),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.14),
+                  blurRadius: 22,
+                  offset: const Offset(0, 14),
                 ),
-                child: AspectRatio(
-                  aspectRatio: 2.04,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      _GuideCoverArt(
-                        seed: seed,
-                        categorySlug: categorySlug,
-                        imageUrl: imageUrl,
-                        muted: muted,
-                      ),
-                      Positioned(
-                        top: 12,
-                        left: 14,
-                        child: _GuideStatusBadge(
-                          label: statusLabel,
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(22),
+                  ),
+                  child: AspectRatio(
+                    aspectRatio: 2.04,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        _GuideCoverArt(
+                          seed: seed,
+                          categorySlug: categorySlug,
+                          imageUrl: imageUrl,
                           muted: muted,
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(22, 22, 22, 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 23,
-                        height: 1.08,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    if (subtitle.trim().isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        subtitle.trim(),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFFD3BFA9),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
+                        Positioned(
+                          top: 12,
+                          left: 14,
+                          child: _GuideStatusBadge(
+                            label: statusLabel,
+                            muted: muted,
+                          ),
                         ),
-                      ),
-                    ],
-                    const SizedBox(height: 14),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 8,
-                      children: [
-                        for (final item in meta)
-                          _GuideMetaChip(icon: item.icon, label: item.label),
                       ],
                     ),
-                    const SizedBox(height: 20),
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final secondary = secondaryActionLabel?.trim() ?? '';
-                        final hasSecondary =
-                            secondary.isNotEmpty &&
-                            onSecondaryActionTap != null;
-                        final destructive =
-                            destructiveActionLabel?.trim() ?? '';
-                        final hasDestructive =
-                            destructive.isNotEmpty &&
-                            onDestructiveActionTap != null;
-                        final stackActions = constraints.maxWidth < 360;
-                        final primaryButton = FilledButton(
-                          onPressed: onTap,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.accent,
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size(0, 48),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(999),
-                            ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(22, 22, 22, 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 23,
+                          height: 1.08,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      if (subtitle.trim().isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          subtitle.trim(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFFD3BFA9),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
                           ),
-                          child: Text(
-                            actionLabel.toUpperCase(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.1,
+                        ),
+                      ],
+                      const SizedBox(height: 14),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 8,
+                        children: [
+                          for (final item in meta)
+                            _GuideMetaChip(icon: item.icon, label: item.label),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final secondary = secondaryActionLabel?.trim() ?? '';
+                          final hasSecondary =
+                              secondary.isNotEmpty &&
+                              onSecondaryActionTap != null;
+                          final destructive =
+                              destructiveActionLabel?.trim() ?? '';
+                          final hasDestructive =
+                              destructive.isNotEmpty &&
+                              onDestructiveActionTap != null;
+                          final stackActions = constraints.maxWidth < 360;
+                          final primaryButton = FilledButton(
+                            onPressed: onTap,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.accent,
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size(0, 48),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(999),
+                              ),
                             ),
-                          ),
-                        );
-                        if (!hasSecondary && !hasDestructive) {
-                          return SizedBox(
-                            width: double.infinity,
-                            child: primaryButton,
+                            child: Text(
+                              actionLabel.toUpperCase(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.1,
+                              ),
+                            ),
                           );
-                        }
+                          if (!hasSecondary && !hasDestructive) {
+                            return SizedBox(
+                              width: double.infinity,
+                              child: primaryButton,
+                            );
+                          }
 
-                        final secondaryButton = OutlinedButton(
-                          onPressed: onSecondaryActionTap,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFFFFD6A3),
-                            side: BorderSide(
-                              color: const Color(
-                                0xFFFFD6A3,
-                              ).withValues(alpha: 0.38),
+                          final secondaryButton = OutlinedButton(
+                            onPressed: onSecondaryActionTap,
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFFFFD6A3),
+                              side: BorderSide(
+                                color: const Color(
+                                  0xFFFFD6A3,
+                                ).withValues(alpha: 0.38),
+                              ),
+                              minimumSize: const Size(0, 48),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(999),
+                              ),
                             ),
-                            minimumSize: const Size(0, 48),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(999),
+                            child: Text(
+                              secondary.toUpperCase(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.1,
+                              ),
                             ),
-                          ),
-                          child: Text(
-                            secondary.toUpperCase(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.1,
-                            ),
-                          ),
-                        );
+                          );
 
-                        final destructiveButton = OutlinedButton.icon(
-                          onPressed: onDestructiveActionTap,
-                          icon: const Icon(Icons.delete_outline_rounded),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFFFFB4AB),
-                            side: BorderSide(
-                              color: const Color(
-                                0xFFFFB4AB,
-                              ).withValues(alpha: 0.46),
+                          final destructiveButton = OutlinedButton.icon(
+                            onPressed: onDestructiveActionTap,
+                            icon: const Icon(Icons.delete_outline_rounded),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFFFFB4AB),
+                              side: BorderSide(
+                                color: const Color(
+                                  0xFFFFB4AB,
+                                ).withValues(alpha: 0.46),
+                              ),
+                              minimumSize: const Size(0, 48),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(999),
+                              ),
                             ),
-                            minimumSize: const Size(0, 48),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(999),
+                            label: Text(
+                              destructive.toUpperCase(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.1,
+                              ),
                             ),
-                          ),
-                          label: Text(
-                            destructive.toUpperCase(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.1,
-                            ),
-                          ),
-                        );
+                          );
 
-                        if (stackActions || stackSecondaryAction) {
+                          if (stackActions || stackSecondaryAction) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                primaryButton,
+                                if (hasSecondary) ...[
+                                  const SizedBox(height: 10),
+                                  secondaryButton,
+                                ],
+                                if (hasDestructive) ...[
+                                  const SizedBox(height: 10),
+                                  destructiveButton,
+                                ],
+                              ],
+                            );
+                          }
+
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              primaryButton,
-                              if (hasSecondary) ...[
-                                const SizedBox(height: 10),
-                                secondaryButton,
-                              ],
+                              Row(
+                                children: [
+                                  Expanded(child: primaryButton),
+                                  if (hasSecondary) ...[
+                                    const SizedBox(width: 10),
+                                    Expanded(child: secondaryButton),
+                                  ],
+                                ],
+                              ),
                               if (hasDestructive) ...[
                                 const SizedBox(height: 10),
                                 destructiveButton,
                               ],
                             ],
                           );
-                        }
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(child: primaryButton),
-                                if (hasSecondary) ...[
-                                  const SizedBox(width: 10),
-                                  Expanded(child: secondaryButton),
-                                ],
-                              ],
-                            ),
-                            if (hasDestructive) ...[
-                              const SizedBox(height: 10),
-                              destructiveButton,
-                            ],
-                          ],
-                        );
-                      },
-                    ),
-                    if (actionFooter != null) ...[
-                      const SizedBox(height: 14),
-                      actionFooter!,
+                        },
+                      ),
+                      if (actionFooter != null) ...[
+                        const SizedBox(height: 14),
+                        actionFooter!,
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -3901,11 +3923,23 @@ class _GuideDashboardSkeletonCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 280),
+      constraints: BoxConstraints(
+        minHeight: _guideDashboardSkeletonMinHeight(context),
+      ),
       decoration: BoxDecoration(
         color: const Color(0xFF2A1D13),
         borderRadius: BorderRadius.circular(22),
       ),
     );
   }
+}
+
+double _guideQrLoadingMinHeight(BuildContext context) {
+  final height = MediaQuery.sizeOf(context).height;
+  return (height * 0.18).clamp(144.0, 204.0).toDouble();
+}
+
+double _guideDashboardSkeletonMinHeight(BuildContext context) {
+  final height = MediaQuery.sizeOf(context).height;
+  return (height * 0.29).clamp(228.0, 304.0).toDouble();
 }

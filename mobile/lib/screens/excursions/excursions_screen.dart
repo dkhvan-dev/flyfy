@@ -1039,13 +1039,31 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
     if (width >= 600) return 28;
     return 24;
   }
+}
 
-  double _gridAspectRatio(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    if (width <= 360) return 0.63;
-    if (width >= 600) return 0.72;
-    return 0.68;
-  }
+double _gridAspectRatio(BuildContext context) {
+  return _excursionGridAspectRatioForWidth(MediaQuery.sizeOf(context).width);
+}
+
+double _excursionGridAspectRatioForWidth(double width) {
+  final normalizedWidth = ((width - 360) / 480).clamp(0.0, 1.0).toDouble();
+  return 0.70 + normalizedWidth * 0.12;
+}
+
+double _excursionFilterHeaderHeight(BuildContext context) {
+  final scaledTitleHeight = MediaQuery.textScalerOf(context).scale(18);
+  return (scaledTitleHeight + 52).clamp(66.0, 82.0).toDouble();
+}
+
+double _excursionLanguageGridMaxHeight(BuildContext context) {
+  final height = MediaQuery.sizeOf(context).height;
+  return (height * 0.26).clamp(176.0, 248.0).toDouble();
+}
+
+double _excursionSegmentMainAxisExtent(BuildContext context) {
+  final width = MediaQuery.sizeOf(context).width;
+  final textScale = MediaQuery.textScalerOf(context).scale(1);
+  return (width * 0.115 + 4 * textScale).clamp(46.0, 56.0).toDouble();
 }
 
 DateTime _excursionCreatedAtFor(ExcursionVm excursion) {
@@ -1504,7 +1522,7 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
                 title: l10n.excursionsFiltersTitle,
                 clearLabel: l10n.excursionsFiltersClear,
                 onClear: _clear,
-                height: 74,
+                height: _excursionFilterHeaderHeight(context),
                 horizontalPadding: 22,
                 titleFontSize: 18,
               ),
@@ -1712,8 +1730,10 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
                                 )
                               else
                                 ConstrainedBox(
-                                  constraints: const BoxConstraints(
-                                    maxHeight: 224,
+                                  constraints: BoxConstraints(
+                                    maxHeight: _excursionLanguageGridMaxHeight(
+                                      context,
+                                    ),
                                   ),
                                   child: ListView.separated(
                                     shrinkWrap: true,
@@ -2053,7 +2073,7 @@ class _ExcursionsSegmentGrid<T> extends StatelessWidget {
           itemCount: items.length,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: useSingleColumn ? 1 : 2,
-            mainAxisExtent: 48,
+            mainAxisExtent: _excursionSegmentMainAxisExtent(context),
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
           ),
@@ -2174,102 +2194,115 @@ class ExcursionListCard extends StatelessWidget {
       fallback: category,
     );
     final location = _primaryLocation(excursion, displayTitle, category);
+    final semanticLabel = [
+      displayTitle,
+      if (location.isNotEmpty) location,
+      price,
+      if (meta.isNotEmpty) meta,
+    ].join(', ');
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Ink(
-          decoration: BoxDecoration(
-            color: const Color(0xFF251A10),
+    return Semantics(
+      button: onTap != null,
+      label: semanticLabel,
+      onTap: onTap,
+      child: ExcludeSemantics(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 32,
-                offset: const Offset(0, 12),
+            child: Ink(
+              decoration: BoxDecoration(
+                color: const Color(0xFF251A10),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 32,
+                    offset: const Offset(0, 12),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  flex: 6,
-                  child: _ExcursionCoverArt(
-                    seed: seed,
-                    categorySlug: excursion.categorySlug,
-                    imageUrl: resolveExcursionCoverUrl(excursion),
-                  ),
-                ),
-                Expanded(
-                  flex: 6,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(13, 11, 13, 11),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (location.isNotEmpty) ...[
-                          Text(
-                            location.toUpperCase(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: AppColors.accent,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.4,
-                              height: 1,
-                            ),
-                          ),
-                          const SizedBox(height: 7),
-                        ],
-                        Text(
-                          displayTitle,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFFEADCD0),
-                            fontSize: 17,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0,
-                            height: 1.16,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          price,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: AppColors.accent,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0,
-                            height: 1,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          meta.isEmpty ? category : meta,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFFB5A394),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            height: 1,
-                          ),
-                        ),
-                      ],
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      flex: 5,
+                      child: _ExcursionCoverArt(
+                        seed: seed,
+                        categorySlug: excursion.categorySlug,
+                        imageUrl: resolveExcursionCoverUrl(excursion),
+                      ),
                     ),
-                  ),
+                    Expanded(
+                      flex: 7,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(13, 11, 13, 11),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (location.isNotEmpty) ...[
+                              Text(
+                                location.toUpperCase(),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AppColors.accent,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.4,
+                                  height: 1,
+                                ),
+                              ),
+                              const SizedBox(height: 7),
+                            ],
+                            Text(
+                              displayTitle,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFFEADCD0),
+                                fontSize: 17,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0,
+                                height: 1.16,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              price,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: AppColors.accent,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0,
+                                height: 1,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              meta.isEmpty ? category : meta,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFFB5A394),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                height: 1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -2638,9 +2671,7 @@ class _ExcursionsLoadingGrid extends StatelessWidget {
           maxCrossAxisExtent: 220,
           mainAxisSpacing: 18,
           crossAxisSpacing: 18,
-          childAspectRatio: MediaQuery.sizeOf(context).width <= 360
-              ? 0.63
-              : 0.68,
+          childAspectRatio: _gridAspectRatio(context),
         ),
         itemBuilder: (context, index) {
           return const _ExcursionsSkeletonCard();
