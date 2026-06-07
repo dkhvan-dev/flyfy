@@ -805,6 +805,11 @@ class ExcursionDetailsContent extends StatelessWidget {
                       icon: showEditOfferAction
                           ? Icons.edit_rounded
                           : Icons.arrow_forward_ios_rounded,
+                      helperText: showBookingAction
+                          ? AppLocalizations.of(
+                              context,
+                            )!.excursionDetailsBookingSeatCheckNote
+                          : null,
                       showPrice: showCheckoutPrice && showBookingAction,
                       onTap: showEditOfferAction ? onEditOfferTap : onBookTap,
                     ),
@@ -4127,6 +4132,7 @@ class _ExcursionCheckoutBar extends StatelessWidget {
     required this.icon,
     required this.showPrice,
     required this.onTap,
+    this.helperText,
   });
 
   final ExcursionVm excursion;
@@ -4134,6 +4140,7 @@ class _ExcursionCheckoutBar extends StatelessWidget {
   final IconData icon;
   final bool showPrice;
   final VoidCallback onTap;
+  final String? helperText;
 
   @override
   Widget build(BuildContext context) {
@@ -4151,64 +4158,87 @@ class _ExcursionCheckoutBar extends StatelessWidget {
         top: false,
         child: Padding(
           padding: EdgeInsets.fromLTRB(14, 13, 14, math.max(13, safeBottom)),
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              if (showPrice) ...[
-                SizedBox(
-                  width: 96,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.excursionDetailsTotal.toUpperCase(),
-                        style: const TextStyle(
-                          color: Color(0xFFB8A898),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.8,
+              Row(
+                children: [
+                  if (showPrice) ...[
+                    SizedBox(
+                      width: 96,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.excursionDetailsTotal.toUpperCase(),
+                            style: const TextStyle(
+                              color: Color(0xFFB8A898),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _formatPrice(context, excursion),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppColors.accent,
+                              fontSize: 19,
+                              fontWeight: FontWeight.w900,
+                              height: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 18),
+                  ],
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: onTap,
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(58),
+                        backgroundColor: AppColors.accent,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _formatPrice(context, excursion),
+                      icon: Icon(icon, size: 16),
+                      label: Text(
+                        label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          color: AppColors.accent,
-                          fontSize: 19,
-                          fontWeight: FontWeight.w900,
-                          height: 1,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 18),
-              ],
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: onTap,
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(58),
-                    backgroundColor: AppColors.accent,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
                     ),
                   ),
-                  icon: Icon(icon, size: 16),
-                  label: Text(
-                    label,
-                    maxLines: 1,
+                ],
+              ),
+              if ((helperText ?? '').trim().isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    helperText!,
+                    textAlign: TextAlign.right,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
+                      color: Color(0xFFB8A898),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      height: 1.25,
                     ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ),

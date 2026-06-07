@@ -204,6 +204,8 @@ void main() {
       expect(source, contains('bookingUnavailableMessage'));
       expect(source, contains('excursionDetailsNoAvailableSlots'));
       expect(source, contains('excursionDetailsCheckingSchedule'));
+      expect(source, contains('excursionDetailsBookingSeatCheckNote'));
+      expect(source, contains('helperText: showBookingAction'));
     },
   );
 

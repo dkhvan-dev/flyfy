@@ -29,8 +29,32 @@ void main() {
       expect(source, contains('resolveExcursionCoverUrl(excursion)'));
       expect(source, contains('showModalBottomSheet'));
       expect(source, contains('selectedSlot?.availableSeats'));
+      expect(source, contains('_selectedSlotUnavailableMessage'));
+      expect(source, contains('excursionBookingSelectedSlotUnavailable'));
+      expect(source, contains('previousSlotId == null'));
+      expect(
+        source,
+        isNot(contains('_selectedSlot = preservedSlot ?? _firstSlotOrNull')),
+      );
       expect(source, isNot(contains('showDatePicker')));
       expect(source, isNot(contains('showTimePicker')));
+    },
+  );
+
+  test(
+    'excursion booking copy is honest while real payments are not connected',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursion_booking_screen.dart',
+      ).readAsString();
+      final ruArb = await File('lib/l10n/app_ru.arb').readAsString();
+
+      expect(source, contains('excursionBookingConfirmReservation'));
+      expect(source, contains('excursionBookingPaymentPendingNote'));
+      expect(source, isNot(contains('excursionBookingSecurePayment')));
+      expect(source, isNot(contains('excursionBookingConfirmPay')));
+      expect(ruArb, contains('"excursionBookingConfirmReservation"'));
+      expect(ruArb, contains('"excursionBookingPaymentPendingNote"'));
     },
   );
 

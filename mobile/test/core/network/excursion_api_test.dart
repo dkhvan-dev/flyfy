@@ -233,6 +233,82 @@ void main() {
   );
 
   test(
+    'quoteExcursionBookingGuests requests server settlement before guest edit',
+    () async {
+      final adapter = _ExcursionJsonAdapter({
+        '/me/excursion-bookings/booking-1/guests/quote': {
+          'adults': 3,
+          'children': 1,
+          'totalSeats': 4,
+          'currentTotalAmount': 45000,
+          'newTotalAmount': 60000,
+          'deltaAmount': 15000,
+          'currency': 'KZT',
+          'status': 'PENDING_PAYMENT_INTEGRATION',
+        },
+      });
+      final api = ExcursionApi(
+        apiClient: ApiClient(
+          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+            ..httpClientAdapter = adapter,
+          secureStorage: _FakeSecureStorage(),
+        ),
+      );
+
+      final quote = await api.quoteExcursionBookingGuests(
+        'booking-1',
+        adults: 3,
+        children: 1,
+      );
+
+      expect(
+        adapter.requests.single.path,
+        '/me/excursion-bookings/booking-1/guests/quote',
+      );
+      expect(adapter.lastOptions?.method, 'POST');
+      expect(adapter.lastJsonBody, {'adults': 3, 'children': 1});
+      expect(quote.deltaAmount, 15000);
+      expect(quote.status, 'PENDING_PAYMENT_INTEGRATION');
+    },
+  );
+
+  test(
+    'quoteExcursionBookingCancellation requests server refund policy before cancel',
+    () async {
+      final adapter = _ExcursionJsonAdapter({
+        '/me/excursion-bookings/booking-1/cancel/quote': {
+          'percent': 75,
+          'amount': 33750,
+          'currency': 'KZT',
+          'policyCode': 'PARTIAL_REFUND_BEFORE_12H',
+          'status': 'PENDING_PAYMENT_INTEGRATION',
+        },
+      });
+      final api = ExcursionApi(
+        apiClient: ApiClient(
+          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+            ..httpClientAdapter = adapter,
+          secureStorage: _FakeSecureStorage(),
+        ),
+      );
+
+      final quote = await api.quoteExcursionBookingCancellation(
+        'booking-1',
+        reason: 'Plans changed',
+      );
+
+      expect(
+        adapter.requests.single.path,
+        '/me/excursion-bookings/booking-1/cancel/quote',
+      );
+      expect(adapter.lastOptions?.method, 'POST');
+      expect(adapter.lastJsonBody, {'reason': 'Plans changed'});
+      expect(quote.percent, 75);
+      expect(quote.policyCode, 'PARTIAL_REFUND_BEFORE_12H');
+    },
+  );
+
+  test(
     'getMyExcursionBookings reads authenticated booking list endpoint',
     () async {
       final adapter = _ExcursionJsonAdapter({

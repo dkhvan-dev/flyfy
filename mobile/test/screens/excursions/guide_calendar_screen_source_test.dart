@@ -60,6 +60,9 @@ void main() {
       expect(source, contains('guideCalendarSuggestNextTime'));
       expect(source, contains('guideCalendarDeleteSlot'));
       expect(source, contains('guideCalendarCancelSlot'));
+      expect(source, contains('_GuideCancelSlotReasonSheet'));
+      expect(source, contains('guideDashboardCancelReasonRequired'));
+      expect(source, isNot(contains("'cancelled by guide'")));
       expect(source, contains('Wrap('));
       expect(source, contains('ExcursionProvider'));
       expect(source, contains('DropdownButtonFormField'));

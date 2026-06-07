@@ -57,7 +57,8 @@ void main() {
     expect(find.text('Adults'), findsOneWidget);
     expect(find.text('Children'), findsOneWidget);
     expect(find.text('Summary'), findsOneWidget);
-    expect(find.text('CONFIRM & PAY'), findsOneWidget);
+    expect(find.text('CONFIRM BOOKING'), findsOneWidget);
+    expect(find.textContaining('No payment is charged now'), findsOneWidget);
   });
 
   testWidgets('stacks date and time schedule cards vertically', (tester) async {

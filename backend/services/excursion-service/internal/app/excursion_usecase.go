@@ -64,6 +64,7 @@ type ExcursionUseCase struct {
 	notificationGateway     port.ExcursionNotificationGateway
 	fraud                   port.FraudEvaluator
 	trustPolicy             port.TrustPolicyClient
+	paymentGateway          port.ExcursionPaymentGateway
 	attendanceQRSigningKey  []byte
 	attendanceQRTTL         time.Duration
 	attendanceOfflineWindow time.Duration
@@ -85,6 +86,15 @@ const (
 
 	excursionBookingRefundStatusPendingPaymentIntegration = "PENDING_PAYMENT_INTEGRATION"
 	excursionBookingRefundStatusNotRefundable             = "NOT_REFUNDABLE"
+	excursionBookingRefundStatusAvailable                 = "REFUND_AVAILABLE"
+	excursionBookingRefundStatusSucceeded                 = "SUCCEEDED"
+	excursionBookingGuestsStatusNoPaymentChange           = "NO_PAYMENT_CHANGE"
+	excursionBookingGuestsStatusPaymentRequired           = "PAYMENT_REQUIRED"
+	excursionBookingGuestsStatusRefundAvailable           = "REFUND_AVAILABLE"
+
+	excursionPaymentSubjectType      = "EXCURSION_BOOKING"
+	excursionPaymentPurposeBooking   = "EXCURSION_BOOKING"
+	excursionPaymentPurposeGuestEdit = "EXCURSION_GUEST_ADJUSTMENT"
 
 	defaultExcursionAttendanceQRSigningSecret = "dev-excursion-attendance-qr-secret"
 
@@ -126,6 +136,11 @@ func (u *ExcursionUseCase) WithUserProfileResolver(resolver port.UserProfileReso
 
 func (u *ExcursionUseCase) WithAttractionRatingUpdater(updater port.AttractionRatingUpdater) *ExcursionUseCase {
 	u.attractionRatingUpdater = updater
+	return u
+}
+
+func (u *ExcursionUseCase) WithPaymentGateway(gateway port.ExcursionPaymentGateway) *ExcursionUseCase {
+	u.paymentGateway = gateway
 	return u
 }
 
@@ -258,6 +273,17 @@ type ExcursionBookingCancellationRefundQuote struct {
 	Currency   string
 	PolicyCode string
 	Status     string
+}
+
+type ExcursionBookingGuestsQuote struct {
+	Adults             int
+	Children           int
+	TotalSeats         int
+	CurrentTotalAmount float64
+	NewTotalAmount     float64
+	DeltaAmount        float64
+	Currency           string
+	Status             string
 }
 
 type CreateGuideScheduleSlotInput struct {
@@ -2136,6 +2162,9 @@ func (u *ExcursionUseCase) CreateExcursionBooking(ctx context.Context, input Cre
 	if err = u.enforceExcursionFraud(ctx, fraudInput); err != nil {
 		return nil, err
 	}
+	if err = u.chargeExcursionBooking(ctx, booking); err != nil {
+		return nil, err
+	}
 	if err = u.repo.CreateExcursionBooking(ctx, booking); err != nil {
 		if errors.Is(err, port.ErrExcursionScheduleUnavailable) {
 			return nil, ErrExcursionScheduleUnavailable
@@ -2239,6 +2268,71 @@ func (u *ExcursionUseCase) ListMyGuideExcursionBookings(ctx context.Context, act
 	return items, nil
 }
 
+func (u *ExcursionUseCase) QuoteExcursionBookingGuests(ctx context.Context, input UpdateExcursionBookingGuestsInput) (ExcursionBookingGuestsQuote, error) {
+	var zero ExcursionBookingGuestsQuote
+	if input.ActorUserID == uuid.Nil {
+		return zero, ErrInvalidActorUserID
+	}
+	if input.BookingID == uuid.Nil {
+		return zero, model.ErrInvalidExcursionBookingID
+	}
+	booking, err := u.repo.GetExcursionBookingByID(ctx, input.BookingID)
+	if err != nil {
+		return zero, fmt.Errorf("get excursion booking: %w", err)
+	}
+	if booking == nil || booking.TouristUserID != input.ActorUserID {
+		return zero, ErrExcursionBookingNotFound
+	}
+	if booking.Status != enum.ExcursionBookingStatusRequested ||
+		booking.CancelledAt != nil ||
+		!booking.ScheduledFor.After(time.Now().UTC()) {
+		return zero, ErrExcursionBookingNotEditable
+	}
+
+	offer, err := u.repo.GetExcursionOfferByID(ctx, booking.OfferID)
+	if err != nil {
+		return zero, fmt.Errorf("get excursion offer: %w", err)
+	}
+	if offer == nil || offer.ProductID != booking.ProductID {
+		return zero, ErrExcursionOfferNotFound
+	}
+	if input.Adults+input.Children > offer.MaxGroupSize {
+		return zero, model.ErrInvalidExcursionBookingGuests
+	}
+
+	seatDelta := input.Adults + input.Children - booking.TotalSeats
+	if seatDelta > 0 && booking.ScheduleSlotID != nil {
+		now := time.Now().UTC()
+		slot, err := u.repo.GetExcursionScheduleSlotByID(ctx, *booking.ScheduleSlotID)
+		if err != nil {
+			return zero, fmt.Errorf("get excursion schedule slot: %w", err)
+		}
+		if slot == nil || slot.ProductID != booking.ProductID || slot.OfferID != booking.OfferID {
+			return zero, ErrExcursionNotFound
+		}
+		if !slotCanAcceptExcursionBooking(slot, seatDelta, now) {
+			return zero, ErrExcursionScheduleUnavailable
+		}
+	}
+
+	quotedBooking := *booking
+	if err := quotedBooking.UpdateGuests(input.Adults, input.Children); err != nil {
+		return zero, err
+	}
+
+	deltaAmount := math.Round((quotedBooking.TotalPriceAmount-booking.TotalPriceAmount)*100) / 100
+	return ExcursionBookingGuestsQuote{
+		Adults:             quotedBooking.Adults,
+		Children:           quotedBooking.Children,
+		TotalSeats:         quotedBooking.TotalSeats,
+		CurrentTotalAmount: booking.TotalPriceAmount,
+		NewTotalAmount:     quotedBooking.TotalPriceAmount,
+		DeltaAmount:        deltaAmount,
+		Currency:           strings.ToUpper(strings.TrimSpace(quotedBooking.Currency)),
+		Status:             excursionBookingGuestQuoteStatus(deltaAmount, u.paymentGateway != nil),
+	}, nil
+}
+
 func (u *ExcursionUseCase) UpdateExcursionBookingGuests(ctx context.Context, input UpdateExcursionBookingGuestsInput) (*model.ExcursionBooking, error) {
 	if input.ActorUserID == uuid.Nil {
 		return nil, ErrInvalidActorUserID
@@ -2271,6 +2365,7 @@ func (u *ExcursionUseCase) UpdateExcursionBookingGuests(ctx context.Context, inp
 	}
 
 	oldSeats := booking.TotalSeats
+	oldTotalAmount := booking.TotalPriceAmount
 	seatDelta := input.Adults + input.Children - oldSeats
 	if seatDelta > 0 && booking.ScheduleSlotID != nil {
 		now := time.Now().UTC()
@@ -2289,6 +2384,7 @@ func (u *ExcursionUseCase) UpdateExcursionBookingGuests(ctx context.Context, inp
 	if err := booking.UpdateGuests(input.Adults, input.Children); err != nil {
 		return nil, err
 	}
+	deltaAmount := math.Round((booking.TotalPriceAmount-oldTotalAmount)*100) / 100
 	if err = u.enforceExcursionFraud(ctx, excursionFraudInput(
 		fraudActionExcursionBookingGuestsUpdate,
 		input.ActorUserID,
@@ -2303,6 +2399,9 @@ func (u *ExcursionUseCase) UpdateExcursionBookingGuests(ctx context.Context, inp
 	)); err != nil {
 		return nil, err
 	}
+	if err = u.settleExcursionBookingGuestPayment(ctx, booking, deltaAmount); err != nil {
+		return nil, err
+	}
 	if err := u.repo.UpdateExcursionBookingGuests(ctx, booking, seatDelta); err != nil {
 		if errors.Is(err, port.ErrExcursionScheduleUnavailable) {
 			return nil, ErrExcursionScheduleUnavailable
@@ -2311,6 +2410,40 @@ func (u *ExcursionUseCase) UpdateExcursionBookingGuests(ctx context.Context, inp
 	}
 	u.notifyExcursionBookingGuestsUpdated(ctx, booking, oldSeats)
 	return booking, nil
+}
+
+func (u *ExcursionUseCase) QuoteExcursionBookingCancellation(ctx context.Context, input CancelExcursionBookingInput) (ExcursionBookingCancellationRefundQuote, error) {
+	var zero ExcursionBookingCancellationRefundQuote
+	if input.ActorUserID == uuid.Nil {
+		return zero, ErrInvalidActorUserID
+	}
+	if input.BookingID == uuid.Nil {
+		return zero, model.ErrInvalidExcursionBookingID
+	}
+
+	booking, err := u.repo.GetExcursionBookingByID(ctx, input.BookingID)
+	if err != nil {
+		return zero, fmt.Errorf("get excursion booking: %w", err)
+	}
+	if booking == nil || booking.TouristUserID != input.ActorUserID {
+		return zero, ErrExcursionBookingNotFound
+	}
+
+	now := time.Now().UTC()
+	if booking.Status != enum.ExcursionBookingStatusRequested ||
+		booking.CancelledAt != nil ||
+		!booking.ScheduledFor.After(now) {
+		return zero, ErrExcursionBookingNotEditable
+	}
+
+	quote := excursionBookingCancellationRefundQuote(
+		booking.TotalPriceAmount,
+		booking.Currency,
+		booking.ScheduledFor,
+		now,
+	)
+	quote.Status = excursionBookingCancellationQuoteStatus(quote.Amount, u.paymentGateway != nil)
+	return quote, nil
 }
 
 func (u *ExcursionUseCase) CancelExcursionBooking(ctx context.Context, input CancelExcursionBookingInput) (*model.ExcursionBooking, error) {
@@ -2342,6 +2475,7 @@ func (u *ExcursionUseCase) CancelExcursionBooking(ctx context.Context, input Can
 		booking.ScheduledFor,
 		now,
 	)
+	quote.Status = excursionBookingCancellationQuoteStatus(quote.Amount, u.paymentGateway != nil)
 	if err = u.enforceExcursionFraud(ctx, excursionFraudInput(
 		fraudActionExcursionBookingCancel,
 		input.ActorUserID,
@@ -2359,6 +2493,15 @@ func (u *ExcursionUseCase) CancelExcursionBooking(ctx context.Context, input Can
 		}),
 	)); err != nil {
 		return nil, err
+	}
+	if quote.Amount > 0 {
+		refunded, refundErr := u.refundExcursionBookingAmount(ctx, booking, moneyMinor(quote.Amount))
+		if refundErr != nil {
+			return nil, refundErr
+		}
+		if refunded {
+			quote.Status = excursionBookingRefundStatusSucceeded
+		}
 	}
 	if err = booking.Cancel(
 		enum.ExcursionBookingCancelledByTourist,

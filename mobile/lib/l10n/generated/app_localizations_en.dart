@@ -3190,6 +3190,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get excursionDetailsBook => 'Book';
 
   @override
+  String get excursionDetailsBookingSeatCheckNote =>
+      'Exact seats for your group are checked on the booking screen.';
+
+  @override
   String get excursionDetailsCheckingSchedule => 'Checking available times...';
 
   @override
@@ -3254,15 +3258,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get excursionBookingTotalPrice => 'Total Price';
 
   @override
-  String get excursionBookingConfirmPay => 'Confirm & Pay';
+  String get excursionBookingConfirmReservation => 'Confirm booking';
 
   @override
-  String get excursionBookingSecurePayment =>
-      'Secure payment processed by Inflap';
+  String excursionBookingPaymentPendingNote(Object amount) {
+    return 'No payment is charged now. Online payment will appear when it is connected. Total: $amount';
+  }
 
   @override
   String get excursionBookingSubmitted =>
-      'Booking request is ready. Online payment will be connected soon.';
+      'Booking is confirmed. Online payment will be connected soon.';
 
   @override
   String get excursionBookingAlreadyBookedTitle =>
@@ -3283,6 +3288,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get excursionBookingSelectSlot => 'Select an available time';
+
+  @override
+  String excursionBookingSelectedSlotUnavailable(Object count) {
+    return 'The selected time is no longer available for $count guests. Choose another time.';
+  }
 
   @override
   String get excursionBookingScheduleLoadFailed =>
@@ -3474,7 +3484,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createExcursionAutosaveHint =>
-      'Auto-saving progress to your guide profile';
+      'Progress is saved locally while you create the offer';
+
+  @override
+  String get createExcursionAutosaveRestored => 'Local draft restored';
 
   @override
   String get createExcursionItineraryValidation =>
@@ -4359,21 +4372,28 @@ class AppLocalizationsEn extends AppLocalizations {
       'Failed to update guest count. Check available seats and try again.';
 
   @override
-  String myExcursionsGuestsChargeMock(Object amount) {
-    return 'To pay: $amount';
+  String myExcursionsGuestsAdditionalCharge(Object amount) {
+    return 'Additional charge: $amount';
   }
 
   @override
-  String myExcursionsGuestsRefundMock(Object amount) {
-    return 'To refund: $amount';
+  String myExcursionsGuestsRefundDue(Object amount) {
+    return 'Refund due: $amount';
   }
 
   @override
   String get myExcursionsGuestsNoPaymentChange => 'Price will not change';
 
   @override
-  String get myExcursionsGuestsPaymentMockHint =>
-      'This is a mock settlement for now: real charges or refunds will be connected through the payment service.';
+  String get myExcursionsGuestsPaymentQuoteHint =>
+      'The estimate is calculated on the server. Real charges or refunds will be connected through the payment service.';
+
+  @override
+  String get myExcursionsGuestsQuoteLoading => 'Calculating price change...';
+
+  @override
+  String get myExcursionsGuestsQuoteFailed =>
+      'Could not calculate the price change. Check available seats and try again.';
 
   @override
   String get myExcursionsPayAndSaveGuests => 'Pay and save';
@@ -4390,6 +4410,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get myExcursionsCancelBookingHint =>
       'We will cancel your place and show the guide that the booking was cancelled by you.';
+
+  @override
+  String get myExcursionsCancelQuoteLoading => 'Calculating refund terms...';
+
+  @override
+  String get myExcursionsCancelQuoteFailed =>
+      'Could not calculate refund terms. Try again.';
 
   @override
   String myExcursionsCancelBookingRefund(Object amount, int percent) {

@@ -641,7 +641,16 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
   }
 
   Future<void> _cancelSlot(ExcursionScheduleProvider provider) async {
-    final ok = await provider.cancelSlot(widget.slot!.id, 'cancelled by guide');
+    final reason = await showModalBottomSheet<String>(
+      context: context,
+      isDismissible: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _GuideCancelSlotReasonSheet(),
+    );
+    if (!mounted || reason == null) return;
+
+    final ok = await provider.cancelSlot(widget.slot!.id, reason);
     if (ok && mounted) Navigator.of(context).pop();
   }
 
@@ -1269,6 +1278,236 @@ class _GuideCalendarReadonlyBanner extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _GuideCancelSlotReasonSheet extends StatefulWidget {
+  const _GuideCancelSlotReasonSheet();
+
+  @override
+  State<_GuideCancelSlotReasonSheet> createState() =>
+      _GuideCancelSlotReasonSheetState();
+}
+
+class _GuideCancelSlotReasonSheetState
+    extends State<_GuideCancelSlotReasonSheet> {
+  final TextEditingController _reasonController = TextEditingController();
+  final FocusNode _reasonFocusNode = FocusNode();
+  String? _errorText;
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    _reasonFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final reason = _reasonController.text.trim();
+    if (reason.isEmpty) {
+      setState(() {
+        _errorText = AppLocalizations.of(
+          context,
+        )!.guideDashboardCancelReasonRequired;
+      });
+      _reasonFocusNode.requestFocus();
+      return;
+    }
+    Navigator.of(context).pop(reason);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final mediaQuery = MediaQuery.of(context);
+    final compact = mediaQuery.size.width < 390;
+
+    return SafeArea(
+      child: AnimatedPadding(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        padding: EdgeInsets.fromLTRB(12, 0, 12, mediaQuery.viewInsets.bottom),
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 540,
+              maxHeight: mediaQuery.size.height * 0.86,
+            ),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: const Color(0xFF241A11),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              ),
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                  compact ? 16 : 20,
+                  14,
+                  compact ? 16 : 20,
+                  22 + MediaQuery.paddingOf(context).bottom,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 52,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      l10n.guideDashboardCancelTitle,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: compact ? 21 : 23,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      l10n.guideDashboardCancelDescription,
+                      style: const TextStyle(
+                        color: Color(0xFFD3BFA9),
+                        fontSize: 14,
+                        height: 1.42,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Text(
+                      l10n.guideDashboardCancelReasonLabel,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: _errorText == null
+                              ? Colors.white.withValues(alpha: 0.08)
+                              : const Color(0x88FF8A65),
+                        ),
+                      ),
+                      child: TextField(
+                        controller: _reasonController,
+                        focusNode: _reasonFocusNode,
+                        maxLines: 4,
+                        minLines: 3,
+                        maxLength: 160,
+                        textCapitalization: TextCapitalization.sentences,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: l10n.guideDashboardCancelReasonPlaceholder,
+                          hintStyle: TextStyle(
+                            color: const Color(
+                              0xFFD3BFA9,
+                            ).withValues(alpha: 0.72),
+                            fontSize: 14,
+                          ),
+                          border: InputBorder.none,
+                          counterStyle: const TextStyle(
+                            color: Color(0xFFD3BFA9),
+                            fontSize: 12,
+                          ),
+                          contentPadding: const EdgeInsets.fromLTRB(
+                            14,
+                            12,
+                            14,
+                            8,
+                          ),
+                        ),
+                        onChanged: (_) {
+                          if (_errorText != null &&
+                              _reasonController.text.trim().isNotEmpty) {
+                            setState(() => _errorText = null);
+                          }
+                        },
+                        onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                      ),
+                    ),
+                    if (_errorText != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        _errorText!,
+                        style: const TextStyle(
+                          color: Color(0xFFFF8A65),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 18),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final stack = constraints.maxWidth < 360;
+                        final keep = OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.textPrimary,
+                            side: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.12),
+                            ),
+                            minimumSize: const Size(0, 50),
+                          ),
+                          child: Text(l10n.cancelButton),
+                        );
+                        final confirm = FilledButton.icon(
+                          onPressed: _submit,
+                          icon: const Icon(Icons.event_busy_rounded),
+                          label: Text(l10n.guideDashboardCancelConfirm),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.accent,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(0, 50),
+                          ),
+                        );
+
+                        if (stack) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              keep,
+                              const SizedBox(height: 10),
+                              confirm,
+                            ],
+                          );
+                        }
+
+                        return Row(
+                          children: [
+                            Expanded(child: keep),
+                            const SizedBox(width: 10),
+                            Expanded(child: confirm),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

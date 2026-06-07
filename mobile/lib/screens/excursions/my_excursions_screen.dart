@@ -369,6 +369,13 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
         return _EditExcursionGuestsSheet(
           l10n: l10n,
           booking: booking,
+          onQuote: (adults, children) {
+            return provider.quoteExcursionBookingGuests(
+              booking.id,
+              adults: adults,
+              children: children,
+            );
+          },
           onSubmit: (adults, children) {
             return provider.updateExcursionBookingGuests(
               booking.id,
@@ -401,6 +408,12 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
         return _CancelExcursionBookingSheet(
           l10n: l10n,
           booking: booking,
+          onQuote: (reason) {
+            return provider.quoteExcursionBookingCancellation(
+              booking.id,
+              reason: reason,
+            );
+          },
           onSubmit: (reason) {
             return provider.cancelExcursionBooking(booking.id, reason: reason);
           },
@@ -1099,11 +1112,14 @@ class _CancelExcursionBookingSheet extends StatefulWidget {
   const _CancelExcursionBookingSheet({
     required this.l10n,
     required this.booking,
+    required this.onQuote,
     required this.onSubmit,
   });
 
   final AppLocalizations l10n;
   final ExcursionBookingVm booking;
+  final Future<ExcursionBookingCancellationQuote> Function(String reason)
+  onQuote;
   final Future<bool> Function(String reason) onSubmit;
 
   @override
@@ -1115,8 +1131,16 @@ class _CancelExcursionBookingSheetState
     extends State<_CancelExcursionBookingSheet> {
   final TextEditingController _reasonController = TextEditingController();
   final FocusNode _reasonFocusNode = FocusNode();
+  ExcursionBookingCancellationQuote? _quote;
+  bool _isQuoteLoading = false;
   bool _isSubmitting = false;
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadQuote();
+  }
 
   @override
   void dispose() {
@@ -1125,8 +1149,31 @@ class _CancelExcursionBookingSheetState
     super.dispose();
   }
 
+  Future<void> _loadQuote() async {
+    if (_isQuoteLoading) return;
+    setState(() {
+      _isQuoteLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final quote = await widget.onQuote(_reasonController.text);
+      if (!mounted) return;
+      setState(() {
+        _quote = quote;
+        _isQuoteLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _quote = null;
+        _isQuoteLoading = false;
+        _errorMessage = widget.l10n.myExcursionsCancelQuoteFailed;
+      });
+    }
+  }
+
   Future<void> _submit() async {
-    if (_isSubmitting) return;
+    if (_isSubmitting || _isQuoteLoading || _quote == null) return;
     FocusScope.of(context).unfocus();
     setState(() {
       _isSubmitting = true;
@@ -1150,13 +1197,16 @@ class _CancelExcursionBookingSheetState
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
     final localeName = Localizations.localeOf(context).toString();
-    final quote = widget.booking.estimateCancellationRefund(DateTime.now());
-    final refund = formatLocalizedExcursionMoney(
-      amount: quote.amount,
-      currency: quote.currency,
-      localeName: localeName,
-      useExcursionListCurrencyFormat: true,
-    );
+    final quote = _quote;
+    final refund = quote == null
+        ? null
+        : formatLocalizedExcursionMoney(
+            amount: quote.amount,
+            currency: quote.currency,
+            localeName: localeName,
+            useExcursionListCurrencyFormat: true,
+          );
+    final canSubmit = !_isSubmitting && !_isQuoteLoading && quote != null;
 
     return SafeArea(
       top: false,
@@ -1213,11 +1263,25 @@ class _CancelExcursionBookingSheetState
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _CancelRefundPanel(
-                    amount: refund,
-                    percent: quote.percent,
-                    hasRefund: quote.hasRefund,
-                  ),
+                  if (_isQuoteLoading)
+                    _QuoteStatusPanel(
+                      icon: Icons.receipt_long_rounded,
+                      title: widget.l10n.myExcursionsCancelQuoteLoading,
+                      showProgress: true,
+                    )
+                  else if (quote == null || refund == null)
+                    _QuoteStatusPanel(
+                      icon: Icons.error_outline_rounded,
+                      title: widget.l10n.myExcursionsCancelQuoteFailed,
+                      actionLabel: widget.l10n.retryButton,
+                      onActionTap: _loadQuote,
+                    )
+                  else
+                    _CancelRefundPanel(
+                      amount: refund,
+                      percent: quote.percent,
+                      hasRefund: quote.hasRefund,
+                    ),
                   const SizedBox(height: 14),
                   _CancelPolicyPanel(l10n: widget.l10n),
                   const SizedBox(height: 14),
@@ -1253,7 +1317,7 @@ class _CancelExcursionBookingSheetState
                   ],
                   const SizedBox(height: 18),
                   FilledButton.icon(
-                    onPressed: _isSubmitting ? null : _submit,
+                    onPressed: canSubmit ? _submit : null,
                     icon: _isSubmitting
                         ? const SizedBox(
                             width: 18,
@@ -1279,6 +1343,70 @@ class _CancelExcursionBookingSheetState
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _QuoteStatusPanel extends StatelessWidget {
+  const _QuoteStatusPanel({
+    required this.icon,
+    required this.title,
+    this.showProgress = false,
+    this.actionLabel,
+    this.onActionTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final bool showProgress;
+  final String? actionLabel;
+  final VoidCallback? onActionTap;
+
+  @override
+  Widget build(BuildContext context) {
+    const color = Color(0xFFDCCAB7);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          if (showProgress)
+            const SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.4,
+                color: AppColors.accent,
+              ),
+            )
+          else
+            Icon(icon, color: color, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w900,
+                height: 1.25,
+              ),
+            ),
+          ),
+          if (actionLabel != null && onActionTap != null) ...[
+            const SizedBox(width: 10),
+            TextButton(
+              onPressed: onActionTap,
+              style: TextButton.styleFrom(foregroundColor: AppColors.accent),
+              child: Text(actionLabel!),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -1425,11 +1553,14 @@ class _EditExcursionGuestsSheet extends StatefulWidget {
   const _EditExcursionGuestsSheet({
     required this.l10n,
     required this.booking,
+    required this.onQuote,
     required this.onSubmit,
   });
 
   final AppLocalizations l10n;
   final ExcursionBookingVm booking;
+  final Future<ExcursionBookingGuestsQuote> Function(int adults, int children)
+  onQuote;
   final Future<bool> Function(int adults, int children) onSubmit;
 
   @override
@@ -1440,22 +1571,13 @@ class _EditExcursionGuestsSheet extends StatefulWidget {
 class _EditExcursionGuestsSheetState extends State<_EditExcursionGuestsSheet> {
   late int _adults;
   late int _children;
+  ExcursionBookingGuestsQuote? _quote;
+  bool _isQuoteLoading = false;
+  int _quoteRequestSerial = 0;
   bool _isSubmitting = false;
   String? _errorMessage;
 
   int get _totalGuests => _adults + _children;
-
-  double get _guestUnitAmount {
-    final seats = widget.booking.totalSeats;
-    if (seats <= 0 || widget.booking.totalPriceAmount <= 0) return 0;
-    return widget.booking.totalPriceAmount / seats;
-  }
-
-  double get _settlementDeltaAmount {
-    final delta =
-        (_guestUnitAmount * _totalGuests) - widget.booking.totalPriceAmount;
-    return delta.abs() < 0.01 ? 0 : delta;
-  }
 
   int get _maxGuests {
     final maxGroupSize = widget.booking.maxGroupSize ?? 0;
@@ -1470,30 +1592,58 @@ class _EditExcursionGuestsSheetState extends State<_EditExcursionGuestsSheet> {
     super.initState();
     _adults = math.max(1, widget.booking.adults);
     _children = math.max(0, widget.booking.children);
+    _loadQuote();
   }
 
   void _incrementAdults() {
     if (_totalGuests >= _maxGuests || _isSubmitting) return;
     setState(() => _adults++);
+    _loadQuote();
   }
 
   void _decrementAdults() {
     if (_adults <= 1 || _isSubmitting) return;
     setState(() => _adults--);
+    _loadQuote();
   }
 
   void _incrementChildren() {
     if (_totalGuests >= _maxGuests || _isSubmitting) return;
     setState(() => _children++);
+    _loadQuote();
   }
 
   void _decrementChildren() {
     if (_children <= 0 || _isSubmitting) return;
     setState(() => _children--);
+    _loadQuote();
+  }
+
+  Future<void> _loadQuote() async {
+    final serial = ++_quoteRequestSerial;
+    setState(() {
+      _isQuoteLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final quote = await widget.onQuote(_adults, _children);
+      if (!mounted || serial != _quoteRequestSerial) return;
+      setState(() {
+        _quote = quote;
+        _isQuoteLoading = false;
+      });
+    } catch (_) {
+      if (!mounted || serial != _quoteRequestSerial) return;
+      setState(() {
+        _quote = null;
+        _isQuoteLoading = false;
+        _errorMessage = widget.l10n.myExcursionsGuestsQuoteFailed;
+      });
+    }
   }
 
   Future<void> _submit() async {
-    if (_isSubmitting) return;
+    if (_isSubmitting || _isQuoteLoading || _quote == null) return;
     setState(() {
       _isSubmitting = true;
       _errorMessage = null;
@@ -1501,8 +1651,6 @@ class _EditExcursionGuestsSheetState extends State<_EditExcursionGuestsSheet> {
     final success = await widget.onSubmit(_adults, _children);
     if (!mounted) return;
     if (success) {
-      await _simulateMockSettlement();
-      if (!mounted) return;
       Navigator.of(context).pop(true);
       return;
     }
@@ -1512,22 +1660,17 @@ class _EditExcursionGuestsSheetState extends State<_EditExcursionGuestsSheet> {
     });
   }
 
-  Future<void> _simulateMockSettlement() async {
-    if (_settlementDeltaAmount == 0) return;
-    await Future<void>.delayed(const Duration(milliseconds: 420));
-  }
-
-  String _formatSettlementAmount(double amount) {
+  String _formatSettlementAmount(double amount, String currency) {
     return formatLocalizedExcursionMoney(
       amount: amount.abs(),
-      currency: widget.booking.currency,
+      currency: currency,
       localeName: widget.l10n.localeName,
       useExcursionListCurrencyFormat: true,
     );
   }
 
   String _submitLabel() {
-    final delta = _settlementDeltaAmount;
+    final delta = _quote?.deltaAmount ?? 0;
     if (delta > 0) {
       return widget.l10n.myExcursionsPayAndSaveGuests;
     }
@@ -1540,6 +1683,8 @@ class _EditExcursionGuestsSheetState extends State<_EditExcursionGuestsSheet> {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
+    final quote = _quote;
+    final canSubmit = !_isSubmitting && !_isQuoteLoading && quote != null;
     return SafeArea(
       top: false,
       child: Padding(
@@ -1606,13 +1751,28 @@ class _EditExcursionGuestsSheetState extends State<_EditExcursionGuestsSheet> {
                   onDecrement: _decrementChildren,
                 ),
                 const SizedBox(height: 12),
-                _EditGuestsSettlementPanel(
-                  l10n: widget.l10n,
-                  deltaAmount: _settlementDeltaAmount,
-                  formattedAmount: _formatSettlementAmount(
-                    _settlementDeltaAmount,
+                if (_isQuoteLoading)
+                  _QuoteStatusPanel(
+                    icon: Icons.receipt_long_rounded,
+                    title: widget.l10n.myExcursionsGuestsQuoteLoading,
+                    showProgress: true,
+                  )
+                else if (quote == null)
+                  _QuoteStatusPanel(
+                    icon: Icons.error_outline_rounded,
+                    title: widget.l10n.myExcursionsGuestsQuoteFailed,
+                    actionLabel: widget.l10n.retryButton,
+                    onActionTap: _loadQuote,
+                  )
+                else
+                  _EditGuestsSettlementPanel(
+                    l10n: widget.l10n,
+                    quote: quote,
+                    formattedAmount: _formatSettlementAmount(
+                      quote.deltaAmount,
+                      quote.currency,
+                    ),
                   ),
-                ),
                 if (_errorMessage != null) ...[
                   const SizedBox(height: 12),
                   Text(
@@ -1625,7 +1785,7 @@ class _EditExcursionGuestsSheetState extends State<_EditExcursionGuestsSheet> {
                 ],
                 const SizedBox(height: 18),
                 FilledButton(
-                  onPressed: _isSubmitting ? null : _submit,
+                  onPressed: canSubmit ? _submit : null,
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.accent,
                     foregroundColor: AppColors.textPrimary,
@@ -1657,16 +1817,17 @@ class _EditExcursionGuestsSheetState extends State<_EditExcursionGuestsSheet> {
 class _EditGuestsSettlementPanel extends StatelessWidget {
   const _EditGuestsSettlementPanel({
     required this.l10n,
-    required this.deltaAmount,
+    required this.quote,
     required this.formattedAmount,
   });
 
   final AppLocalizations l10n;
-  final double deltaAmount;
+  final ExcursionBookingGuestsQuote quote;
   final String formattedAmount;
 
   @override
   Widget build(BuildContext context) {
+    final deltaAmount = quote.deltaAmount;
     final isCharge = deltaAmount > 0;
     final isRefund = deltaAmount < 0;
     final accentColor = isCharge
@@ -1675,9 +1836,9 @@ class _EditGuestsSettlementPanel extends StatelessWidget {
         ? const Color(0xFF7ED7B5)
         : const Color(0xFFDCCAB7);
     final title = isCharge
-        ? l10n.myExcursionsGuestsChargeMock(formattedAmount)
+        ? l10n.myExcursionsGuestsAdditionalCharge(formattedAmount)
         : isRefund
-        ? l10n.myExcursionsGuestsRefundMock(formattedAmount)
+        ? l10n.myExcursionsGuestsRefundDue(formattedAmount)
         : l10n.myExcursionsGuestsNoPaymentChange;
     final icon = isCharge
         ? Icons.payments_rounded
@@ -1711,7 +1872,7 @@ class _EditGuestsSettlementPanel extends StatelessWidget {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  l10n.myExcursionsGuestsPaymentMockHint,
+                  l10n.myExcursionsGuestsPaymentQuoteHint,
                   style: const TextStyle(
                     color: Color(0xFFCBB8A3),
                     fontSize: 12,

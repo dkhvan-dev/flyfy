@@ -5884,6 +5884,12 @@ abstract class AppLocalizations {
   /// **'Book'**
   String get excursionDetailsBook;
 
+  /// No description provided for @excursionDetailsBookingSeatCheckNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact seats for your group are checked on the booking screen.'**
+  String get excursionDetailsBookingSeatCheckNote;
+
   /// No description provided for @excursionDetailsCheckingSchedule.
   ///
   /// In en, this message translates to:
@@ -5998,22 +6004,22 @@ abstract class AppLocalizations {
   /// **'Total Price'**
   String get excursionBookingTotalPrice;
 
-  /// No description provided for @excursionBookingConfirmPay.
+  /// No description provided for @excursionBookingConfirmReservation.
   ///
   /// In en, this message translates to:
-  /// **'Confirm & Pay'**
-  String get excursionBookingConfirmPay;
+  /// **'Confirm booking'**
+  String get excursionBookingConfirmReservation;
 
-  /// No description provided for @excursionBookingSecurePayment.
+  /// No description provided for @excursionBookingPaymentPendingNote.
   ///
   /// In en, this message translates to:
-  /// **'Secure payment processed by Inflap'**
-  String get excursionBookingSecurePayment;
+  /// **'No payment is charged now. Online payment will appear when it is connected. Total: {amount}'**
+  String excursionBookingPaymentPendingNote(Object amount);
 
   /// No description provided for @excursionBookingSubmitted.
   ///
   /// In en, this message translates to:
-  /// **'Booking request is ready. Online payment will be connected soon.'**
+  /// **'Booking is confirmed. Online payment will be connected soon.'**
   String get excursionBookingSubmitted;
 
   /// No description provided for @excursionBookingAlreadyBookedTitle.
@@ -6051,6 +6057,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select an available time'**
   String get excursionBookingSelectSlot;
+
+  /// No description provided for @excursionBookingSelectedSlotUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected time is no longer available for {count} guests. Choose another time.'**
+  String excursionBookingSelectedSlotUnavailable(Object count);
 
   /// No description provided for @excursionBookingScheduleLoadFailed.
   ///
@@ -6385,8 +6397,14 @@ abstract class AppLocalizations {
   /// No description provided for @createExcursionAutosaveHint.
   ///
   /// In en, this message translates to:
-  /// **'Auto-saving progress to your guide profile'**
+  /// **'Progress is saved locally while you create the offer'**
   String get createExcursionAutosaveHint;
+
+  /// No description provided for @createExcursionAutosaveRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Local draft restored'**
+  String get createExcursionAutosaveRestored;
 
   /// No description provided for @createExcursionItineraryValidation.
   ///
@@ -7978,17 +7996,17 @@ abstract class AppLocalizations {
   /// **'Failed to update guest count. Check available seats and try again.'**
   String get myExcursionsUpdateGuestsFailed;
 
-  /// No description provided for @myExcursionsGuestsChargeMock.
+  /// No description provided for @myExcursionsGuestsAdditionalCharge.
   ///
   /// In en, this message translates to:
-  /// **'To pay: {amount}'**
-  String myExcursionsGuestsChargeMock(Object amount);
+  /// **'Additional charge: {amount}'**
+  String myExcursionsGuestsAdditionalCharge(Object amount);
 
-  /// No description provided for @myExcursionsGuestsRefundMock.
+  /// No description provided for @myExcursionsGuestsRefundDue.
   ///
   /// In en, this message translates to:
-  /// **'To refund: {amount}'**
-  String myExcursionsGuestsRefundMock(Object amount);
+  /// **'Refund due: {amount}'**
+  String myExcursionsGuestsRefundDue(Object amount);
 
   /// No description provided for @myExcursionsGuestsNoPaymentChange.
   ///
@@ -7996,11 +8014,23 @@ abstract class AppLocalizations {
   /// **'Price will not change'**
   String get myExcursionsGuestsNoPaymentChange;
 
-  /// No description provided for @myExcursionsGuestsPaymentMockHint.
+  /// No description provided for @myExcursionsGuestsPaymentQuoteHint.
   ///
   /// In en, this message translates to:
-  /// **'This is a mock settlement for now: real charges or refunds will be connected through the payment service.'**
-  String get myExcursionsGuestsPaymentMockHint;
+  /// **'The estimate is calculated on the server. Real charges or refunds will be connected through the payment service.'**
+  String get myExcursionsGuestsPaymentQuoteHint;
+
+  /// No description provided for @myExcursionsGuestsQuoteLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculating price change...'**
+  String get myExcursionsGuestsQuoteLoading;
+
+  /// No description provided for @myExcursionsGuestsQuoteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not calculate the price change. Check available seats and try again.'**
+  String get myExcursionsGuestsQuoteFailed;
 
   /// No description provided for @myExcursionsPayAndSaveGuests.
   ///
@@ -8031,6 +8061,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'We will cancel your place and show the guide that the booking was cancelled by you.'**
   String get myExcursionsCancelBookingHint;
+
+  /// No description provided for @myExcursionsCancelQuoteLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculating refund terms...'**
+  String get myExcursionsCancelQuoteLoading;
+
+  /// No description provided for @myExcursionsCancelQuoteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not calculate refund terms. Try again.'**
+  String get myExcursionsCancelQuoteFailed;
 
   /// No description provided for @myExcursionsCancelBookingRefund.
   ///

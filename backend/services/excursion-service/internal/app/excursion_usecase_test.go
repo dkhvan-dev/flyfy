@@ -94,6 +94,45 @@ type excursionRepoStub struct {
 	hardDeletedGuideUserID          uuid.UUID
 }
 
+type excursionPaymentGatewayStub struct {
+	chargeInput  *port.PaymentCreateInput
+	refundInputs []port.PaymentChildInput
+	listFilter   *port.PaymentTransactionFilter
+	listItems    []*port.PaymentTransaction
+}
+
+func (s *excursionPaymentGatewayStub) Charge(ctx context.Context, input port.PaymentCreateInput) (*port.PaymentTransaction, error) {
+	s.chargeInput = &input
+	return &port.PaymentTransaction{
+		ID:            uuid.New(),
+		OperationType: port.PaymentOperationTypeCharge,
+		Status:        port.PaymentStatusSucceeded,
+		AmountMinor:   input.AmountMinor,
+	}, nil
+}
+
+func (s *excursionPaymentGatewayStub) Refund(ctx context.Context, input port.PaymentChildInput) (*port.PaymentTransaction, error) {
+	s.refundInputs = append(s.refundInputs, input)
+	return &port.PaymentTransaction{
+		ID:            uuid.New(),
+		OperationType: port.PaymentOperationTypeRefund,
+		Status:        port.PaymentStatusSucceeded,
+		AmountMinor:   valueOrZero(input.AmountMinor),
+	}, nil
+}
+
+func (s *excursionPaymentGatewayStub) ListTransactions(ctx context.Context, filter port.PaymentTransactionFilter) ([]*port.PaymentTransaction, error) {
+	s.listFilter = &filter
+	return s.listItems, nil
+}
+
+func valueOrZero(value *int64) int64 {
+	if value == nil {
+		return 0
+	}
+	return *value
+}
+
 func (s *excursionRepoStub) CreateExcursionAggregate(ctx context.Context, item *model.Excursion, relations port.ExcursionRelations) error {
 	s.createdExcursion = item
 	s.createdRelations = relations
@@ -2030,6 +2069,76 @@ func TestCreateExcursionBookingPersistsRequestForSelectedOffer(t *testing.T) {
 	}
 }
 
+func TestCreateExcursionBookingChargesPaymentBeforePersistingPaidRequest(t *testing.T) {
+	productID := uuid.New()
+	offerID := uuid.New()
+	guideUserID := uuid.New()
+	touristUserID := uuid.New()
+	scheduledFor := time.Now().UTC().Add(48 * time.Hour)
+	idempotencyKey := "booking-create-payment"
+
+	repo := &excursionRepoStub{
+		gotOffer: &model.ExcursionOffer{
+			ID:              offerID,
+			ProductID:       productID,
+			GuideProfileID:  uuid.New(),
+			GuideUserID:     guideUserID,
+			Status:          enum.ExcursionStatusPublished,
+			Visibility:      enum.ExcursionVisibilityPublic,
+			DurationMinutes: 180,
+			MaxGroupSize:    8,
+			MeetingPoint:    "Hotel pickup",
+			PriceAmount:     120,
+			Currency:        "KZT",
+			CreatedAt:       time.Now().UTC(),
+			UpdatedAt:       time.Now().UTC(),
+		},
+	}
+	payments := &excursionPaymentGatewayStub{}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil).
+		WithPaymentGateway(payments)
+
+	booking, err := uc.CreateExcursionBooking(context.Background(), CreateExcursionBookingInput{
+		ActorUserID:    touristUserID,
+		ProductID:      productID,
+		OfferID:        offerID,
+		ScheduledFor:   scheduledFor,
+		Adults:         2,
+		Children:       1,
+		IdempotencyKey: &idempotencyKey,
+	})
+	if err != nil {
+		t.Fatalf("CreateExcursionBooking() error = %v", err)
+	}
+	if repo.createdBooking == nil {
+		t.Fatal("booking was not persisted")
+	}
+	if payments.chargeInput == nil {
+		t.Fatal("payment charge was not requested")
+	}
+	if payments.chargeInput.SubjectType != excursionPaymentSubjectType ||
+		payments.chargeInput.SubjectID != booking.ID ||
+		payments.chargeInput.Purpose != excursionPaymentPurposeBooking {
+		t.Fatalf("payment subject/purpose = %s/%s/%s, want booking charge",
+			payments.chargeInput.SubjectType,
+			payments.chargeInput.SubjectID,
+			payments.chargeInput.Purpose,
+		)
+	}
+	if payments.chargeInput.PayerUserID != touristUserID {
+		t.Fatalf("payment payer = %s, want tourist %s", payments.chargeInput.PayerUserID, touristUserID)
+	}
+	if payments.chargeInput.AmountMinor != moneyMinor(booking.TotalPriceAmount) {
+		t.Fatalf("payment amount minor = %d, want %d", payments.chargeInput.AmountMinor, moneyMinor(booking.TotalPriceAmount))
+	}
+	if payments.chargeInput.Currency != "KZT" {
+		t.Fatalf("payment currency = %q, want KZT", payments.chargeInput.Currency)
+	}
+	if payments.chargeInput.IdempotencyKey != "excursion_booking:"+idempotencyKey+":charge" {
+		t.Fatalf("payment idempotency key = %q, want booking-scoped key", payments.chargeInput.IdempotencyKey)
+	}
+}
+
 func TestCreateExcursionReviewRequestsAttractionRatingRecalculation(t *testing.T) {
 	productID := uuid.New()
 	offerID := uuid.New()
@@ -3241,6 +3350,84 @@ func TestUpdateExcursionBookingGuestsRejectsSlotCapacityOverflow(t *testing.T) {
 	}
 }
 
+func TestQuoteExcursionBookingGuestsReturnsSettlementWithoutPersisting(t *testing.T) {
+	touristUserID := uuid.New()
+	guideUserID := uuid.New()
+	slotID := uuid.New()
+	offerID := uuid.New()
+	productID := uuid.New()
+	scheduledFor := time.Now().UTC().Add(48 * time.Hour)
+	booking, err := model.NewExcursionBooking(model.NewExcursionBookingParams{
+		ProductID:       productID,
+		OfferID:         offerID,
+		ScheduleSlotID:  &slotID,
+		GuideProfileID:  uuid.New(),
+		GuideUserID:     guideUserID,
+		TouristUserID:   touristUserID,
+		ScheduledFor:    scheduledFor,
+		Adults:          2,
+		Children:        0,
+		UnitPriceAmount: 120,
+		Currency:        "KZT",
+	})
+	if err != nil {
+		t.Fatalf("NewExcursionBooking() error = %v", err)
+	}
+	repo := &excursionRepoStub{
+		gotBooking: booking,
+		gotOffer: &model.ExcursionOffer{
+			ID:             offerID,
+			ProductID:      productID,
+			GuideProfileID: uuid.New(),
+			GuideUserID:    guideUserID,
+			Status:         enum.ExcursionStatusPublished,
+			Visibility:     enum.ExcursionVisibilityPublic,
+			MaxGroupSize:   6,
+			PriceAmount:    120,
+			Currency:       "KZT",
+		},
+		gotScheduleSlot: &model.ExcursionScheduleSlot{
+			ID:          slotID,
+			OfferID:     offerID,
+			ProductID:   productID,
+			GuideUserID: guideUserID,
+			StartAt:     scheduledFor,
+			EndAt:       scheduledFor.Add(2 * time.Hour),
+			Timezone:    "Asia/Almaty",
+			Capacity:    6,
+			BookedSeats: 2,
+			Status:      enum.ExcursionScheduleSlotStatusBooked,
+		},
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	quote, err := uc.QuoteExcursionBookingGuests(context.Background(), UpdateExcursionBookingGuestsInput{
+		ActorUserID: touristUserID,
+		BookingID:   booking.ID,
+		Adults:      3,
+		Children:    1,
+	})
+
+	if err != nil {
+		t.Fatalf("QuoteExcursionBookingGuests() error = %v", err)
+	}
+	if quote.Adults != 3 || quote.Children != 1 || quote.TotalSeats != 4 {
+		t.Fatalf("quote guests = %d/%d total %d, want 3/1 total 4", quote.Adults, quote.Children, quote.TotalSeats)
+	}
+	if quote.CurrentTotalAmount != 252 || quote.NewTotalAmount != 504 || quote.DeltaAmount != 252 {
+		t.Fatalf("quote totals = current %v new %v delta %v, want 252/504/252", quote.CurrentTotalAmount, quote.NewTotalAmount, quote.DeltaAmount)
+	}
+	if quote.Currency != "KZT" || quote.Status != "PENDING_PAYMENT_INTEGRATION" {
+		t.Fatalf("quote currency/status = %q/%q, want KZT/PENDING_PAYMENT_INTEGRATION", quote.Currency, quote.Status)
+	}
+	if repo.updatedBooking != nil {
+		t.Fatal("booking was persisted while quoting guest changes")
+	}
+	if booking.TotalSeats != 2 || booking.TotalPriceAmount != 252 {
+		t.Fatalf("booking mutated during quote: seats=%d total=%v", booking.TotalSeats, booking.TotalPriceAmount)
+	}
+}
+
 func TestExcursionBookingCancellationRefundPolicyTiers(t *testing.T) {
 	now := time.Date(2026, time.May, 18, 12, 0, 0, 0, time.UTC)
 
@@ -3314,6 +3501,55 @@ func TestExcursionBookingCancellationRefundPolicyTiers(t *testing.T) {
 	}
 }
 
+func TestQuoteExcursionBookingCancellationReturnsRefundPolicyWithoutPersisting(t *testing.T) {
+	touristUserID := uuid.New()
+	guideUserID := uuid.New()
+	slotID := uuid.New()
+	offerID := uuid.New()
+	productID := uuid.New()
+	scheduledFor := time.Now().UTC().Add(48 * time.Hour)
+	booking, err := model.NewExcursionBooking(model.NewExcursionBookingParams{
+		ProductID:       productID,
+		OfferID:         offerID,
+		ScheduleSlotID:  &slotID,
+		GuideProfileID:  uuid.New(),
+		GuideUserID:     guideUserID,
+		TouristUserID:   touristUserID,
+		ScheduledFor:    scheduledFor,
+		Adults:          2,
+		Children:        1,
+		UnitPriceAmount: 10000,
+		Currency:        "KZT",
+	})
+	if err != nil {
+		t.Fatalf("NewExcursionBooking() error = %v", err)
+	}
+	repo := &excursionRepoStub{gotBooking: booking}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	quote, err := uc.QuoteExcursionBookingCancellation(context.Background(), CancelExcursionBookingInput{
+		ActorUserID: touristUserID,
+		BookingID:   booking.ID,
+		Reason:      "Планы изменились",
+	})
+
+	if err != nil {
+		t.Fatalf("QuoteExcursionBookingCancellation() error = %v", err)
+	}
+	if quote.Percent != 100 || quote.Amount != booking.TotalPriceAmount || quote.Currency != "KZT" {
+		t.Fatalf("quote refund = %d/%v/%q, want 100/%v/KZT", quote.Percent, quote.Amount, quote.Currency, booking.TotalPriceAmount)
+	}
+	if quote.PolicyCode != "FULL_REFUND_BEFORE_24H" || quote.Status != "PENDING_PAYMENT_INTEGRATION" {
+		t.Fatalf("quote policy/status = %q/%q", quote.PolicyCode, quote.Status)
+	}
+	if repo.cancelledBooking != nil {
+		t.Fatal("booking was cancelled while quoting cancellation")
+	}
+	if booking.CancelledAt != nil || booking.Status != enum.ExcursionBookingStatusRequested {
+		t.Fatalf("booking mutated during quote: status=%q cancelledAt=%v", booking.Status, booking.CancelledAt)
+	}
+}
+
 func TestCancelExcursionBookingMarksTouristCancellationAndReleasesSlotSeats(t *testing.T) {
 	touristUserID := uuid.New()
 	guideUserID := uuid.New()
@@ -3369,6 +3605,71 @@ func TestCancelExcursionBookingMarksTouristCancellationAndReleasesSlotSeats(t *t
 	}
 	if repo.cancelledBookingReleaseSeats != 3 {
 		t.Fatalf("release seats = %d, want 3", repo.cancelledBookingReleaseSeats)
+	}
+}
+
+func TestCancelExcursionBookingRefundsSucceededMockCharge(t *testing.T) {
+	touristUserID := uuid.New()
+	guideUserID := uuid.New()
+	offerID := uuid.New()
+	productID := uuid.New()
+	scheduledFor := time.Now().UTC().Add(48 * time.Hour)
+	booking, err := model.NewExcursionBooking(model.NewExcursionBookingParams{
+		ProductID:       productID,
+		OfferID:         offerID,
+		GuideProfileID:  uuid.New(),
+		GuideUserID:     guideUserID,
+		TouristUserID:   touristUserID,
+		ScheduledFor:    scheduledFor,
+		Adults:          2,
+		Children:        1,
+		UnitPriceAmount: 10000,
+		Currency:        "KZT",
+	})
+	if err != nil {
+		t.Fatalf("NewExcursionBooking() error = %v", err)
+	}
+	parentPaymentID := uuid.New()
+	repo := &excursionRepoStub{gotBooking: booking}
+	payments := &excursionPaymentGatewayStub{
+		listItems: []*port.PaymentTransaction{
+			{
+				ID:            parentPaymentID,
+				OperationType: port.PaymentOperationTypeCharge,
+				Status:        port.PaymentStatusSucceeded,
+				AmountMinor:   moneyMinor(booking.TotalPriceAmount),
+			},
+		},
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil).
+		WithPaymentGateway(payments)
+
+	cancelled, err := uc.CancelExcursionBooking(context.Background(), CancelExcursionBookingInput{
+		ActorUserID: touristUserID,
+		BookingID:   booking.ID,
+		Reason:      "Планы изменились",
+	})
+	if err != nil {
+		t.Fatalf("CancelExcursionBooking() error = %v", err)
+	}
+	if payments.listFilter == nil ||
+		payments.listFilter.SubjectType != excursionPaymentSubjectType ||
+		payments.listFilter.SubjectID == nil ||
+		*payments.listFilter.SubjectID != booking.ID {
+		t.Fatalf("payment list filter = %+v, want booking subject", payments.listFilter)
+	}
+	if len(payments.refundInputs) != 1 {
+		t.Fatalf("refund calls = %d, want 1", len(payments.refundInputs))
+	}
+	refund := payments.refundInputs[0]
+	if refund.ParentTransactionID != parentPaymentID {
+		t.Fatalf("refund parent = %s, want %s", refund.ParentTransactionID, parentPaymentID)
+	}
+	if refund.AmountMinor == nil || *refund.AmountMinor != moneyMinor(booking.TotalPriceAmount) {
+		t.Fatalf("refund amount minor = %v, want %d", refund.AmountMinor, moneyMinor(booking.TotalPriceAmount))
+	}
+	if cancelled.RefundStatus == nil || *cancelled.RefundStatus != excursionBookingRefundStatusSucceeded {
+		t.Fatalf("refund status = %v, want %s", cancelled.RefundStatus, excursionBookingRefundStatusSucceeded)
 	}
 }
 

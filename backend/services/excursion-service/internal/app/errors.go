@@ -31,6 +31,9 @@ var (
 	ErrExcursionAttendanceQRExpired           = errors.New("excursion attendance qr is no longer usable")
 	ErrExcursionAttendanceAlreadyCheckedIn    = errors.New("excursion booking already checked in")
 	ErrExcursionAttendanceBookingInvalid      = errors.New("excursion booking is not eligible for attendance check-in")
+	ErrPaymentGatewayUnavailable              = errors.New("payment gateway is unavailable")
+	ErrPaymentChargeFailed                    = errors.New("payment charge failed")
+	ErrPaymentRefundFailed                    = errors.New("payment refund failed")
 
 	ErrExcursionCoverFileNotFound   = errors.New("excursion cover file not found")
 	ErrExcursionCoverFileNotReady   = errors.New("excursion cover file is not ready")

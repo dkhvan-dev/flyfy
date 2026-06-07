@@ -1164,6 +1164,7 @@
   "excursionDetailsMeetingPoint": "Кездесу орны",
   "excursionDetailsTotal": "Барлығы",
   "excursionDetailsBook": "Брондау",
+  "excursionDetailsBookingSeatCheckNote": "Тобыңызға нақты орын саны брондау экранында тексеріледі.",
   "excursionDetailsCheckingSchedule": "Қолжетімді уақыттарды тексеріп жатырмыз...",
   "excursionDetailsNoAvailableSlots": "Бұл гидте осы экскурсияға әзірге қолжетімді уақыттар жоқ.",
   "excursionDetailsEditOffer": "Ұсынысты өзгерту",
@@ -1195,15 +1196,26 @@
   },
   "excursionBookingServiceFeeSummary": "Қызмет ақысы (5%)",
   "excursionBookingTotalPrice": "Жалпы баға",
-  "excursionBookingConfirmPay": "Растау және төлеу",
-  "excursionBookingSecurePayment": "Қауіпсіз төлем Inflap арқылы өңделеді",
-  "excursionBookingSubmitted": "Брондау сұрауы дайын. Онлайн төлем жақында қосылады.",
+  "excursionBookingConfirmReservation": "Брондауды растау",
+  "excursionBookingPaymentPendingNote": "Қазір төлем алынбайды. Онлайн төлем қосылғаннан кейін пайда болады. Барлығы: {amount}",
+  "@excursionBookingPaymentPendingNote": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "excursionBookingSubmitted": "Брондау расталды. Онлайн төлем жақында қосылады.",
   "excursionBookingAlreadyBookedTitle": "Бұл уақытқа бронь бар",
   "excursionBookingAlreadyBookedMessage": "Қонақтар санын «Менің экскурсияларым» бөлімінде өзгертуге болады.",
   "excursionBookingOpenMyExcursions": "Менің экскурсияларымды ашу",
   "excursionBookingLoadFailed": "Экскурсия брондауын жүктеу мүмкін болмады",
   "excursionBookingPerPerson": "/ адам",
   "excursionBookingSelectSlot": "Қолжетімді уақытты таңдаңыз",
+  "excursionBookingSelectedSlotUnavailable": "Таңдалған уақыт {count} қонаққа енді қолжетімсіз. Басқа уақытты таңдаңыз.",
+  "@excursionBookingSelectedSlotUnavailable": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "excursionBookingScheduleLoadFailed": "Қолжетімді уақыттарды жүктеу мүмкін болмады",
   "excursionBookingNoSlots": "Гид бұл ұсыныс үшін қолжетімді уақыттарды әлі қоспады.",
   "excursionBookingSeatsLeft": "Қалған орын: {count}",
@@ -1290,7 +1302,8 @@
   "createExcursionAddTimeSlot": "Уақыт слотын қосу",
   "createExcursionEditTimeSlot": "Уақыт слотын өңдеу",
   "createExcursionItineraryEmpty": "Кемінде екі маршрут пунктін қосыңыз. Олар туристерге экскурсия мәліметінде көрсетіледі.",
-  "createExcursionAutosaveHint": "Прогресс гид профиліне автоматты сақталады",
+  "createExcursionAutosaveHint": "Ұсынысты жасау кезінде прогресс жергілікті сақталады",
+  "createExcursionAutosaveRestored": "Жергілікті черновик қалпына келтірілді",
   "createExcursionItineraryValidation": "Маршрут пунктінің уақытын, атауын және сипаттамасын толтырыңыз",
   "createExcursionItineraryMinSlotsValidation": "Кемінде {count} маршрут пунктін қосыңыз",
   "@createExcursionItineraryMinSlotsValidation": {
@@ -1627,25 +1640,29 @@
   "myExcursionsEditGuestsHint": "Біз бос орындарды тексеріп, жаңа бронь жасамай броньды жаңартамыз.",
   "myExcursionsUpdateGuestsSuccess": "Қонақтар саны жаңартылды",
   "myExcursionsUpdateGuestsFailed": "Қонақтар санын жаңарту мүмкін болмады. Бос орындарды тексеріп, қайталап көріңіз.",
-  "myExcursionsGuestsChargeMock": "Қосымша төлем: {amount}",
-  "@myExcursionsGuestsChargeMock": {
+  "myExcursionsGuestsAdditionalCharge": "Қосымша төлем: {amount}",
+  "@myExcursionsGuestsAdditionalCharge": {
     "placeholders": {
       "amount": {}
     }
   },
-  "myExcursionsGuestsRefundMock": "Қайтарым: {amount}",
-  "@myExcursionsGuestsRefundMock": {
+  "myExcursionsGuestsRefundDue": "Қайтарым: {amount}",
+  "@myExcursionsGuestsRefundDue": {
     "placeholders": {
       "amount": {}
     }
   },
   "myExcursionsGuestsNoPaymentChange": "Баға өзгермейді",
-  "myExcursionsGuestsPaymentMockHint": "Әзірге бұл мок-есеп: нақты қосымша төлем немесе қайтарым төлем сервисі арқылы қосылады.",
+  "myExcursionsGuestsPaymentQuoteHint": "Есеп серверде жасалды. Нақты қосымша төлем немесе қайтарым төлем сервисі арқылы қосылады.",
+  "myExcursionsGuestsQuoteLoading": "Баға өзгерісін есептеп жатырмыз...",
+  "myExcursionsGuestsQuoteFailed": "Баға өзгерісін есептеу мүмкін болмады. Бос орындарды тексеріп, қайталап көріңіз.",
   "myExcursionsPayAndSaveGuests": "Төлеп сақтау",
   "myExcursionsRefundAndSaveGuests": "Қайтарып сақтау",
   "myExcursionsCancelBookingButton": "Броньды болдырмау",
   "myExcursionsCancelBookingTitle": "Броньды болдырмау керек пе?",
   "myExcursionsCancelBookingHint": "Біз сіздің орныңызды болдырмаймыз және гидке броньды сіз болдырмағаныңызды көрсетеміз.",
+  "myExcursionsCancelQuoteLoading": "Қайтарым шарттарын есептеп жатырмыз...",
+  "myExcursionsCancelQuoteFailed": "Қайтарым шарттарын есептеу мүмкін болмады. Қайталап көріңіз.",
   "myExcursionsCancelBookingRefund": "Қайтарым: {amount} ({percent}%)",
   "@myExcursionsCancelBookingRefund": {
     "placeholders": {

@@ -241,6 +241,25 @@ type CancelExcursionBookingRequest struct {
 	Reason string `json:"reason,omitempty"`
 }
 
+type ExcursionBookingGuestsQuoteResponse struct {
+	Adults             int     `json:"adults"`
+	Children           int     `json:"children"`
+	TotalSeats         int     `json:"totalSeats"`
+	CurrentTotalAmount float64 `json:"currentTotalAmount"`
+	NewTotalAmount     float64 `json:"newTotalAmount"`
+	DeltaAmount        float64 `json:"deltaAmount"`
+	Currency           string  `json:"currency"`
+	Status             string  `json:"status"`
+}
+
+type ExcursionBookingCancellationQuoteResponse struct {
+	Percent    int     `json:"percent"`
+	Amount     float64 `json:"amount"`
+	Currency   string  `json:"currency"`
+	PolicyCode string  `json:"policyCode"`
+	Status     string  `json:"status"`
+}
+
 type CreateGuideScheduleSlotRequest struct {
 	OfferID  string `json:"offerId"`
 	StartAt  string `json:"startAt"`

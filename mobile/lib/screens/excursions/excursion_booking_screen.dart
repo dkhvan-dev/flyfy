@@ -47,6 +47,7 @@ class _ExcursionBookingScreenState extends State<ExcursionBookingScreen> {
   ExcursionScheduleSlotVm? _selectedSlot;
   String? _loadError;
   String? _scheduleError;
+  String? _selectedSlotUnavailableMessage;
   bool _isLoading = true;
   bool _isScheduleLoading = false;
   bool _isSubmitting = false;
@@ -148,6 +149,7 @@ class _ExcursionBookingScreenState extends State<ExcursionBookingScreen> {
     setState(() {
       _isScheduleLoading = true;
       _scheduleError = null;
+      _selectedSlotUnavailableMessage = null;
     });
 
     final now = DateTime.now();
@@ -172,17 +174,27 @@ class _ExcursionBookingScreenState extends State<ExcursionBookingScreen> {
             .toList(growable: false),
       );
       final preservedSlot = _slotById(slots, previousSlotId);
+      final selectedSlot =
+          preservedSlot ??
+          (previousSlotId == null ? _firstSlotOrNull(slots) : null);
+      final unavailableMessage = previousSlotId != null && preservedSlot == null
+          ? AppLocalizations.of(
+              context,
+            )!.excursionBookingSelectedSlotUnavailable(_totalTravelers)
+          : null;
       setState(() {
         _slots = slots;
-        _selectedSlot = preservedSlot ?? _firstSlotOrNull(slots);
+        _selectedSlot = selectedSlot;
         _isScheduleLoading = false;
         _scheduleError = null;
+        _selectedSlotUnavailableMessage = unavailableMessage;
       });
     } catch (_) {
       if (!mounted || requestSerial != _scheduleRequestSerial) return;
       setState(() {
         _slots = const [];
         _selectedSlot = null;
+        _selectedSlotUnavailableMessage = null;
         _isScheduleLoading = false;
         _scheduleError = AppLocalizations.of(
           context,
@@ -421,6 +433,7 @@ class _ExcursionBookingScreenState extends State<ExcursionBookingScreen> {
         selectedSlot: _selectedSlot,
         isScheduleLoading: _isScheduleLoading,
         scheduleError: _scheduleError,
+        selectedSlotUnavailableMessage: _selectedSlotUnavailableMessage,
         adults: _adults,
         children: _children,
         maxTravelers: _travelerLimit,
@@ -430,6 +443,7 @@ class _ExcursionBookingScreenState extends State<ExcursionBookingScreen> {
         onBackTap: _goBack,
         onSelectSlot: (slot) => setState(() {
           _selectedSlot = slot;
+          _selectedSlotUnavailableMessage = null;
           _clampTravelersToLimit(_travelerLimitFor(_excursion, slot));
         }),
         onReloadSchedule: _loadScheduleSlots,
@@ -469,6 +483,7 @@ class ExcursionBookingContent extends StatelessWidget {
     this.onRetry,
     this.loadError,
     this.scheduleError,
+    this.selectedSlotUnavailableMessage,
   });
 
   final ExcursionVm excursion;
@@ -492,6 +507,7 @@ class ExcursionBookingContent extends StatelessWidget {
   final VoidCallback? onRetry;
   final String? loadError;
   final String? scheduleError;
+  final String? selectedSlotUnavailableMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -544,6 +560,8 @@ class ExcursionBookingContent extends StatelessWidget {
                               selectedSlot: selectedSlot,
                               isLoading: isScheduleLoading,
                               errorMessage: scheduleError,
+                              selectedSlotUnavailableMessage:
+                                  selectedSlotUnavailableMessage,
                               travelers: adults + children,
                               onSelectSlot: onSelectSlot,
                               onReload: onReloadSchedule,
@@ -740,6 +758,7 @@ class _BookingScheduleSection extends StatelessWidget {
     required this.onSelectSlot,
     required this.onReload,
     this.errorMessage,
+    this.selectedSlotUnavailableMessage,
   });
 
   final List<ExcursionScheduleSlotVm> slots;
@@ -749,6 +768,7 @@ class _BookingScheduleSection extends StatelessWidget {
   final ValueChanged<ExcursionScheduleSlotVm> onSelectSlot;
   final VoidCallback onReload;
   final String? errorMessage;
+  final String? selectedSlotUnavailableMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -798,6 +818,7 @@ class _BookingScheduleSection extends StatelessWidget {
           isLoading: isLoading,
           travelers: travelers,
           errorMessage: errorMessage,
+          selectedSlotUnavailableMessage: selectedSlotUnavailableMessage,
           onSelectSlot: onSelectSlot,
           onRetry: onReload,
         ),
@@ -860,6 +881,8 @@ class _BookingScheduleSection extends StatelessWidget {
                         selectedSlot: selectedSlot,
                         isLoading: false,
                         travelers: travelers,
+                        selectedSlotUnavailableMessage:
+                            selectedSlotUnavailableMessage,
                         onSelectSlot: (slot) {
                           onSelectSlot(slot);
                           Navigator.of(sheetContext).pop();
@@ -887,6 +910,7 @@ class _BookingSlotSelector extends StatelessWidget {
     required this.onSelectSlot,
     required this.onRetry,
     this.errorMessage,
+    this.selectedSlotUnavailableMessage,
   });
 
   final List<ExcursionScheduleSlotVm> slots;
@@ -896,6 +920,7 @@ class _BookingSlotSelector extends StatelessWidget {
   final ValueChanged<ExcursionScheduleSlotVm> onSelectSlot;
   final VoidCallback onRetry;
   final String? errorMessage;
+  final String? selectedSlotUnavailableMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -930,6 +955,10 @@ class _BookingSlotSelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (selectedSlotUnavailableMessage != null) ...[
+          _SoftErrorBanner(message: selectedSlotUnavailableMessage!),
+          const SizedBox(height: 12),
+        ],
         for (var i = 0; i < grouped.length; i++) ...[
           if (i > 0) const SizedBox(height: 14),
           Text(
@@ -1304,7 +1333,7 @@ class _BookingFooter extends StatelessWidget {
                         : Text(
                             (existingBooking != null
                                     ? l10n.excursionBookingOpenMyExcursions
-                                    : l10n.excursionBookingConfirmPay)
+                                    : l10n.excursionBookingConfirmReservation)
                                 .toUpperCase(),
                             key: const ValueKey('booking-confirm'),
                             maxLines: 1,
@@ -1322,8 +1351,9 @@ class _BookingFooter extends StatelessWidget {
               Text(
                 existingBooking != null
                     ? l10n.excursionBookingAlreadyBookedMessage
-                    : '${l10n.excursionBookingSecurePayment} · '
-                          '${_formatBookingMoney(context, total, excursion.currency)}',
+                    : l10n.excursionBookingPaymentPendingNote(
+                        _formatBookingMoney(context, total, excursion.currency),
+                      ),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,

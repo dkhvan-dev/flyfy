@@ -357,21 +357,28 @@ void main() {
     },
   );
 
-  test('edit guests sheet shows mock settlement for payment deltas', () async {
-    final source = await File(
-      'lib/screens/excursions/my_excursions_screen.dart',
-    ).readAsString();
-    final ruSource = await File('lib/l10n/app_ru.arb').readAsString();
+  test(
+    'booking edit and cancel sheets use server quotes before mutation',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/my_excursions_screen.dart',
+      ).readAsString();
+      final ruSource = await File('lib/l10n/app_ru.arb').readAsString();
 
-    expect(source, contains('_settlementDeltaAmount'));
-    expect(source, contains('_simulateMockSettlement'));
-    expect(source, contains('formatLocalizedExcursionMoney'));
-    expect(source, contains('myExcursionsGuestsChargeMock'));
-    expect(source, contains('myExcursionsGuestsRefundMock'));
-    expect(source, contains('myExcursionsGuestsNoPaymentChange'));
-    expect(source, contains('myExcursionsPayAndSaveGuests'));
-    expect(source, contains('myExcursionsRefundAndSaveGuests'));
-    expect(ruSource, contains('"myExcursionsGuestsChargeMock"'));
-    expect(ruSource, contains('"myExcursionsGuestsRefundMock"'));
-  });
+      expect(source, contains('quoteExcursionBookingGuests'));
+      expect(source, contains('quoteExcursionBookingCancellation'));
+      expect(source, contains('_loadQuote'));
+      expect(source, isNot(contains('_simulateMockSettlement')));
+      expect(source, isNot(contains('estimateCancellationRefund')));
+      expect(source, contains('formatLocalizedExcursionMoney'));
+      expect(source, contains('myExcursionsGuestsAdditionalCharge'));
+      expect(source, contains('myExcursionsGuestsRefundDue'));
+      expect(source, contains('myExcursionsGuestsNoPaymentChange'));
+      expect(source, contains('myExcursionsPayAndSaveGuests'));
+      expect(source, contains('myExcursionsRefundAndSaveGuests'));
+      expect(ruSource, contains('"myExcursionsGuestsAdditionalCharge"'));
+      expect(ruSource, contains('"myExcursionsGuestsRefundDue"'));
+      expect(ruSource, contains('"myExcursionsGuestsQuoteFailed"'));
+    },
+  );
 }

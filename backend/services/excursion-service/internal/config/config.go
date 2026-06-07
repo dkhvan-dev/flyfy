@@ -20,6 +20,7 @@ type Config struct {
 	FileManager  FileManagerConfig
 	ChatService  ChatServiceConfig
 	Notification NotificationServiceConfig
+	Payment      PaymentServiceConfig
 	Translation  TranslationServiceConfig
 	Attendance   AttendanceConfig
 	AntiFraud    AntiFraudConfig
@@ -121,6 +122,11 @@ type ChatServiceConfig struct {
 type NotificationServiceConfig struct {
 	HTTPURL        string        `env:"NOTIFICATION_SERVICE_HTTP_URL, default=http://notification-service:8097"`
 	RequestTimeout time.Duration `env:"NOTIFICATION_SERVICE_REQUEST_TIMEOUT, default=3s"`
+}
+
+type PaymentServiceConfig struct {
+	HTTPURL        string        `env:"PAYMENT_SERVICE_HTTP_URL, default=http://payment-service:8091"`
+	RequestTimeout time.Duration `env:"PAYMENT_SERVICE_REQUEST_TIMEOUT, default=5s"`
 }
 
 type TranslationServiceConfig struct {

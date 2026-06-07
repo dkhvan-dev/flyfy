@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -9,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
@@ -50,6 +52,9 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   static const int _maxExcursionLanguages = 5;
   static const int _minItinerarySlots = 2;
   static const int _maxItineraryAttractionStops = 5;
+  static const String _autosaveKey = 'create_excursion_autosave_v1';
+  static const int _autosaveVersion = 1;
+  static const Duration _autosaveDebounceDuration = Duration(milliseconds: 650);
 
   final _pageController = PageController();
   final _imagePicker = ImagePicker();
@@ -96,8 +101,12 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   String? _coverUploadErrorMessage;
   int _coverUploadGeneration = 0;
   bool _isApplyingMapUrlProgrammatically = false;
+  bool _isApplyingAutosaveDraft = false;
+  bool _didRestoreAutosaveDraft = false;
+  bool _autosaveRestored = false;
   bool _isTrackingStepBackSwipe = false;
   double _stepBackSwipeDistance = 0;
+  Timer? _autosaveDebounce;
   int _mapSelectionRequestSerial = 0;
   String? _stepErrorText;
   String? _landmarkErrorText;
@@ -118,9 +127,14 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   void initState() {
     super.initState();
     _mapUrlCtrl.addListener(_handleMapUrlTextChanged);
+    _attachAutosaveListeners();
     if ((widget.excursionId ?? '').trim().isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _loadExcursionForEdit();
+      });
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(_restoreAutosaveDraft());
       });
     }
   }
@@ -171,11 +185,14 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
         _cityNameCtrl.text = location.cityName!.trim();
       }
     });
+    _scheduleAutosave();
   }
 
   @override
   void dispose() {
     _mapUrlCtrl.removeListener(_handleMapUrlTextChanged);
+    _removeAutosaveListeners();
+    _autosaveDebounce?.cancel();
     _mapUrlParseDebounce?.cancel();
     _mapUrlResolveSerial += 1;
     _pageController.dispose();
@@ -187,6 +204,283 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     _mapUrlCtrl.dispose();
     _priceAmountCtrl.dispose();
     super.dispose();
+  }
+
+  void _attachAutosaveListeners() {
+    for (final controller in _autosaveTextControllers) {
+      controller.addListener(_handleAutosaveTextChanged);
+    }
+  }
+
+  void _removeAutosaveListeners() {
+    for (final controller in _autosaveTextControllers) {
+      controller.removeListener(_handleAutosaveTextChanged);
+    }
+  }
+
+  List<TextEditingController> get _autosaveTextControllers => [
+    _landmarkNameCtrl,
+    _cityNameCtrl,
+    _durationValueCtrl,
+    _maxGroupSizeCtrl,
+    _meetingPointCtrl,
+    _mapUrlCtrl,
+    _priceAmountCtrl,
+  ];
+
+  void _handleAutosaveTextChanged() {
+    _scheduleAutosave();
+  }
+
+  void _scheduleAutosave() {
+    if (_isEditMode || _isApplyingAutosaveDraft) return;
+    _autosaveDebounce?.cancel();
+    _autosaveDebounce = Timer(_autosaveDebounceDuration, () {
+      unawaited(_persistAutosaveDraft());
+    });
+  }
+
+  Future<void> _persistAutosaveDraft() async {
+    if (_isEditMode || _isApplyingAutosaveDraft || !mounted) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_autosaveKey, jsonEncode(_autosaveDraftPayload()));
+  }
+
+  Future<void> _restoreAutosaveDraft() async {
+    if (_isEditMode || _didRestoreAutosaveDraft || !mounted) return;
+    _didRestoreAutosaveDraft = true;
+    final prefs = await SharedPreferences.getInstance();
+    final rawDraft = prefs.getString(_autosaveKey);
+    if (rawDraft == null || rawDraft.trim().isEmpty) return;
+
+    try {
+      final decoded = jsonDecode(rawDraft);
+      if (decoded is! Map<String, dynamic>) return;
+      if (_intFromDraft(decoded['version']) != _autosaveVersion) return;
+      _applyAutosaveDraftPayload(decoded);
+      if (!mounted) return;
+      setState(() => _autosaveRestored = true);
+    } catch (_) {
+      await prefs.remove(_autosaveKey);
+    }
+  }
+
+  Future<void> _clearAutosaveDraft() async {
+    _autosaveDebounce?.cancel();
+    if (_isEditMode) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_autosaveKey);
+  }
+
+  Map<String, dynamic> _autosaveDraftPayload() {
+    return {
+      'version': _autosaveVersion,
+      'updatedAt': DateTime.now().toUtc().toIso8601String(),
+      'currentStep': _currentStep,
+      'creationMode': _creationMode.name,
+      'selectedCategorySlug': _selectedCategorySlug,
+      'visibility': _visibility,
+      'selectedDurationUnit': _selectedDurationUnit.name,
+      'selectedCurrencyCode': _selectedCurrencyCode,
+      'selectedCountryCode': _selectedCountryCode,
+      'departureCityId': _departureCityId,
+      'selectedLandmarkId': _selectedLandmarkId,
+      'selectedLatitude': _selectedLatitude,
+      'selectedLongitude': _selectedLongitude,
+      'selectedAttractionCoverFileId': _selectedAttractionCoverFileId,
+      'selectedAttractionCoverImageUrl': _selectedAttractionCoverImageUrl,
+      'coverFileId': _coverFileId,
+      'coverChanged': _coverChanged,
+      'productTranslations': _productTranslations.map(
+        (locale, copy) => MapEntry(locale, copy.toJson()),
+      ),
+      'selectedLanguageCodes': _selectedLanguageCodes.toList(growable: false),
+      'includedItems': _includedItems
+          .map((item) => item.toPayload())
+          .toList(growable: false),
+      'itinerary': _itinerary
+          .map(_itineraryDraftToJson)
+          .toList(growable: false),
+      'text': {
+        'landmarkName': _landmarkNameCtrl.text,
+        'cityName': _cityNameCtrl.text,
+        'durationValue': _durationValueCtrl.text,
+        'maxGroupSize': _maxGroupSizeCtrl.text,
+        'meetingPoint': _meetingPointCtrl.text,
+        'mapUrl': _mapUrlCtrl.text,
+        'priceAmount': _priceAmountCtrl.text,
+      },
+    };
+  }
+
+  void _applyAutosaveDraftPayload(Map<String, dynamic> draft) {
+    final text = draft['text'];
+    _isApplyingAutosaveDraft = true;
+    setState(() {
+      _currentStep = (_intFromDraft(draft['currentStep']) ?? 0).clamp(
+        0,
+        _totalSteps - 1,
+      );
+      _creationMode = _enumFromDraft(
+        _ExcursionCreationMode.values,
+        _stringFromDraft(draft['creationMode']),
+        _creationMode,
+      );
+      _selectedCategorySlug =
+          _stringFromDraft(draft['selectedCategorySlug']) ??
+          _selectedCategorySlug;
+      _visibility = _stringFromDraft(draft['visibility']) ?? _visibility;
+      _selectedDurationUnit = _enumFromDraft(
+        _ExcursionDurationUnit.values,
+        _stringFromDraft(draft['selectedDurationUnit']),
+        _selectedDurationUnit,
+      );
+      _selectedCurrencyCode =
+          _stringFromDraft(draft['selectedCurrencyCode']) ??
+          _selectedCurrencyCode;
+      _selectedCountryCode = _stringFromDraft(draft['selectedCountryCode']);
+      _departureCityId = _stringFromDraft(draft['departureCityId']);
+      _selectedLandmarkId = _stringFromDraft(draft['selectedLandmarkId']);
+      _selectedLatitude = _doubleFromDraft(draft['selectedLatitude']);
+      _selectedLongitude = _doubleFromDraft(draft['selectedLongitude']);
+      _selectedAttractionCoverFileId = _stringFromDraft(
+        draft['selectedAttractionCoverFileId'],
+      );
+      _selectedAttractionCoverImageUrl = _stringFromDraft(
+        draft['selectedAttractionCoverImageUrl'],
+      );
+      _coverFileId = _stringFromDraft(draft['coverFileId']);
+      _coverChanged = draft['coverChanged'] == true && _coverFileId != null;
+      _productTranslations = _localizedCopyDraftMapFromJson(
+        draft['productTranslations'],
+      );
+      _selectedLanguageCodes
+        ..clear()
+        ..addAll(_stringListFromDraft(draft['selectedLanguageCodes']));
+      if (_selectedLanguageCodes.isEmpty) {
+        _selectedLanguageCodes.addAll(const ['en', 'ru']);
+      }
+      _includedItems
+        ..clear()
+        ..addAll(
+          _stringListFromDraft(
+            draft['includedItems'],
+          ).map(_ExcursionIncludedItemDraft.fromPayload),
+        );
+      _itinerary
+        ..clear()
+        ..addAll(_itineraryDraftsFromJson(draft['itinerary']));
+      if (text is Map<String, dynamic>) {
+        _landmarkNameCtrl.text = _stringFromDraft(text['landmarkName']) ?? '';
+        _cityNameCtrl.text = _stringFromDraft(text['cityName']) ?? '';
+        _durationValueCtrl.text =
+            _stringFromDraft(text['durationValue']) ?? '4';
+        _maxGroupSizeCtrl.text = _stringFromDraft(text['maxGroupSize']) ?? '8';
+        _meetingPointCtrl.text = _stringFromDraft(text['meetingPoint']) ?? '';
+        _setMapUrlText(_stringFromDraft(text['mapUrl']) ?? '');
+        _priceAmountCtrl.text = _stringFromDraft(text['priceAmount']) ?? '';
+      }
+      _clearFieldValidationErrors();
+      _stepErrorText = null;
+    });
+    _pageController.jumpToPage(_currentStep);
+    _isApplyingAutosaveDraft = false;
+  }
+
+  Map<String, dynamic> _itineraryDraftToJson(_ExcursionItineraryDraft item) {
+    return {
+      'startOffsetMinutes': item.startOffsetMinutes,
+      'countryCode': item.countryCode,
+      'durationMinutes': item.durationMinutes,
+      'attractionId': item.attractionId,
+      'attractionName': item.attractionName,
+      'latitude': item.latitude,
+      'longitude': item.longitude,
+      'travelFromPreviousMinutes': item.travelFromPreviousMinutes,
+      'title': item.title,
+      'description': item.description,
+    };
+  }
+
+  List<_ExcursionItineraryDraft> _itineraryDraftsFromJson(Object? rawItems) {
+    if (rawItems is! List) return const [];
+    return rawItems
+        .whereType<Map<String, dynamic>>()
+        .map((item) {
+          return _ExcursionItineraryDraft(
+            startOffsetMinutes: _intFromDraft(item['startOffsetMinutes']) ?? 0,
+            countryCode: _stringFromDraft(item['countryCode']),
+            durationMinutes: _intFromDraft(item['durationMinutes']),
+            attractionId: _stringFromDraft(item['attractionId']),
+            attractionName: _stringFromDraft(item['attractionName']),
+            latitude: _doubleFromDraft(item['latitude']),
+            longitude: _doubleFromDraft(item['longitude']),
+            travelFromPreviousMinutes: _intFromDraft(
+              item['travelFromPreviousMinutes'],
+            ),
+            title: _stringFromDraft(item['title']) ?? '',
+            description: _stringFromDraft(item['description']) ?? '',
+          );
+        })
+        .toList(growable: false);
+  }
+
+  Map<String, CreateExcursionLocalizedCopyRequest>
+  _localizedCopyDraftMapFromJson(Object? rawMap) {
+    if (rawMap is! Map<String, dynamic>) return const {};
+    final result = <String, CreateExcursionLocalizedCopyRequest>{};
+    rawMap.forEach((locale, rawCopy) {
+      if (rawCopy is! Map<String, dynamic>) return;
+      final normalizedLocale = locale.trim().toLowerCase();
+      if (normalizedLocale.isEmpty) return;
+      result[normalizedLocale] = CreateExcursionLocalizedCopyRequest(
+        title: _stringFromDraft(rawCopy['title']),
+        summary: _stringFromDraft(rawCopy['summary']),
+        description: _stringFromDraft(rawCopy['description']),
+      );
+    });
+    return result;
+  }
+
+  List<String> _stringListFromDraft(Object? rawItems) {
+    if (rawItems is! List) return const [];
+    return rawItems
+        .whereType<String>()
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  String? _stringFromDraft(Object? value) {
+    if (value is! String) return null;
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  int? _intFromDraft(Object? value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value.trim());
+    return null;
+  }
+
+  double? _doubleFromDraft(Object? value) {
+    if (value is double) return value;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value.trim());
+    return null;
+  }
+
+  T _enumFromDraft<T extends Enum>(
+    Iterable<T> values,
+    String? name,
+    T fallback,
+  ) {
+    if (name == null) return fallback;
+    for (final value in values) {
+      if (value.name == name) return value;
+    }
+    return fallback;
   }
 
   bool get _isEditMode => (widget.excursionId ?? '').trim().isNotEmpty;
@@ -372,6 +666,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       duration: const Duration(milliseconds: 260),
       curve: Curves.easeOutCubic,
     );
+    _scheduleAutosave();
   }
 
   void _nextStep() {
@@ -572,6 +867,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
 
     if (saved != null) {
       _editingExcursionStatus = saved.status.trim().toUpperCase();
+      await _clearAutosaveDraft();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -586,7 +883,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       if (context.canPop()) {
         context.pop(saved);
       } else {
-        context.go('/');
+        context.go('/profile/guide-dashboard');
       }
       return;
     }
@@ -766,6 +1063,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       _languagesErrorText = null;
       _stepErrorText = null;
     });
+    _scheduleAutosave();
   }
 
   Future<void> _openIncludedItemsEditor() async {
@@ -786,6 +1084,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
         ..addAll(result);
       _stepErrorText = null;
     });
+    _scheduleAutosave();
   }
 
   List<_ExcursionIncludedItemDraft> _uniqueIncludedItemDrafts(
@@ -816,6 +1115,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     _mapUrlResolveFailedRawValue = null;
     _meetingPointErrorText = null;
     _mapUrlErrorText = null;
+    _scheduleAutosave();
   }
 
   bool get _hasSelectedAttraction =>
@@ -835,6 +1135,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       _itineraryErrorText = null;
       _stepErrorText = null;
     });
+    _scheduleAutosave();
   }
 
   void _replaceCustomCoverWithAttractionCover() {
@@ -1013,6 +1314,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       _meetingPointErrorText = null;
       _stepErrorText = null;
     });
+    _scheduleAutosave();
     await _applyParsedMeetingPointAddress(
       position: resolvedPoint,
       mapUrlRequestSerial: requestSerial,
@@ -1115,6 +1417,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
             _meetingPointErrorText = null;
             _stepErrorText = null;
           });
+          _scheduleAutosave();
         }
       }
     } catch (_) {
@@ -1141,6 +1444,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       _mapUrlErrorText = null;
       _stepErrorText = null;
     });
+    _scheduleAutosave();
 
     await _resolveMeetingPointAddress(
       position: position,
@@ -1218,6 +1522,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
         _coverUploadErrorMessage = null;
         _isCoverUploading = false;
       });
+      _scheduleAutosave();
     } on DioException catch (e) {
       if (!mounted || uploadGeneration != _coverUploadGeneration) return;
       setState(() {
@@ -1337,6 +1642,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       _landmarkErrorText = null;
       _stepErrorText = null;
     });
+    _scheduleAutosave();
   }
 
   Future<void> _openItineraryEditor({_ExcursionItineraryDraft? item}) async {
@@ -1375,6 +1681,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       _itineraryErrorText = null;
       _stepErrorText = null;
     });
+    _scheduleAutosave();
   }
 
   Set<String> _reservedItineraryAttractionIds(_ExcursionItineraryDraft? item) {
@@ -1555,6 +1862,18 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           textAlign: TextAlign.center,
           style: const TextStyle(color: Color(0xFFB69B78), fontSize: 12),
         ),
+        if (_autosaveRestored) ...[
+          const SizedBox(height: 6),
+          Text(
+            l10n.createExcursionAutosaveRestored,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppColors.accent,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -1595,7 +1914,10 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
             item: item,
             hasError: !_isCompleteItineraryDraft(item),
             onTap: () => _openItineraryEditor(item: item),
-            onDelete: () => setState(() => _itinerary.remove(item)),
+            onDelete: () {
+              setState(() => _itinerary.remove(item));
+              _scheduleAutosave();
+            },
           ),
         ),
       ),
@@ -1658,11 +1980,14 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
             _durationErrorText = null;
             _stepErrorText = null;
           }),
-          onUnitChanged: (unit) => setState(() {
-            _selectedDurationUnit = unit;
-            _durationErrorText = null;
-            _stepErrorText = null;
-          }),
+          onUnitChanged: (unit) {
+            setState(() {
+              _selectedDurationUnit = unit;
+              _durationErrorText = null;
+              _stepErrorText = null;
+            });
+            _scheduleAutosave();
+          },
         ),
         const SizedBox(height: 16),
         _ExcursionTextField(
@@ -1694,7 +2019,10 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           description: l10n.createExcursionVisibilityPublicDescription,
           icon: Icons.public_rounded,
           selected: _visibility == 'PUBLIC',
-          onTap: () => setState(() => _visibility = 'PUBLIC'),
+          onTap: () {
+            setState(() => _visibility = 'PUBLIC');
+            _scheduleAutosave();
+          },
         ),
         const SizedBox(height: 12),
         _VisibilityCard(
@@ -1702,7 +2030,10 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           description: l10n.createExcursionVisibilityUnlistedDescription,
           icon: Icons.link_rounded,
           selected: _visibility == 'UNLISTED',
-          onTap: () => setState(() => _visibility = 'UNLISTED'),
+          onTap: () {
+            setState(() => _visibility = 'UNLISTED');
+            _scheduleAutosave();
+          },
         ),
       ],
     );
@@ -1780,11 +2111,14 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           label: l10n.createCurrencyLabel,
           selectedCode: _selectedCurrencyCode,
           errorText: _currencyErrorText,
-          onChanged: (value) => setState(() {
-            _selectedCurrencyCode = value;
-            _currencyErrorText = null;
-            _stepErrorText = null;
-          }),
+          onChanged: (value) {
+            setState(() {
+              _selectedCurrencyCode = value;
+              _currencyErrorText = null;
+              _stepErrorText = null;
+            });
+            _scheduleAutosave();
+          },
         ),
         const SizedBox(height: 12),
         _SectionHeader(

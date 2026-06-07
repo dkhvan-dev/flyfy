@@ -107,8 +107,12 @@ class ExcursionBookingVm {
         !scheduledFor.toUtc().isAfter(now.toUtc());
   }
 
+  bool isPastForHistory(DateTime now) {
+    return !isCancelled && !scheduledFor.toUtc().isAfter(now.toUtc());
+  }
+
   bool isBooked(DateTime now) {
-    return !isCancelled && scheduledFor.isAfter(now);
+    return !isCancelled && scheduledFor.toUtc().isAfter(now.toUtc());
   }
 
   bool get isCancelled => status.trim().toUpperCase() == 'CANCELLED';
@@ -337,6 +341,19 @@ class ExcursionBookingCancellationQuote {
 
   bool get hasRefund => amount > 0;
 
+  factory ExcursionBookingCancellationQuote.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    final normalizedCurrency = _string(json['currency']).trim().toUpperCase();
+    return ExcursionBookingCancellationQuote(
+      percent: _int(json['percent']),
+      amount: _double(json['amount']),
+      currency: normalizedCurrency.isEmpty ? 'KZT' : normalizedCurrency,
+      policyCode: _string(json['policyCode']),
+      status: _string(json['status']),
+    );
+  }
+
   factory ExcursionBookingCancellationQuote.fromBooking({
     required double totalAmount,
     required String currency,
@@ -368,6 +385,46 @@ class ExcursionBookingCancellationQuote {
       currency: currency.trim().isEmpty ? 'KZT' : currency.trim(),
       policyCode: policyCode,
       status: amount > 0 ? 'PENDING_PAYMENT_INTEGRATION' : 'NOT_REFUNDABLE',
+    );
+  }
+}
+
+class ExcursionBookingGuestsQuote {
+  const ExcursionBookingGuestsQuote({
+    required this.adults,
+    required this.children,
+    required this.totalSeats,
+    required this.currentTotalAmount,
+    required this.newTotalAmount,
+    required this.deltaAmount,
+    required this.currency,
+    required this.status,
+  });
+
+  final int adults;
+  final int children;
+  final int totalSeats;
+  final double currentTotalAmount;
+  final double newTotalAmount;
+  final double deltaAmount;
+  final String currency;
+  final String status;
+
+  bool get hasPaymentChange => deltaAmount != 0;
+  bool get isAdditionalCharge => deltaAmount > 0;
+  bool get isRefund => deltaAmount < 0;
+
+  factory ExcursionBookingGuestsQuote.fromJson(Map<String, dynamic> json) {
+    final normalizedCurrency = _string(json['currency']).trim().toUpperCase();
+    return ExcursionBookingGuestsQuote(
+      adults: _int(json['adults']),
+      children: _int(json['children']),
+      totalSeats: _int(json['totalSeats']),
+      currentTotalAmount: _double(json['currentTotalAmount']),
+      newTotalAmount: _double(json['newTotalAmount']),
+      deltaAmount: _double(json['deltaAmount']),
+      currency: normalizedCurrency.isEmpty ? 'KZT' : normalizedCurrency,
+      status: _string(json['status']),
     );
   }
 }
@@ -490,7 +547,7 @@ List<ExcursionBookingVm> filterMyExcursionBookings(
         if (tab == MyExcursionsTab.booked && !isUpcoming) {
           return false;
         }
-        if (tab == MyExcursionsTab.visited && !item.isVisited(now)) {
+        if (tab == MyExcursionsTab.visited && !item.isPastForHistory(now)) {
           return false;
         }
         if (normalizedStatuses.isNotEmpty &&

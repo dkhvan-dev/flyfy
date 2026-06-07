@@ -1164,6 +1164,7 @@
   "excursionDetailsMeetingPoint": "Meeting point",
   "excursionDetailsTotal": "Total",
   "excursionDetailsBook": "Book",
+  "excursionDetailsBookingSeatCheckNote": "Exact seats for your group are checked on the booking screen.",
   "excursionDetailsCheckingSchedule": "Checking available times...",
   "excursionDetailsNoAvailableSlots": "This guide has no available time slots for this excursion yet.",
   "excursionDetailsEditOffer": "Edit offer",
@@ -1195,15 +1196,26 @@
   },
   "excursionBookingServiceFeeSummary": "Service fee (5%)",
   "excursionBookingTotalPrice": "Total Price",
-  "excursionBookingConfirmPay": "Confirm & Pay",
-  "excursionBookingSecurePayment": "Secure payment processed by Inflap",
-  "excursionBookingSubmitted": "Booking request is ready. Online payment will be connected soon.",
+  "excursionBookingConfirmReservation": "Confirm booking",
+  "excursionBookingPaymentPendingNote": "No payment is charged now. Online payment will appear when it is connected. Total: {amount}",
+  "@excursionBookingPaymentPendingNote": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "excursionBookingSubmitted": "Booking is confirmed. Online payment will be connected soon.",
   "excursionBookingAlreadyBookedTitle": "You already booked this time",
   "excursionBookingAlreadyBookedMessage": "You can change the number of guests in My excursions.",
   "excursionBookingOpenMyExcursions": "Open My excursions",
   "excursionBookingLoadFailed": "Failed to load excursion booking",
   "excursionBookingPerPerson": "/ person",
   "excursionBookingSelectSlot": "Select an available time",
+  "excursionBookingSelectedSlotUnavailable": "The selected time is no longer available for {count} guests. Choose another time.",
+  "@excursionBookingSelectedSlotUnavailable": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "excursionBookingScheduleLoadFailed": "Failed to load available times",
   "excursionBookingNoSlots": "The guide has not added available times for this offer yet.",
   "excursionBookingSeatsLeft": "{count} seats left",
@@ -1290,7 +1302,8 @@
   "createExcursionAddTimeSlot": "Add Time Slot",
   "createExcursionEditTimeSlot": "Edit Time Slot",
   "createExcursionItineraryEmpty": "Add at least two route points. They will be shown to tourists in the excursion details.",
-  "createExcursionAutosaveHint": "Auto-saving progress to your guide profile",
+  "createExcursionAutosaveHint": "Progress is saved locally while you create the offer",
+  "createExcursionAutosaveRestored": "Local draft restored",
   "createExcursionItineraryValidation": "Fill in the route point time, title, and description",
   "createExcursionItineraryMinSlotsValidation": "Add at least {count} route points",
   "@createExcursionItineraryMinSlotsValidation": {
@@ -1627,25 +1640,29 @@
   "myExcursionsEditGuestsHint": "We will check available seats and update the booking without creating another one.",
   "myExcursionsUpdateGuestsSuccess": "Guest count updated",
   "myExcursionsUpdateGuestsFailed": "Failed to update guest count. Check available seats and try again.",
-  "myExcursionsGuestsChargeMock": "To pay: {amount}",
-  "@myExcursionsGuestsChargeMock": {
+  "myExcursionsGuestsAdditionalCharge": "Additional charge: {amount}",
+  "@myExcursionsGuestsAdditionalCharge": {
     "placeholders": {
       "amount": {}
     }
   },
-  "myExcursionsGuestsRefundMock": "To refund: {amount}",
-  "@myExcursionsGuestsRefundMock": {
+  "myExcursionsGuestsRefundDue": "Refund due: {amount}",
+  "@myExcursionsGuestsRefundDue": {
     "placeholders": {
       "amount": {}
     }
   },
   "myExcursionsGuestsNoPaymentChange": "Price will not change",
-  "myExcursionsGuestsPaymentMockHint": "This is a mock settlement for now: real charges or refunds will be connected through the payment service.",
+  "myExcursionsGuestsPaymentQuoteHint": "The estimate is calculated on the server. Real charges or refunds will be connected through the payment service.",
+  "myExcursionsGuestsQuoteLoading": "Calculating price change...",
+  "myExcursionsGuestsQuoteFailed": "Could not calculate the price change. Check available seats and try again.",
   "myExcursionsPayAndSaveGuests": "Pay and save",
   "myExcursionsRefundAndSaveGuests": "Refund and save",
   "myExcursionsCancelBookingButton": "Cancel booking",
   "myExcursionsCancelBookingTitle": "Cancel booking?",
   "myExcursionsCancelBookingHint": "We will cancel your place and show the guide that the booking was cancelled by you.",
+  "myExcursionsCancelQuoteLoading": "Calculating refund terms...",
+  "myExcursionsCancelQuoteFailed": "Could not calculate refund terms. Try again.",
   "myExcursionsCancelBookingRefund": "Refund: {amount} ({percent}%)",
   "@myExcursionsCancelBookingRefund": {
     "placeholders": {

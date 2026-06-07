@@ -128,6 +128,39 @@ void main() {
     },
   );
 
+  test('loadGuideDashboardData loads all guide dashboard pages', () async {
+    final api = _FakeExcursionApi(
+      excursionBatches: const [],
+      createdExcursion: _createdDraft,
+      publishedExcursion: _publishedExcursion,
+      myExcursionPages: const [
+        ExcursionsPage(items: [_publishedProductDetails], hasMore: true),
+        ExcursionsPage(items: [_createdDraft], hasMore: false),
+      ],
+      guideBookingPages: [
+        ExcursionBookingsPage(items: [_upcomingGuideBooking], hasMore: true),
+        ExcursionBookingsPage(items: [_upcomingGuideBooking], hasMore: false),
+      ],
+    );
+    final provider = ExcursionProvider(
+      excursionApi: api,
+      guideApi: _FakeGuideApi(profile: null),
+    );
+
+    await provider.loadGuideDashboardData();
+
+    expect(provider.myGuideExcursions, const [
+      _publishedProductDetails,
+      _createdDraft,
+    ]);
+    expect(provider.myGuideExcursionBookings, [
+      _upcomingGuideBooking,
+      _upcomingGuideBooking,
+    ]);
+    expect(api.getMyExcursionsOffsets, [0, 1]);
+    expect(api.getMyGuideExcursionBookingsOffsets, [0, 1]);
+  });
+
   test(
     'previewExcursions loads all matching pages without mutating list state',
     () async {
@@ -509,7 +542,9 @@ class _FakeExcursionApi extends ExcursionApi {
     this.updatedExcursion,
     this.excursionDetails = const {},
     this.myExcursions = const [],
+    this.myExcursionPages = const [],
     this.guideBookings = const [],
+    this.guideBookingPages = const [],
   });
 
   final List<List<ExcursionVm>> excursionBatches;
@@ -519,7 +554,9 @@ class _FakeExcursionApi extends ExcursionApi {
   final ExcursionVm? updatedExcursion;
   final Map<String, ExcursionVm> excursionDetails;
   final List<ExcursionVm> myExcursions;
+  final List<ExcursionsPage> myExcursionPages;
   final List<ExcursionBookingVm> guideBookings;
+  final List<ExcursionBookingsPage> guideBookingPages;
   int getExcursionsCallCount = 0;
   int getExcursionsPageCallCount = 0;
   final List<int> getExcursionsPageOffsets = [];
@@ -527,7 +564,9 @@ class _FakeExcursionApi extends ExcursionApi {
   final List<String?> getExcursionsPageDepartureCityIds = [];
   int getMyExcursionsCallCount = 0;
   final List<List<String>> getMyExcursionsStatuses = [];
+  final List<int> getMyExcursionsOffsets = [];
   int getMyGuideExcursionBookingsCallCount = 0;
+  final List<int> getMyGuideExcursionBookingsOffsets = [];
   final List<String> getExcursionByIdCalls = [];
   final List<String> deletedExcursionIds = [];
 
@@ -602,8 +641,16 @@ class _FakeExcursionApi extends ExcursionApi {
     int offset = 0,
     List<String> statuses = const [],
   }) async {
+    final index = getMyExcursionsCallCount;
     getMyExcursionsCallCount++;
+    getMyExcursionsOffsets.add(offset);
     getMyExcursionsStatuses.add(List<String>.unmodifiable(statuses));
+    if (myExcursionPages.isNotEmpty) {
+      if (index >= myExcursionPages.length) {
+        return const ExcursionsPage(items: [], hasMore: false);
+      }
+      return myExcursionPages[index];
+    }
     return ExcursionsPage(items: myExcursions, hasMore: false);
   }
 
@@ -617,7 +664,15 @@ class _FakeExcursionApi extends ExcursionApi {
     int limit = 50,
     int offset = 0,
   }) async {
+    final index = getMyGuideExcursionBookingsCallCount;
     getMyGuideExcursionBookingsCallCount++;
+    getMyGuideExcursionBookingsOffsets.add(offset);
+    if (guideBookingPages.isNotEmpty) {
+      if (index >= guideBookingPages.length) {
+        return const ExcursionBookingsPage(items: [], hasMore: false);
+      }
+      return guideBookingPages[index];
+    }
     return ExcursionBookingsPage(items: guideBookings, hasMore: false);
   }
 }

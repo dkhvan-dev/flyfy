@@ -1164,6 +1164,7 @@
   "excursionDetailsMeetingPoint": "Место встречи",
   "excursionDetailsTotal": "Итого",
   "excursionDetailsBook": "Забронировать",
+  "excursionDetailsBookingSeatCheckNote": "Точное число мест проверим на экране бронирования.",
   "excursionDetailsCheckingSchedule": "Проверяем доступное время...",
   "excursionDetailsNoAvailableSlots": "У этого гида пока нет доступных слотов для этой экскурсии.",
   "excursionDetailsEditOffer": "Редактировать предложение",
@@ -1195,15 +1196,26 @@
   },
   "excursionBookingServiceFeeSummary": "Сервисный сбор (5%)",
   "excursionBookingTotalPrice": "Итоговая стоимость",
-  "excursionBookingConfirmPay": "Подтвердить и оплатить",
-  "excursionBookingSecurePayment": "Безопасная оплата через Inflap",
-  "excursionBookingSubmitted": "Заявка на бронирование готова. Онлайн-оплата будет подключена скоро.",
+  "excursionBookingConfirmReservation": "Подтвердить бронь",
+  "excursionBookingPaymentPendingNote": "Сейчас оплата не списывается. Онлайн-оплата появится после подключения. Итого: {amount}",
+  "@excursionBookingPaymentPendingNote": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "excursionBookingSubmitted": "Бронь подтверждена. Онлайн-оплата будет подключена скоро.",
   "excursionBookingAlreadyBookedTitle": "Вы уже забронировали это время",
   "excursionBookingAlreadyBookedMessage": "Изменить количество гостей можно в разделе «Мои экскурсии».",
   "excursionBookingOpenMyExcursions": "Открыть Мои экскурсии",
   "excursionBookingLoadFailed": "Не удалось загрузить бронирование экскурсии",
   "excursionBookingPerPerson": "/ чел.",
   "excursionBookingSelectSlot": "Выберите доступное время",
+  "excursionBookingSelectedSlotUnavailable": "Выбранное время больше недоступно для {count} гостей. Выберите другое время.",
+  "@excursionBookingSelectedSlotUnavailable": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "excursionBookingScheduleLoadFailed": "Не удалось загрузить доступное время",
   "excursionBookingNoSlots": "Гид пока не добавил доступное время для этого предложения.",
   "excursionBookingSeatsLeft": "Осталось мест: {count}",
@@ -1290,7 +1302,8 @@
   "createExcursionAddTimeSlot": "Добавить слот",
   "createExcursionEditTimeSlot": "Редактировать слот",
   "createExcursionItineraryEmpty": "Добавьте минимум два пункта маршрута. Они будут показаны туристам в деталях экскурсии.",
-  "createExcursionAutosaveHint": "Прогресс автосохраняется в профиль гида",
+  "createExcursionAutosaveHint": "Прогресс сохраняется локально, пока вы создаете предложение",
+  "createExcursionAutosaveRestored": "Локальный черновик восстановлен",
   "createExcursionItineraryValidation": "Заполните время, название и описание пункта маршрута",
   "createExcursionItineraryMinSlotsValidation": "Добавьте минимум {count} пункта маршрута",
   "@createExcursionItineraryMinSlotsValidation": {
@@ -1627,25 +1640,29 @@
   "myExcursionsEditGuestsHint": "Мы проверим доступные места и обновим бронь без повторного создания.",
   "myExcursionsUpdateGuestsSuccess": "Количество гостей обновлено",
   "myExcursionsUpdateGuestsFailed": "Не удалось обновить количество гостей. Проверьте доступные места и попробуйте снова.",
-  "myExcursionsGuestsChargeMock": "К доплате: {amount}",
-  "@myExcursionsGuestsChargeMock": {
+  "myExcursionsGuestsAdditionalCharge": "К доплате: {amount}",
+  "@myExcursionsGuestsAdditionalCharge": {
     "placeholders": {
       "amount": {}
     }
   },
-  "myExcursionsGuestsRefundMock": "К возврату: {amount}",
-  "@myExcursionsGuestsRefundMock": {
+  "myExcursionsGuestsRefundDue": "К возврату: {amount}",
+  "@myExcursionsGuestsRefundDue": {
     "placeholders": {
       "amount": {}
     }
   },
   "myExcursionsGuestsNoPaymentChange": "Стоимость не изменится",
-  "myExcursionsGuestsPaymentMockHint": "Пока это мок-расчет: реальная доплата или возврат подключатся через платежный сервис.",
+  "myExcursionsGuestsPaymentQuoteHint": "Расчет выполнен на сервере. Реальная доплата или возврат подключатся через платежный сервис.",
+  "myExcursionsGuestsQuoteLoading": "Считаем изменение стоимости...",
+  "myExcursionsGuestsQuoteFailed": "Не удалось рассчитать изменение стоимости. Проверьте доступные места и попробуйте снова.",
   "myExcursionsPayAndSaveGuests": "Доплатить и сохранить",
   "myExcursionsRefundAndSaveGuests": "Вернуть и сохранить",
   "myExcursionsCancelBookingButton": "Отменить бронь",
   "myExcursionsCancelBookingTitle": "Отменить бронь?",
   "myExcursionsCancelBookingHint": "Мы отменим ваше место и покажем гиду, что бронь отменена вами.",
+  "myExcursionsCancelQuoteLoading": "Считаем условия возврата...",
+  "myExcursionsCancelQuoteFailed": "Не удалось рассчитать условия возврата. Попробуйте еще раз.",
   "myExcursionsCancelBookingRefund": "К возврату: {amount} ({percent}%)",
   "@myExcursionsCancelBookingRefund": {
     "placeholders": {

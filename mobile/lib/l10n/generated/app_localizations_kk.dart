@@ -3217,6 +3217,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get excursionDetailsBook => 'Брондау';
 
   @override
+  String get excursionDetailsBookingSeatCheckNote =>
+      'Тобыңызға нақты орын саны брондау экранында тексеріледі.';
+
+  @override
   String get excursionDetailsCheckingSchedule =>
       'Қолжетімді уақыттарды тексеріп жатырмыз...';
 
@@ -3282,15 +3286,16 @@ class AppLocalizationsKk extends AppLocalizations {
   String get excursionBookingTotalPrice => 'Жалпы баға';
 
   @override
-  String get excursionBookingConfirmPay => 'Растау және төлеу';
+  String get excursionBookingConfirmReservation => 'Брондауды растау';
 
   @override
-  String get excursionBookingSecurePayment =>
-      'Қауіпсіз төлем Inflap арқылы өңделеді';
+  String excursionBookingPaymentPendingNote(Object amount) {
+    return 'Қазір төлем алынбайды. Онлайн төлем қосылғаннан кейін пайда болады. Барлығы: $amount';
+  }
 
   @override
   String get excursionBookingSubmitted =>
-      'Брондау сұрауы дайын. Онлайн төлем жақында қосылады.';
+      'Брондау расталды. Онлайн төлем жақында қосылады.';
 
   @override
   String get excursionBookingAlreadyBookedTitle => 'Бұл уақытқа бронь бар';
@@ -3311,6 +3316,11 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get excursionBookingSelectSlot => 'Қолжетімді уақытты таңдаңыз';
+
+  @override
+  String excursionBookingSelectedSlotUnavailable(Object count) {
+    return 'Таңдалған уақыт $count қонаққа енді қолжетімсіз. Басқа уақытты таңдаңыз.';
+  }
 
   @override
   String get excursionBookingScheduleLoadFailed =>
@@ -3503,7 +3513,11 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get createExcursionAutosaveHint =>
-      'Прогресс гид профиліне автоматты сақталады';
+      'Ұсынысты жасау кезінде прогресс жергілікті сақталады';
+
+  @override
+  String get createExcursionAutosaveRestored =>
+      'Жергілікті черновик қалпына келтірілді';
 
   @override
   String get createExcursionItineraryValidation =>
@@ -4394,12 +4408,12 @@ class AppLocalizationsKk extends AppLocalizations {
       'Қонақтар санын жаңарту мүмкін болмады. Бос орындарды тексеріп, қайталап көріңіз.';
 
   @override
-  String myExcursionsGuestsChargeMock(Object amount) {
+  String myExcursionsGuestsAdditionalCharge(Object amount) {
     return 'Қосымша төлем: $amount';
   }
 
   @override
-  String myExcursionsGuestsRefundMock(Object amount) {
+  String myExcursionsGuestsRefundDue(Object amount) {
     return 'Қайтарым: $amount';
   }
 
@@ -4407,8 +4421,16 @@ class AppLocalizationsKk extends AppLocalizations {
   String get myExcursionsGuestsNoPaymentChange => 'Баға өзгермейді';
 
   @override
-  String get myExcursionsGuestsPaymentMockHint =>
-      'Әзірге бұл мок-есеп: нақты қосымша төлем немесе қайтарым төлем сервисі арқылы қосылады.';
+  String get myExcursionsGuestsPaymentQuoteHint =>
+      'Есеп серверде жасалды. Нақты қосымша төлем немесе қайтарым төлем сервисі арқылы қосылады.';
+
+  @override
+  String get myExcursionsGuestsQuoteLoading =>
+      'Баға өзгерісін есептеп жатырмыз...';
+
+  @override
+  String get myExcursionsGuestsQuoteFailed =>
+      'Баға өзгерісін есептеу мүмкін болмады. Бос орындарды тексеріп, қайталап көріңіз.';
 
   @override
   String get myExcursionsPayAndSaveGuests => 'Төлеп сақтау';
@@ -4425,6 +4447,14 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get myExcursionsCancelBookingHint =>
       'Біз сіздің орныңызды болдырмаймыз және гидке броньды сіз болдырмағаныңызды көрсетеміз.';
+
+  @override
+  String get myExcursionsCancelQuoteLoading =>
+      'Қайтарым шарттарын есептеп жатырмыз...';
+
+  @override
+  String get myExcursionsCancelQuoteFailed =>
+      'Қайтарым шарттарын есептеу мүмкін болмады. Қайталап көріңіз.';
 
   @override
   String myExcursionsCancelBookingRefund(Object amount, int percent) {

@@ -261,6 +261,37 @@ class ExcursionApi {
     return ExcursionBookingVm.fromJson(response.data as Map<String, dynamic>);
   }
 
+  Future<ExcursionBookingGuestsQuote> quoteExcursionBookingGuests(
+    String bookingId, {
+    required int adults,
+    required int children,
+  }) async {
+    final encodedBookingId = Uri.encodeComponent(bookingId);
+    final response = await _apiClient.dio.post(
+      '/me/excursion-bookings/$encodedBookingId/guests/quote',
+      data: <String, dynamic>{'adults': adults, 'children': children},
+    );
+
+    return ExcursionBookingGuestsQuote.fromJson(
+      response.data as Map<String, dynamic>,
+    );
+  }
+
+  Future<ExcursionBookingCancellationQuote> quoteExcursionBookingCancellation(
+    String bookingId, {
+    String reason = '',
+  }) async {
+    final encodedBookingId = Uri.encodeComponent(bookingId);
+    final response = await _apiClient.dio.post(
+      '/me/excursion-bookings/$encodedBookingId/cancel/quote',
+      data: <String, dynamic>{'reason': reason},
+    );
+
+    return ExcursionBookingCancellationQuote.fromJson(
+      response.data as Map<String, dynamic>,
+    );
+  }
+
   Future<ExcursionBookingVm> cancelExcursionBooking(
     String bookingId, {
     String reason = '',

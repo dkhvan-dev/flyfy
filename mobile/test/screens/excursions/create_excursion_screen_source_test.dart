@@ -27,6 +27,8 @@ void main() {
       expect(source, contains('longitude: _selectedLongitude'));
       expect(source, contains('MediaQuery.viewInsetsOf(context).bottom'));
       expect(source, contains('ListView('));
+      expect(source, contains("context.go('/profile/guide-dashboard')"));
+      expect(source, isNot(contains("context.go('/')")));
       expect(source, isNot(contains('height: 500')));
     },
   );
@@ -476,8 +478,9 @@ void main() {
       expect(source, contains('l10n.createExcursionItineraryEmpty'));
       expect(
         source,
-        contains('onDelete: () => setState(() => _itinerary.remove(item))'),
+        contains('setState(() => _itinerary.remove(item));'),
       );
+      expect(source, contains('_scheduleAutosave();'));
       expect(source, isNot(contains('Meet at base camp')));
       expect(source, isNot(contains('Mountain ascent and photography')));
       expect(source, isNot(contains('_itinerary.length == 1')));
@@ -914,5 +917,29 @@ void main() {
     expect(routerSource, contains("path: '/excursions/create'"));
     expect(routerSource, contains('CreateExcursionScreen'));
     expect(routerSource, isNot(contains("location == '/excursions/create'")));
+  });
+
+  test('create excursion autosaves and restores local draft fields', () async {
+    final source = await File(
+      'lib/screens/excursions/create_excursion_screen.dart',
+    ).readAsString();
+    final enSource = await File('lib/l10n/app_en.arb').readAsString();
+    final ruSource = await File('lib/l10n/app_ru.arb').readAsString();
+    final kkSource = await File('lib/l10n/app_kk.arb').readAsString();
+
+    expect(source, contains('SharedPreferences'));
+    expect(source, contains('_autosaveKey'));
+    expect(source, contains('Timer? _autosaveDebounce'));
+    expect(source, contains('Future<void> _restoreAutosaveDraft()'));
+    expect(source, contains('Future<void> _persistAutosaveDraft()'));
+    expect(source, contains('Future<void> _clearAutosaveDraft()'));
+    expect(source, contains('_attachAutosaveListeners()'));
+    expect(source, contains('_scheduleAutosave()'));
+    expect(source, contains('_autosaveDraftPayload()'));
+    expect(source, contains('_applyAutosaveDraftPayload'));
+    expect(source, contains('createExcursionAutosaveRestored'));
+    expect(enSource, contains('"createExcursionAutosaveRestored"'));
+    expect(ruSource, contains('"createExcursionAutosaveRestored"'));
+    expect(kkSource, contains('"createExcursionAutosaveRestored"'));
   });
 }

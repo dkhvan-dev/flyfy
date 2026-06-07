@@ -31,6 +31,7 @@ class ExcursionProvider extends ChangeNotifier {
   static const _marketplaceRefreshAttempts = 3;
   static const _marketplaceRefreshRetryDelay = Duration(milliseconds: 150);
   static const _filterPreviewPageSize = 100;
+  static const _guideDashboardPageSize = 100;
   static const _guideDashboardOfferStatuses = <String>[
     'PUBLISHED',
     'DRAFT',
@@ -303,19 +304,16 @@ class ExcursionProvider extends ChangeNotifier {
 
     try {
       final results = await Future.wait<Object?>([
-        _excursionApi.getMyExcursions(
-          limit: 100,
-          statuses: _guideDashboardOfferStatuses,
-        ),
-        _excursionApi.getMyGuideExcursionBookings(limit: 100),
+        _loadAllGuideDashboardExcursions(),
+        _loadAllGuideDashboardBookings(),
         _guideApi.getMyGuideProfileOrNull(),
       ]);
-      final excursionsPage = results[0] as ExcursionsPage;
-      final bookingsPage = results[1] as ExcursionBookingsPage;
+      final excursions = results[0] as List<ExcursionVm>;
+      final bookings = results[1] as List<ExcursionBookingVm>;
       final guideProfile = results[2] as GuideProfileVm?;
 
-      _myGuideExcursions = excursionsPage.items;
-      _myGuideExcursionBookings = bookingsPage.items;
+      _myGuideExcursions = excursions;
+      _myGuideExcursionBookings = bookings;
       _myGuideProfile = guideProfile;
       _guideDashboardState = ExcursionListState.success;
     } on DioException catch (e) {
@@ -336,6 +334,37 @@ class ExcursionProvider extends ChangeNotifier {
 
   Future<void> refreshGuideDashboardData() {
     return loadGuideDashboardData(force: true);
+  }
+
+  Future<List<ExcursionVm>> _loadAllGuideDashboardExcursions() async {
+    final items = <ExcursionVm>[];
+    var offset = 0;
+    while (true) {
+      final page = await _excursionApi.getMyExcursions(
+        limit: _guideDashboardPageSize,
+        offset: offset,
+        statuses: _guideDashboardOfferStatuses,
+      );
+      items.addAll(page.items);
+      if (!page.hasMore || page.items.isEmpty) break;
+      offset += page.items.length;
+    }
+    return items;
+  }
+
+  Future<List<ExcursionBookingVm>> _loadAllGuideDashboardBookings() async {
+    final items = <ExcursionBookingVm>[];
+    var offset = 0;
+    while (true) {
+      final page = await _excursionApi.getMyGuideExcursionBookings(
+        limit: _guideDashboardPageSize,
+        offset: offset,
+      );
+      items.addAll(page.items);
+      if (!page.hasMore || page.items.isEmpty) break;
+      offset += page.items.length;
+    }
+    return items;
   }
 
   Future<List<ExcursionScheduleSlotVm>> loadBookableExcursionSchedule({
@@ -710,6 +739,60 @@ class ExcursionProvider extends ChangeNotifier {
       return false;
     } finally {
       notifyListeners();
+    }
+  }
+
+  Future<ExcursionBookingGuestsQuote> quoteExcursionBookingGuests(
+    String bookingId, {
+    required int adults,
+    required int children,
+  }) async {
+    final trimmedBookingId = bookingId.trim();
+    if (trimmedBookingId.isEmpty) {
+      throw ArgumentError('Invalid excursion booking id');
+    }
+    try {
+      return await _excursionApi.quoteExcursionBookingGuests(
+        trimmedBookingId,
+        adults: adults,
+        children: children,
+      );
+    } on DioException catch (e) {
+      final message = DioErrorMapper.toMessage(e);
+      _actionErrorMessage = message;
+      notifyListeners();
+      throw Exception(message);
+    } catch (_) {
+      const message = 'Failed to quote excursion booking';
+      _actionErrorMessage = message;
+      notifyListeners();
+      throw Exception(message);
+    }
+  }
+
+  Future<ExcursionBookingCancellationQuote> quoteExcursionBookingCancellation(
+    String bookingId, {
+    String reason = '',
+  }) async {
+    final trimmedBookingId = bookingId.trim();
+    if (trimmedBookingId.isEmpty) {
+      throw ArgumentError('Invalid excursion booking id');
+    }
+    try {
+      return await _excursionApi.quoteExcursionBookingCancellation(
+        trimmedBookingId,
+        reason: reason.trim(),
+      );
+    } on DioException catch (e) {
+      final message = DioErrorMapper.toMessage(e);
+      _actionErrorMessage = message;
+      notifyListeners();
+      throw Exception(message);
+    } catch (_) {
+      const message = 'Failed to quote excursion booking cancellation';
+      _actionErrorMessage = message;
+      notifyListeners();
+      throw Exception(message);
     }
   }
 

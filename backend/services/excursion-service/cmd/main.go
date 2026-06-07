@@ -23,6 +23,7 @@ import (
 	guideadapter "kz/inflap/backend/services/excursion-service/internal/adapter/guide"
 	httpadapter "kz/inflap/backend/services/excursion-service/internal/adapter/http"
 	notificationadapter "kz/inflap/backend/services/excursion-service/internal/adapter/notification"
+	paymentadapter "kz/inflap/backend/services/excursion-service/internal/adapter/payment"
 	"kz/inflap/backend/services/excursion-service/internal/adapter/repository"
 	translationadapter "kz/inflap/backend/services/excursion-service/internal/adapter/translation"
 	userserviceadapter "kz/inflap/backend/services/excursion-service/internal/adapter/userservice"
@@ -107,6 +108,14 @@ func main() {
 		cfg.App.Name,
 		cfg.Notification.RequestTimeout,
 	)
+	paymentClient, err := paymentadapter.New(
+		cfg.Payment.HTTPURL,
+		cfg.Security.InternalServiceToken,
+		cfg.Payment.RequestTimeout,
+	)
+	if err != nil {
+		log.Fatal().Err(err).Msg("initialize payment-service client")
+	}
 	fraudClient, err := newFraudEvaluator(cfg)
 	if err != nil {
 		log.Fatal().Err(err).Msg("initialize anti-fraud client")
@@ -129,6 +138,7 @@ func main() {
 		WithAttractionRatingUpdater(attractionRatingClient).
 		WithExcursionChatGateway(chatClient).
 		WithNotificationGateway(notificationClient).
+		WithPaymentGateway(paymentClient).
 		WithFraudEvaluator(fraudClient).
 		WithTrustPolicyClient(trustClient).
 		WithAttendanceQRConfig(

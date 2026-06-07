@@ -72,7 +72,9 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/me/excursion-bookings", h.ListMyExcursionBookings)
 	mux.HandleFunc("GET /v1/me/guide-excursion-bookings", h.ListMyGuideExcursionBookings)
 	mux.HandleFunc("POST /v1/me/excursion-bookings", h.CreateExcursionBooking)
+	mux.HandleFunc("POST /v1/me/excursion-bookings/{id}/guests/quote", h.QuoteExcursionBookingGuests)
 	mux.HandleFunc("PATCH /v1/me/excursion-bookings/{id}", h.UpdateExcursionBookingGuests)
+	mux.HandleFunc("POST /v1/me/excursion-bookings/{id}/cancel/quote", h.QuoteExcursionBookingCancellation)
 	mux.HandleFunc("POST /v1/me/excursion-bookings/{id}/cancel", h.CancelExcursionBooking)
 	mux.HandleFunc("POST /v1/me/excursion-bookings/{id}/review", h.CreateExcursionReview)
 	mux.HandleFunc("PUT /v1/me/excursion-bookings/{id}/reviews", h.SaveBookingReviews)
@@ -882,6 +884,33 @@ func (h *Handler) ListMyGuideExcursionBookings(w http.ResponseWriter, r *http.Re
 	writeJSON(w, http.StatusOK, toExcursionBookingListResponse(items, requestedLimit))
 }
 
+func (h *Handler) QuoteExcursionBookingGuests(w http.ResponseWriter, r *http.Request) {
+	actorUserID, ok := parseActorUserID(w, r)
+	if !ok {
+		return
+	}
+	bookingID, ok := parsePathUUID(w, r, "id", "invalid excursion booking id")
+	if !ok {
+		return
+	}
+	var req dto.UpdateExcursionBookingGuestsRequest
+	if err := decodeBody(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	quote, err := h.useCase.QuoteExcursionBookingGuests(r.Context(), app.UpdateExcursionBookingGuestsInput{
+		ActorUserID: actorUserID,
+		BookingID:   bookingID,
+		Adults:      req.Adults,
+		Children:    req.Children,
+	})
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to quote excursion booking guests")
+		return
+	}
+	writeJSON(w, http.StatusOK, toExcursionBookingGuestsQuoteResponse(quote))
+}
+
 func (h *Handler) UpdateExcursionBookingGuests(w http.ResponseWriter, r *http.Request) {
 	actorUserID, ok := parseActorUserID(w, r)
 	if !ok {
@@ -907,6 +936,32 @@ func (h *Handler) UpdateExcursionBookingGuests(w http.ResponseWriter, r *http.Re
 		return
 	}
 	writeJSON(w, http.StatusOK, toExcursionBookingResponse(booking))
+}
+
+func (h *Handler) QuoteExcursionBookingCancellation(w http.ResponseWriter, r *http.Request) {
+	actorUserID, ok := parseActorUserID(w, r)
+	if !ok {
+		return
+	}
+	bookingID, ok := parsePathUUID(w, r, "id", "invalid excursion booking id")
+	if !ok {
+		return
+	}
+	var req dto.CancelExcursionBookingRequest
+	if err := decodeBody(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	quote, err := h.useCase.QuoteExcursionBookingCancellation(r.Context(), app.CancelExcursionBookingInput{
+		ActorUserID: actorUserID,
+		BookingID:   bookingID,
+		Reason:      req.Reason,
+	})
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to quote excursion booking cancellation")
+		return
+	}
+	writeJSON(w, http.StatusOK, toExcursionBookingCancellationQuoteResponse(quote))
 }
 
 func (h *Handler) CancelExcursionBooking(w http.ResponseWriter, r *http.Request) {
@@ -1757,6 +1812,29 @@ func toExcursionBookingResponse(item *model.ExcursionBooking) dto.ExcursionBooki
 	}
 }
 
+func toExcursionBookingGuestsQuoteResponse(quote app.ExcursionBookingGuestsQuote) dto.ExcursionBookingGuestsQuoteResponse {
+	return dto.ExcursionBookingGuestsQuoteResponse{
+		Adults:             quote.Adults,
+		Children:           quote.Children,
+		TotalSeats:         quote.TotalSeats,
+		CurrentTotalAmount: quote.CurrentTotalAmount,
+		NewTotalAmount:     quote.NewTotalAmount,
+		DeltaAmount:        quote.DeltaAmount,
+		Currency:           quote.Currency,
+		Status:             quote.Status,
+	}
+}
+
+func toExcursionBookingCancellationQuoteResponse(quote app.ExcursionBookingCancellationRefundQuote) dto.ExcursionBookingCancellationQuoteResponse {
+	return dto.ExcursionBookingCancellationQuoteResponse{
+		Percent:    quote.Percent,
+		Amount:     quote.Amount,
+		Currency:   quote.Currency,
+		PolicyCode: quote.PolicyCode,
+		Status:     quote.Status,
+	}
+}
+
 func toGuideScheduleSlotResponse(slot *model.ExcursionScheduleSlot) dto.GuideScheduleSlotResponse {
 	return dto.GuideScheduleSlotResponse{
 		ID:                slot.ID.String(),
@@ -2007,8 +2085,12 @@ func (h *Handler) writeUseCaseError(w http.ResponseWriter, r *http.Request, err 
 		errors.Is(err, app.ErrExcursionBookingIdempotencyConflict),
 		errors.Is(err, app.ErrExcursionScheduleConflict):
 		writeError(w, http.StatusConflict, err.Error())
-	case errors.Is(err, app.ErrExcursionTranslationFailed):
+	case errors.Is(err, app.ErrExcursionTranslationFailed),
+		errors.Is(err, app.ErrPaymentGatewayUnavailable):
 		writeError(w, http.StatusServiceUnavailable, err.Error())
+	case errors.Is(err, app.ErrPaymentChargeFailed),
+		errors.Is(err, app.ErrPaymentRefundFailed):
+		writeError(w, http.StatusConflict, err.Error())
 	case errors.Is(err, app.ErrInvalidExcursionID),
 		errors.Is(err, app.ErrExcursionAttractionRequired),
 		errors.Is(err, app.ErrCombinedExcursionRouteRequiresTwoStops),

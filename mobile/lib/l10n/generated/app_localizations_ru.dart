@@ -3204,6 +3204,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get excursionDetailsBook => 'Забронировать';
 
   @override
+  String get excursionDetailsBookingSeatCheckNote =>
+      'Точное число мест проверим на экране бронирования.';
+
+  @override
   String get excursionDetailsCheckingSchedule => 'Проверяем доступное время...';
 
   @override
@@ -3268,14 +3272,16 @@ class AppLocalizationsRu extends AppLocalizations {
   String get excursionBookingTotalPrice => 'Итоговая стоимость';
 
   @override
-  String get excursionBookingConfirmPay => 'Подтвердить и оплатить';
+  String get excursionBookingConfirmReservation => 'Подтвердить бронь';
 
   @override
-  String get excursionBookingSecurePayment => 'Безопасная оплата через Inflap';
+  String excursionBookingPaymentPendingNote(Object amount) {
+    return 'Сейчас оплата не списывается. Онлайн-оплата появится после подключения. Итого: $amount';
+  }
 
   @override
   String get excursionBookingSubmitted =>
-      'Заявка на бронирование готова. Онлайн-оплата будет подключена скоро.';
+      'Бронь подтверждена. Онлайн-оплата будет подключена скоро.';
 
   @override
   String get excursionBookingAlreadyBookedTitle =>
@@ -3297,6 +3303,11 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get excursionBookingSelectSlot => 'Выберите доступное время';
+
+  @override
+  String excursionBookingSelectedSlotUnavailable(Object count) {
+    return 'Выбранное время больше недоступно для $count гостей. Выберите другое время.';
+  }
 
   @override
   String get excursionBookingScheduleLoadFailed =>
@@ -3493,7 +3504,11 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get createExcursionAutosaveHint =>
-      'Прогресс автосохраняется в профиль гида';
+      'Прогресс сохраняется локально, пока вы создаете предложение';
+
+  @override
+  String get createExcursionAutosaveRestored =>
+      'Локальный черновик восстановлен';
 
   @override
   String get createExcursionItineraryValidation =>
@@ -4381,12 +4396,12 @@ class AppLocalizationsRu extends AppLocalizations {
       'Не удалось обновить количество гостей. Проверьте доступные места и попробуйте снова.';
 
   @override
-  String myExcursionsGuestsChargeMock(Object amount) {
+  String myExcursionsGuestsAdditionalCharge(Object amount) {
     return 'К доплате: $amount';
   }
 
   @override
-  String myExcursionsGuestsRefundMock(Object amount) {
+  String myExcursionsGuestsRefundDue(Object amount) {
     return 'К возврату: $amount';
   }
 
@@ -4394,8 +4409,15 @@ class AppLocalizationsRu extends AppLocalizations {
   String get myExcursionsGuestsNoPaymentChange => 'Стоимость не изменится';
 
   @override
-  String get myExcursionsGuestsPaymentMockHint =>
-      'Пока это мок-расчет: реальная доплата или возврат подключатся через платежный сервис.';
+  String get myExcursionsGuestsPaymentQuoteHint =>
+      'Расчет выполнен на сервере. Реальная доплата или возврат подключатся через платежный сервис.';
+
+  @override
+  String get myExcursionsGuestsQuoteLoading => 'Считаем изменение стоимости...';
+
+  @override
+  String get myExcursionsGuestsQuoteFailed =>
+      'Не удалось рассчитать изменение стоимости. Проверьте доступные места и попробуйте снова.';
 
   @override
   String get myExcursionsPayAndSaveGuests => 'Доплатить и сохранить';
@@ -4412,6 +4434,13 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get myExcursionsCancelBookingHint =>
       'Мы отменим ваше место и покажем гиду, что бронь отменена вами.';
+
+  @override
+  String get myExcursionsCancelQuoteLoading => 'Считаем условия возврата...';
+
+  @override
+  String get myExcursionsCancelQuoteFailed =>
+      'Не удалось рассчитать условия возврата. Попробуйте еще раз.';
 
   @override
   String myExcursionsCancelBookingRefund(Object amount, int percent) {

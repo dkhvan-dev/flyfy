@@ -131,7 +131,7 @@ void main() {
   );
 
   test(
-    'visited filter includes only checked-in past bookings and ignores statuses',
+    'visited filter keeps past bookings in history even without check-in',
     () {
       final now = DateTime.utc(2026, 5, 17);
       final visited = _booking(
@@ -159,7 +159,8 @@ void main() {
         statuses: const {'CANCELLED'},
       );
 
-      expect(filtered.map((item) => item.id), ['visited']);
+      expect(filtered.map((item) => item.id), ['visited', 'booked-past']);
+      expect(bookedPast.canReview(now), isFalse);
     },
   );
 
