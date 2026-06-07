@@ -67,20 +67,27 @@ void main() {
         screenSource,
         contains("import '../../shared/widgets/app_city_filter_section.dart';"),
       );
+      expect(
+        screenSource,
+        contains(
+          "import '../../shared/location/home_location_filter_defaults.dart';",
+        ),
+      );
       expect(screenSource, contains('HomeLocationProvider'));
       expect(screenSource, contains('provider.effectiveLocation'));
       expect(
         screenSource,
-        contains('location.source == HomeLocationSource.fallback'),
+        contains('HomeLocationFilterDefaults.fromPreference'),
       );
+      expect(screenSource, contains('if (!defaults.hasValue) return;'));
       expect(
         screenSource,
         isNot(contains('final location = provider.selectedLocation')),
       );
       expect(screenSource, contains('_initializeDefaultLocationFilter'));
       expect(screenSource, contains('_applyDefaultLocationFilter'));
-      expect(screenSource, contains('country: defaultCountry'));
-      expect(screenSource, contains('city: defaultCity'));
+      expect(screenSource, contains('country: defaults.country'));
+      expect(screenSource, contains('city: defaults.city'));
       expect(screenSource, contains('cityId: _filters.cityId'));
       expect(screenSource, contains('countryCode: _filters.countryCode'));
       expect(screenSource, isNot(contains('profile?.countryCode')));

@@ -16,6 +16,7 @@ import '../../features/attractions/data/attraction_api.dart';
 import '../../features/attractions/models/attraction_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/home_location_provider.dart';
+import '../../shared/location/home_location_filter_defaults.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
 import '../../shared/widgets/app_localized_location_text.dart';
 import 'attractions_filter_sheet.dart';
@@ -134,40 +135,39 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
   }
 
   void _applyDefaultLocationFilter(HomeLocationProvider provider) {
-    if (_hasAppliedDefaultLocationFilter ||
-        _filters.country != null ||
-        _filters.city != null) {
+    if (_hasAppliedDefaultLocationFilter) {
+      return;
+    }
+    if (_filters.country != null || _filters.city != null) {
+      _hasAppliedDefaultLocationFilter = true;
       return;
     }
 
-    final location = provider.effectiveLocation;
-    if (location.source == HomeLocationSource.fallback) return;
+    final defaults = HomeLocationFilterDefaults.fromPreference(
+      provider.effectiveLocation,
+    );
+    if (!defaults.hasValue) return;
 
     _hasAppliedDefaultLocationFilter = true;
 
-    final defaultCountry = AppCountryFilterValue.fromParts(
-      countryCode: location.countryCode,
-    );
-    final defaultCity = defaultCountry == null
-        ? null
-        : AppCityFilterValue.fromParts(
-            cityId: location.cityId,
-            cityName: location.cityName,
-            countryCode: location.countryCode,
-          );
-    if (defaultCountry == null && defaultCity == null) return;
-
     setState(() {
-      _filters = _filters.copyWith(country: defaultCountry, city: defaultCity);
+      _filters = _filters.copyWith(
+        country: defaults.country,
+        city: defaults.city,
+      );
       _currentPage = 1;
     });
   }
 
   void _scheduleApplyDefaultLocationFilter(HomeLocationProvider provider) {
-    if (_hasAppliedDefaultLocationFilter ||
-        _filters.country != null ||
-        _filters.city != null ||
-        provider.effectiveLocation.source == HomeLocationSource.fallback) {
+    if (_hasAppliedDefaultLocationFilter) {
+      return;
+    }
+    if (_filters.country != null || _filters.city != null) {
+      _hasAppliedDefaultLocationFilter = true;
+      return;
+    }
+    if (provider.effectiveLocation.source == HomeLocationSource.fallback) {
       return;
     }
 
@@ -290,12 +290,9 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
   AppCityFilterValue? _currentCityValue(HomeLocationProvider provider) {
     if (_filters.city != null) return _filters.city;
 
-    final location = provider.effectiveLocation;
-    return AppCityFilterValue.fromParts(
-      cityId: location.cityId,
-      cityName: location.cityName,
-      countryCode: location.countryCode,
-    );
+    return HomeLocationFilterDefaults.fromPreference(
+      provider.effectiveLocation,
+    ).city;
   }
 
   List<AttractionVm> _mustVisitAttractions(AppCityFilterValue? city) {

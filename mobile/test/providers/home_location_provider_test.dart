@@ -199,6 +199,50 @@ void main() {
     expect(api.countryCodes, [null]);
   });
 
+  test(
+    'load prefers saved home screen location before device and profile',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        HomeLocationProvider.storageKey: jsonEncode({
+          'source': HomeLocationSource.manual.name,
+          'countryCode': 'UZ',
+          'cityId': 'tashkent',
+          'cityName': 'Tashkent',
+          'updatedAt': DateTime.utc(2026, 6, 8).toIso8601String(),
+        }),
+      });
+      final api = _FakeReferenceApi(cities: const []);
+      final deviceContext = _FakeDeviceContextService(
+        suggestion: DeviceLocationSuggestion(
+          countryCode: 'KG',
+          countryName: 'Kyrgyzstan',
+          cityName: 'Bishkek',
+          latitude: 42.8746,
+          longitude: 74.5698,
+        ),
+      );
+      final provider = HomeLocationProvider(
+        referenceApi: api,
+        deviceContextService: deviceContext,
+      );
+
+      await provider.load(
+        languageCode: 'ru',
+        profileFallback: HomeLocationPreference.fromProfile(
+          countryCode: 'KZ',
+          timezone: 'Asia/Almaty',
+        ),
+      );
+
+      expect(provider.effectiveLocation.source, HomeLocationSource.manual);
+      expect(provider.effectiveLocation.countryCode, 'UZ');
+      expect(provider.effectiveLocation.cityId, 'tashkent');
+      expect(provider.effectiveLocation.cityName, 'Tashkent');
+      expect(deviceContext.requestPermissionValues, isEmpty);
+      expect(api.queries, isEmpty);
+    },
+  );
+
   test('load ignores stored profile-derived location preference', () async {
     SharedPreferences.setMockInitialValues({
       HomeLocationProvider.storageKey: jsonEncode({

@@ -29,6 +29,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
 import '../../providers/home_location_provider.dart';
 import '../../providers/session_provider.dart';
+import '../../shared/location/home_location_filter_defaults.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
 import '../../shared/widgets/app_localized_location_text.dart';
 import 'widgets/activity_review_sheet.dart';
@@ -551,32 +552,25 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
   }
 
   void _applyDefaultLocationFilter(HomeLocationProvider provider) {
-    if (_hasAppliedDefaultLocationFilter ||
-        _filters.country != null ||
-        _filters.city != null) {
+    if (_hasAppliedDefaultLocationFilter) {
       return;
     }
-    final location = provider.effectiveLocation;
-    if (location.source == HomeLocationSource.fallback) return;
+    if (_filters.country != null || _filters.city != null) {
+      _hasAppliedDefaultLocationFilter = true;
+      return;
+    }
+
+    final defaults = HomeLocationFilterDefaults.fromPreference(
+      provider.effectiveLocation,
+    );
+    if (!defaults.hasValue) return;
 
     _hasAppliedDefaultLocationFilter = true;
 
-    final defaultCountry = AppCountryFilterValue.fromParts(
-      countryCode: location.countryCode,
-    );
-    final defaultCity = defaultCountry == null
-        ? null
-        : AppCityFilterValue.fromParts(
-            cityId: location.cityId,
-            cityName: location.cityName,
-            countryCode: location.countryCode,
-          );
-    if (defaultCountry == null && defaultCity == null) return;
-
     setState(
       () => _filters = _filters.copyWith(
-        country: defaultCountry,
-        city: defaultCity,
+        country: defaults.country,
+        city: defaults.city,
       ),
     );
   }

@@ -14,7 +14,7 @@ void main() {
       expect(source, contains('class _MustVisitCard'));
       expect(source, contains('_mustVisitAttractions('));
       expect(source, contains('provider.effectiveLocation'));
-      expect(source, contains('AppCityFilterValue.fromParts('));
+      expect(source, contains('HomeLocationFilterDefaults.fromPreference'));
       expect(source, contains('l10n.attractionMustVisitBadge'));
 
       final bodyStart = source.indexOf('Widget _buildBody');

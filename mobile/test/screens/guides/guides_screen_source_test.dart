@@ -34,12 +34,16 @@ void main() {
       expect(source, contains('guidesSearchHint'));
       expect(source, contains('showModalBottomSheet<_GuideFilters>'));
       expect(source, contains('class _GuidesFiltersSheet'));
-      expect(source, contains('HomeLocationProvider'));
-      expect(source, contains('provider.effectiveLocation'));
       expect(
         source,
-        contains('location.source == HomeLocationSource.fallback'),
+        contains(
+          "import '../../shared/location/home_location_filter_defaults.dart';",
+        ),
       );
+      expect(source, contains('HomeLocationProvider'));
+      expect(source, contains('provider.effectiveLocation'));
+      expect(source, contains('HomeLocationFilterDefaults.fromPreference'));
+      expect(source, contains('if (!defaults.hasValue) return;'));
       expect(
         source,
         isNot(contains('final location = provider.selectedLocation')),

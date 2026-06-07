@@ -79,6 +79,12 @@ void main() {
         source,
         contains("import '../../shared/widgets/app_city_filter_section.dart';"),
       );
+      expect(
+        source,
+        contains(
+          "import '../../shared/location/home_location_filter_defaults.dart';",
+        ),
+      );
       expect(source, contains('HomeLocationProvider'));
       expect(source, contains('SessionProvider'));
       expect(source, isNot(contains('profile: sessionProvider.profile')));
@@ -93,10 +99,8 @@ void main() {
         source,
         contains('final location = await provider.resolveCityReference('),
       );
-      expect(
-        source,
-        contains('location.source == HomeLocationSource.fallback'),
-      );
+      expect(source, contains('HomeLocationFilterDefaults.fromPreference'));
+      expect(source, contains('if (!defaults.hasValue) return;'));
       expect(
         source,
         isNot(contains('final location = provider.selectedLocation')),

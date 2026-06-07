@@ -25,6 +25,7 @@ import '../../features/excursions/models/excursion_booking_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/excursion_provider.dart';
 import '../../providers/home_location_provider.dart';
+import '../../shared/location/home_location_filter_defaults.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
 
 class MyExcursionsScreen extends StatefulWidget {
@@ -102,28 +103,26 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
   }
 
   void _applyDefaultCityFilter(HomeLocationProvider provider) {
-    if (_hasAppliedDefaultCityFilter ||
-        _filters.country != null ||
-        _filters.city != null) {
+    if (_hasAppliedDefaultCityFilter) {
       return;
     }
+    if (_filters.country != null || _filters.city != null) {
+      _hasAppliedDefaultCityFilter = true;
+      return;
+    }
+
+    final defaults = HomeLocationFilterDefaults.fromPreference(
+      provider.effectiveLocation,
+    );
+    if (!defaults.hasValue) return;
     _hasAppliedDefaultCityFilter = true;
 
-    final location = provider.effectiveLocation;
-    if (location.source == HomeLocationSource.fallback) return;
-    final country = AppCountryFilterValue.fromParts(
-      countryCode: location.countryCode,
+    setState(
+      () => _filters = _filters.copyWith(
+        country: defaults.country,
+        city: defaults.city,
+      ),
     );
-    final city = country == null
-        ? null
-        : AppCityFilterValue.fromParts(
-            cityId: location.cityId,
-            cityName: location.cityName,
-            countryCode: location.countryCode,
-          );
-    if (country == null && city == null) return;
-
-    setState(() => _filters = _filters.copyWith(country: country, city: city));
   }
 
   void _handleSearchChanged() {

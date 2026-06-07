@@ -63,8 +63,15 @@ void main() {
       expect(source, contains('final AppCountryFilterValue? country'));
       expect(source, contains('final AppCityFilterValue? city'));
       expect(source, contains('_initializeDefaultLocationFilter'));
-      expect(source, contains('country: defaultCountry'));
-      expect(source, contains('city: defaultCity'));
+      expect(
+        source,
+        contains(
+          "import '../../shared/location/home_location_filter_defaults.dart';",
+        ),
+      );
+      expect(source, contains('HomeLocationFilterDefaults.fromPreference'));
+      expect(source, contains('country: defaults.country'));
+      expect(source, contains('city: defaults.city'));
       expect(source, contains('AppCountryFilterSection'));
       expect(source, contains('activitiesFilterCountrySection'));
       expect(source, contains('activitiesFilterCountryAll'));
@@ -119,14 +126,12 @@ void main() {
         initSource,
         contains('languageCode: Localizations.localeOf(context).languageCode'),
       );
+      expect(applySource, contains('provider.effectiveLocation'));
       expect(
         applySource,
-        contains('final location = provider.effectiveLocation'),
+        contains('HomeLocationFilterDefaults.fromPreference'),
       );
-      expect(
-        applySource,
-        contains('location.source == HomeLocationSource.fallback'),
-      );
+      expect(applySource, contains('if (!defaults.hasValue) return;'));
       expect(
         applySource,
         isNot(contains('final location = provider.selectedLocation')),

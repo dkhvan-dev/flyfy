@@ -25,6 +25,7 @@ import '../../providers/home_location_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/excursion_provider.dart';
 import '../../shared/formatters/app_money_formatter.dart';
+import '../../shared/location/home_location_filter_defaults.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
 
 class ExcursionsRouteArgs {
@@ -436,34 +437,36 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
   }
 
   void _applyDefaultCityFilter(HomeLocationPreference location) {
-    if (_hasAppliedDefaultCityFilter ||
-        _filters.country != null ||
-        _filters.city != null) {
+    if (_hasAppliedDefaultCityFilter) {
+      return;
+    }
+    if (_filters.country != null || _filters.city != null) {
+      _hasAppliedDefaultCityFilter = true;
       return;
     }
 
-    if (location.source == HomeLocationSource.fallback) return;
-
-    final country = AppCountryFilterValue.fromParts(
-      countryCode: location.countryCode,
-    );
-    final city = AppCityFilterValue.fromParts(
-      cityId: location.cityId,
-      cityName: location.cityName,
-      countryCode: location.countryCode,
-    );
-    if (country == null && city == null) return;
+    final defaults = HomeLocationFilterDefaults.fromPreference(location);
+    if (!defaults.hasValue) return;
 
     _hasAppliedDefaultCityFilter = true;
 
-    setState(() => _filters = _filters.copyWith(country: country, city: city));
+    setState(
+      () => _filters = _filters.copyWith(
+        country: defaults.country,
+        city: defaults.city,
+      ),
+    );
   }
 
   void _scheduleApplyDefaultCityFilter(HomeLocationProvider provider) {
-    if (_hasAppliedDefaultCityFilter ||
-        _filters.country != null ||
-        _filters.city != null ||
-        provider.effectiveLocation.source == HomeLocationSource.fallback) {
+    if (_hasAppliedDefaultCityFilter) {
+      return;
+    }
+    if (_filters.country != null || _filters.city != null) {
+      _hasAppliedDefaultCityFilter = true;
+      return;
+    }
+    if (provider.effectiveLocation.source == HomeLocationSource.fallback) {
       return;
     }
 

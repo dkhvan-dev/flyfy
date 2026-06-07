@@ -30,6 +30,7 @@ import '../../providers/activity_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/home_location_provider.dart';
 import '../../providers/session_provider.dart';
+import '../../shared/location/home_location_filter_defaults.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
 import '../../shared/widgets/app_localized_location_text.dart';
 import '../common/app_side_drawer.dart';
@@ -87,39 +88,39 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
   }
 
   void _applyDefaultLocationFilter(HomeLocationProvider provider) {
-    if (_hasAppliedDefaultLocationFilter ||
-        _filters.country != null ||
-        _filters.city != null) {
+    if (_hasAppliedDefaultLocationFilter) {
       return;
     }
-    final location = provider.effectiveLocation;
-    if (location.source == HomeLocationSource.fallback) return;
+    if (_filters.country != null || _filters.city != null) {
+      _hasAppliedDefaultLocationFilter = true;
+      return;
+    }
 
-    final defaultCountry = AppCountryFilterValue.fromParts(
-      countryCode: location.countryCode,
+    final defaults = HomeLocationFilterDefaults.fromPreference(
+      provider.effectiveLocation,
     );
-    final defaultCity = defaultCountry == null
-        ? null
-        : AppCityFilterValue.fromParts(
-            cityId: location.cityId,
-            cityName: location.cityName,
-            countryCode: location.countryCode,
-          );
-    if (defaultCountry == null && defaultCity == null) return;
+    if (!defaults.hasValue) return;
 
     _hasAppliedDefaultLocationFilter = true;
 
     setState(() {
-      _filters = _filters.copyWith(country: defaultCountry, city: defaultCity);
+      _filters = _filters.copyWith(
+        country: defaults.country,
+        city: defaults.city,
+      );
       _currentPage = 1;
     });
   }
 
   void _scheduleApplyDefaultLocationFilter(HomeLocationProvider provider) {
-    if (_hasAppliedDefaultLocationFilter ||
-        _filters.country != null ||
-        _filters.city != null ||
-        provider.effectiveLocation.source == HomeLocationSource.fallback) {
+    if (_hasAppliedDefaultLocationFilter) {
+      return;
+    }
+    if (_filters.country != null || _filters.city != null) {
+      _hasAppliedDefaultLocationFilter = true;
+      return;
+    }
+    if (provider.effectiveLocation.source == HomeLocationSource.fallback) {
       return;
     }
 

@@ -21,6 +21,7 @@ import '../../features/guides/guide_search.dart';
 import '../../features/guides/models/public_guide_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/home_location_provider.dart';
+import '../../shared/location/home_location_filter_defaults.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
 
 enum _GuideSortMode { rating, experience }
@@ -116,7 +117,9 @@ class _GuidesScreenState extends State<GuidesScreen> {
 
     final locationProvider = context.read<HomeLocationProvider>();
     if (!locationProvider.isLoaded && !locationProvider.isLoading) {
-      await locationProvider.load();
+      await locationProvider.load(
+        languageCode: Localizations.localeOf(context).languageCode,
+      );
     }
     if (!mounted) return;
     _applyDefaultCityFilter(locationProvider);
@@ -124,37 +127,39 @@ class _GuidesScreenState extends State<GuidesScreen> {
   }
 
   void _applyDefaultCityFilter(HomeLocationProvider provider) {
-    if (_hasAppliedDefaultCityFilter ||
-        _filters.country != null ||
-        _filters.city != null) {
+    if (_hasAppliedDefaultCityFilter) {
       _hasAppliedDefaultCityFilter = true;
       return;
     }
-
-    final location = provider.effectiveLocation;
-    if (location.source == HomeLocationSource.fallback) return;
+    if (_filters.country != null || _filters.city != null) {
+      _hasAppliedDefaultCityFilter = true;
+      return;
+    }
+    final defaults = HomeLocationFilterDefaults.fromPreference(
+      provider.effectiveLocation,
+    );
+    if (!defaults.hasValue) return;
     _hasAppliedDefaultCityFilter = true;
-    final country = AppCountryFilterValue.fromParts(
-      countryCode: location.countryCode,
-    );
-    final city = AppCityFilterValue.fromParts(
-      cityId: location.cityId,
-      cityName: location.cityName,
-      countryCode: location.countryCode,
-    );
-    if ((country == null && city == null) || !mounted) return;
+    if (!mounted) return;
 
     setState(() {
-      _filters = _filters.copyWith(country: country, city: city);
+      _filters = _filters.copyWith(
+        country: defaults.country,
+        city: defaults.city,
+      );
       _currentPage = 1;
     });
   }
 
   void _scheduleApplyDefaultCityFilter(HomeLocationProvider provider) {
-    if (_hasAppliedDefaultCityFilter ||
-        _filters.country != null ||
-        _filters.city != null ||
-        provider.effectiveLocation.source == HomeLocationSource.fallback) {
+    if (_hasAppliedDefaultCityFilter) {
+      return;
+    }
+    if (_filters.country != null || _filters.city != null) {
+      _hasAppliedDefaultCityFilter = true;
+      return;
+    }
+    if (provider.effectiveLocation.source == HomeLocationSource.fallback) {
       return;
     }
 
