@@ -38,6 +38,226 @@ class AppDismissibleModalSheet extends StatelessWidget {
   }
 }
 
+class AppFilterPaletteDialog extends StatelessWidget {
+  const AppFilterPaletteDialog({
+    super.key,
+    required this.title,
+    required this.message,
+    required this.secondaryLabel,
+    required this.primaryLabel,
+    required this.onSecondary,
+    required this.onPrimary,
+    this.icon = Icons.tune_rounded,
+  });
+
+  final String title;
+  final String message;
+  final String secondaryLabel;
+  final String primaryLabel;
+  final VoidCallback onSecondary;
+  final VoidCallback onPrimary;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final screenWidth = mediaQuery.size.width;
+    final screenHeight = mediaQuery.size.height;
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final isCompact = screenWidth < 375;
+    final maxDialogHeight =
+        (screenHeight - mediaQuery.viewPadding.vertical - 48)
+            .clamp(300.0, screenHeight)
+            .toDouble();
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: isCompact ? 16 : 24,
+        vertical: 24,
+      ),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: 386, maxHeight: maxDialogHeight),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: const Color(0xFF21170D),
+              border: Border.all(color: const Color(0x293A270F)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.34),
+                  blurRadius: 34,
+                  offset: const Offset(0, 18),
+                ),
+              ],
+            ),
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  isCompact ? 22 : 26,
+                  isCompact ? 22 : 26,
+                  isCompact ? 22 : 26,
+                  isCompact ? 20 : 24,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: isCompact ? 54 : 58,
+                      height: isCompact ? 54 : 58,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFF2C2118),
+                        border: Border.all(
+                          color: AppColors.accent.withValues(alpha: 0.24),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.accent.withValues(alpha: 0.14),
+                            blurRadius: 22,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        icon,
+                        color: AppColors.accent,
+                        size: isCompact ? 25 : 27,
+                      ),
+                    ),
+                    SizedBox(height: isCompact ? 18 : 20),
+                    Text(
+                      title,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: const Color(0xFFFFF7EC),
+                        fontSize: isCompact ? 21 : 23,
+                        height: 1.12,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      message,
+                      style: TextStyle(
+                        color: const Color(0xFFE0D4C6).withValues(alpha: 0.88),
+                        fontSize: isCompact ? 14 : 15,
+                        height: 1.45,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                    SizedBox(height: isCompact ? 22 : 26),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final useStackedActions =
+                            constraints.maxWidth < 318 || textScale > 1.25;
+                        final actionWidth = useStackedActions
+                            ? constraints.maxWidth
+                            : (constraints.maxWidth - 12) / 2;
+
+                        return Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          alignment: WrapAlignment.end,
+                          children: [
+                            SizedBox(
+                              width: actionWidth,
+                              child: _AppFilterPaletteDialogActionButton(
+                                label: secondaryLabel,
+                                onTap: onSecondary,
+                                isPrimary: false,
+                              ),
+                            ),
+                            SizedBox(
+                              width: actionWidth,
+                              child: _AppFilterPaletteDialogActionButton(
+                                label: primaryLabel,
+                                onTap: onPrimary,
+                                isPrimary: true,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AppFilterPaletteDialogActionButton extends StatelessWidget {
+  const _AppFilterPaletteDialogActionButton({
+    required this.label,
+    required this.onTap,
+    required this.isPrimary,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+  final bool isPrimary;
+
+  @override
+  Widget build(BuildContext context) {
+    final foregroundColor = isPrimary
+        ? AppColors.textPrimary
+        : const Color(0xFFD8C7B7);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Ink(
+            decoration: BoxDecoration(
+              color: isPrimary ? AppColors.accent : const Color(0xFF2C2118),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isPrimary ? AppColors.accent : const Color(0xFF3B260D),
+              ),
+            ),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                child: Text(
+                  label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: foregroundColor,
+                    fontSize: 15,
+                    height: 1.1,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class AppFilterSheetHeader extends StatelessWidget {
   const AppFilterSheetHeader({
     super.key,

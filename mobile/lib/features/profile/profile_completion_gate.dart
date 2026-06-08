@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/navigation/android_back_swipe_scope.dart';
+import '../../core/ui/filter_sheet_chrome.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/session_provider.dart';
 import '../../screens/profile/edit_profile_screen.dart';
@@ -74,19 +75,14 @@ class ProfileCompletionGate {
     return showDialog<bool>(
       context: context,
       builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(l10n.profileRequiredTitle),
-          content: Text(l10n.profileRequiredDescription),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(l10n.laterButton),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(l10n.fillNowButton),
-            ),
-          ],
+        return AppFilterPaletteDialog(
+          icon: Icons.manage_accounts_rounded,
+          title: l10n.profileRequiredTitle,
+          message: l10n.profileRequiredDescription,
+          secondaryLabel: l10n.laterButton,
+          primaryLabel: l10n.fillNowButton,
+          onSecondary: () => Navigator.of(dialogContext).pop(false),
+          onPrimary: () => Navigator.of(dialogContext).pop(true),
         );
       },
     );
