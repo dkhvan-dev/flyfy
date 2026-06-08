@@ -17,16 +17,17 @@ var (
 )
 
 type User struct {
-	ID            uuid.UUID
-	AuthSubjectID string
-	Status        enum.UserStatus
-	PrimaryPhone  *string
-	PrimaryEmail  *string
-	IsDeleted     bool
-	DeletedAt     *time.Time
-	LastSeenAt    *time.Time
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	ID                     uuid.UUID
+	AuthSubjectID          string
+	Status                 enum.UserStatus
+	PrimaryPhone           *string
+	PrimaryPhoneVerifiedAt *time.Time
+	PrimaryEmail           *string
+	IsDeleted              bool
+	DeletedAt              *time.Time
+	LastSeenAt             *time.Time
+	CreatedAt              time.Time
+	UpdatedAt              time.Time
 }
 
 type NewUserParams struct {

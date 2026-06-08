@@ -19,11 +19,19 @@ import (
 )
 
 type Handler struct {
-	useCase *app.UserUseCase
+	useCase           *app.UserUseCase
+	phoneVerification *app.PhoneVerificationUseCase
 }
 
-func NewHandler(useCase *app.UserUseCase) *Handler {
-	return &Handler{useCase: useCase}
+func NewHandler(useCase *app.UserUseCase, phoneVerification ...*app.PhoneVerificationUseCase) *Handler {
+	var phoneUseCase *app.PhoneVerificationUseCase
+	if len(phoneVerification) > 0 {
+		phoneUseCase = phoneVerification[0]
+	}
+	return &Handler{
+		useCase:           useCase,
+		phoneVerification: phoneUseCase,
+	}
 }
 
 func (h *Handler) Register(mux *http.ServeMux) {
@@ -35,6 +43,10 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/users/me", h.GetMe)
 	mux.HandleFunc("POST /v1/users/me/presence", h.UpdateMyPresence)
 	mux.HandleFunc("PUT /v1/users/me/profile", h.UpdateMyProfile)
+	mux.HandleFunc("POST /v1/users/me/phone/verification/start", h.StartMyPhoneVerification)
+	mux.HandleFunc("POST /v1/users/me/phone/verification/verify", h.VerifyMyPhoneVerification)
+	mux.HandleFunc("POST /v1/users/me/phone/verification/resend", h.ResendMyPhoneVerification)
+	mux.HandleFunc("DELETE /v1/users/me/phone/pending", h.CancelMyPendingPhoneVerification)
 	mux.HandleFunc("GET /v1/users/nickname-availability", h.CheckNicknameAvailability)
 	mux.HandleFunc("GET /v1/users/", h.GetUserByID)
 	mux.HandleFunc("POST /v1/users/", h.handleUserActions)
@@ -173,6 +185,146 @@ func (h *Handler) UpdateMyPresence(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, toUserResponse(user))
+}
+
+func (h *Handler) StartMyPhoneVerification(w http.ResponseWriter, r *http.Request) {
+	subject, ok := h.phoneVerificationSubject(w, r)
+	if !ok {
+		return
+	}
+
+	var req dto.StartPhoneVerificationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	result, err := h.phoneVerification.Start(r.Context(), subject, req.Phone)
+	if err != nil {
+		h.writePhoneVerificationError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, toPhoneVerificationStartResponse(result))
+}
+
+func (h *Handler) VerifyMyPhoneVerification(w http.ResponseWriter, r *http.Request) {
+	subject, ok := h.phoneVerificationSubject(w, r)
+	if !ok {
+		return
+	}
+
+	var req dto.VerifyPhoneVerificationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	challengeID, err := uuid.Parse(strings.TrimSpace(req.ChallengeID))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid challengeId")
+		return
+	}
+
+	state, err := h.phoneVerification.Verify(
+		r.Context(),
+		subject,
+		challengeID,
+		req.Code,
+	)
+	if err != nil {
+		h.writePhoneVerificationError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, toPhoneVerificationStateResponse(state))
+}
+
+func (h *Handler) ResendMyPhoneVerification(w http.ResponseWriter, r *http.Request) {
+	subject, ok := h.phoneVerificationSubject(w, r)
+	if !ok {
+		return
+	}
+
+	var req dto.ResendPhoneVerificationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	challengeID, err := uuid.Parse(strings.TrimSpace(req.ChallengeID))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid challengeId")
+		return
+	}
+
+	result, err := h.phoneVerification.Resend(r.Context(), subject, challengeID)
+	if err != nil {
+		h.writePhoneVerificationError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, toPhoneVerificationStartResponse(result))
+}
+
+func (h *Handler) CancelMyPendingPhoneVerification(w http.ResponseWriter, r *http.Request) {
+	subject, ok := h.phoneVerificationSubject(w, r)
+	if !ok {
+		return
+	}
+
+	if err := h.phoneVerification.Cancel(r.Context(), subject); err != nil {
+		h.writePhoneVerificationError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]bool{"cancelled": true})
+}
+
+func (h *Handler) phoneVerificationSubject(
+	w http.ResponseWriter,
+	r *http.Request,
+) (string, bool) {
+	if h.phoneVerification == nil {
+		writeError(w, http.StatusServiceUnavailable, "phone verification is temporarily unavailable")
+		return "", false
+	}
+
+	subject := strings.TrimSpace(SubjectFromContext(r.Context()))
+	if subject == "" {
+		writeError(w, http.StatusUnauthorized, "missing authenticated subject")
+		return "", false
+	}
+	return subject, true
+}
+
+func (h *Handler) writePhoneVerificationError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, app.ErrInvalidSubjectID):
+		writeError(w, http.StatusBadRequest, err.Error())
+	case errors.Is(err, app.ErrPhoneRequired):
+		writeError(w, http.StatusBadRequest, "phone is required")
+	case errors.Is(err, app.ErrPhoneInvalid):
+		writeError(w, http.StatusBadRequest, "invalid phone")
+	case errors.Is(err, app.ErrPhoneAlreadyVerified):
+		writeError(w, http.StatusConflict, "phone is already verified for this account")
+	case errors.Is(err, app.ErrPhoneAlreadyTaken):
+		writeError(w, http.StatusConflict, "phone is unavailable")
+	case errors.Is(err, app.ErrPhoneVerificationNotFound):
+		writeError(w, http.StatusNotFound, "phone verification challenge not found")
+	case errors.Is(err, app.ErrPhoneVerificationExpired):
+		writeError(w, http.StatusGone, "phone verification code expired")
+	case errors.Is(err, app.ErrInvalidPhoneVerificationCode):
+		writeError(w, http.StatusUnauthorized, "invalid phone verification code")
+	case errors.Is(err, app.ErrPhoneVerificationLocked):
+		writeError(w, http.StatusTooManyRequests, "phone verification locked")
+	case errors.Is(err, app.ErrPhoneVerificationRateLimited):
+		writeError(w, http.StatusTooManyRequests, "phone verification rate limited")
+	case errors.Is(err, app.ErrUserNotFound):
+		writeError(w, http.StatusNotFound, err.Error())
+	default:
+		writeError(w, http.StatusInternalServerError, "phone verification failed")
+	}
 }
 
 func (h *Handler) GetUserByID(w http.ResponseWriter, r *http.Request) {
@@ -567,7 +719,51 @@ func toUserFriendshipResponse(friendship app.UserFriendshipSummary) dto.UserFrie
 	return dto.UserFriendshipResponse{Status: string(status)}
 }
 
+func toPhoneVerificationStartResponse(
+	result *app.PhoneVerificationStartResult,
+) dto.PhoneVerificationResponse {
+	if result == nil {
+		return dto.PhoneVerificationResponse{}
+	}
+	return dto.PhoneVerificationResponse{
+		ChallengeID:        result.ChallengeID.String(),
+		MaskedPhone:        result.MaskedPhone,
+		ResendAfterSeconds: result.ResendAfterSeconds,
+		ExpiresAt:          result.ExpiresAt.UTC().Format(time.RFC3339),
+		Verified:           false,
+	}
+}
+
+func toPhoneVerificationStateResponse(
+	state *app.PhoneVerificationState,
+) dto.PhoneVerificationResponse {
+	if state == nil {
+		return dto.PhoneVerificationResponse{}
+	}
+	resp := dto.PhoneVerificationResponse{
+		MaskedPhone: state.MaskedPhone,
+		Verified:    state.Verified,
+	}
+	if state.VerifiedAt != nil {
+		resp.VerifiedAt = state.VerifiedAt.UTC().Format(time.RFC3339)
+	}
+	return resp
+}
+
 func toUserResponse(user *model.User) dto.UserResponse {
+	var primaryPhoneMasked *string
+	if user.PrimaryPhone != nil {
+		if masked := app.MaskPhoneForDisplay(*user.PrimaryPhone); masked != "" {
+			primaryPhoneMasked = &masked
+		}
+	}
+
+	var primaryPhoneVerifiedAt *string
+	if user.PrimaryPhoneVerifiedAt != nil {
+		v := user.PrimaryPhoneVerifiedAt.UTC().Format(time.RFC3339)
+		primaryPhoneVerifiedAt = &v
+	}
+
 	var deletedAt *string
 	if user.DeletedAt != nil {
 		v := user.DeletedAt.UTC().Format(time.RFC3339)
@@ -581,16 +777,19 @@ func toUserResponse(user *model.User) dto.UserResponse {
 	}
 
 	return dto.UserResponse{
-		ID:            user.ID.String(),
-		AuthSubjectID: user.AuthSubjectID,
-		Status:        string(user.Status),
-		PrimaryPhone:  user.PrimaryPhone,
-		PrimaryEmail:  user.PrimaryEmail,
-		IsDeleted:     user.IsDeleted,
-		DeletedAt:     deletedAt,
-		LastSeenAt:    lastSeenAt,
-		CreatedAt:     user.CreatedAt.UTC().Format(time.RFC3339),
-		UpdatedAt:     user.UpdatedAt.UTC().Format(time.RFC3339),
+		ID:                     user.ID.String(),
+		AuthSubjectID:          user.AuthSubjectID,
+		Status:                 string(user.Status),
+		PrimaryPhone:           nil,
+		PrimaryPhoneMasked:     primaryPhoneMasked,
+		PrimaryPhoneVerified:   user.PrimaryPhoneVerifiedAt != nil,
+		PrimaryPhoneVerifiedAt: primaryPhoneVerifiedAt,
+		PrimaryEmail:           user.PrimaryEmail,
+		IsDeleted:              user.IsDeleted,
+		DeletedAt:              deletedAt,
+		LastSeenAt:             lastSeenAt,
+		CreatedAt:              user.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:              user.UpdatedAt.UTC().Format(time.RFC3339),
 	}
 }
 

@@ -309,6 +309,103 @@ class AppLocalizationsKk extends AppLocalizations {
   String get profilePhone => 'Телефон';
 
   @override
+  String get profilePhoneVerificationSection => 'Телефонды растау';
+
+  @override
+  String get profilePhoneVerificationTitle => 'Байланыс нөмірі';
+
+  @override
+  String get profilePhoneVerificationDescription =>
+      'Брондау және маңызды әрекеттерді қорғау үшін нөміріңізді SMS арқылы растаңыз.';
+
+  @override
+  String get profilePhoneVerifiedTitle => 'Телефон расталды';
+
+  @override
+  String get profilePhoneVerifiedDescription =>
+      'Бұл нөмір маңызды әрекеттер үшін сенімді байланыс ретінде қолданылады.';
+
+  @override
+  String profilePhoneVerifiedAs(Object phone) {
+    return 'Расталды: $phone';
+  }
+
+  @override
+  String profilePhoneCurrentVerifiedAs(Object phone) {
+    return 'Ағымдағы нөмір: $phone';
+  }
+
+  @override
+  String get profilePhoneSendCode => 'Код жіберу';
+
+  @override
+  String profilePhoneCodeSentTo(Object phone) {
+    return 'Код $phone нөміріне жіберілді';
+  }
+
+  @override
+  String get profilePhoneCodeHint => 'SMS коды';
+
+  @override
+  String get profilePhoneVerifyCode => 'Телефонды растау';
+
+  @override
+  String get profilePhoneResendCode => 'Қайта жіберу';
+
+  @override
+  String profilePhoneResendIn(Object seconds) {
+    return '$seconds с кейін қайта';
+  }
+
+  @override
+  String get profilePhoneChangeNumber => 'Нөмірді өзгерту';
+
+  @override
+  String get profilePhoneCancelChange => 'Ағымдағы нөмірді қалдыру';
+
+  @override
+  String get profilePhoneInvalid =>
+      'Нөмірді халықаралық форматта енгізіңіз, мысалы +77011234567.';
+
+  @override
+  String get profilePhoneAlreadyVerified =>
+      'Бұл нөмір әлдеқашан расталған. Басқа нөмір енгізіңіз.';
+
+  @override
+  String get profilePhoneUnavailable =>
+      'Бұл нөмір қолданыста немесе қолжетімсіз.';
+
+  @override
+  String get profilePhoneCodeExpired =>
+      'Кодтың мерзімі өтті. Жаңа код жіберіңіз.';
+
+  @override
+  String get profilePhoneCodeInvalid => 'Растау коды қате.';
+
+  @override
+  String get profilePhoneVerificationLocked =>
+      'Қате әрекет тым көп. Жаңа кодты кейін сұраңыз.';
+
+  @override
+  String get profilePhoneRateLimited =>
+      'Тым жиі. Қайта жібермес бұрын күтіңіз.';
+
+  @override
+  String get profilePhoneVerificationUnavailable =>
+      'Телефонды растау уақытша қолжетімсіз.';
+
+  @override
+  String get profilePhoneVerificationFailed =>
+      'Телефонды растау мүмкін болмады. Қайта көріңіз.';
+
+  @override
+  String get profilePhoneCodeRequired => 'SMS кодын енгізіңіз.';
+
+  @override
+  String get profilePhoneStartRequired =>
+      'Алдымен телефон нөміріне код жіберіңіз.';
+
+  @override
   String get profileEmail => 'Email';
 
   @override

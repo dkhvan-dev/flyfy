@@ -111,6 +111,52 @@
   "drawerStatusCompleteProfile": "Профильді толтырыңыз",
   "profileNotAvailable": "Профиль қолжетімсіз",
   "profilePhone": "Телефон",
+  "profilePhoneVerificationSection": "Телефонды растау",
+  "profilePhoneVerificationTitle": "Байланыс нөмірі",
+  "profilePhoneVerificationDescription": "Брондау және маңызды әрекеттерді қорғау үшін нөміріңізді SMS арқылы растаңыз.",
+  "profilePhoneVerifiedTitle": "Телефон расталды",
+  "profilePhoneVerifiedDescription": "Бұл нөмір маңызды әрекеттер үшін сенімді байланыс ретінде қолданылады.",
+  "profilePhoneVerifiedAs": "Расталды: {phone}",
+  "@profilePhoneVerifiedAs": {
+    "placeholders": {
+      "phone": {}
+    }
+  },
+  "profilePhoneCurrentVerifiedAs": "Ағымдағы нөмір: {phone}",
+  "@profilePhoneCurrentVerifiedAs": {
+    "placeholders": {
+      "phone": {}
+    }
+  },
+  "profilePhoneSendCode": "Код жіберу",
+  "profilePhoneCodeSentTo": "Код {phone} нөміріне жіберілді",
+  "@profilePhoneCodeSentTo": {
+    "placeholders": {
+      "phone": {}
+    }
+  },
+  "profilePhoneCodeHint": "SMS коды",
+  "profilePhoneVerifyCode": "Телефонды растау",
+  "profilePhoneResendCode": "Қайта жіберу",
+  "profilePhoneResendIn": "{seconds} с кейін қайта",
+  "@profilePhoneResendIn": {
+    "placeholders": {
+      "seconds": {}
+    }
+  },
+  "profilePhoneChangeNumber": "Нөмірді өзгерту",
+  "profilePhoneCancelChange": "Ағымдағы нөмірді қалдыру",
+  "profilePhoneInvalid": "Нөмірді халықаралық форматта енгізіңіз, мысалы +77011234567.",
+  "profilePhoneAlreadyVerified": "Бұл нөмір әлдеқашан расталған. Басқа нөмір енгізіңіз.",
+  "profilePhoneUnavailable": "Бұл нөмір қолданыста немесе қолжетімсіз.",
+  "profilePhoneCodeExpired": "Кодтың мерзімі өтті. Жаңа код жіберіңіз.",
+  "profilePhoneCodeInvalid": "Растау коды қате.",
+  "profilePhoneVerificationLocked": "Қате әрекет тым көп. Жаңа кодты кейін сұраңыз.",
+  "profilePhoneRateLimited": "Тым жиі. Қайта жібермес бұрын күтіңіз.",
+  "profilePhoneVerificationUnavailable": "Телефонды растау уақытша қолжетімсіз.",
+  "profilePhoneVerificationFailed": "Телефонды растау мүмкін болмады. Қайта көріңіз.",
+  "profilePhoneCodeRequired": "SMS кодын енгізіңіз.",
+  "profilePhoneStartRequired": "Алдымен телефон нөміріне код жіберіңіз.",
   "profileEmail": "Email",
   "profileLocale": "Тіл",
   "profileTimezone": "Уақыт белдеуі",

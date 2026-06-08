@@ -306,6 +306,102 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profilePhone => 'Телефон';
 
   @override
+  String get profilePhoneVerificationSection => 'Подтверждение телефона';
+
+  @override
+  String get profilePhoneVerificationTitle => 'Номер для связи';
+
+  @override
+  String get profilePhoneVerificationDescription =>
+      'Подтвердите номер по SMS, чтобы мы могли защищать бронирования и важные действия.';
+
+  @override
+  String get profilePhoneVerifiedTitle => 'Телефон подтвержден';
+
+  @override
+  String get profilePhoneVerifiedDescription =>
+      'Этот номер используется как доверенный контакт для важных действий.';
+
+  @override
+  String profilePhoneVerifiedAs(Object phone) {
+    return 'Подтвержден: $phone';
+  }
+
+  @override
+  String profilePhoneCurrentVerifiedAs(Object phone) {
+    return 'Текущий номер: $phone';
+  }
+
+  @override
+  String get profilePhoneSendCode => 'Отправить код';
+
+  @override
+  String profilePhoneCodeSentTo(Object phone) {
+    return 'Код отправлен на $phone';
+  }
+
+  @override
+  String get profilePhoneCodeHint => 'Код из SMS';
+
+  @override
+  String get profilePhoneVerifyCode => 'Подтвердить телефон';
+
+  @override
+  String get profilePhoneResendCode => 'Отправить повторно';
+
+  @override
+  String profilePhoneResendIn(Object seconds) {
+    return 'Повторно через $seconds с';
+  }
+
+  @override
+  String get profilePhoneChangeNumber => 'Изменить номер';
+
+  @override
+  String get profilePhoneCancelChange => 'Оставить текущий номер';
+
+  @override
+  String get profilePhoneInvalid =>
+      'Введите номер в международном формате, например +77011234567.';
+
+  @override
+  String get profilePhoneAlreadyVerified =>
+      'Этот номер уже подтвержден. Введите другой номер.';
+
+  @override
+  String get profilePhoneUnavailable =>
+      'Этот номер уже используется или недоступен.';
+
+  @override
+  String get profilePhoneCodeExpired => 'Код истек. Отправьте новый код.';
+
+  @override
+  String get profilePhoneCodeInvalid => 'Неверный код подтверждения.';
+
+  @override
+  String get profilePhoneVerificationLocked =>
+      'Слишком много неверных попыток. Запросите новый код позже.';
+
+  @override
+  String get profilePhoneRateLimited =>
+      'Слишком часто. Подождите перед повторной отправкой.';
+
+  @override
+  String get profilePhoneVerificationUnavailable =>
+      'Подтверждение телефона временно недоступно.';
+
+  @override
+  String get profilePhoneVerificationFailed =>
+      'Не удалось подтвердить телефон. Попробуйте еще раз.';
+
+  @override
+  String get profilePhoneCodeRequired => 'Введите код из SMS.';
+
+  @override
+  String get profilePhoneStartRequired =>
+      'Сначала отправьте код на номер телефона.';
+
+  @override
   String get profileEmail => 'Email';
 
   @override

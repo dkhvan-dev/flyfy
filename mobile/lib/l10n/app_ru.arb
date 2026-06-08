@@ -111,6 +111,52 @@
   "drawerStatusCompleteProfile": "Заполните профиль",
   "profileNotAvailable": "Профиль недоступен",
   "profilePhone": "Телефон",
+  "profilePhoneVerificationSection": "Подтверждение телефона",
+  "profilePhoneVerificationTitle": "Номер для связи",
+  "profilePhoneVerificationDescription": "Подтвердите номер по SMS, чтобы мы могли защищать бронирования и важные действия.",
+  "profilePhoneVerifiedTitle": "Телефон подтвержден",
+  "profilePhoneVerifiedDescription": "Этот номер используется как доверенный контакт для важных действий.",
+  "profilePhoneVerifiedAs": "Подтвержден: {phone}",
+  "@profilePhoneVerifiedAs": {
+    "placeholders": {
+      "phone": {}
+    }
+  },
+  "profilePhoneCurrentVerifiedAs": "Текущий номер: {phone}",
+  "@profilePhoneCurrentVerifiedAs": {
+    "placeholders": {
+      "phone": {}
+    }
+  },
+  "profilePhoneSendCode": "Отправить код",
+  "profilePhoneCodeSentTo": "Код отправлен на {phone}",
+  "@profilePhoneCodeSentTo": {
+    "placeholders": {
+      "phone": {}
+    }
+  },
+  "profilePhoneCodeHint": "Код из SMS",
+  "profilePhoneVerifyCode": "Подтвердить телефон",
+  "profilePhoneResendCode": "Отправить повторно",
+  "profilePhoneResendIn": "Повторно через {seconds} с",
+  "@profilePhoneResendIn": {
+    "placeholders": {
+      "seconds": {}
+    }
+  },
+  "profilePhoneChangeNumber": "Изменить номер",
+  "profilePhoneCancelChange": "Оставить текущий номер",
+  "profilePhoneInvalid": "Введите номер в международном формате, например +77011234567.",
+  "profilePhoneAlreadyVerified": "Этот номер уже подтвержден. Введите другой номер.",
+  "profilePhoneUnavailable": "Этот номер уже используется или недоступен.",
+  "profilePhoneCodeExpired": "Код истек. Отправьте новый код.",
+  "profilePhoneCodeInvalid": "Неверный код подтверждения.",
+  "profilePhoneVerificationLocked": "Слишком много неверных попыток. Запросите новый код позже.",
+  "profilePhoneRateLimited": "Слишком часто. Подождите перед повторной отправкой.",
+  "profilePhoneVerificationUnavailable": "Подтверждение телефона временно недоступно.",
+  "profilePhoneVerificationFailed": "Не удалось подтвердить телефон. Попробуйте еще раз.",
+  "profilePhoneCodeRequired": "Введите код из SMS.",
+  "profilePhoneStartRequired": "Сначала отправьте код на номер телефона.",
   "profileEmail": "Email",
   "profileLocale": "Язык",
   "profileTimezone": "Часовой пояс",

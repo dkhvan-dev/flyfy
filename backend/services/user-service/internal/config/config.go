@@ -16,6 +16,7 @@ type Config struct {
 	Postgres    PostgresConfig
 	Log         LogConfig
 	Security    SecurityConfig
+	Phone       PhoneVerificationConfig
 	FileManager FileManagerConfig
 }
 
@@ -98,6 +99,16 @@ type SecurityConfig struct {
 	TrustedGatewayHeaderRoles  string `env:"TRUSTED_GATEWAY_HEADER_ROLES, default=X-User-Roles"`
 	TrustedGatewayHeaderSub    string `env:"TRUSTED_GATEWAY_HEADER_SUB, default=X-Auth-Subject"`
 	RequestIDHeader            string `env:"REQUEST_ID_HEADER, default=X-Request-Id"`
+}
+
+type PhoneVerificationConfig struct {
+	Provider              string        `env:"PHONE_VERIFICATION_PROVIDER, default=log"`
+	CodeLength            int           `env:"PHONE_VERIFICATION_CODE_LENGTH, default=6"`
+	CodeTTL               time.Duration `env:"PHONE_VERIFICATION_CODE_TTL, default=5m"`
+	ResendCooldown        time.Duration `env:"PHONE_VERIFICATION_RESEND_COOLDOWN, default=1m"`
+	MaxVerifyAttempts     int           `env:"PHONE_VERIFICATION_MAX_VERIFY_ATTEMPTS, default=5"`
+	CodeHashSecret        string        `env:"PHONE_VERIFICATION_CODE_HASH_SECRET, default="`
+	DevelopmentStaticCode string        `env:"PHONE_VERIFICATION_DEV_STATIC_CODE, default="`
 }
 
 func Load(ctx context.Context) (*Config, error) {

@@ -652,6 +652,162 @@ abstract class AppLocalizations {
   /// **'Phone'**
   String get profilePhone;
 
+  /// No description provided for @profilePhoneVerificationSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone verification'**
+  String get profilePhoneVerificationSection;
+
+  /// No description provided for @profilePhoneVerificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact number'**
+  String get profilePhoneVerificationTitle;
+
+  /// No description provided for @profilePhoneVerificationDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your number by SMS so we can protect bookings and sensitive actions.'**
+  String get profilePhoneVerificationDescription;
+
+  /// No description provided for @profilePhoneVerifiedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone verified'**
+  String get profilePhoneVerifiedTitle;
+
+  /// No description provided for @profilePhoneVerifiedDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This number is used as a trusted contact for important actions.'**
+  String get profilePhoneVerifiedDescription;
+
+  /// No description provided for @profilePhoneVerifiedAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified: {phone}'**
+  String profilePhoneVerifiedAs(Object phone);
+
+  /// No description provided for @profilePhoneCurrentVerifiedAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Current number: {phone}'**
+  String profilePhoneCurrentVerifiedAs(Object phone);
+
+  /// No description provided for @profilePhoneSendCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Send code'**
+  String get profilePhoneSendCode;
+
+  /// No description provided for @profilePhoneCodeSentTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Code sent to {phone}'**
+  String profilePhoneCodeSentTo(Object phone);
+
+  /// No description provided for @profilePhoneCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'SMS code'**
+  String get profilePhoneCodeHint;
+
+  /// No description provided for @profilePhoneVerifyCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify phone'**
+  String get profilePhoneVerifyCode;
+
+  /// No description provided for @profilePhoneResendCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Send again'**
+  String get profilePhoneResendCode;
+
+  /// No description provided for @profilePhoneResendIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Again in {seconds}s'**
+  String profilePhoneResendIn(Object seconds);
+
+  /// No description provided for @profilePhoneChangeNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Change number'**
+  String get profilePhoneChangeNumber;
+
+  /// No description provided for @profilePhoneCancelChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep current number'**
+  String get profilePhoneCancelChange;
+
+  /// No description provided for @profilePhoneInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the number in international format, for example +77011234567.'**
+  String get profilePhoneInvalid;
+
+  /// No description provided for @profilePhoneAlreadyVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'This number is already verified. Enter a different number.'**
+  String get profilePhoneAlreadyVerified;
+
+  /// No description provided for @profilePhoneUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This number is already used or unavailable.'**
+  String get profilePhoneUnavailable;
+
+  /// No description provided for @profilePhoneCodeExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'The code expired. Send a new code.'**
+  String get profilePhoneCodeExpired;
+
+  /// No description provided for @profilePhoneCodeInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid verification code.'**
+  String get profilePhoneCodeInvalid;
+
+  /// No description provided for @profilePhoneVerificationLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many incorrect attempts. Request a new code later.'**
+  String get profilePhoneVerificationLocked;
+
+  /// No description provided for @profilePhoneRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many attempts. Wait before sending again.'**
+  String get profilePhoneRateLimited;
+
+  /// No description provided for @profilePhoneVerificationUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone verification is temporarily unavailable.'**
+  String get profilePhoneVerificationUnavailable;
+
+  /// No description provided for @profilePhoneVerificationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to verify phone. Please try again.'**
+  String get profilePhoneVerificationFailed;
+
+  /// No description provided for @profilePhoneCodeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the SMS code.'**
+  String get profilePhoneCodeRequired;
+
+  /// No description provided for @profilePhoneStartRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a code to the phone number first.'**
+  String get profilePhoneStartRequired;
+
   /// No description provided for @profileEmail.
   ///
   /// In en, this message translates to:

@@ -34,6 +34,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _firstNameFieldKey = GlobalKey();
   final _lastNameFieldKey = GlobalKey();
   final _nicknameFieldKey = GlobalKey();
+  final _phoneFieldKey = GlobalKey();
   final _countryFieldKey = GlobalKey();
   final _profileApi = ProfileApi();
   final _fileApi = FileApi();
@@ -44,6 +45,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final TextEditingController _firstNameController;
   late final TextEditingController _lastNameController;
   late final TextEditingController _nicknameController;
+  late final TextEditingController _phoneController;
+  late final TextEditingController _phoneCodeController;
   late final TextEditingController _bioController;
   late final TextEditingController _countryCodeController;
   late final TextEditingController _countrySearchController;
@@ -82,7 +85,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String? _nicknameAvailabilityError;
   String? _lastCheckedNickname;
   Timer? _nicknameAvailabilityDebounce;
+  Timer? _phoneResendCountdownTimer;
   int _nicknameAvailabilityRequestId = 0;
+  String? _phoneVerificationChallengeId;
+  String? _phoneVerificationMaskedPhone;
+  String? _phoneVerificationError;
+  int _phoneResendSecondsRemaining = 0;
+  bool _isStartingPhoneVerification = false;
+  bool _isVerifyingPhoneVerification = false;
+  bool _isResendingPhoneVerification = false;
+  bool _isPhoneVerificationConfirmed = false;
+  bool _isChangingVerifiedPhone = false;
+  bool _isApplyingPhonePrefix = false;
+  String? _verifiedPhoneBeforeChange;
 
   @override
   void initState() {
@@ -98,6 +113,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       ..addListener(_handlePreviewChanged);
     _nicknameController = TextEditingController(text: _initialNickname)
       ..addListener(_handleNicknameChanged);
+    _phoneController = TextEditingController(
+      text: _initialPhoneInputText(profile),
+    )..addListener(_handlePhoneChanged);
+    _phoneCodeController = TextEditingController();
     _bioController = TextEditingController(text: profile?.bio ?? '');
     _countryCodeController = TextEditingController(
       text: profile?.countryCode ?? '',
@@ -123,6 +142,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ? null
         : profile!.avatarFileId!.trim();
     _avatarFuture = _loadAvatarUrl(profile?.avatarFileId);
+    _phoneVerificationMaskedPhone = profile?.primaryPhoneVerified == true
+        ? profile?.primaryPhoneDisplay
+        : null;
+    _isPhoneVerificationConfirmed = profile?.primaryPhoneVerified == true;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_prefillTimezoneFromDevice());
@@ -135,9 +158,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void dispose() {
     _nicknameAvailabilityDebounce?.cancel();
+    _phoneResendCountdownTimer?.cancel();
     _firstNameController.dispose();
     _lastNameController.dispose();
     _nicknameController.dispose();
+    _phoneController.dispose();
+    _phoneCodeController.dispose();
     _bioController.dispose();
     _countryCodeController.dispose();
     _countrySearchController
@@ -163,6 +189,43 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void _handleNicknameChanged() {
     _handlePreviewChanged();
     _scheduleNicknameAvailabilityCheck();
+  }
+
+  String _initialPhoneInputText(UserProfileVm? profile) {
+    if (profile?.primaryPhoneVerified == true) {
+      return profile?.primaryPhoneDisplay ?? '';
+    }
+    return '+';
+  }
+
+  void _handlePhoneChanged() {
+    if (_isApplyingPhonePrefix ||
+        (_isPhoneVerificationConfirmed && !_isChangingVerifiedPhone)) {
+      return;
+    }
+    _ensurePhonePlusPrefix();
+  }
+
+  void _ensurePhonePlusPrefix() {
+    final value = _phoneController.value;
+    final text = value.text;
+
+    if (text.startsWith('+')) return;
+
+    final nextText = text.isEmpty ? '+' : '+$text';
+    final baseOffset = value.selection.baseOffset;
+    final nextOffset = text.isEmpty
+        ? 1
+        : (baseOffset < 0 ? nextText.length : baseOffset + 1);
+
+    _isApplyingPhonePrefix = true;
+    _phoneController.value = TextEditingValue(
+      text: nextText,
+      selection: TextSelection.collapsed(
+        offset: nextOffset.clamp(0, nextText.length),
+      ),
+    );
+    _isApplyingPhonePrefix = false;
   }
 
   void _scheduleNicknameAvailabilityCheck() {
@@ -294,6 +357,358 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return l10n.profileNicknameTaken;
     }
     return null;
+  }
+
+  bool get _hasPendingPhoneVerification =>
+      (_phoneVerificationChallengeId ?? '').trim().isNotEmpty;
+
+  bool get _isPhoneVerificationBusy =>
+      _isStartingPhoneVerification ||
+      _isVerifyingPhoneVerification ||
+      _isResendingPhoneVerification;
+
+  ButtonStyle get _phoneChangeActionStyle {
+    return TextButton.styleFrom(
+      foregroundColor: AppColors.accent,
+      padding: EdgeInsets.zero,
+      alignment: Alignment.centerLeft,
+    );
+  }
+
+  String _currentVerifiedPhoneDisplay(UserProfileVm? profile) {
+    final pendingChangePhone = (_verifiedPhoneBeforeChange ?? '').trim();
+    if (_isChangingVerifiedPhone && pendingChangePhone.isNotEmpty) {
+      return pendingChangePhone;
+    }
+
+    final profilePhone = (profile?.primaryPhoneDisplay ?? '').trim();
+    if (profile?.primaryPhoneVerified == true && profilePhone.isNotEmpty) {
+      return profilePhone;
+    }
+
+    if (_isPhoneVerificationConfirmed) {
+      return (_phoneVerificationMaskedPhone ?? '').trim();
+    }
+
+    return '';
+  }
+
+  void _setPhoneControllerText(String text) {
+    final nextText = text.trim().isEmpty ? '+' : text.trim();
+    _isApplyingPhonePrefix = true;
+    _phoneController.value = TextEditingValue(
+      text: nextText,
+      selection: TextSelection.collapsed(offset: nextText.length),
+    );
+    _isApplyingPhonePrefix = false;
+  }
+
+  void _startVerifiedPhoneChange() {
+    if (_isPhoneVerificationBusy || _hasPendingPhoneVerification) return;
+
+    final currentPhone = _currentVerifiedPhoneDisplay(
+      context.read<SessionProvider>().profile,
+    );
+    _phoneResendCountdownTimer?.cancel();
+    _phoneCodeController.clear();
+    setState(() {
+      _isChangingVerifiedPhone = true;
+      _verifiedPhoneBeforeChange = currentPhone.isEmpty ? null : currentPhone;
+      _phoneVerificationChallengeId = null;
+      _phoneVerificationMaskedPhone = null;
+      _phoneVerificationError = null;
+      _phoneResendSecondsRemaining = 0;
+      _isPhoneVerificationConfirmed = false;
+    });
+    _setPhoneControllerText('+');
+  }
+
+  String _normalizePhoneInput(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return '';
+
+    final buffer = StringBuffer();
+    for (var i = 0; i < trimmed.length; i++) {
+      final char = trimmed[i];
+      if (char == '+' && i == 0) {
+        buffer.write(char);
+      } else if (RegExp(r'\d').hasMatch(char)) {
+        buffer.write(char);
+      }
+    }
+
+    final normalized = buffer.toString();
+    if (normalized.startsWith('00')) {
+      return '+${normalized.substring(2)}';
+    }
+    return normalized;
+  }
+
+  bool _isValidPhoneInput(String phone) {
+    return RegExp(r'^\+\d{8,15}$').hasMatch(phone);
+  }
+
+  String _phoneVerificationErrorMessage(
+    DioException error,
+    AppLocalizations l10n,
+  ) {
+    final statusCode = error.response?.statusCode;
+    final data = error.response?.data;
+    final backendError = data is Map<String, dynamic>
+        ? data['error']?.toString().trim()
+        : null;
+
+    if (backendError == 'phone is already verified for this account') {
+      return l10n.profilePhoneAlreadyVerified;
+    }
+    if (statusCode == 409 || backendError == 'phone is unavailable') {
+      return l10n.profilePhoneUnavailable;
+    }
+    if (statusCode == 410 ||
+        backendError == 'phone verification code expired') {
+      return l10n.profilePhoneCodeExpired;
+    }
+    if (statusCode == 401 ||
+        backendError == 'invalid phone verification code') {
+      return l10n.profilePhoneCodeInvalid;
+    }
+    if (statusCode == 423 || backendError == 'phone verification locked') {
+      return l10n.profilePhoneVerificationLocked;
+    }
+    if (statusCode == 429) {
+      return l10n.profilePhoneRateLimited;
+    }
+    if (statusCode == 503) {
+      return l10n.profilePhoneVerificationUnavailable;
+    }
+    if (backendError == 'phone is required' ||
+        backendError == 'invalid phone') {
+      return l10n.profilePhoneInvalid;
+    }
+    return l10n.profilePhoneVerificationFailed;
+  }
+
+  void _startPhoneResendCountdown(int seconds) {
+    _phoneResendCountdownTimer?.cancel();
+    final initial = seconds < 0 ? 0 : seconds;
+    setState(() => _phoneResendSecondsRemaining = initial);
+
+    if (initial == 0) return;
+
+    _phoneResendCountdownTimer = Timer.periodic(const Duration(seconds: 1), (
+      timer,
+    ) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      final next = _phoneResendSecondsRemaining - 1;
+      if (next <= 0) {
+        timer.cancel();
+        setState(() => _phoneResendSecondsRemaining = 0);
+        return;
+      }
+
+      setState(() => _phoneResendSecondsRemaining = next);
+    });
+  }
+
+  Future<void> _startPhoneVerification() async {
+    if (_isPhoneVerificationBusy) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    final phone = _normalizePhoneInput(_phoneController.text);
+    if (!_isValidPhoneInput(phone)) {
+      setState(() => _phoneVerificationError = l10n.profilePhoneInvalid);
+      await _scrollToField(_phoneFieldKey);
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _isStartingPhoneVerification = true;
+      _phoneVerificationError = null;
+    });
+
+    try {
+      final challenge = await _profileApi.startPhoneVerification(phone);
+      if (!mounted) return;
+
+      _phoneCodeController.clear();
+      _setPhoneControllerText(phone);
+      setState(() {
+        _phoneVerificationChallengeId = challenge.challengeId;
+        _phoneVerificationMaskedPhone = challenge.maskedPhone;
+        _phoneVerificationError = null;
+        _isPhoneVerificationConfirmed = false;
+      });
+      _startPhoneResendCountdown(challenge.resendAfterSeconds);
+    } on DioException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _phoneVerificationError = _phoneVerificationErrorMessage(e, l10n);
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _phoneVerificationError = l10n.profilePhoneVerificationFailed;
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isStartingPhoneVerification = false);
+      }
+    }
+  }
+
+  Future<void> _verifyPhoneVerification() async {
+    if (_isPhoneVerificationBusy) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    final challengeId = (_phoneVerificationChallengeId ?? '').trim();
+    final code = _phoneCodeController.text.trim();
+
+    if (challengeId.isEmpty) {
+      setState(() => _phoneVerificationError = l10n.profilePhoneStartRequired);
+      return;
+    }
+    if (!RegExp(r'^\d{4,10}$').hasMatch(code)) {
+      setState(() => _phoneVerificationError = l10n.profilePhoneCodeRequired);
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _isVerifyingPhoneVerification = true;
+      _phoneVerificationError = null;
+    });
+
+    try {
+      final result = await _profileApi.verifyPhoneVerification(
+        challengeId: challengeId,
+        code: code,
+      );
+      if (!mounted) return;
+
+      _phoneResendCountdownTimer?.cancel();
+      _phoneCodeController.clear();
+      setState(() {
+        _phoneVerificationChallengeId = null;
+        _phoneVerificationMaskedPhone = result.maskedPhone;
+        _phoneVerificationError = null;
+        _phoneResendSecondsRemaining = 0;
+        _isPhoneVerificationConfirmed = result.verified;
+        _isChangingVerifiedPhone = false;
+        _verifiedPhoneBeforeChange = null;
+        if ((result.maskedPhone ?? '').trim().isNotEmpty) {
+          _setPhoneControllerText(result.maskedPhone!.trim());
+        }
+      });
+
+      await context.read<SessionProvider>().reloadProfile();
+    } on DioException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _phoneVerificationError = _phoneVerificationErrorMessage(e, l10n);
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _phoneVerificationError = l10n.profilePhoneVerificationFailed;
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isVerifyingPhoneVerification = false);
+      }
+    }
+  }
+
+  Future<void> _resendPhoneVerification() async {
+    if (_isPhoneVerificationBusy || _phoneResendSecondsRemaining > 0) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    final challengeId = (_phoneVerificationChallengeId ?? '').trim();
+    if (challengeId.isEmpty) {
+      setState(() => _phoneVerificationError = l10n.profilePhoneStartRequired);
+      return;
+    }
+
+    setState(() {
+      _isResendingPhoneVerification = true;
+      _phoneVerificationError = null;
+    });
+
+    try {
+      final challenge = await _profileApi.resendPhoneVerification(challengeId);
+      if (!mounted) return;
+
+      setState(() {
+        _phoneVerificationChallengeId = challenge.challengeId;
+        _phoneVerificationMaskedPhone = challenge.maskedPhone;
+        _phoneVerificationError = null;
+      });
+      _startPhoneResendCountdown(challenge.resendAfterSeconds);
+    } on DioException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _phoneVerificationError = _phoneVerificationErrorMessage(e, l10n);
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _phoneVerificationError = l10n.profilePhoneVerificationFailed;
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isResendingPhoneVerification = false);
+      }
+    }
+  }
+
+  Future<void> _cancelPendingPhoneVerification() async {
+    await _cancelPhoneVerification(restoreVerifiedPhone: false);
+  }
+
+  Future<void> _cancelVerifiedPhoneChange() async {
+    await _cancelPhoneVerification(restoreVerifiedPhone: true);
+  }
+
+  Future<void> _cancelPhoneVerification({
+    required bool restoreVerifiedPhone,
+  }) async {
+    if (_isPhoneVerificationBusy) return;
+
+    final profile = context.read<SessionProvider>().profile;
+    final currentVerifiedPhone = restoreVerifiedPhone
+        ? _currentVerifiedPhoneDisplay(profile)
+        : '';
+
+    setState(() {
+      _phoneVerificationChallengeId = null;
+      _phoneVerificationMaskedPhone = currentVerifiedPhone.isEmpty
+          ? null
+          : currentVerifiedPhone;
+      _phoneVerificationError = null;
+      _phoneResendSecondsRemaining = 0;
+      _isPhoneVerificationConfirmed =
+          restoreVerifiedPhone &&
+          (profile?.primaryPhoneVerified == true ||
+              currentVerifiedPhone.isNotEmpty);
+      _isChangingVerifiedPhone = false;
+      _verifiedPhoneBeforeChange = null;
+    });
+    _phoneCodeController.clear();
+    _phoneResendCountdownTimer?.cancel();
+    _setPhoneControllerText(
+      restoreVerifiedPhone ? currentVerifiedPhone : _phoneController.text,
+    );
+
+    try {
+      await _profileApi.cancelPendingPhoneVerification();
+    } catch (_) {
+      // Local cancellation keeps the user unblocked; backend pending challenge
+      // will expire if the network request fails.
+    }
   }
 
   Future<void> _loadCountries() {
@@ -1060,6 +1475,313 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return parts.first.substring(0, 1).toUpperCase();
   }
 
+  Widget _buildPhoneVerificationSection(
+    UserProfileVm? profile,
+    AppLocalizations l10n,
+  ) {
+    final currentVerifiedPhone = _currentVerifiedPhoneDisplay(profile);
+    final hasVerifiedPhone =
+        profile?.primaryPhoneVerified == true ||
+        (_isPhoneVerificationConfirmed && !_isChangingVerifiedPhone) ||
+        (_isChangingVerifiedPhone && currentVerifiedPhone.isNotEmpty);
+    final isChangingVerifiedPhone =
+        hasVerifiedPhone && _isChangingVerifiedPhone;
+    final isVerified = hasVerifiedPhone && !isChangingVerifiedPhone;
+    final displayPhone = isVerified && currentVerifiedPhone.isNotEmpty
+        ? currentVerifiedPhone
+        : (_phoneVerificationMaskedPhone ?? '').trim().isNotEmpty
+        ? _phoneVerificationMaskedPhone!.trim()
+        : profile?.primaryPhoneDisplay ?? '';
+    final isSendDisabled =
+        _isPhoneVerificationBusy || isVerified || _hasPendingPhoneVerification;
+    final isVerifyDisabled =
+        _isPhoneVerificationBusy || !_hasPendingPhoneVerification;
+    final isResendDisabled =
+        _isPhoneVerificationBusy ||
+        !_hasPendingPhoneVerification ||
+        _phoneResendSecondsRemaining > 0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ProfileSectionHeading(title: l10n.profilePhoneVerificationSection),
+        SizedBox(height: profileScaled(context, 14, min: 12, max: 16)),
+        _ProfileSectionCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: profileScaled(context, 42, min: 38, max: 44),
+                    height: profileScaled(context, 42, min: 38, max: 44),
+                    decoration: BoxDecoration(
+                      color: AppColors.accent.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isVerified
+                          ? Icons.verified_user_rounded
+                          : Icons.sms_outlined,
+                      color: AppColors.accent,
+                      size: profileScaled(context, 21, min: 19, max: 22),
+                    ),
+                  ),
+                  SizedBox(width: profileScaled(context, 12, min: 10, max: 14)),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isVerified
+                              ? l10n.profilePhoneVerifiedTitle
+                              : l10n.profilePhoneVerificationTitle,
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: profileScaled(
+                              context,
+                              16,
+                              min: 15,
+                              max: 17,
+                            ),
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        SizedBox(
+                          height: profileScaled(context, 6, min: 5, max: 7),
+                        ),
+                        Text(
+                          isVerified
+                              ? l10n.profilePhoneVerifiedDescription
+                              : l10n.profilePhoneVerificationDescription,
+                          style: TextStyle(
+                            color: profileTextMuted,
+                            fontSize: profileScaled(
+                              context,
+                              13,
+                              min: 12,
+                              max: 13,
+                            ),
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: profileScaled(context, 16, min: 14, max: 18)),
+              _LabeledInput(
+                key: _phoneFieldKey,
+                label: l10n.profilePhone,
+                child: _StyledTextField(
+                  controller: _phoneController,
+                  hintText: '+77011234567',
+                  readOnly: isVerified || _hasPendingPhoneVerification,
+                  keyboardType: TextInputType.phone,
+                  textCapitalization: TextCapitalization.none,
+                ),
+              ),
+              if (isVerified && displayPhone.isNotEmpty) ...[
+                SizedBox(height: profileScaled(context, 10, min: 8, max: 12)),
+                _PhoneStatusLine(
+                  icon: Icons.check_circle_rounded,
+                  text: l10n.profilePhoneVerifiedAs(displayPhone),
+                  color: const Color(0xFF65D08A),
+                ),
+                SizedBox(height: profileScaled(context, 10, min: 8, max: 12)),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: _isPhoneVerificationBusy
+                        ? null
+                        : _startVerifiedPhoneChange,
+                    style: _phoneChangeActionStyle,
+                    icon: const Icon(Icons.edit_rounded),
+                    label: Text(l10n.profilePhoneChangeNumber),
+                  ),
+                ),
+              ],
+              if (isChangingVerifiedPhone &&
+                  currentVerifiedPhone.isNotEmpty) ...[
+                SizedBox(height: profileScaled(context, 10, min: 8, max: 12)),
+                _PhoneStatusLine(
+                  icon: Icons.verified_rounded,
+                  text: l10n.profilePhoneCurrentVerifiedAs(
+                    currentVerifiedPhone,
+                  ),
+                  color: const Color(0xFF65D08A),
+                ),
+              ],
+              if (!isVerified && !_hasPendingPhoneVerification) ...[
+                SizedBox(height: profileScaled(context, 14, min: 12, max: 16)),
+                FilledButton(
+                  onPressed: isSendDisabled ? null : _startPhoneVerification,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                    foregroundColor: Colors.white,
+                    minimumSize: Size(
+                      double.infinity,
+                      profileScaled(context, 50, min: 46, max: 52),
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        profileScaled(context, 16, min: 14, max: 18),
+                      ),
+                    ),
+                  ),
+                  child: _isStartingPhoneVerification
+                      ? SizedBox(
+                          width: profileScaled(context, 18, min: 16, max: 18),
+                          height: profileScaled(context, 18, min: 16, max: 18),
+                          child: const CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          l10n.profilePhoneSendCode,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                ),
+                if (isChangingVerifiedPhone) ...[
+                  SizedBox(height: profileScaled(context, 8, min: 6, max: 10)),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: _isPhoneVerificationBusy
+                          ? null
+                          : _cancelVerifiedPhoneChange,
+                      style: _phoneChangeActionStyle,
+                      icon: const Icon(Icons.close_rounded),
+                      label: Text(l10n.profilePhoneCancelChange),
+                    ),
+                  ),
+                ],
+              ],
+              if (!isVerified && _hasPendingPhoneVerification) ...[
+                SizedBox(height: profileScaled(context, 14, min: 12, max: 16)),
+                _PhoneStatusLine(
+                  icon: Icons.mark_email_read_outlined,
+                  text: l10n.profilePhoneCodeSentTo(
+                    (_phoneVerificationMaskedPhone ?? '').trim().isEmpty
+                        ? _phoneController.text.trim()
+                        : _phoneVerificationMaskedPhone!.trim(),
+                  ),
+                  color: profileTextSoft,
+                ),
+                SizedBox(height: profileScaled(context, 12, min: 10, max: 14)),
+                _StyledTextField(
+                  controller: _phoneCodeController,
+                  hintText: l10n.profilePhoneCodeHint,
+                  keyboardType: TextInputType.number,
+                  textCapitalization: TextCapitalization.none,
+                ),
+                SizedBox(height: profileScaled(context, 14, min: 12, max: 16)),
+                FilledButton(
+                  onPressed: isVerifyDisabled ? null : _verifyPhoneVerification,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                    foregroundColor: Colors.white,
+                    minimumSize: Size(
+                      double.infinity,
+                      profileScaled(context, 50, min: 46, max: 52),
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        profileScaled(context, 16, min: 14, max: 18),
+                      ),
+                    ),
+                  ),
+                  child: _isVerifyingPhoneVerification
+                      ? SizedBox(
+                          width: profileScaled(context, 18, min: 16, max: 18),
+                          height: profileScaled(context, 18, min: 16, max: 18),
+                          child: const CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          l10n.profilePhoneVerifyCode,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                ),
+                SizedBox(height: profileScaled(context, 10, min: 8, max: 12)),
+                Wrap(
+                  spacing: profileScaled(context, 10, min: 8, max: 10),
+                  runSpacing: profileScaled(context, 8, min: 6, max: 8),
+                  children: [
+                    TextButton.icon(
+                      onPressed: isResendDisabled
+                          ? null
+                          : _resendPhoneVerification,
+                      icon: _isResendingPhoneVerification
+                          ? SizedBox(
+                              width: profileScaled(
+                                context,
+                                16,
+                                min: 14,
+                                max: 16,
+                              ),
+                              height: profileScaled(
+                                context,
+                                16,
+                                min: 14,
+                                max: 16,
+                              ),
+                              child: const CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Icon(Icons.refresh_rounded),
+                      label: Text(
+                        _phoneResendSecondsRemaining > 0
+                            ? l10n.profilePhoneResendIn(
+                                _phoneResendSecondsRemaining,
+                              )
+                            : l10n.profilePhoneResendCode,
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: _isPhoneVerificationBusy
+                          ? null
+                          : isChangingVerifiedPhone
+                          ? _cancelVerifiedPhoneChange
+                          : _cancelPendingPhoneVerification,
+                      style: _phoneChangeActionStyle,
+                      icon: Icon(
+                        isChangingVerifiedPhone
+                            ? Icons.close_rounded
+                            : Icons.edit_rounded,
+                      ),
+                      label: Text(
+                        isChangingVerifiedPhone
+                            ? l10n.profilePhoneCancelChange
+                            : l10n.profilePhoneChangeNumber,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              if ((_phoneVerificationError ?? '').trim().isNotEmpty) ...[
+                SizedBox(height: profileScaled(context, 10, min: 8, max: 12)),
+                _PhoneStatusLine(
+                  icon: Icons.error_outline_rounded,
+                  text: _phoneVerificationError!.trim(),
+                  color: const Color(0xFFE47F78),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -1098,7 +1820,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         avatarBytes: _avatarPreviewBytes,
                         initials: previewInitials,
                         name: previewName,
-                        phone: profile?.primaryPhone,
+                        phone: profile?.primaryPhoneDisplay,
                         email: profile?.primaryEmail,
                         avatarHint: _isUploadingAvatar
                             ? l10n.profileSettingsAvatarUploading
@@ -1325,6 +2047,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ],
                     ),
                   ),
+                  SizedBox(
+                    height: profileScaled(context, 28, min: 24, max: 32),
+                  ),
+                  _buildPhoneVerificationSection(profile, l10n),
                   SizedBox(
                     height: profileScaled(context, 28, min: 24, max: 32),
                   ),
@@ -1651,6 +2377,44 @@ class _ContactPill extends StatelessWidget {
           fontWeight: FontWeight.w700,
         ),
       ),
+    );
+  }
+}
+
+class _PhoneStatusLine extends StatelessWidget {
+  const _PhoneStatusLine({
+    required this.icon,
+    required this.text,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String text;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          color: color,
+          size: profileScaled(context, 18, min: 16, max: 18),
+        ),
+        SizedBox(width: profileScaled(context, 8, min: 7, max: 9)),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              color: color,
+              fontSize: profileScaled(context, 12, min: 11, max: 13),
+              fontWeight: FontWeight.w700,
+              height: 1.3,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -2574,6 +3338,7 @@ class _StyledTextField extends StatelessWidget {
     this.readOnly = false,
     this.helperText,
     this.errorText,
+    this.keyboardType,
     this.textCapitalization = TextCapitalization.sentences,
     this.minLines = 1,
     this.maxLines = 1,
@@ -2585,6 +3350,7 @@ class _StyledTextField extends StatelessWidget {
   final bool readOnly;
   final String? helperText;
   final String? errorText;
+  final TextInputType? keyboardType;
   final TextCapitalization textCapitalization;
   final int minLines;
   final int maxLines;
@@ -2601,6 +3367,7 @@ class _StyledTextField extends StatelessWidget {
       readOnly: readOnly,
       minLines: minLines,
       maxLines: maxLines,
+      keyboardType: keyboardType,
       textCapitalization: textCapitalization,
       style: TextStyle(
         color: AppColors.textPrimary,

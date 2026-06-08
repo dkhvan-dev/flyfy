@@ -30,7 +30,10 @@ class UserProfileVm {
     required this.followersCount,
     required this.isFollowedByMe,
     required this.friendshipStatus,
+    this.primaryPhoneVerified = false,
     this.primaryPhone,
+    this.primaryPhoneMasked,
+    this.primaryPhoneVerifiedAt,
     this.primaryEmail,
     this.firstName,
     this.lastName,
@@ -55,6 +58,9 @@ class UserProfileVm {
   final UserFriendshipStatus friendshipStatus;
 
   final String? primaryPhone;
+  final String? primaryPhoneMasked;
+  final bool primaryPhoneVerified;
+  final DateTime? primaryPhoneVerifiedAt;
   final String? primaryEmail;
   final String? firstName;
   final String? lastName;
@@ -80,6 +86,11 @@ class UserProfileVm {
       userId: user['id']?.toString() ?? '',
       status: user['status']?.toString() ?? '',
       primaryPhone: user['primaryPhone']?.toString(),
+      primaryPhoneMasked: user['primaryPhoneMasked']?.toString(),
+      primaryPhoneVerified: user['primaryPhoneVerified'] == true,
+      primaryPhoneVerifiedAt: DateTime.tryParse(
+        user['primaryPhoneVerifiedAt']?.toString() ?? '',
+      ),
       primaryEmail: user['primaryEmail']?.toString(),
       firstName: profile['firstName']?.toString(),
       lastName: profile['lastName']?.toString(),
@@ -123,6 +134,9 @@ class UserProfileVm {
       isFollowedByMe: isFollowedByMe ?? this.isFollowedByMe,
       friendshipStatus: friendshipStatus ?? this.friendshipStatus,
       primaryPhone: primaryPhone,
+      primaryPhoneMasked: primaryPhoneMasked,
+      primaryPhoneVerified: primaryPhoneVerified,
+      primaryPhoneVerifiedAt: primaryPhoneVerifiedAt,
       primaryEmail: primaryEmail,
       firstName: firstName,
       lastName: lastName,
@@ -150,6 +164,9 @@ class UserProfileVm {
     final fullName = [first, last].where((e) => e.isNotEmpty).join(' ');
     if (fullName.isNotEmpty) return fullName;
 
+    final maskedPhone = (primaryPhoneMasked ?? '').trim();
+    if (maskedPhone.isNotEmpty) return maskedPhone;
+
     final phone = (primaryPhone ?? '').trim();
     if (phone.isNotEmpty) return _maskPhone(phone);
 
@@ -159,6 +176,12 @@ class UserProfileVm {
     }
 
     return 'Inflap';
+  }
+
+  String get primaryPhoneDisplay {
+    final masked = (primaryPhoneMasked ?? '').trim();
+    if (masked.isNotEmpty) return masked;
+    return (primaryPhone ?? '').trim();
   }
 
   String get initials {

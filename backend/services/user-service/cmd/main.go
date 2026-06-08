@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc"
 	grpcadapter "kz/inflap/backend/services/user-service/internal/adapter/grpc"
 	httpadapter "kz/inflap/backend/services/user-service/internal/adapter/http"
+	phoneadapter "kz/inflap/backend/services/user-service/internal/adapter/phone"
 	"kz/inflap/backend/services/user-service/internal/adapter/repository"
 	"kz/inflap/backend/services/user-service/internal/app"
 	"kz/inflap/backend/services/user-service/internal/config"
@@ -56,8 +57,34 @@ func main() {
 
 	userRepo := repository.NewPGUserRepository(pool)
 	userUseCase := app.NewUserUseCase(userRepo, fileManagerClient)
+	if cfg.Phone.Provider != "log" {
+		log.Fatal().
+			Str("provider", cfg.Phone.Provider).
+			Msg("unsupported PHONE_VERIFICATION_PROVIDER")
+	}
+	if cfg.App.IsProduction() && cfg.Phone.Provider == "log" {
+		log.Fatal().Msg("PHONE_VERIFICATION_PROVIDER=log is not allowed in production")
+	}
+	if cfg.App.IsProduction() && cfg.Phone.CodeHashSecret == "" {
+		log.Fatal().Msg("PHONE_VERIFICATION_CODE_HASH_SECRET is required in production")
+	}
+	if cfg.App.IsProduction() && cfg.Phone.DevelopmentStaticCode != "" {
+		log.Fatal().Msg("PHONE_VERIFICATION_DEV_STATIC_CODE is not allowed in production")
+	}
+	phoneVerificationUseCase := app.NewPhoneVerificationUseCase(
+		userRepo,
+		phoneadapter.NewLogSender(cfg.App.Env),
+		app.PhoneVerificationConfig{
+			CodeLength:            cfg.Phone.CodeLength,
+			CodeTTL:               cfg.Phone.CodeTTL,
+			ResendCooldown:        cfg.Phone.ResendCooldown,
+			MaxVerifyAttempts:     cfg.Phone.MaxVerifyAttempts,
+			CodeHashSecret:        cfg.Phone.CodeHashSecret,
+			DevelopmentStaticCode: cfg.Phone.DevelopmentStaticCode,
+		},
+	)
 
-	httpHandler := httpadapter.NewHandler(userUseCase)
+	httpHandler := httpadapter.NewHandler(userUseCase, phoneVerificationUseCase)
 	httpMux := http.NewServeMux()
 	httpHandler.Register(httpMux)
 

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../core/network/api_client.dart';
+import '../models/phone_verification_vm.dart';
 import '../models/profile_follower_vm.dart';
 import '../models/update_profile_request.dart';
 import '../models/user_profile_vm.dart';
@@ -59,6 +60,33 @@ class ProfileApi {
   Future<UserProfileVm> updateMeProfile(UpdateProfileRequest request) async {
     final data = await _apiClient.updateMeProfile(request.toJson());
     return UserProfileVm.fromJson(data);
+  }
+
+  Future<PhoneVerificationVm> startPhoneVerification(String phone) async {
+    final data = await _apiClient.startProfilePhoneVerification(phone);
+    return PhoneVerificationVm.fromJson(data);
+  }
+
+  Future<PhoneVerificationVm> verifyPhoneVerification({
+    required String challengeId,
+    required String code,
+  }) async {
+    final data = await _apiClient.verifyProfilePhoneVerification(
+      challengeId,
+      code,
+    );
+    return PhoneVerificationVm.fromJson(data);
+  }
+
+  Future<PhoneVerificationVm> resendPhoneVerification(
+    String challengeId,
+  ) async {
+    final data = await _apiClient.resendProfilePhoneVerification(challengeId);
+    return PhoneVerificationVm.fromJson(data);
+  }
+
+  Future<void> cancelPendingPhoneVerification() async {
+    await _apiClient.cancelPendingProfilePhoneVerification();
   }
 
   Future<void> followUser(String userId) async {

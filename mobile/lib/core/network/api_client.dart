@@ -509,6 +509,41 @@ class ApiClient {
     return response.data as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> startProfilePhoneVerification(
+    String phone,
+  ) async {
+    final response = await _dio.post(
+      '/users/me/phone/verification/start',
+      data: {'phone': phone},
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> verifyProfilePhoneVerification(
+    String challengeId,
+    String code,
+  ) async {
+    final response = await _dio.post(
+      '/users/me/phone/verification/verify',
+      data: {'challengeId': challengeId, 'code': code},
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> resendProfilePhoneVerification(
+    String challengeId,
+  ) async {
+    final response = await _dio.post(
+      '/users/me/phone/verification/resend',
+      data: {'challengeId': challengeId},
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<void> cancelPendingProfilePhoneVerification() async {
+    await _dio.delete('/users/me/phone/pending');
+  }
+
   Future<Map<String, dynamic>> updateMeSettings(
     Map<String, dynamic> body,
   ) async {

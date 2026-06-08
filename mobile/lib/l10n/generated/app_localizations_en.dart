@@ -304,6 +304,102 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profilePhone => 'Phone';
 
   @override
+  String get profilePhoneVerificationSection => 'Phone verification';
+
+  @override
+  String get profilePhoneVerificationTitle => 'Contact number';
+
+  @override
+  String get profilePhoneVerificationDescription =>
+      'Verify your number by SMS so we can protect bookings and sensitive actions.';
+
+  @override
+  String get profilePhoneVerifiedTitle => 'Phone verified';
+
+  @override
+  String get profilePhoneVerifiedDescription =>
+      'This number is used as a trusted contact for important actions.';
+
+  @override
+  String profilePhoneVerifiedAs(Object phone) {
+    return 'Verified: $phone';
+  }
+
+  @override
+  String profilePhoneCurrentVerifiedAs(Object phone) {
+    return 'Current number: $phone';
+  }
+
+  @override
+  String get profilePhoneSendCode => 'Send code';
+
+  @override
+  String profilePhoneCodeSentTo(Object phone) {
+    return 'Code sent to $phone';
+  }
+
+  @override
+  String get profilePhoneCodeHint => 'SMS code';
+
+  @override
+  String get profilePhoneVerifyCode => 'Verify phone';
+
+  @override
+  String get profilePhoneResendCode => 'Send again';
+
+  @override
+  String profilePhoneResendIn(Object seconds) {
+    return 'Again in ${seconds}s';
+  }
+
+  @override
+  String get profilePhoneChangeNumber => 'Change number';
+
+  @override
+  String get profilePhoneCancelChange => 'Keep current number';
+
+  @override
+  String get profilePhoneInvalid =>
+      'Enter the number in international format, for example +77011234567.';
+
+  @override
+  String get profilePhoneAlreadyVerified =>
+      'This number is already verified. Enter a different number.';
+
+  @override
+  String get profilePhoneUnavailable =>
+      'This number is already used or unavailable.';
+
+  @override
+  String get profilePhoneCodeExpired => 'The code expired. Send a new code.';
+
+  @override
+  String get profilePhoneCodeInvalid => 'Invalid verification code.';
+
+  @override
+  String get profilePhoneVerificationLocked =>
+      'Too many incorrect attempts. Request a new code later.';
+
+  @override
+  String get profilePhoneRateLimited =>
+      'Too many attempts. Wait before sending again.';
+
+  @override
+  String get profilePhoneVerificationUnavailable =>
+      'Phone verification is temporarily unavailable.';
+
+  @override
+  String get profilePhoneVerificationFailed =>
+      'Failed to verify phone. Please try again.';
+
+  @override
+  String get profilePhoneCodeRequired => 'Enter the SMS code.';
+
+  @override
+  String get profilePhoneStartRequired =>
+      'Send a code to the phone number first.';
+
+  @override
   String get profileEmail => 'Email';
 
   @override

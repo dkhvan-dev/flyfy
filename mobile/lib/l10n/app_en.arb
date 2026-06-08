@@ -111,6 +111,52 @@
   "drawerStatusCompleteProfile": "Complete profile",
   "profileNotAvailable": "Profile is not available",
   "profilePhone": "Phone",
+  "profilePhoneVerificationSection": "Phone verification",
+  "profilePhoneVerificationTitle": "Contact number",
+  "profilePhoneVerificationDescription": "Verify your number by SMS so we can protect bookings and sensitive actions.",
+  "profilePhoneVerifiedTitle": "Phone verified",
+  "profilePhoneVerifiedDescription": "This number is used as a trusted contact for important actions.",
+  "profilePhoneVerifiedAs": "Verified: {phone}",
+  "@profilePhoneVerifiedAs": {
+    "placeholders": {
+      "phone": {}
+    }
+  },
+  "profilePhoneCurrentVerifiedAs": "Current number: {phone}",
+  "@profilePhoneCurrentVerifiedAs": {
+    "placeholders": {
+      "phone": {}
+    }
+  },
+  "profilePhoneSendCode": "Send code",
+  "profilePhoneCodeSentTo": "Code sent to {phone}",
+  "@profilePhoneCodeSentTo": {
+    "placeholders": {
+      "phone": {}
+    }
+  },
+  "profilePhoneCodeHint": "SMS code",
+  "profilePhoneVerifyCode": "Verify phone",
+  "profilePhoneResendCode": "Send again",
+  "profilePhoneResendIn": "Again in {seconds}s",
+  "@profilePhoneResendIn": {
+    "placeholders": {
+      "seconds": {}
+    }
+  },
+  "profilePhoneChangeNumber": "Change number",
+  "profilePhoneCancelChange": "Keep current number",
+  "profilePhoneInvalid": "Enter the number in international format, for example +77011234567.",
+  "profilePhoneAlreadyVerified": "This number is already verified. Enter a different number.",
+  "profilePhoneUnavailable": "This number is already used or unavailable.",
+  "profilePhoneCodeExpired": "The code expired. Send a new code.",
+  "profilePhoneCodeInvalid": "Invalid verification code.",
+  "profilePhoneVerificationLocked": "Too many incorrect attempts. Request a new code later.",
+  "profilePhoneRateLimited": "Too many attempts. Wait before sending again.",
+  "profilePhoneVerificationUnavailable": "Phone verification is temporarily unavailable.",
+  "profilePhoneVerificationFailed": "Failed to verify phone. Please try again.",
+  "profilePhoneCodeRequired": "Enter the SMS code.",
+  "profilePhoneStartRequired": "Send a code to the phone number first.",
   "profileEmail": "Email",
   "profileLocale": "Language",
   "profileTimezone": "Time zone",

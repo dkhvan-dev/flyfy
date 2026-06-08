@@ -42,8 +42,9 @@ func (r *PGUserRepository) CreateUserAggregate(
 
 	const userQuery = `
 		INSERT INTO users (
-			id, auth_subject_id, status, primary_phone, primary_email, last_seen_at, created_at, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+			id, auth_subject_id, status, primary_phone, primary_phone_verified_at,
+			primary_email, last_seen_at, created_at, updated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
 	`
 	if _, err = tx.Exec(
 		ctx,
@@ -52,6 +53,7 @@ func (r *PGUserRepository) CreateUserAggregate(
 		user.AuthSubjectID,
 		string(user.Status),
 		user.PrimaryPhone,
+		user.PrimaryPhoneVerifiedAt,
 		user.PrimaryEmail,
 		user.LastSeenAt,
 	); err != nil {
@@ -155,7 +157,7 @@ func (r *PGUserRepository) CreateUserAggregate(
 func (r *PGUserRepository) GetUserByID(ctx context.Context, userID uuid.UUID) (*model.User, error) {
 	const query = `
 		SELECT
-			id, auth_subject_id, status, primary_phone, primary_email,
+			id, auth_subject_id, status, primary_phone, primary_phone_verified_at, primary_email,
 			is_deleted, deleted_at, last_seen_at, created_at, updated_at
 		FROM users
 		WHERE id = $1
@@ -174,6 +176,7 @@ func (r *PGUserRepository) GetUserByID(ctx context.Context, userID uuid.UUID) (*
 		&item.AuthSubjectID,
 		&statusRaw,
 		&item.PrimaryPhone,
+		&item.PrimaryPhoneVerifiedAt,
 		&item.PrimaryEmail,
 		&item.IsDeleted,
 		&item.DeletedAt,
@@ -195,7 +198,7 @@ func (r *PGUserRepository) GetUserByID(ctx context.Context, userID uuid.UUID) (*
 func (r *PGUserRepository) GetUserBySubject(ctx context.Context, subject string) (*model.User, error) {
 	const query = `
 		SELECT
-			id, auth_subject_id, status, primary_phone, primary_email,
+			id, auth_subject_id, status, primary_phone, primary_phone_verified_at, primary_email,
 			is_deleted, deleted_at, last_seen_at, created_at, updated_at
 		FROM users
 		WHERE auth_subject_id = $1
@@ -214,6 +217,7 @@ func (r *PGUserRepository) GetUserBySubject(ctx context.Context, subject string)
 		&item.AuthSubjectID,
 		&statusRaw,
 		&item.PrimaryPhone,
+		&item.PrimaryPhoneVerifiedAt,
 		&item.PrimaryEmail,
 		&item.IsDeleted,
 		&item.DeletedAt,
@@ -546,7 +550,7 @@ func (r *PGUserRepository) UpdateLastSeen(ctx context.Context, userID uuid.UUID)
 		SET last_seen_at = NOW(), updated_at = NOW()
 		WHERE id = $1 AND is_deleted = FALSE
 		RETURNING
-			id, auth_subject_id, status, primary_phone, primary_email,
+			id, auth_subject_id, status, primary_phone, primary_phone_verified_at, primary_email,
 			is_deleted, deleted_at, last_seen_at, created_at, updated_at
 	`
 
@@ -560,6 +564,7 @@ func (r *PGUserRepository) UpdateLastSeen(ctx context.Context, userID uuid.UUID)
 		&item.AuthSubjectID,
 		&statusRaw,
 		&item.PrimaryPhone,
+		&item.PrimaryPhoneVerifiedAt,
 		&item.PrimaryEmail,
 		&item.IsDeleted,
 		&item.DeletedAt,
@@ -1566,5 +1571,324 @@ func (r *PGUserRepository) PatchUserIdentityBySubject(
 		return fmt.Errorf("patch user identity by subject: %w", err)
 	}
 
+	return nil
+}
+
+func (r *PGUserRepository) GetPhoneVerificationUserBySubject(
+	ctx context.Context,
+	subjectID string,
+) (*model.User, error) {
+	return r.GetUserBySubject(ctx, subjectID)
+}
+
+func (r *PGUserRepository) IsVerifiedPhoneTaken(
+	ctx context.Context,
+	phone string,
+	excludeUserID uuid.UUID,
+) (bool, error) {
+	phone = strings.TrimSpace(phone)
+	if phone == "" {
+		return false, nil
+	}
+
+	const query = `
+		SELECT EXISTS (
+			SELECT 1
+			FROM users
+			WHERE primary_phone = $1
+			  AND primary_phone_verified_at IS NOT NULL
+			  AND is_deleted = FALSE
+			  AND id <> $2
+		)
+	`
+
+	var taken bool
+	if err := r.pool.QueryRow(ctx, query, phone, excludeUserID).Scan(&taken); err != nil {
+		return false, fmt.Errorf("check verified phone uniqueness: %w", err)
+	}
+	return taken, nil
+}
+
+func (r *PGUserRepository) CreatePhoneVerificationChallenge(
+	ctx context.Context,
+	challenge *app.PhoneVerificationChallenge,
+) error {
+	if challenge == nil {
+		return app.ErrPhoneVerificationNotFound
+	}
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin phone verification tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	if _, err = tx.Exec(ctx, `
+		UPDATE users
+		SET pending_phone = $2,
+		    pending_phone_started_at = $3,
+		    updated_at = NOW()
+		WHERE id = $1
+		  AND is_deleted = FALSE
+	`, challenge.UserID, challenge.PhoneE164, challenge.CreatedAt); err != nil {
+		return fmt.Errorf("set pending phone: %w", err)
+	}
+
+	_, err = tx.Exec(ctx, `
+		INSERT INTO user_phone_verification_challenges (
+			id, user_id, phone_e164, code_hash, status, attempt_count,
+			resend_count, last_sent_at, expires_at, verified_at, created_at, updated_at
+		) VALUES (
+			$1, $2, $3, $4, $5, $6,
+			$7, $8, $9, $10, $11, NOW()
+		)
+	`, challenge.ID,
+		challenge.UserID,
+		challenge.PhoneE164,
+		challenge.CodeHash,
+		string(challenge.Status),
+		challenge.AttemptCount,
+		challenge.ResendCount,
+		challenge.LastSentAt,
+		challenge.ExpiresAt,
+		challenge.VerifiedAt,
+		challenge.CreatedAt,
+	)
+	if err != nil {
+		return fmt.Errorf("insert phone verification challenge: %w", err)
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit phone verification tx: %w", err)
+	}
+	return nil
+}
+
+func (r *PGUserRepository) GetPhoneVerificationChallenge(
+	ctx context.Context,
+	userID uuid.UUID,
+	challengeID uuid.UUID,
+) (*app.PhoneVerificationChallenge, error) {
+	const query = `
+		SELECT
+			id, user_id, phone_e164, code_hash, status, attempt_count,
+			resend_count, last_sent_at, expires_at, verified_at, created_at
+		FROM user_phone_verification_challenges
+		WHERE id = $1
+		  AND user_id = $2
+		LIMIT 1
+	`
+
+	var (
+		challenge app.PhoneVerificationChallenge
+		statusRaw string
+	)
+	err := r.pool.QueryRow(ctx, query, challengeID, userID).Scan(
+		&challenge.ID,
+		&challenge.UserID,
+		&challenge.PhoneE164,
+		&challenge.CodeHash,
+		&statusRaw,
+		&challenge.AttemptCount,
+		&challenge.ResendCount,
+		&challenge.LastSentAt,
+		&challenge.ExpiresAt,
+		&challenge.VerifiedAt,
+		&challenge.CreatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, app.ErrPhoneVerificationNotFound
+		}
+		return nil, fmt.Errorf("select phone verification challenge: %w", err)
+	}
+	challenge.Status = app.PhoneVerificationStatus(statusRaw)
+	return &challenge, nil
+}
+
+func (r *PGUserRepository) UpdatePhoneVerificationChallengeCode(
+	ctx context.Context,
+	challenge *app.PhoneVerificationChallenge,
+) error {
+	if challenge == nil {
+		return app.ErrPhoneVerificationNotFound
+	}
+
+	commandTag, err := r.pool.Exec(ctx, `
+		UPDATE user_phone_verification_challenges
+		SET code_hash = $2,
+		    resend_count = $3,
+		    last_sent_at = $4,
+		    expires_at = $5,
+		    attempt_count = 0,
+		    updated_at = NOW()
+		WHERE id = $1
+		  AND user_id = $6
+		  AND status = $7
+	`, challenge.ID,
+		challenge.CodeHash,
+		challenge.ResendCount,
+		challenge.LastSentAt,
+		challenge.ExpiresAt,
+		challenge.UserID,
+		string(app.PhoneVerificationStatusPending),
+	)
+	if err != nil {
+		return fmt.Errorf("update phone verification challenge code: %w", err)
+	}
+	if commandTag.RowsAffected() == 0 {
+		return app.ErrPhoneVerificationNotFound
+	}
+	return nil
+}
+
+func (r *PGUserRepository) RecordPhoneVerificationFailedAttempt(
+	ctx context.Context,
+	challengeID uuid.UUID,
+	locked bool,
+) error {
+	commandTag, err := r.pool.Exec(ctx, `
+		UPDATE user_phone_verification_challenges
+		SET attempt_count = attempt_count + 1,
+		    status = CASE WHEN $2 THEN $3 ELSE status END,
+		    updated_at = NOW()
+		WHERE id = $1
+	`, challengeID, locked, string(app.PhoneVerificationStatusLocked))
+	if err != nil {
+		return fmt.Errorf("record phone verification failed attempt: %w", err)
+	}
+	if commandTag.RowsAffected() == 0 {
+		return app.ErrPhoneVerificationNotFound
+	}
+	return nil
+}
+
+func (r *PGUserRepository) ConfirmPhoneVerificationChallenge(
+	ctx context.Context,
+	userID uuid.UUID,
+	challengeID uuid.UUID,
+) (*model.User, error) {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("begin confirm phone verification tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	const challengeQuery = `
+		SELECT phone_e164
+		FROM user_phone_verification_challenges
+		WHERE id = $1
+		  AND user_id = $2
+		  AND status = $3
+		FOR UPDATE
+	`
+	var phone string
+	if err = tx.QueryRow(
+		ctx,
+		challengeQuery,
+		challengeID,
+		userID,
+		string(app.PhoneVerificationStatusPending),
+	).Scan(&phone); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, app.ErrPhoneVerificationNotFound
+		}
+		return nil, fmt.Errorf("select phone verification challenge for confirm: %w", err)
+	}
+
+	if _, err = tx.Exec(ctx, `
+		UPDATE user_phone_verification_challenges
+		SET status = $3,
+		    verified_at = NOW(),
+		    updated_at = NOW()
+		WHERE id = $1
+		  AND user_id = $2
+	`, challengeID, userID, string(app.PhoneVerificationStatusVerified)); err != nil {
+		return nil, fmt.Errorf("mark phone verification challenge verified: %w", err)
+	}
+
+	const updateUserQuery = `
+		UPDATE users
+		SET primary_phone = $2,
+		    primary_phone_verified_at = NOW(),
+		    pending_phone = NULL,
+		    pending_phone_started_at = NULL,
+		    updated_at = NOW()
+		WHERE id = $1
+		  AND is_deleted = FALSE
+		RETURNING
+			id, auth_subject_id, status, primary_phone, primary_phone_verified_at, primary_email,
+			is_deleted, deleted_at, last_seen_at, created_at, updated_at
+	`
+
+	var (
+		user      model.User
+		statusRaw string
+	)
+	err = tx.QueryRow(ctx, updateUserQuery, userID, phone).Scan(
+		&user.ID,
+		&user.AuthSubjectID,
+		&statusRaw,
+		&user.PrimaryPhone,
+		&user.PrimaryPhoneVerifiedAt,
+		&user.PrimaryEmail,
+		&user.IsDeleted,
+		&user.DeletedAt,
+		&user.LastSeenAt,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return nil, app.ErrPhoneAlreadyTaken
+		}
+		return nil, fmt.Errorf("confirm verified phone: %w", err)
+	}
+	user.Status = enum.UserStatus(statusRaw)
+
+	if err = tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("commit confirm phone verification tx: %w", err)
+	}
+	return &user, nil
+}
+
+func (r *PGUserRepository) CancelPendingPhoneVerification(
+	ctx context.Context,
+	userID uuid.UUID,
+) error {
+	if userID == uuid.Nil {
+		return app.ErrInvalidUserID
+	}
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin cancel phone verification tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	if _, err = tx.Exec(ctx, `
+		UPDATE users
+		SET pending_phone = NULL,
+		    pending_phone_started_at = NULL,
+		    updated_at = NOW()
+		WHERE id = $1
+	`, userID); err != nil {
+		return fmt.Errorf("clear pending phone: %w", err)
+	}
+
+	if _, err = tx.Exec(ctx, `
+		UPDATE user_phone_verification_challenges
+		SET status = $2,
+		    updated_at = NOW()
+		WHERE user_id = $1
+		  AND status = $3
+	`, userID, string(app.PhoneVerificationStatusCancelled), string(app.PhoneVerificationStatusPending)); err != nil {
+		return fmt.Errorf("cancel pending phone verification challenges: %w", err)
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit cancel phone verification tx: %w", err)
+	}
 	return nil
 }

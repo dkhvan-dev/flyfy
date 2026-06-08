@@ -20,16 +20,19 @@ type UserFriendshipResponse struct {
 }
 
 type UserResponse struct {
-	ID            string  `json:"id"`
-	AuthSubjectID string  `json:"authSubjectId"`
-	Status        string  `json:"status"`
-	PrimaryPhone  *string `json:"primaryPhone,omitempty"`
-	PrimaryEmail  *string `json:"primaryEmail,omitempty"`
-	IsDeleted     bool    `json:"isDeleted"`
-	DeletedAt     *string `json:"deletedAt,omitempty"`
-	LastSeenAt    *string `json:"lastSeenAt,omitempty"`
-	CreatedAt     string  `json:"createdAt"`
-	UpdatedAt     string  `json:"updatedAt"`
+	ID                     string  `json:"id"`
+	AuthSubjectID          string  `json:"authSubjectId"`
+	Status                 string  `json:"status"`
+	PrimaryPhone           *string `json:"primaryPhone,omitempty"`
+	PrimaryPhoneMasked     *string `json:"primaryPhoneMasked,omitempty"`
+	PrimaryPhoneVerified   bool    `json:"primaryPhoneVerified"`
+	PrimaryPhoneVerifiedAt *string `json:"primaryPhoneVerifiedAt,omitempty"`
+	PrimaryEmail           *string `json:"primaryEmail,omitempty"`
+	IsDeleted              bool    `json:"isDeleted"`
+	DeletedAt              *string `json:"deletedAt,omitempty"`
+	LastSeenAt             *string `json:"lastSeenAt,omitempty"`
+	CreatedAt              string  `json:"createdAt"`
+	UpdatedAt              string  `json:"updatedAt"`
 }
 
 type UserProfileResponse struct {
@@ -93,6 +96,30 @@ type UpdateMySettingsRequest struct {
 	NotificationsSMSEnabled   *bool `json:"notificationsSmsEnabled,omitempty"`
 	MarketingEnabled          *bool `json:"marketingEnabled,omitempty"`
 	DarkModeEnabled           *bool `json:"darkModeEnabled,omitempty"`
+}
+
+type StartPhoneVerificationRequest struct {
+	Phone   string `json:"phone"`
+	Channel string `json:"channel,omitempty"`
+}
+
+type VerifyPhoneVerificationRequest struct {
+	ChallengeID string `json:"challengeId"`
+	Code        string `json:"code"`
+}
+
+type ResendPhoneVerificationRequest struct {
+	ChallengeID string `json:"challengeId"`
+	Channel     string `json:"channel,omitempty"`
+}
+
+type PhoneVerificationResponse struct {
+	ChallengeID        string `json:"challengeId,omitempty"`
+	MaskedPhone        string `json:"maskedPhone,omitempty"`
+	ResendAfterSeconds int    `json:"resendAfterSeconds,omitempty"`
+	ExpiresAt          string `json:"expiresAt,omitempty"`
+	Verified           bool   `json:"verified"`
+	VerifiedAt         string `json:"verifiedAt,omitempty"`
 }
 
 type GrantRoleRequest struct {
