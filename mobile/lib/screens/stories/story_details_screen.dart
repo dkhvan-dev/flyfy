@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -11,13 +12,13 @@ import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/profile/data/profile_api.dart';
 import '../../features/profile/models/user_profile_vm.dart';
-import '../../features/stories/story_content_codec.dart';
+import '../../features/stories/editor/domain/story_document.dart';
 import '../../features/stories/models/story_vm.dart';
 import '../../features/stories/story_ui.dart';
+import '../../features/stories/widgets/story_document_renderer.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/session_provider.dart';
-import 'stories_screen.dart';
 
 class StoryDetailsScreen extends StatefulWidget {
   const StoryDetailsScreen({
@@ -25,11 +26,13 @@ class StoryDetailsScreen extends StatefulWidget {
     required this.slug,
     this.initialStory,
     this.initialCommentId,
-  });
+    FileApi? fileApi,
+  }) : _fileApiOverride = fileApi;
 
   final String slug;
   final StoryVm? initialStory;
   final String? initialCommentId;
+  final FileApi? _fileApiOverride;
 
   @override
   State<StoryDetailsScreen> createState() => _StoryDetailsScreenState();
@@ -38,6 +41,7 @@ class StoryDetailsScreen extends StatefulWidget {
 class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
   final _storyApi = StoryApi();
   final _profileApi = ProfileApi();
+  late final FileApi _fileApi;
   final _scrollController = ScrollController();
   final _commentController = TextEditingController();
   final _commentFocusNode = FocusNode();
@@ -60,6 +64,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    _fileApi = widget._fileApiOverride ?? FileApi();
     if (widget.initialStory != null) {
       _detail = StoryDetailVm(
         story: widget.initialStory!,
@@ -80,6 +85,9 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
   }
 
   Future<void> _loadDetail({bool silent = false}) async {
+    final initialStory = widget.initialStory;
+    final shouldLoadOwnedStory =
+        initialStory != null && !initialStory.isPublished;
     if (!silent) {
       setState(() {
         _isLoading = _detail == null;
@@ -88,6 +96,27 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     }
 
     try {
+      if (shouldLoadOwnedStory) {
+        final storyId = initialStory.id.trim().isNotEmpty
+            ? initialStory.id.trim()
+            : widget.slug.trim();
+        final story = await _storyApi.getStoryById(storyId);
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _detail = StoryDetailVm(
+            story: story,
+            related: const [],
+            comments: const [],
+          );
+          _isLoading = false;
+          _errorMessage = null;
+        });
+        await _loadAuthorProfile();
+        return;
+      }
+
       final detail = await _storyApi.getPublicStoryBySlug(widget.slug);
       if (!mounted) {
         return;
@@ -104,12 +133,26 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
       if (!mounted) {
         return;
       }
+      if (shouldLoadOwnedStory && _detail != null) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = null;
+        });
+        return;
+      }
       setState(() {
         _errorMessage = DioErrorMapper.toMessage(e);
         _isLoading = false;
       });
     } catch (_) {
       if (!mounted) {
+        return;
+      }
+      if (shouldLoadOwnedStory && _detail != null) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = null;
+        });
         return;
       }
       setState(() {
@@ -156,6 +199,10 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
 
     var detail = _detail;
     if (detail == null) {
+      return;
+    }
+    if (!detail.story.isPublished) {
+      _didHandleInitialCommentJump = true;
       return;
     }
 
@@ -423,7 +470,10 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     final detail = _detail;
     final body = _commentController.text.trim();
     final editingCommentId = _editingCommentId;
-    if (detail == null || body.isEmpty || _isSubmittingComment) {
+    if (detail == null ||
+        !detail.story.isPublished ||
+        body.isEmpty ||
+        _isSubmittingComment) {
       return;
     }
     if (auth.state != AuthState.authenticated) {
@@ -582,6 +632,45 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
         subject: subject,
         sharePositionOrigin: _sharePositionOrigin(),
       ),
+    );
+  }
+
+  Future<void> _openStoryImages(
+    List<StoryImagePayload> images,
+    int initialIndex,
+  ) async {
+    final preferPrivateContent = !(_detail?.story.isPublished ?? true);
+    final visibleImages = images
+        .where((image) {
+          final fileId = image.fileId.trim();
+          if (fileId.isEmpty) {
+            return false;
+          }
+          return preferPrivateContent ||
+              resolvePublicFileContentUrl(fileId) != null;
+        })
+        .toList(growable: false);
+    if (visibleImages.isEmpty || !mounted) {
+      return;
+    }
+    final page = initialIndex.clamp(0, visibleImages.length - 1).toInt();
+    await showGeneralDialog<int>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.black,
+      transitionDuration: const Duration(milliseconds: 180),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return _StoryImageGalleryViewer(
+          images: visibleImages,
+          initialIndex: page,
+          preferPrivateContent: preferPrivateContent,
+          fileApi: _fileApi,
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(opacity: animation, child: child);
+      },
     );
   }
 
@@ -827,30 +916,9 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
         (context.watch<SessionProvider>().profile?.userId ?? '').trim();
     final story = detail?.story;
     final isAuthor = story?.isOwnedBy(currentUserId) ?? false;
-    final commentLockEndsAt = _editingCommentId == null
-        ? _commentLockEndsAt(currentUserId)
-        : null;
-    final isCommentComposerLocked = commentLockEndsAt != null;
 
     return Scaffold(
       backgroundColor: StoryPalette.backgroundDeep,
-      bottomNavigationBar: StoriesBottomNavBar(
-        active: StoriesNavItem.stories,
-        onItemTap: (item) {
-          switch (item) {
-            case StoriesNavItem.home:
-              context.go('/');
-            case StoriesNavItem.activities:
-              context.push('/activities');
-            case StoriesNavItem.stories:
-              context.go('/stories');
-            case StoriesNavItem.chats:
-              context.push('/chats');
-            case StoriesNavItem.profile:
-              context.push('/profile');
-          }
-        },
-      ),
       body: DecoratedBox(
         decoration: storyScreenBackground(),
         child: SafeArea(
@@ -868,6 +936,12 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
               : Builder(
                   builder: (context) {
                     final currentDetail = detail!;
+                    final showSocialSections = currentDetail.story.isPublished;
+                    final commentLockEndsAt =
+                        showSocialSections && _editingCommentId == null
+                        ? _commentLockEndsAt(currentUserId)
+                        : null;
+                    final isCommentComposerLocked = commentLockEndsAt != null;
                     return CustomScrollView(
                       controller: _scrollController,
                       physics: const BouncingScrollPhysics(),
@@ -879,6 +953,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                             isSharing: _isSharing,
                             onBackTap: () => context.pop(false),
                             onShareTap: _shareStory,
+                            onOpenImages: _openStoryImages,
                           ),
                         ),
                         SliverPadding(
@@ -909,58 +984,66 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                                     onDeleteTap: _deleteStory,
                                     onViewsTap: null,
                                     onLikesTap: _toggleLike,
-                                    onCommentsTap: () =>
-                                        _scrollToComments(focusComposer: true),
+                                    onCommentsTap: showSocialSections
+                                        ? () => _scrollToComments(
+                                            focusComposer: true,
+                                          )
+                                        : null,
                                     onSharesTap: _shareStory,
                                   ),
                                 ),
-                                SizedBox(height: adaptive.scale(12)),
-                                _StoryArticle(story: story),
-                                SizedBox(height: adaptive.scale(24)),
-                                _CommentComposer(
-                                  key: _commentComposerKey,
-                                  controller: _commentController,
-                                  focusNode: _commentFocusNode,
-                                  isSubmitting: _isSubmittingComment,
-                                  enabled: !isCommentComposerLocked,
-                                  isEditing: _editingCommentId != null,
-                                  helperText: isCommentComposerLocked
-                                      ? _formatCommentCooldownLabel(
-                                          context,
-                                          commentLockEndsAt,
-                                        )
-                                      : null,
-                                  editingTitle: _editingCommentId == null
-                                      ? null
-                                      : l10n.storyCommentEditingTitle,
-                                  submitLabel: _editingCommentId == null
-                                      ? null
-                                      : l10n.storyCommentSaveAction,
-                                  onCancelEdit: _editingCommentId == null
-                                      ? null
-                                      : _cancelCommentEditing,
-                                  onSubmit: _submitComment,
-                                ),
                                 SizedBox(height: adaptive.scale(18)),
-                                _CommentsSection(
-                                  key: _commentsSectionKey,
-                                  comments: currentDetail.comments,
-                                  commentKeyForId: _commentKeyFor,
-                                  onEditComment: _startEditingComment,
-                                  onDeleteComment: _deleteComment,
-                                  onLikeComment: _toggleCommentLike,
-                                  onShareComment: _shareComment,
+                                _StoryArticle(
+                                  story: story,
+                                  onOpenImages: _openStoryImages,
                                 ),
-                                SizedBox(height: adaptive.scale(24)),
-                                _RelatedStoriesSection(
-                                  stories: currentDetail.related,
-                                  onStoryTap: (story) {
-                                    context.pushReplacement(
-                                      '/stories/${Uri.encodeComponent(story.slug)}',
-                                      extra: story,
-                                    );
-                                  },
-                                ),
+                                if (showSocialSections) ...[
+                                  SizedBox(height: adaptive.scale(24)),
+                                  _CommentComposer(
+                                    key: _commentComposerKey,
+                                    controller: _commentController,
+                                    focusNode: _commentFocusNode,
+                                    isSubmitting: _isSubmittingComment,
+                                    enabled: !isCommentComposerLocked,
+                                    isEditing: _editingCommentId != null,
+                                    helperText: isCommentComposerLocked
+                                        ? _formatCommentCooldownLabel(
+                                            context,
+                                            commentLockEndsAt,
+                                          )
+                                        : null,
+                                    editingTitle: _editingCommentId == null
+                                        ? null
+                                        : l10n.storyCommentEditingTitle,
+                                    submitLabel: _editingCommentId == null
+                                        ? null
+                                        : l10n.storyCommentSaveAction,
+                                    onCancelEdit: _editingCommentId == null
+                                        ? null
+                                        : _cancelCommentEditing,
+                                    onSubmit: _submitComment,
+                                  ),
+                                  SizedBox(height: adaptive.scale(18)),
+                                  _CommentsSection(
+                                    key: _commentsSectionKey,
+                                    comments: currentDetail.comments,
+                                    commentKeyForId: _commentKeyFor,
+                                    onEditComment: _startEditingComment,
+                                    onDeleteComment: _deleteComment,
+                                    onLikeComment: _toggleCommentLike,
+                                    onShareComment: _shareComment,
+                                  ),
+                                  SizedBox(height: adaptive.scale(24)),
+                                  _RelatedStoriesSection(
+                                    stories: currentDetail.related,
+                                    onStoryTap: (story) {
+                                      context.pushReplacement(
+                                        '/stories/${Uri.encodeComponent(story.slug)}',
+                                        extra: story,
+                                      );
+                                    },
+                                  ),
+                                ],
                               ],
                             ),
                           ),
@@ -982,6 +1065,7 @@ class _StoryHero extends StatelessWidget {
     required this.isSharing,
     required this.onBackTap,
     required this.onShareTap,
+    required this.onOpenImages,
   });
 
   final StoryVm story;
@@ -989,37 +1073,51 @@ class _StoryHero extends StatelessWidget {
   final bool isSharing;
   final VoidCallback onBackTap;
   final VoidCallback onShareTap;
+  final StoryImageOpenCallback onOpenImages;
 
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
     final heroHeight = adaptive.scale(430, minFactor: 0.82, maxFactor: 1.02);
     final topInset = MediaQuery.paddingOf(context).top;
+    final coverFileId = (story.coverFileId ?? '').trim();
+    final canOpenCover = resolvePublicFileContentUrl(coverFileId) != null;
 
     return Stack(
       children: [
-        Container(
-          height: heroHeight,
-          decoration: const BoxDecoration(color: Color(0xFF1E1208)),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              StoryCoverImage(url: story.coverUrl),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.10),
-                      Colors.black.withValues(alpha: 0.28),
-                      const Color(0xF2100703),
-                    ],
-                    stops: const [0, 0.42, 1],
+        Semantics(
+          button: canOpenCover,
+          image: true,
+          child: GestureDetector(
+            onTap: canOpenCover
+                ? () =>
+                      onOpenImages([StoryImagePayload(fileId: coverFileId)], 0)
+                : null,
+            behavior: canOpenCover ? HitTestBehavior.opaque : null,
+            child: Container(
+              height: heroHeight,
+              decoration: const BoxDecoration(color: Color(0xFF1E1208)),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  StoryCoverImage(url: story.coverUrl),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.10),
+                          Colors.black.withValues(alpha: 0.28),
+                          const Color(0xF2100703),
+                        ],
+                        stops: const [0, 0.42, 1],
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
         Positioned(
@@ -1030,6 +1128,9 @@ class _StoryHero extends StatelessWidget {
             children: [
               _OverlayIconButton(
                 icon: Icons.arrow_back_ios_new_rounded,
+                semanticLabel: MaterialLocalizations.of(
+                  context,
+                ).backButtonTooltip,
                 onTap: onBackTap,
               ),
               Expanded(
@@ -1047,6 +1148,9 @@ class _StoryHero extends StatelessWidget {
                 icon: isSharing
                     ? Icons.hourglass_empty_rounded
                     : Icons.ios_share_rounded,
+                semanticLabel: AppLocalizations.of(
+                  context,
+                )!.storyCommentShareAction,
                 onTap: onShareTap,
               ),
             ],
@@ -1083,7 +1187,7 @@ class _StoryHero extends StatelessWidget {
                   fontSize: adaptive.scale(24),
                   height: 1.05,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: -1.2,
+                  letterSpacing: 0,
                 ),
               ),
               SizedBox(height: adaptive.scale(12)),
@@ -1128,24 +1232,34 @@ class _StoryHero extends StatelessWidget {
 }
 
 class _OverlayIconButton extends StatelessWidget {
-  const _OverlayIconButton({required this.icon, required this.onTap});
+  const _OverlayIconButton({
+    required this.icon,
+    required this.semanticLabel,
+    required this.onTap,
+  });
 
   final IconData icon;
+  final String semanticLabel;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      label: semanticLabel,
       onTap: onTap,
-      child: Container(
-        width: adaptive.scale(36),
-        height: adaptive.scale(36),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.black.withValues(alpha: 0.18),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: adaptive.scale(36),
+          height: adaptive.scale(36),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.black.withValues(alpha: 0.18),
+          ),
+          child: Icon(icon, color: Colors.white, size: adaptive.scale(18)),
         ),
-        child: Icon(icon, color: Colors.white, size: adaptive.scale(18)),
       ),
     );
   }
@@ -1217,7 +1331,7 @@ class _AuthorCard extends StatelessWidget {
   final VoidCallback onDeleteTap;
   final VoidCallback? onViewsTap;
   final VoidCallback? onLikesTap;
-  final VoidCallback onCommentsTap;
+  final VoidCallback? onCommentsTap;
   final VoidCallback onSharesTap;
 
   @override
@@ -1324,7 +1438,7 @@ class _AuthorCard extends StatelessWidget {
                   child: TextButton(
                     onPressed: onDeleteTap,
                     style: TextButton.styleFrom(
-                      foregroundColor: StoryPalette.textSoft,
+                      foregroundColor: AppColors.destructive,
                     ),
                     child: Text(l10n.storyDeleteAction),
                   ),
@@ -1464,48 +1578,21 @@ class _StatItem extends StatelessWidget {
 }
 
 class _StoryArticle extends StatelessWidget {
-  const _StoryArticle({required this.story});
+  const _StoryArticle({required this.story, required this.onOpenImages});
 
   final StoryVm story;
+  final StoryImageOpenCallback onOpenImages;
 
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
-    final content = (story.content ?? '').trim();
-    final parts = content.isEmpty
-        ? <StoryContentPart>[StoryContentPart.text(story.excerpt)]
-        : parseStoryContentParts(content);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final part in parts) ...[
-          if (part.isText)
-            ...((part.text ?? '')
-                .split(RegExp(r'\n{2,}'))
-                .map((item) => item.trim())
-                .where((item) => item.isNotEmpty)
-                .map(
-                  (paragraph) => Padding(
-                    padding: EdgeInsets.only(bottom: adaptive.scale(16)),
-                    child: Text(
-                      paragraph,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.84),
-                        fontSize: adaptive.scale(15),
-                        height: 1.8,
-                      ),
-                    ),
-                  ),
-                )),
-          if (!part.isText && (part.imageFileId ?? '').trim().isNotEmpty)
-            Padding(
-              padding: EdgeInsets.only(bottom: adaptive.scale(18)),
-              child: _StoryArticleImage(fileId: part.imageFileId!.trim()),
-            ),
-        ],
+        StoryDocumentRenderer(story: story, onOpenImages: onOpenImages),
         if (story.tags.isNotEmpty) ...[
-          SizedBox(height: adaptive.scale(8)),
+          SizedBox(height: adaptive.scale(24)),
           Text(
             AppLocalizations.of(context)!.storyTagsLabel,
             style: TextStyle(
@@ -1546,44 +1633,6 @@ class _StoryArticle extends StatelessWidget {
           ),
         ],
       ],
-    );
-  }
-}
-
-class _StoryArticleImage extends StatelessWidget {
-  const _StoryArticleImage({required this.fileId});
-
-  final String fileId;
-
-  @override
-  Widget build(BuildContext context) {
-    final adaptive = StoryAdaptive.of(context);
-    final imageUrl = resolvePublicFileContentUrl(fileId);
-    if (imageUrl == null) {
-      return const SizedBox.shrink();
-    }
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(adaptive.radius(22)),
-      child: AspectRatio(
-        aspectRatio: 16 / 10,
-        child: DecoratedBox(
-          decoration: const BoxDecoration(color: Color(0xFF2A1708)),
-          child: Image.network(
-            imageUrl,
-            fit: BoxFit.cover,
-            errorBuilder: (_, _, _) {
-              return const Center(
-                child: Icon(
-                  Icons.broken_image_outlined,
-                  color: Colors.white54,
-                  size: 30,
-                ),
-              );
-            },
-          ),
-        ),
-      ),
     );
   }
 }
@@ -1990,6 +2039,613 @@ class _CommentActionButton extends StatelessWidget {
   }
 }
 
+const double _storyImageViewerHorizontalSwipeDistance = 72;
+const double _storyImageViewerDismissSwipeDistance = 96;
+const double _storyImageViewerSwipeAxisDominance = 1.2;
+const double _storyImageViewerTransitionSlideDistance = 0.16;
+const Duration _storyImageViewerTransitionDuration = Duration(
+  milliseconds: 320,
+);
+const Duration _storyImageViewerReverseTransitionDuration = Duration(
+  milliseconds: 260,
+);
+
+class _StoryImageGalleryViewer extends StatefulWidget {
+  const _StoryImageGalleryViewer({
+    required this.images,
+    required this.initialIndex,
+    required this.preferPrivateContent,
+    required this.fileApi,
+  }) : assert(images.length > 0);
+
+  final List<StoryImagePayload> images;
+  final int initialIndex;
+  final bool preferPrivateContent;
+  final FileApi fileApi;
+
+  @override
+  State<_StoryImageGalleryViewer> createState() =>
+      _StoryImageGalleryViewerState();
+}
+
+class _StoryImageGalleryViewerState extends State<_StoryImageGalleryViewer> {
+  late int _currentIndex;
+  final Set<int> _activeSwipePointers = <int>{};
+  Offset? _swipeStartPosition;
+  Offset? _swipeLatestPosition;
+  bool _ignoreSwipeUntilPointersUp = false;
+  int _transitionDirection = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex
+        .clamp(0, widget.images.length - 1)
+        .toInt();
+  }
+
+  bool get _hasPrevious => _currentIndex > 0;
+
+  bool get _hasNext => _currentIndex < widget.images.length - 1;
+
+  void _showPreviousImage() {
+    if (!_hasPrevious) {
+      return;
+    }
+    setState(() {
+      _transitionDirection = -1;
+      _currentIndex -= 1;
+    });
+  }
+
+  void _showNextImage() {
+    if (!_hasNext) {
+      return;
+    }
+    setState(() {
+      _transitionDirection = 1;
+      _currentIndex += 1;
+    });
+  }
+
+  void _closeViewer() {
+    Navigator.of(context).pop(_currentIndex);
+  }
+
+  void _startSwipeTracking(PointerDownEvent event) {
+    _activeSwipePointers.add(event.pointer);
+    if (_activeSwipePointers.length > 1) {
+      _ignoreSwipeUntilPointersUp = true;
+      _swipeStartPosition = null;
+      _swipeLatestPosition = null;
+      return;
+    }
+    _ignoreSwipeUntilPointersUp = false;
+    _swipeStartPosition = event.position;
+    _swipeLatestPosition = event.position;
+  }
+
+  void _trackSwipeMovement(PointerMoveEvent event) {
+    if (_ignoreSwipeUntilPointersUp ||
+        !_activeSwipePointers.contains(event.pointer)) {
+      return;
+    }
+    _swipeLatestPosition = event.position;
+  }
+
+  void _completeSwipeTracking(PointerUpEvent event) {
+    final start = _swipeStartPosition;
+    final end = _swipeLatestPosition ?? event.position;
+    final canHandleSwipe =
+        !_ignoreSwipeUntilPointersUp &&
+        start != null &&
+        _activeSwipePointers.length == 1 &&
+        _activeSwipePointers.contains(event.pointer);
+    _activeSwipePointers.remove(event.pointer);
+    if (_activeSwipePointers.isEmpty) {
+      _ignoreSwipeUntilPointersUp = false;
+      _swipeStartPosition = null;
+      _swipeLatestPosition = null;
+    }
+    if (canHandleSwipe) {
+      _handleSwipe(end - start);
+    }
+  }
+
+  void _cancelSwipeTracking(PointerCancelEvent event) {
+    _activeSwipePointers.remove(event.pointer);
+    if (_activeSwipePointers.isEmpty) {
+      _ignoreSwipeUntilPointersUp = false;
+      _swipeStartPosition = null;
+      _swipeLatestPosition = null;
+    }
+  }
+
+  void _handleSwipe(Offset delta) {
+    final horizontalDistance = delta.dx.abs();
+    final verticalDistance = delta.dy.abs();
+    if (delta.dy > _storyImageViewerDismissSwipeDistance &&
+        verticalDistance >
+            horizontalDistance * _storyImageViewerSwipeAxisDominance) {
+      _closeViewer();
+      return;
+    }
+    if (horizontalDistance < _storyImageViewerHorizontalSwipeDistance ||
+        horizontalDistance <
+            verticalDistance * _storyImageViewerSwipeAxisDominance) {
+      return;
+    }
+    if (delta.dx < 0) {
+      _showNextImage();
+    } else {
+      _showPreviousImage();
+    }
+  }
+
+  Widget _buildImageTransition(
+    Widget child,
+    Animation<double> animation, {
+    required bool isCurrentChild,
+  }) {
+    final slideDirection = _transitionDirection == 0
+        ? 0.0
+        : _transitionDirection.toDouble();
+    final slideOffset = isCurrentChild ? slideDirection : -slideDirection;
+    final curvedAnimation = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutQuart,
+      reverseCurve: Curves.easeInQuart,
+    );
+    return FadeTransition(
+      opacity: curvedAnimation,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: Offset(
+            slideOffset * _storyImageViewerTransitionSlideDistance,
+            0,
+          ),
+          end: Offset.zero,
+        ).animate(curvedAnimation),
+        child: child,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final image = widget.images[_currentIndex];
+    final localizations = MaterialLocalizations.of(context);
+    final currentChildKey = ValueKey<String>(
+      'story-viewer-page-${image.fileId}-$_currentIndex',
+    );
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: DefaultTextStyle.merge(
+        style: const TextStyle(decoration: TextDecoration.none),
+        child: Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: _startSwipeTracking,
+          onPointerMove: _trackSwipeMovement,
+          onPointerUp: _completeSwipeTracking,
+          onPointerCancel: _cancelSwipeTracking,
+          child: SizedBox.expand(
+            child: ColoredBox(
+              color: Colors.black,
+              child: SafeArea(
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: AnimatedSwitcher(
+                        duration: _storyImageViewerTransitionDuration,
+                        reverseDuration:
+                            _storyImageViewerReverseTransitionDuration,
+                        switchInCurve: Curves.easeOutQuart,
+                        switchOutCurve: Curves.easeInQuart,
+                        layoutBuilder: (currentChild, previousChildren) {
+                          return Stack(
+                            fit: StackFit.expand,
+                            children: <Widget>[
+                              ...previousChildren,
+                              ?currentChild,
+                            ],
+                          );
+                        },
+                        transitionBuilder: (child, animation) {
+                          return _buildImageTransition(
+                            child,
+                            animation,
+                            isCurrentChild: child.key == currentChildKey,
+                          );
+                        },
+                        child: _StoryImageViewerPage(
+                          key: currentChildKey,
+                          image: image,
+                          preferPrivateContent: widget.preferPrivateContent,
+                          fileApi: widget.fileApi,
+                        ),
+                      ),
+                    ),
+                    PositionedDirectional(
+                      top: 12,
+                      start: 12,
+                      child: _StoryImageViewerIconButton(
+                        icon: Icons.close_rounded,
+                        tooltip: localizations.closeButtonTooltip,
+                        onTap: _closeViewer,
+                      ),
+                    ),
+                    if (widget.images.length > 1)
+                      PositionedDirectional(
+                        top: 15,
+                        start: 76,
+                        end: 76,
+                        child: Center(
+                          child: Container(
+                            height: 38,
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.48),
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.14),
+                              ),
+                            ),
+                            child: Text(
+                              '${_currentIndex + 1}/${widget.images.length}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (_hasPrevious)
+                      PositionedDirectional(
+                        start: 12,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: _StoryImageViewerIconButton(
+                            icon: Icons.chevron_left_rounded,
+                            tooltip: localizations.previousPageTooltip,
+                            onTap: _showPreviousImage,
+                          ),
+                        ),
+                      ),
+                    if (_hasNext)
+                      PositionedDirectional(
+                        end: 12,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: _StoryImageViewerIconButton(
+                            icon: Icons.chevron_right_rounded,
+                            tooltip: localizations.nextPageTooltip,
+                            onTap: _showNextImage,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StoryImageViewerPage extends StatelessWidget {
+  const _StoryImageViewerPage({
+    super.key,
+    required this.image,
+    required this.preferPrivateContent,
+    required this.fileApi,
+  });
+
+  final StoryImagePayload image;
+  final bool preferPrivateContent;
+  final FileApi fileApi;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = resolvePublicFileContentUrl(image.fileId);
+    final view = MediaQuery.of(context);
+    final cacheWidth = _storyFullscreenImageTargetWidth(
+      context,
+      view.size.width,
+      minWidth: 900,
+      maxWidth: 2200,
+    );
+    if (preferPrivateContent) {
+      return InteractiveViewer(
+        minScale: 0.8,
+        maxScale: 4,
+        child: Center(
+          child: _StoryDraftImage(
+            publicUrl: url,
+            fileApi: fileApi,
+            image: image,
+            cacheWidth: cacheWidth,
+          ),
+        ),
+      );
+    }
+    if (url != null) {
+      return InteractiveViewer(
+        minScale: 0.8,
+        maxScale: 4,
+        child: Center(
+          child: _StoryPublicImage(
+            url: url,
+            image: image,
+            cacheWidth: cacheWidth,
+          ),
+        ),
+      );
+    }
+    return const _StoryImageViewerPlaceholder();
+  }
+}
+
+class _StoryDraftImage extends StatefulWidget {
+  const _StoryDraftImage({
+    required this.publicUrl,
+    required this.fileApi,
+    required this.image,
+    required this.cacheWidth,
+  });
+
+  final String? publicUrl;
+  final FileApi fileApi;
+  final StoryImagePayload image;
+  final int cacheWidth;
+
+  @override
+  State<_StoryDraftImage> createState() => _StoryDraftImageState();
+}
+
+class _StoryDraftImageState extends State<_StoryDraftImage> {
+  bool _usePrivateFallback = false;
+
+  void _showPrivateFallback() {
+    if (!mounted || _usePrivateFallback) {
+      return;
+    }
+    setState(() => _usePrivateFallback = true);
+  }
+
+  @override
+  void didUpdateWidget(covariant _StoryDraftImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.image.fileId != widget.image.fileId ||
+        oldWidget.publicUrl != widget.publicUrl ||
+        oldWidget.fileApi != widget.fileApi) {
+      _usePrivateFallback = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final publicUrl = widget.publicUrl;
+    if (!_usePrivateFallback && publicUrl != null) {
+      return Image.network(
+        publicUrl,
+        fit: BoxFit.contain,
+        cacheWidth: widget.cacheWidth,
+        filterQuality: FilterQuality.medium,
+        gaplessPlayback: true,
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) {
+            return child;
+          }
+          return const _StoryImageViewerLoading();
+        },
+        errorBuilder: (context, error, stackTrace) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _showPrivateFallback();
+          });
+          return const _StoryImageViewerLoading();
+        },
+      );
+    }
+
+    return _StoryPrivateImage(
+      fileApi: widget.fileApi,
+      image: widget.image,
+      cacheWidth: widget.cacheWidth,
+      publicUrl: publicUrl,
+    );
+  }
+}
+
+class _StoryPublicImage extends StatelessWidget {
+  const _StoryPublicImage({
+    required this.url,
+    required this.image,
+    required this.cacheWidth,
+  });
+
+  final String url;
+  final StoryImagePayload image;
+  final int cacheWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.network(
+      url,
+      fit: BoxFit.contain,
+      cacheWidth: cacheWidth,
+      filterQuality: FilterQuality.medium,
+      gaplessPlayback: true,
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) {
+          return child;
+        }
+        return const _StoryImageViewerLoading();
+      },
+      errorBuilder: (context, error, stackTrace) {
+        return const _StoryImageViewerPlaceholder();
+      },
+    );
+  }
+}
+
+class _StoryPrivateImage extends StatefulWidget {
+  const _StoryPrivateImage({
+    required this.fileApi,
+    required this.image,
+    required this.cacheWidth,
+    required this.publicUrl,
+  });
+
+  final FileApi fileApi;
+  final StoryImagePayload image;
+  final int cacheWidth;
+  final String? publicUrl;
+
+  @override
+  State<_StoryPrivateImage> createState() => _StoryPrivateImageState();
+}
+
+class _StoryPrivateImageState extends State<_StoryPrivateImage> {
+  late Future<FileContentVm> _contentFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _contentFuture = widget.fileApi.downloadContent(widget.image.fileId);
+  }
+
+  @override
+  void didUpdateWidget(covariant _StoryPrivateImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.image.fileId != widget.image.fileId ||
+        oldWidget.fileApi != widget.fileApi) {
+      _contentFuture = widget.fileApi.downloadContent(widget.image.fileId);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<FileContentVm>(
+      future: _contentFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const _StoryImageViewerLoading();
+        }
+        final content = snapshot.data;
+        if (snapshot.hasError || content == null || content.bytes.isEmpty) {
+          final publicUrl = widget.publicUrl;
+          if (publicUrl != null) {
+            return _StoryPublicImage(
+              url: publicUrl,
+              image: widget.image,
+              cacheWidth: widget.cacheWidth,
+            );
+          }
+          return const _StoryImageViewerPlaceholder();
+        }
+
+        return Image.memory(
+          content.bytes,
+          fit: BoxFit.contain,
+          cacheWidth: widget.cacheWidth,
+          filterQuality: FilterQuality.medium,
+          gaplessPlayback: true,
+          errorBuilder: (context, error, stackTrace) {
+            return const _StoryImageViewerPlaceholder();
+          },
+        );
+      },
+    );
+  }
+}
+
+int _storyFullscreenImageTargetWidth(
+  BuildContext context,
+  double displayWidth, {
+  required int minWidth,
+  required int maxWidth,
+}) {
+  final normalizedWidth = displayWidth.isFinite && displayWidth > 0
+      ? displayWidth
+      : MediaQuery.sizeOf(context).width;
+  final targetWidth = normalizedWidth * MediaQuery.devicePixelRatioOf(context);
+  return targetWidth.clamp(minWidth, maxWidth).round();
+}
+
+class _StoryImageViewerIconButton extends StatelessWidget {
+  const _StoryImageViewerIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.black.withValues(alpha: 0.54),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+          ),
+          child: Icon(icon, color: Colors.white, size: 24),
+        ),
+      ),
+    );
+  }
+}
+
+class _StoryImageViewerLoading extends StatelessWidget {
+  const _StoryImageViewerLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: SizedBox.square(
+        dimension: 30,
+        child: CircularProgressIndicator(
+          color: AppColors.accent,
+          strokeWidth: 2.4,
+        ),
+      ),
+    );
+  }
+}
+
+class _StoryImageViewerPlaceholder extends StatelessWidget {
+  const _StoryImageViewerPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Icon(
+        Icons.image_not_supported_rounded,
+        color: AppColors.textCaption,
+        size: 54,
+      ),
+    );
+  }
+}
+
 class _RelatedStoriesSection extends StatelessWidget {
   const _RelatedStoriesSection({
     required this.stories,
@@ -2040,7 +2696,7 @@ class _RelatedStoriesSection extends StatelessWidget {
               child: Text(
                 l10n.storyViewAll,
                 style: TextStyle(
-                  color: const Color(0xFFFFBD55),
+                  color: AppColors.accent,
                   fontSize: adaptive.scale(10),
                   fontWeight: FontWeight.w800,
                   letterSpacing: 1.0,
@@ -2166,24 +2822,27 @@ class _StoryDetailErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final adaptive = StoryAdaptive.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(
+          adaptive.scale(24, minFactor: 0.86, maxFactor: 1.04),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.error_outline_rounded,
               color: AppColors.accent,
-              size: 42,
+              size: adaptive.scale(42, minFactor: 0.86, maxFactor: 1.04),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: adaptive.scale(14, minFactor: 0.86)),
             Text(
               message,
               textAlign: TextAlign.center,
               style: const TextStyle(color: StoryPalette.textSoft),
             ),
-            const SizedBox(height: 18),
+            SizedBox(height: adaptive.scale(18, minFactor: 0.86)),
             ElevatedButton(
               onPressed: () => onRetry(),
               style: ElevatedButton.styleFrom(

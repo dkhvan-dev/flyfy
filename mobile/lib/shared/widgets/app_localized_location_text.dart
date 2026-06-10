@@ -90,20 +90,25 @@ class _AppLocalizedLocationTextState extends State<AppLocalizedLocationText> {
     }
 
     final addressText = widget.addressText?.trim() ?? '';
-    final resolved = addressText.isEmpty
-        ? await _resolver.resolve(
-            countryCode: widget.countryCode,
-            cityId: widget.cityId,
-            cityName: widget.cityName,
-            localeName: localeName,
-          )
-        : await _resolver.resolveAddress(
-            countryCode: widget.countryCode,
-            cityId: widget.cityId,
-            cityName: widget.cityName,
-            addressText: addressText,
-            localeName: localeName,
-          );
+    String resolved;
+    try {
+      resolved = addressText.isEmpty
+          ? await _resolver.resolve(
+              countryCode: widget.countryCode,
+              cityId: widget.cityId,
+              cityName: widget.cityName,
+              localeName: localeName,
+            )
+          : await _resolver.resolveAddress(
+              countryCode: widget.countryCode,
+              cityId: widget.cityId,
+              cityName: widget.cityName,
+              addressText: addressText,
+              localeName: localeName,
+            );
+    } catch (_) {
+      resolved = fallback;
+    }
     if (!mounted || serial != _requestSerial) return;
     setState(
       () => _resolvedText = resolved.trim().isEmpty ? fallback : resolved,

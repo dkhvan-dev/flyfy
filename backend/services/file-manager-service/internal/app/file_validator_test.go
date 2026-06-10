@@ -53,3 +53,38 @@ func TestChatStickerRejectsOversizedTelegramTGS(t *testing.T) {
 		t.Fatalf("expected oversized telegram tgs to be rejected, got %v", err)
 	}
 }
+
+func TestStoryMediaAllowsPublicImages(t *testing.T) {
+	validator := NewFileValidator(DefaultUploadPolicies(0))
+
+	if err := validator.ValidateForCreate(
+		"weekend-cover.webp",
+		"image/webp",
+		2*1024*1024,
+		enum.FilePurposeStoryMedia,
+	); err != nil {
+		t.Fatalf("expected story image media to be allowed, got %v", err)
+	}
+
+	if err := validator.ValidateUploadedObject(
+		"weekend-cover.webp",
+		"image/webp; charset=binary",
+		2*1024*1024,
+		enum.FilePurposeStoryMedia,
+	); err != nil {
+		t.Fatalf("expected uploaded story image media to be allowed, got %v", err)
+	}
+}
+
+func TestStoryMediaRejectsVideoUploads(t *testing.T) {
+	validator := NewFileValidator(DefaultUploadPolicies(0))
+
+	if err := validator.ValidateForCreate(
+		"weekend-reel.mp4",
+		"video/mp4",
+		2*1024*1024,
+		enum.FilePurposeStoryMedia,
+	); err != ErrExtensionNotAllowed {
+		t.Fatalf("expected story video media to be rejected by extension, got %v", err)
+	}
+}

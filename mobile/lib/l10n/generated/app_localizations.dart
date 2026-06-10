@@ -1672,11 +1672,11 @@ abstract class AppLocalizations {
   /// **'Reviews'**
   String get profileReviewsStat;
 
-  /// No description provided for @profileBlogsStat.
+  /// No description provided for @profileStoriesStat.
   ///
   /// In en, this message translates to:
-  /// **'Blogs'**
-  String get profileBlogsStat;
+  /// **'Stories'**
+  String get profileStoriesStat;
 
   /// No description provided for @profileFollowersStat.
   ///
@@ -2044,17 +2044,17 @@ abstract class AppLocalizations {
   /// **'User stories'**
   String get profileUserStoriesTitle;
 
-  /// No description provided for @profileBlogsTitle.
+  /// No description provided for @profileStoriesTitle.
   ///
   /// In en, this message translates to:
-  /// **'Recent Blogs'**
-  String get profileBlogsTitle;
+  /// **'Recent stories'**
+  String get profileStoriesTitle;
 
-  /// No description provided for @profileBlogsUnavailable.
+  /// No description provided for @profileStoriesUnavailable.
   ///
   /// In en, this message translates to:
-  /// **'Public notes and travel stories are not available in the app yet.'**
-  String get profileBlogsUnavailable;
+  /// **'Public stories and travel articles are not available in the app yet.'**
+  String get profileStoriesUnavailable;
 
   /// No description provided for @profileUnavailableTitle.
   ///
@@ -9644,16 +9644,34 @@ abstract class AppLocalizations {
   /// **'Search stories, authors, or places'**
   String get storySearchHint;
 
+  /// No description provided for @storySearchCompactHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search stories'**
+  String get storySearchCompactHint;
+
   /// No description provided for @storyFiltersTitle.
   ///
   /// In en, this message translates to:
   /// **'Filters'**
   String get storyFiltersTitle;
 
+  /// No description provided for @storyFiltersActiveSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected filters'**
+  String get storyFiltersActiveSummary;
+
+  /// No description provided for @storyFilterFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Material type'**
+  String get storyFilterFormat;
+
   /// No description provided for @storyFilterCategory.
   ///
   /// In en, this message translates to:
-  /// **'Category'**
+  /// **'Theme'**
   String get storyFilterCategory;
 
   /// No description provided for @storyFilterCountry.
@@ -9740,6 +9758,96 @@ abstract class AppLocalizations {
   /// **'Be the first to publish a travel note, local guide, or visual essay.'**
   String get storyEmptySubtitle;
 
+  /// No description provided for @storyEmptyAuthenticatedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a story, article, guide, or visual essay to start the feed.'**
+  String get storyEmptyAuthenticatedSubtitle;
+
+  /// No description provided for @storyFilteredEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No stories match your filters'**
+  String get storyFilteredEmptyTitle;
+
+  /// No description provided for @storyFilteredEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Try a different search, country, city, or category.'**
+  String get storyFilteredEmptySubtitle;
+
+  /// No description provided for @storyResetFiltersAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset filters'**
+  String get storyResetFiltersAction;
+
+  /// No description provided for @storyLoginCreateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Log in to create'**
+  String get storyLoginCreateAction;
+
+  /// No description provided for @myStoriesDraftsTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Drafts'**
+  String get myStoriesDraftsTab;
+
+  /// No description provided for @myStoriesPublishedTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Published'**
+  String get myStoriesPublishedTab;
+
+  /// No description provided for @myStoriesArchivedTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get myStoriesArchivedTab;
+
+  /// No description provided for @myStoriesDraftEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No drafts yet'**
+  String get myStoriesDraftEmptyTitle;
+
+  /// No description provided for @myStoriesDraftEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save ideas as drafts before publishing them to the stories feed.'**
+  String get myStoriesDraftEmptySubtitle;
+
+  /// No description provided for @myStoriesPublishedEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No published stories yet'**
+  String get myStoriesPublishedEmptyTitle;
+
+  /// No description provided for @myStoriesPublishedEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Published stories, guides, articles, and visual essays will appear here.'**
+  String get myStoriesPublishedEmptySubtitle;
+
+  /// No description provided for @myStoriesArchivedEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No archived stories yet'**
+  String get myStoriesArchivedEmptyTitle;
+
+  /// No description provided for @myStoriesArchivedEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived stories are kept here for history and reuse.'**
+  String get myStoriesArchivedEmptySubtitle;
+
+  /// No description provided for @myStoriesCreateDraftAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a draft'**
+  String get myStoriesCreateDraftAction;
+
   /// No description provided for @storyLoadFailed.
   ///
   /// In en, this message translates to:
@@ -9775,6 +9883,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Culinary'**
   String get storyCategoryCulinary;
+
+  /// No description provided for @storyFormatStory.
+  ///
+  /// In en, this message translates to:
+  /// **'Story'**
+  String get storyFormatStory;
+
+  /// No description provided for @storyFormatGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide'**
+  String get storyFormatGuide;
+
+  /// No description provided for @storyFormatPhotoEssay.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo Essay'**
+  String get storyFormatPhotoEssay;
+
+  /// No description provided for @storyFormatArticle.
+  ///
+  /// In en, this message translates to:
+  /// **'Article'**
+  String get storyFormatArticle;
+
+  /// No description provided for @storyFormatCulinary.
+  ///
+  /// In en, this message translates to:
+  /// **'Culinary'**
+  String get storyFormatCulinary;
 
   /// No description provided for @storyDetailsTitle.
   ///
@@ -10201,6 +10339,906 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Try starting with a sensory detail. Instead of “I arrived in Tokyo,” describe the neon glow reflecting off the damp pavement in Shibuya.'**
   String get storyWritersNoteBody;
+
+  /// No description provided for @storyEditorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Story editor'**
+  String get storyEditorTitle;
+
+  /// No description provided for @storyEditorLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading story'**
+  String get storyEditorLoading;
+
+  /// No description provided for @storyEditorLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load story for editing.'**
+  String get storyEditorLoadFailed;
+
+  /// No description provided for @storyEditorEditMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get storyEditorEditMode;
+
+  /// No description provided for @storyEditorPreviewMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get storyEditorPreviewMode;
+
+  /// No description provided for @storyEditorRecoveryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recover unsaved draft?'**
+  String get storyEditorRecoveryTitle;
+
+  /// No description provided for @storyEditorRecoveryMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'A local recovery copy is available for this story.'**
+  String get storyEditorRecoveryMessage;
+
+  /// No description provided for @storyEditorRecoveryDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get storyEditorRecoveryDiscard;
+
+  /// No description provided for @storyEditorRecoveryRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get storyEditorRecoveryRestore;
+
+  /// No description provided for @storyEditorDiscardChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard story changes?'**
+  String get storyEditorDiscardChangesTitle;
+
+  /// No description provided for @storyEditorDiscardChangesMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved edits may be lost.'**
+  String get storyEditorDiscardChangesMessage;
+
+  /// No description provided for @storyEditorKeepEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get storyEditorKeepEditing;
+
+  /// No description provided for @storyEditorMetadataTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Publication setup'**
+  String get storyEditorMetadataTitle;
+
+  /// No description provided for @storyEditorTitleFieldHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A precise, searchable title'**
+  String get storyEditorTitleFieldHint;
+
+  /// No description provided for @storyEditorTemplateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Templates'**
+  String get storyEditorTemplateAction;
+
+  /// No description provided for @storyEditorTemplateSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose story template'**
+  String get storyEditorTemplateSemantic;
+
+  /// No description provided for @storyEditorTemplatePlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a template'**
+  String get storyEditorTemplatePlaceholder;
+
+  /// No description provided for @storyEditorTemplateWeekendGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekend guide'**
+  String get storyEditorTemplateWeekendGuide;
+
+  /// No description provided for @storyEditorTemplatePhotoEssay.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo essay'**
+  String get storyEditorTemplatePhotoEssay;
+
+  /// No description provided for @storyEditorTemplateFoodNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Food notes'**
+  String get storyEditorTemplateFoodNotes;
+
+  /// No description provided for @storyEditorTemplateCityWalk.
+  ///
+  /// In en, this message translates to:
+  /// **'City walk'**
+  String get storyEditorTemplateCityWalk;
+
+  /// No description provided for @storyEditorTemplateHiddenGems.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden gems'**
+  String get storyEditorTemplateHiddenGems;
+
+  /// No description provided for @storyEditorTemplatePracticalTips.
+  ///
+  /// In en, this message translates to:
+  /// **'Practical tips'**
+  String get storyEditorTemplatePracticalTips;
+
+  /// No description provided for @storyEditorTemplateCultureRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Culture route'**
+  String get storyEditorTemplateCultureRoute;
+
+  /// No description provided for @storyEditorTemplateWeekendHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekend plan'**
+  String get storyEditorTemplateWeekendHeading;
+
+  /// No description provided for @storyEditorTemplateWeekendList.
+  ///
+  /// In en, this message translates to:
+  /// **'Morning stop\nLocal food\nEvening view'**
+  String get storyEditorTemplateWeekendList;
+
+  /// No description provided for @storyEditorTemplatePhotoHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo story'**
+  String get storyEditorTemplatePhotoHeading;
+
+  /// No description provided for @storyEditorTemplateFoodHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Where to eat'**
+  String get storyEditorTemplateFoodHeading;
+
+  /// No description provided for @storyEditorTemplateFoodParagraph.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the dish, price range, and best time to visit.'**
+  String get storyEditorTemplateFoodParagraph;
+
+  /// No description provided for @storyEditorTemplateCityWalkHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Walking route'**
+  String get storyEditorTemplateCityWalkHeading;
+
+  /// No description provided for @storyEditorTemplateCityWalkList.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting point\nMain street\nPause spot\nFinal view'**
+  String get storyEditorTemplateCityWalkList;
+
+  /// No description provided for @storyEditorTemplateCityWalkParagraph.
+  ///
+  /// In en, this message translates to:
+  /// **'Add distance, approximate timing, and the easiest way to reach the start.'**
+  String get storyEditorTemplateCityWalkParagraph;
+
+  /// No description provided for @storyEditorTemplateHiddenGemsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Places not everyone knows'**
+  String get storyEditorTemplateHiddenGemsHeading;
+
+  /// No description provided for @storyEditorTemplateHiddenGemsList.
+  ///
+  /// In en, this message translates to:
+  /// **'Why it is worth a stop\nWhen it is quiet\nWhat to see nearby'**
+  String get storyEditorTemplateHiddenGemsList;
+
+  /// No description provided for @storyEditorTemplateHiddenGemsCallout.
+  ///
+  /// In en, this message translates to:
+  /// **'Add practical details: entry, schedule, safety, cash, or reservation notes.'**
+  String get storyEditorTemplateHiddenGemsCallout;
+
+  /// No description provided for @storyEditorTemplatePracticalTipsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Good to know before the trip'**
+  String get storyEditorTemplatePracticalTipsHeading;
+
+  /// No description provided for @storyEditorTemplatePracticalTipsList.
+  ///
+  /// In en, this message translates to:
+  /// **'When to go\nHow to get there\nBudget to plan\nWhat to bring'**
+  String get storyEditorTemplatePracticalTipsList;
+
+  /// No description provided for @storyEditorTemplatePracticalTipsCallout.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an honest tip that saves time or helps avoid a common mistake.'**
+  String get storyEditorTemplatePracticalTipsCallout;
+
+  /// No description provided for @storyEditorTemplateCultureRouteHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Culture route'**
+  String get storyEditorTemplateCultureRouteHeading;
+
+  /// No description provided for @storyEditorTemplateCultureRouteParagraph.
+  ///
+  /// In en, this message translates to:
+  /// **'Explain which traditions, buildings, museums, or local stories help readers understand this place.'**
+  String get storyEditorTemplateCultureRouteParagraph;
+
+  /// No description provided for @storyEditorTemplateCultureRouteQuote.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a phrase, observation, or short fact that sets the mood for the route.'**
+  String get storyEditorTemplateCultureRouteQuote;
+
+  /// No description provided for @storyEditorTemplateConflictTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply new story structure?'**
+  String get storyEditorTemplateConflictTitle;
+
+  /// No description provided for @storyEditorTemplateConflictMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This structure suggests {format} / {category}. Choose how to apply it without losing your draft.'**
+  String storyEditorTemplateConflictMessage(Object format, Object category);
+
+  /// No description provided for @storyEditorTemplateConflictReplace.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace template'**
+  String get storyEditorTemplateConflictReplace;
+
+  /// No description provided for @storyEditorTemplateConflictReplaceDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove untouched template blocks, keep your edited text, and add the new structure.'**
+  String get storyEditorTemplateConflictReplaceDescription;
+
+  /// No description provided for @storyEditorTemplateConflictAppend.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to current story'**
+  String get storyEditorTemplateConflictAppend;
+
+  /// No description provided for @storyEditorTemplateConflictAppendDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep everything and append the new structure below your current blocks.'**
+  String get storyEditorTemplateConflictAppendDescription;
+
+  /// No description provided for @storyEditorTemplateConflictMetadataOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Update type and topic'**
+  String get storyEditorTemplateConflictMetadataOnly;
+
+  /// No description provided for @storyEditorTemplateConflictMetadataOnlyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Change only the content type and topic without changing blocks.'**
+  String get storyEditorTemplateConflictMetadataOnlyDescription;
+
+  /// No description provided for @storyEditorFormatLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Content type'**
+  String get storyEditorFormatLabel;
+
+  /// No description provided for @storyEditorPlaceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Place'**
+  String get storyEditorPlaceLabel;
+
+  /// No description provided for @storyEditorCountryCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Country code'**
+  String get storyEditorCountryCodeLabel;
+
+  /// No description provided for @storyEditorCountryCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'KZ'**
+  String get storyEditorCountryCodeHint;
+
+  /// No description provided for @storyEditorCityPlaceIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'City/place id'**
+  String get storyEditorCityPlaceIdLabel;
+
+  /// No description provided for @storyEditorTagsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'mountains, food, weekend'**
+  String get storyEditorTagsHint;
+
+  /// No description provided for @storyEditorCoverSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover selected'**
+  String get storyEditorCoverSelected;
+
+  /// No description provided for @storyEditorCoverRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover required'**
+  String get storyEditorCoverRequired;
+
+  /// No description provided for @storyEditorReplaceCover.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace cover'**
+  String get storyEditorReplaceCover;
+
+  /// No description provided for @storyEditorAddCover.
+  ///
+  /// In en, this message translates to:
+  /// **'Add cover'**
+  String get storyEditorAddCover;
+
+  /// No description provided for @storyEditorClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get storyEditorClear;
+
+  /// No description provided for @storyEditorToolbarAddBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Add block'**
+  String get storyEditorToolbarAddBlock;
+
+  /// No description provided for @storyEditorToolbarHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Heading'**
+  String get storyEditorToolbarHeading;
+
+  /// No description provided for @storyEditorToolbarBold.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold'**
+  String get storyEditorToolbarBold;
+
+  /// No description provided for @storyEditorToolbarItalic.
+  ///
+  /// In en, this message translates to:
+  /// **'Italic'**
+  String get storyEditorToolbarItalic;
+
+  /// No description provided for @storyEditorToolbarStrikethrough.
+  ///
+  /// In en, this message translates to:
+  /// **'Strikethrough'**
+  String get storyEditorToolbarStrikethrough;
+
+  /// No description provided for @storyEditorToolbarUnderline.
+  ///
+  /// In en, this message translates to:
+  /// **'Underline'**
+  String get storyEditorToolbarUnderline;
+
+  /// No description provided for @storyEditorToolbarList.
+  ///
+  /// In en, this message translates to:
+  /// **'List'**
+  String get storyEditorToolbarList;
+
+  /// No description provided for @storyEditorToolbarQuote.
+  ///
+  /// In en, this message translates to:
+  /// **'Quote'**
+  String get storyEditorToolbarQuote;
+
+  /// No description provided for @storyEditorToolbarImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Image'**
+  String get storyEditorToolbarImage;
+
+  /// No description provided for @storyEditorToolbarUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get storyEditorToolbarUndo;
+
+  /// No description provided for @storyEditorToolbarRedo.
+  ///
+  /// In en, this message translates to:
+  /// **'Redo'**
+  String get storyEditorToolbarRedo;
+
+  /// No description provided for @storyEditorAddBlockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add block'**
+  String get storyEditorAddBlockTitle;
+
+  /// No description provided for @storyEditorBlockParagraph.
+  ///
+  /// In en, this message translates to:
+  /// **'Paragraph'**
+  String get storyEditorBlockParagraph;
+
+  /// No description provided for @storyEditorBlockParagraphDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Body text for the story'**
+  String get storyEditorBlockParagraphDescription;
+
+  /// No description provided for @storyEditorBlockHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Heading'**
+  String get storyEditorBlockHeading;
+
+  /// No description provided for @storyEditorBlockHeadingDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Section title'**
+  String get storyEditorBlockHeadingDescription;
+
+  /// No description provided for @storyEditorBlockList.
+  ///
+  /// In en, this message translates to:
+  /// **'List'**
+  String get storyEditorBlockList;
+
+  /// No description provided for @storyEditorBlockListDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Useful tips or steps'**
+  String get storyEditorBlockListDescription;
+
+  /// No description provided for @storyEditorBlockImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Image'**
+  String get storyEditorBlockImage;
+
+  /// No description provided for @storyEditorBlockImageDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Single media upload'**
+  String get storyEditorBlockImageDescription;
+
+  /// No description provided for @storyEditorBlockGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery'**
+  String get storyEditorBlockGallery;
+
+  /// No description provided for @storyEditorBlockGalleryDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Multiple images'**
+  String get storyEditorBlockGalleryDescription;
+
+  /// No description provided for @storyEditorBlockQuote.
+  ///
+  /// In en, this message translates to:
+  /// **'Quote'**
+  String get storyEditorBlockQuote;
+
+  /// No description provided for @storyEditorBlockQuoteDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'A highlighted sentence'**
+  String get storyEditorBlockQuoteDescription;
+
+  /// No description provided for @storyEditorBlockCallout.
+  ///
+  /// In en, this message translates to:
+  /// **'Callout'**
+  String get storyEditorBlockCallout;
+
+  /// No description provided for @storyEditorBlockCalloutDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Important travel note'**
+  String get storyEditorBlockCalloutDescription;
+
+  /// No description provided for @storyEditorBlockDivider.
+  ///
+  /// In en, this message translates to:
+  /// **'Divider'**
+  String get storyEditorBlockDivider;
+
+  /// No description provided for @storyEditorBlockDividerDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Visual section break'**
+  String get storyEditorBlockDividerDescription;
+
+  /// No description provided for @storyEditorBlockPlaceReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Place reference'**
+  String get storyEditorBlockPlaceReference;
+
+  /// No description provided for @storyEditorBlockPlaceReferenceDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Link a place to the story'**
+  String get storyEditorBlockPlaceReferenceDescription;
+
+  /// No description provided for @storyEditorBlockNumberedList.
+  ///
+  /// In en, this message translates to:
+  /// **'Numbered list'**
+  String get storyEditorBlockNumberedList;
+
+  /// No description provided for @storyEditorStartWithBlockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start with a block'**
+  String get storyEditorStartWithBlockTitle;
+
+  /// No description provided for @storyEditorStartWithBlockSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add text, media, places, callouts, or dividers to shape the story.'**
+  String get storyEditorStartWithBlockSubtitle;
+
+  /// No description provided for @storyEditorPlaceNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Place name'**
+  String get storyEditorPlaceNameHint;
+
+  /// No description provided for @storyEditorTextHintHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a clear section heading'**
+  String get storyEditorTextHintHeading;
+
+  /// No description provided for @storyEditorTextHintBulletedList.
+  ///
+  /// In en, this message translates to:
+  /// **'Add list items, one per line'**
+  String get storyEditorTextHintBulletedList;
+
+  /// No description provided for @storyEditorTextHintNumberedList.
+  ///
+  /// In en, this message translates to:
+  /// **'Add ordered steps, one per line'**
+  String get storyEditorTextHintNumberedList;
+
+  /// No description provided for @storyEditorTextHintQuote.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a quote or memorable line'**
+  String get storyEditorTextHintQuote;
+
+  /// No description provided for @storyEditorTextHintCallout.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlight a practical tip'**
+  String get storyEditorTextHintCallout;
+
+  /// No description provided for @storyEditorTextHintParagraph.
+  ///
+  /// In en, this message translates to:
+  /// **'Write your story'**
+  String get storyEditorTextHintParagraph;
+
+  /// No description provided for @storyEditorDeleteBlockSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {block} block'**
+  String storyEditorDeleteBlockSemantic(Object block);
+
+  /// No description provided for @storyEditorReorderBlockSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to reorder {block} block'**
+  String storyEditorReorderBlockSemantic(Object block);
+
+  /// No description provided for @storyEditorPublishReadiness.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish readiness'**
+  String get storyEditorPublishReadiness;
+
+  /// No description provided for @storyEditorChecklistTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get storyEditorChecklistTitle;
+
+  /// No description provided for @storyEditorChecklistFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Content type'**
+  String get storyEditorChecklistFormat;
+
+  /// No description provided for @storyEditorChecklistCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Topic'**
+  String get storyEditorChecklistCategory;
+
+  /// No description provided for @storyEditorChecklistCover.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover'**
+  String get storyEditorChecklistCover;
+
+  /// No description provided for @storyEditorChecklistPlace.
+  ///
+  /// In en, this message translates to:
+  /// **'Place'**
+  String get storyEditorChecklistPlace;
+
+  /// No description provided for @storyEditorChecklistCountry.
+  ///
+  /// In en, this message translates to:
+  /// **'Country'**
+  String get storyEditorChecklistCountry;
+
+  /// No description provided for @storyEditorChecklistContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Content'**
+  String get storyEditorChecklistContent;
+
+  /// No description provided for @storyEditorChecklistMedia.
+  ///
+  /// In en, this message translates to:
+  /// **'Media'**
+  String get storyEditorChecklistMedia;
+
+  /// No description provided for @storyEditorChecklistReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get storyEditorChecklistReady;
+
+  /// No description provided for @storyEditorChecklistNeedsAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get storyEditorChecklistNeedsAttention;
+
+  /// No description provided for @storyEditorChecklistOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get storyEditorChecklistOpen;
+
+  /// No description provided for @storyEditorConflictFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Story was changed elsewhere.'**
+  String get storyEditorConflictFallback;
+
+  /// No description provided for @storyEditorSaveDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Save draft'**
+  String get storyEditorSaveDraft;
+
+  /// No description provided for @storyEditorPublish.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish'**
+  String get storyEditorPublish;
+
+  /// No description provided for @storyEditorPublishSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish story'**
+  String get storyEditorPublishSemantic;
+
+  /// No description provided for @storyEditorAutosaveIdle.
+  ///
+  /// In en, this message translates to:
+  /// **'Idle'**
+  String get storyEditorAutosaveIdle;
+
+  /// No description provided for @storyEditorAutosaveSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving'**
+  String get storyEditorAutosaveSaving;
+
+  /// No description provided for @storyEditorAutosaveSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get storyEditorAutosaveSaved;
+
+  /// No description provided for @storyEditorAutosaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get storyEditorAutosaveFailed;
+
+  /// No description provided for @storyEditorAutosaveConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Conflict'**
+  String get storyEditorAutosaveConflict;
+
+  /// No description provided for @storyEditorPublishNotReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Story is not ready to publish.'**
+  String get storyEditorPublishNotReady;
+
+  /// No description provided for @storyEditorMediaRetrySemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry media upload'**
+  String get storyEditorMediaRetrySemantic;
+
+  /// No description provided for @storyEditorMediaRemoveSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove media upload'**
+  String get storyEditorMediaRemoveSemantic;
+
+  /// No description provided for @storyEditorMediaRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get storyEditorMediaRetry;
+
+  /// No description provided for @storyEditorMediaRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get storyEditorMediaRemove;
+
+  /// No description provided for @storyEditorMediaQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued for upload'**
+  String get storyEditorMediaQueued;
+
+  /// No description provided for @storyEditorMediaUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading'**
+  String get storyEditorMediaUploading;
+
+  /// No description provided for @storyEditorMediaFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload failed'**
+  String get storyEditorMediaFailed;
+
+  /// No description provided for @storyEditorMediaComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload complete'**
+  String get storyEditorMediaComplete;
+
+  /// No description provided for @storyEditorMediaRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed'**
+  String get storyEditorMediaRemoved;
+
+  /// No description provided for @storyEditorMediaLocalPreviewUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Local preview unavailable. Remove and add this media again.'**
+  String get storyEditorMediaLocalPreviewUnavailable;
+
+  /// No description provided for @storyEditorMediaErrorRetryUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry the media upload.'**
+  String get storyEditorMediaErrorRetryUpload;
+
+  /// No description provided for @storyEditorMediaErrorInterrupted.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload was interrupted. Retry to continue.'**
+  String get storyEditorMediaErrorInterrupted;
+
+  /// No description provided for @storyEditorMediaErrorMissingSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Local media source is unavailable. Remove and add this media again.'**
+  String get storyEditorMediaErrorMissingSource;
+
+  /// No description provided for @storyEditorMediaErrorUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Media upload failed. Please try again.'**
+  String get storyEditorMediaErrorUploadFailed;
+
+  /// No description provided for @storyEditorImagePickTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Image is too large. Choose an image up to 20 MB.'**
+  String get storyEditorImagePickTooLarge;
+
+  /// No description provided for @storyEditorImagePickUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a JPG, PNG, or WebP image.'**
+  String get storyEditorImagePickUnsupported;
+
+  /// No description provided for @storyEditorImagePickFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open this image. Please try another one.'**
+  String get storyEditorImagePickFailed;
+
+  /// No description provided for @storyEditorValidationTitleRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Story title is required.'**
+  String get storyEditorValidationTitleRequired;
+
+  /// No description provided for @storyEditorValidationFormatRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Story format is required.'**
+  String get storyEditorValidationFormatRequired;
+
+  /// No description provided for @storyEditorValidationCategoryRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Story category is required.'**
+  String get storyEditorValidationCategoryRequired;
+
+  /// No description provided for @storyEditorValidationCoverRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Story cover is required.'**
+  String get storyEditorValidationCoverRequired;
+
+  /// No description provided for @storyEditorValidationPlaceRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Story place is required.'**
+  String get storyEditorValidationPlaceRequired;
+
+  /// No description provided for @storyEditorValidationCountryRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Story country is required.'**
+  String get storyEditorValidationCountryRequired;
+
+  /// No description provided for @storyEditorValidationDraftRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a title or at least one story block to save a draft.'**
+  String get storyEditorValidationDraftRequired;
+
+  /// No description provided for @storyEditorValidationContentRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Write at least one story block before publishing.'**
+  String get storyEditorValidationContentRequired;
+
+  /// No description provided for @storyEditorValidationMediaPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait until media uploads finish.'**
+  String get storyEditorValidationMediaPending;
 
   /// No description provided for @chatListTitle.
   ///

@@ -34,6 +34,7 @@ type fileUseCase interface {
 	OpenContent(context.Context, uuid.UUID) (io.ReadCloser, string, error)
 	OpenPublicContent(context.Context, uuid.UUID) (io.ReadCloser, string, error)
 	SoftDelete(context.Context, uuid.UUID) error
+	ReleaseUnboundUpload(context.Context, uuid.UUID, string) error
 }
 
 type bindingUseCase interface {
@@ -156,6 +157,9 @@ func (h *Handler) handleFileActions(w http.ResponseWriter, r *http.Request) {
 		return
 	case r.Method == http.MethodDelete && len(parts) == 1:
 		h.DeleteFile(w, r, fileID)
+		return
+	case r.Method == http.MethodPost && len(parts) == 2 && parts[1] == "release":
+		h.ReleaseFile(w, r, fileID)
 		return
 	case r.Method == http.MethodPut && len(parts) == 2 && parts[1] == "binary":
 		h.UploadBinary(w, r, fileID)
@@ -407,6 +411,33 @@ func (h *Handler) DeleteFile(w http.ResponseWriter, r *http.Request, fileID uuid
 		switch {
 		case errors.Is(err, app.ErrFileNotFound):
 			writeAppError(w, r, http.StatusNotFound, err)
+		default:
+			writeTechnicalError(w, r, http.StatusInternalServerError, err)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) ReleaseFile(w http.ResponseWriter, r *http.Request, fileID uuid.UUID) {
+	userID := strings.TrimSpace(UserIDFromContext(r.Context()))
+	if userID == "" {
+		writeBusinessError(w, r, http.StatusUnauthorized, errorCodeUnauthorized)
+		return
+	}
+
+	if err := h.useCase.ReleaseUnboundUpload(r.Context(), fileID, userID); err != nil {
+		switch {
+		case errors.Is(err, app.ErrInvalidFileID),
+			errors.Is(err, app.ErrInvalidOwnerID):
+			writeAppError(w, r, http.StatusBadRequest, err)
+		case errors.Is(err, app.ErrFileNotFound):
+			writeAppError(w, r, http.StatusNotFound, err)
+		case errors.Is(err, app.ErrFileOwnershipMismatch):
+			writeAppError(w, r, http.StatusForbidden, err)
+		case errors.Is(err, app.ErrFileAlreadyBound):
+			writeAppError(w, r, http.StatusConflict, err)
 		default:
 			writeTechnicalError(w, r, http.StatusInternalServerError, err)
 		}

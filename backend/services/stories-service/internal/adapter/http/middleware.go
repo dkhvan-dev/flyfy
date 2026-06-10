@@ -58,7 +58,9 @@ func authContextMiddleware(cfg *config.Config, next http.Handler) http.Handler {
 			ctx = withSubject(ctx, subject)
 		}
 
-		if cfg.Security.RequireAuthenticatedWrites && isWriteMethod(r.Method) {
+		if cfg.Security.RequireAuthenticatedWrites &&
+			isWriteMethod(r.Method) &&
+			!isPublicWriteRoute(r) {
 			if subject == "" {
 				writeError(w, r, http.StatusUnauthorized, errorCodeUnauthenticatedWriter)
 				return
@@ -119,6 +121,20 @@ func isWriteMethod(method string) bool {
 	default:
 		return false
 	}
+}
+
+func isPublicWriteRoute(r *http.Request) bool {
+	if r.Method != http.MethodPost {
+		return false
+	}
+
+	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	if len(parts) != 4 || parts[0] != "v1" || parts[1] != "stories" || parts[3] != "share" {
+		return false
+	}
+
+	_, err := uuid.Parse(parts[2])
+	return err == nil
 }
 
 func hasRole(ctx context.Context, target string) bool {

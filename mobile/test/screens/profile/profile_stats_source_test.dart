@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('profile stats show activities blogs and followers', () async {
+  test('profile stats show activities stories and followers', () async {
     final source = await File(
       'lib/screens/profile/profile_screen.dart',
     ).readAsString();
@@ -21,12 +21,13 @@ void main() {
     final gridSource = source.substring(gridStart, gridEnd);
 
     final activitiesIndex = gridSource.indexOf('profileActivitiesStat');
-    final blogsIndex = gridSource.indexOf('profileBlogsStat');
+    final storiesIndex = gridSource.indexOf('profileStoriesStat');
     final followersIndex = gridSource.indexOf('profileFollowersStat');
 
     expect(activitiesIndex, isNonNegative);
-    expect(blogsIndex, greaterThan(activitiesIndex));
-    expect(followersIndex, greaterThan(blogsIndex));
+    expect(storiesIndex, greaterThan(activitiesIndex));
+    expect(followersIndex, greaterThan(storiesIndex));
+    expect(gridSource, isNot(contains('profileBlogsStat')));
     expect(gridSource, isNot(contains('profileReviewsStat')));
     expect(gridSource, contains(r"'${profile.followersCount}'"));
     expect(RegExp('highlighted: true').allMatches(gridSource), hasLength(3));

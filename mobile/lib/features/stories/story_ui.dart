@@ -90,6 +90,22 @@ String formatStoryCategory(AppLocalizations l10n, String rawCategory) {
   }
 }
 
+String formatStoryFormat(AppLocalizations l10n, String rawFormat) {
+  switch (rawFormat.trim().toUpperCase()) {
+    case 'GUIDE':
+      return l10n.storyFormatGuide;
+    case 'PHOTO_ESSAY':
+      return l10n.storyFormatPhotoEssay;
+    case 'ARTICLE':
+      return l10n.storyFormatArticle;
+    case 'CULINARY':
+      return l10n.storyFormatCulinary;
+    case 'STORY':
+    default:
+      return l10n.storyFormatStory;
+  }
+}
+
 String formatStoryDate(BuildContext context, DateTime? value) {
   if (value == null) {
     return '';
@@ -232,6 +248,12 @@ class StoryCoverImage extends StatelessWidget {
     return Image.network(
       url!,
       fit: BoxFit.cover,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) {
+          return child;
+        }
+        return const _StoryImageLoadingPlaceholder();
+      },
       errorBuilder: (context, error, stackTrace) {
         return const DecoratedBox(
           decoration: BoxDecoration(color: Color(0xFF22160D)),
@@ -244,6 +266,26 @@ class StoryCoverImage extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _StoryImageLoadingPlaceholder extends StatelessWidget {
+  const _StoryImageLoadingPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(color: Color(0xFF22160D)),
+      child: Center(
+        child: SizedBox.square(
+          dimension: StoryAdaptive.of(context).scale(26),
+          child: CircularProgressIndicator(
+            strokeWidth: StoryAdaptive.of(context).scale(2),
+            color: AppColors.accent,
+          ),
+        ),
+      ),
     );
   }
 }

@@ -57,6 +57,10 @@ class DioErrorMapper {
 
   static String _localizedBackendMessage(String message) {
     return switch (message) {
+      'authentication_required' ||
+      'missing_authenticated_subject' ||
+      'invalid_access_token' ||
+      'unauthorized' => 'Войдите в аккаунт, чтобы продолжить.',
       'invalid excursion itinerary description' =>
         'Описание каждого этапа маршрута должно быть не короче 5 символов.',
       'excursion already exists for this guide and attraction' =>

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -125,6 +126,23 @@ func (f *fakeFileRepository) Update(context.Context, *model.File) error {
 
 func (f *fakeFileRepository) SoftDelete(context.Context, uuid.UUID) error {
 	return nil
+}
+
+func (f *fakeFileRepository) SoftDeleteUnbound(context.Context, uuid.UUID) (bool, error) {
+	return true, nil
+}
+
+func (f *fakeFileRepository) HasActiveBinding(context.Context, uuid.UUID) (bool, error) {
+	return false, nil
+}
+
+func (f *fakeFileRepository) ListExpiredUnboundUploads(
+	context.Context,
+	enum.FilePurpose,
+	time.Time,
+	int,
+) ([]*model.File, error) {
+	return nil, nil
 }
 
 type fakeFileBindingRepository struct {

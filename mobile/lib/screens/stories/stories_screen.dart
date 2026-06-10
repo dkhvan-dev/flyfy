@@ -23,6 +23,8 @@ import '../common/app_side_drawer.dart';
 
 enum _StorySortDirection { asc, desc }
 
+enum _MyStoryStatusTab { drafts, published, archived }
+
 extension _StorySortDirectionX on _StorySortDirection {
   String get querySuffix {
     switch (this) {
@@ -34,11 +36,41 @@ extension _StorySortDirectionX on _StorySortDirection {
   }
 }
 
+extension _MyStoryStatusTabX on _MyStoryStatusTab {
+  String get status {
+    switch (this) {
+      case _MyStoryStatusTab.drafts:
+        return 'DRAFT';
+      case _MyStoryStatusTab.published:
+        return 'PUBLISHED';
+      case _MyStoryStatusTab.archived:
+        return 'ARCHIVED';
+    }
+  }
+
+  String label(AppLocalizations l10n) {
+    switch (this) {
+      case _MyStoryStatusTab.drafts:
+        return l10n.myStoriesDraftsTab;
+      case _MyStoryStatusTab.published:
+        return l10n.myStoriesPublishedTab;
+      case _MyStoryStatusTab.archived:
+        return l10n.myStoriesArchivedTab;
+    }
+  }
+}
+
 class StoriesScreen extends StatefulWidget {
-  const StoriesScreen({super.key, this.myOnly = false, this.authorId});
+  const StoriesScreen({
+    super.key,
+    this.myOnly = false,
+    this.authorId,
+    this.storyApi,
+  });
 
   final bool myOnly;
   final String? authorId;
+  final StoryApi? storyApi;
 
   @override
   State<StoriesScreen> createState() => _StoriesScreenState();
@@ -47,7 +79,7 @@ class StoriesScreen extends StatefulWidget {
 class _StoriesScreenState extends State<StoriesScreen> {
   static const int _pageSize = 8;
 
-  final _api = StoryApi();
+  late final StoryApi _api;
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
@@ -59,24 +91,47 @@ class _StoriesScreenState extends State<StoriesScreen> {
   String? _errorMessage;
   int _currentPage = 1;
   int _totalStories = 0;
+  int _pageLimit = _pageSize;
   bool _hasNextPage = false;
+  int _loadRequestId = 0;
 
   String _searchQuery = '';
+  String? _selectedFormat;
   String? _selectedCategory;
   AppCountryFilterValue? _selectedCountry;
   AppCityFilterValue? _selectedCity;
   String _sort = 'latest';
   _StorySortDirection _sortDirection = _StorySortDirection.desc;
+  _MyStoryStatusTab _selectedMyStatus = _MyStoryStatusTab.drafts;
 
   String get _sortQueryParam => '${_sort}_${_sortDirection.querySuffix}';
+  String? get _myStatusFilter =>
+      widget.myOnly ? _selectedMyStatus.status : null;
   String? get _authorIdFilter {
     final value = (widget.authorId ?? '').trim();
     return value.isEmpty ? null : value;
   }
 
+  bool get _hasActiveFilters =>
+      _searchQuery.trim().isNotEmpty ||
+      (_selectedFormat ?? '').trim().isNotEmpty ||
+      (_selectedCategory ?? '').trim().isNotEmpty ||
+      _selectedCountry != null ||
+      _selectedCity != null;
+
+  int get _totalPages {
+    final limit = _pageLimit <= 0 ? _pageSize : _pageLimit;
+    if (_totalStories > 0) {
+      final pages = (_totalStories / limit).ceil();
+      return pages < 1 ? 1 : pages;
+    }
+    return _hasNextPage ? _currentPage + 1 : _currentPage;
+  }
+
   @override
   void initState() {
     super.initState();
+    _api = widget.storyApi ?? StoryApi();
     _searchController.addListener(_handleSearchChanged);
     _loadStories();
   }
@@ -123,6 +178,8 @@ class _StoriesScreenState extends State<StoriesScreen> {
   Future<void> _loadStories({bool showLoader = true, int? page}) async {
     final requestedPage = page ?? _currentPage;
     final normalizedPage = requestedPage < 1 ? 1 : requestedPage;
+    final requestId = ++_loadRequestId;
+    final requestSignature = _storyListSignature(normalizedPage);
 
     if (showLoader) {
       setState(() {
@@ -140,17 +197,24 @@ class _StoriesScreenState extends State<StoriesScreen> {
       final storiesPage = widget.myOnly
           ? await _api.listMyStoriesPage(
               search: _searchQuery,
+              formats: _selectedFormat == null
+                  ? null
+                  : <String>[_selectedFormat!],
               categories: _selectedCategory == null
                   ? null
                   : <String>[_selectedCategory!],
               countryCode: _selectedCountryCode,
               cityId: _selectedCityId,
               sort: _sortQueryParam,
+              status: _myStatusFilter,
               limit: _pageSize,
               offset: (normalizedPage - 1) * _pageSize,
             )
           : await _api.listStoriesPage(
               search: _searchQuery,
+              formats: _selectedFormat == null
+                  ? null
+                  : <String>[_selectedFormat!],
               categories: _selectedCategory == null
                   ? null
                   : <String>[_selectedCategory!],
@@ -162,12 +226,17 @@ class _StoriesScreenState extends State<StoriesScreen> {
               authorId: widget.authorId,
             );
 
-      if (!mounted) {
+      if (!_isCurrentStoriesRequest(
+        requestId,
+        requestSignature,
+        normalizedPage,
+      )) {
         return;
       }
       setState(() {
         _stories = storiesPage.items;
         _totalStories = storiesPage.total;
+        _pageLimit = storiesPage.limit <= 0 ? _pageSize : storiesPage.limit;
         _currentPage = storiesPage.items.isEmpty && normalizedPage > 1
             ? 1
             : normalizedPage;
@@ -176,7 +245,11 @@ class _StoriesScreenState extends State<StoriesScreen> {
         _isRefreshing = false;
       });
     } on DioException catch (e) {
-      if (!mounted) {
+      if (!_isCurrentStoriesRequest(
+        requestId,
+        requestSignature,
+        normalizedPage,
+      )) {
         return;
       }
       setState(() {
@@ -185,7 +258,11 @@ class _StoriesScreenState extends State<StoriesScreen> {
         _isRefreshing = false;
       });
     } catch (_) {
-      if (!mounted) {
+      if (!_isCurrentStoriesRequest(
+        requestId,
+        requestSignature,
+        normalizedPage,
+      )) {
         return;
       }
       setState(() {
@@ -194,6 +271,32 @@ class _StoriesScreenState extends State<StoriesScreen> {
         _isRefreshing = false;
       });
     }
+  }
+
+  String _storyListSignature(int page) {
+    final format = _selectedFormat?.trim().toUpperCase() ?? '';
+    final category = _selectedCategory?.trim().toUpperCase() ?? '';
+    final countryCode = _selectedCountryCode?.trim().toUpperCase() ?? '';
+    final cityId = _selectedCityId?.trim() ?? '';
+    return [
+      widget.myOnly ? 'mine' : 'public',
+      _authorIdFilter ?? '',
+      _myStatusFilter ?? '',
+      _searchQuery.trim(),
+      format,
+      category,
+      countryCode,
+      cityId,
+      _sortQueryParam,
+      page.toString(),
+    ].join('\u001F');
+  }
+
+  bool _isCurrentStoriesRequest(int requestId, String signature, int page) {
+    if (!mounted || requestId != _loadRequestId) {
+      return false;
+    }
+    return signature == _storyListSignature(page);
   }
 
   Future<void> _openFilters() async {
@@ -208,17 +311,23 @@ class _StoriesScreenState extends State<StoriesScreen> {
       useSafeArea: true,
       builder: (context) {
         return _StoryFiltersSheet(
+          initialFormat: _selectedFormat,
           initialCategory: _selectedCategory,
           initialCountry: _selectedCountry,
           initialCity: _selectedCity,
           previewCount: _totalStories,
           previewCountLoader:
-              ({required category, required country, required city}) =>
-                  _loadStoriesPreviewCount(
-                    category: category,
-                    country: country,
-                    city: city,
-                  ),
+              ({
+                required format,
+                required category,
+                required country,
+                required city,
+              }) => _loadStoriesPreviewCount(
+                format: format,
+                category: category,
+                country: country,
+                city: city,
+              ),
         );
       },
     );
@@ -226,16 +335,18 @@ class _StoriesScreenState extends State<StoriesScreen> {
     if (!mounted || selected == null) {
       return;
     }
+    final formatChanged = selected.format != _selectedFormat;
     final categoryChanged = selected.category != _selectedCategory;
     final countryChanged = !_sameCountryFilter(
       selected.country,
       _selectedCountry,
     );
     final cityChanged = !_sameCityFilter(selected.city, _selectedCity);
-    if (!categoryChanged && !countryChanged && !cityChanged) {
+    if (!formatChanged && !categoryChanged && !countryChanged && !cityChanged) {
       return;
     }
     setState(() {
+      _selectedFormat = selected.format;
       _selectedCategory = selected.category;
       _selectedCountry = selected.country;
       _selectedCity = selected.city;
@@ -244,10 +355,13 @@ class _StoriesScreenState extends State<StoriesScreen> {
   }
 
   Future<int> _loadStoriesPreviewCount({
+    required String? format,
     required String? category,
     required AppCountryFilterValue? country,
     required AppCityFilterValue? city,
   }) async {
+    final trimmedFormat = format?.trim() ?? '';
+    final formats = trimmedFormat.isEmpty ? null : <String>[trimmedFormat];
     final trimmedCategory = category?.trim() ?? '';
     final categories = trimmedCategory.isEmpty
         ? null
@@ -255,14 +369,17 @@ class _StoriesScreenState extends State<StoriesScreen> {
     final page = widget.myOnly
         ? await _api.listMyStoriesPage(
             search: _searchQuery,
+            formats: formats,
             categories: categories,
             countryCode: country?.countryCode,
             cityId: city?.cityId,
             sort: _sortQueryParam,
+            status: _myStatusFilter,
             limit: 1,
           )
         : await _api.listStoriesPage(
             search: _searchQuery,
+            formats: formats,
             categories: categories,
             countryCode: country?.countryCode,
             cityId: city?.cityId,
@@ -287,6 +404,30 @@ class _StoriesScreenState extends State<StoriesScreen> {
   }
 
   Future<void> _refresh() => _loadStories(showLoader: false);
+
+  Future<void> _resetFilters() async {
+    _searchDebounce?.cancel();
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _searchQuery = '';
+      _searchController.clear();
+      _selectedFormat = null;
+      _selectedCategory = null;
+      _selectedCountry = null;
+      _selectedCity = null;
+    });
+    await _loadStories(showLoader: false, page: 1);
+  }
+
+  void _handleMyStatusSelected(_MyStoryStatusTab status) {
+    if (!widget.myOnly || _selectedMyStatus == status) {
+      return;
+    }
+    setState(() {
+      _selectedMyStatus = status;
+    });
+    _loadStories(showLoader: false, page: 1);
+  }
 
   void _handleSortSelected(String value) {
     if (_sort == value) {
@@ -336,17 +477,31 @@ class _StoriesScreenState extends State<StoriesScreen> {
   }
 
   void _upsertStory(StoryVm story) {
-    if (!story.isPublished || !_matchesActiveFilters(story)) {
+    if (!_matchesActiveStatus(story) || !_matchesActiveFilters(story)) {
       return;
     }
     setState(() {
+      final existed = _stories.any((item) => item.id == story.id);
       final next = _stories
           .where((item) => item.id != story.id)
           .toList(growable: true);
       next.insert(0, story);
       next.sort((a, b) => b.sortDate.compareTo(a.sortDate));
-      _stories = next;
+      _stories = next.take(_pageSize).toList(growable: false);
+      if (!existed) {
+        _totalStories += 1;
+      }
+      final limit = _pageLimit <= 0 ? _pageSize : _pageLimit;
+      _hasNextPage = _totalStories > _currentPage * limit;
     });
+  }
+
+  bool _matchesActiveStatus(StoryVm story) {
+    final status = story.status.trim().toUpperCase();
+    if (widget.myOnly) {
+      return status == _selectedMyStatus.status;
+    }
+    return status == 'PUBLISHED';
   }
 
   bool _matchesActiveFilters(StoryVm story) {
@@ -362,6 +517,11 @@ class _StoriesScreenState extends State<StoriesScreen> {
     if ((_selectedCategory ?? '').trim().isNotEmpty &&
         story.category.trim().toUpperCase() !=
             _selectedCategory!.trim().toUpperCase()) {
+      return false;
+    }
+    if ((_selectedFormat ?? '').trim().isNotEmpty &&
+        story.format.trim().toUpperCase() !=
+            _selectedFormat!.trim().toUpperCase()) {
       return false;
     }
     final selectedCountry = _selectedCountry;
@@ -486,7 +646,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
       Localizations.localeOf(context),
     );
     final isLoggedIn = auth.state == AuthState.authenticated;
-    final totalPages = _hasNextPage ? _currentPage + 1 : _currentPage;
+    final totalPages = _totalPages;
 
     return Scaffold(
       key: _scaffoldKey,
@@ -565,8 +725,10 @@ class _StoriesScreenState extends State<StoriesScreen> {
                             _StoriesSearchBar(
                               controller: _searchController,
                               hint: l10n.storySearchHint,
+                              compactHint: l10n.storySearchCompactHint,
                               filterTooltip: l10n.storyFiltersTitle,
                               activeFilterCount:
+                                  (_selectedFormat == null ? 0 : 1) +
                                   (_selectedCategory == null ? 0 : 1) +
                                   (_selectedCountry == null ? 0 : 1) +
                                   (_selectedCity == null ? 0 : 1),
@@ -578,6 +740,13 @@ class _StoriesScreenState extends State<StoriesScreen> {
                               sortDirection: _sortDirection,
                               onSortSelected: _handleSortSelected,
                             ),
+                            if (widget.myOnly) ...[
+                              SizedBox(height: adaptive.scale(18)),
+                              _MyStoriesStatusTabs(
+                                selected: _selectedMyStatus,
+                                onSelected: _handleMyStatusSelected,
+                              ),
+                            ],
                             SizedBox(height: adaptive.scale(18)),
                             if (_isLoading)
                               const _StoriesLoadingState()
@@ -589,8 +758,13 @@ class _StoriesScreenState extends State<StoriesScreen> {
                               )
                             else if (_stories.isEmpty)
                               _StoriesEmptyState(
-                                title: l10n.storyEmptyTitle,
-                                subtitle: l10n.storyEmptySubtitle,
+                                title: _emptyTitle(l10n, isLoggedIn),
+                                subtitle: _emptySubtitle(l10n, isLoggedIn),
+                                actionLabel: _emptyActionLabel(
+                                  l10n,
+                                  isLoggedIn,
+                                ),
+                                onAction: _emptyAction(isLoggedIn),
                               )
                             else ...[
                               if (_isRefreshing)
@@ -634,12 +808,117 @@ class _StoriesScreenState extends State<StoriesScreen> {
       ),
     );
   }
+
+  String _emptyTitle(AppLocalizations l10n, bool isLoggedIn) {
+    if (_hasActiveFilters) {
+      return l10n.storyFilteredEmptyTitle;
+    }
+    if (widget.myOnly) {
+      switch (_selectedMyStatus) {
+        case _MyStoryStatusTab.drafts:
+          return l10n.myStoriesDraftEmptyTitle;
+        case _MyStoryStatusTab.published:
+          return l10n.myStoriesPublishedEmptyTitle;
+        case _MyStoryStatusTab.archived:
+          return l10n.myStoriesArchivedEmptyTitle;
+      }
+    }
+    return l10n.storyEmptyTitle;
+  }
+
+  String _emptySubtitle(AppLocalizations l10n, bool isLoggedIn) {
+    if (_hasActiveFilters) {
+      return l10n.storyFilteredEmptySubtitle;
+    }
+    if (widget.myOnly) {
+      switch (_selectedMyStatus) {
+        case _MyStoryStatusTab.drafts:
+          return l10n.myStoriesDraftEmptySubtitle;
+        case _MyStoryStatusTab.published:
+          return l10n.myStoriesPublishedEmptySubtitle;
+        case _MyStoryStatusTab.archived:
+          return l10n.myStoriesArchivedEmptySubtitle;
+      }
+    }
+    return isLoggedIn
+        ? l10n.storyEmptyAuthenticatedSubtitle
+        : l10n.storyEmptySubtitle;
+  }
+
+  String? _emptyActionLabel(AppLocalizations l10n, bool isLoggedIn) {
+    if (_hasActiveFilters) {
+      return l10n.storyResetFiltersAction;
+    }
+    if (widget.myOnly && _selectedMyStatus == _MyStoryStatusTab.drafts) {
+      return l10n.myStoriesCreateDraftAction;
+    }
+    if (!widget.myOnly && _authorIdFilter == null) {
+      return isLoggedIn ? l10n.storyCreateFirst : l10n.storyLoginCreateAction;
+    }
+    return null;
+  }
+
+  VoidCallback? _emptyAction(bool isLoggedIn) {
+    if (_hasActiveFilters) {
+      return () => unawaited(_resetFilters());
+    }
+    if (widget.myOnly && _selectedMyStatus == _MyStoryStatusTab.drafts) {
+      return () => unawaited(_openCreateStory());
+    }
+    if (!widget.myOnly && _authorIdFilter == null) {
+      return () => unawaited(_openCreateStory());
+    }
+    return null;
+  }
+}
+
+class _MyStoriesStatusTabs extends StatelessWidget {
+  const _MyStoriesStatusTabs({
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final _MyStoryStatusTab selected;
+  final ValueChanged<_MyStoryStatusTab> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final adaptive = StoryAdaptive.of(context);
+
+    return Wrap(
+      spacing: adaptive.scale(8),
+      runSpacing: adaptive.scale(8),
+      children: [
+        for (final tab in _MyStoryStatusTab.values)
+          ChoiceChip(
+            label: Text(tab.label(l10n)),
+            selected: selected == tab,
+            onSelected: (_) => onSelected(tab),
+            selectedColor: AppColors.accent,
+            backgroundColor: const Color(0xFF2A1D13),
+            showCheckmark: false,
+            side: BorderSide(
+              color: selected == tab ? AppColors.accent : Colors.transparent,
+            ),
+            labelStyle: TextStyle(
+              color: selected == tab ? Colors.white : const Color(0xFFCBB8A3),
+              fontWeight: FontWeight.w800,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(adaptive.radius(999)),
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 class _StoriesSearchBar extends StatelessWidget {
   const _StoriesSearchBar({
     required this.controller,
     required this.hint,
+    required this.compactHint,
     required this.filterTooltip,
     required this.activeFilterCount,
     required this.onFilterTap,
@@ -647,19 +926,25 @@ class _StoriesSearchBar extends StatelessWidget {
 
   final TextEditingController controller;
   final String hint;
+  final String compactHint;
   final String filterTooltip;
   final int activeFilterCount;
   final VoidCallback onFilterTap;
 
   @override
   Widget build(BuildContext context) {
-    return AppListSearchField(
-      controller: controller,
-      hintText: hint,
-      filterTooltip: filterTooltip,
-      activeFilterCount: activeFilterCount,
-      showClearButton: true,
-      onFilterTap: onFilterTap,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final effectiveHint = constraints.maxWidth < 390 ? compactHint : hint;
+        return AppListSearchField(
+          controller: controller,
+          hintText: effectiveHint,
+          filterTooltip: filterTooltip,
+          activeFilterCount: activeFilterCount,
+          showClearButton: true,
+          onFilterTap: onFilterTap,
+        );
+      },
     );
   }
 }
@@ -704,32 +989,50 @@ class _StoriesSortRow extends StatelessWidget {
           ),
           SizedBox(width: adaptive.scale(18)),
           for (final item in items) ...[
-            GestureDetector(
+            Semantics(
+              button: true,
+              selected: selectedSort == item.$1,
+              label: item.$2,
               onTap: () => onSortSelected(item.$1),
-              behavior: HitTestBehavior.opaque,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    item.$2,
-                    style: TextStyle(
-                      color: selectedSort == item.$1
-                          ? AppColors.accent
-                          : const Color(0xFFA98D74),
-                      fontSize: adaptive.scale(12),
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.4,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => onSortSelected(item.$1),
+                  borderRadius: BorderRadius.circular(adaptive.radius(999)),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: adaptive.scale(40)),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: adaptive.scale(2),
+                        vertical: adaptive.scale(10),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            item.$2,
+                            style: TextStyle(
+                              color: selectedSort == item.$1
+                                  ? AppColors.accent
+                                  : const Color(0xFFA98D74),
+                              fontSize: adaptive.scale(12),
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.4,
+                            ),
+                          ),
+                          if (selectedSort == item.$1) ...[
+                            SizedBox(width: adaptive.scale(5, minFactor: 0.72)),
+                            Icon(
+                              directionIcon,
+                              color: AppColors.accent,
+                              size: adaptive.scale(14, minFactor: 0.82),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   ),
-                  if (selectedSort == item.$1) ...[
-                    SizedBox(width: adaptive.scale(5, minFactor: 0.72)),
-                    Icon(
-                      directionIcon,
-                      color: AppColors.accent,
-                      size: adaptive.scale(14, minFactor: 0.82),
-                    ),
-                  ],
-                ],
+                ),
               ),
             ),
             SizedBox(width: adaptive.scale(22)),
@@ -749,111 +1052,224 @@ class _StoryListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final publishedLabel = formatStoryDate(
+      context,
+      story.publishedAt ?? story.createdAt,
+    );
     final imageHeight = adaptive.isVeryNarrow
         ? adaptive.scale(214, maxFactor: 1.0)
         : adaptive.scale(236, maxFactor: 1.04);
 
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      container: true,
+      label: story.title,
       onTap: onTap,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: imageHeight,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(adaptive.radius(42)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.35),
-                  blurRadius: adaptive.scale(30),
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                StoryCoverImage(url: story.coverUrl),
-                Positioned(
-                  left: adaptive.scale(14),
-                  top: adaptive.scale(14),
-                  child: _LocationTag(
-                    label: (story.placeName ?? '').trim().isEmpty
-                        ? formatStoryCategory(
-                            AppLocalizations.of(context)!,
-                            story.category,
-                          )
-                        : story.placeName!.trim(),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: imageHeight,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(adaptive.radius(42)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    blurRadius: adaptive.scale(30),
+                    offset: const Offset(0, 10),
                   ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: adaptive.scale(18)),
-          Text(
-            story.title,
-            maxLines: adaptive.isNarrow ? 3 : 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: const Color(0xFFFFFAF5),
-              fontSize: adaptive.scale(adaptive.isNarrow ? 23 : 26),
-              height: 1.08,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -1.1,
-            ),
-          ),
-          SizedBox(height: adaptive.scale(16)),
-          Row(
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    StoryAvatar(
-                      label: story.author.initials,
-                      imageUrl: story.author.avatarUrl,
-                      size: adaptive.scale(36),
-                    ),
-                    SizedBox(width: adaptive.scale(12)),
-                    Expanded(
-                      child: Text(
-                        story.author.preferredName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: const Color(0xFFD7C5B2),
-                          fontSize: adaptive.scale(15),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                ],
               ),
-              SizedBox(width: adaptive.scale(14)),
-              Row(
-                mainAxisSize: MainAxisSize.min,
+              clipBehavior: Clip.antiAlias,
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  Icon(
-                    Icons.remove_red_eye_outlined,
-                    color: StoryPalette.textMuted,
-                    size: adaptive.scale(16),
+                  StoryCoverImage(url: story.coverUrl),
+                  Positioned(
+                    left: adaptive.scale(14),
+                    top: adaptive.scale(14),
+                    child: _LocationTag(
+                      label: (story.placeName ?? '').trim().isEmpty
+                          ? formatStoryCategory(l10n, story.category)
+                          : story.placeName!.trim(),
+                    ),
                   ),
-                  SizedBox(width: adaptive.scale(6)),
-                  Text(
-                    '${formatStoryCountCompact(story.stats.views)} ${AppLocalizations.of(context)!.storyViewsSuffix}',
-                    style: TextStyle(
-                      color: StoryPalette.textMuted,
-                      fontSize: adaptive.scale(15),
-                      fontWeight: FontWeight.w500,
+                  Positioned(
+                    right: adaptive.scale(14),
+                    top: adaptive.scale(14),
+                    child: _FormatTag(
+                      label: formatStoryFormat(l10n, story.format),
                     ),
                   ),
                 ],
               ),
-            ],
+            ),
+            SizedBox(height: adaptive.scale(18)),
+            Text(
+              story.title,
+              maxLines: adaptive.isNarrow ? 3 : 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: const Color(0xFFFFFAF5),
+                fontSize: adaptive.scale(adaptive.isNarrow ? 23 : 26),
+                height: 1.08,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0,
+              ),
+            ),
+            SizedBox(height: adaptive.scale(10)),
+            Wrap(
+              spacing: adaptive.scale(8),
+              runSpacing: adaptive.scale(8),
+              children: [
+                _StoryMetaChip(
+                  icon: Icons.auto_stories_outlined,
+                  label: formatStoryFormat(l10n, story.format),
+                ),
+                _StoryMetaChip(
+                  icon: Icons.category_outlined,
+                  label: formatStoryCategory(l10n, story.category),
+                ),
+                if (publishedLabel.trim().isNotEmpty)
+                  _StoryMetaChip(
+                    icon: Icons.calendar_month_outlined,
+                    label: publishedLabel,
+                  ),
+              ],
+            ),
+            SizedBox(height: adaptive.scale(16)),
+            Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      StoryAvatar(
+                        label: story.author.initials,
+                        imageUrl: story.author.avatarUrl,
+                        size: adaptive.scale(36),
+                      ),
+                      SizedBox(width: adaptive.scale(12)),
+                      Expanded(
+                        child: Text(
+                          story.author.preferredName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: const Color(0xFFD7C5B2),
+                            fontSize: adaptive.scale(15),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: adaptive.scale(14)),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.remove_red_eye_outlined,
+                      color: StoryPalette.textMuted,
+                      size: adaptive.scale(16),
+                    ),
+                    SizedBox(width: adaptive.scale(6)),
+                    Text(
+                      '${formatStoryCountCompact(story.stats.views)} ${l10n.storyViewsSuffix}',
+                      style: TextStyle(
+                        color: StoryPalette.textMuted,
+                        fontSize: adaptive.scale(15),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StoryMetaChip extends StatelessWidget {
+  const _StoryMetaChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final adaptive = StoryAdaptive.of(context);
+
+    return Container(
+      constraints: BoxConstraints(maxWidth: adaptive.scale(210)),
+      padding: EdgeInsets.symmetric(
+        horizontal: adaptive.scale(10),
+        vertical: adaptive.scale(7),
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(adaptive.radius(999)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: AppColors.accent, size: adaptive.scale(14)),
+          SizedBox(width: adaptive.scale(6)),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: StoryPalette.textMuted,
+                fontSize: adaptive.scale(13),
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0,
+              ),
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _FormatTag extends StatelessWidget {
+  const _FormatTag({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final adaptive = StoryAdaptive.of(context);
+    return Container(
+      constraints: BoxConstraints(maxWidth: adaptive.scale(150)),
+      padding: EdgeInsets.symmetric(
+        horizontal: adaptive.scale(12),
+        vertical: adaptive.scale(8),
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.accent.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(adaptive.radius(999)),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: adaptive.scale(11),
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.6,
+        ),
       ),
     );
   }
@@ -986,10 +1402,17 @@ class _StoriesErrorState extends StatelessWidget {
 }
 
 class _StoriesEmptyState extends StatelessWidget {
-  const _StoriesEmptyState({required this.title, required this.subtitle});
+  const _StoriesEmptyState({
+    required this.title,
+    required this.subtitle,
+    this.actionLabel,
+    this.onAction,
+  });
 
   final String title;
   final String subtitle;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -1035,6 +1458,28 @@ class _StoriesEmptyState extends StatelessWidget {
               height: 1.45,
             ),
           ),
+          if (actionLabel != null && onAction != null) ...[
+            SizedBox(height: adaptive.scale(18)),
+            ElevatedButton(
+              onPressed: onAction,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                foregroundColor: const Color(0xFF211306),
+                padding: EdgeInsets.symmetric(
+                  horizontal: adaptive.scale(20),
+                  vertical: adaptive.scale(14),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(adaptive.radius(999)),
+                ),
+              ),
+              child: Text(
+                actionLabel!,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1043,11 +1488,13 @@ class _StoriesEmptyState extends StatelessWidget {
 
 class _StoryFiltersResult {
   const _StoryFiltersResult({
+    required this.format,
     required this.category,
     required this.country,
     required this.city,
   });
 
+  final String? format;
   final String? category;
   final AppCountryFilterValue? country;
   final AppCityFilterValue? city;
@@ -1055,6 +1502,7 @@ class _StoryFiltersResult {
 
 typedef _StoryFiltersPreviewCountLoader =
     Future<int> Function({
+      required String? format,
       required String? category,
       required AppCountryFilterValue? country,
       required AppCityFilterValue? city,
@@ -1062,6 +1510,7 @@ typedef _StoryFiltersPreviewCountLoader =
 
 class _StoryFiltersSheet extends StatefulWidget {
   const _StoryFiltersSheet({
+    required this.initialFormat,
     required this.initialCategory,
     required this.initialCountry,
     required this.initialCity,
@@ -1069,6 +1518,7 @@ class _StoryFiltersSheet extends StatefulWidget {
     required this.previewCountLoader,
   });
 
+  final String? initialFormat;
   final String? initialCategory;
   final AppCountryFilterValue? initialCountry;
   final AppCityFilterValue? initialCity;
@@ -1080,6 +1530,14 @@ class _StoryFiltersSheet extends StatefulWidget {
 }
 
 class _StoryFiltersSheetState extends State<_StoryFiltersSheet> {
+  static const _formatOptions = <String?>[
+    null,
+    'STORY',
+    'GUIDE',
+    'PHOTO_ESSAY',
+    'ARTICLE',
+    'CULINARY',
+  ];
   static const _categoryOptions = <String?>[
     null,
     'JOURNAL',
@@ -1088,6 +1546,7 @@ class _StoryFiltersSheetState extends State<_StoryFiltersSheet> {
     'CULINARY',
   ];
 
+  String? _selectedFormat;
   String? _selectedCategory;
   AppCountryFilterValue? _selectedCountry;
   AppCityFilterValue? _selectedCity;
@@ -1098,10 +1557,19 @@ class _StoryFiltersSheetState extends State<_StoryFiltersSheet> {
   @override
   void initState() {
     super.initState();
+    _selectedFormat = widget.initialFormat;
     _selectedCategory = widget.initialCategory;
     _selectedCountry = widget.initialCountry;
     _selectedCity = widget.initialCity;
     _previewCount = widget.previewCount;
+    _loadPreviewCount();
+  }
+
+  void _selectFormat(String? format) {
+    if (_selectedFormat == format) {
+      return;
+    }
+    setState(() => _selectedFormat = format);
     _loadPreviewCount();
   }
 
@@ -1136,6 +1604,7 @@ class _StoryFiltersSheetState extends State<_StoryFiltersSheet> {
 
   void _clearAll() {
     setState(() {
+      _selectedFormat = null;
       _selectedCategory = null;
       _selectedCountry = null;
       _selectedCity = null;
@@ -1148,6 +1617,7 @@ class _StoryFiltersSheetState extends State<_StoryFiltersSheet> {
     setState(() => _isPreviewLoading = true);
     try {
       final count = await widget.previewCountLoader(
+        format: _selectedFormat,
         category: _selectedCategory,
         country: _selectedCountry,
         city: _selectedCity,
@@ -1204,6 +1674,7 @@ class _StoryFiltersSheetState extends State<_StoryFiltersSheet> {
       onApply: () {
         Navigator.of(context).pop(
           _StoryFiltersResult(
+            format: _selectedFormat,
             category: _selectedCategory,
             country: _selectedCountry,
             city: _selectedCity,
@@ -1215,22 +1686,171 @@ class _StoryFiltersSheetState extends State<_StoryFiltersSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _ActiveFiltersSummary(
+            title: l10n.storyFiltersActiveSummary,
+            formatLabel: _selectedFormat == null
+                ? l10n.storyFilterAll
+                : formatStoryFormat(l10n, _selectedFormat!),
+            categoryLabel: _selectedCategory == null
+                ? l10n.storyFilterAll
+                : formatStoryCategory(l10n, _selectedCategory!),
+            countryLabel: (_selectedCountry?.fallbackLabel ?? '').trim().isEmpty
+                ? l10n.storyFilterCountryAll
+                : _selectedCountry!.fallbackLabel,
+            cityLabel: (_selectedCity?.fallbackLabel ?? '').trim().isEmpty
+                ? l10n.locationFilterAllCities
+                : _selectedCity!.fallbackLabel,
+          ),
+          SizedBox(height: adaptive.scale(18)),
           _buildCountrySection(l10n, adaptive),
-          if (_selectedCountry != null) ...[
-            SizedBox(height: adaptive.scale(18)),
-            _buildCitySection(l10n, adaptive),
-          ],
+          SizedBox(height: adaptive.scale(18)),
+          _buildCitySection(l10n, adaptive),
+          SizedBox(height: adaptive.scale(18)),
+          _FilterSectionTitle(label: l10n.storyFilterFormat),
+          SizedBox(height: adaptive.scale(10)),
+          _FilterFormatGrid(
+            options: _formatOptions,
+            selectedFormat: _selectedFormat,
+            labelFor: (option) => option == null
+                ? l10n.storyFilterAll
+                : formatStoryFormat(l10n, option),
+            onSelected: _selectFormat,
+          ),
           SizedBox(height: adaptive.scale(18)),
           _FilterSectionTitle(label: l10n.storyFilterCategory),
-          SizedBox(height: adaptive.scale(8)),
-          for (final option in _categoryOptions)
-            _FilterOptionTile(
-              label: option == null
-                  ? l10n.storyFilterAll
-                  : formatStoryCategory(l10n, option),
-              selected: _selectedCategory == option,
-              onTap: () => _selectCategory(option),
+          SizedBox(height: adaptive.scale(10)),
+          _FilterCategoryGrid(
+            options: _categoryOptions,
+            selectedCategory: _selectedCategory,
+            labelFor: (option) => option == null
+                ? l10n.storyFilterAll
+                : formatStoryCategory(l10n, option),
+            onSelected: _selectCategory,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActiveFiltersSummary extends StatelessWidget {
+  const _ActiveFiltersSummary({
+    required this.title,
+    required this.formatLabel,
+    required this.categoryLabel,
+    required this.countryLabel,
+    required this.cityLabel,
+  });
+
+  final String title;
+  final String formatLabel;
+  final String categoryLabel;
+  final String countryLabel;
+  final String cityLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final adaptive = StoryAdaptive.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.accent.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(adaptive.radius(20)),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.16)),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(adaptive.scale(14)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.tune_rounded,
+                  color: AppColors.accent,
+                  size: adaptive.scale(18),
+                ),
+                SizedBox(width: adaptive.scale(8)),
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: adaptive.scale(13),
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
             ),
+            SizedBox(height: adaptive.scale(10)),
+            Wrap(
+              spacing: adaptive.scale(8),
+              runSpacing: adaptive.scale(8),
+              children: [
+                _ActiveFilterChip(
+                  icon: Icons.auto_stories_outlined,
+                  label: formatLabel,
+                ),
+                _ActiveFilterChip(
+                  icon: Icons.category_outlined,
+                  label: categoryLabel,
+                ),
+                _ActiveFilterChip(
+                  icon: Icons.public_rounded,
+                  label: countryLabel,
+                ),
+                _ActiveFilterChip(
+                  icon: Icons.location_city_outlined,
+                  label: cityLabel,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActiveFilterChip extends StatelessWidget {
+  const _ActiveFilterChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final adaptive = StoryAdaptive.of(context);
+    return Container(
+      constraints: BoxConstraints(maxWidth: adaptive.scale(230)),
+      padding: EdgeInsets.symmetric(
+        horizontal: adaptive.scale(10),
+        vertical: adaptive.scale(7),
+      ),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(adaptive.radius(999)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: adaptive.scale(14), color: AppColors.accent),
+          SizedBox(width: adaptive.scale(6)),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: adaptive.scale(12),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -1343,14 +1963,108 @@ class _FilterSheet extends StatelessWidget {
   }
 }
 
-class _FilterOptionTile extends StatelessWidget {
-  const _FilterOptionTile({
+class _FilterFormatGrid extends StatelessWidget {
+  const _FilterFormatGrid({
+    required this.options,
+    required this.selectedFormat,
+    required this.labelFor,
+    required this.onSelected,
+  });
+
+  final List<String?> options;
+  final String? selectedFormat;
+  final String Function(String? option) labelFor;
+  final ValueChanged<String?> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final adaptive = StoryAdaptive.of(context);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final spacing = adaptive.scale(8);
+        final fullWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+        final useTwoColumns = fullWidth >= adaptive.scale(330);
+        final itemWidth = useTwoColumns ? (fullWidth - spacing) / 2 : fullWidth;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            for (final option in options)
+              SizedBox(
+                width: itemWidth,
+                child: _FilterOptionCard(
+                  label: labelFor(option),
+                  icon: _formatFilterIcon(option),
+                  selected: selectedFormat == option,
+                  onTap: () => onSelected(option),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _FilterCategoryGrid extends StatelessWidget {
+  const _FilterCategoryGrid({
+    required this.options,
+    required this.selectedCategory,
+    required this.labelFor,
+    required this.onSelected,
+  });
+
+  final List<String?> options;
+  final String? selectedCategory;
+  final String Function(String? option) labelFor;
+  final ValueChanged<String?> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final adaptive = StoryAdaptive.of(context);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final spacing = adaptive.scale(8);
+        final fullWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+        final useTwoColumns = fullWidth >= adaptive.scale(330);
+        final itemWidth = useTwoColumns ? (fullWidth - spacing) / 2 : fullWidth;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            for (final option in options)
+              SizedBox(
+                width: itemWidth,
+                child: _FilterOptionCard(
+                  label: labelFor(option),
+                  icon: _categoryFilterIcon(option),
+                  selected: selectedCategory == option,
+                  onTap: () => onSelected(option),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _FilterOptionCard extends StatelessWidget {
+  const _FilterOptionCard({
     required this.label,
+    required this.icon,
     required this.selected,
     required this.onTap,
   });
 
   final String label;
+  final IconData icon;
   final bool selected;
   final VoidCallback onTap;
 
@@ -1362,29 +2076,59 @@ class _FilterOptionTile extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(adaptive.radius(18)),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            vertical: adaptive.scale(14),
-            horizontal: adaptive.scale(2),
+        child: Ink(
+          padding: EdgeInsets.all(adaptive.scale(12)),
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.accent.withValues(alpha: 0.14)
+                : Colors.white.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(adaptive.radius(18)),
+            border: Border.all(
+              color: selected
+                  ? AppColors.accent.withValues(alpha: 0.40)
+                  : Colors.white.withValues(alpha: 0.08),
+            ),
           ),
           child: Row(
             children: [
+              Container(
+                width: adaptive.scale(34),
+                height: adaptive.scale(34),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? AppColors.accent.withValues(alpha: 0.18)
+                      : Colors.black.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(adaptive.radius(12)),
+                ),
+                child: Icon(
+                  icon,
+                  color: selected ? AppColors.accent : StoryPalette.textSoft,
+                  size: adaptive.scale(18),
+                ),
+              ),
+              SizedBox(width: adaptive.scale(10)),
               Expanded(
                 child: Text(
                   label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: selected ? AppColors.accent : StoryPalette.textSoft,
-                    fontSize: adaptive.scale(15),
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected
+                        ? AppColors.textPrimary
+                        : StoryPalette.textSoft,
+                    fontSize: adaptive.scale(14),
+                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                   ),
                 ),
               ),
               Icon(
-                selected ? Icons.check_circle_rounded : Icons.circle_outlined,
+                selected
+                    ? Icons.check_circle_rounded
+                    : Icons.add_circle_outline,
                 color: selected
                     ? AppColors.accent
                     : Colors.white.withValues(alpha: 0.24),
-                size: adaptive.scale(20),
+                size: adaptive.scale(19),
               ),
             ],
           ),
@@ -1392,6 +2136,27 @@ class _FilterOptionTile extends StatelessWidget {
       ),
     );
   }
+}
+
+IconData _categoryFilterIcon(String? category) {
+  return switch ((category ?? '').trim()) {
+    'GUIDE' => Icons.map_outlined,
+    'PHOTO_ESSAY' => Icons.photo_library_outlined,
+    'CULINARY' => Icons.restaurant_menu_rounded,
+    'JOURNAL' || '' => Icons.auto_stories_outlined,
+    _ => Icons.category_outlined,
+  };
+}
+
+IconData _formatFilterIcon(String? format) {
+  return switch ((format ?? '').trim()) {
+    'GUIDE' => Icons.map_outlined,
+    'PHOTO_ESSAY' => Icons.photo_library_outlined,
+    'ARTICLE' => Icons.article_outlined,
+    'CULINARY' => Icons.restaurant_menu_rounded,
+    'STORY' || '' => Icons.auto_stories_outlined,
+    _ => Icons.dashboard_customize_outlined,
+  };
 }
 
 class _FilterSectionTitle extends StatelessWidget {
@@ -1510,28 +2275,34 @@ class _StoriesNavButton extends StatelessWidget {
     final color = active ? AppColors.accent : const Color(0xFFC7B19B);
 
     return Expanded(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: adaptive.scale(8)),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: color, size: adaptive.scale(22)),
-                SizedBox(height: adaptive.scale(5)),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: adaptive.scale(11),
-                    fontWeight: FontWeight.w600,
+      child: Semantics(
+        button: true,
+        selected: active,
+        label: label,
+        onTap: onTap,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: adaptive.scale(8)),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, color: color, size: adaptive.scale(22)),
+                  SizedBox(height: adaptive.scale(5)),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: adaptive.scale(11),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

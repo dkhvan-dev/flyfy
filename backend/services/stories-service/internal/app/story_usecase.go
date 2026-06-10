@@ -1,7 +1,10 @@
 package app
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"sort"
@@ -25,6 +28,7 @@ const (
 	maxTagChars          = 32
 	defaultListLimit     = 20
 	maxListLimit         = 100
+	defaultRelatedLimit  = 3
 	defaultCommentLimit  = 20
 	commentCreateWindow  = 3 * time.Hour
 )
@@ -67,22 +71,49 @@ type StoryDetail struct {
 }
 
 type CreateStoryInput struct {
-	Title            string
-	Content          string
-	Category         enum.StoryCategory
-	Status           enum.StoryStatus
-	CoverFileID      *uuid.UUID
-	PlaceName        *string
-	PlaceCountryCode *string
-	PlaceCityID      *string
-	Tags             []string
+	Title               string
+	Content             string
+	Format              enum.StoryFormat
+	ContentBlocks       json.RawMessage
+	Category            enum.StoryCategory
+	Status              enum.StoryStatus
+	PublishIntent       bool
+	AllowArchivedStatus bool
+	Revision            int64
+	CoverFileID         *uuid.UUID
+	PlaceName           *string
+	PlaceCountryCode    *string
+	PlaceCityID         *string
+	Tags                []string
 }
 
-type UpdateStoryInput = CreateStoryInput
+type UpdateStoryInput struct {
+	Title               *string
+	Content             *string
+	Format              *enum.StoryFormat
+	ContentBlocks       *json.RawMessage
+	Category            *enum.StoryCategory
+	Status              *enum.StoryStatus
+	PublishIntent       bool
+	AllowArchivedStatus bool
+	Revision            int64
+	CoverFileID         *uuid.UUID
+	CoverFileIDSet      bool
+	PlaceName           *string
+	PlaceNameSet        bool
+	PlaceCountryCode    *string
+	PlaceCountryCodeSet bool
+	PlaceCityID         *string
+	PlaceCityIDSet      bool
+	Tags                []string
+	TagsSet             bool
+}
 
 type ListStoriesInput struct {
 	Search      string
+	Format      []string
 	Category    []string
+	Status      string
 	Place       string
 	CountryCode string
 	CityID      string
@@ -113,13 +144,14 @@ func (u *StoryUseCase) CreateStory(ctx context.Context, subject string, input Cr
 		return nil, err
 	}
 
-	story, err := normalizeStoryInput(input)
+	storyID := uuid.New()
+	story, err := normalizeStoryInput(storyID, input)
 	if err != nil {
 		return nil, err
 	}
 
 	now := time.Now().UTC()
-	story.ID = uuid.New()
+	story.ID = storyID
 	story.AuthorUserID = authorUserID
 	story.Slug = buildStorySlug(story.Title, story.ID)
 	story.CreatedAt = now
@@ -137,52 +169,35 @@ func (u *StoryUseCase) CreateStory(ctx context.Context, subject string, input Cr
 }
 
 func (u *StoryUseCase) UpdateStory(ctx context.Context, subject string, storyID uuid.UUID, input UpdateStoryInput) (*StoryView, error) {
-	actorUserID, err := u.requireUserID(ctx, subject)
-	if err != nil {
-		return nil, err
-	}
-	if storyID == uuid.Nil {
-		return nil, ErrInvalidStoryID
-	}
+	return u.updateOwnedStory(ctx, subject, storyID, input.Revision, func(*model.Story) (UpdateStoryInput, error) {
+		return input, nil
+	}, nil)
+}
 
-	existing, err := u.repo.GetStoryByID(ctx, storyID)
-	if err != nil {
-		return nil, fmt.Errorf("get story: %w", err)
-	}
-	if existing == nil || existing.DeletedAt != nil {
-		return nil, ErrStoryNotFound
-	}
-	if !existing.IsOwnedBy(actorUserID) {
-		return nil, ErrStoryAccessDenied
-	}
+func (u *StoryUseCase) AutosaveStory(ctx context.Context, subject string, storyID uuid.UUID, input UpdateStoryInput) (*StoryView, error) {
+	return u.updateOwnedStory(ctx, subject, storyID, input.Revision, func(existing *model.Story) (UpdateStoryInput, error) {
+		return input, nil
+	}, func(story *model.Story, now time.Time) {
+		story.LastAutosavedAt = &now
+	})
+}
 
-	next, err := normalizeStoryInput(input)
-	if err != nil {
-		return nil, err
-	}
+func (u *StoryUseCase) PublishStory(ctx context.Context, subject string, storyID uuid.UUID, revision int64) (*StoryView, error) {
+	return u.updateOwnedStory(ctx, subject, storyID, revision, func(existing *model.Story) (UpdateStoryInput, error) {
+		status := enum.StoryStatusPublished
+		input := UpdateStoryInput{Status: &status}
+		input.PublishIntent = true
+		return input, nil
+	}, nil)
+}
 
-	existing.Title = next.Title
-	existing.Excerpt = next.Excerpt
-	existing.Content = next.Content
-	existing.Category = next.Category
-	existing.Status = next.Status
-	existing.CoverFileID = next.CoverFileID
-	existing.PlaceName = next.PlaceName
-	existing.PlaceCountryCode = next.PlaceCountryCode
-	existing.PlaceCityID = next.PlaceCityID
-	existing.Tags = next.Tags
-	existing.Slug = buildStorySlug(next.Title, existing.ID)
-	existing.UpdatedAt = time.Now().UTC()
-	if existing.Status == enum.StoryStatusPublished && existing.PublishedAt == nil {
-		now := time.Now().UTC()
-		existing.PublishedAt = &now
-	}
-
-	if err = u.repo.UpdateStory(ctx, existing); err != nil {
-		return nil, fmt.Errorf("update story: %w", err)
-	}
-
-	return u.GetStoryByID(ctx, subject, storyID)
+func (u *StoryUseCase) ArchiveStory(ctx context.Context, subject string, storyID uuid.UUID, revision int64) (*StoryView, error) {
+	return u.updateOwnedStory(ctx, subject, storyID, revision, func(existing *model.Story) (UpdateStoryInput, error) {
+		status := enum.StoryStatusArchived
+		return UpdateStoryInput{Status: &status, AllowArchivedStatus: true}, nil
+	}, func(story *model.Story, now time.Time) {
+		story.ArchivedAt = &now
+	})
 }
 
 func (u *StoryUseCase) DeleteStory(ctx context.Context, subject string, storyID uuid.UUID) error {
@@ -218,7 +233,7 @@ func (u *StoryUseCase) GetStoryByID(ctx context.Context, subject string, storyID
 	if story == nil || story.DeletedAt != nil {
 		return nil, ErrStoryNotFound
 	}
-	if !story.IsPublished() && (viewerUserID == nil || !story.IsOwnedBy(*viewerUserID)) {
+	if !story.IsPubliclyVisible() && (viewerUserID == nil || !story.IsOwnedBy(*viewerUserID)) {
 		return nil, ErrStoryNotFound
 	}
 
@@ -238,7 +253,7 @@ func (u *StoryUseCase) GetStoryBySlug(ctx context.Context, slug string, subject 
 	if err != nil {
 		return nil, fmt.Errorf("get story by slug: %w", err)
 	}
-	if story == nil || !story.IsPublished() {
+	if story == nil || !story.IsPubliclyVisible() {
 		return nil, ErrStoryNotFound
 	}
 
@@ -255,14 +270,7 @@ func (u *StoryUseCase) GetStoryBySlug(ctx context.Context, slug string, subject 
 		return nil, ErrStoryNotFound
 	}
 
-	relatedStories, err := u.repo.ListStories(ctx, model.StoryListFilter{
-		Categories:     []enum.StoryCategory{story.Category},
-		ExcludeStoryID: &story.ID,
-		OnlyPublished:  true,
-		Limit:          3,
-		Offset:         0,
-		Sort:           "popular",
-	})
+	relatedStories, err := u.repo.ListStories(ctx, relatedStoriesFilterFor(story))
 	if err != nil {
 		return nil, fmt.Errorf("list related stories: %w", err)
 	}
@@ -308,6 +316,61 @@ func (u *StoryUseCase) ListStories(ctx context.Context, subject string, input Li
 	return u.buildStoryViews(ctx, items, viewerUserID)
 }
 
+func (u *StoryUseCase) CountStories(ctx context.Context, subject string, input ListStoriesInput) (int, error) {
+	viewerUserID, err := u.optionalUserID(ctx, subject)
+	if err != nil {
+		return 0, err
+	}
+
+	filter, err := u.normalizeListInput(input, viewerUserID)
+	if err != nil {
+		return 0, err
+	}
+
+	count, err := u.repo.CountStories(ctx, filter)
+	if err != nil {
+		return 0, fmt.Errorf("count stories: %w", err)
+	}
+	return count, nil
+}
+
+func relatedStoriesFilterFor(story *model.Story) model.StoryListFilter {
+	if story == nil {
+		return model.StoryListFilter{
+			OnlyPublished: true,
+			Limit:         defaultRelatedLimit,
+			Sort:          "popular_desc",
+		}
+	}
+
+	filter := model.StoryListFilter{
+		ExcludeStoryID: &story.ID,
+		OnlyPublished:  true,
+		Limit:          defaultRelatedLimit,
+		Offset:         0,
+		Sort:           "related",
+		RelatedToCountry: strings.ToUpper(
+			strings.TrimSpace(derefString(story.PlaceCountryCode)),
+		),
+		RelatedToCityID: strings.TrimSpace(derefString(story.PlaceCityID)),
+		RelatedToTags:   sanitizeRelatedTags(story.Tags),
+	}
+	if story.AuthorUserID != uuid.Nil {
+		filter.RelatedToAuthor = &story.AuthorUserID
+	}
+
+	format := enum.NormalizeStoryFormat(story.Format)
+	if format.IsValid() {
+		filter.RelatedToFormat = &format
+	}
+	if story.Category.IsValid() {
+		category := story.Category
+		filter.RelatedToCategory = &category
+	}
+
+	return filter
+}
+
 func (u *StoryUseCase) CountPublishedStoriesByAuthorID(ctx context.Context, authorUserID uuid.UUID) (int, error) {
 	if authorUserID == uuid.Nil {
 		return 0, ErrInvalidStoryAuthorID
@@ -334,7 +397,7 @@ func (u *StoryUseCase) TrackStoryView(ctx context.Context, subject string, story
 	if err != nil {
 		return 0, fmt.Errorf("get story for view: %w", err)
 	}
-	if story == nil || !story.IsPublished() {
+	if story == nil || !story.IsPubliclyVisible() {
 		return 0, ErrStoryNotFound
 	}
 	if story.IsOwnedBy(viewerUserID) {
@@ -362,7 +425,7 @@ func (u *StoryUseCase) LikeStory(ctx context.Context, subject string, storyID uu
 	if err != nil {
 		return 0, fmt.Errorf("get story for like: %w", err)
 	}
-	if story == nil || !story.IsPublished() {
+	if story == nil || !story.IsPubliclyVisible() {
 		return 0, ErrStoryNotFound
 	}
 
@@ -387,7 +450,7 @@ func (u *StoryUseCase) UnlikeStory(ctx context.Context, subject string, storyID 
 	if err != nil {
 		return 0, fmt.Errorf("get story for unlike: %w", err)
 	}
-	if story == nil || !story.IsPublished() {
+	if story == nil || !story.IsPubliclyVisible() {
 		return 0, ErrStoryNotFound
 	}
 
@@ -416,7 +479,7 @@ func (u *StoryUseCase) ListComments(ctx context.Context, subject string, storyID
 	if story == nil || story.DeletedAt != nil {
 		return nil, ErrStoryNotFound
 	}
-	if !story.IsPublished() && (viewerUserID == nil || !story.IsOwnedBy(*viewerUserID)) {
+	if !story.IsPubliclyVisible() && (viewerUserID == nil || !story.IsOwnedBy(*viewerUserID)) {
 		return nil, ErrStoryNotFound
 	}
 
@@ -448,7 +511,7 @@ func (u *StoryUseCase) CreateComment(ctx context.Context, subject string, storyI
 	if err != nil {
 		return nil, fmt.Errorf("get story for comment: %w", err)
 	}
-	if story == nil || !story.IsPublished() {
+	if story == nil || !story.IsPubliclyVisible() {
 		return nil, ErrStoryNotFound
 	}
 
@@ -587,7 +650,7 @@ func (u *StoryUseCase) LikeComment(ctx context.Context, subject string, storyID 
 	if err != nil {
 		return 0, false, fmt.Errorf("get story for comment like: %w", err)
 	}
-	if story == nil || !story.IsPublished() {
+	if story == nil || !story.IsPubliclyVisible() {
 		return 0, false, ErrStoryNotFound
 	}
 
@@ -623,7 +686,7 @@ func (u *StoryUseCase) UnlikeComment(ctx context.Context, subject string, storyI
 	if err != nil {
 		return 0, false, fmt.Errorf("get story for comment unlike: %w", err)
 	}
-	if story == nil || !story.IsPublished() {
+	if story == nil || !story.IsPubliclyVisible() {
 		return 0, false, ErrStoryNotFound
 	}
 
@@ -652,7 +715,7 @@ func (u *StoryUseCase) ShareStory(ctx context.Context, storyID uuid.UUID) (strin
 	if err != nil {
 		return "", 0, fmt.Errorf("get story for share: %w", err)
 	}
-	if story == nil || !story.IsPublished() {
+	if story == nil || !story.IsPubliclyVisible() {
 		return "", 0, ErrStoryNotFound
 	}
 
@@ -710,6 +773,18 @@ func (u *StoryUseCase) normalizeListInput(input ListStoriesInput, viewerUserID *
 		filter.Sort = "latest_desc"
 	}
 
+	filter.Formats = make([]enum.StoryFormat, 0, len(input.Format))
+	for _, raw := range input.Format {
+		format := enum.NormalizeStoryFormat(enum.StoryFormat(raw))
+		if strings.TrimSpace(raw) == "" {
+			continue
+		}
+		if !format.IsValid() {
+			return model.StoryListFilter{}, ErrInvalidStoryFormat
+		}
+		filter.Formats = append(filter.Formats, format)
+	}
+
 	filter.Categories = make([]enum.StoryCategory, 0, len(input.Category))
 	for _, raw := range input.Category {
 		category := enum.StoryCategory(strings.ToUpper(strings.TrimSpace(raw)))
@@ -729,9 +804,176 @@ func (u *StoryUseCase) normalizeListInput(input ListStoriesInput, viewerUserID *
 		filter.AuthorUserID = viewerUserID
 		filter.IncludeDrafts = true
 		filter.OnlyPublished = false
+		filter.ExcludeArchived = true
+	}
+
+	switch strings.ToUpper(strings.TrimSpace(input.Status)) {
+	case "":
+	case "ARCHIVED":
+		filter.ArchivedOnly = true
+		filter.ExcludeArchived = false
+		if input.IncludeMine {
+			filter.OnlyPublished = false
+		}
+	case string(enum.StoryStatusDraft):
+		status := enum.StoryStatusDraft
+		filter.Status = &status
+		if input.IncludeMine {
+			filter.OnlyPublished = false
+		}
+	case string(enum.StoryStatusPublished):
+		status := enum.StoryStatusPublished
+		filter.Status = &status
+	default:
+		return model.StoryListFilter{}, ErrInvalidStoryStatus
 	}
 
 	return filter, nil
+}
+
+func (u *StoryUseCase) updateOwnedStory(
+	ctx context.Context,
+	subject string,
+	storyID uuid.UUID,
+	revision int64,
+	inputForExisting func(*model.Story) (UpdateStoryInput, error),
+	mutate func(*model.Story, time.Time),
+) (*StoryView, error) {
+	actorUserID, err := u.requireUserID(ctx, subject)
+	if err != nil {
+		return nil, err
+	}
+	if storyID == uuid.Nil {
+		return nil, ErrInvalidStoryID
+	}
+
+	existing, err := u.repo.GetStoryByID(ctx, storyID)
+	if err != nil {
+		return nil, fmt.Errorf("get story: %w", err)
+	}
+	if existing == nil || existing.DeletedAt != nil {
+		return nil, ErrStoryNotFound
+	}
+	if !existing.IsOwnedBy(actorUserID) {
+		return nil, ErrStoryAccessDenied
+	}
+	if revision <= 0 {
+		return nil, ErrStoryRevisionConflict
+	}
+
+	input, err := inputForExisting(existing)
+	if err != nil {
+		return nil, err
+	}
+	input.Revision = revision
+
+	mergedInput := mergeStoryUpdateInput(existing, input)
+	next, err := normalizeStoryInput(existing.ID, mergedInput)
+	if err != nil {
+		return nil, err
+	}
+
+	applyStoryUpdate(existing, next, revision, existing.ModerationStatus)
+	now := time.Now().UTC()
+	existing.UpdatedAt = now
+	if mutate != nil {
+		mutate(existing, now)
+	}
+	if existing.Status == enum.StoryStatusPublished && existing.PublishedAt == nil {
+		existing.PublishedAt = &now
+	}
+
+	if err = u.repo.UpdateStory(ctx, existing); err != nil {
+		if errors.Is(err, port.ErrStoryRevisionConflict) {
+			return nil, ErrStoryRevisionConflict
+		}
+		return nil, fmt.Errorf("update story: %w", err)
+	}
+
+	return u.GetStoryByID(ctx, subject, storyID)
+}
+
+func applyStoryUpdate(existing *model.Story, next *model.Story, revision int64, moderationStatus enum.ModerationStatus) {
+	existing.Title = next.Title
+	existing.Excerpt = next.Excerpt
+	existing.Content = next.Content
+	existing.Format = next.Format
+	existing.ContentSchemaVersion = next.ContentSchemaVersion
+	existing.ContentBlocks = next.ContentBlocks
+	existing.ContentPlainText = next.ContentPlainText
+	existing.Category = next.Category
+	existing.Status = next.Status
+	existing.Revision = revision
+	existing.ModerationStatus = moderationStatus
+	existing.CoverFileID = next.CoverFileID
+	existing.PlaceName = next.PlaceName
+	existing.PlaceCountryCode = next.PlaceCountryCode
+	existing.PlaceCityID = next.PlaceCityID
+	existing.Tags = next.Tags
+	existing.Slug = buildStorySlug(next.Title, existing.ID)
+}
+
+func storyInputFromExisting(story *model.Story) CreateStoryInput {
+	if story == nil {
+		return CreateStoryInput{}
+	}
+	return CreateStoryInput{
+		Title:            story.Title,
+		Content:          story.Content,
+		Format:           story.Format,
+		ContentBlocks:    append(json.RawMessage(nil), story.ContentBlocks...),
+		Category:         story.Category,
+		Status:           story.Status,
+		CoverFileID:      story.CoverFileID,
+		PlaceName:        story.PlaceName,
+		PlaceCountryCode: story.PlaceCountryCode,
+		PlaceCityID:      story.PlaceCityID,
+		Tags:             append([]string(nil), story.Tags...),
+	}
+}
+
+func mergeStoryUpdateInput(story *model.Story, input UpdateStoryInput) CreateStoryInput {
+	merged := storyInputFromExisting(story)
+	if input.Title != nil {
+		merged.Title = *input.Title
+	}
+	if input.Content != nil {
+		merged.Content = *input.Content
+		if input.ContentBlocks == nil {
+			merged.ContentBlocks = nil
+		}
+	}
+	if input.Format != nil {
+		merged.Format = *input.Format
+	}
+	if input.ContentBlocks != nil {
+		merged.ContentBlocks = append(json.RawMessage(nil), (*input.ContentBlocks)...)
+	}
+	if input.Category != nil {
+		merged.Category = *input.Category
+	}
+	if input.Status != nil {
+		merged.Status = *input.Status
+	}
+	merged.PublishIntent = input.PublishIntent
+	merged.AllowArchivedStatus = input.AllowArchivedStatus
+	merged.Revision = input.Revision
+	if input.CoverFileIDSet {
+		merged.CoverFileID = input.CoverFileID
+	}
+	if input.PlaceNameSet {
+		merged.PlaceName = input.PlaceName
+	}
+	if input.PlaceCountryCodeSet {
+		merged.PlaceCountryCode = input.PlaceCountryCode
+	}
+	if input.PlaceCityIDSet {
+		merged.PlaceCityID = input.PlaceCityID
+	}
+	if input.TagsSet {
+		merged.Tags = append([]string(nil), input.Tags...)
+	}
+	return merged
 }
 
 func normalizePlaceFilters(raw string) (placeQuery string, placeCountryCode string) {
@@ -761,14 +1003,19 @@ func looksLikeCountryCode(value string) bool {
 	return true
 }
 
-func normalizeStoryInput(input CreateStoryInput) (*model.Story, error) {
+func normalizeStoryInput(storyID uuid.UUID, input CreateStoryInput) (*model.Story, error) {
 	title := strings.TrimSpace(input.Title)
-	if title == "" || utf8.RuneCountInString(title) > maxStoryTitleChars {
+	if utf8.RuneCountInString(title) > maxStoryTitleChars {
 		return nil, ErrInvalidStoryTitle
 	}
 
+	format := enum.NormalizeStoryFormat(input.Format)
+	if !format.IsValid() {
+		return nil, ErrInvalidStoryContent
+	}
+
 	category := enum.StoryCategory(strings.ToUpper(strings.TrimSpace(string(input.Category))))
-	if !category.IsValid() {
+	if category != "" && !category.IsValid() {
 		return nil, ErrInvalidStoryCategory
 	}
 
@@ -776,26 +1023,36 @@ func normalizeStoryInput(input CreateStoryInput) (*model.Story, error) {
 	if status == "" {
 		status = enum.StoryStatusDraft
 	}
+	if input.PublishIntent {
+		status = enum.StoryStatusPublished
+	}
 	if !status.IsValid() {
 		return nil, ErrInvalidStoryStatus
 	}
+	if status == enum.StoryStatusArchived && !input.AllowArchivedStatus {
+		return nil, ErrInvalidStoryStatus
+	}
 
-	content := strings.TrimSpace(input.Content)
-	visibleContent := visibleStoryContent(content)
-	if utf8.RuneCountInString(visibleContent) > maxStoryContentChars {
+	document, contentBlocks, err := normalizeStoryDocumentInput(storyID, input.ContentBlocks, input.Content)
+	if err != nil {
 		return nil, ErrInvalidStoryContent
 	}
-	if status == enum.StoryStatusPublished && visibleContent == "" {
+
+	contentPlainText := strings.TrimSpace(document.PlainText())
+	content := strings.TrimSpace(document.LegacyContent())
+	hasPublishableContent := !document.IsEmptyForPublish()
+	if utf8.RuneCountInString(visibleStoryContent(content)) > maxStoryContentChars {
+		return nil, ErrInvalidStoryContent
+	}
+	if status != enum.StoryStatusPublished && title == "" && !hasPublishableContent {
 		return nil, ErrInvalidStoryContent
 	}
 
 	placeName := trimOptionalString(input.PlaceName)
-	if status == enum.StoryStatusPublished && placeName == nil {
-		return nil, ErrInvalidStoryPlace
-	}
-
-	if status == enum.StoryStatusPublished && input.CoverFileID == nil {
-		return nil, ErrInvalidStoryCover
+	if status == enum.StoryStatusPublished {
+		if err := validatePublishableStory(title, category, placeName, input.CoverFileID, hasPublishableContent); err != nil {
+			return nil, err
+		}
 	}
 
 	tags, err := sanitizeTags(input.Tags)
@@ -804,17 +1061,104 @@ func normalizeStoryInput(input CreateStoryInput) (*model.Story, error) {
 	}
 
 	return &model.Story{
-		Title:            title,
-		Excerpt:          buildExcerpt(content, title),
-		Content:          content,
-		Category:         category,
-		Status:           status,
-		CoverFileID:      input.CoverFileID,
-		PlaceName:        placeName,
-		PlaceCountryCode: trimOptionalString(input.PlaceCountryCode),
-		PlaceCityID:      trimOptionalString(input.PlaceCityID),
-		Tags:             tags,
+		Title:                title,
+		Excerpt:              buildExcerpt(content, title),
+		Content:              content,
+		Format:               format,
+		ContentSchemaVersion: model.StoryDocumentVersion,
+		ContentBlocks:        contentBlocks,
+		ContentPlainText:     contentPlainText,
+		Category:             category,
+		Status:               status,
+		ModerationStatus:     enum.ModerationStatusNotRequired,
+		Revision:             1,
+		CoverFileID:          input.CoverFileID,
+		PlaceName:            placeName,
+		PlaceCountryCode:     trimOptionalString(input.PlaceCountryCode),
+		PlaceCityID:          trimOptionalString(input.PlaceCityID),
+		Tags:                 tags,
 	}, nil
+}
+
+func validatePublishableStory(
+	title string,
+	category enum.StoryCategory,
+	placeName *string,
+	coverFileID *uuid.UUID,
+	hasPublishableContent bool,
+) error {
+	fields := make(map[string]string, 5)
+	causes := make([]error, 0, 5)
+	if title == "" {
+		fields["title"] = "required_for_publish"
+		causes = append(causes, ErrInvalidStoryTitle)
+	}
+	if !category.IsValid() {
+		fields["category"] = "required_for_publish"
+		causes = append(causes, ErrInvalidStoryCategory)
+	}
+	if placeName == nil {
+		fields["placeName"] = "required_for_publish"
+		causes = append(causes, ErrInvalidStoryPlace)
+	}
+	if coverFileID == nil {
+		fields["coverFileId"] = "required_for_publish"
+		causes = append(causes, ErrInvalidStoryCover)
+	}
+	if !hasPublishableContent {
+		fields["contentBlocks"] = "required_for_publish"
+		causes = append(causes, ErrInvalidStoryContent)
+	}
+	if len(fields) == 0 {
+		return nil
+	}
+	return NewStoryValidationError(fields, causes...)
+}
+
+func normalizeStoryDocumentInput(
+	storyID uuid.UUID,
+	contentBlocks json.RawMessage,
+	legacyContent string,
+) (model.StoryDocument, json.RawMessage, error) {
+	var document model.StoryDocument
+
+	if len(contentBlocks) > 0 {
+		trimmedContentBlocks := bytes.TrimSpace(contentBlocks)
+		if len(trimmedContentBlocks) > 0 && trimmedContentBlocks[0] == '[' {
+			var blocks []model.StoryBlock
+			if err := json.Unmarshal(trimmedContentBlocks, &blocks); err != nil {
+				return model.StoryDocument{}, nil, err
+			}
+			document = model.StoryDocument{
+				Version: model.StoryDocumentVersion,
+				Blocks:  blocks,
+			}
+		} else {
+			if err := json.Unmarshal(trimmedContentBlocks, &document); err != nil {
+				return model.StoryDocument{}, nil, err
+			}
+		}
+		if err := document.Validate(); err != nil {
+			return model.StoryDocument{}, nil, err
+		}
+		normalizedContentBlocks, err := marshalStoryDocument(document)
+		return document, normalizedContentBlocks, err
+	}
+
+	document, err := LegacyStoryContentToDocument(storyID, legacyContent)
+	if err != nil {
+		return model.StoryDocument{}, nil, err
+	}
+	normalizedContentBlocks, err := marshalStoryDocument(document)
+	return document, normalizedContentBlocks, err
+}
+
+func marshalStoryDocument(document model.StoryDocument) (json.RawMessage, error) {
+	data, err := json.Marshal(document)
+	if err != nil {
+		return nil, err
+	}
+	return json.RawMessage(data), nil
 }
 
 func normalizeCountryCode(raw string) string {
@@ -859,6 +1203,36 @@ func sanitizeTags(tags []string) ([]string, error) {
 	}
 
 	return result, nil
+}
+
+func sanitizeRelatedTags(tags []string) []string {
+	if len(tags) == 0 {
+		return nil
+	}
+	seen := make(map[string]struct{}, len(tags))
+	result := make([]string, 0, len(tags))
+	for _, tag := range tags {
+		normalized := strings.ToLower(strings.TrimSpace(tag))
+		if normalized == "" {
+			continue
+		}
+		if _, exists := seen[normalized]; exists {
+			continue
+		}
+		seen[normalized] = struct{}{}
+		result = append(result, normalized)
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
+}
+
+func derefString(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
 }
 
 func buildExcerpt(content string, title string) string {

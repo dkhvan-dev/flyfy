@@ -11,6 +11,7 @@ class StoryApi {
 
   Future<StoryListPage> listStoriesPage({
     String? search,
+    List<String>? formats,
     List<String>? categories,
     String? place,
     String? countryCode,
@@ -26,40 +27,32 @@ class StoryApi {
       '/stories',
       queryParameters: {
         if ((search ?? '').trim().isNotEmpty) 'search': search!.trim(),
-        if (categories != null && categories.isNotEmpty)
-          'category': categories.join(','),
+        if (_normalizedCsvOrNull(formats) != null)
+          'format': _normalizedCsvOrNull(formats),
+        if (_normalizedCsvOrNull(categories) != null)
+          'category': _normalizedCsvOrNull(categories),
         if ((place ?? '').trim().isNotEmpty) 'place': place!.trim(),
         if (_normalizeCountryCode(countryCode) != null)
           'countryCode': _normalizeCountryCode(countryCode),
         if ((cityId ?? '').trim().isNotEmpty) 'cityId': cityId!.trim(),
         if ((sort ?? '').trim().isNotEmpty) 'sort': sort!.trim(),
         if ((authorId ?? '').trim().isNotEmpty) 'authorId': authorId!.trim(),
-        'limit': pageLimit + 1,
+        'limit': pageLimit,
         'offset': pageOffset,
       },
+      options: Options(extra: const {'requiresAuth': false}),
     );
 
-    final data = response.data as Map<String, dynamic>? ?? const {};
-    final rawItems = data['items'];
-    if (rawItems is! List) {
-      return const StoryListPage(items: [], hasMore: false, total: 0);
-    }
-    final items = rawItems
-        .whereType<Map<String, dynamic>>()
-        .map(StoryVm.fromJson)
-        .toList(growable: false);
-    final hasMore = items.length > pageLimit;
-    final total = int.tryParse(data['total']?.toString() ?? '') ?? items.length;
-
-    return StoryListPage(
-      items: hasMore ? items.take(pageLimit).toList(growable: false) : items,
-      hasMore: hasMore,
-      total: total,
+    return _parseStoryListPage(
+      response.data,
+      fallbackLimit: pageLimit,
+      fallbackOffset: pageOffset,
     );
   }
 
   Future<List<StoryVm>> listStories({
     String? search,
+    List<String>? formats,
     List<String>? categories,
     String? place,
     String? countryCode,
@@ -71,6 +64,7 @@ class StoryApi {
   }) async {
     final page = await listStoriesPage(
       search: search,
+      formats: formats,
       categories: categories,
       place: place,
       countryCode: countryCode,
@@ -87,6 +81,7 @@ class StoryApi {
   Future<StoryListPage> getUserStoriesPage(
     String userId, {
     String? search,
+    List<String>? formats,
     List<String>? categories,
     String? place,
     String? countryCode,
@@ -102,6 +97,7 @@ class StoryApi {
 
     return listStoriesPage(
       search: search,
+      formats: formats,
       categories: categories,
       place: place,
       countryCode: countryCode,
@@ -129,11 +125,13 @@ class StoryApi {
 
   Future<StoryListPage> listMyStoriesPage({
     String? search,
+    List<String>? formats,
     List<String>? categories,
     String? place,
     String? countryCode,
     String? cityId,
     String? sort,
+    String? status,
     int limit = 20,
     int offset = 0,
   }) async {
@@ -143,54 +141,50 @@ class StoryApi {
       '/stories/mine',
       queryParameters: {
         if ((search ?? '').trim().isNotEmpty) 'search': search!.trim(),
-        if (categories != null && categories.isNotEmpty)
-          'category': categories.join(','),
+        if (_normalizedCsvOrNull(formats) != null)
+          'format': _normalizedCsvOrNull(formats),
+        if (_normalizedCsvOrNull(categories) != null)
+          'category': _normalizedCsvOrNull(categories),
         if ((place ?? '').trim().isNotEmpty) 'place': place!.trim(),
         if (_normalizeCountryCode(countryCode) != null)
           'countryCode': _normalizeCountryCode(countryCode),
         if ((cityId ?? '').trim().isNotEmpty) 'cityId': cityId!.trim(),
         if ((sort ?? '').trim().isNotEmpty) 'sort': sort!.trim(),
-        'limit': pageLimit + 1,
+        if ((status ?? '').trim().isNotEmpty)
+          'status': status!.trim().toUpperCase(),
+        'limit': pageLimit,
         'offset': pageOffset,
       },
     );
 
-    final data = response.data as Map<String, dynamic>? ?? const {};
-    final rawItems = data['items'];
-    if (rawItems is! List) {
-      return const StoryListPage(items: [], hasMore: false, total: 0);
-    }
-    final items = rawItems
-        .whereType<Map<String, dynamic>>()
-        .map(StoryVm.fromJson)
-        .toList(growable: false);
-    final hasMore = items.length > pageLimit;
-    final total = int.tryParse(data['total']?.toString() ?? '') ?? items.length;
-
-    return StoryListPage(
-      items: hasMore ? items.take(pageLimit).toList(growable: false) : items,
-      hasMore: hasMore,
-      total: total,
+    return _parseStoryListPage(
+      response.data,
+      fallbackLimit: pageLimit,
+      fallbackOffset: pageOffset,
     );
   }
 
   Future<List<StoryVm>> listMyStories({
     String? search,
+    List<String>? formats,
     List<String>? categories,
     String? place,
     String? countryCode,
     String? cityId,
     String? sort,
+    String? status,
     int limit = 20,
     int offset = 0,
   }) async {
     final page = await listMyStoriesPage(
       search: search,
+      formats: formats,
       categories: categories,
       place: place,
       countryCode: countryCode,
       cityId: cityId,
       sort: sort,
+      status: status,
       limit: limit,
       offset: offset,
     );
@@ -201,6 +195,7 @@ class StoryApi {
   Future<StoryDetailVm> getPublicStoryBySlug(String slug) async {
     final response = await _apiClient.dio.get(
       '/public/stories/${Uri.encodeComponent(slug)}',
+      options: Options(extra: const {'requiresAuth': false}),
     );
     return StoryDetailVm.fromJson(response.data as Map<String, dynamic>);
   }
@@ -256,6 +251,7 @@ class StoryApi {
     final response = await _apiClient.dio.get(
       '/stories/$storyId/comments',
       queryParameters: {'limit': limit, 'offset': offset},
+      options: Options(extra: const {'requiresAuth': false}),
     );
     final data = response.data as Map<String, dynamic>? ?? const {};
     final rawItems = data['items'];
@@ -321,7 +317,10 @@ class StoryApi {
   }
 
   Future<(String shareUrl, int shares)> shareStory(String storyId) async {
-    final response = await _apiClient.dio.post('/stories/$storyId/share');
+    final response = await _apiClient.dio.post(
+      '/stories/$storyId/share',
+      options: Options(extra: const {'requiresAuth': false}),
+    );
     final data = response.data as Map<String, dynamic>? ?? const {};
     return (
       data['shareUrl']?.toString() ?? '',
@@ -350,11 +349,69 @@ class StoryListPage {
     required this.items,
     required this.hasMore,
     required this.total,
+    this.limit = 0,
+    this.offset = 0,
   });
 
   final List<StoryVm> items;
   final bool hasMore;
   final int total;
+  final int limit;
+  final int offset;
+}
+
+StoryListPage _parseStoryListPage(
+  Object? responseData, {
+  required int fallbackLimit,
+  required int fallbackOffset,
+}) {
+  final data = responseData as Map<String, dynamic>? ?? const {};
+  final rawItems = data['items'];
+  if (rawItems is! List) {
+    return StoryListPage(
+      items: const [],
+      hasMore: false,
+      total: 0,
+      limit: _parseInt(data['limit']) ?? fallbackLimit,
+      offset: _parseInt(data['offset']) ?? fallbackOffset,
+    );
+  }
+
+  final parsedItems = rawItems
+      .whereType<Map<String, dynamic>>()
+      .map(StoryVm.fromJson)
+      .toList(growable: false);
+  final hasExtraLegacyItem = parsedItems.length > fallbackLimit;
+  final items = hasExtraLegacyItem
+      ? parsedItems.take(fallbackLimit).toList(growable: false)
+      : parsedItems;
+  final limit = _parseInt(data['limit']) ?? fallbackLimit;
+  final offset = _parseInt(data['offset']) ?? fallbackOffset;
+  final total = _parseInt(data['total']) ?? offset + items.length;
+  final hasMore =
+      data['hasMore'] == true ||
+      hasExtraLegacyItem ||
+      total > offset + items.length;
+
+  return StoryListPage(
+    items: items,
+    hasMore: hasMore,
+    total: total,
+    limit: limit,
+    offset: offset,
+  );
+}
+
+int? _parseInt(Object? value) {
+  return int.tryParse(value?.toString() ?? '');
+}
+
+String? _normalizedCsvOrNull(List<String>? values) {
+  final normalized = values
+      ?.map((value) => value.trim())
+      .where((value) => value.isNotEmpty)
+      .join(',');
+  return normalized == null || normalized.isEmpty ? null : normalized;
 }
 
 String? _normalizeCountryCode(String? value) {

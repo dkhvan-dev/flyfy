@@ -13,6 +13,7 @@ import (
 
 	"kz/inflap/backend/services/stories-service/internal/app"
 	"kz/inflap/backend/services/stories-service/internal/domain/enum"
+	"kz/inflap/backend/services/stories-service/internal/domain/model"
 	"kz/inflap/backend/services/stories-service/internal/transport/dto"
 )
 
@@ -62,7 +63,27 @@ func (h *Handler) ListStories(w http.ResponseWriter, r *http.Request) {
 
 	items, err := h.useCase.ListStories(r.Context(), SubjectFromContext(r.Context()), app.ListStoriesInput{
 		Search:      query.Get("search"),
+		Format:      splitCSV(query.Get("format")),
 		Category:    splitCSV(query.Get("category")),
+		Status:      query.Get("status"),
+		Place:       query.Get("place"),
+		CountryCode: query.Get("countryCode"),
+		CityID:      query.Get("cityId"),
+		AuthorID:    authorID,
+		Sort:        query.Get("sort"),
+		Limit:       limit,
+		Offset:      offset,
+	})
+	if err != nil {
+		h.writeUseCaseError(w, r, err)
+		return
+	}
+
+	total, err := h.useCase.CountStories(r.Context(), SubjectFromContext(r.Context()), app.ListStoriesInput{
+		Search:      query.Get("search"),
+		Format:      splitCSV(query.Get("format")),
+		Category:    splitCSV(query.Get("category")),
+		Status:      query.Get("status"),
 		Place:       query.Get("place"),
 		CountryCode: query.Get("countryCode"),
 		CityID:      query.Get("cityId"),
@@ -77,7 +98,11 @@ func (h *Handler) ListStories(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := &dto.StoryListResponse{
-		Items: make([]*dto.StoryResponse, 0, len(items)),
+		Items:   make([]*dto.StoryResponse, 0, len(items)),
+		Total:   total,
+		Limit:   limit,
+		Offset:  offset,
+		HasMore: offset+len(items) < total,
 	}
 	for _, item := range items {
 		resp.Items = append(resp.Items, toStoryResponse(item, false))
@@ -95,7 +120,27 @@ func (h *Handler) ListMyStories(w http.ResponseWriter, r *http.Request) {
 
 	items, err := h.useCase.ListStories(r.Context(), SubjectFromContext(r.Context()), app.ListStoriesInput{
 		Search:      query.Get("search"),
+		Format:      splitCSV(query.Get("format")),
 		Category:    splitCSV(query.Get("category")),
+		Status:      query.Get("status"),
+		Place:       query.Get("place"),
+		CountryCode: query.Get("countryCode"),
+		CityID:      query.Get("cityId"),
+		Sort:        query.Get("sort"),
+		Limit:       limit,
+		Offset:      offset,
+		IncludeMine: true,
+	})
+	if err != nil {
+		h.writeUseCaseError(w, r, err)
+		return
+	}
+
+	total, err := h.useCase.CountStories(r.Context(), SubjectFromContext(r.Context()), app.ListStoriesInput{
+		Search:      query.Get("search"),
+		Format:      splitCSV(query.Get("format")),
+		Category:    splitCSV(query.Get("category")),
+		Status:      query.Get("status"),
 		Place:       query.Get("place"),
 		CountryCode: query.Get("countryCode"),
 		CityID:      query.Get("cityId"),
@@ -110,7 +155,11 @@ func (h *Handler) ListMyStories(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := &dto.StoryListResponse{
-		Items: make([]*dto.StoryResponse, 0, len(items)),
+		Items:   make([]*dto.StoryResponse, 0, len(items)),
+		Total:   total,
+		Limit:   limit,
+		Offset:  offset,
+		HasMore: offset+len(items) < total,
 	}
 	for _, item := range items {
 		resp.Items = append(resp.Items, toStoryResponse(item, false))
@@ -135,6 +184,8 @@ func (h *Handler) CreateStory(w http.ResponseWriter, r *http.Request) {
 	item, err := h.useCase.CreateStory(r.Context(), SubjectFromContext(r.Context()), app.CreateStoryInput{
 		Title:            req.Title,
 		Content:          req.Content,
+		Format:           enum.StoryFormat(req.Format),
+		ContentBlocks:    req.ContentBlocks,
 		Category:         enum.StoryCategory(req.Category),
 		Status:           enum.StoryStatus(req.Status),
 		CoverFileID:      coverFileID,
@@ -148,6 +199,9 @@ func (h *Handler) CreateStory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if item != nil && item.Story != nil && item.Story.Status == enum.StoryStatusDraft {
+		logStoryMetric(r, storyMetricDraftCreated, item.Story.ID)
+	}
 	writeJSON(w, http.StatusCreated, toStoryResponse(item, true))
 }
 
@@ -252,6 +306,21 @@ func (h *Handler) handleStoryActions(w http.ResponseWriter, r *http.Request) {
 			h.ShareStory(w, r, storyID)
 			return
 		}
+	case "autosave":
+		if len(parts) == 2 && r.Method == http.MethodPost {
+			h.AutosaveStory(w, r, storyID)
+			return
+		}
+	case "publish":
+		if len(parts) == 2 && r.Method == http.MethodPost {
+			h.PublishStory(w, r, storyID)
+			return
+		}
+	case "archive":
+		if len(parts) == 2 && r.Method == http.MethodPost {
+			h.ArchiveStory(w, r, storyID)
+			return
+		}
 	}
 
 	writeError(w, r, http.StatusNotFound, errorCodeNotFound)
@@ -319,17 +388,65 @@ func (h *Handler) UpdateStory(w http.ResponseWriter, r *http.Request, storyID uu
 		return
 	}
 
-	item, err := h.useCase.UpdateStory(r.Context(), SubjectFromContext(r.Context()), storyID, app.UpdateStoryInput{
-		Title:            req.Title,
-		Content:          req.Content,
-		Category:         enum.StoryCategory(req.Category),
-		Status:           enum.StoryStatus(req.Status),
-		CoverFileID:      coverFileID,
-		PlaceName:        req.PlaceName,
-		PlaceCountryCode: req.PlaceCountryCode,
-		PlaceCityID:      req.PlaceCityID,
-		Tags:             req.Tags,
-	})
+	item, err := h.useCase.UpdateStory(r.Context(), SubjectFromContext(r.Context()), storyID, updateStoryInputFromRequest(req, coverFileID))
+	if err != nil {
+		logStoryUseCaseErrorMetrics(r, storyID, storyOperationPatch, err)
+		h.writeUseCaseError(w, r, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, toStoryResponse(item, true))
+}
+
+func (h *Handler) AutosaveStory(w http.ResponseWriter, r *http.Request, storyID uuid.UUID) {
+	var req dto.UpdateStoryRequest
+	if err := decodeBody(r, &req); err != nil {
+		writeError(w, r, http.StatusBadRequest, errorCodeInvalidRequestBody)
+		return
+	}
+
+	coverFileID, err := parseOptionalUUID(req.CoverFileID)
+	if err != nil {
+		writeError(w, r, http.StatusBadRequest, errorCodeInvalidCoverFileID)
+		return
+	}
+
+	item, err := h.useCase.AutosaveStory(r.Context(), SubjectFromContext(r.Context()), storyID, updateStoryInputFromRequest(req, coverFileID))
+	if err != nil {
+		logStoryUseCaseErrorMetrics(r, storyID, storyOperationAutosave, err)
+		h.writeUseCaseError(w, r, err)
+		return
+	}
+
+	logStoryAutosaveSuccess(r, storyID)
+	writeJSON(w, http.StatusOK, toStoryResponse(item, true))
+}
+
+func (h *Handler) PublishStory(w http.ResponseWriter, r *http.Request, storyID uuid.UUID) {
+	var req dto.UpdateStoryRequest
+	if err := decodeBody(r, &req); err != nil {
+		writeError(w, r, http.StatusBadRequest, errorCodeInvalidRequestBody)
+		return
+	}
+
+	item, err := h.useCase.PublishStory(r.Context(), SubjectFromContext(r.Context()), storyID, req.Revision)
+	if err != nil {
+		logStoryUseCaseErrorMetrics(r, storyID, storyOperationPublish, err)
+		h.writeUseCaseError(w, r, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, toStoryResponse(item, true))
+}
+
+func (h *Handler) ArchiveStory(w http.ResponseWriter, r *http.Request, storyID uuid.UUID) {
+	var req dto.UpdateStoryRequest
+	if err := decodeBody(r, &req); err != nil {
+		writeError(w, r, http.StatusBadRequest, errorCodeInvalidRequestBody)
+		return
+	}
+
+	item, err := h.useCase.ArchiveStory(r.Context(), SubjectFromContext(r.Context()), storyID, req.Revision)
 	if err != nil {
 		h.writeUseCaseError(w, r, err)
 		return
@@ -501,32 +618,61 @@ func toStoryResponse(item *app.StoryView, includeContent bool) *dto.StoryRespons
 		publishedAt = &v
 	}
 
+	var lastAutosavedAt *string
+	if item.Story.LastAutosavedAt != nil {
+		v := item.Story.LastAutosavedAt.UTC().Format(time.RFC3339)
+		lastAutosavedAt = &v
+	}
+
+	var archivedAt *string
+	if item.Story.ArchivedAt != nil {
+		v := item.Story.ArchivedAt.UTC().Format(time.RFC3339)
+		archivedAt = &v
+	}
+
 	return &dto.StoryResponse{
-		ID:               item.Story.ID.String(),
-		Slug:             item.Story.Slug,
-		Title:            item.Story.Title,
-		Excerpt:          item.Story.Excerpt,
-		Content:          content,
-		Category:         string(item.Story.Category),
-		Status:           string(item.Story.Status),
-		CoverFileID:      coverFileID,
-		PlaceName:        item.Story.PlaceName,
-		PlaceCountryCode: item.Story.PlaceCountryCode,
-		PlaceCityID:      item.Story.PlaceCityID,
-		Tags:             item.Story.Tags,
+		ID:                   item.Story.ID.String(),
+		Slug:                 item.Story.Slug,
+		Title:                item.Story.Title,
+		Excerpt:              item.Story.Excerpt,
+		Content:              content,
+		Format:               string(item.Story.Format),
+		ContentBlocks:        item.Story.ContentBlocks,
+		ContentSchemaVersion: item.Story.ContentSchemaVersion,
+		Revision:             item.Story.Revision,
+		Category:             string(item.Story.Category),
+		Status:               storyResponseStatus(item.Story),
+		ModerationStatus:     string(item.Story.ModerationStatus),
+		CoverFileID:          coverFileID,
+		PlaceName:            item.Story.PlaceName,
+		PlaceCountryCode:     item.Story.PlaceCountryCode,
+		PlaceCityID:          item.Story.PlaceCityID,
+		Tags:                 item.Story.Tags,
 		Stats: dto.StoryStatsResponse{
 			Views:    item.Story.ViewCount,
 			Likes:    item.Story.LikeCount,
 			Comments: item.Story.CommentCount,
 			Shares:   item.Story.ShareCount,
 		},
-		Author:        toAuthorResponse(item.Author),
-		LikedByViewer: item.LikedByViewer,
-		ShareURL:      item.ShareURL,
-		PublishedAt:   publishedAt,
-		CreatedAt:     item.Story.CreatedAt.UTC().Format(time.RFC3339),
-		UpdatedAt:     item.Story.UpdatedAt.UTC().Format(time.RFC3339),
+		Author:          toAuthorResponse(item.Author),
+		LikedByViewer:   item.LikedByViewer,
+		ShareURL:        item.ShareURL,
+		PublishedAt:     publishedAt,
+		LastAutosavedAt: lastAutosavedAt,
+		ArchivedAt:      archivedAt,
+		CreatedAt:       item.Story.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:       item.Story.UpdatedAt.UTC().Format(time.RFC3339),
 	}
+}
+
+func storyResponseStatus(story *model.Story) string {
+	if story != nil && story.ArchivedAt != nil {
+		return string(enum.StoryStatusArchived)
+	}
+	if story == nil {
+		return ""
+	}
+	return string(story.Status)
 }
 
 func toStoryCommentResponse(item *app.StoryCommentView) *dto.StoryCommentResponse {
@@ -623,6 +769,40 @@ func parseOptionalUUID(raw *string) (*uuid.UUID, error) {
 		return nil, err
 	}
 	return &parsed, nil
+}
+
+func updateStoryInputFromRequest(req dto.UpdateStoryRequest, coverFileID *uuid.UUID) app.UpdateStoryInput {
+	input := app.UpdateStoryInput{
+		Title:               req.Title,
+		Content:             req.Content,
+		ContentBlocks:       req.ContentBlocks,
+		Revision:            req.Revision,
+		CoverFileID:         coverFileID,
+		CoverFileIDSet:      req.Present["coverFileId"],
+		PlaceName:           req.PlaceName,
+		PlaceNameSet:        req.Present["placeName"],
+		PlaceCountryCode:    req.PlaceCountryCode,
+		PlaceCountryCodeSet: req.Present["placeCountryCode"],
+		PlaceCityID:         req.PlaceCityID,
+		PlaceCityIDSet:      req.Present["placeCityId"],
+	}
+	if req.Format != nil {
+		format := enum.StoryFormat(*req.Format)
+		input.Format = &format
+	}
+	if req.Category != nil {
+		category := enum.StoryCategory(*req.Category)
+		input.Category = &category
+	}
+	if req.Status != nil {
+		status := enum.StoryStatus(*req.Status)
+		input.Status = &status
+	}
+	if req.Tags != nil {
+		input.Tags = append([]string(nil), (*req.Tags)...)
+		input.TagsSet = true
+	}
+	return input
 }
 
 func decodeBody(r *http.Request, target any) error {

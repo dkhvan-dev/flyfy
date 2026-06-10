@@ -41,7 +41,7 @@ class FileApi {
       originalName: originalName,
       contentType: contentType,
       sizeBytes: sizeBytes,
-      purpose: 'ACTIVITY_MEDIA',
+      purpose: 'STORY_MEDIA',
       visibility: 'PUBLIC',
     );
   }
@@ -55,7 +55,7 @@ class FileApi {
       originalName: originalName,
       contentType: contentType,
       sizeBytes: sizeBytes,
-      purpose: 'ACTIVITY_MEDIA',
+      purpose: 'STORY_MEDIA',
       visibility: 'PUBLIC',
     );
   }
@@ -262,6 +262,15 @@ class FileApi {
       },
     );
     return FileBindingVm.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<void> releaseUnboundUpload(String fileId) async {
+    final trimmedFileId = fileId.trim();
+    if (trimmedFileId.isEmpty) {
+      throw ArgumentError.value(fileId, 'fileId', 'File id is required');
+    }
+
+    await _apiClient.dio.post<void>('/files/$trimmedFileId/release');
   }
 
   Future<List<FileBindingVm>> listMyFileBindings({

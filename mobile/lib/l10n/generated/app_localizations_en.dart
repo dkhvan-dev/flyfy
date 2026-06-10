@@ -890,7 +890,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileReviewsStat => 'Reviews';
 
   @override
-  String get profileBlogsStat => 'Blogs';
+  String get profileStoriesStat => 'Stories';
 
   @override
   String get profileFollowersStat => 'Followers';
@@ -1097,11 +1097,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileUserStoriesTitle => 'User stories';
 
   @override
-  String get profileBlogsTitle => 'Recent Blogs';
+  String get profileStoriesTitle => 'Recent stories';
 
   @override
-  String get profileBlogsUnavailable =>
-      'Public notes and travel stories are not available in the app yet.';
+  String get profileStoriesUnavailable =>
+      'Public stories and travel articles are not available in the app yet.';
 
   @override
   String get profileUnavailableTitle => 'Coming soon';
@@ -5314,10 +5314,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storySearchHint => 'Search stories, authors, or places';
 
   @override
+  String get storySearchCompactHint => 'Search stories';
+
+  @override
   String get storyFiltersTitle => 'Filters';
 
   @override
-  String get storyFilterCategory => 'Category';
+  String get storyFiltersActiveSummary => 'Selected filters';
+
+  @override
+  String get storyFilterFormat => 'Material type';
+
+  @override
+  String get storyFilterCategory => 'Theme';
 
   @override
   String get storyFilterCountry => 'Country';
@@ -5372,6 +5381,56 @@ class AppLocalizationsEn extends AppLocalizations {
       'Be the first to publish a travel note, local guide, or visual essay.';
 
   @override
+  String get storyEmptyAuthenticatedSubtitle =>
+      'Create a story, article, guide, or visual essay to start the feed.';
+
+  @override
+  String get storyFilteredEmptyTitle => 'No stories match your filters';
+
+  @override
+  String get storyFilteredEmptySubtitle =>
+      'Try a different search, country, city, or category.';
+
+  @override
+  String get storyResetFiltersAction => 'Reset filters';
+
+  @override
+  String get storyLoginCreateAction => 'Log in to create';
+
+  @override
+  String get myStoriesDraftsTab => 'Drafts';
+
+  @override
+  String get myStoriesPublishedTab => 'Published';
+
+  @override
+  String get myStoriesArchivedTab => 'Archived';
+
+  @override
+  String get myStoriesDraftEmptyTitle => 'No drafts yet';
+
+  @override
+  String get myStoriesDraftEmptySubtitle =>
+      'Save ideas as drafts before publishing them to the stories feed.';
+
+  @override
+  String get myStoriesPublishedEmptyTitle => 'No published stories yet';
+
+  @override
+  String get myStoriesPublishedEmptySubtitle =>
+      'Published stories, guides, articles, and visual essays will appear here.';
+
+  @override
+  String get myStoriesArchivedEmptyTitle => 'No archived stories yet';
+
+  @override
+  String get myStoriesArchivedEmptySubtitle =>
+      'Archived stories are kept here for history and reuse.';
+
+  @override
+  String get myStoriesCreateDraftAction => 'Create a draft';
+
+  @override
   String get storyLoadFailed => 'Failed to load stories';
 
   @override
@@ -5388,6 +5447,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storyCategoryCulinary => 'Culinary';
+
+  @override
+  String get storyFormatStory => 'Story';
+
+  @override
+  String get storyFormatGuide => 'Guide';
+
+  @override
+  String get storyFormatPhotoEssay => 'Photo Essay';
+
+  @override
+  String get storyFormatArticle => 'Article';
+
+  @override
+  String get storyFormatCulinary => 'Culinary';
 
   @override
   String get storyDetailsTitle => 'Story Details';
@@ -5620,6 +5694,493 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get storyWritersNoteBody =>
       'Try starting with a sensory detail. Instead of “I arrived in Tokyo,” describe the neon glow reflecting off the damp pavement in Shibuya.';
+
+  @override
+  String get storyEditorTitle => 'Story editor';
+
+  @override
+  String get storyEditorLoading => 'Loading story';
+
+  @override
+  String get storyEditorLoadFailed => 'Unable to load story for editing.';
+
+  @override
+  String get storyEditorEditMode => 'Edit';
+
+  @override
+  String get storyEditorPreviewMode => 'Preview';
+
+  @override
+  String get storyEditorRecoveryTitle => 'Recover unsaved draft?';
+
+  @override
+  String get storyEditorRecoveryMessage =>
+      'A local recovery copy is available for this story.';
+
+  @override
+  String get storyEditorRecoveryDiscard => 'Discard';
+
+  @override
+  String get storyEditorRecoveryRestore => 'Restore';
+
+  @override
+  String get storyEditorDiscardChangesTitle => 'Discard story changes?';
+
+  @override
+  String get storyEditorDiscardChangesMessage => 'Unsaved edits may be lost.';
+
+  @override
+  String get storyEditorKeepEditing => 'Keep editing';
+
+  @override
+  String get storyEditorMetadataTitle => 'Publication setup';
+
+  @override
+  String get storyEditorTitleFieldHint => 'A precise, searchable title';
+
+  @override
+  String get storyEditorTemplateAction => 'Templates';
+
+  @override
+  String get storyEditorTemplateSemantic => 'Choose story template';
+
+  @override
+  String get storyEditorTemplatePlaceholder => 'Choose a template';
+
+  @override
+  String get storyEditorTemplateWeekendGuide => 'Weekend guide';
+
+  @override
+  String get storyEditorTemplatePhotoEssay => 'Photo essay';
+
+  @override
+  String get storyEditorTemplateFoodNotes => 'Food notes';
+
+  @override
+  String get storyEditorTemplateCityWalk => 'City walk';
+
+  @override
+  String get storyEditorTemplateHiddenGems => 'Hidden gems';
+
+  @override
+  String get storyEditorTemplatePracticalTips => 'Practical tips';
+
+  @override
+  String get storyEditorTemplateCultureRoute => 'Culture route';
+
+  @override
+  String get storyEditorTemplateWeekendHeading => 'Weekend plan';
+
+  @override
+  String get storyEditorTemplateWeekendList =>
+      'Morning stop\nLocal food\nEvening view';
+
+  @override
+  String get storyEditorTemplatePhotoHeading => 'Photo story';
+
+  @override
+  String get storyEditorTemplateFoodHeading => 'Where to eat';
+
+  @override
+  String get storyEditorTemplateFoodParagraph =>
+      'Describe the dish, price range, and best time to visit.';
+
+  @override
+  String get storyEditorTemplateCityWalkHeading => 'Walking route';
+
+  @override
+  String get storyEditorTemplateCityWalkList =>
+      'Starting point\nMain street\nPause spot\nFinal view';
+
+  @override
+  String get storyEditorTemplateCityWalkParagraph =>
+      'Add distance, approximate timing, and the easiest way to reach the start.';
+
+  @override
+  String get storyEditorTemplateHiddenGemsHeading =>
+      'Places not everyone knows';
+
+  @override
+  String get storyEditorTemplateHiddenGemsList =>
+      'Why it is worth a stop\nWhen it is quiet\nWhat to see nearby';
+
+  @override
+  String get storyEditorTemplateHiddenGemsCallout =>
+      'Add practical details: entry, schedule, safety, cash, or reservation notes.';
+
+  @override
+  String get storyEditorTemplatePracticalTipsHeading =>
+      'Good to know before the trip';
+
+  @override
+  String get storyEditorTemplatePracticalTipsList =>
+      'When to go\nHow to get there\nBudget to plan\nWhat to bring';
+
+  @override
+  String get storyEditorTemplatePracticalTipsCallout =>
+      'Add an honest tip that saves time or helps avoid a common mistake.';
+
+  @override
+  String get storyEditorTemplateCultureRouteHeading => 'Culture route';
+
+  @override
+  String get storyEditorTemplateCultureRouteParagraph =>
+      'Explain which traditions, buildings, museums, or local stories help readers understand this place.';
+
+  @override
+  String get storyEditorTemplateCultureRouteQuote =>
+      'Add a phrase, observation, or short fact that sets the mood for the route.';
+
+  @override
+  String get storyEditorTemplateConflictTitle => 'Apply new story structure?';
+
+  @override
+  String storyEditorTemplateConflictMessage(Object format, Object category) {
+    return 'This structure suggests $format / $category. Choose how to apply it without losing your draft.';
+  }
+
+  @override
+  String get storyEditorTemplateConflictReplace => 'Replace template';
+
+  @override
+  String get storyEditorTemplateConflictReplaceDescription =>
+      'Remove untouched template blocks, keep your edited text, and add the new structure.';
+
+  @override
+  String get storyEditorTemplateConflictAppend => 'Add to current story';
+
+  @override
+  String get storyEditorTemplateConflictAppendDescription =>
+      'Keep everything and append the new structure below your current blocks.';
+
+  @override
+  String get storyEditorTemplateConflictMetadataOnly => 'Update type and topic';
+
+  @override
+  String get storyEditorTemplateConflictMetadataOnlyDescription =>
+      'Change only the content type and topic without changing blocks.';
+
+  @override
+  String get storyEditorFormatLabel => 'Content type';
+
+  @override
+  String get storyEditorPlaceLabel => 'Place';
+
+  @override
+  String get storyEditorCountryCodeLabel => 'Country code';
+
+  @override
+  String get storyEditorCountryCodeHint => 'KZ';
+
+  @override
+  String get storyEditorCityPlaceIdLabel => 'City/place id';
+
+  @override
+  String get storyEditorTagsHint => 'mountains, food, weekend';
+
+  @override
+  String get storyEditorCoverSelected => 'Cover selected';
+
+  @override
+  String get storyEditorCoverRequired => 'Cover required';
+
+  @override
+  String get storyEditorReplaceCover => 'Replace cover';
+
+  @override
+  String get storyEditorAddCover => 'Add cover';
+
+  @override
+  String get storyEditorClear => 'Clear';
+
+  @override
+  String get storyEditorToolbarAddBlock => 'Add block';
+
+  @override
+  String get storyEditorToolbarHeading => 'Heading';
+
+  @override
+  String get storyEditorToolbarBold => 'Bold';
+
+  @override
+  String get storyEditorToolbarItalic => 'Italic';
+
+  @override
+  String get storyEditorToolbarStrikethrough => 'Strikethrough';
+
+  @override
+  String get storyEditorToolbarUnderline => 'Underline';
+
+  @override
+  String get storyEditorToolbarList => 'List';
+
+  @override
+  String get storyEditorToolbarQuote => 'Quote';
+
+  @override
+  String get storyEditorToolbarImage => 'Image';
+
+  @override
+  String get storyEditorToolbarUndo => 'Undo';
+
+  @override
+  String get storyEditorToolbarRedo => 'Redo';
+
+  @override
+  String get storyEditorAddBlockTitle => 'Add block';
+
+  @override
+  String get storyEditorBlockParagraph => 'Paragraph';
+
+  @override
+  String get storyEditorBlockParagraphDescription => 'Body text for the story';
+
+  @override
+  String get storyEditorBlockHeading => 'Heading';
+
+  @override
+  String get storyEditorBlockHeadingDescription => 'Section title';
+
+  @override
+  String get storyEditorBlockList => 'List';
+
+  @override
+  String get storyEditorBlockListDescription => 'Useful tips or steps';
+
+  @override
+  String get storyEditorBlockImage => 'Image';
+
+  @override
+  String get storyEditorBlockImageDescription => 'Single media upload';
+
+  @override
+  String get storyEditorBlockGallery => 'Gallery';
+
+  @override
+  String get storyEditorBlockGalleryDescription => 'Multiple images';
+
+  @override
+  String get storyEditorBlockQuote => 'Quote';
+
+  @override
+  String get storyEditorBlockQuoteDescription => 'A highlighted sentence';
+
+  @override
+  String get storyEditorBlockCallout => 'Callout';
+
+  @override
+  String get storyEditorBlockCalloutDescription => 'Important travel note';
+
+  @override
+  String get storyEditorBlockDivider => 'Divider';
+
+  @override
+  String get storyEditorBlockDividerDescription => 'Visual section break';
+
+  @override
+  String get storyEditorBlockPlaceReference => 'Place reference';
+
+  @override
+  String get storyEditorBlockPlaceReferenceDescription =>
+      'Link a place to the story';
+
+  @override
+  String get storyEditorBlockNumberedList => 'Numbered list';
+
+  @override
+  String get storyEditorStartWithBlockTitle => 'Start with a block';
+
+  @override
+  String get storyEditorStartWithBlockSubtitle =>
+      'Add text, media, places, callouts, or dividers to shape the story.';
+
+  @override
+  String get storyEditorPlaceNameHint => 'Place name';
+
+  @override
+  String get storyEditorTextHintHeading => 'Write a clear section heading';
+
+  @override
+  String get storyEditorTextHintBulletedList => 'Add list items, one per line';
+
+  @override
+  String get storyEditorTextHintNumberedList =>
+      'Add ordered steps, one per line';
+
+  @override
+  String get storyEditorTextHintQuote => 'Add a quote or memorable line';
+
+  @override
+  String get storyEditorTextHintCallout => 'Highlight a practical tip';
+
+  @override
+  String get storyEditorTextHintParagraph => 'Write your story';
+
+  @override
+  String storyEditorDeleteBlockSemantic(Object block) {
+    return 'Delete $block block';
+  }
+
+  @override
+  String storyEditorReorderBlockSemantic(Object block) {
+    return 'Drag to reorder $block block';
+  }
+
+  @override
+  String get storyEditorPublishReadiness => 'Publish readiness';
+
+  @override
+  String get storyEditorChecklistTitle => 'Title';
+
+  @override
+  String get storyEditorChecklistFormat => 'Content type';
+
+  @override
+  String get storyEditorChecklistCategory => 'Topic';
+
+  @override
+  String get storyEditorChecklistCover => 'Cover';
+
+  @override
+  String get storyEditorChecklistPlace => 'Place';
+
+  @override
+  String get storyEditorChecklistCountry => 'Country';
+
+  @override
+  String get storyEditorChecklistContent => 'Content';
+
+  @override
+  String get storyEditorChecklistMedia => 'Media';
+
+  @override
+  String get storyEditorChecklistReady => 'Ready';
+
+  @override
+  String get storyEditorChecklistNeedsAttention => 'Needs attention';
+
+  @override
+  String get storyEditorChecklistOpen => 'Open';
+
+  @override
+  String get storyEditorConflictFallback => 'Story was changed elsewhere.';
+
+  @override
+  String get storyEditorSaveDraft => 'Save draft';
+
+  @override
+  String get storyEditorPublish => 'Publish';
+
+  @override
+  String get storyEditorPublishSemantic => 'Publish story';
+
+  @override
+  String get storyEditorAutosaveIdle => 'Idle';
+
+  @override
+  String get storyEditorAutosaveSaving => 'Saving';
+
+  @override
+  String get storyEditorAutosaveSaved => 'Saved';
+
+  @override
+  String get storyEditorAutosaveFailed => 'Needs attention';
+
+  @override
+  String get storyEditorAutosaveConflict => 'Conflict';
+
+  @override
+  String get storyEditorPublishNotReady => 'Story is not ready to publish.';
+
+  @override
+  String get storyEditorMediaRetrySemantic => 'Retry media upload';
+
+  @override
+  String get storyEditorMediaRemoveSemantic => 'Remove media upload';
+
+  @override
+  String get storyEditorMediaRetry => 'Retry';
+
+  @override
+  String get storyEditorMediaRemove => 'Remove';
+
+  @override
+  String get storyEditorMediaQueued => 'Queued for upload';
+
+  @override
+  String get storyEditorMediaUploading => 'Uploading';
+
+  @override
+  String get storyEditorMediaFailed => 'Upload failed';
+
+  @override
+  String get storyEditorMediaComplete => 'Upload complete';
+
+  @override
+  String get storyEditorMediaRemoved => 'Removed';
+
+  @override
+  String get storyEditorMediaLocalPreviewUnavailable =>
+      'Local preview unavailable. Remove and add this media again.';
+
+  @override
+  String get storyEditorMediaErrorRetryUpload => 'Retry the media upload.';
+
+  @override
+  String get storyEditorMediaErrorInterrupted =>
+      'Upload was interrupted. Retry to continue.';
+
+  @override
+  String get storyEditorMediaErrorMissingSource =>
+      'Local media source is unavailable. Remove and add this media again.';
+
+  @override
+  String get storyEditorMediaErrorUploadFailed =>
+      'Media upload failed. Please try again.';
+
+  @override
+  String get storyEditorImagePickTooLarge =>
+      'Image is too large. Choose an image up to 20 MB.';
+
+  @override
+  String get storyEditorImagePickUnsupported =>
+      'Choose a JPG, PNG, or WebP image.';
+
+  @override
+  String get storyEditorImagePickFailed =>
+      'Could not open this image. Please try another one.';
+
+  @override
+  String get storyEditorValidationTitleRequired => 'Story title is required.';
+
+  @override
+  String get storyEditorValidationFormatRequired => 'Story format is required.';
+
+  @override
+  String get storyEditorValidationCategoryRequired =>
+      'Story category is required.';
+
+  @override
+  String get storyEditorValidationCoverRequired => 'Story cover is required.';
+
+  @override
+  String get storyEditorValidationPlaceRequired => 'Story place is required.';
+
+  @override
+  String get storyEditorValidationCountryRequired =>
+      'Story country is required.';
+
+  @override
+  String get storyEditorValidationDraftRequired =>
+      'Add a title or at least one story block to save a draft.';
+
+  @override
+  String get storyEditorValidationContentRequired =>
+      'Write at least one story block before publishing.';
+
+  @override
+  String get storyEditorValidationMediaPending =>
+      'Wait until media uploads finish.';
 
   @override
   String get chatListTitle => 'Chats';

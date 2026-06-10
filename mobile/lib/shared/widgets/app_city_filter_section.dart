@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/network/reference_api.dart';
 import '../../core/ui/app_colors.dart';
+import '../reference/app_location_label_resolver.dart';
 import 'app_localized_location_text.dart';
 
 class AppCityFilterValue {
@@ -161,6 +162,7 @@ class AppCountryFilterSection extends StatefulWidget {
 
 class _AppCountryFilterSectionState extends State<AppCountryFilterSection> {
   late final ReferenceApi _api;
+  late final AppLocationLabelResolver _labelResolver;
   final TextEditingController _countrySearchController =
       TextEditingController();
   Timer? _searchDebounce;
@@ -172,6 +174,7 @@ class _AppCountryFilterSectionState extends State<AppCountryFilterSection> {
   void initState() {
     super.initState();
     _api = widget.api ?? ReferenceApi();
+    _labelResolver = AppLocationLabelResolver(api: _api);
     _countrySearchController.addListener(_handleSearchChanged);
   }
 
@@ -297,6 +300,7 @@ class _AppCountryFilterSectionState extends State<AppCountryFilterSection> {
                           cityId: null,
                           cityName: null,
                           fallbackText: selectedCountry.fallbackLabel,
+                          resolver: _labelResolver,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -459,6 +463,7 @@ class AppCityFilterSection extends StatefulWidget {
 
 class _AppCityFilterSectionState extends State<AppCityFilterSection> {
   late final ReferenceApi _api;
+  late final AppLocationLabelResolver _labelResolver;
   final TextEditingController _citySearchController = TextEditingController();
   Timer? _searchDebounce;
   List<ReferenceCity> _visibleCities = const [];
@@ -469,6 +474,7 @@ class _AppCityFilterSectionState extends State<AppCityFilterSection> {
   void initState() {
     super.initState();
     _api = widget.api ?? ReferenceApi();
+    _labelResolver = AppLocationLabelResolver(api: _api);
     _citySearchController.addListener(_handleSearchChanged);
   }
 
@@ -596,6 +602,7 @@ class _AppCityFilterSectionState extends State<AppCityFilterSection> {
                           cityId: selectedCity.cityId,
                           cityName: selectedCity.cityName,
                           fallbackText: selectedCity.fallbackLabel,
+                          resolver: _labelResolver,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(

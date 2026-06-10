@@ -24,6 +24,7 @@ import (
 	s3storage "kz/inflap/backend/services/file-manager-service/internal/adapter/storage/s3"
 	"kz/inflap/backend/services/file-manager-service/internal/app"
 	"kz/inflap/backend/services/file-manager-service/internal/config"
+	"kz/inflap/backend/services/file-manager-service/internal/domain/enum"
 	"kz/inflap/backend/services/file-manager-service/internal/domain/port"
 	filev1 "kz/inflap/proto/gen/go/file/v1"
 )
@@ -108,6 +109,14 @@ func main() {
 
 	cleanupWorker := app.NewIdempotencyCleanupWorker(cleanupRepo, time.Hour, 1000)
 	go cleanupWorker.Start(ctx)
+
+	expiredStoryMediaWorker := app.NewExpiredUploadCleanupWorker(
+		fileUseCase,
+		enum.FilePurposeStoryMedia,
+		time.Hour,
+		100,
+	)
+	go expiredStoryMediaWorker.Start(ctx)
 
 	go func() {
 		log.Info().

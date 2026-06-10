@@ -48,6 +48,15 @@ func DefaultUploadPolicies(globalMaxSize int64) UploadPolicies {
 				"image/jpeg", "image/png", "image/webp",
 			),
 		},
+		enum.FilePurposeStoryMedia: {
+			MaxSizeBytes: 20 * 1024 * 1024,
+			AllowedExtensions: setOf(
+				"jpg", "jpeg", "png", "webp",
+			),
+			AllowedContentTypes: setOf(
+				"image/jpeg", "image/png", "image/webp",
+			),
+		},
 		enum.FilePurposeExcursionMedia: {
 			MaxSizeBytes: 20 * 1024 * 1024,
 			AllowedExtensions: setOf(

@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -29,6 +30,8 @@ type FileUseCase struct {
 	fraud       port.FraudEvaluator
 	trustPolicy port.TrustPolicyClient
 }
+
+const expiredUnboundUploadRetention = 24 * time.Hour
 
 func NewFileUseCase(
 	repo port.FileRepository,
@@ -572,6 +575,92 @@ func (u *FileUseCase) SoftDelete(ctx context.Context, fileID uuid.UUID) error {
 	}
 
 	return nil
+}
+
+func (u *FileUseCase) ReleaseUnboundUpload(ctx context.Context, fileID uuid.UUID, userID string) error {
+	if fileID == uuid.Nil {
+		return ErrInvalidFileID
+	}
+
+	actorUserID, err := uuid.Parse(strings.TrimSpace(userID))
+	if err != nil || actorUserID == uuid.Nil {
+		return ErrInvalidOwnerID
+	}
+
+	file, err := u.repo.GetByID(ctx, fileID)
+	if err != nil {
+		return fmt.Errorf("get file by id: %w", err)
+	}
+	if file == nil || file.IsDeleted {
+		return ErrFileNotFound
+	}
+	if file.UploadedByUserID == nil || *file.UploadedByUserID != actorUserID {
+		return ErrFileOwnershipMismatch
+	}
+
+	hasBinding, err := u.repo.HasActiveBinding(ctx, fileID)
+	if err != nil {
+		return fmt.Errorf("check active file binding: %w", err)
+	}
+	if hasBinding {
+		return ErrFileAlreadyBound
+	}
+
+	deleted, err := u.repo.SoftDeleteUnbound(ctx, fileID)
+	if err != nil {
+		return fmt.Errorf("soft delete unbound file: %w", err)
+	}
+	if !deleted {
+		return ErrFileAlreadyBound
+	}
+
+	if err = u.storage.DeleteObject(ctx, file.Bucket, file.ObjectKey); err != nil {
+		return fmt.Errorf("delete released object: %w", err)
+	}
+
+	return nil
+}
+
+func (u *FileUseCase) CleanupExpiredUnboundUploads(
+	ctx context.Context,
+	purpose enum.FilePurpose,
+	limit int,
+) (int, error) {
+	if !purpose.IsValid() {
+		return 0, ErrForbiddenPurpose
+	}
+	if limit <= 0 {
+		limit = 100
+	}
+
+	expiredBefore := time.Now().UTC().Add(-expiredUnboundUploadRetention)
+	files, err := u.repo.ListExpiredUnboundUploads(ctx, purpose, expiredBefore, limit)
+	if err != nil {
+		return 0, fmt.Errorf("list expired unbound uploads: %w", err)
+	}
+
+	deleted := 0
+	var cleanupErrors []error
+	for _, file := range files {
+		if file == nil || file.ID == uuid.Nil || file.IsDeleted {
+			continue
+		}
+		softDeleted, err := u.repo.SoftDeleteUnbound(ctx, file.ID)
+		if err != nil {
+			cleanupErrors = append(cleanupErrors, fmt.Errorf("soft delete expired file %s: %w", file.ID, err))
+			continue
+		}
+		if !softDeleted {
+			continue
+		}
+		if err = u.storage.DeleteObject(ctx, file.Bucket, file.ObjectKey); err != nil {
+			cleanupErrors = append(cleanupErrors, fmt.Errorf("delete expired object %s: %w", file.ID, err))
+			continue
+		}
+		deleted++
+	}
+
+	return deleted, errors.Join(cleanupErrors...)
 }
 
 func buildObjectKey(purpose enum.FilePurpose, originalName string) string {

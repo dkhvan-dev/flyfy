@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -267,4 +268,121 @@ func (r *PGFileRepository) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	}
 
 	return nil
+}
+
+func (r *PGFileRepository) SoftDeleteUnbound(ctx context.Context, id uuid.UUID) (bool, error) {
+	const query = `
+		UPDATE files
+		SET
+			is_deleted = TRUE,
+			status = $2,
+			deleted_at = NOW(),
+			updated_at = NOW()
+		WHERE id = $1
+		  AND is_deleted = FALSE
+		  AND NOT EXISTS (
+		  	SELECT 1
+		  	FROM file_bindings b
+		  	WHERE b.file_id = files.id
+		  	  AND b.is_deleted = FALSE
+		  )
+	`
+
+	tag, err := r.pool.Exec(ctx, query, id, string(enum.FileStatusDeleted))
+	if err != nil {
+		return false, fmt.Errorf("soft delete unbound file: %w", err)
+	}
+
+	return tag.RowsAffected() > 0, nil
+}
+
+func (r *PGFileRepository) HasActiveBinding(ctx context.Context, id uuid.UUID) (bool, error) {
+	const query = `
+		SELECT EXISTS (
+			SELECT 1
+			FROM file_bindings
+			WHERE file_id = $1
+			  AND is_deleted = FALSE
+		)
+	`
+
+	var exists bool
+	if err := r.pool.QueryRow(ctx, query, id).Scan(&exists); err != nil {
+		return false, fmt.Errorf("check active file binding: %w", err)
+	}
+
+	return exists, nil
+}
+
+func (r *PGFileRepository) ListExpiredUnboundUploads(
+	ctx context.Context,
+	purpose enum.FilePurpose,
+	expiredBefore time.Time,
+	limit int,
+) ([]*model.File, error) {
+	if limit <= 0 {
+		limit = 100
+	}
+
+	const query = `
+		SELECT
+			id,
+			provider,
+			bucket,
+			object_key,
+			original_name,
+			stored_name,
+			extension,
+			content_type,
+			detected_content_type,
+			size_bytes,
+			checksum_sha256,
+			visibility,
+			purpose,
+			status,
+			owner_type,
+			owner_id,
+			uploaded_by_user_id,
+			upload_expires_at,
+			policy_status,
+			policy_reason_code,
+			policy_decision_id,
+			is_deleted,
+			deleted_at,
+			created_at,
+			updated_at
+		FROM files f
+		WHERE f.purpose = $1
+		  AND f.upload_expires_at IS NOT NULL
+		  AND f.upload_expires_at < $2
+		  AND f.is_deleted = FALSE
+		  AND NOT EXISTS (
+		  	SELECT 1
+		  	FROM file_bindings b
+		  	WHERE b.file_id = f.id
+		  	  AND b.is_deleted = FALSE
+		)
+		ORDER BY f.upload_expires_at ASC
+		LIMIT $3
+	`
+
+	rows, err := r.pool.Query(ctx, query, string(purpose), expiredBefore, limit)
+	if err != nil {
+		return nil, fmt.Errorf("query expired unbound uploads: %w", err)
+	}
+	defer rows.Close()
+
+	files := make([]*model.File, 0)
+	for rows.Next() {
+		file, err := scanFile(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scan expired unbound upload: %w", err)
+		}
+		files = append(files, file)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate expired unbound uploads: %w", err)
+	}
+
+	return files, nil
 }

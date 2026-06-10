@@ -28,11 +28,14 @@ const (
 	errorCodeInvalidStoryAuthorID  = "invalid_story_author_id"
 	errorCodeInvalidStoryTitle     = "invalid_story_title"
 	errorCodeInvalidStoryContent   = "invalid_story_content"
+	errorCodeInvalidStoryFormat    = "invalid_story_format"
 	errorCodeInvalidStoryCategory  = "invalid_story_category"
 	errorCodeInvalidStoryStatus    = "invalid_story_status"
 	errorCodeInvalidStoryTags      = "invalid_story_tags"
 	errorCodeInvalidStoryPlace     = "invalid_story_place"
 	errorCodeInvalidStoryCover     = "invalid_story_cover"
+	errorCodeStoryValidationFailed = "story_validation_failed"
+	errorCodeStoryRevisionConflict = "story_revision_conflict"
 	errorCodeInvalidCommentBody    = "invalid_comment_body"
 	errorCodeCommentRateLimited    = "story_comment_rate_limited"
 	errorCodeUnauthenticatedWriter = "missing_authenticated_subject"
@@ -47,10 +50,11 @@ const (
 )
 
 type errorResponse struct {
-	Error   string `json:"error"`
-	Message string `json:"message"`
-	Code    string `json:"code"`
-	Kind    string `json:"kind"`
+	Error   string            `json:"error"`
+	Message string            `json:"message"`
+	Code    string            `json:"code"`
+	Kind    string            `json:"kind"`
+	Fields  map[string]string `json:"fields,omitempty"`
 }
 
 type localizedError struct {
@@ -65,6 +69,10 @@ type mappedError struct {
 
 func (h *Handler) writeUseCaseError(w http.ResponseWriter, r *http.Request, err error) {
 	if mapped, ok := mapBusinessError(err); ok {
+		if validationFields := validationFieldsForError(err); len(validationFields) > 0 {
+			writeErrorWithFields(w, r, mapped.status, mapped.code, validationFields)
+			return
+		}
 		writeError(w, r, mapped.status, mapped.code)
 		return
 	}
@@ -72,13 +80,26 @@ func (h *Handler) writeUseCaseError(w http.ResponseWriter, r *http.Request, err 
 	writeTechnicalError(w, r, err)
 }
 
+func validationFieldsForError(err error) map[string]string {
+	var validationErr *app.StoryValidationError
+	if !errors.As(err, &validationErr) {
+		return nil
+	}
+	return validationErr.Fields
+}
+
 func writeError(w http.ResponseWriter, r *http.Request, status int, code string) {
+	writeErrorWithFields(w, r, status, code, nil)
+}
+
+func writeErrorWithFields(w http.ResponseWriter, r *http.Request, status int, code string, fields map[string]string) {
 	text := businessErrorText(code, localeFromRequest(r))
 	writeJSON(w, status, errorResponse{
 		Error:   text.Error,
 		Message: text.Message,
 		Code:    code,
 		Kind:    errorKindBusiness,
+		Fields:  fields,
 	})
 }
 
@@ -113,10 +134,14 @@ func mapBusinessError(err error) (mappedError, bool) {
 		return mappedError{status: http.StatusBadRequest, code: errorCodeInvalidStoryAuthorID}, true
 	case errors.Is(err, app.ErrInvalidCommentID):
 		return mappedError{status: http.StatusBadRequest, code: errorCodeInvalidCommentID}, true
+	case errors.Is(err, app.ErrStoryValidationFailed):
+		return mappedError{status: http.StatusBadRequest, code: errorCodeStoryValidationFailed}, true
 	case errors.Is(err, app.ErrInvalidStoryTitle):
 		return mappedError{status: http.StatusBadRequest, code: errorCodeInvalidStoryTitle}, true
 	case errors.Is(err, app.ErrInvalidStoryContent):
 		return mappedError{status: http.StatusBadRequest, code: errorCodeInvalidStoryContent}, true
+	case errors.Is(err, app.ErrInvalidStoryFormat):
+		return mappedError{status: http.StatusBadRequest, code: errorCodeInvalidStoryFormat}, true
 	case errors.Is(err, app.ErrInvalidStoryCategory):
 		return mappedError{status: http.StatusBadRequest, code: errorCodeInvalidStoryCategory}, true
 	case errors.Is(err, app.ErrInvalidStoryStatus):
@@ -127,6 +152,8 @@ func mapBusinessError(err error) (mappedError, bool) {
 		return mappedError{status: http.StatusBadRequest, code: errorCodeInvalidStoryPlace}, true
 	case errors.Is(err, app.ErrInvalidStoryCover):
 		return mappedError{status: http.StatusBadRequest, code: errorCodeInvalidStoryCover}, true
+	case errors.Is(err, app.ErrStoryRevisionConflict):
+		return mappedError{status: http.StatusConflict, code: errorCodeStoryRevisionConflict}, true
 	case errors.Is(err, app.ErrInvalidCommentBody):
 		return mappedError{status: http.StatusBadRequest, code: errorCodeInvalidCommentBody}, true
 	case errors.Is(err, app.ErrStoryCommentRateLimited):
@@ -272,6 +299,11 @@ var businessErrorMessages = map[string]map[string]string{
 		"en": "Invalid story category.",
 		"kk": "Оқиға санаты дұрыс емес.",
 	},
+	errorCodeInvalidStoryFormat: {
+		"ru": "Некорректный тип материала.",
+		"en": "Invalid story format.",
+		"kk": "Материал түрі дұрыс емес.",
+	},
 	errorCodeInvalidStoryStatus: {
 		"ru": "Некорректный статус истории.",
 		"en": "Invalid story status.",
@@ -291,6 +323,16 @@ var businessErrorMessages = map[string]map[string]string{
 		"ru": "Для публикации нужна обложка.",
 		"en": "A cover image is required to publish.",
 		"kk": "Жариялау үшін мұқаба қажет.",
+	},
+	errorCodeStoryValidationFailed: {
+		"ru": "Проверьте обязательные поля истории.",
+		"en": "Check the required story fields.",
+		"kk": "Оқиғаның міндетті өрістерін тексеріңіз.",
+	},
+	errorCodeStoryRevisionConflict: {
+		"ru": "История была изменена. Обновите данные и попробуйте снова.",
+		"en": "The story was changed. Refresh it and try again.",
+		"kk": "Оқиға өзгертілді. Деректерді жаңартып, қайталап көріңіз.",
 	},
 	errorCodeInvalidCommentBody: {
 		"ru": "Проверьте текст комментария.",

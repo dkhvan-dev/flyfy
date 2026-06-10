@@ -117,12 +117,19 @@ class StoryVm {
     required this.shareUrl,
     required this.createdAt,
     required this.updatedAt,
+    this.format = 'STORY',
+    this.contentBlocks = const [],
+    this.contentSchemaVersion = 1,
+    this.revision = 1,
+    this.moderationStatus = 'NOT_REQUIRED',
     this.content,
     this.coverFileId,
     this.placeName,
     this.placeCountryCode,
     this.placeCityId,
     this.publishedAt,
+    this.lastAutosavedAt,
+    this.archivedAt,
   });
 
   final String id;
@@ -130,8 +137,13 @@ class StoryVm {
   final String title;
   final String excerpt;
   final String? content;
+  final String format;
+  final List<Map<String, dynamic>> contentBlocks;
+  final int contentSchemaVersion;
+  final int revision;
   final String category;
   final String status;
+  final String moderationStatus;
   final String? coverFileId;
   final String? placeName;
   final String? placeCountryCode;
@@ -142,19 +154,28 @@ class StoryVm {
   final bool likedByViewer;
   final String shareUrl;
   final DateTime? publishedAt;
+  final DateTime? lastAutosavedAt;
+  final DateTime? archivedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
 
   factory StoryVm.fromJson(Map<String, dynamic> json) {
     final rawTags = json['tags'];
+    final contentBlocks = _parseContentBlocks(json['contentBlocks']);
     return StoryVm(
       id: json['id']?.toString() ?? '',
       slug: json['slug']?.toString() ?? '',
       title: json['title']?.toString() ?? '',
       excerpt: json['excerpt']?.toString() ?? '',
       content: json['content']?.toString(),
+      format: json['format']?.toString() ?? 'STORY',
+      contentBlocks: contentBlocks,
+      contentSchemaVersion:
+          int.tryParse(json['contentSchemaVersion']?.toString() ?? '') ?? 1,
+      revision: int.tryParse(json['revision']?.toString() ?? '') ?? 1,
       category: json['category']?.toString() ?? 'JOURNAL',
       status: json['status']?.toString() ?? 'DRAFT',
+      moderationStatus: json['moderationStatus']?.toString() ?? 'NOT_REQUIRED',
       coverFileId: json['coverFileId']?.toString(),
       placeName: json['placeName']?.toString(),
       placeCountryCode: json['placeCountryCode']?.toString(),
@@ -174,6 +195,10 @@ class StoryVm {
       likedByViewer: json['likedByViewer'] == true,
       shareUrl: json['shareUrl']?.toString() ?? '',
       publishedAt: DateTime.tryParse(json['publishedAt']?.toString() ?? ''),
+      lastAutosavedAt: DateTime.tryParse(
+        json['lastAutosavedAt']?.toString() ?? '',
+      ),
+      archivedAt: DateTime.tryParse(json['archivedAt']?.toString() ?? ''),
       createdAt:
           DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
@@ -210,14 +235,21 @@ class StoryVm {
     String? title,
     String? excerpt,
     String? content,
+    String? format,
+    List<Map<String, dynamic>>? contentBlocks,
+    int? contentSchemaVersion,
+    int? revision,
     String? category,
     String? status,
+    String? moderationStatus,
     String? coverFileId,
     String? placeName,
     String? placeCountryCode,
     String? placeCityId,
     List<String>? tags,
     DateTime? publishedAt,
+    DateTime? lastAutosavedAt,
+    DateTime? archivedAt,
     DateTime? updatedAt,
   }) {
     return StoryVm(
@@ -226,8 +258,13 @@ class StoryVm {
       title: title ?? this.title,
       excerpt: excerpt ?? this.excerpt,
       content: content ?? this.content,
+      format: format ?? this.format,
+      contentBlocks: contentBlocks ?? this.contentBlocks,
+      contentSchemaVersion: contentSchemaVersion ?? this.contentSchemaVersion,
+      revision: revision ?? this.revision,
       category: category ?? this.category,
       status: status ?? this.status,
+      moderationStatus: moderationStatus ?? this.moderationStatus,
       coverFileId: coverFileId ?? this.coverFileId,
       placeName: placeName ?? this.placeName,
       placeCountryCode: placeCountryCode ?? this.placeCountryCode,
@@ -238,10 +275,26 @@ class StoryVm {
       likedByViewer: likedByViewer ?? this.likedByViewer,
       shareUrl: shareUrl ?? this.shareUrl,
       publishedAt: publishedAt ?? this.publishedAt,
+      lastAutosavedAt: lastAutosavedAt ?? this.lastAutosavedAt,
+      archivedAt: archivedAt ?? this.archivedAt,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
+}
+
+List<Map<String, dynamic>> _parseContentBlocks(Object? rawContentBlocks) {
+  final rawBlocks = switch (rawContentBlocks) {
+    final List<dynamic> blocks => blocks,
+    final Map<String, dynamic> document when document['blocks'] is List =>
+      document['blocks'] as List<dynamic>,
+    _ => const <dynamic>[],
+  };
+
+  return rawBlocks
+      .whereType<Map<String, dynamic>>()
+      .map(Map<String, dynamic>.unmodifiable)
+      .toList(growable: false);
 }
 
 class StoryCommentVm {

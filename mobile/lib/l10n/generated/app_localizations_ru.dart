@@ -894,7 +894,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileReviewsStat => 'Отзывы';
 
   @override
-  String get profileBlogsStat => 'Блоги';
+  String get profileStoriesStat => 'Истории';
 
   @override
   String get profileFollowersStat => 'Фолловеры';
@@ -1101,11 +1101,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileUserStoriesTitle => 'Истории пользователя';
 
   @override
-  String get profileBlogsTitle => 'Последние Блоги';
+  String get profileStoriesTitle => 'Последние истории';
 
   @override
-  String get profileBlogsUnavailable =>
-      'Публичные заметки и истории путешествий пока недоступны в приложении.';
+  String get profileStoriesUnavailable =>
+      'Публичные истории и travel-статьи пока недоступны в приложении.';
 
   @override
   String get profileUnavailableTitle => 'Скоро появится';
@@ -5341,10 +5341,19 @@ class AppLocalizationsRu extends AppLocalizations {
   String get storySearchHint => 'Поиск историй, авторов или мест';
 
   @override
+  String get storySearchCompactHint => 'Поиск историй';
+
+  @override
   String get storyFiltersTitle => 'Фильтры';
 
   @override
-  String get storyFilterCategory => 'Категория';
+  String get storyFiltersActiveSummary => 'Выбрано';
+
+  @override
+  String get storyFilterFormat => 'Тип материала';
+
+  @override
+  String get storyFilterCategory => 'Тема';
 
   @override
   String get storyFilterCountry => 'Страна';
@@ -5401,6 +5410,56 @@ class AppLocalizationsRu extends AppLocalizations {
       'Станьте первым, кто опубликует travel-note, локальный гид или визуальное эссе.';
 
   @override
+  String get storyEmptyAuthenticatedSubtitle =>
+      'Создайте историю, статью, гид или визуальное эссе, чтобы запустить ленту.';
+
+  @override
+  String get storyFilteredEmptyTitle => 'По этим фильтрам историй нет';
+
+  @override
+  String get storyFilteredEmptySubtitle =>
+      'Попробуйте другой поиск, страну, город или категорию.';
+
+  @override
+  String get storyResetFiltersAction => 'Сбросить фильтры';
+
+  @override
+  String get storyLoginCreateAction => 'Войти и создать';
+
+  @override
+  String get myStoriesDraftsTab => 'Черновики';
+
+  @override
+  String get myStoriesPublishedTab => 'Опубликовано';
+
+  @override
+  String get myStoriesArchivedTab => 'Архив';
+
+  @override
+  String get myStoriesDraftEmptyTitle => 'Черновиков пока нет';
+
+  @override
+  String get myStoriesDraftEmptySubtitle =>
+      'Сохраняйте идеи как черновики перед публикацией в ленту историй.';
+
+  @override
+  String get myStoriesPublishedEmptyTitle => 'Опубликованных историй пока нет';
+
+  @override
+  String get myStoriesPublishedEmptySubtitle =>
+      'Опубликованные истории, гиды, статьи и визуальные эссе появятся здесь.';
+
+  @override
+  String get myStoriesArchivedEmptyTitle => 'Архивных историй пока нет';
+
+  @override
+  String get myStoriesArchivedEmptySubtitle =>
+      'Архивные истории хранятся здесь для истории и повторного использования.';
+
+  @override
+  String get myStoriesCreateDraftAction => 'Создать черновик';
+
+  @override
   String get storyLoadFailed => 'Не удалось загрузить истории';
 
   @override
@@ -5417,6 +5476,21 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get storyCategoryCulinary => 'Гастрономия';
+
+  @override
+  String get storyFormatStory => 'История';
+
+  @override
+  String get storyFormatGuide => 'Гид';
+
+  @override
+  String get storyFormatPhotoEssay => 'Фотоэссе';
+
+  @override
+  String get storyFormatArticle => 'Статья';
+
+  @override
+  String get storyFormatCulinary => 'Гастрономия';
 
   @override
   String get storyDetailsTitle => 'Детали истории';
@@ -5651,6 +5725,499 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get storyWritersNoteBody =>
       'Попробуйте начать с чувственной детали. Вместо «Я приехал в Токио» опишите неоновое свечение, отражающееся в мокром асфальте Сибуи.';
+
+  @override
+  String get storyEditorTitle => 'Редактор истории';
+
+  @override
+  String get storyEditorLoading => 'Загрузка истории';
+
+  @override
+  String get storyEditorLoadFailed =>
+      'Не удалось загрузить историю для редактирования.';
+
+  @override
+  String get storyEditorEditMode => 'Редактирование';
+
+  @override
+  String get storyEditorPreviewMode => 'Предпросмотр';
+
+  @override
+  String get storyEditorRecoveryTitle => 'Восстановить несохраненный черновик?';
+
+  @override
+  String get storyEditorRecoveryMessage =>
+      'Для этой истории доступна локальная копия восстановления.';
+
+  @override
+  String get storyEditorRecoveryDiscard => 'Отклонить';
+
+  @override
+  String get storyEditorRecoveryRestore => 'Восстановить';
+
+  @override
+  String get storyEditorDiscardChangesTitle => 'Отменить изменения истории?';
+
+  @override
+  String get storyEditorDiscardChangesMessage =>
+      'Несохраненные правки могут быть потеряны.';
+
+  @override
+  String get storyEditorKeepEditing => 'Продолжить редактирование';
+
+  @override
+  String get storyEditorMetadataTitle => 'Настройки публикации';
+
+  @override
+  String get storyEditorTitleFieldHint =>
+      'Точный заголовок, который легко найти';
+
+  @override
+  String get storyEditorTemplateAction => 'Шаблоны';
+
+  @override
+  String get storyEditorTemplateSemantic => 'Выбрать шаблон истории';
+
+  @override
+  String get storyEditorTemplatePlaceholder => 'Выберите шаблон';
+
+  @override
+  String get storyEditorTemplateWeekendGuide => 'Гид на выходные';
+
+  @override
+  String get storyEditorTemplatePhotoEssay => 'Фотоэссе';
+
+  @override
+  String get storyEditorTemplateFoodNotes => 'Заметки о еде';
+
+  @override
+  String get storyEditorTemplateCityWalk => 'Прогулка по городу';
+
+  @override
+  String get storyEditorTemplateHiddenGems => 'Скрытые места';
+
+  @override
+  String get storyEditorTemplatePracticalTips => 'Практические советы';
+
+  @override
+  String get storyEditorTemplateCultureRoute => 'Культурный маршрут';
+
+  @override
+  String get storyEditorTemplateWeekendHeading => 'План выходных';
+
+  @override
+  String get storyEditorTemplateWeekendList =>
+      'Утренняя точка\nЛокальная еда\nВечерний вид';
+
+  @override
+  String get storyEditorTemplatePhotoHeading => 'Фотоистория';
+
+  @override
+  String get storyEditorTemplateFoodHeading => 'Где поесть';
+
+  @override
+  String get storyEditorTemplateFoodParagraph =>
+      'Опишите блюдо, уровень цен и лучшее время для визита.';
+
+  @override
+  String get storyEditorTemplateCityWalkHeading => 'Маршрут прогулки';
+
+  @override
+  String get storyEditorTemplateCityWalkList =>
+      'Стартовая точка\nГлавная улица\nМесто для паузы\nФинальный вид';
+
+  @override
+  String get storyEditorTemplateCityWalkParagraph =>
+      'Добавьте расстояние, примерное время и самый удобный способ добраться до старта.';
+
+  @override
+  String get storyEditorTemplateHiddenGemsHeading =>
+      'Места, о которых знают не все';
+
+  @override
+  String get storyEditorTemplateHiddenGemsList =>
+      'Почему стоит зайти\nКогда меньше людей\nЧто посмотреть рядом';
+
+  @override
+  String get storyEditorTemplateHiddenGemsCallout =>
+      'Укажите нюансы: вход, расписание, безопасность, наличные или бронирование.';
+
+  @override
+  String get storyEditorTemplatePracticalTipsHeading =>
+      'Полезно знать перед поездкой';
+
+  @override
+  String get storyEditorTemplatePracticalTipsList =>
+      'Когда ехать\nКак добраться\nСколько заложить денег\nЧто взять с собой';
+
+  @override
+  String get storyEditorTemplatePracticalTipsCallout =>
+      'Добавьте честный совет, который сэкономит время или поможет избежать ошибки.';
+
+  @override
+  String get storyEditorTemplateCultureRouteHeading => 'Культурный маршрут';
+
+  @override
+  String get storyEditorTemplateCultureRouteParagraph =>
+      'Расскажите, какие традиции, здания, музеи или локальные истории помогают понять это место.';
+
+  @override
+  String get storyEditorTemplateCultureRouteQuote =>
+      'Добавьте фразу, наблюдение или короткий факт, который задает настроение маршрута.';
+
+  @override
+  String get storyEditorTemplateConflictTitle => 'Применить новую структуру?';
+
+  @override
+  String storyEditorTemplateConflictMessage(Object format, Object category) {
+    return 'Эта структура предлагает: $format / $category. Выберите, как применить ее без потери черновика.';
+  }
+
+  @override
+  String get storyEditorTemplateConflictReplace => 'Заменить шаблон';
+
+  @override
+  String get storyEditorTemplateConflictReplaceDescription =>
+      'Удалим нетронутые шаблонные блоки, сохраним ваш текст и добавим новую структуру.';
+
+  @override
+  String get storyEditorTemplateConflictAppend => 'Добавить к истории';
+
+  @override
+  String get storyEditorTemplateConflictAppendDescription =>
+      'Сохраним все текущее содержимое и добавим новую структуру ниже.';
+
+  @override
+  String get storyEditorTemplateConflictMetadataOnly => 'Обновить тип и тему';
+
+  @override
+  String get storyEditorTemplateConflictMetadataOnlyDescription =>
+      'Изменим только тип материала и тему, не трогая блоки.';
+
+  @override
+  String get storyEditorFormatLabel => 'Тип материала';
+
+  @override
+  String get storyEditorPlaceLabel => 'Место';
+
+  @override
+  String get storyEditorCountryCodeLabel => 'Код страны';
+
+  @override
+  String get storyEditorCountryCodeHint => 'KZ';
+
+  @override
+  String get storyEditorCityPlaceIdLabel => 'ID города/места';
+
+  @override
+  String get storyEditorTagsHint => 'горы, еда, выходные';
+
+  @override
+  String get storyEditorCoverSelected => 'Обложка выбрана';
+
+  @override
+  String get storyEditorCoverRequired => 'Нужна обложка';
+
+  @override
+  String get storyEditorReplaceCover => 'Заменить обложку';
+
+  @override
+  String get storyEditorAddCover => 'Добавить обложку';
+
+  @override
+  String get storyEditorClear => 'Очистить';
+
+  @override
+  String get storyEditorToolbarAddBlock => 'Добавить блок';
+
+  @override
+  String get storyEditorToolbarHeading => 'Заголовок';
+
+  @override
+  String get storyEditorToolbarBold => 'Жирный';
+
+  @override
+  String get storyEditorToolbarItalic => 'Курсив';
+
+  @override
+  String get storyEditorToolbarStrikethrough => 'Зачеркнутый';
+
+  @override
+  String get storyEditorToolbarUnderline => 'Подчеркнутый';
+
+  @override
+  String get storyEditorToolbarList => 'Список';
+
+  @override
+  String get storyEditorToolbarQuote => 'Цитата';
+
+  @override
+  String get storyEditorToolbarImage => 'Изображение';
+
+  @override
+  String get storyEditorToolbarUndo => 'Отменить';
+
+  @override
+  String get storyEditorToolbarRedo => 'Повторить';
+
+  @override
+  String get storyEditorAddBlockTitle => 'Добавить блок';
+
+  @override
+  String get storyEditorBlockParagraph => 'Абзац';
+
+  @override
+  String get storyEditorBlockParagraphDescription => 'Основной текст истории';
+
+  @override
+  String get storyEditorBlockHeading => 'Заголовок';
+
+  @override
+  String get storyEditorBlockHeadingDescription => 'Название раздела';
+
+  @override
+  String get storyEditorBlockList => 'Список';
+
+  @override
+  String get storyEditorBlockListDescription => 'Полезные советы или шаги';
+
+  @override
+  String get storyEditorBlockImage => 'Изображение';
+
+  @override
+  String get storyEditorBlockImageDescription => 'Одиночная загрузка медиа';
+
+  @override
+  String get storyEditorBlockGallery => 'Галерея';
+
+  @override
+  String get storyEditorBlockGalleryDescription => 'Несколько изображений';
+
+  @override
+  String get storyEditorBlockQuote => 'Цитата';
+
+  @override
+  String get storyEditorBlockQuoteDescription => 'Выделенная фраза';
+
+  @override
+  String get storyEditorBlockCallout => 'Выноска';
+
+  @override
+  String get storyEditorBlockCalloutDescription => 'Важная travel-заметка';
+
+  @override
+  String get storyEditorBlockDivider => 'Разделитель';
+
+  @override
+  String get storyEditorBlockDividerDescription => 'Визуальный разрыв раздела';
+
+  @override
+  String get storyEditorBlockPlaceReference => 'Ссылка на место';
+
+  @override
+  String get storyEditorBlockPlaceReferenceDescription =>
+      'Связать место с историей';
+
+  @override
+  String get storyEditorBlockNumberedList => 'Нумерованный список';
+
+  @override
+  String get storyEditorStartWithBlockTitle => 'Начните с блока';
+
+  @override
+  String get storyEditorStartWithBlockSubtitle =>
+      'Добавляйте текст, медиа, места, выноски или разделители, чтобы собрать историю.';
+
+  @override
+  String get storyEditorPlaceNameHint => 'Название места';
+
+  @override
+  String get storyEditorTextHintHeading =>
+      'Напишите понятный заголовок раздела';
+
+  @override
+  String get storyEditorTextHintBulletedList =>
+      'Добавляйте пункты списка по одному в строке';
+
+  @override
+  String get storyEditorTextHintNumberedList =>
+      'Добавляйте шаги по одному в строке';
+
+  @override
+  String get storyEditorTextHintQuote =>
+      'Добавьте цитату или запоминающуюся фразу';
+
+  @override
+  String get storyEditorTextHintCallout => 'Выделите практический совет';
+
+  @override
+  String get storyEditorTextHintParagraph => 'Напишите свою историю';
+
+  @override
+  String storyEditorDeleteBlockSemantic(Object block) {
+    return 'Удалить блок «$block»';
+  }
+
+  @override
+  String storyEditorReorderBlockSemantic(Object block) {
+    return 'Перетащите, чтобы изменить порядок блока «$block»';
+  }
+
+  @override
+  String get storyEditorPublishReadiness => 'Готовность к публикации';
+
+  @override
+  String get storyEditorChecklistTitle => 'Заголовок';
+
+  @override
+  String get storyEditorChecklistFormat => 'Тип материала';
+
+  @override
+  String get storyEditorChecklistCategory => 'Тема';
+
+  @override
+  String get storyEditorChecklistCover => 'Обложка';
+
+  @override
+  String get storyEditorChecklistPlace => 'Место';
+
+  @override
+  String get storyEditorChecklistCountry => 'Страна';
+
+  @override
+  String get storyEditorChecklistContent => 'Контент';
+
+  @override
+  String get storyEditorChecklistMedia => 'Медиа';
+
+  @override
+  String get storyEditorChecklistReady => 'Готово';
+
+  @override
+  String get storyEditorChecklistNeedsAttention => 'Требует внимания';
+
+  @override
+  String get storyEditorChecklistOpen => 'Открыть';
+
+  @override
+  String get storyEditorConflictFallback =>
+      'История была изменена в другом месте.';
+
+  @override
+  String get storyEditorSaveDraft => 'Сохранить черновик';
+
+  @override
+  String get storyEditorPublish => 'Опубликовать';
+
+  @override
+  String get storyEditorPublishSemantic => 'Опубликовать историю';
+
+  @override
+  String get storyEditorAutosaveIdle => 'Ожидание';
+
+  @override
+  String get storyEditorAutosaveSaving => 'Сохранение';
+
+  @override
+  String get storyEditorAutosaveSaved => 'Сохранено';
+
+  @override
+  String get storyEditorAutosaveFailed => 'Требует внимания';
+
+  @override
+  String get storyEditorAutosaveConflict => 'Конфликт';
+
+  @override
+  String get storyEditorPublishNotReady => 'История не готова к публикации.';
+
+  @override
+  String get storyEditorMediaRetrySemantic => 'Повторить загрузку медиа';
+
+  @override
+  String get storyEditorMediaRemoveSemantic => 'Удалить загрузку медиа';
+
+  @override
+  String get storyEditorMediaRetry => 'Повторить';
+
+  @override
+  String get storyEditorMediaRemove => 'Удалить';
+
+  @override
+  String get storyEditorMediaQueued => 'В очереди на загрузку';
+
+  @override
+  String get storyEditorMediaUploading => 'Загрузка';
+
+  @override
+  String get storyEditorMediaFailed => 'Загрузка не удалась';
+
+  @override
+  String get storyEditorMediaComplete => 'Загрузка завершена';
+
+  @override
+  String get storyEditorMediaRemoved => 'Удалено';
+
+  @override
+  String get storyEditorMediaLocalPreviewUnavailable =>
+      'Локальный предпросмотр недоступен. Удалите и добавьте это медиа снова.';
+
+  @override
+  String get storyEditorMediaErrorRetryUpload => 'Повторите загрузку медиа.';
+
+  @override
+  String get storyEditorMediaErrorInterrupted =>
+      'Загрузка была прервана. Повторите, чтобы продолжить.';
+
+  @override
+  String get storyEditorMediaErrorMissingSource =>
+      'Локальный источник медиа недоступен. Удалите и добавьте это медиа снова.';
+
+  @override
+  String get storyEditorMediaErrorUploadFailed =>
+      'Не удалось загрузить медиа. Попробуйте еще раз.';
+
+  @override
+  String get storyEditorImagePickTooLarge =>
+      'Изображение слишком большое. Выберите файл до 20 МБ.';
+
+  @override
+  String get storyEditorImagePickUnsupported =>
+      'Выберите изображение в формате JPG, PNG или WebP.';
+
+  @override
+  String get storyEditorImagePickFailed =>
+      'Не удалось открыть изображение. Попробуйте выбрать другое.';
+
+  @override
+  String get storyEditorValidationTitleRequired => 'Укажите заголовок истории.';
+
+  @override
+  String get storyEditorValidationFormatRequired => 'Выберите формат истории.';
+
+  @override
+  String get storyEditorValidationCategoryRequired =>
+      'Выберите категорию истории.';
+
+  @override
+  String get storyEditorValidationCoverRequired => 'Добавьте обложку истории.';
+
+  @override
+  String get storyEditorValidationPlaceRequired => 'Укажите место истории.';
+
+  @override
+  String get storyEditorValidationCountryRequired => 'Выберите страну истории.';
+
+  @override
+  String get storyEditorValidationDraftRequired =>
+      'Добавьте заголовок или хотя бы один блок истории, чтобы сохранить черновик.';
+
+  @override
+  String get storyEditorValidationContentRequired =>
+      'Добавьте хотя бы один блок истории перед публикацией.';
+
+  @override
+  String get storyEditorValidationMediaPending =>
+      'Дождитесь завершения загрузки медиа.';
 
   @override
   String get chatListTitle => 'Чаты';

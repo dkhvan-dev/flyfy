@@ -80,7 +80,10 @@ void main() {
       expect(filterSheetSource, contains('storyFilterCountryNoResults'));
       expect(filterSheetSource, contains('locationFilterAllCities'));
       expect(filterSheetSource, contains('locationFilterCitySearchHint'));
-      expect(filterSheetSource, contains('if (_selectedCountry != null) ...['));
+      expect(
+        filterSheetSource,
+        isNot(contains('if (_selectedCountry != null) ...[')),
+      );
       expect(filterSheetSource, isNot(contains('_countrySearchController')));
       expect(
         filterSheetSource,
@@ -102,6 +105,34 @@ void main() {
       expect(categoryTitleCall, isNonNegative);
       expect(countrySectionCall, lessThan(categoryTitleCall));
       expect(citySectionCall, lessThan(categoryTitleCall));
+    },
+  );
+
+  test(
+    'stories filter modal separates material type and theme filters',
+    () async {
+      final source = await File(
+        'lib/screens/stories/stories_screen.dart',
+      ).readAsString();
+
+      final filterSheetStart = source.indexOf('class _StoryFiltersSheet');
+      final filterSheetEnd = source.indexOf('class _FilterSheet');
+      expect(filterSheetStart, isNonNegative);
+      expect(filterSheetEnd, greaterThan(filterSheetStart));
+      final filterSheetSource = source.substring(
+        filterSheetStart,
+        filterSheetEnd,
+      );
+
+      expect(source, contains('String? _selectedFormat'));
+      expect(source, contains('formats: _selectedFormat == null'));
+      expect(filterSheetSource, contains('initialFormat'));
+      expect(filterSheetSource, contains('storyFilterFormat'));
+      expect(filterSheetSource, contains('storyFilterCategory'));
+      expect(filterSheetSource, contains('_FilterFormatGrid('));
+      expect(filterSheetSource, contains('_FilterCategoryGrid('));
+      expect(filterSheetSource, contains('formatStoryFormat(l10n, option)'));
+      expect(filterSheetSource, contains('formatStoryCategory(l10n, option)'));
     },
   );
 }

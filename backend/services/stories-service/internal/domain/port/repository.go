@@ -2,11 +2,14 @@ package port
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 
 	"kz/inflap/backend/services/stories-service/internal/domain/model"
 )
+
+var ErrStoryRevisionConflict = errors.New("story revision conflict")
 
 type StoryRepository interface {
 	CreateStory(ctx context.Context, story *model.Story) error
@@ -15,6 +18,7 @@ type StoryRepository interface {
 	GetStoryByID(ctx context.Context, storyID uuid.UUID) (*model.Story, error)
 	GetStoryBySlug(ctx context.Context, slug string) (*model.Story, error)
 	ListStories(ctx context.Context, filter model.StoryListFilter) ([]*model.Story, error)
+	CountStories(ctx context.Context, filter model.StoryListFilter) (int, error)
 	CountPublishedStoriesByAuthorID(ctx context.Context, authorUserID uuid.UUID) (int, error)
 	LikeStory(ctx context.Context, storyID uuid.UUID, userID uuid.UUID) (bool, int, error)
 	UnlikeStory(ctx context.Context, storyID uuid.UUID, userID uuid.UUID) (bool, int, error)

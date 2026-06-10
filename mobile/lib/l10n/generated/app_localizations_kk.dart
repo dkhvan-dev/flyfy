@@ -897,7 +897,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get profileReviewsStat => 'Пікірлер';
 
   @override
-  String get profileBlogsStat => 'Блогтар';
+  String get profileStoriesStat => 'Хикаялар';
 
   @override
   String get profileFollowersStat => 'Фолловеры';
@@ -1106,11 +1106,11 @@ class AppLocalizationsKk extends AppLocalizations {
   String get profileUserStoriesTitle => 'Пайдаланушы хикаялары';
 
   @override
-  String get profileBlogsTitle => 'Соңғы блогтар';
+  String get profileStoriesTitle => 'Соңғы хикаялар';
 
   @override
-  String get profileBlogsUnavailable =>
-      'Ашық жазбалар мен саяхат тарихтары қолданбада әлі қолжетімді емес.';
+  String get profileStoriesUnavailable =>
+      'Ашық хикаялар мен саяхат мақалалары қолданбада әлі қолжетімді емес.';
 
   @override
   String get profileUnavailableTitle => 'Жақында';
@@ -5360,10 +5360,19 @@ class AppLocalizationsKk extends AppLocalizations {
   String get storySearchHint => 'Хикаяларды, авторларды немесе орындарды іздеу';
 
   @override
+  String get storySearchCompactHint => 'Хикаяларды іздеу';
+
+  @override
   String get storyFiltersTitle => 'Сүзгілер';
 
   @override
-  String get storyFilterCategory => 'Санат';
+  String get storyFiltersActiveSummary => 'Таңдалған сүзгілер';
+
+  @override
+  String get storyFilterFormat => 'Материал түрі';
+
+  @override
+  String get storyFilterCategory => 'Тақырып';
 
   @override
   String get storyFilterCountry => 'Ел';
@@ -5419,6 +5428,56 @@ class AppLocalizationsKk extends AppLocalizations {
       'Travel-note, жергілікті гид немесе визуалды эссе жариялаған алғашқы адам болыңыз.';
 
   @override
+  String get storyEmptyAuthenticatedSubtitle =>
+      'Лентаны бастау үшін хикая, мақала, гид немесе визуалды эссе жасаңыз.';
+
+  @override
+  String get storyFilteredEmptyTitle => 'Бұл сүзгілер бойынша хикая жоқ';
+
+  @override
+  String get storyFilteredEmptySubtitle =>
+      'Басқа іздеу, ел, қала немесе санатты қолданып көріңіз.';
+
+  @override
+  String get storyResetFiltersAction => 'Сүзгілерді тазалау';
+
+  @override
+  String get storyLoginCreateAction => 'Кіріп, жасау';
+
+  @override
+  String get myStoriesDraftsTab => 'Нобайлар';
+
+  @override
+  String get myStoriesPublishedTab => 'Жарияланған';
+
+  @override
+  String get myStoriesArchivedTab => 'Архив';
+
+  @override
+  String get myStoriesDraftEmptyTitle => 'Әзірге нобай жоқ';
+
+  @override
+  String get myStoriesDraftEmptySubtitle =>
+      'Идеяларды хикаялар лентасына жарияламас бұрын нобай ретінде сақтаңыз.';
+
+  @override
+  String get myStoriesPublishedEmptyTitle => 'Әзірге жарияланған хикая жоқ';
+
+  @override
+  String get myStoriesPublishedEmptySubtitle =>
+      'Жарияланған хикаялар, гидтер, мақалалар және визуалды эсселер осы жерде көрсетіледі.';
+
+  @override
+  String get myStoriesArchivedEmptyTitle => 'Әзірге архивтегі хикая жоқ';
+
+  @override
+  String get myStoriesArchivedEmptySubtitle =>
+      'Архивтегі хикаялар тарих және қайта пайдалану үшін осы жерде сақталады.';
+
+  @override
+  String get myStoriesCreateDraftAction => 'Нобай жасау';
+
+  @override
   String get storyLoadFailed => 'Хикаяларды жүктеу мүмкін болмады';
 
   @override
@@ -5435,6 +5494,21 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get storyCategoryCulinary => 'Гастрономия';
+
+  @override
+  String get storyFormatStory => 'Хикая';
+
+  @override
+  String get storyFormatGuide => 'Гид';
+
+  @override
+  String get storyFormatPhotoEssay => 'Фотоэссе';
+
+  @override
+  String get storyFormatArticle => 'Мақала';
+
+  @override
+  String get storyFormatCulinary => 'Гастрономия';
 
   @override
   String get storyDetailsTitle => 'Хикая туралы';
@@ -5666,6 +5740,500 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get storyWritersNoteBody =>
       'Әңгімеңізді сезімдік детальдан бастаңыз. «Мен Токиоға келдім» деудің орнына, Сибуяның дымқыл асфальтында шағылысқан неон жарығын суреттеңіз.';
+
+  @override
+  String get storyEditorTitle => 'Хикая редакторы';
+
+  @override
+  String get storyEditorLoading => 'Хикая жүктелуде';
+
+  @override
+  String get storyEditorLoadFailed =>
+      'Хикаяны өңдеу үшін жүктеу мүмкін болмады.';
+
+  @override
+  String get storyEditorEditMode => 'Өңдеу';
+
+  @override
+  String get storyEditorPreviewMode => 'Алдын ала көру';
+
+  @override
+  String get storyEditorRecoveryTitle =>
+      'Сақталмаған нобайды қалпына келтіру керек пе?';
+
+  @override
+  String get storyEditorRecoveryMessage =>
+      'Бұл хикая үшін жергілікті қалпына келтіру көшірмесі бар.';
+
+  @override
+  String get storyEditorRecoveryDiscard => 'Бас тарту';
+
+  @override
+  String get storyEditorRecoveryRestore => 'Қалпына келтіру';
+
+  @override
+  String get storyEditorDiscardChangesTitle =>
+      'Хикая өзгерістерінен бас тарту керек пе?';
+
+  @override
+  String get storyEditorDiscardChangesMessage =>
+      'Сақталмаған түзетулер жоғалуы мүмкін.';
+
+  @override
+  String get storyEditorKeepEditing => 'Өңдеуді жалғастыру';
+
+  @override
+  String get storyEditorMetadataTitle => 'Жариялау баптаулары';
+
+  @override
+  String get storyEditorTitleFieldHint => 'Іздеуге ыңғайлы нақты атау';
+
+  @override
+  String get storyEditorTemplateAction => 'Үлгілер';
+
+  @override
+  String get storyEditorTemplateSemantic => 'Хикая үлгісін таңдау';
+
+  @override
+  String get storyEditorTemplatePlaceholder => 'Үлгіні таңдаңыз';
+
+  @override
+  String get storyEditorTemplateWeekendGuide => 'Демалыс күнгі гид';
+
+  @override
+  String get storyEditorTemplatePhotoEssay => 'Фотоэссе';
+
+  @override
+  String get storyEditorTemplateFoodNotes => 'Тағам жазбалары';
+
+  @override
+  String get storyEditorTemplateCityWalk => 'Қала серуені';
+
+  @override
+  String get storyEditorTemplateHiddenGems => 'Жасырын орындар';
+
+  @override
+  String get storyEditorTemplatePracticalTips => 'Практикалық кеңестер';
+
+  @override
+  String get storyEditorTemplateCultureRoute => 'Мәдени маршрут';
+
+  @override
+  String get storyEditorTemplateWeekendHeading => 'Демалыс күн жоспары';
+
+  @override
+  String get storyEditorTemplateWeekendList =>
+      'Таңғы аялдама\nЖергілікті тағам\nКешкі көрініс';
+
+  @override
+  String get storyEditorTemplatePhotoHeading => 'Фото хикая';
+
+  @override
+  String get storyEditorTemplateFoodHeading => 'Қайда тамақтану керек';
+
+  @override
+  String get storyEditorTemplateFoodParagraph =>
+      'Тағамды, баға деңгейін және баруға қолайлы уақытты сипаттаңыз.';
+
+  @override
+  String get storyEditorTemplateCityWalkHeading => 'Серуен маршруты';
+
+  @override
+  String get storyEditorTemplateCityWalkList =>
+      'Бастау нүктесі\nНегізгі көше\nДемалатын орын\nСоңғы көрініс';
+
+  @override
+  String get storyEditorTemplateCityWalkParagraph =>
+      'Қашықтықты, шамамен уақытты және бастау нүктесіне жетудің ең ыңғайлы жолын қосыңыз.';
+
+  @override
+  String get storyEditorTemplateHiddenGemsHeading =>
+      'Көп адам біле бермейтін орындар';
+
+  @override
+  String get storyEditorTemplateHiddenGemsList =>
+      'Неге тоқтауға тұрарлық\nҚашан тынышырақ\nЖақын жерде не көруге болады';
+
+  @override
+  String get storyEditorTemplateHiddenGemsCallout =>
+      'Кіру, кесте, қауіпсіздік, қолма-қол ақша немесе брондау туралы маңызды мәлімет қосыңыз.';
+
+  @override
+  String get storyEditorTemplatePracticalTipsHeading =>
+      'Сапар алдында білген пайдалы';
+
+  @override
+  String get storyEditorTemplatePracticalTipsList =>
+      'Қашан бару\nҚалай жету\nҚанша бюджет жоспарлау\nӨзіңізбен не алу';
+
+  @override
+  String get storyEditorTemplatePracticalTipsCallout =>
+      'Уақыт үнемдейтін немесе жиі кездесетін қателіктен сақтайтын нақты кеңес қосыңыз.';
+
+  @override
+  String get storyEditorTemplateCultureRouteHeading => 'Мәдени маршрут';
+
+  @override
+  String get storyEditorTemplateCultureRouteParagraph =>
+      'Бұл жерді түсінуге көмектесетін дәстүрлер, ғимараттар, музейлер немесе жергілікті оқиғалар туралы жазыңыз.';
+
+  @override
+  String get storyEditorTemplateCultureRouteQuote =>
+      'Маршруттың көңіл күйін беретін қысқа фраза, бақылау немесе факт қосыңыз.';
+
+  @override
+  String get storyEditorTemplateConflictTitle =>
+      'Жаңа құрылымды қолдану керек пе?';
+
+  @override
+  String storyEditorTemplateConflictMessage(Object format, Object category) {
+    return 'Бұл құрылым $format / $category ұсынады. Нобайды жоғалтпай қалай қолданатынын таңдаңыз.';
+  }
+
+  @override
+  String get storyEditorTemplateConflictReplace => 'Үлгіні ауыстыру';
+
+  @override
+  String get storyEditorTemplateConflictReplaceDescription =>
+      'Өзгертілмеген үлгі блоктарын өшіріп, мәтініңізді сақтап, жаңа құрылымды қосамыз.';
+
+  @override
+  String get storyEditorTemplateConflictAppend => 'Қазіргі хикаяға қосу';
+
+  @override
+  String get storyEditorTemplateConflictAppendDescription =>
+      'Барлық ағымдағы мазмұнды сақтап, жаңа құрылымды төменге қосамыз.';
+
+  @override
+  String get storyEditorTemplateConflictMetadataOnly =>
+      'Түрі мен тақырыбын жаңарту';
+
+  @override
+  String get storyEditorTemplateConflictMetadataOnlyDescription =>
+      'Блоктарды өзгертпей, тек материал түрі мен тақырыбын өзгертеміз.';
+
+  @override
+  String get storyEditorFormatLabel => 'Материал түрі';
+
+  @override
+  String get storyEditorPlaceLabel => 'Орын';
+
+  @override
+  String get storyEditorCountryCodeLabel => 'Ел коды';
+
+  @override
+  String get storyEditorCountryCodeHint => 'KZ';
+
+  @override
+  String get storyEditorCityPlaceIdLabel => 'Қала/орын ID';
+
+  @override
+  String get storyEditorTagsHint => 'тау, тағам, демалыс';
+
+  @override
+  String get storyEditorCoverSelected => 'Мұқаба таңдалды';
+
+  @override
+  String get storyEditorCoverRequired => 'Мұқаба қажет';
+
+  @override
+  String get storyEditorReplaceCover => 'Мұқабаны ауыстыру';
+
+  @override
+  String get storyEditorAddCover => 'Мұқаба қосу';
+
+  @override
+  String get storyEditorClear => 'Тазалау';
+
+  @override
+  String get storyEditorToolbarAddBlock => 'Блок қосу';
+
+  @override
+  String get storyEditorToolbarHeading => 'Тақырып';
+
+  @override
+  String get storyEditorToolbarBold => 'Қалың';
+
+  @override
+  String get storyEditorToolbarItalic => 'Курсив';
+
+  @override
+  String get storyEditorToolbarStrikethrough => 'Сызылған';
+
+  @override
+  String get storyEditorToolbarUnderline => 'Асты сызылған';
+
+  @override
+  String get storyEditorToolbarList => 'Тізім';
+
+  @override
+  String get storyEditorToolbarQuote => 'Дәйексөз';
+
+  @override
+  String get storyEditorToolbarImage => 'Сурет';
+
+  @override
+  String get storyEditorToolbarUndo => 'Болдырмау';
+
+  @override
+  String get storyEditorToolbarRedo => 'Қайталау';
+
+  @override
+  String get storyEditorAddBlockTitle => 'Блок қосу';
+
+  @override
+  String get storyEditorBlockParagraph => 'Абзац';
+
+  @override
+  String get storyEditorBlockParagraphDescription => 'Хикаяның негізгі мәтіні';
+
+  @override
+  String get storyEditorBlockHeading => 'Тақырып';
+
+  @override
+  String get storyEditorBlockHeadingDescription => 'Бөлім атауы';
+
+  @override
+  String get storyEditorBlockList => 'Тізім';
+
+  @override
+  String get storyEditorBlockListDescription =>
+      'Пайдалы кеңестер немесе қадамдар';
+
+  @override
+  String get storyEditorBlockImage => 'Сурет';
+
+  @override
+  String get storyEditorBlockImageDescription => 'Бір медиа жүктеу';
+
+  @override
+  String get storyEditorBlockGallery => 'Галерея';
+
+  @override
+  String get storyEditorBlockGalleryDescription => 'Бірнеше сурет';
+
+  @override
+  String get storyEditorBlockQuote => 'Дәйексөз';
+
+  @override
+  String get storyEditorBlockQuoteDescription => 'Ерекшеленген сөйлем';
+
+  @override
+  String get storyEditorBlockCallout => 'Ескерту';
+
+  @override
+  String get storyEditorBlockCalloutDescription => 'Маңызды саяхат жазбасы';
+
+  @override
+  String get storyEditorBlockDivider => 'Бөлгіш';
+
+  @override
+  String get storyEditorBlockDividerDescription => 'Бөлімдерді визуалды бөлу';
+
+  @override
+  String get storyEditorBlockPlaceReference => 'Орын сілтемесі';
+
+  @override
+  String get storyEditorBlockPlaceReferenceDescription =>
+      'Орынды хикаямен байланыстыру';
+
+  @override
+  String get storyEditorBlockNumberedList => 'Нөмірленген тізім';
+
+  @override
+  String get storyEditorStartWithBlockTitle => 'Блоктан бастаңыз';
+
+  @override
+  String get storyEditorStartWithBlockSubtitle =>
+      'Хикаяны құрастыру үшін мәтін, медиа, орындар, ескертулер немесе бөлгіштер қосыңыз.';
+
+  @override
+  String get storyEditorPlaceNameHint => 'Орын атауы';
+
+  @override
+  String get storyEditorTextHintHeading => 'Түсінікті бөлім тақырыбын жазыңыз';
+
+  @override
+  String get storyEditorTextHintBulletedList =>
+      'Тізім тармақтарын әр жолға бірден қосыңыз';
+
+  @override
+  String get storyEditorTextHintNumberedList =>
+      'Қадамдарды әр жолға бірден қосыңыз';
+
+  @override
+  String get storyEditorTextHintQuote =>
+      'Дәйексөз немесе есте қаларлық сөйлем қосыңыз';
+
+  @override
+  String get storyEditorTextHintCallout => 'Практикалық кеңесті ерекшелеу';
+
+  @override
+  String get storyEditorTextHintParagraph => 'Хикаяңызды жазыңыз';
+
+  @override
+  String storyEditorDeleteBlockSemantic(Object block) {
+    return '«$block» блогын өшіру';
+  }
+
+  @override
+  String storyEditorReorderBlockSemantic(Object block) {
+    return '«$block» блогының орнын өзгерту үшін сүйреңіз';
+  }
+
+  @override
+  String get storyEditorPublishReadiness => 'Жариялауға дайындық';
+
+  @override
+  String get storyEditorChecklistTitle => 'Атау';
+
+  @override
+  String get storyEditorChecklistFormat => 'Материал түрі';
+
+  @override
+  String get storyEditorChecklistCategory => 'Тақырып';
+
+  @override
+  String get storyEditorChecklistCover => 'Мұқаба';
+
+  @override
+  String get storyEditorChecklistPlace => 'Орын';
+
+  @override
+  String get storyEditorChecklistCountry => 'Ел';
+
+  @override
+  String get storyEditorChecklistContent => 'Контент';
+
+  @override
+  String get storyEditorChecklistMedia => 'Медиа';
+
+  @override
+  String get storyEditorChecklistReady => 'Дайын';
+
+  @override
+  String get storyEditorChecklistNeedsAttention => 'Назар қажет';
+
+  @override
+  String get storyEditorChecklistOpen => 'Ашу';
+
+  @override
+  String get storyEditorConflictFallback => 'Хикая басқа жерде өзгертілген.';
+
+  @override
+  String get storyEditorSaveDraft => 'Нобайды сақтау';
+
+  @override
+  String get storyEditorPublish => 'Жариялау';
+
+  @override
+  String get storyEditorPublishSemantic => 'Хикаяны жариялау';
+
+  @override
+  String get storyEditorAutosaveIdle => 'Күту';
+
+  @override
+  String get storyEditorAutosaveSaving => 'Сақталуда';
+
+  @override
+  String get storyEditorAutosaveSaved => 'Сақталды';
+
+  @override
+  String get storyEditorAutosaveFailed => 'Назар қажет';
+
+  @override
+  String get storyEditorAutosaveConflict => 'Қайшылық';
+
+  @override
+  String get storyEditorPublishNotReady => 'Хикая жариялауға дайын емес.';
+
+  @override
+  String get storyEditorMediaRetrySemantic => 'Медиа жүктеуді қайталау';
+
+  @override
+  String get storyEditorMediaRemoveSemantic => 'Медиа жүктеуді өшіру';
+
+  @override
+  String get storyEditorMediaRetry => 'Қайталау';
+
+  @override
+  String get storyEditorMediaRemove => 'Өшіру';
+
+  @override
+  String get storyEditorMediaQueued => 'Жүктеу кезегінде';
+
+  @override
+  String get storyEditorMediaUploading => 'Жүктелуде';
+
+  @override
+  String get storyEditorMediaFailed => 'Жүктеу сәтсіз аяқталды';
+
+  @override
+  String get storyEditorMediaComplete => 'Жүктеу аяқталды';
+
+  @override
+  String get storyEditorMediaRemoved => 'Өшірілді';
+
+  @override
+  String get storyEditorMediaLocalPreviewUnavailable =>
+      'Жергілікті алдын ала көру қолжетімсіз. Бұл медианы өшіріп, қайта қосыңыз.';
+
+  @override
+  String get storyEditorMediaErrorRetryUpload => 'Медиа жүктеуді қайталаңыз.';
+
+  @override
+  String get storyEditorMediaErrorInterrupted =>
+      'Жүктеу үзілді. Жалғастыру үшін қайталаңыз.';
+
+  @override
+  String get storyEditorMediaErrorMissingSource =>
+      'Жергілікті медиа көзі қолжетімсіз. Бұл медианы өшіріп, қайта қосыңыз.';
+
+  @override
+  String get storyEditorMediaErrorUploadFailed =>
+      'Медианы жүктеу мүмкін болмады. Қайта көріңіз.';
+
+  @override
+  String get storyEditorImagePickTooLarge =>
+      'Сурет тым үлкен. 20 МБ-қа дейінгі файлды таңдаңыз.';
+
+  @override
+  String get storyEditorImagePickUnsupported =>
+      'JPG, PNG немесе WebP форматындағы суретті таңдаңыз.';
+
+  @override
+  String get storyEditorImagePickFailed =>
+      'Бұл суретті ашу мүмкін болмады. Басқасын таңдаңыз.';
+
+  @override
+  String get storyEditorValidationTitleRequired => 'Хикая атауын көрсетіңіз.';
+
+  @override
+  String get storyEditorValidationFormatRequired => 'Хикая форматын таңдаңыз.';
+
+  @override
+  String get storyEditorValidationCategoryRequired => 'Хикая санатын таңдаңыз.';
+
+  @override
+  String get storyEditorValidationCoverRequired => 'Хикая мұқабасын қосыңыз.';
+
+  @override
+  String get storyEditorValidationPlaceRequired => 'Хикая орнын көрсетіңіз.';
+
+  @override
+  String get storyEditorValidationCountryRequired => 'Хикая елін таңдаңыз.';
+
+  @override
+  String get storyEditorValidationDraftRequired =>
+      'Черновикті сақтау үшін тақырып немесе кемінде бір хикая блогын қосыңыз.';
+
+  @override
+  String get storyEditorValidationContentRequired =>
+      'Жарияламас бұрын кемінде бір хикая блогын қосыңыз.';
+
+  @override
+  String get storyEditorValidationMediaPending =>
+      'Медиа жүктеліп болғанша күтіңіз.';
 
   @override
   String get chatListTitle => 'Чаттар';

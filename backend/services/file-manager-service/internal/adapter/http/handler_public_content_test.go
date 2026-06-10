@@ -141,3 +141,7 @@ func (f *fakeFileUseCase) OpenPublicContent(context.Context, uuid.UUID) (io.Read
 func (f *fakeFileUseCase) SoftDelete(context.Context, uuid.UUID) error {
 	return nil
 }
+
+func (f *fakeFileUseCase) ReleaseUnboundUpload(context.Context, uuid.UUID, string) error {
+	return nil
+}

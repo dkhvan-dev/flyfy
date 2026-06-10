@@ -22,6 +22,7 @@ var (
 	ErrIdempotencyConflict   = errors.New("idempotency key reuse with different request payload")
 	ErrFilePurposeMismatch   = errors.New("file purpose does not match binding purpose")
 	ErrFileOwnershipMismatch = errors.New("file owner does not match actor")
+	ErrFileAlreadyBound      = errors.New("file already has an active binding")
 	ErrFraudRejected         = errors.New("operation rejected by fraud policy")
 	ErrTrustPolicyRejected   = errors.New("operation rejected by trust policy")
 )
@@ -44,6 +45,7 @@ const (
 	ErrorCodeIdempotencyConflict   = "idempotency_conflict"
 	ErrorCodeFilePurposeMismatch   = "file_purpose_mismatch"
 	ErrorCodeFileOwnershipMismatch = "file_ownership_mismatch"
+	ErrorCodeFileAlreadyBound      = "file_already_bound"
 	ErrorCodeFraudRejected         = "fraud_rejected"
 	ErrorCodeTrustPolicyRejected   = "trust_policy_rejected"
 )
@@ -84,6 +86,8 @@ func BusinessErrorCode(err error) (string, bool) {
 		return ErrorCodeFilePurposeMismatch, true
 	case errors.Is(err, ErrFileOwnershipMismatch):
 		return ErrorCodeFileOwnershipMismatch, true
+	case errors.Is(err, ErrFileAlreadyBound):
+		return ErrorCodeFileAlreadyBound, true
 	case errors.Is(err, ErrFraudRejected):
 		return ErrorCodeFraudRejected, true
 	case errors.Is(err, ErrTrustPolicyRejected):

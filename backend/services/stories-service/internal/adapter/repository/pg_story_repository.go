@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -13,6 +15,7 @@ import (
 
 	"kz/inflap/backend/services/stories-service/internal/domain/enum"
 	"kz/inflap/backend/services/stories-service/internal/domain/model"
+	"kz/inflap/backend/services/stories-service/internal/domain/port"
 )
 
 type PGStoryRepository struct {
@@ -24,6 +27,8 @@ func NewPGStoryRepository(pool *pgxpool.Pool) *PGStoryRepository {
 }
 
 func (r *PGStoryRepository) CreateStory(ctx context.Context, story *model.Story) error {
+	normalizeStoryContentEngineFields(story)
+
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
@@ -33,12 +38,18 @@ func (r *PGStoryRepository) CreateStory(ctx context.Context, story *model.Story)
 	const storyQuery = `
 		INSERT INTO stories (
 			id, slug, author_user_id, title, excerpt, content, category, status,
-			cover_file_id, place_name, place_country_code, place_city_id, tags, view_count,
-			like_count, comment_count, share_count, published_at, created_at, updated_at
+			cover_file_id, place_name, place_country_code, place_city_id, tags,
+			view_count, like_count, comment_count, share_count, published_at,
+			format, content_schema_version, content_blocks, content_plain_text,
+			revision, last_autosaved_at, archived_at, moderation_status,
+			created_at, updated_at
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8,
-			$9, $10, $11, $12, $13, $14,
-			$15, $16, $17, $18, $19, $20
+			$9, $10, $11, $12, $13,
+			$14, $15, $16, $17, $18,
+			$19, $20, $21, $22,
+			$23, $24, $25, $26,
+			$27, $28
 		)
 	`
 
@@ -63,6 +74,14 @@ func (r *PGStoryRepository) CreateStory(ctx context.Context, story *model.Story)
 		story.CommentCount,
 		story.ShareCount,
 		story.PublishedAt,
+		string(story.Format),
+		story.ContentSchemaVersion,
+		story.ContentBlocks,
+		story.ContentPlainText,
+		story.Revision,
+		story.LastAutosavedAt,
+		story.ArchivedAt,
+		string(story.ModerationStatus),
 		story.CreatedAt,
 		story.UpdatedAt,
 	); err != nil {
@@ -89,6 +108,12 @@ func (r *PGStoryRepository) CreateStory(ctx context.Context, story *model.Story)
 }
 
 func (r *PGStoryRepository) UpdateStory(ctx context.Context, story *model.Story) error {
+	if err := validateStoryUpdateRevision(story); err != nil {
+		return err
+	}
+
+	normalizeStoryContentEngineFields(story)
+
 	const query = `
 		UPDATE stories
 		SET
@@ -104,8 +129,16 @@ func (r *PGStoryRepository) UpdateStory(ctx context.Context, story *model.Story)
 			place_city_id = $11,
 			tags = $12,
 			published_at = $13,
-			updated_at = $14
-		WHERE id = $1 AND deleted_at IS NULL
+			updated_at = $14,
+			format = $15,
+			content_schema_version = $16,
+			content_blocks = $17,
+			content_plain_text = $18,
+			revision = revision + 1,
+			last_autosaved_at = $19,
+			archived_at = $20,
+			moderation_status = $21
+		WHERE id = $1 AND revision = $22 AND deleted_at IS NULL
 	`
 
 	tag, err := r.pool.Exec(
@@ -125,6 +158,14 @@ func (r *PGStoryRepository) UpdateStory(ctx context.Context, story *model.Story)
 		story.Tags,
 		story.PublishedAt,
 		story.UpdatedAt,
+		string(story.Format),
+		story.ContentSchemaVersion,
+		story.ContentBlocks,
+		story.ContentPlainText,
+		story.LastAutosavedAt,
+		story.ArchivedAt,
+		string(story.ModerationStatus),
+		story.Revision,
 	)
 	if err != nil {
 		err = classifyPGError(err)
@@ -133,11 +174,7 @@ func (r *PGStoryRepository) UpdateStory(ctx context.Context, story *model.Story)
 		}
 		return fmt.Errorf("update story: %w", err)
 	}
-	if tag.RowsAffected() == 0 {
-		return ErrNotFound
-	}
-
-	return nil
+	return storyUpdateRowsAffectedError(tag.RowsAffected())
 }
 
 func (r *PGStoryRepository) SoftDeleteStory(ctx context.Context, storyID uuid.UUID, authorUserID uuid.UUID) error {
@@ -163,7 +200,9 @@ func (r *PGStoryRepository) GetStoryByID(ctx context.Context, storyID uuid.UUID)
 		SELECT
 			id, slug, author_user_id, title, excerpt, content, category, status,
 			cover_file_id, place_name, place_country_code, place_city_id, tags, view_count,
-			like_count, comment_count, share_count, published_at, created_at, updated_at, deleted_at
+			like_count, comment_count, share_count, published_at, created_at, updated_at, deleted_at,
+			format, content_schema_version, content_blocks, content_plain_text, revision,
+			last_autosaved_at, archived_at, moderation_status
 		FROM stories
 		WHERE id = $1
 		LIMIT 1
@@ -186,7 +225,9 @@ func (r *PGStoryRepository) GetStoryBySlug(ctx context.Context, slug string) (*m
 		SELECT
 			id, slug, author_user_id, title, excerpt, content, category, status,
 			cover_file_id, place_name, place_country_code, place_city_id, tags, view_count,
-			like_count, comment_count, share_count, published_at, created_at, updated_at, deleted_at
+			like_count, comment_count, share_count, published_at, created_at, updated_at, deleted_at,
+			format, content_schema_version, content_blocks, content_plain_text, revision,
+			last_autosaved_at, archived_at, moderation_status
 		FROM stories
 		WHERE slug = $1 AND deleted_at IS NULL
 		LIMIT 1
@@ -208,16 +249,32 @@ func (r *PGStoryRepository) ListStories(ctx context.Context, filter model.StoryL
 	args := make([]any, 0, 12)
 	clauses := []string{"1=1"}
 
-	if !filter.IncludeDeleted {
-		clauses = append(clauses, "deleted_at IS NULL")
-	}
 	if filter.OnlyPublished {
-		args = append(args, string(enum.StoryStatusPublished))
-		clauses = append(clauses, fmt.Sprintf("status = $%d", len(args)))
+		args, clauses = appendPublicStoryVisibilityClauses(args, clauses)
+	} else if !filter.IncludeDeleted {
+		clauses = append(clauses, "deleted_at IS NULL")
 	}
 	if filter.AuthorUserID != nil && *filter.AuthorUserID != uuid.Nil {
 		args = append(args, *filter.AuthorUserID)
 		clauses = append(clauses, fmt.Sprintf("author_user_id = $%d", len(args)))
+	}
+	if filter.Status != nil {
+		args = append(args, string(*filter.Status))
+		clauses = append(clauses, fmt.Sprintf("status = $%d", len(args)))
+	}
+	if filter.ArchivedOnly {
+		clauses = append(clauses, "archived_at IS NOT NULL")
+	}
+	if filter.ExcludeArchived {
+		clauses = append(clauses, "archived_at IS NULL")
+	}
+	if len(filter.Formats) > 0 {
+		raw := make([]string, 0, len(filter.Formats))
+		for _, format := range filter.Formats {
+			raw = append(raw, string(format))
+		}
+		args = append(args, raw)
+		clauses = append(clauses, fmt.Sprintf("format = ANY($%d)", len(args)))
 	}
 	if len(filter.Categories) > 0 {
 		raw := make([]string, 0, len(filter.Categories))
@@ -243,14 +300,19 @@ func (r *PGStoryRepository) ListStories(ctx context.Context, filter model.StoryL
 	}
 	if strings.TrimSpace(filter.PlaceCountryCode) != "" {
 		args = append(args, strings.ToUpper(strings.TrimSpace(filter.PlaceCountryCode)))
-		clauses = append(clauses, fmt.Sprintf("UPPER(COALESCE(place_country_code, '')) = $%d", len(args)))
+		clauses = append(clauses, fmt.Sprintf("place_country_code = $%d", len(args)))
 	}
 	if strings.TrimSpace(filter.PlaceCityID) != "" {
 		args = append(args, strings.TrimSpace(filter.PlaceCityID))
-		clauses = append(clauses, fmt.Sprintf("LOWER(COALESCE(place_city_id, '')) = LOWER($%d)", len(args)))
+		clauses = append(clauses, fmt.Sprintf("place_city_id = $%d", len(args)))
 	}
 
-	orderBy := storyListOrderBy(filter.Sort)
+	orderBy := ""
+	if filter.Sort == "related" {
+		args, orderBy = appendRelatedStoryOrderBy(args, filter)
+	} else {
+		orderBy = storyListOrderBy(filter.Sort)
+	}
 
 	if filter.Limit <= 0 {
 		filter.Limit = 20
@@ -267,7 +329,9 @@ func (r *PGStoryRepository) ListStories(ctx context.Context, filter model.StoryL
 		SELECT
 			id, slug, author_user_id, title, excerpt, content, category, status,
 			cover_file_id, place_name, place_country_code, place_city_id, tags, view_count,
-			like_count, comment_count, share_count, published_at, created_at, updated_at, deleted_at
+			like_count, comment_count, share_count, published_at, created_at, updated_at, deleted_at,
+			format, content_schema_version, content_blocks, content_plain_text, revision,
+			last_autosaved_at, archived_at, moderation_status
 		FROM stories
 		WHERE %s
 		ORDER BY %s
@@ -292,20 +356,120 @@ func (r *PGStoryRepository) ListStories(ctx context.Context, filter model.StoryL
 	return items, rows.Err()
 }
 
-func (r *PGStoryRepository) CountPublishedStoriesByAuthorID(ctx context.Context, authorUserID uuid.UUID) (int, error) {
+func (r *PGStoryRepository) CountStories(ctx context.Context, filter model.StoryListFilter) (int, error) {
+	args := make([]any, 0, 10)
+	clauses := []string{"1=1"}
+
+	if filter.OnlyPublished {
+		args, clauses = appendPublicStoryVisibilityClauses(args, clauses)
+	} else if !filter.IncludeDeleted {
+		clauses = append(clauses, "deleted_at IS NULL")
+	}
+	if filter.AuthorUserID != nil && *filter.AuthorUserID != uuid.Nil {
+		args = append(args, *filter.AuthorUserID)
+		clauses = append(clauses, fmt.Sprintf("author_user_id = $%d", len(args)))
+	}
+	if filter.Status != nil {
+		args = append(args, string(*filter.Status))
+		clauses = append(clauses, fmt.Sprintf("status = $%d", len(args)))
+	}
+	if filter.ArchivedOnly {
+		clauses = append(clauses, "archived_at IS NOT NULL")
+	}
+	if filter.ExcludeArchived {
+		clauses = append(clauses, "archived_at IS NULL")
+	}
+	if len(filter.Formats) > 0 {
+		raw := make([]string, 0, len(filter.Formats))
+		for _, format := range filter.Formats {
+			raw = append(raw, string(format))
+		}
+		args = append(args, raw)
+		clauses = append(clauses, fmt.Sprintf("format = ANY($%d)", len(args)))
+	}
+	if len(filter.Categories) > 0 {
+		raw := make([]string, 0, len(filter.Categories))
+		for _, category := range filter.Categories {
+			raw = append(raw, string(category))
+		}
+		args = append(args, raw)
+		clauses = append(clauses, fmt.Sprintf("category = ANY($%d)", len(args)))
+	}
+	if filter.ExcludeStoryID != nil && *filter.ExcludeStoryID != uuid.Nil {
+		args = append(args, *filter.ExcludeStoryID)
+		clauses = append(clauses, fmt.Sprintf("id <> $%d", len(args)))
+	}
+	if strings.TrimSpace(filter.Search) != "" {
+		term := strings.TrimSpace(filter.Search)
+		args = append(args, term)
+		clauses = append(clauses, fmt.Sprintf("COALESCE(search_vector, ''::tsvector) @@ websearch_to_tsquery('simple', $%d)", len(args)))
+	}
+	if strings.TrimSpace(filter.PlaceQuery) != "" {
+		term := "%" + strings.TrimSpace(filter.PlaceQuery) + "%"
+		args = append(args, term)
+		clauses = append(clauses, fmt.Sprintf("COALESCE(place_name, '') ILIKE $%d", len(args)))
+	}
+	if strings.TrimSpace(filter.PlaceCountryCode) != "" {
+		args = append(args, strings.ToUpper(strings.TrimSpace(filter.PlaceCountryCode)))
+		clauses = append(clauses, fmt.Sprintf("place_country_code = $%d", len(args)))
+	}
+	if strings.TrimSpace(filter.PlaceCityID) != "" {
+		args = append(args, strings.TrimSpace(filter.PlaceCityID))
+		clauses = append(clauses, fmt.Sprintf("place_city_id = $%d", len(args)))
+	}
+
 	var count int64
-	err := r.pool.QueryRow(ctx, `
+	query := fmt.Sprintf(`
 		SELECT COUNT(*)
 		FROM stories
-		WHERE author_user_id = $1
-			AND status = $2
-			AND deleted_at IS NULL
-	`, authorUserID, string(enum.StoryStatusPublished)).Scan(&count)
+		WHERE %s
+	`, strings.Join(clauses, " AND "))
+
+	if err := r.pool.QueryRow(ctx, query, args...).Scan(&count); err != nil {
+		return 0, fmt.Errorf("count stories: %w", err)
+	}
+
+	return int(count), nil
+}
+
+func (r *PGStoryRepository) CountPublishedStoriesByAuthorID(ctx context.Context, authorUserID uuid.UUID) (int, error) {
+	var count int64
+	args, clauses := appendPublicStoryVisibilityClauses(
+		[]any{authorUserID},
+		[]string{"author_user_id = $1"},
+	)
+
+	query := fmt.Sprintf(`
+		SELECT COUNT(*)
+		FROM stories
+		WHERE %s
+	`, strings.Join(clauses, " AND "))
+
+	err := r.pool.QueryRow(ctx, query, args...).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("count published stories by author: %w", err)
 	}
 
 	return int(count), nil
+}
+
+func appendPublicStoryVisibilityClauses(args []any, clauses []string) ([]any, []string) {
+	args = append(args, string(enum.StoryStatusPublished))
+	statusPos := len(args)
+	args = append(args, []string{
+		string(enum.ModerationStatusNotRequired),
+		string(enum.ModerationStatusApproved),
+	})
+	moderationPos := len(args)
+
+	clauses = append(
+		clauses,
+		"deleted_at IS NULL",
+		"archived_at IS NULL",
+		fmt.Sprintf("status = $%d", statusPos),
+		fmt.Sprintf("COALESCE(moderation_status, 'NOT_REQUIRED') = ANY($%d)", moderationPos),
+	)
+	return args, clauses
 }
 
 func storyListOrderBy(sort string) string {
@@ -325,6 +489,44 @@ func storyListOrderBy(sort string) string {
 	default:
 		return "published_at DESC NULLS LAST, created_at DESC"
 	}
+}
+
+func appendRelatedStoryOrderBy(args []any, filter model.StoryListFilter) ([]any, string) {
+	scoreParts := make([]string, 0, 6)
+
+	if value := strings.TrimSpace(filter.RelatedToCityID); value != "" {
+		args = append(args, value)
+		scoreParts = append(scoreParts, fmt.Sprintf("CASE WHEN place_city_id = $%d THEN 80 ELSE 0 END", len(args)))
+	}
+	if value := strings.ToUpper(strings.TrimSpace(filter.RelatedToCountry)); value != "" {
+		args = append(args, value)
+		scoreParts = append(scoreParts, fmt.Sprintf("CASE WHEN place_country_code = $%d THEN 36 ELSE 0 END", len(args)))
+	}
+	if filter.RelatedToCategory != nil && filter.RelatedToCategory.IsValid() {
+		args = append(args, string(*filter.RelatedToCategory))
+		scoreParts = append(scoreParts, fmt.Sprintf("CASE WHEN category = $%d THEN 32 ELSE 0 END", len(args)))
+	}
+	if filter.RelatedToFormat != nil && filter.RelatedToFormat.IsValid() {
+		args = append(args, string(*filter.RelatedToFormat))
+		scoreParts = append(scoreParts, fmt.Sprintf("CASE WHEN format = $%d THEN 24 ELSE 0 END", len(args)))
+	}
+	if filter.RelatedToAuthor != nil && *filter.RelatedToAuthor != uuid.Nil {
+		args = append(args, *filter.RelatedToAuthor)
+		scoreParts = append(scoreParts, fmt.Sprintf("CASE WHEN author_user_id = $%d THEN 12 ELSE 0 END", len(args)))
+	}
+	if len(filter.RelatedToTags) > 0 {
+		args = append(args, filter.RelatedToTags)
+		scoreParts = append(scoreParts, fmt.Sprintf("CASE WHEN ARRAY(SELECT lower(value) FROM unnest(COALESCE(tags, ARRAY[]::text[])) AS tag(value)) && $%d::text[] THEN 18 ELSE 0 END", len(args)))
+	}
+
+	if len(scoreParts) == 0 {
+		return args, storyListOrderBy("popular_desc")
+	}
+
+	return args, fmt.Sprintf(
+		"(%s) DESC, view_count DESC, like_count DESC, comment_count DESC, published_at DESC NULLS LAST, created_at DESC",
+		strings.Join(scoreParts, " + "),
+	)
 }
 
 func (r *PGStoryRepository) LikeStory(ctx context.Context, storyID uuid.UUID, userID uuid.UUID) (bool, int, error) {
@@ -756,15 +958,23 @@ func (r *PGStoryRepository) DeleteComment(ctx context.Context, storyID uuid.UUID
 
 func scanStory(scanner interface{ Scan(dest ...any) error }) (*model.Story, error) {
 	var (
-		item         model.Story
-		categoryRaw  string
-		statusRaw    string
-		coverFileID  *uuid.UUID
-		placeName    *string
-		placeCountry *string
-		placeCityID  *string
-		publishedAt  *time.Time
-		deletedAt    *time.Time
+		item             model.Story
+		categoryRaw      string
+		statusRaw        string
+		coverFileID      *uuid.UUID
+		placeName        *string
+		placeCountry     *string
+		placeCityID      *string
+		publishedAt      *time.Time
+		deletedAt        *time.Time
+		formatRaw        sql.NullString
+		schemaVersionRaw sql.NullInt32
+		contentBlocksRaw []byte
+		contentPlainText sql.NullString
+		revisionRaw      sql.NullInt64
+		lastAutosavedAt  *time.Time
+		archivedAt       *time.Time
+		moderationRaw    sql.NullString
 	)
 
 	if err := scanner.Scan(
@@ -789,20 +999,73 @@ func scanStory(scanner interface{ Scan(dest ...any) error }) (*model.Story, erro
 		&item.CreatedAt,
 		&item.UpdatedAt,
 		&deletedAt,
+		&formatRaw,
+		&schemaVersionRaw,
+		&contentBlocksRaw,
+		&contentPlainText,
+		&revisionRaw,
+		&lastAutosavedAt,
+		&archivedAt,
+		&moderationRaw,
 	); err != nil {
 		return nil, err
 	}
 
 	item.Category = enum.StoryCategory(categoryRaw)
 	item.Status = enum.StoryStatus(statusRaw)
+	item.Format = enum.NormalizeStoryFormat(enum.StoryFormat(formatRaw.String))
+	item.ContentSchemaVersion = int(schemaVersionRaw.Int32)
+	if !schemaVersionRaw.Valid || item.ContentSchemaVersion <= 0 {
+		item.ContentSchemaVersion = 1
+	}
+	if len(contentBlocksRaw) > 0 {
+		item.ContentBlocks = json.RawMessage(append([]byte(nil), contentBlocksRaw...))
+	}
+	item.ContentPlainText = contentPlainText.String
+	item.Revision = revisionRaw.Int64
+	if !revisionRaw.Valid || item.Revision <= 0 {
+		item.Revision = 1
+	}
 	item.CoverFileID = coverFileID
 	item.PlaceName = placeName
 	item.PlaceCountryCode = placeCountry
 	item.PlaceCityID = placeCityID
 	item.PublishedAt = publishedAt
+	item.LastAutosavedAt = lastAutosavedAt
+	item.ArchivedAt = archivedAt
 	item.DeletedAt = deletedAt
+	item.ModerationStatus = enum.NormalizeModerationStatus(enum.ModerationStatus(moderationRaw.String))
 
 	return &item, nil
+}
+
+func normalizeStoryContentEngineFields(story *model.Story) {
+	if story == nil {
+		return
+	}
+
+	story.Format = enum.NormalizeStoryFormat(story.Format)
+	if story.ContentSchemaVersion <= 0 {
+		story.ContentSchemaVersion = 1
+	}
+	if story.Revision <= 0 {
+		story.Revision = 1
+	}
+	story.ModerationStatus = enum.NormalizeModerationStatus(story.ModerationStatus)
+}
+
+func validateStoryUpdateRevision(story *model.Story) error {
+	if story == nil || story.Revision <= 0 {
+		return port.ErrStoryRevisionConflict
+	}
+	return nil
+}
+
+func storyUpdateRowsAffectedError(rowsAffected int64) error {
+	if rowsAffected == 0 {
+		return port.ErrStoryRevisionConflict
+	}
+	return nil
 }
 
 func scanComment(scanner interface{ Scan(dest ...any) error }) (*model.StoryComment, error) {

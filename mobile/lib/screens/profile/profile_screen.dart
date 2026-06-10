@@ -1744,7 +1744,7 @@ class _ProfileStatsGrid extends StatelessWidget {
                 highlighted: true,
               ),
               _StatConfig(
-                label: l10n.profileBlogsStat,
+                label: l10n.profileStoriesStat,
                 value: '$publishedStoriesCount',
                 highlighted: true,
               ),
