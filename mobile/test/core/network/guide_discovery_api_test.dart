@@ -10,6 +10,35 @@ import 'package:inflap/features/guides/data/guide_discovery_api.dart';
 
 void main() {
   test(
+    'listPublicGuideFilterOptions uses public filter-options endpoint',
+    () async {
+      final adapter = _GuideJsonAdapter(
+        guidesPayload: const {'items': []},
+        filterOptionsPayload: {
+          'languages': ['ru', 'en', 'ru', ''],
+          'specializations': ['mountain_guide', 'city_historian', ' '],
+        },
+      );
+      final api = GuideDiscoveryApi(
+        apiClient: ApiClient(
+          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+            ..httpClientAdapter = adapter,
+          secureStorage: _FakeSecureStorage(),
+        ),
+      );
+
+      final options = await api.listPublicGuideFilterOptions();
+
+      expect(adapter.requests.map((request) => request.path), [
+        '/guides/public/filter-options',
+      ]);
+      expect(adapter.requests.single.extra['requiresAuth'], isFalse);
+      expect(options.languageCodes, ['ru', 'en']);
+      expect(options.specializationCodes, ['mountain_guide', 'city_historian']);
+    },
+  );
+
+  test(
     'listPublicGuides uses public guide-service endpoint with query params',
     () async {
       final adapter = _GuideJsonAdapter(
@@ -135,10 +164,12 @@ class _GuideJsonAdapter implements HttpClientAdapter {
   _GuideJsonAdapter({
     required this.guidesPayload,
     this.languagePayload = const {'items': []},
+    this.filterOptionsPayload = const {'languages': [], 'specializations': []},
   });
 
   final Map<String, Object?> guidesPayload;
   final Map<String, Object?> languagePayload;
+  final Map<String, Object?> filterOptionsPayload;
   RequestOptions? lastOptions;
   final List<RequestOptions> requests = [];
 
@@ -150,9 +181,11 @@ class _GuideJsonAdapter implements HttpClientAdapter {
   ) async {
     lastOptions = options;
     requests.add(options);
-    final payload = options.path == '/guides/excursion-languages'
-        ? languagePayload
-        : guidesPayload;
+    final payload = switch (options.path) {
+      '/guides/excursion-languages' => languagePayload,
+      '/guides/public/filter-options' => filterOptionsPayload,
+      _ => guidesPayload,
+    };
     return ResponseBody.fromString(
       jsonEncode(payload),
       200,

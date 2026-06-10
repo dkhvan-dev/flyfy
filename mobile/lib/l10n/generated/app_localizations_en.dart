@@ -2999,6 +2999,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guidesFiltersClear => 'Clear';
 
   @override
+  String get guidesClearSearch => 'Clear search';
+
+  @override
+  String get guidesFilterCountry => 'Country';
+
+  @override
   String get guidesFilterCountryAll => 'All countries';
 
   @override
@@ -3061,6 +3067,20 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get guidesNoResultsSubtitle =>
       'Try another city, name, expertise, language, or filter.';
+
+  @override
+  String get guidesRatingNew => 'New guide';
+
+  @override
+  String guidesReviewsCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count reviews',
+      one: '1 review',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get guidesSpecialtyMountainGuide => 'Mountain Guide';

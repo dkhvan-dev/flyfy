@@ -1599,46 +1599,59 @@ class _PromoCard extends StatelessWidget {
                     horizontal: isCompact ? 20 : 24,
                     vertical: isCompact ? 22 : 28,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        data.eyebrow,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: AppColors.accent,
-                          fontSize: isCompact ? 9 : 10,
-                          height: 1.1,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 2.2,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: constraints.maxWidth,
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                data.eyebrow,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: AppColors.accent,
+                                  fontSize: isCompact ? 9 : 10,
+                                  height: 1.1,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 2.2,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                data.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: const Color(0xFFFFFBF6),
+                                  fontSize: isCompact ? 20 : 22,
+                                  height: 1.08,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const SizedBox(height: 7),
+                              Text(
+                                data.description,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.78),
+                                  fontSize: isCompact ? 12 : 13,
+                                  height: 1.32,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        data.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: const Color(0xFFFFFBF6),
-                          fontSize: isCompact ? 20 : 22,
-                          height: 1.08,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 7),
-                      Text(
-                        data.description,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.78),
-                          fontSize: isCompact ? 12 : 13,
-                          height: 1.32,
-                        ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
                 ),
               ),
@@ -3522,7 +3535,7 @@ double _homeStoryCardHeight({
   }
 
   final verticalPadding = (isCompact ? 13.0 : 14.0) + (isCompact ? 12.0 : 14.0);
-  final safetyPadding = isCompact ? 12.0 : 14.0;
+  final safetyPadding = isCompact ? 18.0 : 20.0;
   return imageHeight + verticalPadding + contentBodyHeight + safetyPadding;
 }
 

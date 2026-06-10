@@ -51,6 +51,25 @@ class GuideApi {
     }
   }
 
+  Future<GuideProfileVm?> getPublicGuideProfileByUserIdOrNull(
+    String userId,
+  ) async {
+    final trimmed = userId.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+
+    try {
+      final data = await _apiClient.getPublicGuideProfileByUserId(trimmed);
+      return GuideProfileVm.fromJson(data);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        return null;
+      }
+      rethrow;
+    }
+  }
+
   Future<GuideApplicationVm> submitMyGuideApplication(
     SubmitGuideApplicationRequest request,
   ) async {

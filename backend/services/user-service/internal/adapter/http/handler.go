@@ -53,6 +53,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /v1/users/", h.handleUserActions)
 	mux.HandleFunc("PUT /v1/users/me/settings", h.UpdateMySettings)
 	mux.HandleFunc("POST /v1/admin/users/", h.handleAdminActions)
+	mux.HandleFunc("GET /v1/public/users/", h.GetPublicProfileByID)
 	mux.HandleFunc("GET /v1/public/users", h.ListPublicProfiles)
 }
 
@@ -1299,31 +1300,65 @@ func (h *Handler) ListPublicProfiles(w http.ResponseWriter, r *http.Request) {
 
 	resp := make([]dto.PublicProfileResponse, 0, len(items))
 	for _, item := range items {
-		var avatarFileID *string
-		if item.AvatarFileID != nil {
-			v := item.AvatarFileID.String()
-			avatarFileID = &v
-		}
-		var lastSeenAt *string
-		if item.LastSeenAt != nil {
-			v := item.LastSeenAt.UTC().Format(time.RFC3339)
-			lastSeenAt = &v
-		}
-
-		resp = append(resp, dto.PublicProfileResponse{
-			UserID:       item.UserID.String(),
-			Nickname:     item.Nickname,
-			Bio:          item.Bio,
-			AvatarFileID: avatarFileID,
-			CountryCode:  item.CountryCode,
-			Locale:       item.Locale,
-			Timezone:     item.Timezone,
-			IsOnline:     item.IsOnline,
-			LastSeenAt:   lastSeenAt,
-		})
+		resp = append(resp, toPublicProfileResponse(item))
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"items": resp,
 	})
+}
+
+func (h *Handler) GetPublicProfileByID(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/v1/public/users/")
+	path = strings.Trim(path, "/")
+	if path == "" {
+		writeError(w, http.StatusNotFound, "not found")
+		return
+	}
+
+	userID, err := uuid.Parse(path)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	profile, err := h.useCase.GetPublicProfileByUserID(r.Context(), userID)
+	if err != nil {
+		switch {
+		case errors.Is(err, app.ErrInvalidUserID):
+			writeError(w, http.StatusBadRequest, err.Error())
+		case errors.Is(err, app.ErrUserNotFound):
+			writeError(w, http.StatusNotFound, err.Error())
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to get public profile")
+		}
+		return
+	}
+
+	writeJSON(w, http.StatusOK, toPublicProfileResponse(profile))
+}
+
+func toPublicProfileResponse(item *model.UserProfile) dto.PublicProfileResponse {
+	var avatarFileID *string
+	if item.AvatarFileID != nil {
+		v := item.AvatarFileID.String()
+		avatarFileID = &v
+	}
+	var lastSeenAt *string
+	if item.LastSeenAt != nil {
+		v := item.LastSeenAt.UTC().Format(time.RFC3339)
+		lastSeenAt = &v
+	}
+
+	return dto.PublicProfileResponse{
+		UserID:       item.UserID.String(),
+		Nickname:     item.Nickname,
+		Bio:          item.Bio,
+		AvatarFileID: avatarFileID,
+		CountryCode:  item.CountryCode,
+		Locale:       item.Locale,
+		Timezone:     item.Timezone,
+		IsOnline:     item.IsOnline,
+		LastSeenAt:   lastSeenAt,
+	}
 }

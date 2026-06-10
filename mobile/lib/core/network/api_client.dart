@@ -267,6 +267,15 @@ class ApiClient {
     return response.data as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> getPublicUserById(String userId) async {
+    final encodedUserId = Uri.encodeComponent(userId.trim());
+    final response = await _dio.get(
+      '/public/users/$encodedUserId',
+      options: Options(extra: const {'requiresAuth': false}),
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> nicknameAvailability(String nickname) async {
     final response = await _dio.get(
       '/users/nickname-availability',
@@ -563,6 +572,17 @@ class ApiClient {
 
   Future<Map<String, dynamic>> getGuideProfileByUserId(String userId) async {
     final response = await _dio.get('/guides/by-user/$userId');
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> getPublicGuideProfileByUserId(
+    String userId,
+  ) async {
+    final encodedUserId = Uri.encodeComponent(userId.trim());
+    final response = await _dio.get(
+      '/guides/public/by-user/$encodedUserId',
+      options: Options(extra: const {'requiresAuth': false}),
+    );
     return response.data as Map<String, dynamic>;
   }
 

@@ -12,6 +12,7 @@ class AppListSearchField extends StatelessWidget {
     this.focusNode,
     this.activeFilterCount = 0,
     this.showClearButton = false,
+    this.onClear,
     this.onSubmitted,
     this.onTapOutside,
   });
@@ -23,6 +24,7 @@ class AppListSearchField extends StatelessWidget {
   final VoidCallback onFilterTap;
   final int activeFilterCount;
   final bool showClearButton;
+  final VoidCallback? onClear;
   final ValueChanged<String>? onSubmitted;
   final TapRegionCallback? onTapOutside;
 
@@ -72,7 +74,7 @@ class AppListSearchField extends StatelessWidget {
                   tooltip: MaterialLocalizations.of(
                     context,
                   ).deleteButtonTooltip.toLowerCase(),
-                  onPressed: controller.clear,
+                  onPressed: onClear ?? controller.clear,
                   style: IconButton.styleFrom(
                     foregroundColor: const Color(0xFF9F8B7D),
                     minimumSize: const Size(36, 36),

@@ -554,8 +554,14 @@ func (r *friendshipTestRepository) ListPublicProfiles(context.Context, int, int)
 	return nil, nil
 }
 
-func (r *friendshipTestRepository) GetPublicProfilesByUserIDs(context.Context, []uuid.UUID) ([]*model.UserProfile, error) {
-	return nil, nil
+func (r *friendshipTestRepository) GetPublicProfilesByUserIDs(_ context.Context, userIDs []uuid.UUID) ([]*model.UserProfile, error) {
+	result := make([]*model.UserProfile, 0, len(userIDs))
+	for _, userID := range userIDs {
+		if profile, ok := r.profiles[userID]; ok {
+			result = append(result, profile)
+		}
+	}
+	return result, nil
 }
 
 func (r *friendshipTestRepository) ListPublicUserIDsByCountryCodes(context.Context, []string) ([]uuid.UUID, error) {

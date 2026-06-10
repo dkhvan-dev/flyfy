@@ -1097,6 +1097,8 @@
   "guidesViewProfile": "View Profile",
   "guidesFiltersTitle": "Filters",
   "guidesFiltersClear": "Clear",
+  "guidesClearSearch": "Clear search",
+  "guidesFilterCountry": "Country",
   "guidesFilterCountryAll": "All countries",
   "guidesFilterCountrySearchHint": "Search country, code, or phone",
   "guidesFilterCountryNoResults": "Country not found",
@@ -1124,6 +1126,13 @@
   "guidesEmptySubtitle": "Verified local experts will appear here. Try choosing another city in filters.",
   "guidesNoResultsTitle": "No guides found",
   "guidesNoResultsSubtitle": "Try another city, name, expertise, language, or filter.",
+  "guidesRatingNew": "New guide",
+  "guidesReviewsCount": "{count, plural, =1{1 review} other{{count} reviews}}",
+  "@guidesReviewsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "guidesSpecialtyMountainGuide": "Mountain Guide",
   "guidesSpecialtyCityHistorian": "City Historian",
   "guidesSpecialtyCulinaryExpert": "Culinary Expert",

@@ -25,6 +25,7 @@ class AppInlineSortRow<T> extends StatelessWidget {
     this.verticalPadding = 8,
     this.minItemHeight = 40,
     this.letterSpacing = 1.4,
+    this.wrap = false,
     this.labelColor = const Color(0xC7E3D4C2),
     this.activeColor = AppColors.accent,
     this.inactiveColor = const Color(0xFFA98D74),
@@ -43,6 +44,7 @@ class AppInlineSortRow<T> extends StatelessWidget {
   final double verticalPadding;
   final double minItemHeight;
   final double letterSpacing;
+  final bool wrap;
   final Color labelColor;
   final Color activeColor;
   final Color inactiveColor;
@@ -53,41 +55,54 @@ class AppInlineSortRow<T> extends StatelessWidget {
         ? Icons.arrow_upward_rounded
         : Icons.arrow_downward_rounded;
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      child: Row(
-        children: [
-          Text(
-            '$label:',
-            style: TextStyle(
-              color: labelColor,
-              fontSize: fontSize,
-              fontWeight: FontWeight.w700,
-              letterSpacing: letterSpacing,
-            ),
-          ),
-          SizedBox(width: labelToOptionsGap),
-          for (final option in options) ...[
-            _InlineSortItem<T>(
-              option: option,
-              selected: selectedValue == option.value,
-              directionIcon: directionIcon,
-              onSelected: onSelected,
-              fontSize: fontSize,
-              iconSize: iconSize,
-              iconGap: iconGap,
-              verticalPadding: verticalPadding,
-              minItemHeight: minItemHeight,
-              letterSpacing: letterSpacing,
-              activeColor: activeColor,
-              inactiveColor: inactiveColor,
-            ),
-            SizedBox(width: optionGap),
-          ],
-        ],
+    final labelWidget = Text(
+      '$label:',
+      style: TextStyle(
+        color: labelColor,
+        fontSize: fontSize,
+        fontWeight: FontWeight.w700,
+        letterSpacing: letterSpacing,
       ),
     );
+    final optionWidgets = [
+      for (final option in options)
+        _InlineSortItem<T>(
+          option: option,
+          selected: selectedValue == option.value,
+          directionIcon: directionIcon,
+          onSelected: onSelected,
+          fontSize: fontSize,
+          iconSize: iconSize,
+          iconGap: iconGap,
+          verticalPadding: verticalPadding,
+          minItemHeight: minItemHeight,
+          letterSpacing: letterSpacing,
+          activeColor: activeColor,
+          inactiveColor: inactiveColor,
+        ),
+    ];
+
+    return wrap
+        ? Wrap(
+            spacing: optionGap,
+            runSpacing: 2,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [labelWidget, ...optionWidgets],
+          )
+        : SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: Row(
+              children: [
+                labelWidget,
+                SizedBox(width: labelToOptionsGap),
+                for (final optionWidget in optionWidgets) ...[
+                  optionWidget,
+                  SizedBox(width: optionGap),
+                ],
+              ],
+            ),
+          );
   }
 }
 

@@ -1097,6 +1097,8 @@
   "guidesViewProfile": "Профильді көру",
   "guidesFiltersTitle": "Сүзгілер",
   "guidesFiltersClear": "Тазалау",
+  "guidesClearSearch": "Іздеуді тазалау",
+  "guidesFilterCountry": "Ел",
   "guidesFilterCountryAll": "Барлық елдер",
   "guidesFilterCountrySearchHint": "Ел, код немесе телефон бойынша іздеу",
   "guidesFilterCountryNoResults": "Ел табылмады",
@@ -1124,6 +1126,13 @@
   "guidesEmptySubtitle": "Мұнда тексерілген жергілікті сарапшылар пайда болады. Сүзгілерден басқа қаланы таңдаңыз.",
   "guidesNoResultsTitle": "Гидтер табылмады",
   "guidesNoResultsSubtitle": "Басқа қаланы, атты, мамандануды, тілді немесе сүзгіні қолданып көріңіз.",
+  "guidesRatingNew": "Жаңа гид",
+  "guidesReviewsCount": "{count, plural, =1{1 пікір} other{{count} пікір}}",
+  "@guidesReviewsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "guidesSpecialtyMountainGuide": "Тау гиді",
   "guidesSpecialtyCityHistorian": "Қала тарихшысы",
   "guidesSpecialtyCulinaryExpert": "Аспаздық сарапшы",

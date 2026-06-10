@@ -68,7 +68,7 @@ void main() {
       final helperSource = source.substring(helperStart, helperEnd);
 
       expect(helperSource, contains('final safetyPadding ='));
-      expect(helperSource, contains('isCompact ? 12.0 : 14.0'));
+      expect(helperSource, contains('isCompact ? 18.0 : 20.0'));
       expect(helperSource, contains('contentBodyHeight + safetyPadding'));
       expect(helperSource, isNot(contains('contentBodyHeight + 4')));
     },
@@ -346,6 +346,32 @@ void main() {
       expect(cardSource, isNot(contains('data.buttonLabel')));
       expect(dataSource, isNot(contains('buttonLabel')));
       expect(source, isNot(contains('homePromoExplore')));
+    },
+  );
+
+  test(
+    'promo card text block cannot overflow with accessibility text scale',
+    () async {
+      final source = await File(
+        'lib/screens/home/home_screen.dart',
+      ).readAsString();
+      final cardStart = source.indexOf('class _PromoCard');
+      final cardEnd = source.indexOf('class _TopDestinationsRow');
+
+      expect(cardStart, isNonNegative);
+      expect(cardEnd, greaterThan(cardStart));
+
+      final cardSource = source.substring(cardStart, cardEnd);
+
+      expect(cardSource, contains('FittedBox('));
+      expect(cardSource, contains('fit: BoxFit.scaleDown'));
+      expect(cardSource, contains('alignment: Alignment.centerLeft'));
+      expect(cardSource, contains('child: ConstrainedBox('));
+      expect(cardSource, contains('maxWidth:'));
+      expect(
+        cardSource,
+        isNot(contains('mainAxisAlignment: MainAxisAlignment.center')),
+      );
     },
   );
 

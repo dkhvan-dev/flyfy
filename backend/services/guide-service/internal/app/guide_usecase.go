@@ -786,6 +786,7 @@ type ListPublicGuidesInput struct {
 	CityName            string
 	CityCountryCode     string
 	CountryCodes        []string
+	UserIDs             []uuid.UUID
 	LanguageCodes       []string
 	SpecializationCodes []string
 	MinRating           *float64
@@ -816,7 +817,13 @@ func (u *GuideUseCase) ListPublicGuideProfiles(
 				Total: 0,
 			}, nil
 		}
-		filter.UserIDs = guideUserIDs
+		filter.UserIDs = intersectGuideUserIDs(filter.UserIDs, guideUserIDs)
+		if len(filter.UserIDs) == 0 {
+			return port.PublicGuideListResult{
+				Items: []*model.GuideProfile{},
+				Total: 0,
+			}, nil
+		}
 	}
 
 	if len(filter.CountryCodes) > 0 {
@@ -867,6 +874,7 @@ func normalizePublicGuideListFilter(input ListPublicGuidesInput) port.PublicGuid
 	return port.PublicGuideListFilter{
 		Query:               strings.TrimSpace(input.Query),
 		CountryCodes:        normalizePublicGuideCodes(input.CountryCodes),
+		UserIDs:             uniqueGuideUserIDs(input.UserIDs),
 		LanguageCodes:       normalizePublicGuideCodes(input.LanguageCodes),
 		SpecializationCodes: normalizePublicGuideCodes(input.SpecializationCodes),
 		MinRating:           input.MinRating,
@@ -1338,4 +1346,37 @@ func (u *GuideUseCase) ListPublicGuideCards(
 		Limit:  filter.Limit,
 		Offset: filter.Offset,
 	}, nil
+}
+
+func (u *GuideUseCase) GetPublicGuideCardByUserID(
+	ctx context.Context,
+	userID uuid.UUID,
+) (*PublicGuideCard, error) {
+	if userID == uuid.Nil {
+		return nil, ErrInvalidGuideUserID
+	}
+
+	result, err := u.ListPublicGuideCards(ctx, ListPublicGuidesInput{
+		UserIDs: []uuid.UUID{userID},
+		Limit:   1,
+		Offset:  0,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(result.Items) == 0 {
+		return nil, ErrGuideProfileNotFound
+	}
+
+	return result.Items[0], nil
+}
+
+func (u *GuideUseCase) ListPublicGuideFilterOptions(
+	ctx context.Context,
+) (port.PublicGuideFilterOptions, error) {
+	options, err := u.repo.ListPublicGuideFilterOptions(ctx)
+	if err != nil {
+		return port.PublicGuideFilterOptions{}, fmt.Errorf("list public guide filter options: %w", err)
+	}
+	return options, nil
 }

@@ -16,6 +16,7 @@ import '../../core/ui/error_view.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
 import '../../core/ui/pagination_bar.dart';
 import '../../features/guides/data/guide_discovery_api.dart';
+import '../../features/guides/guide_filter_options.dart';
 import '../../features/guides/guide_localization.dart';
 import '../../features/guides/guide_search.dart';
 import '../../features/guides/models/public_guide_vm.dart';
@@ -27,15 +28,6 @@ import '../../shared/widgets/app_city_filter_section.dart';
 enum _GuideSortMode { rating, experience }
 
 enum _GuideSortDirection { asc, desc }
-
-const _guideSpecializationFilterCodes = [
-  'mountain_guide',
-  'city_historian',
-  'culinary_expert',
-  'nature_photographer',
-];
-
-const _guideLanguageFilterCodes = ['en', 'ru', 'kk'];
 
 extension _GuideSortModeX on _GuideSortMode {
   String label(AppLocalizations l10n) {
@@ -86,10 +78,13 @@ class _GuidesScreenState extends State<GuidesScreen> {
   List<PublicGuideVm> _guides = const [];
   int _totalGuides = 0;
   bool _loading = true;
+  bool _isRefreshingList = false;
   bool _hasAppliedDefaultCityFilter = false;
   String? _error;
   String _searchQuery = '';
   Timer? _searchDebounce;
+  int _loadGuidesRequestId = 0;
+  GuideFilterOptions _filterOptions = GuideFilterOptions.fallback;
   _GuideFilters _filters = const _GuideFilters();
   _GuideSortMode _sortMode = _GuideSortMode.rating;
   _GuideSortDirection _sortDirection = _GuideSortDirection.desc;
@@ -116,14 +111,28 @@ class _GuidesScreenState extends State<GuidesScreen> {
     if (!mounted) return;
 
     final locationProvider = context.read<HomeLocationProvider>();
+    final startupLoads = <Future<void>>[_loadGuideFilterOptions()];
     if (!locationProvider.isLoaded && !locationProvider.isLoading) {
-      await locationProvider.load(
-        languageCode: Localizations.localeOf(context).languageCode,
+      startupLoads.add(
+        locationProvider.load(
+          languageCode: Localizations.localeOf(context).languageCode,
+        ),
       );
     }
+    await Future.wait(startupLoads);
     if (!mounted) return;
     _applyDefaultCityFilter(locationProvider);
     await _loadGuides();
+  }
+
+  Future<void> _loadGuideFilterOptions() async {
+    try {
+      final options = await _api.listPublicGuideFilterOptions();
+      if (!mounted || options.isEmpty) return;
+      setState(() => _filterOptions = options);
+    } catch (_) {
+      // Keep local fallback options; filters remain usable offline/poor network.
+    }
   }
 
   void _applyDefaultCityFilter(HomeLocationProvider provider) {
@@ -191,8 +200,11 @@ class _GuidesScreenState extends State<GuidesScreen> {
     if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
     final normalizedPage = page < 1 ? 1 : page;
+    final requestId = ++_loadGuidesRequestId;
+    final hadGuides = _guides.isNotEmpty;
     setState(() {
-      _loading = _guides.isEmpty;
+      _loading = !hadGuides;
+      _isRefreshingList = hadGuides;
       _error = null;
     });
 
@@ -211,7 +223,7 @@ class _GuidesScreenState extends State<GuidesScreen> {
         languageCodes: _filters.languageCodes,
         specializationCodes: _filters.specializations,
       );
-      if (!mounted) return;
+      if (!mounted || requestId != _loadGuidesRequestId) return;
       final totalPages = math.max(1, (result.total / _pageSize).ceil());
       if (result.total > 0 && normalizedPage > totalPages) {
         await _loadGuides(page: totalPages);
@@ -221,15 +233,51 @@ class _GuidesScreenState extends State<GuidesScreen> {
         _guides = result.items;
         _totalGuides = result.total;
         _loading = false;
+        _isRefreshingList = false;
         _currentPage = normalizedPage;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || requestId != _loadGuidesRequestId) return;
       setState(() {
         _error = 'load_failed';
         _loading = false;
+        _isRefreshingList = false;
       });
+      if (_guides.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.guidesLoadFailed),
+            action: SnackBarAction(
+              label: l10n.retryButton,
+              onPressed: () => _loadGuides(page: _currentPage),
+            ),
+          ),
+        );
+      }
     }
+  }
+
+  void _clearSearch() {
+    _searchDebounce?.cancel();
+    if (_searchController.text.isNotEmpty) {
+      _searchController.clear();
+    }
+    if (_searchQuery.isEmpty && _currentPage == 1) return;
+    setState(() {
+      _searchQuery = '';
+      _currentPage = 1;
+    });
+    _loadGuides(page: 1);
+  }
+
+  void _clearFilters() {
+    if (_filters.activeCount == 0 && _currentPage == 1) return;
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _filters = const _GuideFilters();
+      _currentPage = 1;
+    });
+    _loadGuides(page: 1);
   }
 
   void _goBack() {
@@ -268,6 +316,7 @@ class _GuidesScreenState extends State<GuidesScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => _GuidesFiltersSheet(
         initialFilters: _filters,
+        filterOptions: _filterOptions,
         fallbackResultCount: _totalGuides,
         resultCountLoader: (filters) async {
           final result = await _api.listPublicGuides(
@@ -371,9 +420,7 @@ class _GuidesScreenState extends State<GuidesScreen> {
     required int activePage,
   }) {
     if (_loading && _guides.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.accent),
-      );
+      return _buildInitialLoadingBody(l10n);
     }
 
     if (_error != null && _guides.isEmpty) {
@@ -403,6 +450,7 @@ class _GuidesScreenState extends State<GuidesScreen> {
                     controller: _searchController,
                     hintText: l10n.guidesSearchHint,
                     onFilterTap: _showFilters,
+                    onClear: _clearSearch,
                     activeFilterCount: _filters.activeCount,
                   ),
                   const SizedBox(height: 23),
@@ -416,6 +464,31 @@ class _GuidesScreenState extends State<GuidesScreen> {
               ),
             ),
           ),
+          if (_isRefreshingList)
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(padX, 14, padX, 0),
+              sliver: const SliverToBoxAdapter(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.all(Radius.circular(999)),
+                  child: LinearProgressIndicator(
+                    minHeight: 3,
+                    color: AppColors.accent,
+                    backgroundColor: Color(0xFF342315),
+                  ),
+                ),
+              ),
+            ),
+          if (_error != null && _guides.isNotEmpty)
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(padX, 14, padX, 0),
+              sliver: SliverToBoxAdapter(
+                child: _GuidesInlineError(
+                  message: l10n.guidesLoadFailed,
+                  retryLabel: l10n.retryButton,
+                  onRetry: () => _loadGuides(page: _currentPage),
+                ),
+              ),
+            ),
           if (pageGuides.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,
@@ -426,6 +499,11 @@ class _GuidesScreenState extends State<GuidesScreen> {
                 subtitle: _searchQuery.isEmpty && _filters.activeCount == 0
                     ? l10n.guidesEmptySubtitle
                     : l10n.guidesNoResultsSubtitle,
+                clearSearchLabel: l10n.guidesClearSearch,
+                clearFiltersLabel: l10n.guidesFiltersClear,
+                showClearFiltersAction: _filters.activeCount > 0,
+                onClearSearch: _searchQuery.isEmpty ? null : _clearSearch,
+                onClearFilters: _clearFilters,
               ),
             )
           else
@@ -443,17 +521,7 @@ class _GuidesScreenState extends State<GuidesScreen> {
                       currentPage: activePage,
                       totalPages: totalPages,
                       onPageChanged: _handlePageChanged,
-                    ),
-                    const SizedBox(height: 15),
-                    Text(
-                      l10n.commonPaginationLabel(activePage, totalPages),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Color(0x6ED2BBAD),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 2.2,
-                      ),
+                      showLabel: false,
                     ),
                   ],
                 ),
@@ -467,13 +535,55 @@ class _GuidesScreenState extends State<GuidesScreen> {
     );
   }
 
+  Widget _buildInitialLoadingBody(AppLocalizations l10n) {
+    final padX = _horizontalPadding(context);
+
+    return CustomScrollView(
+      controller: _scrollController,
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        SliverPadding(
+          padding: EdgeInsets.fromLTRB(padX, 22, padX, 0),
+          sliver: SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _GuidesSearchField(
+                  controller: _searchController,
+                  hintText: l10n.guidesSearchHint,
+                  onFilterTap: _showFilters,
+                  onClear: _clearSearch,
+                  activeFilterCount: _filters.activeCount,
+                ),
+                const SizedBox(height: 23),
+                _GuidesSortBar(
+                  l10n: l10n,
+                  selected: _sortMode,
+                  direction: _sortDirection,
+                  onChanged: _onSortTap,
+                ),
+              ],
+            ),
+          ),
+        ),
+        SliverPadding(
+          padding: EdgeInsets.fromLTRB(padX, 28, padX, 24),
+          sliver: const _GuidesSkeletonGrid(),
+        ),
+        SliverToBoxAdapter(
+          child: SizedBox(height: MediaQuery.paddingOf(context).bottom + 18),
+        ),
+      ],
+    );
+  }
+
   String get _sortQuery => '${_sortMode.queryKey}_${_sortDirection.queryKey}';
 
   String _backendSearchQuery(AppLocalizations l10n) {
     final query = _searchQuery.trim();
     if (query.isEmpty) return query;
 
-    for (final code in _guideSpecializationFilterCodes) {
+    for (final code in _filterOptions.specializationCodes) {
       if (guideSearchMatches(query, [
         code,
         localizedGuideSpecializationLabel(l10n, code),
@@ -482,10 +592,11 @@ class _GuidesScreenState extends State<GuidesScreen> {
       }
     }
 
-    for (final code in _guideLanguageFilterCodes) {
+    for (final code in _filterOptions.languageCodes) {
       if (guideSearchMatches(query, [
         code,
         localizedGuideLanguageLabel(l10n, code),
+        ..._filterOptions.languageAliases(code),
       ])) {
         return code;
       }
@@ -507,12 +618,14 @@ class _GuidesSearchField extends StatelessWidget {
     required this.controller,
     required this.hintText,
     required this.onFilterTap,
+    required this.onClear,
     required this.activeFilterCount,
   });
 
   final TextEditingController controller;
   final String hintText;
   final VoidCallback onFilterTap;
+  final VoidCallback onClear;
   final int activeFilterCount;
 
   @override
@@ -523,6 +636,8 @@ class _GuidesSearchField extends StatelessWidget {
       filterTooltip: AppLocalizations.of(context)!.guidesFiltersTitle,
       activeFilterCount: activeFilterCount,
       onFilterTap: onFilterTap,
+      showClearButton: true,
+      onClear: onClear,
     );
   }
 }
@@ -551,15 +666,23 @@ class _GuidesSortBar extends StatelessWidget {
       selectedValue: selected,
       isAscending: direction == _GuideSortDirection.asc,
       onSelected: onChanged,
+      wrap: true,
       fontSize: 14,
       iconSize: 15,
-      labelToOptionsGap: 18,
-      optionGap: 22,
-      letterSpacing: 1.8,
+      labelToOptionsGap: 14,
+      optionGap: 18,
+      letterSpacing: 0,
       labelColor: const Color(0xFF8D7464),
       inactiveColor: const Color(0xFFD5C0B2),
     );
   }
+}
+
+int _guideGridColumnCount({required double width, required double textScale}) {
+  if (textScale >= 1.3 && width < 600) return 1;
+  if (width < 335) return 1;
+  if (width >= 680) return 3;
+  return 2;
 }
 
 class _GuidesGrid extends StatelessWidget {
@@ -572,11 +695,11 @@ class _GuidesGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return SliverLayoutBuilder(
       builder: (context, constraints) {
-        final columns = constraints.crossAxisExtent < 335
-            ? 1
-            : constraints.crossAxisExtent >= 680
-            ? 3
-            : 2;
+        final textScale = MediaQuery.textScalerOf(context).scale(1);
+        final columns = _guideGridColumnCount(
+          width: constraints.crossAxisExtent,
+          textScale: textScale,
+        );
         final spacing = constraints.crossAxisExtent < 370 ? 12.0 : 16.0;
         final cardWidth =
             (constraints.crossAxisExtent - spacing * (columns - 1)) / columns;
@@ -604,14 +727,171 @@ class _GuidesGrid extends StatelessWidget {
   }
 }
 
-const double _guideCardBodyMinHeight = 122;
+class _GuidesSkeletonGrid extends StatelessWidget {
+  const _GuidesSkeletonGrid();
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverLayoutBuilder(
+      builder: (context, constraints) {
+        final textScale = MediaQuery.textScalerOf(context).scale(1);
+        final columns = _guideGridColumnCount(
+          width: constraints.crossAxisExtent,
+          textScale: textScale,
+        );
+        final spacing = constraints.crossAxisExtent < 370 ? 12.0 : 16.0;
+        final cardWidth =
+            (constraints.crossAxisExtent - spacing * (columns - 1)) / columns;
+        final imageHeight = (cardWidth * 0.82).clamp(118.0, 156.0);
+        final cardHeight = imageHeight + _guideCardBodyHeight(context);
+
+        return SliverGrid(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            mainAxisSpacing: 18,
+            crossAxisSpacing: spacing,
+            mainAxisExtent: cardHeight,
+          ),
+          delegate: SliverChildBuilderDelegate(
+            (context, index) => const _GuideSkeletonCard(),
+            childCount: columns * 3,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _GuideSkeletonCard extends StatelessWidget {
+  const _GuideSkeletonCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFF2C2014),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Expanded(
+              flex: 4,
+              child: DecoratedBox(
+                decoration: BoxDecoration(color: Color(0xFF392719)),
+              ),
+            ),
+            Expanded(
+              flex: 5,
+              child: Padding(
+                padding: const EdgeInsets.all(15),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    _GuideSkeletonLine(widthFactor: 0.72, height: 18),
+                    SizedBox(height: 10),
+                    _GuideSkeletonLine(widthFactor: 0.92, height: 12),
+                    SizedBox(height: 9),
+                    _GuideSkeletonLine(widthFactor: 0.54, height: 12),
+                    Spacer(),
+                    _GuideSkeletonLine(widthFactor: 1, height: 34),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GuideSkeletonLine extends StatelessWidget {
+  const _GuideSkeletonLine({required this.widthFactor, required this.height});
+
+  final double widthFactor;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return FractionallySizedBox(
+      widthFactor: widthFactor,
+      alignment: Alignment.centerLeft,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: SizedBox(height: height),
+      ),
+    );
+  }
+}
+
+class _GuidesInlineError extends StatelessWidget {
+  const _GuidesInlineError({
+    required this.message,
+    required this.retryLabel,
+    required this.onRetry,
+  });
+
+  final String message;
+  final String retryLabel;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFF3A2114),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.24)),
+      ),
+      child: Padding(
+        padding: const EdgeInsetsDirectional.fromSTEB(14, 11, 10, 11),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.wifi_off_rounded,
+              color: AppColors.accent,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                message,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFFFFF3E8),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  height: 1.25,
+                ),
+              ),
+            ),
+            TextButton(onPressed: onRetry, child: Text(retryLabel)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+const double _guideCardBodyMinHeight = 178;
 const double _guideCardBodyHorizontalPadding = 15;
 const double _guideCardBodyVerticalPadding = 12;
 const double _guideCardNameFontSize = 18;
 const double _guideCardNameLineHeight = 1.08;
+const double _guideCardRoleFontSize = 13;
+const double _guideCardRoleLineHeight = 1.18;
 const double _guideCardLanguageFontSize = 14;
 const double _guideCardLanguageLineHeight = 1.18;
 const double _guideCardLanguageGap = 6;
+const double _guideCardMetaFontSize = 12;
+const double _guideCardMetaLineHeight = 1.15;
 const double _guideCardButtonTopGap = 8;
 const double _guideCardButtonMinHeight = 36;
 const double _guideCardButtonHorizontalPadding = 12;
@@ -626,6 +906,10 @@ double _guideCardBodyHeight(BuildContext context) {
   final languageHeight =
       textScaler.scale(_guideCardLanguageFontSize) *
       _guideCardLanguageLineHeight;
+  final roleHeight =
+      textScaler.scale(_guideCardRoleFontSize) * _guideCardRoleLineHeight;
+  final metaHeight =
+      textScaler.scale(_guideCardMetaFontSize) * _guideCardMetaLineHeight;
   final buttonHeight = math.max(
     _guideCardButtonMinHeight,
     textScaler.scale(_guideCardButtonFontSize) +
@@ -635,8 +919,14 @@ double _guideCardBodyHeight(BuildContext context) {
   final contentHeight =
       _guideCardBodyVerticalPadding * 2 +
       nameHeight +
+      5 +
+      roleHeight +
       _guideCardLanguageGap +
       languageHeight +
+      7 +
+      metaHeight +
+      7 +
+      metaHeight +
       _guideCardButtonTopGap +
       buttonHeight +
       _guideCardMinFlexibleGap;
@@ -659,103 +949,177 @@ class _GuideCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final languageLabel = guideExcursionLanguageLabel(l10n, guide);
+    final roleLabel = guideRoleLabel(l10n, guide);
+    final serviceLabel = guideServiceLabels(l10n, guide).take(2).join(' • ');
+    final reviewLabel = guide.reviewsCount == 0
+        ? l10n.guidesRatingNew
+        : l10n.guidesReviewsCount(guide.reviewsCount);
+    final experienceYears = guide.experienceYears;
+    final metaLabel = [
+      reviewLabel,
+      if (experienceYears != null && experienceYears > 0)
+        l10n.guidesExperienceYears(experienceYears),
+    ].join(' • ');
     final avatarUrl = guide.avatarFileId == null
         ? null
         : resolvePublicFileContentUrl(guide.avatarFileId!);
+    final semanticsLabel = [
+      guide.preferredName,
+      if (roleLabel.isNotEmpty) roleLabel,
+      if (languageLabel.isNotEmpty) languageLabel,
+      metaLabel,
+      if (serviceLabel.isNotEmpty) serviceLabel,
+      l10n.guidesViewProfile,
+    ].join(', ');
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
-        child: Ink(
-          decoration: BoxDecoration(
-            color: const Color(0xFF2C2014),
+    return Semantics(
+      button: true,
+      label: semanticsLabel,
+      onTap: onTap,
+      child: ExcludeSemantics(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            excludeFromSemantics: true,
             borderRadius: BorderRadius.circular(22),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(22),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SizedBox(
-                  height: imageHeight,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      if (avatarUrl != null)
-                        Image.network(
-                          avatarUrl,
-                          fit: BoxFit.cover,
-                          cacheWidth: _imageCacheWidth(context),
-                          filterQuality: FilterQuality.medium,
-                          errorBuilder: (_, _, _) =>
-                              _GuideFallbackArt(initials: guide.initials),
-                        )
-                      else
-                        _GuideFallbackArt(initials: guide.initials),
-                      const DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [Color(0x00000000), Color(0x66120B05)],
-                            stops: [0.55, 1.0],
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        top: 13,
-                        right: 12,
-                        child: _RatingBadge(rating: guide.ratingAvg),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: _guideCardBodyHorizontalPadding,
-                      vertical: _guideCardBodyVerticalPadding,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          guide.preferredName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFFFFF3E8),
-                            fontSize: _guideCardNameFontSize,
-                            fontWeight: FontWeight.w900,
-                            height: _guideCardNameLineHeight,
-                            letterSpacing: 0,
-                          ),
-                        ),
-                        if (languageLabel.isNotEmpty) ...[
-                          const SizedBox(height: _guideCardLanguageGap),
-                          Text(
-                            languageLabel,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xFFD9C4B5),
-                              fontSize: _guideCardLanguageFontSize,
-                              fontWeight: FontWeight.w500,
-                              height: _guideCardLanguageLineHeight,
-                              letterSpacing: 0,
+            child: Ink(
+              decoration: BoxDecoration(
+                color: const Color(0xFF2C2014),
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(22),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(
+                      height: imageHeight,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          if (avatarUrl != null)
+                            Image.network(
+                              avatarUrl,
+                              fit: BoxFit.cover,
+                              cacheWidth: _imageCacheWidth(context),
+                              filterQuality: FilterQuality.medium,
+                              loadingBuilder: (context, child, progress) =>
+                                  progress == null
+                                  ? child
+                                  : _GuideFallbackArt(initials: guide.initials),
+                              errorBuilder: (_, _, _) =>
+                                  _GuideFallbackArt(initials: guide.initials),
+                            )
+                          else
+                            _GuideFallbackArt(initials: guide.initials),
+                          const DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [Color(0x00000000), Color(0x66120B05)],
+                                stops: [0.55, 1.0],
+                              ),
                             ),
                           ),
+                          Positioned(
+                            top: 13,
+                            right: 12,
+                            child: _RatingBadge(rating: guide.ratingAvg),
+                          ),
                         ],
-                        const Spacer(),
-                        const SizedBox(height: _guideCardButtonTopGap),
-                        _ViewProfileButton(label: l10n.guidesViewProfile),
-                      ],
+                      ),
                     ),
-                  ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: _guideCardBodyHorizontalPadding,
+                          vertical: _guideCardBodyVerticalPadding,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              guide.preferredName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFFFFF3E8),
+                                fontSize: _guideCardNameFontSize,
+                                fontWeight: FontWeight.w900,
+                                height: _guideCardNameLineHeight,
+                                letterSpacing: 0,
+                              ),
+                            ),
+                            if (roleLabel.isNotEmpty) ...[
+                              const SizedBox(height: 5),
+                              Text(
+                                roleLabel,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Color(0xFFE8D1BF),
+                                  fontSize: _guideCardRoleFontSize,
+                                  fontWeight: FontWeight.w700,
+                                  height: _guideCardRoleLineHeight,
+                                  letterSpacing: 0,
+                                ),
+                              ),
+                            ],
+                            if (languageLabel.isNotEmpty) ...[
+                              const SizedBox(height: _guideCardLanguageGap),
+                              Text(
+                                languageLabel,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Color(0xFFD9C4B5),
+                                  fontSize: _guideCardLanguageFontSize,
+                                  fontWeight: FontWeight.w500,
+                                  height: _guideCardLanguageLineHeight,
+                                  letterSpacing: 0,
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 7),
+                            Text(
+                              metaLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFFBDA393),
+                                fontSize: _guideCardMetaFontSize,
+                                fontWeight: FontWeight.w800,
+                                height: _guideCardMetaLineHeight,
+                                letterSpacing: 0,
+                              ),
+                            ),
+                            if (serviceLabel.isNotEmpty) ...[
+                              const SizedBox(height: 7),
+                              Text(
+                                serviceLabel,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Color(0xFF8F7768),
+                                  fontSize: _guideCardMetaFontSize,
+                                  fontWeight: FontWeight.w700,
+                                  height: _guideCardMetaLineHeight,
+                                  letterSpacing: 0,
+                                ),
+                              ),
+                            ],
+                            const Spacer(),
+                            const SizedBox(height: _guideCardButtonTopGap),
+                            _ViewProfileButton(label: l10n.guidesViewProfile),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -828,7 +1192,7 @@ class _RatingBadge extends StatelessWidget {
           const Icon(Icons.star_rounded, color: AppColors.accent, size: 18),
           const SizedBox(width: 4),
           Text(
-            rating <= 0 ? '0.0' : rating.toStringAsFixed(1),
+            (rating <= 0 ? 5.0 : rating).toStringAsFixed(1),
             style: const TextStyle(
               color: AppColors.accent,
               fontSize: 14,
@@ -878,13 +1242,36 @@ class _ViewProfileButton extends StatelessWidget {
 }
 
 class _GuidesEmptyState extends StatelessWidget {
-  const _GuidesEmptyState({required this.title, required this.subtitle});
+  const _GuidesEmptyState({
+    required this.title,
+    required this.subtitle,
+    required this.clearSearchLabel,
+    required this.clearFiltersLabel,
+    required this.showClearFiltersAction,
+    this.onClearSearch,
+    this.onClearFilters,
+  });
 
   final String title;
   final String subtitle;
+  final String clearSearchLabel;
+  final String clearFiltersLabel;
+  final bool showClearFiltersAction;
+  final VoidCallback? onClearSearch;
+  final VoidCallback? onClearFilters;
 
   @override
   Widget build(BuildContext context) {
+    final actions = [
+      if (onClearSearch != null)
+        _GuidesEmptyAction(label: clearSearchLabel, onPressed: onClearSearch!),
+      if (showClearFiltersAction && onClearFilters != null)
+        _GuidesEmptyAction(
+          label: clearFiltersLabel,
+          onPressed: onClearFilters!,
+        ),
+    ];
+
     return Padding(
       padding: const EdgeInsets.all(28),
       child: Column(
@@ -911,8 +1298,37 @@ class _GuidesEmptyState extends StatelessWidget {
               height: 1.35,
             ),
           ),
+          if (actions.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 10,
+              runSpacing: 10,
+              children: actions,
+            ),
+          ],
         ],
       ),
+    );
+  }
+}
+
+class _GuidesEmptyAction extends StatelessWidget {
+  const _GuidesEmptyAction({required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppColors.accent,
+        side: BorderSide(color: AppColors.accent.withValues(alpha: 0.42)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      child: Text(label),
     );
   }
 }
@@ -981,11 +1397,13 @@ class _GuideFilters {
 class _GuidesFiltersSheet extends StatefulWidget {
   const _GuidesFiltersSheet({
     required this.initialFilters,
+    required this.filterOptions,
     required this.fallbackResultCount,
     required this.resultCountLoader,
   });
 
   final _GuideFilters initialFilters;
+  final GuideFilterOptions filterOptions;
   final int fallbackResultCount;
   final Future<int> Function(_GuideFilters filters) resultCountLoader;
 
@@ -1121,7 +1539,7 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
     final query = _languageSearchQuery.trim();
     if (query.isEmpty) return const [];
 
-    return _guideLanguageFilterCodes
+    return widget.filterOptions.languageCodes
         .where(
           (code) =>
               guideSearchMatches(query, _languageSearchHaystack(l10n, code)),
@@ -1130,12 +1548,7 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
   }
 
   List<String> _languageSearchHaystack(AppLocalizations l10n, String code) {
-    final aliases = switch (code.trim().toLowerCase()) {
-      'en' => const ['english', 'английский', 'ағылшын'],
-      'ru' => const ['russian', 'русский', 'орыс'],
-      'kk' || 'kz' => const ['kazakh', 'казахский', 'қазақ'],
-      _ => const <String>[],
-    };
+    final aliases = widget.filterOptions.languageAliases(code);
     return [code, localizedGuideLanguageLabel(l10n, code), ...aliases];
   }
 
@@ -1178,10 +1591,10 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       AppCountryFilterSection(
-                        title: l10n.attractionFilterCountrySection,
-                        allCountriesLabel: l10n.attractionFilterCountryAll,
-                        searchHint: l10n.attractionFilterCountrySearchHint,
-                        noResultsText: l10n.attractionFilterCountryNoResults,
+                        title: l10n.guidesFilterCountry,
+                        allCountriesLabel: l10n.guidesFilterCountryAll,
+                        searchHint: l10n.guidesFilterCountrySearchHint,
+                        noResultsText: l10n.guidesFilterCountryNoResults,
                         selectedCountry: _filters.country,
                         onChanged: _setCountry,
                       ),
@@ -1204,7 +1617,8 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
                           spacing: 12,
                           runSpacing: 12,
                           children: [
-                            for (final code in _guideSpecializationFilterCodes)
+                            for (final code
+                                in widget.filterOptions.specializationCodes)
                               _GuideFilterChip(
                                 label: localizedGuideSpecializationLabel(
                                   l10n,
@@ -1565,13 +1979,17 @@ class _GuideSegmentGrid<T> extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final useSingleColumn = constraints.maxWidth < 330;
+        final textScale = MediaQuery.textScalerOf(context).scale(1);
+        final contentExtent = 14 * textScale * 1.15 * 2 + 16;
+        final itemExtent = contentExtent < 48 ? 48.0 : contentExtent;
+
         return GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: items.length,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: useSingleColumn ? 1 : 2,
-            mainAxisExtent: 48,
+            mainAxisExtent: itemExtent,
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
           ),

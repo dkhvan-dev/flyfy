@@ -41,4 +41,18 @@ void main() {
 
     expect(guide.preferredName, 'Тулегенова Аружан');
   });
+
+  test('uses default five-star rating until first review arrives', () {
+    final guide = PublicGuideVm.fromJson({
+      'guideProfile': {
+        'id': 'guide-profile-id',
+        'userId': 'guide-user-id',
+        'ratingAvg': 0,
+        'reviewsCount': 0,
+      },
+    });
+
+    expect(guide.ratingAvg, 5.0);
+    expect(guide.reviewsCount, 0);
+  });
 }

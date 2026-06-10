@@ -36,10 +36,15 @@ class GuideProfileVm {
   final DateTime? statusChangedAt;
 
   factory GuideProfileVm.fromJson(Map<String, dynamic> json) {
-    final profile = json['profile'] as Map<String, dynamic>? ?? const {};
+    final profile =
+        (json['profile'] as Map<String, dynamic>?) ??
+        (json['guideProfile'] as Map<String, dynamic>?) ??
+        const {};
     final languages = json['languages'] as List<dynamic>? ?? const [];
     final specializations =
         json['specializations'] as List<dynamic>? ?? const [];
+    final reviewsCount =
+        int.tryParse(profile['reviewsCount']?.toString() ?? '') ?? 0;
 
     int? parseNullableInt(dynamic value) {
       final parsed = int.tryParse(value?.toString() ?? '');
@@ -57,9 +62,10 @@ class GuideProfileVm {
       isPrivateGuideAvailable: profile['isPrivateGuideAvailable'] == true,
       isActivityHostAvailable: profile['isActivityHostAvailable'] == true,
       isExcursionGuideAvailable: profile['isExcursionGuideAvailable'] == true,
-      ratingAvg: double.tryParse(profile['ratingAvg']?.toString() ?? '') ?? 0,
-      reviewsCount:
-          int.tryParse(profile['reviewsCount']?.toString() ?? '') ?? 0,
+      ratingAvg: reviewsCount <= 0
+          ? 5
+          : double.tryParse(profile['ratingAvg']?.toString() ?? '') ?? 0,
+      reviewsCount: reviewsCount,
       statusReason: _trimmedStringOrNull(profile['statusReason']),
       statusChangedAt: DateTime.tryParse(
         profile['statusChangedAt']?.toString() ?? '',

@@ -3008,6 +3008,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get guidesFiltersClear => 'Очистить';
 
   @override
+  String get guidesClearSearch => 'Очистить поиск';
+
+  @override
+  String get guidesFilterCountry => 'Страна';
+
+  @override
   String get guidesFilterCountryAll => 'Все страны';
 
   @override
@@ -3072,6 +3078,22 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get guidesNoResultsSubtitle =>
       'Попробуйте другой город, имя, специализацию, язык или фильтр.';
+
+  @override
+  String get guidesRatingNew => 'Новый гид';
+
+  @override
+  String guidesReviewsCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count отзыва',
+      many: '$count отзывов',
+      few: '$count отзыва',
+      one: '$count отзыв',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get guidesSpecialtyMountainGuide => 'Горный гид';

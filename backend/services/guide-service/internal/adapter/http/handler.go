@@ -34,6 +34,8 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/guides/me/application", h.SubmitMyGuideApplication)
 	mux.HandleFunc("POST /v1/guides/me/verification-requests", h.CreateMyVerificationRequest)
 	mux.HandleFunc("POST /v1/guides/me/verification-requests/", h.AttachMyGuideDocument)
+	mux.HandleFunc("GET /v1/guides/public/by-user/", h.GetPublicGuideByUserID)
+	mux.HandleFunc("GET /v1/guides/public/filter-options", h.ListPublicGuideFilterOptions)
 	mux.HandleFunc("GET /v1/guides/public", h.ListPublicGuides)
 	mux.HandleFunc("GET /v1/guides/by-user/", h.GetGuideByUserID)
 	mux.HandleFunc("GET /v1/guides/", h.GetGuideByID)
@@ -448,6 +450,49 @@ func (h *Handler) ListPublicGuides(w http.ResponseWriter, r *http.Request) {
 		"total":  result.Total,
 		"limit":  result.Limit,
 		"offset": result.Offset,
+	})
+}
+
+func (h *Handler) GetPublicGuideByUserID(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/v1/guides/public/by-user/")
+	path = strings.Trim(path, "/")
+	if path == "" {
+		writeError(w, http.StatusNotFound, "not found")
+		return
+	}
+
+	userID, err := uuid.Parse(path)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	card, err := h.useCase.GetPublicGuideCardByUserID(r.Context(), userID)
+	if err != nil {
+		switch {
+		case errors.Is(err, app.ErrInvalidGuideUserID):
+			writeError(w, http.StatusBadRequest, err.Error())
+		case errors.Is(err, app.ErrGuideProfileNotFound):
+			writeError(w, http.StatusNotFound, err.Error())
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to get public guide profile")
+		}
+		return
+	}
+
+	writeJSON(w, http.StatusOK, toPublicGuideCardResponse(card))
+}
+
+func (h *Handler) ListPublicGuideFilterOptions(w http.ResponseWriter, r *http.Request) {
+	options, err := h.useCase.ListPublicGuideFilterOptions(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to list public guide filter options")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"languages":       options.LanguageCodes,
+		"specializations": options.SpecializationCodes,
 	})
 }
 

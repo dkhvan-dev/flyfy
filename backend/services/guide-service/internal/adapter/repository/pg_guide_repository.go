@@ -857,6 +857,68 @@ func (r *PGGuideRepository) ListPublicGuideProfiles(
 	}, nil
 }
 
+func (r *PGGuideRepository) ListPublicGuideFilterOptions(
+	ctx context.Context,
+) (port.PublicGuideFilterOptions, error) {
+	languages, err := r.listDistinctPublicGuideCodes(ctx, `
+		SELECT DISTINCT LOWER(gl.language_code)
+		FROM guide_languages gl
+		JOIN guide_profiles gp ON gp.id = gl.guide_profile_id
+		WHERE gp.status = $1
+			AND TRIM(gl.language_code) <> ''
+		ORDER BY 1
+	`)
+	if err != nil {
+		return port.PublicGuideFilterOptions{}, fmt.Errorf("list public guide language options: %w", err)
+	}
+
+	specializations, err := r.listDistinctPublicGuideCodes(ctx, `
+		SELECT DISTINCT LOWER(gs.specialization_code)
+		FROM guide_specializations gs
+		JOIN guide_profiles gp ON gp.id = gs.guide_profile_id
+		WHERE gp.status = $1
+			AND TRIM(gs.specialization_code) <> ''
+		ORDER BY 1
+	`)
+	if err != nil {
+		return port.PublicGuideFilterOptions{}, fmt.Errorf("list public guide specialization options: %w", err)
+	}
+
+	return port.PublicGuideFilterOptions{
+		LanguageCodes:       languages,
+		SpecializationCodes: specializations,
+	}, nil
+}
+
+func (r *PGGuideRepository) listDistinctPublicGuideCodes(
+	ctx context.Context,
+	query string,
+) ([]string, error) {
+	rows, err := r.pool.Query(ctx, query, string(enum.GuideStatusActive))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make([]string, 0)
+	for rows.Next() {
+		var code string
+		if err = rows.Scan(&code); err != nil {
+			return nil, fmt.Errorf("scan public guide option code: %w", err)
+		}
+		code = strings.TrimSpace(strings.ToLower(code))
+		if code == "" {
+			continue
+		}
+		result = append(result, code)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 func buildPublicGuideWhere(filter port.PublicGuideListFilter) ([]string, []any) {
 	where := []string{"gp.status = $1"}
 	args := []any{string(enum.GuideStatusActive)}

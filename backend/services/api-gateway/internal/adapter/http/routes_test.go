@@ -240,6 +240,54 @@ func TestPublicGuidesRouteDoesNotRequireBearerToken(t *testing.T) {
 	}
 }
 
+func TestPublicGuideByUserRouteDoesNotRequireBearerToken(t *testing.T) {
+	policy := matchRoutePolicy("/api/v1/guides/public/by-user/user-1", "/api/v1")
+	if policy == nil {
+		t.Fatal("expected public guide by user route policy")
+	}
+	if policy.Upstream != "guide" {
+		t.Fatalf("upstream = %q, want guide", policy.Upstream)
+	}
+	if policy.AuthMode != RouteAuthPublic {
+		t.Fatalf("auth mode = %q, want public", policy.AuthMode)
+	}
+	if policy.RewritePrefix != "/v1/guides/public/by-user" {
+		t.Fatalf("rewrite prefix = %q, want /v1/guides/public/by-user", policy.RewritePrefix)
+	}
+}
+
+func TestPublicGuideFilterOptionsRouteDoesNotRequireBearerToken(t *testing.T) {
+	policy := matchRoutePolicy("/api/v1/guides/public/filter-options", "/api/v1")
+	if policy == nil {
+		t.Fatal("expected public guide filter options route policy")
+	}
+	if policy.Upstream != "guide" {
+		t.Fatalf("upstream = %q, want guide", policy.Upstream)
+	}
+	if policy.AuthMode != RouteAuthPublic {
+		t.Fatalf("auth mode = %q, want public", policy.AuthMode)
+	}
+	if policy.RewritePrefix != "/v1/guides/public/filter-options" {
+		t.Fatalf("rewrite prefix = %q, want /v1/guides/public/filter-options", policy.RewritePrefix)
+	}
+}
+
+func TestPublicUserProfileRouteDoesNotRequireBearerToken(t *testing.T) {
+	policy := matchRoutePolicy("/api/v1/public/users/user-1", "/api/v1")
+	if policy == nil {
+		t.Fatal("expected public user route policy")
+	}
+	if policy.Upstream != "user" {
+		t.Fatalf("upstream = %q, want user", policy.Upstream)
+	}
+	if policy.AuthMode != RouteAuthPublic {
+		t.Fatalf("auth mode = %q, want public", policy.AuthMode)
+	}
+	if policy.RewritePrefix != "/v1/public/users" {
+		t.Fatalf("rewrite prefix = %q, want /v1/public/users", policy.RewritePrefix)
+	}
+}
+
 func TestGuideExcursionLanguagesRouteProxiesToExcursionService(t *testing.T) {
 	policy := matchRoutePolicy("/api/v1/guides/excursion-languages", "/api/v1")
 	if policy == nil {

@@ -37,8 +37,16 @@ void main() {
     );
     expect(
       resolvedSource,
-      contains('onFollowersTap: () => _openFollowers(effectiveProfile)'),
+      contains(
+        'final VoidCallback onFollowersTap = isOwnProfile || canUseProtectedActions',
+      ),
     );
+    expect(
+      resolvedSource,
+      contains('? () => _openFollowers(effectiveProfile)'),
+    );
+    expect(resolvedSource, contains(': _openLoginForProtectedAction;'));
+    expect(resolvedSource, contains('onFollowersTap: onFollowersTap'));
   });
 
   test(

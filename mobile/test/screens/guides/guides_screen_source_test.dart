@@ -86,10 +86,10 @@ void main() {
     expect(source, contains('countryCodes: filters.countryCodes'));
     expect(source, contains('AppCountryFilterSection'));
     expect(source, contains('AppCityFilterSection'));
-    expect(source, contains('attractionFilterCountrySection'));
-    expect(source, contains('attractionFilterCountryAll'));
-    expect(source, contains('attractionFilterCountrySearchHint'));
-    expect(source, contains('attractionFilterCountryNoResults'));
+    expect(source, contains('guidesFilterCountry'));
+    expect(source, contains('guidesFilterCountryAll'));
+    expect(source, contains('guidesFilterCountrySearchHint'));
+    expect(source, contains('guidesFilterCountryNoResults'));
     expect(source, contains('locationFilterCitySection'));
     expect(source, contains('locationFilterCitySearchHint'));
     expect(source, contains('locationFilterCityNoResults'));
@@ -152,6 +152,29 @@ void main() {
     expect(languageSection, isNot(contains('_GuideFilterChip(')));
   });
 
+  test('guides filters load reference options outside the screen UI', () async {
+    final source = await File(
+      'lib/screens/guides/guides_screen.dart',
+    ).readAsString();
+    final optionsSource = await File(
+      'lib/features/guides/guide_filter_options.dart',
+    ).readAsString();
+    final apiSource = await File(
+      'lib/features/guides/data/guide_discovery_api.dart',
+    ).readAsString();
+
+    expect(source, contains('GuideFilterOptions.fallback'));
+    expect(source, contains('_loadGuideFilterOptions'));
+    expect(source, contains('listPublicGuideFilterOptions'));
+    expect(source, contains('filterOptions: _filterOptions'));
+    expect(source, isNot(contains('const _guideLanguageFilterCodes')));
+    expect(source, isNot(contains('const _guideSpecializationFilterCodes')));
+    expect(optionsSource, contains('class GuideFilterOptions'));
+    expect(optionsSource, contains('languageAliases'));
+    expect(optionsSource, contains('specializationCodes'));
+    expect(apiSource, contains("'/guides/public/filter-options'"));
+  });
+
   test('guide cards show excursion languages and use compact sizing', () async {
     final source = await File(
       'lib/screens/guides/guides_screen.dart',
@@ -166,6 +189,94 @@ void main() {
     expect(source, contains('clamp(118.0, 156.0)'));
     expect(source, contains('guide.preferredName'));
     expect(source, contains('maxLines: 1'));
+  });
+
+  test(
+    'guide list keeps sort and cards adaptive for large accessibility text',
+    () async {
+      final source = await File(
+        'lib/screens/guides/guides_screen.dart',
+      ).readAsString();
+      final sortRowSource = await File(
+        'lib/core/ui/app_inline_sort_row.dart',
+      ).readAsString();
+
+      expect(sortRowSource, contains('final bool wrap'));
+      expect(sortRowSource, contains('return wrap'));
+      expect(sortRowSource, contains('? Wrap('));
+      expect(source, contains('wrap: true'));
+      expect(source, contains('_guideGridColumnCount('));
+      expect(source, contains('MediaQuery.textScalerOf(context).scale(1)'));
+      expect(
+        source,
+        contains('if (textScale >= 1.3 && width < 600) return 1;'),
+      );
+    },
+  );
+
+  test('guide card exposes profile navigation as a semantic button', () async {
+    final source = await File(
+      'lib/screens/guides/guides_screen.dart',
+    ).readAsString();
+    final cardStart = source.indexOf('class _GuideCard');
+    final fallbackStart = source.indexOf('class _GuideFallbackArt');
+
+    expect(cardStart, isNonNegative);
+    expect(fallbackStart, greaterThan(cardStart));
+
+    final cardSource = source.substring(cardStart, fallbackStart);
+
+    expect(cardSource, contains('Semantics('));
+    expect(cardSource, contains('button: true'));
+    expect(cardSource, contains('onTap: onTap'));
+    expect(cardSource, contains('label: semanticsLabel'));
+    expect(cardSource, contains('final semanticsLabel'));
+    expect(cardSource, contains('l10n.guidesViewProfile'));
+  });
+
+  test('guide filter segments grow for accessibility text scale', () async {
+    final source = await File(
+      'lib/screens/guides/guides_screen.dart',
+    ).readAsString();
+    final gridStart = source.indexOf('class _GuideSegmentGrid');
+    final buttonStart = source.indexOf('class _GuideSegmentButton');
+
+    expect(gridStart, isNonNegative);
+    expect(buttonStart, greaterThan(gridStart));
+
+    final gridSource = source.substring(gridStart, buttonStart);
+
+    expect(gridSource, contains('MediaQuery.textScalerOf(context).scale(1)'));
+    expect(gridSource, contains('final itemExtent'));
+    expect(gridSource, contains('mainAxisExtent: itemExtent'));
+    expect(gridSource, isNot(contains('mainAxisExtent: 48')));
+  });
+
+  test('guide list avoids stale loads and exposes recovery actions', () async {
+    final source = await File(
+      'lib/screens/guides/guides_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('_loadGuidesRequestId'));
+    expect(source, contains('requestId != _loadGuidesRequestId'));
+    expect(source, contains('ScaffoldMessenger.of(context).showSnackBar'));
+    expect(source, contains('showClearButton: true'));
+    expect(source, contains('onClear: _clearSearch'));
+    expect(source, contains('onClearFilters: _clearFilters'));
+    expect(source, contains('showLabel: false'));
+  });
+
+  test('guide cards expose decision signals beyond name and image', () async {
+    final source = await File(
+      'lib/screens/guides/guides_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('guideRoleLabel(l10n, guide)'));
+    expect(source, contains('guideServiceLabels(l10n, guide)'));
+    expect(source, contains('guide.reviewsCount'));
+    expect(source, contains('guide.experienceYears'));
+    expect(source, contains('guidesRatingNew'));
+    expect(source, contains('guidesReviewsCount'));
   });
 
   test(
@@ -191,6 +302,29 @@ void main() {
       );
       expect(homeSource, contains('context.push(service.route)'));
       expect(homeSource, contains('onServiceTap: _openService'));
+      expect(routerSource, contains("location.startsWith('/users/')"));
+    },
+  );
+
+  test(
+    'foreign guide profile keeps public browsing read-only for guests',
+    () async {
+      final profileSource = await File(
+        'lib/screens/profile/profile_screen.dart',
+      ).readAsString();
+      final profileApiSource = await File(
+        'lib/features/profile/data/profile_api.dart',
+      ).readAsString();
+      final guideApiSource = await File(
+        'lib/features/profile/data/guide_api.dart',
+      ).readAsString();
+
+      expect(profileSource, contains('session.isAuthenticated'));
+      expect(profileSource, contains('_openLoginForProtectedAction'));
+      expect(profileSource, contains('getPublicUserById'));
+      expect(profileSource, contains('getPublicGuideProfileByUserIdOrNull'));
+      expect(profileApiSource, contains('getPublicUserById'));
+      expect(guideApiSource, contains('getPublicGuideProfileByUserIdOrNull'));
     },
   );
 }

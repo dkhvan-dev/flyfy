@@ -6,6 +6,7 @@ import (
 	nethttp "net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -238,6 +239,148 @@ func TestListPublicGuidesReturnsEmptyWhenCityHasNoExcursionGuides(t *testing.T) 
 	}
 }
 
+func TestGetPublicGuideByUserIDReturnsPublicCardOnly(t *testing.T) {
+	t.Parallel()
+
+	profileID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	userID := uuid.MustParse("22222222-2222-2222-2222-222222222222")
+	now := time.Date(2026, 5, 11, 9, 30, 0, 0, time.UTC)
+	headline := "Almaty mountain guide"
+	nickname := "Aruzhan Guide"
+	repo := &publicGuideRepositoryStub{
+		result: port.PublicGuideListResult{
+			Items: []*model.GuideProfile{
+				{
+					ID:              profileID,
+					UserID:          userID,
+					Type:            enum.GuideTypeIndependent,
+					Status:          enum.GuideStatusActive,
+					Headline:        &headline,
+					ExperienceYears: 8,
+					RatingAvg:       5,
+					ReviewsCount:    0,
+					CreatedAt:       now,
+					UpdatedAt:       now,
+				},
+			},
+			Total: 1,
+		},
+		languages: map[uuid.UUID][]*model.GuideLanguage{
+			profileID: {
+				{
+					ID:               uuid.MustParse("33333333-3333-3333-3333-333333333333"),
+					GuideProfileID:   profileID,
+					LanguageCode:     "ru",
+					ProficiencyLevel: "NATIVE",
+					CreatedAt:        now,
+				},
+			},
+		},
+	}
+	handler := NewHandler(app.NewGuideUseCase(
+		repo,
+		&publicUserClientStub{
+			profiles: map[uuid.UUID]app.PublicUserProfile{
+				userID: {
+					UserID:   userID,
+					Nickname: &nickname,
+					Locale:   "ru",
+					Timezone: "Asia/Almaty",
+				},
+			},
+		},
+		nil,
+	))
+
+	req := httptest.NewRequest(
+		nethttp.MethodGet,
+		"/v1/guides/public/by-user/"+userID.String(),
+		nil,
+	)
+	rec := httptest.NewRecorder()
+
+	handler.GetPublicGuideByUserID(rec, req)
+
+	if rec.Code != nethttp.StatusOK {
+		t.Fatalf("expected status %d, got %d: %s", nethttp.StatusOK, rec.Code, rec.Body.String())
+	}
+	if !reflect.DeepEqual(repo.lastFilter.UserIDs, []uuid.UUID{userID}) {
+		t.Fatalf("unexpected guide user filter: %#v", repo.lastFilter.UserIDs)
+	}
+	body := rec.Body.String()
+	if strings.Contains(body, "documents") || strings.Contains(body, "verificationRequest") {
+		t.Fatalf("public guide card leaked private aggregate fields: %s", body)
+	}
+
+	var payload struct {
+		GuideProfile struct {
+			UserID       string  `json:"userId"`
+			RatingAvg    float64 `json:"ratingAvg"`
+			ReviewsCount int     `json:"reviewsCount"`
+		} `json:"guideProfile"`
+		UserProfile *struct {
+			UserID   string  `json:"userId"`
+			Nickname *string `json:"nickname"`
+		} `json:"userProfile"`
+		Languages []struct {
+			LanguageCode string `json:"languageCode"`
+		} `json:"languages"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if payload.GuideProfile.UserID != userID.String() {
+		t.Fatalf("guide user id = %s, want %s", payload.GuideProfile.UserID, userID)
+	}
+	if payload.GuideProfile.RatingAvg != 5 || payload.GuideProfile.ReviewsCount != 0 {
+		t.Fatalf("unexpected rating snapshot: %#v", payload.GuideProfile)
+	}
+	if payload.UserProfile == nil || payload.UserProfile.Nickname == nil || *payload.UserProfile.Nickname != nickname {
+		t.Fatalf("expected public user card, got %#v", payload.UserProfile)
+	}
+	if len(payload.Languages) != 1 || payload.Languages[0].LanguageCode != "ru" {
+		t.Fatalf("expected guide languages, got %#v", payload.Languages)
+	}
+}
+
+func TestListPublicGuideFilterOptionsReturnsReferenceCodes(t *testing.T) {
+	t.Parallel()
+
+	repo := &publicGuideRepositoryStub{
+		filterOptions: port.PublicGuideFilterOptions{
+			LanguageCodes:       []string{"ru", "en", "kk"},
+			SpecializationCodes: []string{"mountain_guide", "city_historian"},
+		},
+	}
+	handler := NewHandler(app.NewGuideUseCase(repo, nil, nil))
+	req := httptest.NewRequest(
+		nethttp.MethodGet,
+		"/v1/guides/public/filter-options",
+		nil,
+	)
+	rec := httptest.NewRecorder()
+
+	handler.ListPublicGuideFilterOptions(rec, req)
+
+	if rec.Code != nethttp.StatusOK {
+		t.Fatalf("expected status %d, got %d: %s", nethttp.StatusOK, rec.Code, rec.Body.String())
+	}
+
+	var payload struct {
+		Languages       []string `json:"languages"`
+		Specializations []string `json:"specializations"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if !reflect.DeepEqual(payload.Languages, []string{"ru", "en", "kk"}) {
+		t.Fatalf("languages = %#v", payload.Languages)
+	}
+	if !reflect.DeepEqual(payload.Specializations, []string{"mountain_guide", "city_historian"}) {
+		t.Fatalf("specializations = %#v", payload.Specializations)
+	}
+}
+
 func TestListActiveGuidesForAdminReturnsReadableGuideItems(t *testing.T) {
 	t.Parallel()
 
@@ -327,6 +470,7 @@ type publicGuideRepositoryStub struct {
 	result          port.PublicGuideListResult
 	lastFilter      port.PublicGuideListFilter
 	listPublicCalls int
+	filterOptions   port.PublicGuideFilterOptions
 	languages       map[uuid.UUID][]*model.GuideLanguage
 	specializations map[uuid.UUID][]*model.GuideSpecialization
 }
@@ -419,6 +563,10 @@ func (s *publicGuideRepositoryStub) ListPublicGuideProfiles(_ context.Context, f
 	s.listPublicCalls++
 	s.lastFilter = filter
 	return s.result, nil
+}
+
+func (s *publicGuideRepositoryStub) ListPublicGuideFilterOptions(context.Context) (port.PublicGuideFilterOptions, error) {
+	return s.filterOptions, nil
 }
 
 type publicGuideExcursionCoverageClientStub struct {

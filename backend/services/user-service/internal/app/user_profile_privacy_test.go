@@ -76,6 +76,48 @@ func TestComputeProfileCompletedRequiresNickname(t *testing.T) {
 	}
 }
 
+func TestGetPublicProfileByUserIDReturnsPublicProfile(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+	firstName := "Aruzhan"
+	lastName := "Tulegenova"
+	nickname := "@aru_guide"
+	countryCode := "KZ"
+	repo := newFriendshipTestRepository(userID)
+	repo.profiles[userID] = &model.UserProfile{
+		UserID:      userID,
+		FirstName:   &firstName,
+		LastName:    &lastName,
+		Nickname:    &nickname,
+		CountryCode: &countryCode,
+		Locale:      "ru",
+		Timezone:    "Asia/Almaty",
+		CreatedAt:   time.Now().UTC(),
+		UpdatedAt:   time.Now().UTC(),
+	}
+	useCase := NewUserUseCase(repo, nil)
+
+	profile, err := useCase.GetPublicProfileByUserID(ctx, userID)
+	if err != nil {
+		t.Fatalf("GetPublicProfileByUserID() error = %v", err)
+	}
+	if profile.UserID != userID {
+		t.Fatalf("user id = %s, want %s", profile.UserID, userID)
+	}
+	if profile.Nickname == nil || *profile.Nickname != nickname {
+		t.Fatalf("nickname = %#v, want %q", profile.Nickname, nickname)
+	}
+}
+
+func TestGetPublicProfileByUserIDReturnsNotFoundForUnknownUser(t *testing.T) {
+	useCase := NewUserUseCase(newFriendshipTestRepository(uuid.New()), nil)
+
+	_, err := useCase.GetPublicProfileByUserID(context.Background(), uuid.New())
+	if !errors.Is(err, ErrUserNotFound) {
+		t.Fatalf("error = %v, want %v", err, ErrUserNotFound)
+	}
+}
+
 func TestUpdateProfileRequiresNicknameBeforeFirstSet(t *testing.T) {
 	ctx := context.Background()
 	userID := uuid.New()

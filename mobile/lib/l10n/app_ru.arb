@@ -1097,6 +1097,8 @@
   "guidesViewProfile": "Профиль",
   "guidesFiltersTitle": "Фильтры",
   "guidesFiltersClear": "Очистить",
+  "guidesClearSearch": "Очистить поиск",
+  "guidesFilterCountry": "Страна",
   "guidesFilterCountryAll": "Все страны",
   "guidesFilterCountrySearchHint": "Поиск страны, кода или телефона",
   "guidesFilterCountryNoResults": "Страна не найдена",
@@ -1124,6 +1126,13 @@
   "guidesEmptySubtitle": "Здесь появятся проверенные локальные эксперты. Попробуйте выбрать другой город в фильтрах.",
   "guidesNoResultsTitle": "Гиды не найдены",
   "guidesNoResultsSubtitle": "Попробуйте другой город, имя, специализацию, язык или фильтр.",
+  "guidesRatingNew": "Новый гид",
+  "guidesReviewsCount": "{count, plural, one{{count} отзыв} few{{count} отзыва} many{{count} отзывов} other{{count} отзыва}}",
+  "@guidesReviewsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "guidesSpecialtyMountainGuide": "Горный гид",
   "guidesSpecialtyCityHistorian": "Городской историк",
   "guidesSpecialtyCulinaryExpert": "Кулинарный эксперт",

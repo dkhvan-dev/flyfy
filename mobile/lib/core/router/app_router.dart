@@ -625,6 +625,10 @@ class AppRouter {
       return true;
     }
 
+    if (location.startsWith('/users/') && location.endsWith('/profile')) {
+      return true;
+    }
+
     if (location.startsWith('/excursions/create')) {
       return false;
     }

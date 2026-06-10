@@ -145,8 +145,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
-    // Always fetch fresh data from API to get up-to-date followers/reputation.
-    _foreignProfileFuture = _profileApi.getUserById(userId);
+    final isAuthenticated = context.read<SessionProvider>().isAuthenticated;
+    _foreignProfileFuture = isAuthenticated
+        ? _profileApi.getUserById(userId)
+        : _profileApi.getPublicUserById(userId);
   }
 
   UserProfileVm _profileWithRelationshipOverrides(UserProfileVm profile) {
@@ -423,6 +425,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _openLoginForProtectedAction() async {
+    context.push('/login');
+  }
+
   Future<void> _toggleBlockUser(
     UserProfileVm profile,
     bool isBlockedByMe,
@@ -464,9 +470,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<_ProfileExtras> _loadExtras(UserProfileVm profile, String lang) async {
+  Future<_ProfileExtras> _loadExtras(
+    UserProfileVm profile,
+    String lang, {
+    required bool publicRead,
+  }) async {
     Future<GuideProfileVm?> loadGuide() async {
       try {
+        if (publicRead) {
+          return await _guideApi.getPublicGuideProfileByUserIdOrNull(
+            profile.userId,
+          );
+        }
         return await _guideApi.getGuideProfileByUserIdOrNull(profile.userId);
       } catch (_) {
         return null;
@@ -552,12 +567,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return null;
   }
 
-  Future<_ProfileExtras> _extrasFutureFor(UserProfileVm profile, String lang) {
+  Future<_ProfileExtras> _extrasFutureFor(
+    UserProfileVm profile,
+    String lang, {
+    required bool publicRead,
+  }) {
     final key =
-        '${profile.userId.trim()}|${(profile.avatarFileId ?? '').trim()}|${profile.roles.join(",")}|${profile.countryCode ?? ""}|${profile.currency ?? ""}|$lang';
+        '${profile.userId.trim()}|${(profile.avatarFileId ?? '').trim()}|${profile.roles.join(",")}|${profile.countryCode ?? ""}|${profile.currency ?? ""}|$lang|$publicRead';
     if (_extrasFuture == null || _extrasKey != key) {
       _extrasKey = key;
-      _extrasFuture = _loadExtras(profile, lang);
+      _extrasFuture = _loadExtras(profile, lang, publicRead: publicRead);
     }
     return _extrasFuture!;
   }
@@ -728,6 +747,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       context,
                       session.profile,
                       isOwnProfile: true,
+                      isAuthenticated: session.isAuthenticated,
                     )
                   : FutureBuilder<UserProfileVm>(
                       future: _foreignProfileFuture,
@@ -754,6 +774,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           context,
                           snapshot.data,
                           isOwnProfile: false,
+                          isAuthenticated: session.isAuthenticated,
                         );
                       },
                     ),
@@ -768,6 +789,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     BuildContext context,
     UserProfileVm? profile, {
     required bool isOwnProfile,
+    required bool isAuthenticated,
   }) {
     final l10n = AppLocalizations.of(context)!;
     if (profile == null) {
@@ -781,9 +803,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final effectiveProfile = _profileWithRelationshipOverrides(profile);
     final lang = Localizations.localeOf(context).languageCode;
+    final publicRead = !isOwnProfile;
+    final canUseProtectedActions = isAuthenticated;
+    final Future<void> Function()? onToggleFollow = isOwnProfile
+        ? null
+        : canUseProtectedActions
+        ? () => _toggleFollow(effectiveProfile)
+        : _openLoginForProtectedAction;
+    final Future<void> Function()? onFriendshipAction = isOwnProfile
+        ? null
+        : canUseProtectedActions
+        ? () => _handleFriendshipAction(effectiveProfile)
+        : _openLoginForProtectedAction;
+    final Future<void> Function()? onDeclineFriendship = isOwnProfile
+        ? null
+        : canUseProtectedActions
+        ? () => _handleDeclineFriendRequest(effectiveProfile)
+        : _openLoginForProtectedAction;
+    final Future<void> Function()? onMessageTap = isOwnProfile
+        ? null
+        : canUseProtectedActions
+        ? () => _openDirectChat(effectiveProfile)
+        : _openLoginForProtectedAction;
+    final Future<void> Function(bool isBlockedByMe)? onToggleBlock =
+        isOwnProfile
+        ? null
+        : canUseProtectedActions
+        ? (isBlockedByMe) => _toggleBlockUser(effectiveProfile, isBlockedByMe)
+        : (_) => _openLoginForProtectedAction();
+    final VoidCallback onFollowersTap = isOwnProfile || canUseProtectedActions
+        ? () => _openFollowers(effectiveProfile)
+        : _openLoginForProtectedAction;
 
     return FutureBuilder<_ProfileExtras>(
-      future: _extrasFutureFor(effectiveProfile, lang),
+      future: _extrasFutureFor(effectiveProfile, lang, publicRead: publicRead),
       builder: (context, snapshot) {
         final extras = snapshot.data ?? const _ProfileExtras();
         return _ProfileBody(
@@ -806,6 +859,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               : null,
           blockStatusFuture: isOwnProfile
               ? null
+              : !canUseProtectedActions
+              ? null
               : _blockStatusFutureFor(effectiveProfile),
           recentActivitiesFuture: isOwnProfile
               ? null
@@ -826,26 +881,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _blockStatusOverrideUserId == effectiveProfile.userId.trim()
               ? _isBlockedByMeOverride
               : null,
-          onToggleFollow: isOwnProfile
-              ? null
-              : () => _toggleFollow(effectiveProfile),
-          onFriendshipAction: isOwnProfile
-              ? null
-              : () => _handleFriendshipAction(effectiveProfile),
-          onDeclineFriendship: isOwnProfile
-              ? null
-              : () => _handleDeclineFriendRequest(effectiveProfile),
-          onMessageTap: isOwnProfile
-              ? null
-              : () => _openDirectChat(effectiveProfile),
-          onToggleBlock: isOwnProfile
-              ? null
-              : (isBlockedByMe) =>
-                    _toggleBlockUser(effectiveProfile, isBlockedByMe),
+          onToggleFollow: onToggleFollow,
+          onFriendshipAction: onFriendshipAction,
+          onDeclineFriendship: onDeclineFriendship,
+          onMessageTap: onMessageTap,
+          onToggleBlock: onToggleBlock,
           onSettingsTap: isOwnProfile ? _openSettings : null,
           onEditProfile: isOwnProfile ? _openEditProfile : null,
           onCopyProfileLink: () => _copyProfileLink(effectiveProfile),
-          onFollowersTap: () => _openFollowers(effectiveProfile),
+          onFollowersTap: onFollowersTap,
         );
       },
     );

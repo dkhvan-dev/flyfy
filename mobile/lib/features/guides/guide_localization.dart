@@ -52,7 +52,11 @@ String guideExcursionLanguageLabel(AppLocalizations l10n, PublicGuideVm guide) {
   final labels = <String>[];
   final seenCodes = <String>{};
 
-  for (final rawCode in guide.excursionLanguageCodes) {
+  final languageCodes = guide.excursionLanguageCodes.isNotEmpty
+      ? guide.excursionLanguageCodes
+      : guide.languageCodes;
+
+  for (final rawCode in languageCodes) {
     final code = rawCode.trim().toLowerCase();
     if (code.isEmpty || !seenCodes.add(code)) continue;
     labels.add(localizedGuideLanguageLabel(l10n, code));

@@ -21,6 +21,24 @@ class ProfileApi {
     return UserProfileVm.fromJson(data);
   }
 
+  Future<UserProfileVm> getPublicUserById(String userId) async {
+    final data = await _apiClient.getPublicUserById(userId);
+    return UserProfileVm.fromJson({
+      'user': {'id': data['userId'], 'status': 'ACTIVE'},
+      'profile': {
+        'nickname': data['nickname'],
+        'bio': data['bio'],
+        'avatarFileId': data['avatarFileId'],
+        'countryCode': data['countryCode'],
+        'locale': data['locale'],
+        'timezone': data['timezone'],
+      },
+      'roles': const <String>[],
+      'followers': const {'count': 0, 'isFollowedByMe': false},
+      'friendship': const {'status': 'NONE'},
+    });
+  }
+
   Future<bool> isNicknameAvailable(String nickname) async {
     final data = await _apiClient.nicknameAvailability(nickname);
     return data['available'] == true;

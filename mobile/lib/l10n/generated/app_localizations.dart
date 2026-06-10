@@ -5542,6 +5542,18 @@ abstract class AppLocalizations {
   /// **'Clear'**
   String get guidesFiltersClear;
 
+  /// No description provided for @guidesClearSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get guidesClearSearch;
+
+  /// No description provided for @guidesFilterCountry.
+  ///
+  /// In en, this message translates to:
+  /// **'Country'**
+  String get guidesFilterCountry;
+
   /// No description provided for @guidesFilterCountryAll.
   ///
   /// In en, this message translates to:
@@ -5643,6 +5655,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Try another city, name, expertise, language, or filter.'**
   String get guidesNoResultsSubtitle;
+
+  /// No description provided for @guidesRatingNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New guide'**
+  String get guidesRatingNew;
+
+  /// No description provided for @guidesReviewsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 review} other{{count} reviews}}'**
+  String guidesReviewsCount(num count);
 
   /// No description provided for @guidesSpecialtyMountainGuide.
   ///

@@ -805,6 +805,25 @@ func (u *UserUseCase) ListPublicProfiles(
 	return items, nil
 }
 
+func (u *UserUseCase) GetPublicProfileByUserID(
+	ctx context.Context,
+	userID uuid.UUID,
+) (*model.UserProfile, error) {
+	if userID == uuid.Nil {
+		return nil, ErrInvalidUserID
+	}
+
+	items, err := u.repo.GetPublicProfilesByUserIDs(ctx, []uuid.UUID{userID})
+	if err != nil {
+		return nil, fmt.Errorf("get public profile by user id: %w", err)
+	}
+	if len(items) == 0 {
+		return nil, ErrUserNotFound
+	}
+
+	return items[0], nil
+}
+
 func (u *UserUseCase) ListAdminUsers(
 	ctx context.Context,
 	filter model.AdminUserListFilter,

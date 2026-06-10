@@ -59,7 +59,7 @@ func NewGuideProfile(params NewGuideProfileParams) (*GuideProfile, error) {
 		IsPrivateGuideAvailable:   false,
 		IsActivityHostAvailable:   false,
 		IsExcursionGuideAvailable: false,
-		RatingAvg:                 0,
+		RatingAvg:                 5,
 		ReviewsCount:              0,
 		CreatedAt:                 now,
 		UpdatedAt:                 now,

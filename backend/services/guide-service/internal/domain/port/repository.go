@@ -38,6 +38,11 @@ type PublicGuideListResult struct {
 	Total int
 }
 
+type PublicGuideFilterOptions struct {
+	LanguageCodes       []string
+	SpecializationCodes []string
+}
+
 type GuideRepository interface {
 	CreateGuideProfile(ctx context.Context, profile *model.GuideProfile) error
 	GetGuideProfileByID(ctx context.Context, id uuid.UUID) (*model.GuideProfile, error)
@@ -64,6 +69,7 @@ type GuideRepository interface {
 	ListGuideSpecializationsByProfileIDs(ctx context.Context, guideProfileIDs []uuid.UUID) (map[uuid.UUID][]*model.GuideSpecialization, error)
 
 	ListPublicGuideProfiles(ctx context.Context, filter PublicGuideListFilter) (PublicGuideListResult, error)
+	ListPublicGuideFilterOptions(ctx context.Context) (PublicGuideFilterOptions, error)
 
 	ListVerificationRequestsByStatuses(
 		ctx context.Context,

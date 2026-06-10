@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../core/network/api_client.dart';
+import '../guide_filter_options.dart';
 import '../models/public_guide_vm.dart';
 
 class GuideDiscoveryApi {
@@ -8,6 +9,21 @@ class GuideDiscoveryApi {
     : _apiClient = apiClient ?? ApiClient();
 
   final ApiClient _apiClient;
+
+  Future<GuideFilterOptions> listPublicGuideFilterOptions() async {
+    final response = await _apiClient.dio.get(
+      '/guides/public/filter-options',
+      options: Options(extra: const {'requiresAuth': false}),
+    );
+    final data = response.data;
+    if (data is! Map<String, dynamic>) {
+      return const GuideFilterOptions(
+        languageCodes: [],
+        specializationCodes: [],
+      );
+    }
+    return GuideFilterOptions.fromJson(data);
+  }
 
   Future<PublicGuidesPage> listPublicGuides({
     int limit = 20,

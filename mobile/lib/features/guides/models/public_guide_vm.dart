@@ -52,6 +52,7 @@ class PublicGuideVm {
     final userId = _string(guideProfile['userId']).isNotEmpty
         ? _string(guideProfile['userId'])
         : _string(userProfile['userId']);
+    final reviewsCount = _int(guideProfile['reviewsCount']);
 
     return PublicGuideVm(
       id: _string(guideProfile['id']),
@@ -65,8 +66,8 @@ class PublicGuideVm {
       isActivityHostAvailable: guideProfile['isActivityHostAvailable'] == true,
       isExcursionGuideAvailable:
           guideProfile['isExcursionGuideAvailable'] == true,
-      ratingAvg: _double(guideProfile['ratingAvg']),
-      reviewsCount: _int(guideProfile['reviewsCount']),
+      ratingAvg: _rating(guideProfile['ratingAvg'], reviewsCount),
+      reviewsCount: reviewsCount,
       languageCodes: _codes(
         json['languages'] ??
             guideProfile['languages'] ??
@@ -171,6 +172,11 @@ int? _nullableInt(dynamic value) {
 
 double _double(dynamic value) {
   return double.tryParse(value?.toString() ?? '') ?? 0;
+}
+
+double _rating(dynamic value, int reviewsCount) {
+  if (reviewsCount <= 0) return 5;
+  return _double(value);
 }
 
 List<String> _codes(

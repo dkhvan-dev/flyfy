@@ -3025,6 +3025,12 @@ class AppLocalizationsKk extends AppLocalizations {
   String get guidesFiltersClear => 'Тазалау';
 
   @override
+  String get guidesClearSearch => 'Іздеуді тазалау';
+
+  @override
+  String get guidesFilterCountry => 'Ел';
+
+  @override
   String get guidesFilterCountryAll => 'Барлық елдер';
 
   @override
@@ -3088,6 +3094,20 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get guidesNoResultsSubtitle =>
       'Басқа қаланы, атты, мамандануды, тілді немесе сүзгіні қолданып көріңіз.';
+
+  @override
+  String get guidesRatingNew => 'Жаңа гид';
+
+  @override
+  String guidesReviewsCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count пікір',
+      one: '1 пікір',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get guidesSpecialtyMountainGuide => 'Тау гиді';

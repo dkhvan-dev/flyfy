@@ -89,6 +89,36 @@ void main() {
     },
   );
 
+  test(
+    'foreign profile route is public but profile subflows stay protected',
+    () async {
+      final source = await File(
+        'lib/core/router/app_router.dart',
+      ).readAsString();
+      final publicRouteIndex = source.indexOf(
+        'static bool _isPublicRoute(String location)',
+      );
+
+      expect(publicRouteIndex, greaterThanOrEqualTo(0));
+
+      final publicRouteSource = source.substring(publicRouteIndex);
+      expect(
+        publicRouteSource,
+        contains(
+          "location.startsWith('/users/') && location.endsWith('/profile')",
+        ),
+      );
+      expect(
+        publicRouteSource,
+        isNot(contains("location.startsWith('/users/') {")),
+      );
+      expect(
+        publicRouteSource,
+        isNot(contains("location.endsWith('/followers')")),
+      );
+    },
+  );
+
   test('services bottom tab opens the real services grid screen', () async {
     final source = await File('lib/core/router/app_router.dart').readAsString();
     final servicesRouteIndex = source.indexOf("path: '/services'");

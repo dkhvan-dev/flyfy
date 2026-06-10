@@ -7,6 +7,22 @@ import (
 	"kz/inflap/backend/services/guide-service/internal/domain/enum"
 )
 
+func TestNewGuideProfileDefaultsToFiveStarRatingUntilFirstReview(t *testing.T) {
+	profile, err := NewGuideProfile(NewGuideProfileParams{
+		UserID: uuid.New(),
+		Type:   enum.GuideTypeIndependent,
+	})
+	if err != nil {
+		t.Fatalf("NewGuideProfile() error = %v", err)
+	}
+	if profile.ReviewsCount != 0 {
+		t.Fatalf("reviews count = %d, want 0", profile.ReviewsCount)
+	}
+	if profile.RatingAvg != 5 {
+		t.Fatalf("rating avg = %v, want 5", profile.RatingAvg)
+	}
+}
+
 func TestGuideProfileRevokeDisablesGuideCapabilitiesAndStoresReason(t *testing.T) {
 	profile, err := NewGuideProfile(NewGuideProfileParams{
 		UserID: uuid.New(),
