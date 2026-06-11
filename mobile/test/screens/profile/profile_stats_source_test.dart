@@ -132,36 +132,47 @@ void main() {
     expect(sectionsSource, isNot(contains("context.push('/me/activities')")));
   });
 
-  test('profile hero localizes country and currency badges', () async {
-    final source = await File(
-      'lib/screens/profile/profile_screen.dart',
-    ).readAsString();
-    final heroStart = source.indexOf('class _ProfileHero');
-    final avatarStart = source.indexOf('class _ProfileAvatar');
-    final extrasStart = source.indexOf('class _ProfileExtras');
-    final reviewInitialStart = source.indexOf('String _reviewInitial');
+  test(
+    'profile hero shows full name and hides country currency badges',
+    () async {
+      final source = await File(
+        'lib/screens/profile/profile_screen.dart',
+      ).readAsString();
+      final heroStart = source.indexOf('class _ProfileHero');
+      final avatarStart = source.indexOf('class _ProfileAvatar');
+      final extrasStart = source.indexOf('class _ProfileExtras');
+      final reviewInitialStart = source.indexOf('String _reviewInitial');
 
-    expect(heroStart, isNonNegative);
-    expect(avatarStart, greaterThan(heroStart));
-    expect(extrasStart, isNonNegative);
-    expect(reviewInitialStart, greaterThan(extrasStart));
+      expect(heroStart, isNonNegative);
+      expect(avatarStart, greaterThan(heroStart));
+      expect(extrasStart, isNonNegative);
+      expect(reviewInitialStart, greaterThan(extrasStart));
 
-    final heroSource = source.substring(heroStart, avatarStart);
-    final extrasSource = source.substring(extrasStart, reviewInitialStart);
+      final heroSource = source.substring(heroStart, avatarStart);
+      final extrasSource = source.substring(extrasStart, reviewInitialStart);
 
-    expect(source, contains("import '../../core/network/reference_api.dart';"));
-    expect(source, contains('ReferenceApi _referenceApi = ReferenceApi()'));
-    expect(source, contains('getCountry('));
-    expect(source, contains('listCurrencies('));
-    expect(source, contains('normalizeReferenceCountryCode('));
-    expect(source, contains('referenceCurrencyLabel('));
-    expect(source, contains('_resolveProfileReferenceLabels('));
-    expect(extrasSource, contains('referenceLabels'));
-    expect(heroSource, contains('referenceLabels.country'));
-    expect(heroSource, contains('referenceLabels.currency'));
-    expect(heroSource, isNot(contains('profile.countryCode')));
-    expect(heroSource, isNot(contains('profile.currency')));
-  });
+      expect(
+        source,
+        isNot(contains("import '../../core/network/reference_api.dart';")),
+      );
+      expect(
+        source,
+        isNot(contains('ReferenceApi _referenceApi = ReferenceApi()')),
+      );
+      expect(source, isNot(contains('getCountry(')));
+      expect(source, isNot(contains('listCurrencies(')));
+      expect(source, isNot(contains('normalizeReferenceCountryCode(')));
+      expect(source, isNot(contains('referenceCurrencyLabel(')));
+      expect(source, isNot(contains('_resolveProfileReferenceLabels(')));
+      expect(extrasSource, isNot(contains('referenceLabels')));
+      expect(heroSource, contains('profile.fullName'));
+      expect(heroSource, contains('if (fullName.isNotEmpty'));
+      expect(heroSource, isNot(contains('referenceLabels.country')));
+      expect(heroSource, isNot(contains('referenceLabels.currency')));
+      expect(heroSource, isNot(contains('profile.countryCode')));
+      expect(heroSource, isNot(contains('profile.currency')));
+    },
+  );
 
   test(
     'foreign guide profile loads and renders top excursion reviews',
@@ -177,7 +188,7 @@ void main() {
       expect(source, contains('limit: 10'));
       expect(source, contains('class _GuideExcursionReviewsSection'));
       expect(source, contains('profileGuideReviewsTitle'));
-      expect(source, contains('profileGuideReviewsEmpty'));
+      expect(source, contains('return const SizedBox.shrink();'));
       expect(source, contains('review.author.resolvedDisplayName'));
     },
   );
@@ -193,7 +204,7 @@ void main() {
       expect(source, contains('getGuideReviews('));
       expect(source, contains('class _DirectGuideReviewsSection'));
       expect(source, contains('profileDirectGuideReviewsTitle'));
-      expect(source, contains('profileDirectGuideReviewsEmpty'));
+      expect(source, contains('return const SizedBox.shrink();'));
       expect(source, contains('GuideReviewVm'));
       expect(source, contains('directGuideReviewsFuture:'));
     },
@@ -209,21 +220,29 @@ void main() {
       final heroEnd = source.indexOf('class _ProfileAvatar');
       final bodyStart = source.indexOf('class _ProfileBody');
       final bodyEnd = source.indexOf('class _ProfileTopBar');
+      final actionsStart = source.indexOf('class _ProfileHeroActions');
+      final actionsEnd = source.indexOf('class _ProfileHeroActionButton');
 
       expect(heroStart, isNonNegative);
       expect(heroEnd, greaterThan(heroStart));
       expect(bodyStart, isNonNegative);
       expect(bodyEnd, greaterThan(bodyStart));
+      expect(actionsStart, isNonNegative);
+      expect(actionsEnd, greaterThan(actionsStart));
 
       final heroSource = source.substring(heroStart, heroEnd);
       final bodySource = source.substring(bodyStart, bodyEnd);
+      final actionsSource = source.substring(actionsStart, actionsEnd);
 
       expect(heroSource, contains('class _GuideRatingBadge'));
       expect(heroSource, contains('_GuideRatingBadge(guide: guide!)'));
       expect(heroSource, contains('guide.ratingAvg'));
+      expect(heroSource, contains('profileGuideRatingLabel'));
       expect(heroSource, isNot(contains('profileGuideRatingSummary(')));
       expect(heroSource, isNot(contains('guide.reviewsCount')));
-      expect(bodySource, contains('guideCalendarTitle'));
+      expect(bodySource, contains('onGuideCalendarTap: isGuideProfile'));
+      expect(actionsSource, contains('guideCalendarTitle'));
+      expect(actionsSource, contains('Icons.calendar_month_rounded'));
       expect(
         bodySource,
         contains("context.push('/guides/\${profile.userId}/calendar')"),

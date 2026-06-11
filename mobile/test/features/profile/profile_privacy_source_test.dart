@@ -27,18 +27,15 @@ void main() {
     final detailsStart = editProfileSource.indexOf(
       'title: l10n.profileSettingsDetailsSection',
     );
-    final saveButtonStart = editProfileSource.indexOf(
-      'l10n.profileSaveChangesButton',
+    final detailsEnd = editProfileSource.indexOf(
+      '_buildPhoneVerificationSection(profile, l10n)',
       detailsStart,
     );
 
     expect(detailsStart, isNonNegative);
-    expect(saveButtonStart, greaterThan(detailsStart));
+    expect(detailsEnd, greaterThan(detailsStart));
 
-    final detailsSource = editProfileSource.substring(
-      detailsStart,
-      saveButtonStart,
-    );
+    final detailsSource = editProfileSource.substring(detailsStart, detailsEnd);
 
     expect(detailsSource, isNot(contains('l10n.appLanguageTitle')));
     expect(detailsSource, isNot(contains('DropdownButtonFormField<String>')));

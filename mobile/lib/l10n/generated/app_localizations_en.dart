@@ -400,6 +400,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Send a code to the phone number first.';
 
   @override
+  String get profileFullName => 'Full name';
+
+  @override
   String get profileEmail => 'Email';
 
   @override
@@ -850,6 +853,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileGuideTitle => 'Inflap Guide';
+
+  @override
+  String get profileGuideRatingLabel => 'Guide rating';
 
   @override
   String get profileEmptyBioPlaceholder =>

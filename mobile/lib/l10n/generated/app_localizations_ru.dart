@@ -402,6 +402,9 @@ class AppLocalizationsRu extends AppLocalizations {
       'Сначала отправьте код на номер телефона.';
 
   @override
+  String get profileFullName => 'ФИО';
+
+  @override
   String get profileEmail => 'Email';
 
   @override
@@ -854,6 +857,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get profileGuideTitle => 'Гид Inflap';
+
+  @override
+  String get profileGuideRatingLabel => 'Рейтинг гида';
 
   @override
   String get profileEmptyBioPlaceholder =>

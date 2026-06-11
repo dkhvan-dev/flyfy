@@ -406,6 +406,9 @@ class AppLocalizationsKk extends AppLocalizations {
       'Алдымен телефон нөміріне код жіберіңіз.';
 
   @override
+  String get profileFullName => 'Аты-жөні';
+
+  @override
   String get profileEmail => 'Email';
 
   @override
@@ -857,6 +860,9 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get profileGuideTitle => 'Inflap гиді';
+
+  @override
+  String get profileGuideRatingLabel => 'Гид рейтингі';
 
   @override
   String get profileEmptyBioPlaceholder =>

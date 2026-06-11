@@ -940,7 +940,7 @@ class _FriendRequestsPreviewSection extends StatelessWidget {
                   ),
                 ),
               ),
-              if (data.nextOffset != null)
+              if (data.items.isNotEmpty)
                 TextButton(
                   onPressed: onViewAll,
                   style: TextButton.styleFrom(

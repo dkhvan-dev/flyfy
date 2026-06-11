@@ -11,10 +11,7 @@ import '../../core/network/chat_api.dart';
 import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
 import '../../core/network/excursion_api.dart';
-import '../../core/network/reference_api.dart';
 import '../../core/network/story_api.dart';
-import '../../core/reference/country_filter_utils.dart';
-import '../../core/reference/currency_filter_utils.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
@@ -24,6 +21,7 @@ import '../../features/excursions/models/excursion_booking_vm.dart';
 import '../../features/profile/data/guide_api.dart';
 import '../../features/profile/data/profile_api.dart';
 import '../../features/profile/models/guide_profile_vm.dart';
+import '../../features/profile/models/profile_follower_vm.dart';
 import '../../features/profile/models/user_profile_vm.dart';
 import '../../features/stories/models/story_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -54,13 +52,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final ChatApi _chatApi = ChatApi();
   final ExcursionApi _excursionApi = ExcursionApi();
   final StoryApi _storyApi = StoryApi();
-  final ReferenceApi _referenceApi = ReferenceApi();
 
   Future<UserProfileVm>? _foreignProfileFuture;
+  UserProfileVm? _initialForeignProfile;
   Future<_ProfileExtras>? _extrasFuture;
   Future<int>? _activityCountFuture;
   Future<List<ActivityListItemVm>>? _foreignRecentActivitiesFuture;
   Future<List<StoryVm>>? _foreignPopularStoriesFuture;
+  Future<ProfileFollowersPageVm>? _incomingFriendRequestsFuture;
   Future<int>? _publishedStoriesCountFuture;
   Future<ExcursionReviewsPage>? _guideReviewsFuture;
   Future<GuideReviewsPage>? _directGuideReviewsFuture;
@@ -71,6 +70,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _activityCountKey = '';
   String _foreignRecentActivitiesKey = '';
   String _foreignPopularStoriesKey = '';
+  String _incomingFriendRequestsKey = '';
   String _publishedStoriesCountKey = '';
   String _guideReviewsKey = '';
   String _directGuideReviewsKey = '';
@@ -114,6 +114,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _foreignRecentActivitiesKey = '';
     _foreignPopularStoriesFuture = null;
     _foreignPopularStoriesKey = '';
+    _incomingFriendRequestsFuture = null;
+    _incomingFriendRequestsKey = '';
     _guideReviewsFuture = null;
     _guideReviewsKey = '';
     _directGuideReviewsFuture = null;
@@ -142,13 +144,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final userId = widget.userId?.trim() ?? '';
     if (userId.isEmpty) {
       _foreignProfileFuture = null;
+      _initialForeignProfile = null;
       return;
     }
+
+    final initialProfile = widget.initialProfile;
+    _initialForeignProfile =
+        initialProfile != null && initialProfile.userId.trim() == userId
+        ? initialProfile
+        : null;
 
     final isAuthenticated = context.read<SessionProvider>().isAuthenticated;
     _foreignProfileFuture = isAuthenticated
         ? _profileApi.getUserById(userId)
         : _profileApi.getPublicUserById(userId);
+  }
+
+  UserProfileVm? _initialForeignProfileForBuilder(String requestedUserId) {
+    final initialProfile = _initialForeignProfile;
+    if (initialProfile == null ||
+        initialProfile.userId.trim() != requestedUserId.trim()) {
+      return null;
+    }
+    return _profileWithRelationshipOverrides(initialProfile);
   }
 
   UserProfileVm _profileWithRelationshipOverrides(UserProfileVm profile) {
@@ -471,8 +489,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<_ProfileExtras> _loadExtras(
-    UserProfileVm profile,
-    String lang, {
+    UserProfileVm profile, {
     required bool publicRead,
   }) async {
     Future<GuideProfileVm?> loadGuide() async {
@@ -496,16 +513,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return _fileApi.publicContentUrl(avatarFileId);
     }
 
-    final results = await Future.wait<Object?>([
-      loadGuide(),
-      loadAvatar(),
-      _resolveProfileReferenceLabels(profile, lang),
-    ]);
+    final results = await Future.wait<Object?>([loadGuide(), loadAvatar()]);
 
     return _ProfileExtras(
       guide: results[0] as GuideProfileVm?,
       avatarUrl: results[1] as String?,
-      referenceLabels: results[2] as _ProfileReferenceLabels,
     );
   }
 
@@ -518,65 +530,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return _blockStatusFuture!;
   }
 
-  Future<_ProfileReferenceLabels> _resolveProfileReferenceLabels(
-    UserProfileVm profile,
-    String lang,
-  ) async {
-    final countryCode = normalizeReferenceCountryCode(profile.countryCode);
-    final currencyCode = normalizeReferenceCurrencyCode(profile.currency);
-    final labels = await Future.wait<String?>([
-      _resolveProfileCountryLabel(countryCode, lang),
-      _resolveProfileCurrencyLabel(currencyCode, lang),
-    ]);
-
-    return _ProfileReferenceLabels(country: labels[0], currency: labels[1]);
-  }
-
-  Future<String?> _resolveProfileCountryLabel(
-    String? countryCode,
-    String lang,
-  ) async {
-    if (countryCode == null) return null;
-
-    final country = await _referenceApi.getCountry(countryCode, lang: lang);
-    final name = country?.name.trim() ?? '';
-    return name.isEmpty ? null : name;
-  }
-
-  Future<String?> _resolveProfileCurrencyLabel(
-    String? currencyCode,
-    String lang,
-  ) async {
-    if (currencyCode == null) return null;
-
-    try {
-      final currencies = withDefaultReferenceCurrency(
-        await _referenceApi.listCurrencies(lang: lang),
-        currencyCode,
-      );
-      for (final currency in currencies) {
-        if (normalizeReferenceCurrencyCode(currency.code) == currencyCode) {
-          final label = referenceCurrencyLabel(currency).trim();
-          return label.isEmpty || label == currencyCode ? null : label;
-        }
-      }
-    } catch (_) {
-      // Profile badges are optional; avoid showing raw codes on lookup failure.
-    }
-
-    return null;
-  }
-
   Future<_ProfileExtras> _extrasFutureFor(
-    UserProfileVm profile,
-    String lang, {
+    UserProfileVm profile, {
     required bool publicRead,
   }) {
     final key =
-        '${profile.userId.trim()}|${(profile.avatarFileId ?? '').trim()}|${profile.roles.join(",")}|${profile.countryCode ?? ""}|${profile.currency ?? ""}|$lang|$publicRead';
+        '${profile.userId.trim()}|${(profile.avatarFileId ?? '').trim()}|${profile.roles.join(",")}|$publicRead';
     if (_extrasFuture == null || _extrasKey != key) {
       _extrasKey = key;
-      _extrasFuture = _loadExtras(profile, lang, publicRead: publicRead);
+      _extrasFuture = _loadExtras(profile, publicRead: publicRead);
     }
     return _extrasFuture!;
   }
@@ -620,6 +582,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     }
     return _foreignPopularStoriesFuture!;
+  }
+
+  Future<ProfileFollowersPageVm> _incomingFriendRequestsFutureFor() {
+    const key = 'me|incoming-friend-requests|1';
+    if (_incomingFriendRequestsFuture == null ||
+        _incomingFriendRequestsKey != key) {
+      _incomingFriendRequestsKey = key;
+      _incomingFriendRequestsFuture = _profileApi.getMyIncomingFriendRequests(
+        limit: 1,
+      );
+    }
+    return _incomingFriendRequestsFuture!;
   }
 
   Future<int> _publishedStoriesCountFutureFor(UserProfileVm profile) {
@@ -751,15 +725,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     )
                   : FutureBuilder<UserProfileVm>(
                       future: _foreignProfileFuture,
+                      initialData: _initialForeignProfileForBuilder(
+                        requestedUserId,
+                      ),
                       builder: (context, snapshot) {
+                        final profile = snapshot.data;
                         if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
+                                ConnectionState.waiting &&
+                            profile == null) {
                           return const Center(
                             child: CircularProgressIndicator(),
                           );
                         }
 
-                        if (snapshot.hasError || snapshot.data == null) {
+                        if (snapshot.hasError && profile == null) {
+                          return Center(
+                            child: Text(
+                              l10n.profileNotAvailable,
+                              style: const TextStyle(
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          );
+                        }
+
+                        if (profile == null) {
                           return Center(
                             child: Text(
                               l10n.profileNotAvailable,
@@ -772,7 +762,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                         return _buildResolvedProfile(
                           context,
-                          snapshot.data,
+                          profile,
                           isOwnProfile: false,
                           isAuthenticated: session.isAuthenticated,
                         );
@@ -802,7 +792,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     final effectiveProfile = _profileWithRelationshipOverrides(profile);
-    final lang = Localizations.localeOf(context).languageCode;
     final publicRead = !isOwnProfile;
     final canUseProtectedActions = isAuthenticated;
     final Future<void> Function()? onToggleFollow = isOwnProfile
@@ -836,14 +825,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         : _openLoginForProtectedAction;
 
     return FutureBuilder<_ProfileExtras>(
-      future: _extrasFutureFor(effectiveProfile, lang, publicRead: publicRead),
+      future: _extrasFutureFor(effectiveProfile, publicRead: publicRead),
       builder: (context, snapshot) {
         final extras = snapshot.data ?? const _ProfileExtras();
         return _ProfileBody(
           profile: effectiveProfile,
           guide: extras.guide,
           avatarUrl: extras.avatarUrl,
-          referenceLabels: extras.referenceLabels,
           guideReviewsFuture: !isOwnProfile && extras.guide?.isVerified == true
               ? _guideReviewsFutureFor(effectiveProfile)
               : null,
@@ -862,12 +850,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               : !canUseProtectedActions
               ? null
               : _blockStatusFutureFor(effectiveProfile),
-          recentActivitiesFuture: isOwnProfile
-              ? null
-              : _recentActivitiesFutureFor(effectiveProfile),
-          popularStoriesFuture: isOwnProfile
-              ? null
-              : _popularStoriesFutureFor(effectiveProfile),
+          recentActivitiesFuture: _recentActivitiesFutureFor(effectiveProfile),
+          popularStoriesFuture: _popularStoriesFutureFor(effectiveProfile),
+          incomingFriendRequestsFuture: isOwnProfile
+              ? _incomingFriendRequestsFutureFor()
+              : null,
           activityCountFuture: _activityCountFutureFor(effectiveProfile),
           publishedStoriesCountFuture: _publishedStoriesCountFutureFor(
             effectiveProfile,
@@ -901,7 +888,6 @@ class _ProfileBody extends StatelessWidget {
     required this.profile,
     required this.guide,
     required this.avatarUrl,
-    required this.referenceLabels,
     required this.guideReviewsFuture,
     required this.directGuideReviewsFuture,
     required this.activityReviewsFuture,
@@ -909,6 +895,7 @@ class _ProfileBody extends StatelessWidget {
     required this.blockStatusFuture,
     required this.recentActivitiesFuture,
     required this.popularStoriesFuture,
+    required this.incomingFriendRequestsFuture,
     required this.activityCountFuture,
     required this.publishedStoriesCountFuture,
     required this.isOwnProfile,
@@ -931,7 +918,6 @@ class _ProfileBody extends StatelessWidget {
   final UserProfileVm profile;
   final GuideProfileVm? guide;
   final String? avatarUrl;
-  final _ProfileReferenceLabels referenceLabels;
   final Future<ExcursionReviewsPage>? guideReviewsFuture;
   final Future<GuideReviewsPage>? directGuideReviewsFuture;
   final Future<ActivityReviewsPage>? activityReviewsFuture;
@@ -939,6 +925,7 @@ class _ProfileBody extends StatelessWidget {
   final Future<UserBlockStatusVm>? blockStatusFuture;
   final Future<List<ActivityListItemVm>>? recentActivitiesFuture;
   final Future<List<StoryVm>>? popularStoriesFuture;
+  final Future<ProfileFollowersPageVm>? incomingFriendRequestsFuture;
   final Future<int> activityCountFuture;
   final Future<int> publishedStoriesCountFuture;
   final bool isOwnProfile;
@@ -991,9 +978,25 @@ class _ProfileBody extends StatelessWidget {
           profile: profile,
           guide: guide,
           avatarUrl: avatarUrl,
-          referenceLabels: referenceLabels,
           isOwnProfile: isOwnProfile,
           isGuideProfile: isGuideProfile,
+          actions: !isOwnProfile
+              ? _ProfileHeroActions(
+                  isGuideProfile: isGuideProfile,
+                  isFollowedByMe: profile.isFollowedByMe,
+                  friendshipStatus: profile.friendshipStatus,
+                  isFollowActionLoading: isFollowActionLoading,
+                  isFriendshipActionLoading: isFriendshipActionLoading,
+                  isMessageActionLoading: isMessageActionLoading,
+                  onToggleFollow: onToggleFollow,
+                  onFriendshipAction: onFriendshipAction,
+                  onDeclineFriendship: onDeclineFriendship,
+                  onMessageTap: onMessageTap,
+                  onGuideCalendarTap: isGuideProfile
+                      ? () => context.push('/guides/${profile.userId}/calendar')
+                      : null,
+                )
+              : null,
         ),
         SizedBox(height: profileScaled(context, 20, min: 16, max: 24)),
         if (!isGuideProfile && isOwnProfile)
@@ -1009,30 +1012,15 @@ class _ProfileBody extends StatelessWidget {
           publishedStoriesCountFuture: publishedStoriesCountFuture,
           onFollowersTap: onFollowersTap,
         ),
-        if (!isOwnProfile) ...[
-          SizedBox(height: profileScaled(context, 22, min: 18, max: 24)),
-          _ForeignProfileActions(
-            isFollowedByMe: profile.isFollowedByMe,
-            friendshipStatus: profile.friendshipStatus,
-            isBusy: isFollowActionLoading,
-            isFriendshipActionLoading: isFriendshipActionLoading,
-            isMessageBusy: isMessageActionLoading,
-            onToggleFollow: onToggleFollow,
-            onFriendshipAction: onFriendshipAction,
-            onDeclineFriendship: onDeclineFriendship,
-            onMessageTap: onMessageTap,
-          ),
-          if (isGuideProfile) ...[
-            SizedBox(height: profileScaled(context, 12, min: 10, max: 14)),
-            _GuideCalendarAction(
-              label: l10n.guideCalendarTitle,
-              onTap: () => context.push('/guides/${profile.userId}/calendar'),
-            ),
-          ],
-        ],
         SizedBox(height: profileScaled(context, 32, min: 24, max: 36)),
         if (isOwnProfile) ...[
-          _OwnProfileSections(isGuideProfile: isGuideProfile),
+          _OwnProfileSections(
+            userId: profile.userId,
+            isGuideProfile: isGuideProfile,
+            incomingFriendRequestsFuture: incomingFriendRequestsFuture,
+            recentActivitiesFuture: recentActivitiesFuture,
+            popularStoriesFuture: popularStoriesFuture,
+          ),
         ] else ...[
           _ForeignProfileSections(
             userId: profile.userId,
@@ -1196,23 +1184,24 @@ class _ProfileHero extends StatelessWidget {
     required this.profile,
     required this.guide,
     required this.avatarUrl,
-    required this.referenceLabels,
     required this.isOwnProfile,
     required this.isGuideProfile,
+    required this.actions,
   });
 
   final UserProfileVm profile;
   final GuideProfileVm? guide;
   final String? avatarUrl;
-  final _ProfileReferenceLabels referenceLabels;
   final bool isOwnProfile;
   final bool isGuideProfile;
+  final Widget? actions;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final bio = _resolveAboutText(l10n);
     final badges = _topBadges(l10n);
+    final fullName = profile.fullName;
 
     return Column(
       children: [
@@ -1233,6 +1222,22 @@ class _ProfileHero extends StatelessWidget {
             height: 1.04,
           ),
         ),
+        if (fullName.isNotEmpty && fullName != profile.preferredName) ...[
+          SizedBox(height: profileScaled(context, 8, min: 6, max: 8)),
+          Text(
+            fullName,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: profileTextSoft,
+              fontSize: profileScaled(context, 15, min: 13, max: 16),
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0,
+              height: 1.25,
+            ),
+          ),
+        ],
         if (isGuideProfile) ...[
           SizedBox(height: profileScaled(context, 8, min: 6, max: 8)),
           Text(
@@ -1263,6 +1268,10 @@ class _ProfileHero extends StatelessWidget {
                 .map((item) => _ProfilePill(text: item))
                 .toList(growable: false),
           ),
+        ],
+        if (actions != null) ...[
+          SizedBox(height: profileScaled(context, 20, min: 16, max: 22)),
+          actions!,
         ],
         SizedBox(height: profileScaled(context, 22, min: 18, max: 24)),
         Container(
@@ -1317,17 +1326,6 @@ class _ProfileHero extends StatelessWidget {
       }
     }
 
-    if (values.isEmpty) {
-      final country = (referenceLabels.country ?? '').trim();
-      final currency = (referenceLabels.currency ?? '').trim();
-      if (country.isNotEmpty) {
-        values.add(country);
-      }
-      if (currency.isNotEmpty) {
-        values.add(currency);
-      }
-    }
-
     return values.toSet().toList(growable: false);
   }
 
@@ -1355,6 +1353,7 @@ class _GuideRatingBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final rating = guide.ratingAvg <= 0
         ? '0.0'
         : guide.ratingAvg.toStringAsFixed(1);
@@ -1377,6 +1376,20 @@ class _GuideRatingBadge extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Flexible(
+                child: Text(
+                  l10n.profileGuideRatingLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: profileTextSoft,
+                    fontSize: profileScaled(context, 12, min: 11, max: 12),
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ),
+              SizedBox(width: profileScaled(context, 6, min: 5, max: 6)),
               Icon(
                 Icons.star_rounded,
                 size: profileScaled(context, 17, min: 15, max: 17),
@@ -1776,21 +1789,31 @@ class _ProfileStatsGrid extends StatelessWidget {
     return FutureBuilder<int>(
       future: activityCountFuture,
       builder: (context, snapshot) {
-        final activityCount = snapshot.data ?? 0;
+        final activityCount = snapshot.data;
+        final activityCountLoading =
+            snapshot.connectionState == ConnectionState.waiting &&
+            activityCount == null;
         return FutureBuilder<int>(
           future: publishedStoriesCountFuture,
           builder: (context, storiesSnapshot) {
-            final publishedStoriesCount = storiesSnapshot.data ?? 0;
+            final publishedStoriesCount = storiesSnapshot.data;
+            final publishedStoriesCountLoading =
+                storiesSnapshot.connectionState == ConnectionState.waiting &&
+                publishedStoriesCount == null;
             final cards = <_StatConfig>[
               _StatConfig(
                 label: l10n.profileActivitiesStat,
-                value: '$activityCount',
+                value: activityCount == null ? '—' : '$activityCount',
                 highlighted: true,
+                isLoading: activityCountLoading,
               ),
               _StatConfig(
                 label: l10n.profileStoriesStat,
-                value: '$publishedStoriesCount',
+                value: publishedStoriesCount == null
+                    ? '—'
+                    : '$publishedStoriesCount',
                 highlighted: true,
+                isLoading: publishedStoriesCountLoading,
               ),
               _StatConfig(
                 label: l10n.profileFollowersStat,
@@ -1837,12 +1860,14 @@ class _StatConfig {
     required this.label,
     required this.value,
     this.highlighted = false,
+    this.isLoading = false,
     this.onTap,
   });
 
   final String label;
   final String value;
   final bool highlighted;
+  final bool isLoading;
   final VoidCallback? onTap;
 }
 
@@ -1866,18 +1891,28 @@ class _ProfileStatCard extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            config.value,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: AppColors.accent,
-              fontSize: profileScaled(context, 24, min: 20, max: 28),
-              fontWeight: FontWeight.w900,
-              letterSpacing: -0.8,
+          if (config.isLoading)
+            SizedBox(
+              width: profileScaled(context, 24, min: 20, max: 24),
+              height: profileScaled(context, 24, min: 20, max: 24),
+              child: const CircularProgressIndicator(
+                strokeWidth: 2.4,
+                color: AppColors.accent,
+              ),
+            )
+          else
+            Text(
+              config.value,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: AppColors.accent,
+                fontSize: profileScaled(context, 24, min: 20, max: 28),
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.8,
+              ),
             ),
-          ),
           SizedBox(height: profileScaled(context, 10, min: 8, max: 12)),
           Text(
             config.label,
@@ -2156,369 +2191,248 @@ class _ActivitiesStyleConfirmAction extends StatelessWidget {
   }
 }
 
-class _ForeignProfileActions extends StatelessWidget {
-  const _ForeignProfileActions({
+class _ProfileHeroActions extends StatelessWidget {
+  const _ProfileHeroActions({
+    required this.isGuideProfile,
     required this.isFollowedByMe,
     required this.friendshipStatus,
-    required this.isBusy,
+    required this.isFollowActionLoading,
     required this.isFriendshipActionLoading,
-    required this.isMessageBusy,
+    required this.isMessageActionLoading,
     required this.onToggleFollow,
     required this.onFriendshipAction,
     required this.onDeclineFriendship,
     required this.onMessageTap,
+    required this.onGuideCalendarTap,
   });
 
+  final bool isGuideProfile;
   final bool isFollowedByMe;
   final UserFriendshipStatus friendshipStatus;
-  final bool isBusy;
+  final bool isFollowActionLoading;
   final bool isFriendshipActionLoading;
-  final bool isMessageBusy;
+  final bool isMessageActionLoading;
   final Future<void> Function()? onToggleFollow;
   final Future<void> Function()? onFriendshipAction;
   final Future<void> Function()? onDeclineFriendship;
   final Future<void> Function()? onMessageTap;
+  final VoidCallback? onGuideCalendarTap;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final gap = profileScaled(context, 12, min: 10, max: 14);
-    final hasIncomingRequest =
-        friendshipStatus == UserFriendshipStatus.incomingRequest;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (!hasIncomingRequest) ...[
-          _ProfileActionSlot(child: _friendshipButton(context, l10n)),
-          SizedBox(height: gap),
-        ],
-        _secondaryActionRow(context, l10n, gap),
-        if (hasIncomingRequest) ...[
-          SizedBox(height: gap),
-          _incomingFriendRequestSection(context, l10n, gap),
-        ],
-      ],
-    );
-  }
-
-  Widget _secondaryActionRow(
-    BuildContext context,
-    AppLocalizations l10n,
-    double gap,
-  ) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final textScale = MediaQuery.of(context).textScaler.scale(1);
-        final shouldStack = constraints.maxWidth < 360 || textScale > 1.2;
-        final actionWidth = shouldStack
-            ? constraints.maxWidth
-            : (constraints.maxWidth - gap) / 2;
-
-        return Wrap(
-          spacing: gap,
-          runSpacing: gap,
-          children: [
-            SizedBox(
-              width: actionWidth,
-              child: _ProfileActionSlot(child: _followButton(context, l10n)),
-            ),
-            SizedBox(
-              width: actionWidth,
-              child: _ProfileActionSlot(child: _messageButton(context, l10n)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _incomingFriendRequestSection(
-    BuildContext context,
-    AppLocalizations l10n,
-    double gap,
-  ) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(profileScaled(context, 14, min: 12, max: 16)),
-      decoration: BoxDecoration(
-        color: profileSurfaceMuted.withValues(alpha: 0.28),
-        borderRadius: BorderRadius.circular(
-          profileScaled(context, 18, min: 16, max: 20),
-        ),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.14)),
+    final actions = <Widget>[
+      _ProfileHeroActionButton(
+        icon: Icons.chat_bubble_outline_rounded,
+        label: l10n.profileMessageAction,
+        isBusy: isMessageActionLoading,
+        selected: true,
+        onTap: isMessageActionLoading ? null : () async => onMessageTap?.call(),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            l10n.profileFriendRequestTitle,
-            style: TextStyle(
-              color: profileTextSoft,
-              fontSize: profileScaled(context, 13, min: 12, max: 14),
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0,
-            ),
-          ),
-          SizedBox(height: profileScaled(context, 10, min: 8, max: 12)),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final textScale = MediaQuery.of(context).textScaler.scale(1);
-              final shouldStack = constraints.maxWidth < 360 || textScale > 1.2;
-              final actionWidth = shouldStack
-                  ? constraints.maxWidth
-                  : (constraints.maxWidth - gap) / 2;
-
-              return Wrap(
-                spacing: gap,
-                runSpacing: gap,
-                children: [
-                  SizedBox(
-                    width: actionWidth,
-                    child: _ProfileActionSlot(
-                      child: _acceptFriendRequestButton(context, l10n),
-                    ),
-                  ),
-                  SizedBox(
-                    width: actionWidth,
-                    child: _ProfileActionSlot(
-                      child: _declineFriendRequestButton(context, l10n),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _followButton(BuildContext context, AppLocalizations l10n) {
-    return isFollowedByMe
-        ? OutlinedButton(
-            onPressed: isBusy
-                ? null
-                : () async {
-                    await onToggleFollow?.call();
-                  },
-            style: _outlinedActionStyle(context, accent: true),
-            child: Text(l10n.profileFollowingAction),
-          )
-        : FilledButton(
-            onPressed: isBusy
-                ? null
-                : () async {
-                    await onToggleFollow?.call();
-                  },
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.accent,
-              foregroundColor: AppColors.textPrimary,
-              minimumSize: _actionButtonSize(context),
-              disabledBackgroundColor: profileSurfaceMuted,
-              disabledForegroundColor: profileTextSoft,
-            ),
-            child: Text(
-              isBusy ? l10n.profileFollowingAction : l10n.profileFollowAction,
-            ),
-          );
-  }
-
-  Widget _friendshipButton(BuildContext context, AppLocalizations l10n) {
-    final label = switch (friendshipStatus) {
-      UserFriendshipStatus.none => l10n.profileAddFriendAction,
-      UserFriendshipStatus.outgoingRequest =>
-        l10n.profileFriendRequestSentAction,
-      UserFriendshipStatus.incomingRequest => l10n.profileAcceptFriendAction,
-      UserFriendshipStatus.friends => l10n.profileRemoveFriendAction,
-    };
-
-    final isPrimary =
-        friendshipStatus == UserFriendshipStatus.none ||
-        friendshipStatus == UserFriendshipStatus.incomingRequest;
-    final isDestructive = friendshipStatus == UserFriendshipStatus.friends;
-
-    final child = isFriendshipActionLoading
-        ? SizedBox(
-            width: profileScaled(context, 18, min: 16, max: 18),
-            height: profileScaled(context, 18, min: 16, max: 18),
-            child: CircularProgressIndicator(
-              strokeWidth: 2.2,
-              color: isPrimary
-                  ? AppColors.textPrimary
-                  : isDestructive
-                  ? AppColors.destruct
-                  : AppColors.accent,
-            ),
-          )
-        : Text(label, maxLines: 1, overflow: TextOverflow.ellipsis);
-
-    if (isPrimary) {
-      return FilledButton(
-        onPressed: isFriendshipActionLoading
+      _ProfileHeroActionButton(
+        icon: isFollowedByMe
+            ? Icons.notifications_active_rounded
+            : Icons.notifications_none_rounded,
+        label: isFollowedByMe
+            ? l10n.profileFollowingAction
+            : l10n.profileFollowAction,
+        isBusy: isFollowActionLoading,
+        selected: isFollowedByMe,
+        onTap: isFollowActionLoading
             ? null
-            : () async {
-                await onFriendshipAction?.call();
-              },
-        style: FilledButton.styleFrom(
-          backgroundColor: AppColors.accent,
-          foregroundColor: AppColors.textPrimary,
-          minimumSize: _actionButtonSize(context),
-          disabledBackgroundColor: profileSurfaceMuted,
-          disabledForegroundColor: profileTextSoft,
+            : () async => onToggleFollow?.call(),
+      ),
+      ..._friendshipActions(l10n),
+      if (isGuideProfile && onGuideCalendarTap != null)
+        _ProfileHeroActionButton(
+          icon: Icons.calendar_month_rounded,
+          label: l10n.guideCalendarTitle,
+          selected: true,
+          onTap: onGuideCalendarTap,
         ),
-        child: child,
-      );
-    }
+    ];
 
-    return OutlinedButton(
-      onPressed: isFriendshipActionLoading
-          ? null
-          : () async {
-              await onFriendshipAction?.call();
-            },
-      style: _outlinedActionStyle(context, destructive: isDestructive),
-      child: child,
-    );
-  }
-
-  Widget _acceptFriendRequestButton(
-    BuildContext context,
-    AppLocalizations l10n,
-  ) {
-    return FilledButton(
-      onPressed: isFriendshipActionLoading
-          ? null
-          : () async {
-              await onFriendshipAction?.call();
-            },
-      style: FilledButton.styleFrom(
-        backgroundColor: AppColors.accent,
-        foregroundColor: AppColors.textPrimary,
-        minimumSize: _actionButtonSize(context),
-        disabledBackgroundColor: profileSurfaceMuted,
-        disabledForegroundColor: profileTextSoft,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      clipBehavior: Clip.none,
+      padding: EdgeInsets.symmetric(
+        horizontal: profileScaled(context, 2, min: 0, max: 4),
       ),
-      child: Text(
-        l10n.profileAcceptFriendAction,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < actions.length; i++) ...[
+            actions[i],
+            if (i != actions.length - 1) SizedBox(width: gap),
+          ],
+        ],
       ),
     );
   }
 
-  Widget _declineFriendRequestButton(
-    BuildContext context,
-    AppLocalizations l10n,
-  ) {
-    return OutlinedButton(
-      onPressed: isFriendshipActionLoading
-          ? null
-          : () async {
-              await onDeclineFriendship?.call();
-            },
-      style: _outlinedActionStyle(context, destructive: true),
-      child: Text(
-        l10n.profileDeclineFriendAction,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
+  List<Widget> _friendshipActions(AppLocalizations l10n) {
+    return switch (friendshipStatus) {
+      UserFriendshipStatus.none => [
+        _ProfileHeroActionButton(
+          icon: Icons.person_add_alt_1_rounded,
+          label: l10n.profileAddFriendAction,
+          isBusy: isFriendshipActionLoading,
+          selected: true,
+          onTap: isFriendshipActionLoading
+              ? null
+              : () async => onFriendshipAction?.call(),
+        ),
+      ],
+      UserFriendshipStatus.outgoingRequest => [
+        _ProfileHeroActionButton(
+          icon: Icons.schedule_rounded,
+          label: l10n.profileFriendRequestSentAction,
+          isBusy: isFriendshipActionLoading,
+          selected: true,
+          onTap: isFriendshipActionLoading
+              ? null
+              : () async => onFriendshipAction?.call(),
+        ),
+      ],
+      UserFriendshipStatus.incomingRequest => [
+        _ProfileHeroActionButton(
+          icon: Icons.check_rounded,
+          label: l10n.profileAcceptFriendAction,
+          isBusy: isFriendshipActionLoading,
+          selected: true,
+          onTap: isFriendshipActionLoading
+              ? null
+              : () async => onFriendshipAction?.call(),
+        ),
+        _ProfileHeroActionButton(
+          icon: Icons.close_rounded,
+          label: l10n.profileDeclineFriendAction,
+          isBusy: isFriendshipActionLoading,
+          destructive: true,
+          onTap: isFriendshipActionLoading
+              ? null
+              : () async => onDeclineFriendship?.call(),
+        ),
+      ],
+      UserFriendshipStatus.friends => [
+        _ProfileHeroActionButton(
+          icon: Icons.person_remove_alt_1_rounded,
+          label: l10n.profileRemoveFriendAction,
+          isBusy: isFriendshipActionLoading,
+          destructive: true,
+          onTap: isFriendshipActionLoading
+              ? null
+              : () async => onFriendshipAction?.call(),
+        ),
+      ],
+    };
   }
+}
 
-  Widget _messageButton(BuildContext context, AppLocalizations l10n) {
-    return OutlinedButton(
-      onPressed: isMessageBusy
-          ? null
-          : () async {
-              await onMessageTap?.call();
-            },
-      style: _outlinedActionStyle(context, accent: true),
-      child: isMessageBusy
-          ? SizedBox(
-              width: profileScaled(context, 18, min: 16, max: 18),
-              height: profileScaled(context, 18, min: 16, max: 18),
-              child: const CircularProgressIndicator(
-                strokeWidth: 2.2,
-                color: AppColors.accent,
-              ),
-            )
-          : Text(l10n.profileMessageAction),
-    );
-  }
+class _ProfileHeroActionButton extends StatelessWidget {
+  const _ProfileHeroActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.isBusy = false,
+    this.selected = false,
+    this.destructive = false,
+  });
 
-  ButtonStyle _outlinedActionStyle(
-    BuildContext context, {
-    bool accent = false,
-    bool destructive = false,
-  }) {
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+  final bool isBusy;
+  final bool selected;
+  final bool destructive;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null && !isBusy;
+    final circleSize = profileScaled(context, 50, min: 46, max: 54);
+    final width = profileScaled(context, 78, min: 70, max: 86);
     final color = destructive
         ? AppColors.destruct
-        : accent
+        : selected
         ? AppColors.accent
         : profileTextSoft;
+    final disabledColor = destructive
+        ? AppColors.destruct.withValues(alpha: 0.52)
+        : profileDisabled;
+    final effectiveColor = enabled ? color : disabledColor;
+    final backgroundColor = destructive
+        ? AppColors.destruct.withValues(alpha: selected ? 0.16 : 0.10)
+        : selected
+        ? AppColors.accent.withValues(alpha: 0.18)
+        : Colors.white.withValues(alpha: 0.055);
 
-    return OutlinedButton.styleFrom(
-      side: BorderSide(
-        color: destructive
-            ? AppColors.destruct.withValues(alpha: 0.52)
-            : accent
-            ? AppColors.accent.withValues(alpha: 0.45)
-            : Colors.white.withValues(alpha: 0.08),
-      ),
-      foregroundColor: color,
-      backgroundColor: destructive
-          ? AppColors.destruct.withValues(alpha: 0.1)
-          : accent
-          ? AppColors.accent.withValues(alpha: 0.08)
-          : profileSurfaceMuted.withValues(alpha: 0.62),
-      minimumSize: _actionButtonSize(context),
-      disabledForegroundColor: destructive
-          ? AppColors.destruct.withValues(alpha: 0.62)
-          : accent
-          ? AppColors.accent.withValues(alpha: 0.6)
-          : profileTextSoft,
-    );
-  }
-
-  Size _actionButtonSize(BuildContext context) {
-    return Size(double.infinity, profileScaled(context, 52, min: 48, max: 54));
-  }
-}
-
-class _ProfileActionSlot extends StatelessWidget {
-  const _ProfileActionSlot({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(width: double.infinity, child: child);
-  }
-}
-
-class _GuideCalendarAction extends StatelessWidget {
-  const _GuideCalendarAction({required this.label, required this.onTap});
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return _ProfileActionSlot(
-      child: OutlinedButton.icon(
-        onPressed: onTap,
-        icon: const Icon(Icons.calendar_month_rounded),
-        label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.accent,
-          backgroundColor: AppColors.accent.withValues(alpha: 0.08),
-          side: BorderSide(color: AppColors.accent.withValues(alpha: 0.45)),
-          minimumSize: Size(
-            double.infinity,
-            profileScaled(context, 52, min: 48, max: 54),
-          ),
-          disabledForegroundColor: AppColors.accent.withValues(alpha: 0.6),
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: label,
+      child: SizedBox(
+        width: width,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Material(
+              color: Colors.transparent,
+              shape: const CircleBorder(),
+              child: InkWell(
+                onTap: enabled ? onTap : null,
+                customBorder: const CircleBorder(),
+                child: Ink(
+                  width: circleSize,
+                  height: circleSize,
+                  decoration: BoxDecoration(
+                    color: backgroundColor,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: effectiveColor.withValues(
+                        alpha: enabled ? 0.46 : 0.22,
+                      ),
+                    ),
+                  ),
+                  child: Center(
+                    child: isBusy
+                        ? SizedBox(
+                            width: profileScaled(context, 18, min: 16, max: 18),
+                            height: profileScaled(
+                              context,
+                              18,
+                              min: 16,
+                              max: 18,
+                            ),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.2,
+                              color: effectiveColor,
+                            ),
+                          )
+                        : Icon(
+                            icon,
+                            color: effectiveColor,
+                            size: profileScaled(context, 22, min: 20, max: 24),
+                          ),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: profileScaled(context, 7, min: 6, max: 8)),
+            Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: enabled ? profileTextSoft : profileDisabled,
+                fontSize: profileScaled(context, 11, min: 10, max: 12),
+                fontWeight: FontWeight.w800,
+                height: 1.08,
+                letterSpacing: 0,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -2526,9 +2440,19 @@ class _GuideCalendarAction extends StatelessWidget {
 }
 
 class _OwnProfileSections extends StatelessWidget {
-  const _OwnProfileSections({required this.isGuideProfile});
+  const _OwnProfileSections({
+    required this.userId,
+    required this.isGuideProfile,
+    required this.incomingFriendRequestsFuture,
+    required this.recentActivitiesFuture,
+    required this.popularStoriesFuture,
+  });
 
+  final String userId;
   final bool isGuideProfile;
+  final Future<ProfileFollowersPageVm>? incomingFriendRequestsFuture;
+  final Future<List<ActivityListItemVm>>? recentActivitiesFuture;
+  final Future<List<StoryVm>>? popularStoriesFuture;
 
   @override
   Widget build(BuildContext context) {
@@ -2549,6 +2473,11 @@ class _OwnProfileSections extends StatelessWidget {
           title: l10n.profileConnectionsTitle,
           subtitle: l10n.profileConnectionsSubtitle,
           onTap: () => context.push('/profile/connections'),
+          trailing: incomingFriendRequestsFuture == null
+              ? null
+              : _IncomingFriendRequestsBadge(
+                  requestsFuture: incomingFriendRequestsFuture!,
+                ),
         ),
         if (isGuideProfile)
           _ProfileMenuTile(
@@ -2557,7 +2486,65 @@ class _OwnProfileSections extends StatelessWidget {
             subtitle: l10n.profileGuideDashboardSubtitle,
             onTap: () => context.push('/profile/guide-dashboard'),
           ),
+        SizedBox(height: profileScaled(context, 14, min: 10, max: 16)),
+        _ForeignRecentActivitiesSection(
+          userId: userId,
+          recentActivitiesFuture: recentActivitiesFuture,
+        ),
+        SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
+        _ForeignPopularStoriesSection(
+          userId: userId,
+          popularStoriesFuture: popularStoriesFuture,
+        ),
       ],
+    );
+  }
+}
+
+class _IncomingFriendRequestsBadge extends StatelessWidget {
+  const _IncomingFriendRequestsBadge({required this.requestsFuture});
+
+  final Future<ProfileFollowersPageVm> requestsFuture;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<ProfileFollowersPageVm>(
+      future: requestsFuture,
+      builder: (context, snapshot) {
+        final data = snapshot.data;
+        if (data == null || data.items.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final label = data.nextOffset == null ? '1' : '1+';
+        return Container(
+          constraints: BoxConstraints(
+            minWidth: profileScaled(context, 26, min: 24, max: 28),
+            minHeight: profileScaled(context, 24, min: 22, max: 26),
+          ),
+          padding: EdgeInsets.symmetric(
+            horizontal: profileScaled(context, 8, min: 7, max: 9),
+            vertical: profileScaled(context, 3, min: 2, max: 4),
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.accent,
+            borderRadius: BorderRadius.circular(
+              profileScaled(context, 999, min: 999, max: 999),
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: profileScaled(context, 11, min: 10, max: 12),
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -2592,21 +2579,25 @@ class _ForeignProfileSections extends StatelessWidget {
           if (directGuideReviewsFuture != null) ...[
             _DirectGuideReviewsSection(
               reviewsFuture: directGuideReviewsFuture!,
+              bottomSpacing: profileScaled(context, 28, min: 24, max: 32),
             ),
-            SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
           ],
-          _GuideExcursionReviewsSection(reviewsFuture: guideReviewsFuture!),
-          SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
+          _GuideExcursionReviewsSection(
+            reviewsFuture: guideReviewsFuture!,
+            bottomSpacing: profileScaled(context, 28, min: 24, max: 32),
+          ),
         ],
         if (activityOrganizerReviewsFuture != null) ...[
           _ProfileActivityOrganizerReviewsSection(
             reviewsFuture: activityOrganizerReviewsFuture!,
+            bottomSpacing: profileScaled(context, 28, min: 24, max: 32),
           ),
-          SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
         ],
         if (activityReviewsFuture != null) ...[
-          _ProfileActivityReviewsSection(reviewsFuture: activityReviewsFuture!),
-          SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
+          _ProfileActivityReviewsSection(
+            reviewsFuture: activityReviewsFuture!,
+            bottomSpacing: profileScaled(context, 28, min: 24, max: 32),
+          ),
         ],
         _ForeignRecentActivitiesSection(
           userId: userId,
@@ -2848,215 +2839,236 @@ class _ForeignPopularStoriesSkeleton extends StatelessWidget {
   }
 }
 
+class _ProfileReviewSectionShell extends StatelessWidget {
+  const _ProfileReviewSectionShell({
+    required this.title,
+    required this.child,
+    required this.bottomSpacing,
+  });
+
+  final String title;
+  final Widget child;
+  final double bottomSpacing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ProfileSectionHeading(title: title),
+        SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
+        child,
+        if (bottomSpacing > 0) SizedBox(height: bottomSpacing),
+      ],
+    );
+  }
+}
+
 class _ProfileActivityOrganizerReviewsSection extends StatelessWidget {
-  const _ProfileActivityOrganizerReviewsSection({required this.reviewsFuture});
+  const _ProfileActivityOrganizerReviewsSection({
+    required this.reviewsFuture,
+    required this.bottomSpacing,
+  });
 
   final Future<ActivityOrganizerReviewsPage> reviewsFuture;
+  final double bottomSpacing;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ProfileSectionHeading(title: l10n.profileActivityOrganizerReviewsTitle),
-        SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
-        FutureBuilder<ActivityOrganizerReviewsPage>(
-          future: reviewsFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const _GuideReviewSkeletonList();
-            }
-            if (snapshot.hasError) {
-              return _PlaceholderShowcaseCard(
-                title: l10n.profileGuideReviewsLoadFailed,
-                subtitle: l10n.profileGuideReviewsLoadFailedHint,
-              );
-            }
+    return FutureBuilder<ActivityOrganizerReviewsPage>(
+      future: reviewsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _ProfileReviewSectionShell(
+            title: l10n.profileActivityOrganizerReviewsTitle,
+            bottomSpacing: bottomSpacing,
+            child: const _GuideReviewSkeletonList(),
+          );
+        }
+        if (snapshot.hasError) {
+          return const SizedBox.shrink();
+        }
 
-            final reviews =
-                snapshot.data?.items ?? const <ActivityOrganizerReviewVm>[];
-            if (reviews.isEmpty) {
-              return _PlaceholderShowcaseCard(
-                title: l10n.profileGuideReviewsEmptyTitle,
-                subtitle: l10n.profileActivityOrganizerReviewsEmpty,
-              );
-            }
+        final reviews =
+            snapshot.data?.items ?? const <ActivityOrganizerReviewVm>[];
+        if (reviews.isEmpty) {
+          return const SizedBox.shrink();
+        }
 
-            return Column(
-              children: [
-                for (var i = 0; i < reviews.length; i++) ...[
-                  _ProfileActivityReviewCard(
-                    author: reviews[i].author,
-                    rating: reviews[i].rating,
-                    comment: reviews[i].comment,
-                    createdAt: reviews[i].createdAt,
-                    subtitle: l10n.activityReviewOrganizerLabel,
-                  ),
-                  if (i != reviews.length - 1)
-                    SizedBox(height: profileScaled(context, 12, min: 10)),
-                ],
+        return _ProfileReviewSectionShell(
+          title: l10n.profileActivityOrganizerReviewsTitle,
+          bottomSpacing: bottomSpacing,
+          child: Column(
+            children: [
+              for (var i = 0; i < reviews.length; i++) ...[
+                _ProfileActivityReviewCard(
+                  author: reviews[i].author,
+                  rating: reviews[i].rating,
+                  comment: reviews[i].comment,
+                  createdAt: reviews[i].createdAt,
+                  subtitle: l10n.activityReviewOrganizerLabel,
+                ),
+                if (i != reviews.length - 1)
+                  SizedBox(height: profileScaled(context, 12, min: 10)),
               ],
-            );
-          },
-        ),
-      ],
+            ],
+          ),
+        );
+      },
     );
   }
 }
 
 class _ProfileActivityReviewsSection extends StatelessWidget {
-  const _ProfileActivityReviewsSection({required this.reviewsFuture});
+  const _ProfileActivityReviewsSection({
+    required this.reviewsFuture,
+    required this.bottomSpacing,
+  });
 
   final Future<ActivityReviewsPage> reviewsFuture;
+  final double bottomSpacing;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ProfileSectionHeading(title: l10n.profileActivityReviewsTitle),
-        SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
-        FutureBuilder<ActivityReviewsPage>(
-          future: reviewsFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const _GuideReviewSkeletonList();
-            }
-            if (snapshot.hasError) {
-              return _PlaceholderShowcaseCard(
-                title: l10n.profileGuideReviewsLoadFailed,
-                subtitle: l10n.profileGuideReviewsLoadFailedHint,
-              );
-            }
+    return FutureBuilder<ActivityReviewsPage>(
+      future: reviewsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _ProfileReviewSectionShell(
+            title: l10n.profileActivityReviewsTitle,
+            bottomSpacing: bottomSpacing,
+            child: const _GuideReviewSkeletonList(),
+          );
+        }
+        if (snapshot.hasError) {
+          return const SizedBox.shrink();
+        }
 
-            final reviews = snapshot.data?.items ?? const <ActivityReviewVm>[];
-            if (reviews.isEmpty) {
-              return _PlaceholderShowcaseCard(
-                title: l10n.profileGuideReviewsEmptyTitle,
-                subtitle: l10n.profileActivityReviewsEmpty,
-              );
-            }
+        final reviews = snapshot.data?.items ?? const <ActivityReviewVm>[];
+        if (reviews.isEmpty) {
+          return const SizedBox.shrink();
+        }
 
-            return Column(
-              children: [
-                for (var i = 0; i < reviews.length; i++) ...[
-                  _ProfileActivityReviewCard(
-                    author: reviews[i].author,
-                    rating: reviews[i].rating,
-                    comment: reviews[i].comment,
-                    createdAt: reviews[i].createdAt,
-                    subtitle: l10n.activityReviewActivityLabel,
-                  ),
-                  if (i != reviews.length - 1)
-                    SizedBox(height: profileScaled(context, 12, min: 10)),
-                ],
+        return _ProfileReviewSectionShell(
+          title: l10n.profileActivityReviewsTitle,
+          bottomSpacing: bottomSpacing,
+          child: Column(
+            children: [
+              for (var i = 0; i < reviews.length; i++) ...[
+                _ProfileActivityReviewCard(
+                  author: reviews[i].author,
+                  rating: reviews[i].rating,
+                  comment: reviews[i].comment,
+                  createdAt: reviews[i].createdAt,
+                  subtitle: l10n.activityReviewActivityLabel,
+                ),
+                if (i != reviews.length - 1)
+                  SizedBox(height: profileScaled(context, 12, min: 10)),
               ],
-            );
-          },
-        ),
-      ],
+            ],
+          ),
+        );
+      },
     );
   }
 }
 
 class _DirectGuideReviewsSection extends StatelessWidget {
-  const _DirectGuideReviewsSection({required this.reviewsFuture});
+  const _DirectGuideReviewsSection({
+    required this.reviewsFuture,
+    required this.bottomSpacing,
+  });
 
   final Future<GuideReviewsPage> reviewsFuture;
+  final double bottomSpacing;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ProfileSectionHeading(title: l10n.profileDirectGuideReviewsTitle),
-        SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
-        FutureBuilder<GuideReviewsPage>(
-          future: reviewsFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const _GuideReviewSkeletonList();
-            }
-            if (snapshot.hasError) {
-              return _PlaceholderShowcaseCard(
-                title: l10n.profileGuideReviewsLoadFailed,
-                subtitle: l10n.profileGuideReviewsLoadFailedHint,
-              );
-            }
+    return FutureBuilder<GuideReviewsPage>(
+      future: reviewsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _ProfileReviewSectionShell(
+            title: l10n.profileDirectGuideReviewsTitle,
+            bottomSpacing: bottomSpacing,
+            child: const _GuideReviewSkeletonList(),
+          );
+        }
+        if (snapshot.hasError) {
+          return const SizedBox.shrink();
+        }
 
-            final reviews = snapshot.data?.items ?? const <GuideReviewVm>[];
-            if (reviews.isEmpty) {
-              return _PlaceholderShowcaseCard(
-                title: l10n.profileGuideReviewsEmptyTitle,
-                subtitle: l10n.profileDirectGuideReviewsEmpty,
-              );
-            }
+        final reviews = snapshot.data?.items ?? const <GuideReviewVm>[];
+        if (reviews.isEmpty) {
+          return const SizedBox.shrink();
+        }
 
-            return Column(
-              children: [
-                for (var i = 0; i < reviews.length; i++) ...[
-                  _ProfileDirectGuideReviewCard(review: reviews[i]),
-                  if (i != reviews.length - 1)
-                    SizedBox(height: profileScaled(context, 12, min: 10)),
-                ],
+        return _ProfileReviewSectionShell(
+          title: l10n.profileDirectGuideReviewsTitle,
+          bottomSpacing: bottomSpacing,
+          child: Column(
+            children: [
+              for (var i = 0; i < reviews.length; i++) ...[
+                _ProfileDirectGuideReviewCard(review: reviews[i]),
+                if (i != reviews.length - 1)
+                  SizedBox(height: profileScaled(context, 12, min: 10)),
               ],
-            );
-          },
-        ),
-      ],
+            ],
+          ),
+        );
+      },
     );
   }
 }
 
 class _GuideExcursionReviewsSection extends StatelessWidget {
-  const _GuideExcursionReviewsSection({required this.reviewsFuture});
+  const _GuideExcursionReviewsSection({
+    required this.reviewsFuture,
+    required this.bottomSpacing,
+  });
 
   final Future<ExcursionReviewsPage> reviewsFuture;
+  final double bottomSpacing;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ProfileSectionHeading(title: l10n.profileGuideReviewsTitle),
-        SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
-        FutureBuilder<ExcursionReviewsPage>(
-          future: reviewsFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const _GuideReviewSkeletonList();
-            }
-            if (snapshot.hasError) {
-              return _PlaceholderShowcaseCard(
-                title: l10n.profileGuideReviewsLoadFailed,
-                subtitle: l10n.profileGuideReviewsLoadFailedHint,
-              );
-            }
+    return FutureBuilder<ExcursionReviewsPage>(
+      future: reviewsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _ProfileReviewSectionShell(
+            title: l10n.profileGuideReviewsTitle,
+            bottomSpacing: bottomSpacing,
+            child: const _GuideReviewSkeletonList(),
+          );
+        }
+        if (snapshot.hasError) {
+          return const SizedBox.shrink();
+        }
 
-            final reviews = snapshot.data?.items ?? const <ExcursionReviewVm>[];
-            if (reviews.isEmpty) {
-              return _PlaceholderShowcaseCard(
-                title: l10n.profileGuideReviewsEmptyTitle,
-                subtitle: l10n.profileGuideReviewsEmpty,
-              );
-            }
+        final reviews = snapshot.data?.items ?? const <ExcursionReviewVm>[];
+        if (reviews.isEmpty) {
+          return const SizedBox.shrink();
+        }
 
-            return Column(
-              children: [
-                for (var i = 0; i < reviews.length; i++) ...[
-                  _ProfileGuideReviewCard(review: reviews[i]),
-                  if (i != reviews.length - 1)
-                    SizedBox(height: profileScaled(context, 12, min: 10)),
-                ],
+        return _ProfileReviewSectionShell(
+          title: l10n.profileGuideReviewsTitle,
+          bottomSpacing: bottomSpacing,
+          child: Column(
+            children: [
+              for (var i = 0; i < reviews.length; i++) ...[
+                _ProfileGuideReviewCard(review: reviews[i]),
+                if (i != reviews.length - 1)
+                  SizedBox(height: profileScaled(context, 12, min: 10)),
               ],
-            );
-          },
-        ),
-      ],
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -3458,6 +3470,7 @@ class _ProfileMenuTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     this.onTap,
+    this.trailing,
     this.disabled = false,
   });
 
@@ -3465,6 +3478,7 @@ class _ProfileMenuTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback? onTap;
+  final Widget? trailing;
   final bool disabled;
 
   @override
@@ -3546,6 +3560,11 @@ class _ProfileMenuTile extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (trailing != null) ...[
+                  SizedBox(width: profileScaled(context, 10, min: 8, max: 10)),
+                  trailing!,
+                ],
+                SizedBox(width: profileScaled(context, 6, min: 4, max: 6)),
                 Icon(
                   Icons.chevron_right_rounded,
                   color: effectiveDisabled ? profileDisabled : profileTextMuted,
@@ -3624,22 +3643,10 @@ class _PlaceholderShowcaseCard extends StatelessWidget {
 }
 
 class _ProfileExtras {
-  const _ProfileExtras({
-    this.guide,
-    this.avatarUrl,
-    this.referenceLabels = const _ProfileReferenceLabels(),
-  });
+  const _ProfileExtras({this.guide, this.avatarUrl});
 
   final GuideProfileVm? guide;
   final String? avatarUrl;
-  final _ProfileReferenceLabels referenceLabels;
-}
-
-class _ProfileReferenceLabels {
-  const _ProfileReferenceLabels({this.country, this.currency});
-
-  final String? country;
-  final String? currency;
 }
 
 String _reviewInitial(String value) {

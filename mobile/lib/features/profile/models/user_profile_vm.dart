@@ -159,9 +159,6 @@ class UserProfileVm {
     final display = (nickname ?? '').trim();
     if (display.isNotEmpty) return display;
 
-    final first = (firstName ?? '').trim();
-    final last = (lastName ?? '').trim();
-    final fullName = [first, last].where((e) => e.isNotEmpty).join(' ');
     if (fullName.isNotEmpty) return fullName;
 
     final maskedPhone = (primaryPhoneMasked ?? '').trim();
@@ -176,6 +173,12 @@ class UserProfileVm {
     }
 
     return 'Inflap';
+  }
+
+  String get fullName {
+    final first = (firstName ?? '').trim();
+    final last = (lastName ?? '').trim();
+    return [first, last].where((part) => part.isNotEmpty).join(' ');
   }
 
   String get primaryPhoneDisplay {

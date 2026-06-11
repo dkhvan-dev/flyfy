@@ -808,6 +808,12 @@ abstract class AppLocalizations {
   /// **'Send a code to the phone number first.'**
   String get profilePhoneStartRequired;
 
+  /// No description provided for @profileFullName.
+  ///
+  /// In en, this message translates to:
+  /// **'Full name'**
+  String get profileFullName;
+
   /// No description provided for @profileEmail.
   ///
   /// In en, this message translates to:
@@ -1605,6 +1611,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Inflap Guide'**
   String get profileGuideTitle;
+
+  /// No description provided for @profileGuideRatingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide rating'**
+  String get profileGuideRatingLabel;
 
   /// No description provided for @profileEmptyBioPlaceholder.
   ///

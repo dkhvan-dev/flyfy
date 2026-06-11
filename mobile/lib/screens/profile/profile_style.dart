@@ -22,29 +22,7 @@ class ProfileResponsiveScope extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final shortSide = mediaQuery.size.shortestSide;
-    final baseScale = mediaQuery.textScaler.scale(1);
-
-    double widthScale;
-    if (shortSide <= 320) {
-      widthScale = 0.88;
-    } else if (shortSide <= 360) {
-      widthScale = 0.93;
-    } else if (shortSide <= 390) {
-      widthScale = 0.98;
-    } else if (shortSide >= 430) {
-      widthScale = 1.03;
-    } else {
-      widthScale = 1;
-    }
-
-    final effectiveScale = (baseScale * widthScale).clamp(0.88, 1.14);
-
-    return MediaQuery(
-      data: mediaQuery.copyWith(textScaler: TextScaler.linear(effectiveScale)),
-      child: child,
-    );
+    return child;
   }
 }
 

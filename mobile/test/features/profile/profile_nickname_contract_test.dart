@@ -31,4 +31,22 @@ void main() {
     expect(profile.nickname, '@nomad_aru');
     expect(profile.preferredName, '@nomad_aru');
   });
+
+  test('user profile view model exposes trimmed full name', () {
+    final profile = UserProfileVm.fromJson({
+      'user': {'id': 'user-1', 'status': 'ACTIVE'},
+      'profile': {
+        'firstName': ' Aruzhan ',
+        'lastName': ' Tulegenova ',
+        'locale': 'ru',
+        'timezone': 'Asia/Almaty',
+        'isProfileCompleted': true,
+      },
+      'roles': <String>[],
+      'followers': {'count': 0, 'isFollowedByMe': false},
+      'friendship': {'status': 'NONE'},
+    });
+
+    expect(profile.fullName, 'Aruzhan Tulegenova');
+  });
 }

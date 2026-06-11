@@ -27,8 +27,11 @@ void main() {
       expect(profileSource, contains('profileFriendRequestSentAction'));
       expect(profileSource, contains('profileAcceptFriendAction'));
       expect(profileSource, contains('profileDeclineFriendAction'));
-      expect(profileSource, contains('profileFriendRequestTitle'));
-      expect(profileSource, contains('_incomingFriendRequestSection'));
+      expect(profileSource, contains('class _ProfileHeroActions'));
+      expect(profileSource, contains('class _ProfileHeroActionButton'));
+      expect(profileSource, contains('_friendshipActions'));
+      expect(profileSource, contains('SingleChildScrollView('));
+      expect(profileSource, contains('scrollDirection: Axis.horizontal'));
       expect(profileSource, contains('_handleDeclineFriendRequest'));
       expect(profileSource, contains('onDeclineFriendship'));
       expect(profileSource, contains('profileRemoveFriendAction'));
@@ -43,15 +46,11 @@ void main() {
       expect(profileSource, contains('_ActivitiesStyleConfirmAction'));
       expect(profileSource, contains('Color(0xFF2B1808)'));
       expect(profileSource, contains('Color(0xFF201208)'));
-      expect(profileSource, contains('_secondaryActionRow'));
-      expect(profileSource, contains('Wrap('));
-      expect(profileSource, contains('runSpacing:'));
-      expect(profileSource, contains('constraints.maxWidth < 360'));
+      expect(profileSource, contains('Semantics('));
+      expect(profileSource, contains('shape: const CircleBorder()'));
+      expect(profileSource, contains('Icons.check_rounded'));
+      expect(profileSource, contains('Icons.close_rounded'));
       expect(profileSource, contains('AppColors.destruct'));
-      expect(
-        profileSource,
-        contains('_outlinedActionStyle(context, accent: true)'),
-      );
       expect(profileSource, isNot(contains('profileFriendsAction')));
 
       expect(apiSource, contains('sendFriendRequest'));

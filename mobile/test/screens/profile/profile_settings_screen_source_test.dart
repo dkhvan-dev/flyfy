@@ -28,8 +28,11 @@ void main() {
       expect(source, contains('listTimezones('));
       expect(source, contains('listCurrencies('));
       expect(source, contains('normalizeReferenceCountryCode('));
+      expect(source, contains('normalizeReferenceCurrencyCode('));
       expect(source, contains('referenceTimezoneLabel('));
-      expect(source, contains('referenceCurrencyLabel('));
+      expect(source, contains('withDefaultReferenceCurrency('));
+      expect(source, contains('_currencyCodeWithSymbol('));
+      expect(source, contains(r"'$code ($symbol)'"));
 
       final overviewClassStart = source.indexOf('class _ProfileOverviewCard');
       final actionTileStart = source.indexOf('class _SettingsActionTile');
@@ -40,9 +43,15 @@ void main() {
         overviewClassStart,
         actionTileStart,
       );
+      expect(overviewSource, contains('l10n.profileFullName'));
+      expect(overviewSource, contains('profile.fullName'));
+      expect(overviewSource, contains('l10n.profilePhone'));
+      expect(overviewSource, contains('profile.primaryPhoneDisplay'));
       expect(overviewSource, contains('l10n.profileCountry'));
+      expect(overviewSource, contains('labels?.country'));
       expect(overviewSource, contains('l10n.profileTimezone'));
       expect(overviewSource, contains('l10n.profileCurrency'));
+      expect(overviewSource, contains('labels?.currency'));
       expect(overviewSource, isNot(contains('l10n.profileLocale')));
       expect(overviewSource, isNot(contains('profile.locale')));
     },

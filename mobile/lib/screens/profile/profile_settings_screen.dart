@@ -80,9 +80,14 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   Future<String?> _resolveCountryLabel(String? countryCode, String lang) async {
     if (countryCode == null) return null;
 
-    final country = await _referenceApi.getCountry(countryCode, lang: lang);
-    final name = country?.name.trim() ?? '';
-    return name.isEmpty ? countryCode : name;
+    try {
+      final country = await _referenceApi.getCountry(countryCode, lang: lang);
+      final name = country?.name.trim() ?? '';
+      return name.isEmpty ? countryCode : name;
+    } catch (_) {
+      // Keep settings readable on poor networks.
+      return countryCode;
+    }
   }
 
   Future<String?> _resolveTimezoneLabel(String? timezoneId, String lang) async {
@@ -125,14 +130,24 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       );
       for (final currency in currencies) {
         if (normalizeReferenceCurrencyCode(currency.code) == currencyCode) {
-          return referenceCurrencyLabel(currency);
+          return _currencyCodeWithSymbol(currency);
         }
       }
     } catch (_) {
-      // Fallback below keeps the profile usable on poor networks.
+      // Keep settings readable on poor networks.
     }
 
     return currencyCode;
+  }
+
+  String _currencyCodeWithSymbol(ReferenceCurrency currency) {
+    final code =
+        normalizeReferenceCurrencyCode(currency.code) ??
+        currency.code.trim().toUpperCase();
+    final symbol = currency.symbol.trim();
+    if (code.isEmpty) return symbol;
+    if (symbol.isEmpty || symbol == code) return code;
+    return '$code ($symbol)';
   }
 
   Future<void> _openEditProfile() async {
@@ -370,6 +385,14 @@ class _ProfileOverviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final items = [
+      (
+        l10n.profileFullName,
+        _resolvedValue(null, profile.fullName, l10n.notSpecified),
+      ),
+      (
+        l10n.profilePhone,
+        _resolvedValue(null, profile.primaryPhoneDisplay, l10n.notSpecified),
+      ),
       (
         l10n.profileCountry,
         _resolvedValue(labels?.country, profile.countryCode, l10n.notSpecified),

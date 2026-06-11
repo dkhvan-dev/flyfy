@@ -1782,6 +1782,42 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
+  Widget _buildStickySaveButton(AppLocalizations l10n) {
+    return FilledButton(
+      onPressed: (_isSaving || _isUploadingAvatar) ? null : _save,
+      style: FilledButton.styleFrom(
+        backgroundColor: AppColors.accent,
+        foregroundColor: Colors.white,
+        minimumSize: Size(
+          double.infinity,
+          profileScaled(context, 56, min: 50, max: 58),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(
+            profileScaled(context, 18, min: 16, max: 20),
+          ),
+        ),
+      ),
+      child: _isSaving
+          ? SizedBox(
+              width: profileScaled(context, 18, min: 16, max: 18),
+              height: profileScaled(context, 18, min: 16, max: 18),
+              child: const CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            )
+          : Text(
+              l10n.profileSaveChangesButton,
+              style: TextStyle(
+                fontSize: profileScaled(context, 15, min: 14, max: 16),
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.4,
+              ),
+            ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -1792,6 +1828,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
+      bottomNavigationBar: SafeArea(
+        minimum: EdgeInsets.fromLTRB(
+          padding,
+          profileScaled(context, 8, min: 6, max: 10),
+          padding,
+          profileScaled(context, 12, min: 10, max: 14),
+        ),
+        child: _buildStickySaveButton(l10n),
+      ),
       body: ProfileResponsiveScope(
         child: ProfileGlassBackground(
           child: SafeArea(
@@ -2053,52 +2098,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   _buildPhoneVerificationSection(profile, l10n),
                   SizedBox(
                     height: profileScaled(context, 28, min: 24, max: 32),
-                  ),
-                  FilledButton(
-                    onPressed: (_isSaving || _isUploadingAvatar) ? null : _save,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.accent,
-                      foregroundColor: Colors.white,
-                      minimumSize: Size(
-                        double.infinity,
-                        profileScaled(context, 56, min: 50, max: 58),
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          profileScaled(context, 18, min: 16, max: 20),
-                        ),
-                      ),
-                    ),
-                    child: _isSaving
-                        ? SizedBox(
-                            width: profileScaled(context, 18, min: 16, max: 18),
-                            height: profileScaled(
-                              context,
-                              18,
-                              min: 16,
-                              max: 18,
-                            ),
-                            child: const CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(
-                            l10n.profileSaveChangesButton,
-                            style: TextStyle(
-                              fontSize: profileScaled(
-                                context,
-                                15,
-                                min: 14,
-                                max: 16,
-                              ),
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.4,
-                            ),
-                          ),
-                  ),
-                  SizedBox(
-                    height: profileScaled(context, 18, min: 14, max: 20),
                   ),
                   Center(
                     child: Text(
