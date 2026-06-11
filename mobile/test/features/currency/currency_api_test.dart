@@ -61,7 +61,69 @@ void main() {
     expect(currencies.single.code, 'USD');
     expect(currencies.single.name, 'Доллар США');
   });
+
+  test('default currency fallback covers popular travel currencies', () {
+    final codes = defaultCurrencyOptions
+        .map((currency) => currency.code)
+        .toSet();
+
+    for (final code in _referenceTravelCurrencyCodes) {
+      expect(codes, contains(code), reason: 'Missing fallback currency $code');
+    }
+  });
 }
+
+const _referenceTravelCurrencyCodes = [
+  'AED',
+  'AMD',
+  'ARS',
+  'AUD',
+  'AZN',
+  'BRL',
+  'BYN',
+  'CAD',
+  'CHF',
+  'CNY',
+  'CUP',
+  'CZK',
+  'DKK',
+  'EGP',
+  'EUR',
+  'GBP',
+  'GEL',
+  'IDR',
+  'INR',
+  'ISK',
+  'JPY',
+  'KES',
+  'KGS',
+  'KRW',
+  'KZT',
+  'LKR',
+  'MAD',
+  'MDL',
+  'MNT',
+  'MVR',
+  'MXN',
+  'MYR',
+  'NZD',
+  'PHP',
+  'PLN',
+  'RSD',
+  'RUB',
+  'SCR',
+  'SEK',
+  'SGD',
+  'THB',
+  'TJS',
+  'TMT',
+  'TRY',
+  'TZS',
+  'UAH',
+  'USD',
+  'UZS',
+  'VND',
+];
 
 class _FakeSecureStorage extends SecureStorage {
   @override

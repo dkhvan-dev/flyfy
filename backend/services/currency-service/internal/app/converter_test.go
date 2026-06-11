@@ -81,6 +81,29 @@ func TestConvertFallsBackToSeedRatesWhenProviderFails(t *testing.T) {
 	}
 }
 
+func TestSeedFallbackSupportsReferenceTravelCurrencies(t *testing.T) {
+	uc := NewConverterUseCase(nil, NewSeedRateProvider(time.Date(2026, 5, 31, 0, 0, 0, 0, time.UTC)))
+	listed := map[string]bool{}
+	for _, currency := range uc.ListCurrencies() {
+		listed[currency.Code] = true
+	}
+
+	for _, code := range referenceTravelCurrencyCodes() {
+		if !listed[code] {
+			t.Fatalf("ListCurrencies missing %s", code)
+		}
+
+		_, err := uc.Convert(context.Background(), ConvertInput{
+			Amount:       "1",
+			FromCurrency: code,
+			ToCurrency:   "KZT",
+		})
+		if err != nil {
+			t.Fatalf("Convert(%s -> KZT) returned error: %v", code, err)
+		}
+	}
+}
+
 func TestConvertRejectsUnsupportedCurrency(t *testing.T) {
 	uc := NewConverterUseCase(NewSeedRateProvider(time.Now()), nil)
 
@@ -91,6 +114,60 @@ func TestConvertRejectsUnsupportedCurrency(t *testing.T) {
 	})
 	if !errors.Is(err, ErrUnsupportedCurrency) {
 		t.Fatalf("error = %v, want ErrUnsupportedCurrency", err)
+	}
+}
+
+func referenceTravelCurrencyCodes() []string {
+	return []string{
+		"AED",
+		"AMD",
+		"ARS",
+		"AUD",
+		"AZN",
+		"BRL",
+		"BYN",
+		"CAD",
+		"CHF",
+		"CNY",
+		"CUP",
+		"CZK",
+		"DKK",
+		"EGP",
+		"EUR",
+		"GBP",
+		"GEL",
+		"IDR",
+		"INR",
+		"ISK",
+		"JPY",
+		"KES",
+		"KGS",
+		"KRW",
+		"KZT",
+		"LKR",
+		"MAD",
+		"MDL",
+		"MNT",
+		"MVR",
+		"MXN",
+		"MYR",
+		"NZD",
+		"PHP",
+		"PLN",
+		"RSD",
+		"RUB",
+		"SCR",
+		"SEK",
+		"SGD",
+		"THB",
+		"TJS",
+		"TMT",
+		"TRY",
+		"TZS",
+		"UAH",
+		"USD",
+		"UZS",
+		"VND",
 	}
 }
 
