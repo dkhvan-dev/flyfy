@@ -27,6 +27,32 @@ void main() {
     expect(source, isNot(contains('code.substring(0, 2)')));
   });
 
+  test(
+    'currency converter refreshes daily and shows date-only update label',
+    () async {
+      final source = await File(
+        'lib/screens/currency/currency_converter_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('Timer? _dailyRateRefreshTimer;'));
+      expect(source, contains('Timer.periodic(const Duration(days: 1), (_) {'));
+      expect(source, contains('_dailyRateRefreshTimer?.cancel();'));
+      expect(source, contains('DateFormat.yMMMd('));
+      expect(source, contains(').format(result!.rateAsOf!.toLocal())'));
+      expect(source, isNot(contains('.add_Hm()')));
+    },
+  );
+
+  test('currency picker search icon uses accent color', () async {
+    final source = await File(
+      'lib/screens/currency/currency_converter_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('prefixIcon: const Icon('));
+    expect(source, contains('Icons.search_rounded'));
+    expect(source, contains('color: AppColors.accent'));
+  });
+
   test('home service grid links to the currency converter route', () async {
     final homeSource = await File(
       'lib/screens/home/home_screen.dart',

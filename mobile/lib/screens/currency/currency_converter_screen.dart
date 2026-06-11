@@ -37,6 +37,7 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
   List<CurrencyOption> _currencies = defaultCurrencyOptions;
   CurrencyConversionResult? _result;
   Timer? _convertDebounce;
+  Timer? _dailyRateRefreshTimer;
   int _conversionRequestId = 0;
   String? _loadedCurrencyLocale;
   String _fromCurrency = 'KZT';
@@ -58,7 +59,9 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _convertNow();
+      if (!mounted) return;
+      _convertNow();
+      _startDailyRateRefresh();
     });
   }
 
@@ -74,6 +77,7 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
   @override
   void dispose() {
     _convertDebounce?.cancel();
+    _dailyRateRefreshTimer?.cancel();
     _amountController.dispose();
     _amountFocusNode.dispose();
     super.dispose();
@@ -159,6 +163,13 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
   void _convertNow({bool dismissKeyboard = false}) {
     _convertDebounce?.cancel();
     unawaited(_convert(dismissKeyboard: dismissKeyboard));
+  }
+
+  void _startDailyRateRefresh() {
+    _dailyRateRefreshTimer?.cancel();
+    _dailyRateRefreshTimer = Timer.periodic(const Duration(days: 1), (_) {
+      if (mounted) _convertNow();
+    });
   }
 
   void _swapCurrencies() {
@@ -1047,7 +1058,7 @@ class _CurrencyPickerScreenState extends State<_CurrencyPickerScreen> {
                   ),
                   prefixIcon: const Icon(
                     Icons.search_rounded,
-                    color: _mutedTextColor,
+                    color: AppColors.accent,
                   ),
                   filled: true,
                   fillColor: _surfaceColor,
@@ -1386,7 +1397,7 @@ String _updatedText(
   final localeName = Localizations.localeOf(context).toLanguageTag();
   final formatted = DateFormat.yMMMd(
     localeName,
-  ).add_Hm().format(result!.rateAsOf!.toLocal());
+  ).format(result!.rateAsOf!.toLocal());
   return l10n.currencyConverterUpdatedAt(formatted).toUpperCase();
 }
 
