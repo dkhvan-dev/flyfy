@@ -249,6 +249,10 @@ func (h *Handler) CompleteUpload(w http.ResponseWriter, r *http.Request, fileID 
 		Status:              resp.Status,
 		DetectedContentType: resp.DetectedContentType,
 		SizeBytes:           resp.SizeBytes,
+		Width:               resp.Width,
+		Height:              resp.Height,
+		DurationMS:          resp.DurationMS,
+		ThumbnailFileID:     uuidValueOrEmpty(resp.ThumbnailFileID),
 	})
 }
 
@@ -490,6 +494,10 @@ func toFileResponse(file *model.File) dto.FileResponse {
 		DetectedContentType: file.DetectedContentType,
 		SizeBytes:           file.SizeBytes,
 		ChecksumSHA256:      file.ChecksumSHA256,
+		Width:               file.Width,
+		Height:              file.Height,
+		DurationMS:          file.DurationMS,
+		ThumbnailFileID:     uuidStringPtr(file.ThumbnailFileID),
 		Visibility:          string(file.Visibility),
 		Purpose:             string(file.Purpose),
 		Status:              string(file.Status),
@@ -510,6 +518,21 @@ func userIDFromHeader(r *http.Request) *string {
 		return nil
 	}
 	return &userID
+}
+
+func uuidValueOrEmpty(v *uuid.UUID) string {
+	if v == nil {
+		return ""
+	}
+	return v.String()
+}
+
+func uuidStringPtr(v *uuid.UUID) *string {
+	if v == nil {
+		return nil
+	}
+	s := v.String()
+	return &s
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload any) {

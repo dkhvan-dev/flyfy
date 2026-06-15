@@ -2017,7 +2017,7 @@ abstract class AppLocalizations {
   /// No description provided for @profilePopularStoriesTitle.
   ///
   /// In en, this message translates to:
-  /// **'Popular stories'**
+  /// **'Popular posts'**
   String get profilePopularStoriesTitle;
 
   /// No description provided for @profileViewAllStories.
@@ -2029,7 +2029,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileStoriesLoadFailed.
   ///
   /// In en, this message translates to:
-  /// **'Failed to load stories'**
+  /// **'Failed to load posts'**
   String get profileStoriesLoadFailed;
 
   /// No description provided for @profileStoriesLoadFailedHint.
@@ -2041,31 +2041,31 @@ abstract class AppLocalizations {
   /// No description provided for @profileStoriesEmptyTitle.
   ///
   /// In en, this message translates to:
-  /// **'No stories yet'**
+  /// **'No posts yet'**
   String get profileStoriesEmptyTitle;
 
   /// No description provided for @profileStoriesEmptySubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Published stories from this user will appear here.'**
+  /// **'Published posts from this user will appear here.'**
   String get profileStoriesEmptySubtitle;
 
   /// No description provided for @profileUserStoriesTitle.
   ///
   /// In en, this message translates to:
-  /// **'User stories'**
+  /// **'User posts'**
   String get profileUserStoriesTitle;
 
   /// No description provided for @profileStoriesTitle.
   ///
   /// In en, this message translates to:
-  /// **'Recent stories'**
+  /// **'Recent posts'**
   String get profileStoriesTitle;
 
   /// No description provided for @profileStoriesUnavailable.
   ///
   /// In en, this message translates to:
-  /// **'Public stories and travel articles are not available in the app yet.'**
+  /// **'Public posts and travel articles are not available in the app yet.'**
   String get profileStoriesUnavailable;
 
   /// No description provided for @profileUnavailableTitle.
@@ -3871,7 +3871,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeTopStories.
   ///
   /// In en, this message translates to:
-  /// **'Top Stories'**
+  /// **'Top Posts'**
   String get homeTopStories;
 
   /// No description provided for @homeFeaturedStays.
@@ -4186,6 +4186,12 @@ abstract class AppLocalizations {
   /// **'Home'**
   String get homeNavHome;
 
+  /// No description provided for @feedNavLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Feed'**
+  String get feedNavLabel;
+
   /// No description provided for @homeNavQr.
   ///
   /// In en, this message translates to:
@@ -4209,6 +4215,1284 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'My'**
   String get homeNavMy;
+
+  /// No description provided for @feedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Feed'**
+  String get feedTitle;
+
+  /// No description provided for @feedTabForYou.
+  ///
+  /// In en, this message translates to:
+  /// **'For you'**
+  String get feedTabForYou;
+
+  /// No description provided for @feedTabFollowing.
+  ///
+  /// In en, this message translates to:
+  /// **'Following'**
+  String get feedTabFollowing;
+
+  /// No description provided for @feedStoriesSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stories'**
+  String get feedStoriesSectionTitle;
+
+  /// No description provided for @feedCreateStoryAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Your story'**
+  String get feedCreateStoryAction;
+
+  /// No description provided for @storyCaptureTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to story'**
+  String get storyCaptureTitle;
+
+  /// No description provided for @storyCapturePreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get storyCapturePreviewTitle;
+
+  /// No description provided for @storyCaptureCloseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get storyCaptureCloseLabel;
+
+  /// No description provided for @storyCaptureSettingsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get storyCaptureSettingsLabel;
+
+  /// No description provided for @storyCaptureGalleryAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery'**
+  String get storyCaptureGalleryAction;
+
+  /// No description provided for @storyCapturePhotoFromGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose photo'**
+  String get storyCapturePhotoFromGallery;
+
+  /// No description provided for @storyCaptureVideoFromGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose video'**
+  String get storyCaptureVideoFromGallery;
+
+  /// No description provided for @storyCaptureCameraUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera is unavailable. Check permissions and try again.'**
+  String get storyCaptureCameraUnavailable;
+
+  /// No description provided for @storyCapturePermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera or microphone access is denied.'**
+  String get storyCapturePermissionDenied;
+
+  /// No description provided for @storyCaptureCaptureFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not capture the story. Try again.'**
+  String get storyCaptureCaptureFailed;
+
+  /// No description provided for @storyCaptureFlashOffLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Flash off'**
+  String get storyCaptureFlashOffLabel;
+
+  /// No description provided for @storyCaptureFlashAutoLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto flash'**
+  String get storyCaptureFlashAutoLabel;
+
+  /// No description provided for @storyCaptureFlashOnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Flash on'**
+  String get storyCaptureFlashOnLabel;
+
+  /// No description provided for @storyCaptureFlashUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Flash is not available for this camera.'**
+  String get storyCaptureFlashUnsupported;
+
+  /// No description provided for @storyCapturePhotoMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo'**
+  String get storyCapturePhotoMode;
+
+  /// No description provided for @storyCaptureVideoMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Video'**
+  String get storyCaptureVideoMode;
+
+  /// No description provided for @storyCaptureCaptureButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Take photo'**
+  String get storyCaptureCaptureButtonLabel;
+
+  /// No description provided for @storyCaptureRecordButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Record video'**
+  String get storyCaptureRecordButtonLabel;
+
+  /// No description provided for @storyCaptureStopButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop recording'**
+  String get storyCaptureStopButtonLabel;
+
+  /// No description provided for @storyCaptureFlipCameraLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch camera'**
+  String get storyCaptureFlipCameraLabel;
+
+  /// No description provided for @storyCaptureCaptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a caption...'**
+  String get storyCaptureCaptionHint;
+
+  /// No description provided for @storyCaptureRetakeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Retake'**
+  String get storyCaptureRetakeAction;
+
+  /// No description provided for @storyCapturePublishAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish'**
+  String get storyCapturePublishAction;
+
+  /// No description provided for @storyCapturePublishing.
+  ///
+  /// In en, this message translates to:
+  /// **'Publishing...'**
+  String get storyCapturePublishing;
+
+  /// No description provided for @storyCapturePublishFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not publish the story. Try again.'**
+  String get storyCapturePublishFailed;
+
+  /// No description provided for @storyReplyInputHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply'**
+  String get storyReplyInputHint;
+
+  /// No description provided for @storyReplySendAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Send reply'**
+  String get storyReplySendAction;
+
+  /// No description provided for @storyReplySentMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply sent'**
+  String get storyReplySentMessage;
+
+  /// No description provided for @storyReplySendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send reply. Try again.'**
+  String get storyReplySendFailed;
+
+  /// No description provided for @storyLikeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Like story'**
+  String get storyLikeAction;
+
+  /// No description provided for @storyLikeSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not like the story. Try again.'**
+  String get storyLikeSendFailed;
+
+  /// No description provided for @storyCaptureDefaultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My story'**
+  String get storyCaptureDefaultTitle;
+
+  /// No description provided for @storyCaptureDefaultBody.
+  ///
+  /// In en, this message translates to:
+  /// **'New story'**
+  String get storyCaptureDefaultBody;
+
+  /// No description provided for @storyCaptureDefaultPlace.
+  ///
+  /// In en, this message translates to:
+  /// **'Story'**
+  String get storyCaptureDefaultPlace;
+
+  /// No description provided for @storyCapturePublishedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Story published'**
+  String get storyCapturePublishedMessage;
+
+  /// No description provided for @feedSuggestedCommunitiesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Communities to follow'**
+  String get feedSuggestedCommunitiesTitle;
+
+  /// No description provided for @feedJoinCommunityAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Join'**
+  String get feedJoinCommunityAction;
+
+  /// No description provided for @feedCommunityJoinedAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Following'**
+  String get feedCommunityJoinedAction;
+
+  /// No description provided for @feedCommunityModerationAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderate'**
+  String get feedCommunityModerationAction;
+
+  /// No description provided for @feedCommunityActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update the subscription. Try again.'**
+  String get feedCommunityActionFailed;
+
+  /// No description provided for @feedCommunityMembersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} members'**
+  String feedCommunityMembersLabel(String count);
+
+  /// No description provided for @feedMySubscriptionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My subscriptions'**
+  String get feedMySubscriptionsTitle;
+
+  /// No description provided for @feedMySubscriptionsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{communities} communities · {people} people'**
+  String feedMySubscriptionsSummary(int communities, int people);
+
+  /// No description provided for @feedMySubscriptionsViewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'View all'**
+  String get feedMySubscriptionsViewAll;
+
+  /// No description provided for @feedMySubscriptionsCommunitiesTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Communities'**
+  String get feedMySubscriptionsCommunitiesTab;
+
+  /// No description provided for @feedMySubscriptionsPeopleTab.
+  ///
+  /// In en, this message translates to:
+  /// **'People'**
+  String get feedMySubscriptionsPeopleTab;
+
+  /// No description provided for @feedMySubscriptionsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search subscriptions'**
+  String get feedMySubscriptionsSearchHint;
+
+  /// No description provided for @feedMySubscriptionsSheetSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Communities, friends, and followed people you keep close in the feed.'**
+  String get feedMySubscriptionsSheetSubtitle;
+
+  /// No description provided for @feedMySubscriptionsFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get feedMySubscriptionsFilterAll;
+
+  /// No description provided for @feedMySubscriptionsFilterStatusSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription status'**
+  String get feedMySubscriptionsFilterStatusSection;
+
+  /// No description provided for @feedMySubscriptionsFilterPeopleSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection type'**
+  String get feedMySubscriptionsFilterPeopleSection;
+
+  /// No description provided for @feedMySubscriptionsFilterCommunityActivitySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get feedMySubscriptionsFilterCommunityActivitySection;
+
+  /// No description provided for @feedMySubscriptionsFilterCommunityTopicSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Topics'**
+  String get feedMySubscriptionsFilterCommunityTopicSection;
+
+  /// No description provided for @feedMySubscriptionsFilterPeopleConnectionSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship'**
+  String get feedMySubscriptionsFilterPeopleConnectionSection;
+
+  /// No description provided for @feedMySubscriptionsFilterPeopleActivitySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get feedMySubscriptionsFilterPeopleActivitySection;
+
+  /// No description provided for @feedMySubscriptionsFilterSortSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort'**
+  String get feedMySubscriptionsFilterSortSection;
+
+  /// No description provided for @feedMySubscriptionsFilterSubscribed.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscribed'**
+  String get feedMySubscriptionsFilterSubscribed;
+
+  /// No description provided for @feedMySubscriptionsFilterUnsubscribed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsubscribed'**
+  String get feedMySubscriptionsFilterUnsubscribed;
+
+  /// No description provided for @feedMySubscriptionsFilterCurrentCity.
+  ///
+  /// In en, this message translates to:
+  /// **'My city'**
+  String get feedMySubscriptionsFilterCurrentCity;
+
+  /// No description provided for @feedMySubscriptionsFilterActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Has posts'**
+  String get feedMySubscriptionsFilterActive;
+
+  /// No description provided for @feedMySubscriptionsFilterPopular.
+  ///
+  /// In en, this message translates to:
+  /// **'Popular'**
+  String get feedMySubscriptionsFilterPopular;
+
+  /// No description provided for @feedMySubscriptionsFilterFriends.
+  ///
+  /// In en, this message translates to:
+  /// **'Friends'**
+  String get feedMySubscriptionsFilterFriends;
+
+  /// No description provided for @feedMySubscriptionsFilterFollowing.
+  ///
+  /// In en, this message translates to:
+  /// **'Following'**
+  String get feedMySubscriptionsFilterFollowing;
+
+  /// No description provided for @feedMySubscriptionsFilterOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Online'**
+  String get feedMySubscriptionsFilterOnline;
+
+  /// No description provided for @feedMySubscriptionsSortRelevant.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended'**
+  String get feedMySubscriptionsSortRelevant;
+
+  /// No description provided for @feedMySubscriptionsSortMostActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Most active'**
+  String get feedMySubscriptionsSortMostActive;
+
+  /// No description provided for @feedMySubscriptionsSortMostPopular.
+  ///
+  /// In en, this message translates to:
+  /// **'Most followed'**
+  String get feedMySubscriptionsSortMostPopular;
+
+  /// No description provided for @feedMySubscriptionsSortName.
+  ///
+  /// In en, this message translates to:
+  /// **'A-Z'**
+  String get feedMySubscriptionsSortName;
+
+  /// No description provided for @feedMySubscriptionsSortOnlineFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Online first'**
+  String get feedMySubscriptionsSortOnlineFirst;
+
+  /// No description provided for @feedPostSortRecommended.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended'**
+  String get feedPostSortRecommended;
+
+  /// No description provided for @feedPostSortNewest.
+  ///
+  /// In en, this message translates to:
+  /// **'Newest'**
+  String get feedPostSortNewest;
+
+  /// No description provided for @feedPostSortPopular.
+  ///
+  /// In en, this message translates to:
+  /// **'Popular'**
+  String get feedPostSortPopular;
+
+  /// No description provided for @feedPostSortDiscussed.
+  ///
+  /// In en, this message translates to:
+  /// **'Discussed'**
+  String get feedPostSortDiscussed;
+
+  /// No description provided for @feedMySubscriptionsApplyFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply filters'**
+  String get feedMySubscriptionsApplyFilters;
+
+  /// No description provided for @feedMySubscriptionsShowCommunitiesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Show {count} community} other{Show {count} communities}}'**
+  String feedMySubscriptionsShowCommunitiesCount(num count);
+
+  /// No description provided for @feedMySubscriptionsShowPeopleCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Show {count} person} other{Show {count} people}}'**
+  String feedMySubscriptionsShowPeopleCount(num count);
+
+  /// No description provided for @feedMySubscriptionsEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No subscriptions match these filters.'**
+  String get feedMySubscriptionsEmptyMessage;
+
+  /// No description provided for @feedMySubscriptionsFriendBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Friend'**
+  String get feedMySubscriptionsFriendBadge;
+
+  /// No description provided for @feedMySubscriptionsFollowingBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Following'**
+  String get feedMySubscriptionsFollowingBadge;
+
+  /// No description provided for @feedMySubscriptionsOnlineBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Online'**
+  String get feedMySubscriptionsOnlineBadge;
+
+  /// No description provided for @feedMySubscriptionsUnknownPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get feedMySubscriptionsUnknownPerson;
+
+  /// No description provided for @feedSystemPostsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Official updates'**
+  String get feedSystemPostsTitle;
+
+  /// No description provided for @feedSystemPostsViewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'View all'**
+  String get feedSystemPostsViewAll;
+
+  /// No description provided for @feedSystemPostsSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Official posts'**
+  String get feedSystemPostsSheetTitle;
+
+  /// No description provided for @communityDiscoveryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Communities'**
+  String get communityDiscoveryTitle;
+
+  /// No description provided for @communityDiscoveryEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No communities yet'**
+  String get communityDiscoveryEmptyTitle;
+
+  /// No description provided for @communityDiscoveryEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Official communities will appear here as they launch.'**
+  String get communityDiscoveryEmptyMessage;
+
+  /// No description provided for @communityDiscoveryLoadFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load communities'**
+  String get communityDiscoveryLoadFailedTitle;
+
+  /// No description provided for @communityDiscoveryLoadFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and try again.'**
+  String get communityDiscoveryLoadFailedMessage;
+
+  /// No description provided for @communityDiscoverySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search communities'**
+  String get communityDiscoverySearchHint;
+
+  /// No description provided for @communityDiscoveryFiltersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get communityDiscoveryFiltersTitle;
+
+  /// No description provided for @communityDiscoveryShowResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Show communities'**
+  String get communityDiscoveryShowResults;
+
+  /// No description provided for @communityDiscoveryShowResultsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Show {count, plural, =0{0 communities} =1{1 community} other{{count} communities}}'**
+  String communityDiscoveryShowResultsCount(num count);
+
+  /// No description provided for @communityDiscoveryRequiredLocationMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a country and city to find active local communities.'**
+  String get communityDiscoveryRequiredLocationMessage;
+
+  /// No description provided for @communityDiscoveryTopicSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Community type'**
+  String get communityDiscoveryTopicSection;
+
+  /// No description provided for @communityDiscoveryTopicAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get communityDiscoveryTopicAll;
+
+  /// No description provided for @communityDiscoveryTopicTravel.
+  ///
+  /// In en, this message translates to:
+  /// **'Travel'**
+  String get communityDiscoveryTopicTravel;
+
+  /// No description provided for @communityDiscoveryTopicCity.
+  ///
+  /// In en, this message translates to:
+  /// **'Cities'**
+  String get communityDiscoveryTopicCity;
+
+  /// No description provided for @communityDiscoveryTopicGuides.
+  ///
+  /// In en, this message translates to:
+  /// **'Guides and tours'**
+  String get communityDiscoveryTopicGuides;
+
+  /// No description provided for @communityDiscoveryTopicAppNews.
+  ///
+  /// In en, this message translates to:
+  /// **'Inflap news'**
+  String get communityDiscoveryTopicAppNews;
+
+  /// No description provided for @communityTopicLanguages.
+  ///
+  /// In en, this message translates to:
+  /// **'Languages'**
+  String get communityTopicLanguages;
+
+  /// No description provided for @communityTopicHousing.
+  ///
+  /// In en, this message translates to:
+  /// **'Housing'**
+  String get communityTopicHousing;
+
+  /// No description provided for @communityTopicTransport.
+  ///
+  /// In en, this message translates to:
+  /// **'Transport'**
+  String get communityTopicTransport;
+
+  /// No description provided for @communityTopicSports.
+  ///
+  /// In en, this message translates to:
+  /// **'Sports'**
+  String get communityTopicSports;
+
+  /// No description provided for @communityTopicOutdoor.
+  ///
+  /// In en, this message translates to:
+  /// **'Trips and outdoors'**
+  String get communityTopicOutdoor;
+
+  /// No description provided for @communityTopicHobbies.
+  ///
+  /// In en, this message translates to:
+  /// **'Hobbies and workshops'**
+  String get communityTopicHobbies;
+
+  /// No description provided for @communityTopicWellness.
+  ///
+  /// In en, this message translates to:
+  /// **'Wellness'**
+  String get communityTopicWellness;
+
+  /// No description provided for @communityTopicPets.
+  ///
+  /// In en, this message translates to:
+  /// **'Pets'**
+  String get communityTopicPets;
+
+  /// No description provided for @communityTopicCityLife.
+  ///
+  /// In en, this message translates to:
+  /// **'City life'**
+  String get communityTopicCityLife;
+
+  /// No description provided for @communityTopicContent.
+  ///
+  /// In en, this message translates to:
+  /// **'News and guides'**
+  String get communityTopicContent;
+
+  /// No description provided for @communityTopicFamily.
+  ///
+  /// In en, this message translates to:
+  /// **'Families'**
+  String get communityTopicFamily;
+
+  /// No description provided for @communityTopicGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get communityTopicGeneral;
+
+  /// No description provided for @communityProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Community'**
+  String get communityProfileTitle;
+
+  /// No description provided for @communityProfileActionsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Community actions'**
+  String get communityProfileActionsTooltip;
+
+  /// No description provided for @communityProfileCreatePostAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create post'**
+  String get communityProfileCreatePostAction;
+
+  /// No description provided for @communityPostModeSelectorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Publishing mode'**
+  String get communityPostModeSelectorLabel;
+
+  /// No description provided for @communityPostModeArticle.
+  ///
+  /// In en, this message translates to:
+  /// **'Posts'**
+  String get communityPostModeArticle;
+
+  /// No description provided for @communityPostModeQuickPost.
+  ///
+  /// In en, this message translates to:
+  /// **'Discussions'**
+  String get communityPostModeQuickPost;
+
+  /// No description provided for @communityPostModeListing.
+  ///
+  /// In en, this message translates to:
+  /// **'Listings'**
+  String get communityPostModeListing;
+
+  /// No description provided for @communityPostModeEventAnnouncement.
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get communityPostModeEventAnnouncement;
+
+  /// No description provided for @communityPostModeQuestionAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Questions'**
+  String get communityPostModeQuestionAnswer;
+
+  /// No description provided for @communityPostModeTripPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Trips'**
+  String get communityPostModeTripPlan;
+
+  /// No description provided for @communityProfileUnfollowConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unfollow community?'**
+  String get communityProfileUnfollowConfirmTitle;
+
+  /// No description provided for @communityProfileRulesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Community rules'**
+  String get communityProfileRulesTitle;
+
+  /// No description provided for @communityProfilePostsSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Posts'**
+  String get communityProfilePostsSectionTitle;
+
+  /// No description provided for @communityProfileNoPostsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No posts yet'**
+  String get communityProfileNoPostsTitle;
+
+  /// No description provided for @communityProfileNoPostsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'New posts from this community will appear here.'**
+  String get communityProfileNoPostsMessage;
+
+  /// No description provided for @communityProfilePostsLoadFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load posts'**
+  String get communityProfilePostsLoadFailedTitle;
+
+  /// No description provided for @communityProfilePostsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} posts'**
+  String communityProfilePostsLabel(String count);
+
+  /// No description provided for @communityProfileLoadFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load community'**
+  String get communityProfileLoadFailedTitle;
+
+  /// No description provided for @communityProfileLoadFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and try again.'**
+  String get communityProfileLoadFailedMessage;
+
+  /// No description provided for @communityTrustReportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Report community'**
+  String get communityTrustReportAction;
+
+  /// No description provided for @communityTrustMuteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute community'**
+  String get communityTrustMuteAction;
+
+  /// No description provided for @communityTrustUnmuteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmute community'**
+  String get communityTrustUnmuteAction;
+
+  /// No description provided for @communityTrustBlockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Posting blocked'**
+  String get communityTrustBlockedTitle;
+
+  /// No description provided for @communityTrustBlockedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You cannot post in this community until moderators lift the restriction.'**
+  String get communityTrustBlockedMessage;
+
+  /// No description provided for @communityTrustMutedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Community muted'**
+  String get communityTrustMutedTitle;
+
+  /// No description provided for @communityTrustMutedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This community is muted in your feed. You can unmute it anytime.'**
+  String get communityTrustMutedMessage;
+
+  /// No description provided for @communityTrustAppealPendingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Appeal in review'**
+  String get communityTrustAppealPendingTitle;
+
+  /// No description provided for @communityTrustAppealPendingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderators are reviewing your appeal for this community.'**
+  String get communityTrustAppealPendingMessage;
+
+  /// No description provided for @communityTrustAppealRejectedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Appeal rejected'**
+  String get communityTrustAppealRejectedTitle;
+
+  /// No description provided for @communityTrustAppealRejectedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The restriction remains active after moderator review.'**
+  String get communityTrustAppealRejectedMessage;
+
+  /// No description provided for @communityTrustAppealAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Appeal'**
+  String get communityTrustAppealAction;
+
+  /// No description provided for @communityTrustAppealMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Please review my community restriction again.'**
+  String get communityTrustAppealMessage;
+
+  /// No description provided for @communityTrustReportSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Community sent to moderation.'**
+  String get communityTrustReportSubmitted;
+
+  /// No description provided for @communityTrustMutedSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Community muted.'**
+  String get communityTrustMutedSubmitted;
+
+  /// No description provided for @communityTrustUnmutedSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Community unmuted.'**
+  String get communityTrustUnmutedSubmitted;
+
+  /// No description provided for @communityTrustAppealSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Appeal sent to moderators.'**
+  String get communityTrustAppealSubmitted;
+
+  /// No description provided for @communityTrustActionUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This trust action is not available yet.'**
+  String get communityTrustActionUnavailable;
+
+  /// No description provided for @communityTrustActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not complete the trust action. Try again.'**
+  String get communityTrustActionFailed;
+
+  /// No description provided for @feedEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No feed items yet'**
+  String get feedEmptyTitle;
+
+  /// No description provided for @feedEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow travelers and communities to shape your feed.'**
+  String get feedEmptyMessage;
+
+  /// No description provided for @feedLoadFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load feed'**
+  String get feedLoadFailedTitle;
+
+  /// No description provided for @feedLoadFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and try again.'**
+  String get feedLoadFailedMessage;
+
+  /// No description provided for @feedRetryAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get feedRetryAction;
+
+  /// No description provided for @communityModerationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderation queue'**
+  String get communityModerationTitle;
+
+  /// No description provided for @communityModerationSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} pending'**
+  String communityModerationSubtitle(int count);
+
+  /// No description provided for @communityModerationEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No posts waiting'**
+  String get communityModerationEmptyTitle;
+
+  /// No description provided for @communityModerationEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'New community posts that need review will appear here.'**
+  String get communityModerationEmptyMessage;
+
+  /// No description provided for @communityModerationLoadFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load moderation queue'**
+  String get communityModerationLoadFailedTitle;
+
+  /// No description provided for @communityModerationLoadFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and try again.'**
+  String get communityModerationLoadFailedMessage;
+
+  /// No description provided for @communityModerationApproveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get communityModerationApproveAction;
+
+  /// No description provided for @communityModerationRejectAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get communityModerationRejectAction;
+
+  /// No description provided for @communityModerationHistoryAction.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get communityModerationHistoryAction;
+
+  /// No description provided for @communityModerationApprovedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Post approved'**
+  String get communityModerationApprovedMessage;
+
+  /// No description provided for @communityModerationRejectedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Post rejected'**
+  String get communityModerationRejectedMessage;
+
+  /// No description provided for @communityModerationActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update this post. Try again.'**
+  String get communityModerationActionFailed;
+
+  /// No description provided for @communityModerationDecisionHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Decision history'**
+  String get communityModerationDecisionHistoryTitle;
+
+  /// No description provided for @communityModerationDecisionHistoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No moderation decisions yet.'**
+  String get communityModerationDecisionHistoryEmpty;
+
+  /// No description provided for @communityModerationDecisionHistoryFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load decision history.'**
+  String get communityModerationDecisionHistoryFailed;
+
+  /// No description provided for @communityModerationRejectReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason for rejection'**
+  String get communityModerationRejectReasonLabel;
+
+  /// No description provided for @communityModerationRejectConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject post'**
+  String get communityModerationRejectConfirmAction;
+
+  /// No description provided for @communityModerationRejectCancelAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get communityModerationRejectCancelAction;
+
+  /// No description provided for @communityMembersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get communityMembersTitle;
+
+  /// No description provided for @communityMembersSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage access and roles'**
+  String get communityMembersSubtitle;
+
+  /// No description provided for @communityMembersAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get communityMembersAction;
+
+  /// No description provided for @communityMembersEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No members found'**
+  String get communityMembersEmptyTitle;
+
+  /// No description provided for @communityMembersEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Members matching the selected filters will appear here.'**
+  String get communityMembersEmptyMessage;
+
+  /// No description provided for @communityMembersLoadFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load members'**
+  String get communityMembersLoadFailedTitle;
+
+  /// No description provided for @communityMembersLoadFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and try again.'**
+  String get communityMembersLoadFailedMessage;
+
+  /// No description provided for @communityMembersRoleFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Role'**
+  String get communityMembersRoleFilterLabel;
+
+  /// No description provided for @communityMembersStatusFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get communityMembersStatusFilterLabel;
+
+  /// No description provided for @communityMembersAllFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get communityMembersAllFilter;
+
+  /// No description provided for @communityMembersActiveStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get communityMembersActiveStatus;
+
+  /// No description provided for @communityMembersMutedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Muted'**
+  String get communityMembersMutedStatus;
+
+  /// No description provided for @communityMembersBannedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Banned'**
+  String get communityMembersBannedStatus;
+
+  /// No description provided for @communityMembersLeftStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Left'**
+  String get communityMembersLeftStatus;
+
+  /// No description provided for @communityMembersTrustedRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Trusted member'**
+  String get communityMembersTrustedRole;
+
+  /// No description provided for @communityMembersModeratorRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderator'**
+  String get communityMembersModeratorRole;
+
+  /// No description provided for @communityMembersAdminRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin'**
+  String get communityMembersAdminRole;
+
+  /// No description provided for @communityMembersMemberRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Member'**
+  String get communityMembersMemberRole;
+
+  /// No description provided for @communityMembersChangeRoleAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Change role'**
+  String get communityMembersChangeRoleAction;
+
+  /// No description provided for @communityMembersRoleHistoryAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Role history'**
+  String get communityMembersRoleHistoryAction;
+
+  /// No description provided for @communityMembersRoleHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Role history'**
+  String get communityMembersRoleHistoryTitle;
+
+  /// No description provided for @communityMembersRoleHistoryChangedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Changed by'**
+  String get communityMembersRoleHistoryChangedBy;
+
+  /// No description provided for @communityMembersRoleHistoryEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No role changes'**
+  String get communityMembersRoleHistoryEmptyTitle;
+
+  /// No description provided for @communityMembersRoleHistoryEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Role updates for this member will appear here.'**
+  String get communityMembersRoleHistoryEmptyMessage;
+
+  /// No description provided for @communityMembersRoleHistoryLoadFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load role history'**
+  String get communityMembersRoleHistoryLoadFailedTitle;
+
+  /// No description provided for @communityMembersRoleHistoryLoadFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and try again.'**
+  String get communityMembersRoleHistoryLoadFailedMessage;
+
+  /// No description provided for @communityMembersChangeStatusAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Change status'**
+  String get communityMembersChangeStatusAction;
+
+  /// No description provided for @communityMembersMuteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute member'**
+  String get communityMembersMuteAction;
+
+  /// No description provided for @communityMembersBanAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Ban member'**
+  String get communityMembersBanAction;
+
+  /// No description provided for @communityMembersRemoveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove member'**
+  String get communityMembersRemoveAction;
+
+  /// No description provided for @communityMembersRestoreAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore member'**
+  String get communityMembersRestoreAction;
+
+  /// No description provided for @communityMembersStatusUpdatedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Status updated'**
+  String get communityMembersStatusUpdatedMessage;
+
+  /// No description provided for @communityMembersStatusUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update this member status. Try again.'**
+  String get communityMembersStatusUpdateFailed;
+
+  /// No description provided for @communityMembersRoleUpdatedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Role updated'**
+  String get communityMembersRoleUpdatedMessage;
+
+  /// No description provided for @communityMembersRoleUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update this member. Try again.'**
+  String get communityMembersRoleUpdateFailed;
 
   /// No description provided for @mapNearbyPlacesLabel.
   ///
@@ -7885,8 +9169,14 @@ abstract class AppLocalizations {
   /// No description provided for @myStoriesTitle.
   ///
   /// In en, this message translates to:
-  /// **'My Stories'**
+  /// **'My Posts'**
   String get myStoriesTitle;
+
+  /// No description provided for @myStoryArchiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My Stories'**
+  String get myStoryArchiveTitle;
 
   /// No description provided for @myActivitiesEmpty.
   ///
@@ -9659,13 +10949,13 @@ abstract class AppLocalizations {
   /// No description provided for @storiesDiscoverTitle.
   ///
   /// In en, this message translates to:
-  /// **'Discover Stories'**
+  /// **'Posts'**
   String get storiesDiscoverTitle;
 
   /// No description provided for @storiesNavLabel.
   ///
   /// In en, this message translates to:
-  /// **'Stories'**
+  /// **'Posts'**
   String get storiesNavLabel;
 
   /// No description provided for @storiesActivitiesNavLabel.
@@ -9677,13 +10967,13 @@ abstract class AppLocalizations {
   /// No description provided for @storySearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search stories, authors, or places'**
+  /// **'Search posts, authors, or places'**
   String get storySearchHint;
 
   /// No description provided for @storySearchCompactHint.
   ///
   /// In en, this message translates to:
-  /// **'Search stories'**
+  /// **'Search posts'**
   String get storySearchCompactHint;
 
   /// No description provided for @storyFiltersTitle.
@@ -9743,7 +11033,7 @@ abstract class AppLocalizations {
   /// No description provided for @storiesShowResults.
   ///
   /// In en, this message translates to:
-  /// **'Show {count, plural, =0{0 stories} =1{1 story} other{{count} stories}}'**
+  /// **'Show {count, plural, =0{0 posts} =1{1 post} other{{count} posts}}'**
   String storiesShowResults(num count);
 
   /// No description provided for @storySortLabel.
@@ -9773,19 +11063,19 @@ abstract class AppLocalizations {
   /// No description provided for @storyCreateCta.
   ///
   /// In en, this message translates to:
-  /// **'Share Your Story'**
+  /// **'Share a post'**
   String get storyCreateCta;
 
   /// No description provided for @storyCreateFirst.
   ///
   /// In en, this message translates to:
-  /// **'Create the first story'**
+  /// **'Create the first post'**
   String get storyCreateFirst;
 
   /// No description provided for @storyEmptyTitle.
   ///
   /// In en, this message translates to:
-  /// **'No stories yet'**
+  /// **'No posts yet'**
   String get storyEmptyTitle;
 
   /// No description provided for @storyEmptySubtitle.
@@ -9797,13 +11087,13 @@ abstract class AppLocalizations {
   /// No description provided for @storyEmptyAuthenticatedSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Create a story, article, guide, or visual essay to start the feed.'**
+  /// **'Create a post, article, guide, or visual essay to start the feed.'**
   String get storyEmptyAuthenticatedSubtitle;
 
   /// No description provided for @storyFilteredEmptyTitle.
   ///
   /// In en, this message translates to:
-  /// **'No stories match your filters'**
+  /// **'No posts match your filters'**
   String get storyFilteredEmptyTitle;
 
   /// No description provided for @storyFilteredEmptySubtitle.
@@ -9815,7 +11105,7 @@ abstract class AppLocalizations {
   /// No description provided for @storyResetFiltersAction.
   ///
   /// In en, this message translates to:
-  /// **'Reset filters'**
+  /// **'Clear'**
   String get storyResetFiltersAction;
 
   /// No description provided for @storyLoginCreateAction.
@@ -9829,6 +11119,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Drafts'**
   String get myStoriesDraftsTab;
+
+  /// No description provided for @myStoriesPendingReviewTab.
+  ///
+  /// In en, this message translates to:
+  /// **'In review'**
+  String get myStoriesPendingReviewTab;
 
   /// No description provided for @myStoriesPublishedTab.
   ///
@@ -9851,31 +11147,43 @@ abstract class AppLocalizations {
   /// No description provided for @myStoriesDraftEmptySubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Save ideas as drafts before publishing them to the stories feed.'**
+  /// **'Save ideas as drafts before publishing them to the posts feed.'**
   String get myStoriesDraftEmptySubtitle;
+
+  /// No description provided for @myStoriesPendingReviewEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No posts in review'**
+  String get myStoriesPendingReviewEmptyTitle;
+
+  /// No description provided for @myStoriesPendingReviewEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Posts waiting for moderator review will appear here.'**
+  String get myStoriesPendingReviewEmptySubtitle;
 
   /// No description provided for @myStoriesPublishedEmptyTitle.
   ///
   /// In en, this message translates to:
-  /// **'No published stories yet'**
+  /// **'No published posts yet'**
   String get myStoriesPublishedEmptyTitle;
 
   /// No description provided for @myStoriesPublishedEmptySubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Published stories, guides, articles, and visual essays will appear here.'**
+  /// **'Published posts, guides, articles, and visual essays will appear here.'**
   String get myStoriesPublishedEmptySubtitle;
 
   /// No description provided for @myStoriesArchivedEmptyTitle.
   ///
   /// In en, this message translates to:
-  /// **'No archived stories yet'**
+  /// **'No archived posts yet'**
   String get myStoriesArchivedEmptyTitle;
 
   /// No description provided for @myStoriesArchivedEmptySubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Archived stories are kept here for history and reuse.'**
+  /// **'Archived posts are kept here for history and reuse.'**
   String get myStoriesArchivedEmptySubtitle;
 
   /// No description provided for @myStoriesCreateDraftAction.
@@ -9884,10 +11192,118 @@ abstract class AppLocalizations {
   /// **'Create a draft'**
   String get myStoriesCreateDraftAction;
 
+  /// No description provided for @storyArchiveActiveTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get storyArchiveActiveTab;
+
+  /// No description provided for @storyArchiveArchiveTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get storyArchiveArchiveTab;
+
+  /// No description provided for @storyArchiveActiveSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'These are your stories that are still visible to other users.'**
+  String get storyArchiveActiveSubtitle;
+
+  /// No description provided for @storyArchiveActiveEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No active stories yet'**
+  String get storyArchiveActiveEmptyTitle;
+
+  /// No description provided for @storyArchiveActiveEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture a photo or video story to keep it here for 24 hours.'**
+  String get storyArchiveActiveEmptySubtitle;
+
+  /// No description provided for @storyArchiveActiveUntilPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Active until'**
+  String get storyArchiveActiveUntilPrefix;
+
+  /// No description provided for @storyArchiveSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stories live for 24 hours, then stay here for you.'**
+  String get storyArchiveSubtitle;
+
+  /// No description provided for @storyArchiveEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No archived stories yet'**
+  String get storyArchiveEmptyTitle;
+
+  /// No description provided for @storyArchiveEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your camera stories will appear here after 24 hours.'**
+  String get storyArchiveEmptySubtitle;
+
+  /// No description provided for @storyArchiveLoadFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load stories'**
+  String get storyArchiveLoadFailedTitle;
+
+  /// No description provided for @storyArchiveLoadFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the connection and try again.'**
+  String get storyArchiveLoadFailedMessage;
+
+  /// No description provided for @storyArchiveRetryAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get storyArchiveRetryAction;
+
+  /// No description provided for @storyArchiveLoadMoreAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Load more'**
+  String get storyArchiveLoadMoreAction;
+
+  /// No description provided for @storyArchiveExpiredPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get storyArchiveExpiredPrefix;
+
+  /// No description provided for @storyStateSeenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Seen'**
+  String get storyStateSeenLabel;
+
+  /// No description provided for @storyStateExpiredLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired'**
+  String get storyStateExpiredLabel;
+
+  /// No description provided for @storyStatePendingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending review'**
+  String get storyStatePendingLabel;
+
+  /// No description provided for @storyStateHiddenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden'**
+  String get storyStateHiddenLabel;
+
   /// No description provided for @storyLoadFailed.
   ///
   /// In en, this message translates to:
-  /// **'Failed to load stories'**
+  /// **'Failed to load posts'**
   String get storyLoadFailed;
 
   /// No description provided for @storyViewsSuffix.
@@ -9923,7 +11339,7 @@ abstract class AppLocalizations {
   /// No description provided for @storyFormatStory.
   ///
   /// In en, this message translates to:
-  /// **'Story'**
+  /// **'Post'**
   String get storyFormatStory;
 
   /// No description provided for @storyFormatGuide.
@@ -9953,13 +11369,13 @@ abstract class AppLocalizations {
   /// No description provided for @storyDetailsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Story Details'**
+  /// **'Post details'**
   String get storyDetailsTitle;
 
   /// No description provided for @storyLinkCopied.
   ///
   /// In en, this message translates to:
-  /// **'Story link copied'**
+  /// **'Post link copied'**
   String get storyLinkCopied;
 
   /// No description provided for @storyShareFailed.
@@ -9967,6 +11383,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unable to open the share sheet. Please try again.'**
   String get storyShareFailed;
+
+  /// No description provided for @storyReportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get storyReportAction;
+
+  /// No description provided for @storyReportSending.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending...'**
+  String get storyReportSending;
+
+  /// No description provided for @storyReportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report post'**
+  String get storyReportTitle;
+
+  /// No description provided for @storyReportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us what is wrong. Reports help moderators keep travel content safe and useful.'**
+  String get storyReportSubtitle;
+
+  /// No description provided for @storyReportDetailsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get storyReportDetailsLabel;
+
+  /// No description provided for @storyReportDetailsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add context for moderators'**
+  String get storyReportDetailsHint;
+
+  /// No description provided for @storyReportSubmitAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit report'**
+  String get storyReportSubmitAction;
+
+  /// No description provided for @storyReportSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks. We sent this post to moderation.'**
+  String get storyReportSubmitted;
+
+  /// No description provided for @storyReportAutoHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks. This post is hidden while moderators review it.'**
+  String get storyReportAutoHidden;
+
+  /// No description provided for @storyReportReasonSpam.
+  ///
+  /// In en, this message translates to:
+  /// **'Spam or misleading'**
+  String get storyReportReasonSpam;
+
+  /// No description provided for @storyReportReasonHarassment.
+  ///
+  /// In en, this message translates to:
+  /// **'Harassment'**
+  String get storyReportReasonHarassment;
+
+  /// No description provided for @storyReportReasonHate.
+  ///
+  /// In en, this message translates to:
+  /// **'Hate or discrimination'**
+  String get storyReportReasonHate;
+
+  /// No description provided for @storyReportReasonSexualContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sexual content'**
+  String get storyReportReasonSexualContent;
+
+  /// No description provided for @storyReportReasonViolence.
+  ///
+  /// In en, this message translates to:
+  /// **'Violence or graphic content'**
+  String get storyReportReasonViolence;
+
+  /// No description provided for @storyReportReasonMisinformation.
+  ///
+  /// In en, this message translates to:
+  /// **'Misinformation'**
+  String get storyReportReasonMisinformation;
+
+  /// No description provided for @storyReportReasonIllegal.
+  ///
+  /// In en, this message translates to:
+  /// **'Illegal activity'**
+  String get storyReportReasonIllegal;
+
+  /// No description provided for @storyReportReasonOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get storyReportReasonOther;
 
   /// No description provided for @storyAuthorLabel.
   ///
@@ -10058,6 +11576,12 @@ abstract class AppLocalizations {
   /// **'Unable to open the comment share sheet. Please try again.'**
   String get storyCommentShareFailed;
 
+  /// No description provided for @storyLikeActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update the like. Please try again.'**
+  String get storyLikeActionFailed;
+
   /// No description provided for @storyCommentEditingTitle.
   ///
   /// In en, this message translates to:
@@ -10103,13 +11627,13 @@ abstract class AppLocalizations {
   /// No description provided for @storyRelatedTitle.
   ///
   /// In en, this message translates to:
-  /// **'Related Stories'**
+  /// **'Related posts'**
   String get storyRelatedTitle;
 
   /// No description provided for @storyRelatedEmpty.
   ///
   /// In en, this message translates to:
-  /// **'No related stories yet'**
+  /// **'No related posts yet'**
   String get storyRelatedEmpty;
 
   /// No description provided for @storyViewAll.
@@ -10121,19 +11645,19 @@ abstract class AppLocalizations {
   /// No description provided for @storyEditAction.
   ///
   /// In en, this message translates to:
-  /// **'Edit Story'**
+  /// **'Edit post'**
   String get storyEditAction;
 
   /// No description provided for @storyDeleteTitle.
   ///
   /// In en, this message translates to:
-  /// **'Delete story?'**
+  /// **'Delete post?'**
   String get storyDeleteTitle;
 
   /// No description provided for @storyDeleteMessage.
   ///
   /// In en, this message translates to:
-  /// **'The story will be removed from public feed.'**
+  /// **'The post will be removed from public feed.'**
   String get storyDeleteMessage;
 
   /// No description provided for @storyDeleteAction.
@@ -10381,6 +11905,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Story editor'**
   String get storyEditorTitle;
+
+  /// No description provided for @storyEditorQuickPostTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick post'**
+  String get storyEditorQuickPostTitle;
+
+  /// No description provided for @storyEditorQuickPostSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Share a short update, question, or local tip with the community.'**
+  String get storyEditorQuickPostSubtitle;
+
+  /// No description provided for @storyEditorQuickPostHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What do you want to share?'**
+  String get storyEditorQuickPostHint;
 
   /// No description provided for @storyEditorLoading.
   ///
@@ -11276,6 +12818,30 @@ abstract class AppLocalizations {
   /// **'Wait until media uploads finish.'**
   String get storyEditorValidationMediaPending;
 
+  /// No description provided for @postCreateRateLimitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Post limit'**
+  String get postCreateRateLimitTitle;
+
+  /// No description provided for @postCreateRateLimitMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You have created the maximum number of posts in the last hour. You can create another post in about {minutes} min.'**
+  String postCreateRateLimitMessage(int minutes);
+
+  /// No description provided for @postCreateRateLimitAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get postCreateRateLimitAction;
+
+  /// No description provided for @postCreatePreflightFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not check the post limit. We will check again when you publish.'**
+  String get postCreatePreflightFailed;
+
   /// No description provided for @chatListTitle.
   ///
   /// In en, this message translates to:
@@ -12098,6 +13664,18 @@ abstract class AppLocalizations {
   /// **'Forwarded'**
   String get chatForwardedLabel;
 
+  /// No description provided for @chatStoryReplyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply to story'**
+  String get chatStoryReplyLabel;
+
+  /// No description provided for @chatStoryReplyUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Story is no longer available'**
+  String get chatStoryReplyUnavailable;
+
   /// No description provided for @chatForwardedFrom.
   ///
   /// In en, this message translates to:
@@ -12625,6 +14203,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Messages'**
   String get notificationsCategoryChat;
+
+  /// No description provided for @notificationsCategoryContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Posts and stories'**
+  String get notificationsCategoryContent;
 
   /// No description provided for @notificationsCategorySystem.
   ///

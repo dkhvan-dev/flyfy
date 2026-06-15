@@ -1,0 +1,86 @@
+{{define "trust/appeals"}}
+{{template "pageStart" .}}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "trust.eyebrow"}}</p>
+      <h1>{{t .Locale "trust.appealsTitle"}}</h1>
+    </div>
+  </div>
+
+  <form class="filter-bar" method="get" action="/admin/trust/appeals">
+    <div class="filter-grid">
+      <label>
+        <span>{{t .Locale "field.search"}}</span>
+        <input type="search" name="q" value="{{.Data.Filters.Search}}" placeholder="{{t .Locale "placeholder.searchTrustAppeals"}}">
+      </label>
+      <label>
+        <span>{{t .Locale "field.status"}}</span>
+        <select name="status">
+          <option value="OPEN" {{if eq .Data.Filters.Status "OPEN"}}selected{{end}}>{{statusText .Locale "OPEN"}}</option>
+          <option value="APPROVED" {{if eq .Data.Filters.Status "APPROVED"}}selected{{end}}>{{statusText .Locale "APPROVED"}}</option>
+          <option value="REJECTED" {{if eq .Data.Filters.Status "REJECTED"}}selected{{end}}>{{statusText .Locale "REJECTED"}}</option>
+        </select>
+      </label>
+      <label>
+        <span>{{t .Locale "field.pageSize"}}</span>
+        <select name="page_size">
+          <option value="25" {{if eq .Data.Filters.PageSize 25}}selected{{end}}>25</option>
+          <option value="50" {{if eq .Data.Filters.PageSize 50}}selected{{end}}>50</option>
+          <option value="100" {{if eq .Data.Filters.PageSize 100}}selected{{end}}>100</option>
+        </select>
+      </label>
+    </div>
+    <div class="filter-actions">
+      <button class="primary" type="submit">{{t .Locale "action.applyFilters"}}</button>
+      <a class="button" href="{{.Data.ResetURL}}">{{t .Locale "action.resetFilters"}}</a>
+    </div>
+  </form>
+
+  {{if .Data.Items}}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>{{t .Locale "table.appeal"}}</th>
+            <th>{{t .Locale "table.user"}}</th>
+            <th>{{t .Locale "users.restrictionCode"}}</th>
+            <th>{{t .Locale "table.status"}}</th>
+            <th>{{t .Locale "table.comment"}}</th>
+            <th>{{t .Locale "table.created"}}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .Data.Items}}
+            <tr>
+              <td>
+                <strong><code>{{shortID .Item.ID}}</code></strong>
+                <span class="muted block">{{.Item.ReasonCode}}</span>
+              </td>
+              <td>
+                <a href="{{.UserURL}}"><code>{{shortID .Item.UserID}}</code></a>
+                <span class="muted block">{{t $.Locale "label.restriction"}} <code>{{shortID .Item.RestrictionID}}</code></span>
+              </td>
+              <td>{{statusText $.Locale .Item.RestrictionCode}}</td>
+              <td><span class="{{statusClass .Item.Status}}">{{statusText $.Locale .Item.Status}}</span></td>
+              <td class="preline">{{if .Item.UserMessage}}{{.Item.UserMessage}}{{else}}-{{end}}</td>
+              <td>{{formatTime .Item.CreatedAt (staffTimezone $.Staff)}}</td>
+              <td class="right"><a class="button" href="{{.DetailURL}}">{{t $.Locale "action.review"}}</a></td>
+            </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+    {{if .Data.NextPageURL}}
+      <nav class="pagination" aria-label="{{t .Locale "pagination.label"}}">
+        <span class="muted">{{t .Locale "trust.nextPageHint"}}</span>
+        <a class="button" href="{{.Data.NextPageURL}}">{{t .Locale "action.nextPage"}}</a>
+      </nav>
+    {{end}}
+  {{else}}
+    <div class="empty card">{{t .Locale "trust.noAppeals"}}</div>
+  {{end}}
+</section>
+{{template "pageEnd" .}}
+{{end}}

@@ -45,6 +45,8 @@ var (
 
 	ErrBlockedURLDetected          = errors.New("blocked url detected")
 	ErrActivityCreationRateLimited = errors.New("activity creation rate limited")
+	ErrActivityCreationInProgress  = errors.New("activity creation is already in progress")
+	ErrActivityIdempotencyConflict = errors.New("activity idempotency key conflict")
 	ErrFraudRejected               = errors.New("activity action rejected by fraud policy")
 	ErrTrustPolicyRejected         = errors.New("activity action rejected by trust policy")
 

@@ -6,14 +6,15 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/network/dio_error_mapper.dart';
-import '../../core/network/story_api.dart';
+import '../../core/network/post_api.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/app_list_search_field.dart';
 import '../../core/ui/app_list_screen_header.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
 import '../../core/ui/pagination_bar.dart';
-import '../../features/stories/models/story_vm.dart';
+import '../../features/stories/models/post_vm.dart';
+import '../../features/stories/editor/presentation/post_create_preflight.dart';
 import '../../features/stories/story_ui.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/auth_provider.dart';
@@ -23,7 +24,7 @@ import '../common/app_side_drawer.dart';
 
 enum _StorySortDirection { asc, desc }
 
-enum _MyStoryStatusTab { drafts, published, archived }
+enum _MyStoryStatusTab { drafts, pendingReview, published, archived }
 
 extension _StorySortDirectionX on _StorySortDirection {
   String get querySuffix {
@@ -37,10 +38,12 @@ extension _StorySortDirectionX on _StorySortDirection {
 }
 
 extension _MyStoryStatusTabX on _MyStoryStatusTab {
-  String get status {
+  String get postStatus {
     switch (this) {
       case _MyStoryStatusTab.drafts:
         return 'DRAFT';
+      case _MyStoryStatusTab.pendingReview:
+        return 'PUBLISHED';
       case _MyStoryStatusTab.published:
         return 'PUBLISHED';
       case _MyStoryStatusTab.archived:
@@ -48,10 +51,24 @@ extension _MyStoryStatusTabX on _MyStoryStatusTab {
     }
   }
 
+  List<String>? get moderationStatuses {
+    switch (this) {
+      case _MyStoryStatusTab.pendingReview:
+        return const ['PENDING'];
+      case _MyStoryStatusTab.published:
+        return const ['NOT_REQUIRED', 'APPROVED'];
+      case _MyStoryStatusTab.drafts:
+      case _MyStoryStatusTab.archived:
+        return null;
+    }
+  }
+
   String label(AppLocalizations l10n) {
     switch (this) {
       case _MyStoryStatusTab.drafts:
         return l10n.myStoriesDraftsTab;
+      case _MyStoryStatusTab.pendingReview:
+        return l10n.myStoriesPendingReviewTab;
       case _MyStoryStatusTab.published:
         return l10n.myStoriesPublishedTab;
       case _MyStoryStatusTab.archived:
@@ -65,12 +82,12 @@ class StoriesScreen extends StatefulWidget {
     super.key,
     this.myOnly = false,
     this.authorId,
-    this.storyApi,
+    this.postApi,
   });
 
   final bool myOnly;
   final String? authorId;
-  final StoryApi? storyApi;
+  final PostApi? postApi;
 
   @override
   State<StoriesScreen> createState() => _StoriesScreenState();
@@ -79,13 +96,13 @@ class StoriesScreen extends StatefulWidget {
 class _StoriesScreenState extends State<StoriesScreen> {
   static const int _pageSize = 8;
 
-  late final StoryApi _api;
+  late final PostApi _api;
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
 
   Timer? _searchDebounce;
-  List<StoryVm> _stories = const [];
+  List<PostVm> _stories = const [];
   bool _isLoading = true;
   bool _isRefreshing = false;
   String? _errorMessage;
@@ -102,11 +119,13 @@ class _StoriesScreenState extends State<StoriesScreen> {
   AppCityFilterValue? _selectedCity;
   String _sort = 'latest';
   _StorySortDirection _sortDirection = _StorySortDirection.desc;
-  _MyStoryStatusTab _selectedMyStatus = _MyStoryStatusTab.drafts;
+  _MyStoryStatusTab _selectedMyStatus = _MyStoryStatusTab.published;
 
   String get _sortQueryParam => '${_sort}_${_sortDirection.querySuffix}';
   String? get _myStatusFilter =>
-      widget.myOnly ? _selectedMyStatus.status : null;
+      widget.myOnly ? _selectedMyStatus.postStatus : null;
+  List<String>? get _myModerationStatusFilter =>
+      widget.myOnly ? _selectedMyStatus.moderationStatuses : null;
   String? get _authorIdFilter {
     final value = (widget.authorId ?? '').trim();
     return value.isEmpty ? null : value;
@@ -131,7 +150,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
   @override
   void initState() {
     super.initState();
-    _api = widget.storyApi ?? StoryApi();
+    _api = widget.postApi ?? PostApi();
     _searchController.addListener(_handleSearchChanged);
     _loadStories();
   }
@@ -195,7 +214,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
 
     try {
       final storiesPage = widget.myOnly
-          ? await _api.listMyStoriesPage(
+          ? await _api.listMyPostsPage(
               search: _searchQuery,
               formats: _selectedFormat == null
                   ? null
@@ -203,6 +222,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
               categories: _selectedCategory == null
                   ? null
                   : <String>[_selectedCategory!],
+              moderationStatuses: _myModerationStatusFilter,
               countryCode: _selectedCountryCode,
               cityId: _selectedCityId,
               sort: _sortQueryParam,
@@ -210,7 +230,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
               limit: _pageSize,
               offset: (normalizedPage - 1) * _pageSize,
             )
-          : await _api.listStoriesPage(
+          : await _api.listPostsPage(
               search: _searchQuery,
               formats: _selectedFormat == null
                   ? null
@@ -282,6 +302,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
       widget.myOnly ? 'mine' : 'public',
       _authorIdFilter ?? '',
       _myStatusFilter ?? '',
+      _myModerationStatusFilter?.join(',') ?? '',
       _searchQuery.trim(),
       format,
       category,
@@ -367,17 +388,18 @@ class _StoriesScreenState extends State<StoriesScreen> {
         ? null
         : <String>[trimmedCategory];
     final page = widget.myOnly
-        ? await _api.listMyStoriesPage(
+        ? await _api.listMyPostsPage(
             search: _searchQuery,
             formats: formats,
             categories: categories,
+            moderationStatuses: _myModerationStatusFilter,
             countryCode: country?.countryCode,
             cityId: city?.cityId,
             sort: _sortQueryParam,
             status: _myStatusFilter,
             limit: 1,
           )
-        : await _api.listStoriesPage(
+        : await _api.listPostsPage(
             search: _searchQuery,
             formats: formats,
             categories: categories,
@@ -463,20 +485,46 @@ class _StoriesScreenState extends State<StoriesScreen> {
   }
 
   Future<void> _openCreateStory() async {
-    final authProvider = context.read<AuthProvider>();
-    if (authProvider.state != AuthState.authenticated) {
-      context.push('/login?from=/stories/create');
+    const path = '/posts/create';
+    final allowed = await ensurePostCreateAllowed(
+      context,
+      postApi: _api,
+      loginFrom: path,
+    );
+    if (!allowed || !mounted) {
       return;
     }
 
-    final result = await context.push<StoryVm>('/stories/create');
+    final result = await context.push<PostVm>(path);
     if (result != null && mounted) {
+      if (widget.myOnly) {
+        final nextStatus = _statusTabForPost(result);
+        if (_selectedMyStatus != nextStatus) {
+          setState(() {
+            _selectedMyStatus = nextStatus;
+          });
+        }
+      }
       _upsertStory(result);
       unawaited(_loadStories(showLoader: false, page: 1));
     }
   }
 
-  void _upsertStory(StoryVm story) {
+  _MyStoryStatusTab _statusTabForPost(PostVm story) {
+    final status = story.status.trim().toUpperCase();
+    if (status == 'DRAFT') {
+      return _MyStoryStatusTab.drafts;
+    }
+    if (status == 'ARCHIVED') {
+      return _MyStoryStatusTab.archived;
+    }
+    if (_isPendingModerationStatus(story.moderationStatus)) {
+      return _MyStoryStatusTab.pendingReview;
+    }
+    return _MyStoryStatusTab.published;
+  }
+
+  void _upsertStory(PostVm story) {
     if (!_matchesActiveStatus(story) || !_matchesActiveFilters(story)) {
       return;
     }
@@ -496,15 +544,30 @@ class _StoriesScreenState extends State<StoriesScreen> {
     });
   }
 
-  bool _matchesActiveStatus(StoryVm story) {
+  bool _matchesActiveStatus(PostVm story) {
     final status = story.status.trim().toUpperCase();
     if (widget.myOnly) {
-      return status == _selectedMyStatus.status;
+      if (status != _selectedMyStatus.postStatus) {
+        return false;
+      }
+      final moderationStatuses = _selectedMyStatus.moderationStatuses;
+      if (moderationStatuses == null || moderationStatuses.isEmpty) {
+        return true;
+      }
+      final moderationStatus = story.moderationStatus.trim().toUpperCase();
+      return moderationStatuses.contains(moderationStatus);
     }
     return status == 'PUBLISHED';
   }
 
-  bool _matchesActiveFilters(StoryVm story) {
+  bool _isPendingModerationStatus(String value) {
+    final status = value.trim().toUpperCase();
+    return status == 'PENDING' ||
+        status == 'PENDING_REVIEW' ||
+        status == 'IN_REVIEW';
+  }
+
+  bool _matchesActiveFilters(PostVm story) {
     final query = _searchQuery.trim().toLowerCase();
     if (query.isNotEmpty) {
       final haystack =
@@ -549,9 +612,9 @@ class _StoriesScreenState extends State<StoriesScreen> {
     return value.contains(',') ? value.split(',').first.trim() : value;
   }
 
-  Future<void> _openStory(StoryVm story) async {
+  Future<void> _openStory(PostVm story) async {
     final refreshed = await context.push<bool>(
-      '/stories/${Uri.encodeComponent(story.slug)}',
+      '/posts/${Uri.encodeComponent(story.slug)}',
       extra: story,
     );
     if (refreshed == true && mounted) {
@@ -673,11 +736,13 @@ class _StoriesScreenState extends State<StoriesScreen> {
         onMyExcursionsTap: () =>
             _runDrawerAction(() async => context.push('/me/excursions')),
         onMyStoriesTap: () =>
+            _runDrawerAction(() async => context.push('/me/posts')),
+        onMyStoryArchiveTap: () =>
             _runDrawerAction(() async => context.push('/me/stories')),
         onActivitiesTap: () =>
             _runDrawerAction(() async => context.push('/activities')),
         onLoginTap: () =>
-            _runDrawerAction(() async => context.push('/login?from=/stories')),
+            _runDrawerAction(() async => context.push('/login?from=/posts')),
         onLogoutTap: () => _runDrawerAction(_confirmLogout),
       ),
       bottomNavigationBar: CreateActionBottomNavigationBar(
@@ -817,6 +882,8 @@ class _StoriesScreenState extends State<StoriesScreen> {
       switch (_selectedMyStatus) {
         case _MyStoryStatusTab.drafts:
           return l10n.myStoriesDraftEmptyTitle;
+        case _MyStoryStatusTab.pendingReview:
+          return l10n.myStoriesPendingReviewEmptyTitle;
         case _MyStoryStatusTab.published:
           return l10n.myStoriesPublishedEmptyTitle;
         case _MyStoryStatusTab.archived:
@@ -834,6 +901,8 @@ class _StoriesScreenState extends State<StoriesScreen> {
       switch (_selectedMyStatus) {
         case _MyStoryStatusTab.drafts:
           return l10n.myStoriesDraftEmptySubtitle;
+        case _MyStoryStatusTab.pendingReview:
+          return l10n.myStoriesPendingReviewEmptySubtitle;
         case _MyStoryStatusTab.published:
           return l10n.myStoriesPublishedEmptySubtitle;
         case _MyStoryStatusTab.archived:
@@ -849,11 +918,8 @@ class _StoriesScreenState extends State<StoriesScreen> {
     if (_hasActiveFilters) {
       return l10n.storyResetFiltersAction;
     }
-    if (widget.myOnly && _selectedMyStatus == _MyStoryStatusTab.drafts) {
-      return l10n.myStoriesCreateDraftAction;
-    }
-    if (!widget.myOnly && _authorIdFilter == null) {
-      return isLoggedIn ? l10n.storyCreateFirst : l10n.storyLoginCreateAction;
+    if (!widget.myOnly && isLoggedIn && _authorIdFilter == null) {
+      return l10n.storyCreateFirst;
     }
     return null;
   }
@@ -862,10 +928,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
     if (_hasActiveFilters) {
       return () => unawaited(_resetFilters());
     }
-    if (widget.myOnly && _selectedMyStatus == _MyStoryStatusTab.drafts) {
-      return () => unawaited(_openCreateStory());
-    }
-    if (!widget.myOnly && _authorIdFilter == null) {
+    if (!widget.myOnly && isLoggedIn && _authorIdFilter == null) {
       return () => unawaited(_openCreateStory());
     }
     return null;
@@ -886,30 +949,35 @@ class _MyStoriesStatusTabs extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final adaptive = StoryAdaptive.of(context);
 
-    return Wrap(
-      spacing: adaptive.scale(8),
-      runSpacing: adaptive.scale(8),
-      children: [
-        for (final tab in _MyStoryStatusTab.values)
-          ChoiceChip(
-            label: Text(tab.label(l10n)),
-            selected: selected == tab,
-            onSelected: (_) => onSelected(tab),
-            selectedColor: AppColors.accent,
-            backgroundColor: const Color(0xFF2A1D13),
-            showCheckmark: false,
-            side: BorderSide(
-              color: selected == tab ? AppColors.accent : Colors.transparent,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: [
+          for (final tab in _MyStoryStatusTab.values) ...[
+            ChoiceChip(
+              label: Text(tab.label(l10n)),
+              selected: selected == tab,
+              onSelected: (_) => onSelected(tab),
+              selectedColor: AppColors.accent,
+              backgroundColor: const Color(0xFF2A1D13),
+              showCheckmark: false,
+              side: BorderSide(
+                color: selected == tab ? AppColors.accent : Colors.transparent,
+              ),
+              labelStyle: TextStyle(
+                color: selected == tab ? Colors.white : const Color(0xFFCBB8A3),
+                fontWeight: FontWeight.w800,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(adaptive.radius(999)),
+              ),
             ),
-            labelStyle: TextStyle(
-              color: selected == tab ? Colors.white : const Color(0xFFCBB8A3),
-              fontWeight: FontWeight.w800,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(adaptive.radius(999)),
-            ),
-          ),
-      ],
+            if (tab != _MyStoryStatusTab.values.last)
+              SizedBox(width: adaptive.scale(8)),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -1046,13 +1114,14 @@ class _StoriesSortRow extends StatelessWidget {
 class _StoryListCard extends StatelessWidget {
   const _StoryListCard({required this.story, required this.onTap});
 
-  final StoryVm story;
+  final PostVm story;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
     final l10n = AppLocalizations.of(context)!;
+    final state = resolvePostEntryState(story);
     final publishedLabel = formatStoryDate(
       context,
       story.publishedAt ?? story.createdAt,
@@ -1064,10 +1133,11 @@ class _StoryListCard extends StatelessWidget {
     return Semantics(
       button: true,
       container: true,
+      enabled: !state.disablesEntry,
       label: story.title,
-      onTap: onTap,
+      onTap: state.disablesEntry ? null : onTap,
       child: GestureDetector(
-        onTap: onTap,
+        onTap: state.disablesEntry ? null : onTap,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1089,6 +1159,12 @@ class _StoryListCard extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   StoryCoverImage(url: story.coverUrl),
+                  if (state.disablesEntry)
+                    Positioned.fill(
+                      child: ColoredBox(
+                        color: Colors.black.withValues(alpha: 0.38),
+                      ),
+                    ),
                   Positioned(
                     left: adaptive.scale(14),
                     top: adaptive.scale(14),
@@ -1104,6 +1180,11 @@ class _StoryListCard extends StatelessWidget {
                     child: _FormatTag(
                       label: formatStoryFormat(l10n, story.format),
                     ),
+                  ),
+                  Positioned(
+                    left: adaptive.scale(14),
+                    bottom: adaptive.scale(14),
+                    child: StoryStateAffordance.fromPost(story),
                   ),
                 ],
               ),
@@ -1460,24 +1541,20 @@ class _StoriesEmptyState extends StatelessWidget {
           ),
           if (actionLabel != null && onAction != null) ...[
             SizedBox(height: adaptive.scale(18)),
-            ElevatedButton(
+            FilledButton(
               onPressed: onAction,
-              style: ElevatedButton.styleFrom(
+              style: FilledButton.styleFrom(
                 backgroundColor: AppColors.accent,
-                foregroundColor: const Color(0xFF211306),
+                foregroundColor: Colors.white,
                 padding: EdgeInsets.symmetric(
                   horizontal: adaptive.scale(20),
-                  vertical: adaptive.scale(14),
+                  vertical: adaptive.scale(12),
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(adaptive.radius(999)),
                 ),
               ),
-              child: Text(
-                actionLabel!,
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-              ),
+              child: Text(actionLabel!),
             ),
           ],
         ],
@@ -1532,7 +1609,6 @@ class _StoryFiltersSheet extends StatefulWidget {
 class _StoryFiltersSheetState extends State<_StoryFiltersSheet> {
   static const _formatOptions = <String?>[
     null,
-    'STORY',
     'GUIDE',
     'PHOTO_ESSAY',
     'ARTICLE',

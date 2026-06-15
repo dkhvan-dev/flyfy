@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,12 +13,14 @@ import 'package:inflap/features/stories/editor/domain/story_document.dart';
 import 'package:inflap/features/stories/editor/domain/story_editor_autosave_policy.dart';
 import 'package:inflap/features/stories/editor/presentation/story_editor_controller.dart';
 import 'package:inflap/features/stories/editor/presentation/story_editor_screen.dart';
+import 'package:inflap/features/stories/editor/presentation/story_editor_trust_context.dart';
 import 'package:inflap/features/stories/editor/presentation/widgets/story_add_block_sheet.dart';
 import 'package:inflap/features/stories/editor/presentation/widgets/story_editor_toolbar.dart';
 import 'package:inflap/features/stories/editor/presentation/widgets/story_metadata_panel.dart';
 import 'package:inflap/features/stories/editor/presentation/widgets/story_media_block.dart';
 import 'package:inflap/features/stories/editor/presentation/widgets/story_publish_panel.dart';
-import 'package:inflap/features/stories/models/story_vm.dart';
+import 'package:inflap/features/stories/models/post_profile_contract.dart';
+import 'package:inflap/features/stories/models/post_vm.dart';
 import 'package:inflap/features/stories/story_ui.dart';
 import 'package:inflap/l10n/generated/app_localizations.dart';
 import 'package:inflap/screens/stories/create_story_screen.dart';
@@ -38,6 +41,289 @@ void main() {
       expect(_storyBlockCanvasFinder(), findsOneWidget);
       expect(find.byType(StoryEditorToolbar), findsOneWidget);
     });
+
+    testWidgets(
+      'community composer shows trust banner and disables publish when posting is restricted',
+      (tester) async {
+        await tester.pumpWidget(
+          _app(
+            const CreateStoryScreen(
+              communityId: 'community-1',
+              communityTrustContext: StoryEditorTrustContext(
+                kind: StoryEditorTrustBannerKind.blocked,
+                title: 'Posting blocked',
+                message: 'Moderators need to lift this restriction first.',
+                blocksPublishing: true,
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('Posting blocked'), findsOneWidget);
+        expect(
+          find.text('Moderators need to lift this restriction first.'),
+          findsOneWidget,
+        );
+        expect(
+          tester
+              .widget<OutlinedButton>(
+                find.widgetWithText(OutlinedButton, 'Save draft'),
+              )
+              .onPressed,
+          isNotNull,
+        );
+        expect(
+          tester
+              .widget<FilledButton>(
+                find.widgetWithText(FilledButton, 'Publish'),
+              )
+              .onPressed,
+          isNull,
+        );
+      },
+    );
+
+    testWidgets('create editor exposes a guarded back button', (tester) async {
+      final router = GoRouter(
+        initialLocation: '/',
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => Scaffold(
+              body: ElevatedButton(
+                onPressed: () => context.push('/posts/create'),
+                child: const Text('Open editor'),
+              ),
+            ),
+          ),
+          GoRoute(
+            path: '/posts/create',
+            builder: (context, state) => const CreateStoryScreen(),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(_routerApp(router));
+      await tester.tap(find.text('Open editor'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('story-editor-back-button')),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(const ValueKey('story-editor-back-button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Open editor'), findsOneWidget);
+      expect(find.byType(StoryEditorScreen), findsNothing);
+    });
+
+    testWidgets('community post mode is selected inside the editor', (
+      tester,
+    ) async {
+      final controller = _controller(api: _FakeStoryEditorApi());
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        _app(
+          _screen(
+            controller: controller,
+            postProfileKey: PostProfileKeys.quickPost,
+            availablePostProfileKeys: const [
+              PostProfileKeys.quickPost,
+              PostProfileKeys.listing,
+              PostProfileKeys.eventAnnouncement,
+              PostProfileKeys.article,
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('story-editor-post-mode-selector')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('story-editor-post-mode-quick_post_v1')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('story-editor-post-mode-listing_v1')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const ValueKey('story-editor-post-mode-event_announcement_v1'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('story-editor-post-mode-article_v1')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('quick-post-composer')), findsOneWidget);
+
+      await tester.tap(
+        find.byKey(const ValueKey('story-editor-post-mode-listing_v1')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(controller.state.postProfileKey, PostProfileKeys.listing);
+      expect(find.byType(StoryMetadataPanel), findsOneWidget);
+      expect(find.byKey(const ValueKey('quick-post-composer')), findsNothing);
+
+      await tester.tap(
+        find.byKey(const ValueKey('story-editor-post-mode-article_v1')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(controller.state.postProfileKey, isNull);
+      expect(find.byType(StoryMetadataPanel), findsOneWidget);
+      expect(find.byKey(const ValueKey('quick-post-composer')), findsNothing);
+    });
+
+    testWidgets(
+      'quick post profile uses compact composer instead of block editor',
+      (tester) async {
+        final controller = StoryEditorController(api: _FakeStoryEditorApi());
+
+        await tester.pumpWidget(
+          _app(
+            _screen(controller: controller, postProfileKey: 'quick_post_v1'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Quick post'), findsWidgets);
+        expect(
+          find.byKey(const ValueKey('quick-post-composer')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('quick-post-body-field')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('quick-post-media-panel')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('quick-post-add-photo')),
+          findsOneWidget,
+        );
+        expect(_storyBlockCanvasFinder(), findsNothing);
+        expect(find.byType(StoryMetadataPanel), findsNothing);
+        expect(find.byType(StoryEditorToolbar), findsNothing);
+
+        await tester.enterText(
+          find.byKey(const ValueKey('quick-post-body-field')),
+          'Кто сегодня едет в Дананг?',
+        );
+        await tester.pump();
+
+        expect(
+          controller.state.document.plainText,
+          'Кто сегодня едет в Дананг?',
+        );
+        expect(controller.state.postProfileKey, 'quick_post_v1');
+
+        await tester.enterText(
+          find.byKey(const ValueKey('quick-post-body-field')),
+          'Кто сегодня едет в Дананг? ',
+        );
+        await tester.pump();
+
+        final bodyField = tester.widget<TextField>(
+          find.byKey(const ValueKey('quick-post-body-field')),
+        );
+        expect(bodyField.controller?.text, 'Кто сегодня едет в Дананг? ');
+
+        await tester.ensureVisible(find.byType(StoryPublishPanel));
+        expect(find.text('Title'), findsNothing);
+        expect(find.text('Cover'), findsNothing);
+        expect(find.text('Place'), findsNothing);
+        expect(find.text('Country'), findsNothing);
+        expect(
+          find.descendant(
+            of: find.byType(StoryPublishPanel),
+            matching: find.text('Content'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(StoryPublishPanel),
+            matching: find.text('Media'),
+          ),
+          findsOneWidget,
+        );
+
+        await tester.pump(const Duration(milliseconds: 800));
+      },
+    );
+
+    testWidgets(
+      'quick post photos use the first image as cover and next images as content',
+      (tester) async {
+        final mediaUpload = _FakeStoryEditorMediaUploadGateway();
+        final picker = _FakeStoryEditorImagePicker(
+          image: StoryEditorPickedImage(
+            bytes: base64Decode(_tinyPngBase64),
+            fileName: 'quick-photo.png',
+            mimeType: 'image/png',
+          ),
+        );
+        final controller = _controller(mediaUpload: mediaUpload);
+        controller.initializeCreate(
+          userId: 'user-1',
+          postProfileKey: 'quick_post_v1',
+        );
+
+        await tester.pumpWidget(
+          _app(
+            _screen(
+              controller: controller,
+              postProfileKey: 'quick_post_v1',
+              imagePicker: picker,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const ValueKey('quick-post-add-photo')));
+        await tester.pump();
+
+        expect(picker.requestedPurposes, [StoryEditorImagePickPurpose.cover]);
+        expect(
+          mediaUpload.requests.single.kind,
+          StoryEditorMediaUploadKind.cover,
+        );
+        expect(
+          controller.state.mediaQueue.items.single.kind,
+          StoryEditorMediaUploadKind.cover,
+        );
+
+        await tester.tap(find.byKey(const ValueKey('quick-post-add-photo')));
+        await tester.pump();
+
+        expect(picker.requestedPurposes, [
+          StoryEditorImagePickPurpose.cover,
+          StoryEditorImagePickPurpose.inlineImage,
+        ]);
+        expect(
+          mediaUpload.requests.last.kind,
+          StoryEditorMediaUploadKind.inlineImage,
+        );
+        expect(
+          controller.state.document.blocks
+              .where((block) => block.image != null)
+              .length,
+          1,
+        );
+      },
+    );
 
     testWidgets('renders responsive editor chrome on compact screens', (
       tester,
@@ -413,6 +699,48 @@ void main() {
       );
     });
 
+    testWidgets(
+      'community posts inherit location and hide manual place selectors',
+      (tester) async {
+        final controller = _controller();
+
+        await tester.pumpWidget(
+          _app(
+            _screen(
+              controller: controller,
+              communityId: 'community-1',
+              communityCountryCode: 'VN',
+              communityCityId: 'da-nang',
+              communityCityName: 'Da Nang',
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(controller.state.metadata.placeCountryCode, 'VN');
+        expect(controller.state.metadata.placeCityId, 'da-nang');
+        expect(controller.state.metadata.placeName, 'Da Nang');
+        expect(
+          find.byKey(const ValueKey('story-editor-place-field')),
+          findsNothing,
+        );
+        expect(find.text('Country'), findsNothing);
+        expect(find.text('City'), findsNothing);
+
+        await tester.ensureVisible(find.byType(StoryPublishPanel));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const ValueKey('publish-check-place-open')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const ValueKey('publish-check-country-open')),
+          findsNothing,
+        );
+      },
+    );
+
     testWidgets('publish actions are stacked vertically', (tester) async {
       final controller = _controller();
       controller.initializeCreate(userId: 'user-1');
@@ -497,7 +825,9 @@ void main() {
       expect(tester.getTopLeft(coverFieldFinder).dy, greaterThanOrEqualTo(0));
     });
 
-    testWidgets('published story opens its details page', (tester) async {
+    testWidgets('published create flow returns the new post to caller', (
+      tester,
+    ) async {
       final api = _FakeStoryEditorApi();
       final mediaLifecycle = _FakeStoryEditorMediaLifecycleGateway();
       final controller = _controller(api: api, mediaLifecycle: mediaLifecycle);
@@ -510,29 +840,31 @@ void main() {
           StoryBlock.paragraph(id: 'paragraph-1', text: 'Published body'),
         );
       late final GoRouter router;
+      PostVm? returnedPost;
       router = GoRouter(
-        initialLocation: '/stories/create',
+        initialLocation: '/',
         routes: [
           GoRoute(
-            path: '/stories/create',
-            builder: (context, state) => _screen(controller: controller),
+            path: '/',
+            builder: (context, state) => Scaffold(
+              body: ElevatedButton(
+                onPressed: () async {
+                  returnedPost = await context.push<PostVm>('/posts/create');
+                },
+                child: const Text('Open editor'),
+              ),
+            ),
           ),
           GoRoute(
-            path: '/stories/:slug',
-            builder: (context, state) {
-              final extra = state.extra;
-              final extraStory = extra is StoryVm ? extra.slug : 'missing';
-              return Scaffold(
-                body: Text(
-                  'Story details ${state.pathParameters['slug']} extra $extraStory',
-                ),
-              );
-            },
+            path: '/posts/create',
+            builder: (context, state) => _screen(controller: controller),
           ),
         ],
       );
 
       await tester.pumpWidget(_routerApp(router));
+      await tester.tap(find.text('Open editor'));
+      await tester.pumpAndSettle();
       await tester.ensureVisible(find.byType(StoryPublishPanel));
       await tester.pumpAndSettle();
 
@@ -546,43 +878,44 @@ void main() {
       expect(api.publishRequests, hasLength(1));
       expect(mediaLifecycle.binds, hasLength(2));
       expect(find.byType(StoryEditorScreen), findsNothing);
-      expect(
-        find.text('Story details created-story extra created-story'),
-        findsOneWidget,
-      );
-      expect(router.canPop(), isFalse);
+      expect(find.text('Open editor'), findsOneWidget);
+      expect(returnedPost?.id, 'created-story');
     });
 
-    testWidgets('saved draft opens its details page', (tester) async {
+    testWidgets('saved create draft returns the new post to caller', (
+      tester,
+    ) async {
       final api = _FakeStoryEditorApi();
       final controller = _controller(api: api);
       controller
         ..initializeCreate(userId: 'user-1')
         ..changeTitle('Draft route title');
       late final GoRouter router;
+      PostVm? returnedPost;
       router = GoRouter(
-        initialLocation: '/stories/create',
+        initialLocation: '/',
         routes: [
           GoRoute(
-            path: '/stories/create',
-            builder: (context, state) => _screen(controller: controller),
+            path: '/',
+            builder: (context, state) => Scaffold(
+              body: ElevatedButton(
+                onPressed: () async {
+                  returnedPost = await context.push<PostVm>('/posts/create');
+                },
+                child: const Text('Open editor'),
+              ),
+            ),
           ),
           GoRoute(
-            path: '/stories/:slug',
-            builder: (context, state) {
-              final extra = state.extra;
-              final extraStory = extra is StoryVm ? extra.slug : 'missing';
-              return Scaffold(
-                body: Text(
-                  'Story details ${state.pathParameters['slug']} extra $extraStory',
-                ),
-              );
-            },
+            path: '/posts/create',
+            builder: (context, state) => _screen(controller: controller),
           ),
         ],
       );
 
       await tester.pumpWidget(_routerApp(router));
+      await tester.tap(find.text('Open editor'));
+      await tester.pumpAndSettle();
       await tester.ensureVisible(find.byType(StoryPublishPanel));
       await tester.pumpAndSettle();
 
@@ -594,11 +927,8 @@ void main() {
 
       expect(api.createDraftRequests, hasLength(1));
       expect(find.byType(StoryEditorScreen), findsNothing);
-      expect(
-        find.text('Story details created-story extra created-story'),
-        findsOneWidget,
-      );
-      expect(router.canPop(), isFalse);
+      expect(find.text('Open editor'), findsOneWidget);
+      expect(returnedPost?.id, 'created-story');
     });
 
     testWidgets(
@@ -620,23 +950,31 @@ void main() {
             StoryBlock.paragraph(id: 'paragraph-1', text: 'Locked body'),
           );
         late final GoRouter router;
+        PostVm? returnedPost;
         router = GoRouter(
-          initialLocation: '/stories/create',
+          initialLocation: '/',
           routes: [
             GoRoute(
-              path: '/stories/create',
-              builder: (context, state) => _screen(controller: controller),
+              path: '/',
+              builder: (context, state) => Scaffold(
+                body: ElevatedButton(
+                  onPressed: () async {
+                    returnedPost = await context.push<PostVm>('/posts/create');
+                  },
+                  child: const Text('Open editor'),
+                ),
+              ),
             ),
             GoRoute(
-              path: '/stories/:slug',
-              builder: (context, state) => Scaffold(
-                body: Text('Story details ${state.pathParameters['slug']}'),
-              ),
+              path: '/posts/create',
+              builder: (context, state) => _screen(controller: controller),
             ),
           ],
         );
 
         await tester.pumpWidget(_routerApp(router));
+        await tester.tap(find.text('Open editor'));
+        await tester.pumpAndSettle();
         await tester.ensureVisible(find.byType(StoryPublishPanel));
         await tester.pumpAndSettle();
 
@@ -659,7 +997,8 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(StoryEditorScreen), findsNothing);
-        expect(find.text('Story details created-story'), findsOneWidget);
+        expect(find.text('Open editor'), findsOneWidget);
+        expect(returnedPost?.id, 'created-story');
       },
     );
 
@@ -681,14 +1020,14 @@ void main() {
           );
         late final GoRouter router;
         router = GoRouter(
-          initialLocation: '/stories/story-1/edit',
+          initialLocation: '/posts/story-1/edit',
           routes: [
             GoRoute(
-              path: '/stories/:storyId/edit',
+              path: '/posts/:postId/edit',
               builder: (context, state) => _screen(controller: controller),
             ),
             GoRoute(
-              path: '/stories/:slug',
+              path: '/posts/:slug',
               builder: (context, state) => Scaffold(
                 body: Text('Story details ${state.pathParameters['slug']}'),
               ),
@@ -1914,10 +2253,22 @@ Widget _routerApp(GoRouter router) {
 Widget _screen({
   StoryEditorController? controller,
   StoryEditorImagePickerGateway? imagePicker,
+  String? postProfileKey,
+  List<String>? availablePostProfileKeys,
+  String? communityId,
+  String? communityCountryCode,
+  String? communityCityId,
+  String? communityCityName,
 }) {
   return StoryEditorScreen(
     controller: controller,
     userId: 'user-1',
+    communityId: communityId,
+    postProfileKey: postProfileKey,
+    availablePostProfileKeys: availablePostProfileKeys,
+    communityCountryCode: communityCountryCode,
+    communityCityId: communityCityId,
+    communityCityName: communityCityName,
     imagePicker: imagePicker ?? _FakeStoryEditorImagePicker(),
   );
 }
@@ -1990,7 +2341,7 @@ StoryEditorController _controller({
   );
 }
 
-StoryVm _storyVm({
+PostVm _storyVm({
   String id = 'story-1',
   String title = 'Remote title',
   String format = 'STORY',
@@ -2004,7 +2355,7 @@ StoryVm _storyVm({
   int revision = 1,
   List<Map<String, dynamic>> contentBlocks = const [],
 }) {
-  return StoryVm(
+  return PostVm(
     id: id,
     slug: id,
     title: title,
@@ -2020,8 +2371,8 @@ StoryVm _storyVm({
     placeCountryCode: placeCountryCode,
     placeCityId: placeCityId,
     tags: tags,
-    stats: StoryStatsVm(views: 0, likes: 0, comments: 0, shares: 0),
-    author: StoryAuthorVm(
+    stats: PostStatsVm(views: 0, likes: 0, comments: 0, shares: 0),
+    author: PostAuthorVm(
       userId: 'user-1',
       locale: 'en',
       timezone: 'Asia/Almaty',
@@ -2034,10 +2385,10 @@ StoryVm _storyVm({
 }
 
 class _FakeStoryEditorApi implements StoryEditorApiGateway {
-  _FakeStoryEditorApi({StoryVm? storyById, this.createDraftError})
+  _FakeStoryEditorApi({PostVm? storyById, this.createDraftError})
     : storyById = storyById ?? _storyVm();
 
-  final StoryVm storyById;
+  final PostVm storyById;
   final Object? createDraftError;
   final createDraftRequests = <StoryEditorWriteRequest>[];
   final autosaveRequests = <StoryEditorWriteRequest>[];
@@ -2045,17 +2396,17 @@ class _FakeStoryEditorApi implements StoryEditorApiGateway {
   final publishRequests = <StoryEditorWriteRequest>[];
 
   @override
-  Future<StoryVm> getStory(String storyId) async {
+  Future<PostVm> getStory(String storyId) async {
     return storyById;
   }
 
   @override
-  Future<StoryVm> archive(String storyId, {int? revision}) async {
+  Future<PostVm> archive(String storyId, {int? revision}) async {
     return _storyVm(id: storyId, revision: (revision ?? 0) + 1);
   }
 
   @override
-  Future<StoryVm> autosave(
+  Future<PostVm> autosave(
     String storyId,
     StoryEditorWriteRequest request,
   ) async {
@@ -2064,7 +2415,7 @@ class _FakeStoryEditorApi implements StoryEditorApiGateway {
   }
 
   @override
-  Future<StoryVm> createDraft(StoryEditorWriteRequest request) async {
+  Future<PostVm> createDraft(StoryEditorWriteRequest request) async {
     final error = createDraftError;
     if (error != null) {
       throw error;
@@ -2074,7 +2425,7 @@ class _FakeStoryEditorApi implements StoryEditorApiGateway {
   }
 
   @override
-  Future<StoryVm> publish(
+  Future<PostVm> publish(
     String storyId,
     StoryEditorWriteRequest request,
   ) async {
@@ -2083,10 +2434,7 @@ class _FakeStoryEditorApi implements StoryEditorApiGateway {
   }
 
   @override
-  Future<StoryVm> update(
-    String storyId,
-    StoryEditorWriteRequest request,
-  ) async {
+  Future<PostVm> update(String storyId, StoryEditorWriteRequest request) async {
     updateRequests.add(request);
     return _storyVm(id: storyId, title: request.title);
   }
@@ -2247,4 +2595,6 @@ class _StoryMediaBindCall {
 }
 
 const _tinyJpegBytes = <int>[0xFF, 0xD8, 0xFF, 0xD9];
+const _tinyPngBase64 =
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=';
 const _tinyPngBytes = <int>[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];

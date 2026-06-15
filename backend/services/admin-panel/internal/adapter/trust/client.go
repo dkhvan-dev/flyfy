@@ -3,6 +3,7 @@ package trust
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"strings"
 	"time"
 
@@ -82,11 +83,104 @@ func (c *Client) ApplyUserRestrictionEvent(ctx context.Context, event model.User
 	return resp.GetApplied(), nil
 }
 
-func (c *Client) withInternalMetadata(ctx context.Context) context.Context {
+func (c *Client) ListRestrictionAppeals(
+	ctx context.Context,
+	filter model.TrustRestrictionAppealFilter,
+) (model.TrustRestrictionAppealListPage, error) {
+	callCtx, cancel := context.WithTimeout(ctx, c.timeout)
+	defer cancel()
+	callCtx = c.withInternalMetadata(callCtx)
+
+	resp, err := c.service.ListRestrictionAppeals(callCtx, &trustv1.ListRestrictionAppealsRequest{
+		Status: trustAppealStatusToProto(filter.Status),
+	})
+	if err != nil {
+		return model.TrustRestrictionAppealListPage{}, mapTrustServiceError(err)
+	}
+
+	items := make([]model.TrustRestrictionAppeal, 0, len(resp.GetAppeals()))
+	query := strings.ToLower(strings.TrimSpace(filter.Query))
+	for _, appeal := range resp.GetAppeals() {
+		item := trustAppealFromProto(appeal)
+		if query != "" && !trustAppealMatchesQuery(item, query) {
+			continue
+		}
+		items = append(items, item)
+	}
+
+	offset := pageOffset(filter.PageToken)
+	if offset > len(items) {
+		offset = len(items)
+	}
+	limit := filter.PageSize
+	if limit <= 0 {
+		limit = 50
+	}
+	end := offset + limit
+	nextPageToken := ""
+	if end < len(items) {
+		nextPageToken = strconv.Itoa(end)
+	} else {
+		end = len(items)
+	}
+
+	return model.TrustRestrictionAppealListPage{
+		Items:         items[offset:end],
+		NextPageToken: nextPageToken,
+	}, nil
+}
+
+func (c *Client) GetRestrictionAppeal(
+	ctx context.Context,
+	id uuid.UUID,
+) (model.TrustRestrictionAppeal, error) {
+	if id == uuid.Nil {
+		return model.TrustRestrictionAppeal{}, app.ErrInvalidInput
+	}
+	page, err := c.ListRestrictionAppeals(ctx, model.TrustRestrictionAppealFilter{
+		PageSize: 1000,
+	})
+	if err != nil {
+		return model.TrustRestrictionAppeal{}, err
+	}
+	for _, item := range page.Items {
+		if item.ID == id {
+			return item, nil
+		}
+	}
+	return model.TrustRestrictionAppeal{}, app.ErrInvalidInput
+}
+
+func (c *Client) DecideRestrictionAppeal(
+	ctx context.Context,
+	input model.TrustRestrictionAppealDecisionInput,
+) (model.TrustRestrictionAppeal, error) {
+	callCtx, cancel := context.WithTimeout(ctx, c.timeout)
+	defer cancel()
+	callCtx = c.withInternalMetadata(callCtx, input.RequestID)
+
+	resp, err := c.service.DecideRestrictionAppeal(callCtx, &trustv1.DecideRestrictionAppealRequest{
+		AppealId:        uuidString(input.AppealID),
+		ActorStaffId:    uuidString(input.ActorStaffID),
+		Decision:        trustAppealDecisionToProto(input.Decision),
+		ReasonCode:      strings.TrimSpace(input.ReasonCode),
+		StaffComment:    strings.TrimSpace(input.StaffComment),
+		DecisionEventId: decisionEventID(input),
+	})
+	if err != nil {
+		return model.TrustRestrictionAppeal{}, mapTrustServiceError(err)
+	}
+	return trustAppealFromProto(resp.GetAppeal()), nil
+}
+
+func (c *Client) withInternalMetadata(ctx context.Context, requestID ...string) context.Context {
 	md := metadata.New(map[string]string{
 		"x-internal-service-token": c.internalToken,
 		"x-service-name":           c.serviceName,
 	})
+	if len(requestID) > 0 && strings.TrimSpace(requestID[0]) != "" {
+		md.Set("x-request-id", strings.TrimSpace(requestID[0]))
+	}
 	return metadata.NewOutgoingContext(ctx, md)
 }
 
@@ -132,6 +226,74 @@ func restrictionEventTypeToProto(eventType string) trustv1.RestrictionEventType 
 	}
 }
 
+func trustAppealStatusToProto(status model.TrustRestrictionAppealStatus) trustv1.RestrictionAppealStatus {
+	switch status {
+	case model.TrustRestrictionAppealStatusOpen:
+		return trustv1.RestrictionAppealStatus_RESTRICTION_APPEAL_STATUS_PENDING
+	case model.TrustRestrictionAppealStatusApproved:
+		return trustv1.RestrictionAppealStatus_RESTRICTION_APPEAL_STATUS_APPROVED
+	case model.TrustRestrictionAppealStatusRejected:
+		return trustv1.RestrictionAppealStatus_RESTRICTION_APPEAL_STATUS_REJECTED
+	default:
+		return trustv1.RestrictionAppealStatus_RESTRICTION_APPEAL_STATUS_UNSPECIFIED
+	}
+}
+
+func trustAppealStatusFromProto(status trustv1.RestrictionAppealStatus) model.TrustRestrictionAppealStatus {
+	switch status {
+	case trustv1.RestrictionAppealStatus_RESTRICTION_APPEAL_STATUS_APPROVED:
+		return model.TrustRestrictionAppealStatusApproved
+	case trustv1.RestrictionAppealStatus_RESTRICTION_APPEAL_STATUS_REJECTED:
+		return model.TrustRestrictionAppealStatusRejected
+	default:
+		return model.TrustRestrictionAppealStatusOpen
+	}
+}
+
+func trustAppealDecisionToProto(decision model.TrustRestrictionAppealDecision) trustv1.RestrictionAppealDecision {
+	switch decision {
+	case model.TrustRestrictionAppealDecisionApprove:
+		return trustv1.RestrictionAppealDecision_RESTRICTION_APPEAL_DECISION_APPROVE
+	case model.TrustRestrictionAppealDecisionReject:
+		return trustv1.RestrictionAppealDecision_RESTRICTION_APPEAL_DECISION_REJECT
+	default:
+		return trustv1.RestrictionAppealDecision_RESTRICTION_APPEAL_DECISION_UNSPECIFIED
+	}
+}
+
+func trustAppealDecisionFromProto(status trustv1.RestrictionAppealStatus) *model.TrustRestrictionAppealDecision {
+	switch status {
+	case trustv1.RestrictionAppealStatus_RESTRICTION_APPEAL_STATUS_APPROVED:
+		decision := model.TrustRestrictionAppealDecisionApprove
+		return &decision
+	case trustv1.RestrictionAppealStatus_RESTRICTION_APPEAL_STATUS_REJECTED:
+		decision := model.TrustRestrictionAppealDecisionReject
+		return &decision
+	default:
+		return nil
+	}
+}
+
+func trustAppealFromProto(appeal *trustv1.RestrictionAppeal) model.TrustRestrictionAppeal {
+	if appeal == nil {
+		return model.TrustRestrictionAppeal{}
+	}
+	return model.TrustRestrictionAppeal{
+		ID:               parseUUIDOrNil(appeal.GetAppealId()),
+		RestrictionID:    parseUUIDOrNil(appeal.GetRestrictionId()),
+		UserID:           parseUUIDOrNil(appeal.GetUserId()),
+		Status:           trustAppealStatusFromProto(appeal.GetStatus()),
+		ReasonCode:       appeal.GetReasonCode(),
+		UserMessage:      appeal.GetUserMessage(),
+		StaffDecision:    trustAppealDecisionFromProto(appeal.GetStatus()),
+		StaffComment:     appeal.GetStaffComment(),
+		DecidedByStaffID: uuidPtrFromString(appeal.GetDecidedByStaffId()),
+		CreatedAt:        timeFromProto(appeal.GetCreatedAt()),
+		UpdatedAt:        timeFromProto(appeal.GetUpdatedAt()),
+		DecidedAt:        timePtrFromProto(appeal.GetDecidedAt()),
+	}
+}
+
 func mapTrustServiceError(err error) error {
 	if st, ok := status.FromError(err); ok {
 		switch st.Code() {
@@ -170,4 +332,67 @@ func timestampValue(value time.Time) *timestamppb.Timestamp {
 		return nil
 	}
 	return timestamppb.New(value)
+}
+
+func trustAppealMatchesQuery(item model.TrustRestrictionAppeal, query string) bool {
+	return strings.Contains(strings.ToLower(item.ID.String()), query) ||
+		strings.Contains(strings.ToLower(item.UserID.String()), query) ||
+		strings.Contains(strings.ToLower(item.RestrictionID.String()), query) ||
+		strings.Contains(strings.ToLower(item.ReasonCode), query)
+}
+
+func pageOffset(token string) int {
+	parsed, err := strconv.Atoi(strings.TrimSpace(token))
+	if err != nil || parsed < 0 {
+		return 0
+	}
+	return parsed
+}
+
+func parseUUIDOrNil(value string) uuid.UUID {
+	id, err := uuid.Parse(strings.TrimSpace(value))
+	if err != nil {
+		return uuid.Nil
+	}
+	return id
+}
+
+func uuidPtrFromString(value string) *uuid.UUID {
+	id := parseUUIDOrNil(value)
+	if id == uuid.Nil {
+		return nil
+	}
+	return &id
+}
+
+func timeFromProto(value *timestamppb.Timestamp) time.Time {
+	if value == nil {
+		return time.Time{}
+	}
+	return value.AsTime()
+}
+
+func timePtrFromProto(value *timestamppb.Timestamp) *time.Time {
+	if value == nil {
+		return nil
+	}
+	parsed := value.AsTime()
+	if parsed.IsZero() {
+		return nil
+	}
+	return &parsed
+}
+
+func decisionEventID(input model.TrustRestrictionAppealDecisionInput) string {
+	key := strings.TrimSpace(input.IdempotencyKey)
+	if parsed, err := uuid.Parse(key); err == nil {
+		return parsed.String()
+	}
+	if key == "" {
+		return uuid.NewString()
+	}
+	return uuid.NewSHA1(
+		uuid.NameSpaceOID,
+		[]byte(input.AppealID.String()+":"+key),
+	).String()
 }

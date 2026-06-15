@@ -49,12 +49,25 @@ func DefaultUploadPolicies(globalMaxSize int64) UploadPolicies {
 			),
 		},
 		enum.FilePurposeStoryMedia: {
-			MaxSizeBytes: 20 * 1024 * 1024,
+			MaxSizeBytes: 80 * 1024 * 1024,
 			AllowedExtensions: setOf(
-				"jpg", "jpeg", "png", "webp",
+				"jpg", "jpeg", "png", "webp", "heic", "heif",
+				"mp4", "mov", "webm", "m4v",
 			),
 			AllowedContentTypes: setOf(
-				"image/jpeg", "image/png", "image/webp",
+				"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif",
+				"video/mp4", "video/quicktime", "video/webm", "video/x-m4v",
+			),
+		},
+		enum.FilePurposePostMedia: {
+			MaxSizeBytes: 80 * 1024 * 1024,
+			AllowedExtensions: setOf(
+				"jpg", "jpeg", "png", "webp", "heic", "heif",
+				"mp4", "mov", "webm", "m4v",
+			),
+			AllowedContentTypes: setOf(
+				"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif",
+				"video/mp4", "video/quicktime", "video/webm", "video/x-m4v",
 			),
 		},
 		enum.FilePurposeExcursionMedia: {

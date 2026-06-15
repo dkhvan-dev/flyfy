@@ -6,71 +6,69 @@ import 'package:inflap/shared/reference/app_location_label_resolver.dart';
 import 'package:inflap/shared/widgets/app_localized_location_text.dart';
 
 void main() {
-  testWidgets(
-    'does not flash raw country-code fallback while resolving structured location',
-    (tester) async {
-      final completer = Completer<String>();
-      final resolver = _FakeLocationLabelResolver((_) => completer.future);
+  testWidgets('shows readable fallback while resolving structured location', (
+    tester,
+  ) async {
+    final completer = Completer<String>();
+    final resolver = _FakeLocationLabelResolver((_) => completer.future);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          locale: const Locale('ru'),
-          home: Directionality(
-            textDirection: TextDirection.ltr,
-            child: AppLocalizedLocationText(
-              countryCode: 'KZ',
-              cityId: 'almaty',
-              cityName: 'Almaty',
-              fallbackText: 'Almaty, KZ',
-              resolver: resolver,
-            ),
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('ru'),
+        home: Directionality(
+          textDirection: TextDirection.ltr,
+          child: AppLocalizedLocationText(
+            countryCode: 'KZ',
+            cityId: 'almaty',
+            cityName: 'Almaty',
+            fallbackText: 'Almaty, KZ',
+            resolver: resolver,
           ),
         ),
-      );
-      await tester.pump();
+      ),
+    );
+    await tester.pump();
 
-      expect(find.text('Almaty, KZ'), findsNothing);
+    expect(find.text('Almaty, KZ'), findsOneWidget);
 
-      completer.complete('Алматы, Казахстан');
-      await tester.pump();
-      await tester.pump();
+    completer.complete('Алматы, Казахстан');
+    await tester.pump();
+    await tester.pump();
 
-      expect(find.text('Алматы, Казахстан'), findsOneWidget);
-    },
-  );
+    expect(find.text('Алматы, Казахстан'), findsOneWidget);
+  });
 
-  testWidgets(
-    'does not flash raw city fallback while resolving legacy city name',
-    (tester) async {
-      final completer = Completer<String>();
-      final resolver = _FakeLocationLabelResolver((_) => completer.future);
+  testWidgets('shows readable fallback while resolving legacy city name', (
+    tester,
+  ) async {
+    final completer = Completer<String>();
+    final resolver = _FakeLocationLabelResolver((_) => completer.future);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          locale: const Locale('ru'),
-          home: Directionality(
-            textDirection: TextDirection.ltr,
-            child: AppLocalizedLocationText(
-              countryCode: null,
-              cityId: null,
-              cityName: 'Almaty',
-              fallbackText: 'Almaty',
-              resolver: resolver,
-            ),
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('ru'),
+        home: Directionality(
+          textDirection: TextDirection.ltr,
+          child: AppLocalizedLocationText(
+            countryCode: null,
+            cityId: null,
+            cityName: 'Almaty',
+            fallbackText: 'Almaty',
+            resolver: resolver,
           ),
         ),
-      );
-      await tester.pump();
+      ),
+    );
+    await tester.pump();
 
-      expect(find.text('Almaty'), findsNothing);
+    expect(find.text('Almaty'), findsOneWidget);
 
-      completer.complete('Алматы');
-      await tester.pump();
-      await tester.pump();
+    completer.complete('Алматы');
+    await tester.pump();
+    await tester.pump();
 
-      expect(find.text('Алматы'), findsOneWidget);
-    },
-  );
+    expect(find.text('Алматы'), findsOneWidget);
+  });
 
   testWidgets(
     'localizes structured location while preserving address details',
@@ -99,7 +97,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Almaty, Kazakhstan, Bayzakova 127'), findsNothing);
+      expect(find.text('Almaty, Kazakhstan, Bayzakova 127'), findsOneWidget);
 
       completer.complete('Алматы, Казахстан, Bayzakova 127');
       await tester.pump();

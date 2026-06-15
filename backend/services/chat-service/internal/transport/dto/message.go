@@ -1,12 +1,22 @@
 package dto
 
 type SendMessageRequest struct {
-	Content          string   `json:"content"`
-	Type             string   `json:"type"`
-	ClientMessageID  *string  `json:"clientMessageId,omitempty"`
-	FileIDs          []string `json:"fileIds"`
-	StickerID        *string  `json:"stickerId,omitempty"`
-	ReplyToMessageID *string  `json:"replyToMessageId"`
+	Content          string                    `json:"content"`
+	Type             string                    `json:"type"`
+	ClientMessageID  *string                   `json:"clientMessageId,omitempty"`
+	FileIDs          []string                  `json:"fileIds"`
+	StickerID        *string                   `json:"stickerId,omitempty"`
+	ReplyToMessageID *string                   `json:"replyToMessageId"`
+	StoryReply       *StoryReplyContextRequest `json:"storyReply,omitempty"`
+}
+
+type StoryReplyContextRequest struct {
+	StoryID            string  `json:"storyId"`
+	StoryAuthorUserID  string  `json:"storyAuthorUserId"`
+	StoryTitle         string  `json:"storyTitle,omitempty"`
+	StoryPreviewFileID string  `json:"storyPreviewFileId,omitempty"`
+	StoryPreviewURL    string  `json:"storyPreviewUrl,omitempty"`
+	StoryExpiresAt     *string `json:"storyExpiresAt,omitempty"`
 }
 
 type ForwardMessageRequest struct {
@@ -26,28 +36,38 @@ type ReactMessageRequest struct {
 }
 
 type MessageResponse struct {
-	ID                        string                   `json:"id"`
-	ClientMessageID           *string                  `json:"clientMessageId,omitempty"`
-	SenderUserID              string                   `json:"senderUserId"`
-	SenderDisplayName         string                   `json:"senderDisplayName"`
-	SenderAvatarFileID        *string                  `json:"senderAvatarFileId,omitempty"`
-	Type                      string                   `json:"type"`
-	Content                   string                   `json:"content"`
-	FileIDs                   []string                 `json:"fileIds,omitempty"`
-	StickerID                 *string                  `json:"stickerId,omitempty"`
-	StickerFileID             *string                  `json:"stickerFileId,omitempty"`
-	ReplyToMessageID          *string                  `json:"replyToMessageId,omitempty"`
-	ForwardedFromMessageID    *string                  `json:"forwardedFromMessageId,omitempty"`
-	ForwardedFromSenderUserID *string                  `json:"forwardedFromSenderUserId,omitempty"`
-	ForwardedFromSenderName   *string                  `json:"forwardedFromSenderName,omitempty"`
-	ForwardCount              int                      `json:"forwardCount"`
-	EditedAt                  *string                  `json:"editedAt,omitempty"`
-	DeletedAt                 *string                  `json:"deletedAt,omitempty"`
-	ModerationStatus          string                   `json:"moderationStatus,omitempty"`
-	ModerationPublicComment   *string                  `json:"moderationPublicComment,omitempty"`
-	Reactions                 []MessageReactionInfo    `json:"reactions,omitempty"`
-	ReadReceipts              []MessageReadReceiptInfo `json:"readReceipts,omitempty"`
-	SentAt                    string                   `json:"sentAt"`
+	ID                        string                     `json:"id"`
+	ClientMessageID           *string                    `json:"clientMessageId,omitempty"`
+	SenderUserID              string                     `json:"senderUserId"`
+	SenderDisplayName         string                     `json:"senderDisplayName"`
+	SenderAvatarFileID        *string                    `json:"senderAvatarFileId,omitempty"`
+	Type                      string                     `json:"type"`
+	Content                   string                     `json:"content"`
+	FileIDs                   []string                   `json:"fileIds,omitempty"`
+	StickerID                 *string                    `json:"stickerId,omitempty"`
+	StickerFileID             *string                    `json:"stickerFileId,omitempty"`
+	ReplyToMessageID          *string                    `json:"replyToMessageId,omitempty"`
+	StoryReply                *StoryReplyContextResponse `json:"storyReply,omitempty"`
+	ForwardedFromMessageID    *string                    `json:"forwardedFromMessageId,omitempty"`
+	ForwardedFromSenderUserID *string                    `json:"forwardedFromSenderUserId,omitempty"`
+	ForwardedFromSenderName   *string                    `json:"forwardedFromSenderName,omitempty"`
+	ForwardCount              int                        `json:"forwardCount"`
+	EditedAt                  *string                    `json:"editedAt,omitempty"`
+	DeletedAt                 *string                    `json:"deletedAt,omitempty"`
+	ModerationStatus          string                     `json:"moderationStatus,omitempty"`
+	ModerationPublicComment   *string                    `json:"moderationPublicComment,omitempty"`
+	Reactions                 []MessageReactionInfo      `json:"reactions,omitempty"`
+	ReadReceipts              []MessageReadReceiptInfo   `json:"readReceipts,omitempty"`
+	SentAt                    string                     `json:"sentAt"`
+}
+
+type StoryReplyContextResponse struct {
+	StoryID            string  `json:"storyId"`
+	StoryAuthorUserID  string  `json:"storyAuthorUserId"`
+	StoryTitle         string  `json:"storyTitle,omitempty"`
+	StoryPreviewFileID string  `json:"storyPreviewFileId,omitempty"`
+	StoryPreviewURL    string  `json:"storyPreviewUrl,omitempty"`
+	StoryExpiresAt     *string `json:"storyExpiresAt,omitempty"`
 }
 
 type MessageReactionInfo struct {

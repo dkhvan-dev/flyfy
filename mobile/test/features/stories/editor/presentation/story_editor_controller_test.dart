@@ -8,7 +8,8 @@ import 'package:inflap/features/stories/editor/data/story_editor_recovery_store.
 import 'package:inflap/features/stories/editor/domain/story_document.dart';
 import 'package:inflap/features/stories/editor/domain/story_editor_autosave_policy.dart';
 import 'package:inflap/features/stories/editor/presentation/story_editor_controller.dart';
-import 'package:inflap/features/stories/models/story_vm.dart';
+import 'package:inflap/features/stories/models/post_profile_contract.dart';
+import 'package:inflap/features/stories/models/post_vm.dart';
 
 void main() {
   group('StoryEditorController', () {
@@ -22,7 +23,7 @@ void main() {
       expect(controller.state.localDraftId, 'local-draft-1');
       expect(controller.state.storyId, isNull);
       expect(controller.state.metadata.title, '');
-      expect(controller.state.metadata.format, 'STORY');
+      expect(controller.state.metadata.format, 'ARTICLE');
       expect(controller.state.metadata.category, 'JOURNAL');
       expect(controller.state.document.blocks, isEmpty);
       expect(controller.state.saveStatus.phase, StoryEditorSavePhase.idle);
@@ -1081,7 +1082,7 @@ void main() {
           storyId: 'story-1',
           metadata: StoryEditorMetadataDraft(
             title: 'Recovered title',
-            format: 'STORY',
+            format: 'ARTICLE',
             category: 'JOURNAL',
             status: 'DRAFT',
           ),
@@ -1144,7 +1145,7 @@ void main() {
           storyId: 'story-1',
           metadata: StoryEditorMetadataDraft(
             title: 'Recovered title',
-            format: 'STORY',
+            format: 'ARTICLE',
             category: 'JOURNAL',
             status: 'DRAFT',
             coverFileId: 'cover-1',
@@ -1211,7 +1212,7 @@ void main() {
         storyId: 'story-1',
         metadata: StoryEditorMetadataDraft(
           title: 'Recovered title',
-          format: 'STORY',
+          format: 'ARTICLE',
           category: 'JOURNAL',
           status: 'DRAFT',
         ),
@@ -1280,7 +1281,7 @@ void main() {
     );
 
     test('stale manual save response does not overwrite newer edits', () async {
-      final updateCompleter = Completer<StoryVm>();
+      final updateCompleter = Completer<PostVm>();
       final api = _FakeStoryEditorApi(updateCompleter: updateCompleter);
       final controller = _controller(api: api);
       controller.initializeEdit(userId: 'user-1', story: _storyVm(revision: 5));
@@ -1297,7 +1298,7 @@ void main() {
     });
 
     test('async save completion does not notify after dispose', () async {
-      final updateCompleter = Completer<StoryVm>();
+      final updateCompleter = Completer<PostVm>();
       final api = _FakeStoryEditorApi(updateCompleter: updateCompleter);
       final controller = _controller(api: api);
       var notifications = 0;
@@ -1321,7 +1322,7 @@ void main() {
           storyId: 'story-2',
           metadata: StoryEditorMetadataDraft(
             title: 'Wrong snapshot',
-            format: 'STORY',
+            format: 'ARTICLE',
             category: 'JOURNAL',
             status: 'DRAFT',
           ),
@@ -1478,6 +1479,120 @@ void main() {
       },
     );
 
+    test('create mode serializes target community id', () async {
+      final api = _FakeStoryEditorApi();
+      final controller = _controller(api: api);
+      controller.initializeCreate(
+        userId: 'user-1',
+        communityId: ' community-1 ',
+      );
+      controller.changeTitle('Community post draft');
+
+      await controller.saveDraft();
+
+      expect(
+        api.createDraftRequests.single.toJson()['communityId'],
+        'community-1',
+      );
+    });
+
+    test(
+      'quick post community serializes profile key and structured body',
+      () async {
+        final api = _FakeStoryEditorApi();
+        final controller = _controller(api: api);
+        controller.initializeCreate(
+          userId: 'user-1',
+          communityId: 'community-1',
+          postProfileKey: 'quick_post_v1',
+        );
+        controller.addBlock(
+          StoryBlock.paragraph(
+            id: 'quick-body',
+            text: 'Кто едет в Дананг сегодня?',
+          ),
+        );
+
+        await controller.saveDraft();
+
+        final body = api.createDraftRequests.single.toJson();
+        expect(body['communityId'], 'community-1');
+        expect(body['postProfileKey'], 'quick_post_v1');
+        expect(body['format'], 'POST');
+        expect(body['structuredData'], {'body': 'Кто едет в Дананг сегодня?'});
+      },
+    );
+
+    test('quick post community can publish without article metadata', () async {
+      final api = _FakeStoryEditorApi();
+      final controller = _controller(api: api);
+      controller.initializeCreate(
+        userId: 'user-1',
+        communityId: 'community-1',
+        postProfileKey: 'quick_post_v1',
+      );
+      controller.addBlock(
+        StoryBlock.paragraph(
+          id: 'quick-body',
+          text: 'Нужен совет по району для аренды.',
+        ),
+      );
+
+      final published = await controller.publish();
+
+      expect(published, isNotNull);
+      expect(
+        api.createDraftRequests.single.toJson()['postProfileKey'],
+        'quick_post_v1',
+      );
+      expect(api.publishRequests.single.toJson()['structuredData'], {
+        'body': 'Нужен совет по району для аренды.',
+      });
+    });
+
+    test(
+      'listing profile publishes structured fields without article-only cover',
+      () async {
+        final api = _FakeStoryEditorApi();
+        final controller = _controller(api: api);
+        controller.initializeCreate(
+          userId: 'user-1',
+          communityId: 'community-1',
+          postProfileKey: PostProfileKeys.listing,
+          placeName: 'Дананг',
+          placeCountryCode: 'VN',
+          placeCityId: 'da-nang',
+        );
+        controller
+          ..changeTitle('Сдам байк на неделю')
+          ..addBlock(
+            StoryBlock.paragraph(
+              id: 'listing-body',
+              text: 'Honda AirBlade, документы есть, пишите в личку.',
+            ),
+          );
+
+        final published = await controller.publish();
+
+        expect(published, isNotNull);
+        expect(api.publishRequests, hasLength(1));
+        final requestJson = api.publishRequests.single.toJson();
+        expect(requestJson['postProfileKey'], PostProfileKeys.listing);
+        expect(requestJson['format'], 'POST');
+        expect(requestJson['category'], 'GUIDE');
+        expect(requestJson['coverFileId'], isNull);
+        expect(requestJson['structuredData'], {
+          'title': 'Сдам байк на неделю',
+          'body': 'Honda AirBlade, документы есть, пишите в личку.',
+          'location': {
+            'name': 'Дананг',
+            'country_code': 'VN',
+            'city_id': 'da-nang',
+          },
+        });
+      },
+    );
+
     test('conflict field errors are immutable in controller state', () async {
       final errors = [
         const StoryEditorFieldError(
@@ -1532,7 +1647,7 @@ StoryEditorController _controller({
   );
 }
 
-StoryVm _storyVm({
+PostVm _storyVm({
   String id = 'story-1',
   String title = 'Remote title',
   String format = 'GUIDE',
@@ -1546,7 +1661,7 @@ StoryVm _storyVm({
   int revision = 5,
   List<Map<String, dynamic>> contentBlocks = const [],
 }) {
-  return StoryVm(
+  return PostVm(
     id: id,
     slug: id,
     title: title,
@@ -1562,8 +1677,8 @@ StoryVm _storyVm({
     placeCountryCode: placeCountryCode,
     placeCityId: placeCityId,
     tags: tags,
-    stats: StoryStatsVm(views: 0, likes: 0, comments: 0, shares: 0),
-    author: StoryAuthorVm(
+    stats: PostStatsVm(views: 0, likes: 0, comments: 0, shares: 0),
+    author: PostAuthorVm(
       userId: 'user-1',
       locale: 'en',
       timezone: 'Asia/Almaty',
@@ -1577,18 +1692,18 @@ StoryVm _storyVm({
 
 class _FakeStoryEditorApi implements StoryEditorApiGateway {
   _FakeStoryEditorApi({
-    StoryVm? storyById,
+    PostVm? storyById,
     this.autosaveError,
     this.updateError,
     this.publishError,
     this.updateCompleter,
   }) : storyById = storyById ?? _storyVm();
 
-  final StoryVm storyById;
+  final PostVm storyById;
   final Object? autosaveError;
   final Object? updateError;
   final Object? publishError;
-  final Completer<StoryVm>? updateCompleter;
+  final Completer<PostVm>? updateCompleter;
   final createDraftRequests = <StoryEditorWriteRequest>[];
   final autosaveRequests = <StoryEditorWriteRequest>[];
   final updateRequests = <StoryEditorWriteRequest>[];
@@ -1596,25 +1711,30 @@ class _FakeStoryEditorApi implements StoryEditorApiGateway {
   final archiveRevisions = <int?>[];
 
   @override
-  Future<StoryVm> getStory(String storyId) async {
+  Future<PostVm> getStory(String storyId) async {
     return storyById;
   }
 
   @override
-  Future<StoryVm> createDraft(StoryEditorWriteRequest request) async {
+  Future<PostVm> createDraft(StoryEditorWriteRequest request) async {
     createDraftRequests.add(request);
     final contentBlocks = _contentBlocksFromRequestBody(request.toJson());
     return _storyVm(
       id: 'created-story',
       title: request.title,
+      format: request.format,
+      category: request.category,
       coverFileId: request.coverFileId,
+      placeName: request.placeName,
+      placeCountryCode: request.placeCountryCode,
+      placeCityId: request.placeCityId,
       contentBlocks: contentBlocks,
       revision: 1,
     );
   }
 
   @override
-  Future<StoryVm> autosave(
+  Future<PostVm> autosave(
     String storyId,
     StoryEditorWriteRequest request,
   ) async {
@@ -1624,15 +1744,17 @@ class _FakeStoryEditorApi implements StoryEditorApiGateway {
     return _storyVm(
       id: storyId,
       title: request.title,
+      format: request.format,
+      category: request.category,
+      placeName: request.placeName,
+      placeCountryCode: request.placeCountryCode,
+      placeCityId: request.placeCityId,
       revision: (request.revision ?? 0) + 1,
     );
   }
 
   @override
-  Future<StoryVm> update(
-    String storyId,
-    StoryEditorWriteRequest request,
-  ) async {
+  Future<PostVm> update(String storyId, StoryEditorWriteRequest request) async {
     updateRequests.add(request);
     final completer = updateCompleter;
     if (completer != null) {
@@ -1643,12 +1765,17 @@ class _FakeStoryEditorApi implements StoryEditorApiGateway {
     return _storyVm(
       id: storyId,
       title: request.title,
+      format: request.format,
+      category: request.category,
+      placeName: request.placeName,
+      placeCountryCode: request.placeCountryCode,
+      placeCityId: request.placeCityId,
       revision: (request.revision ?? 0) + 1,
     );
   }
 
   @override
-  Future<StoryVm> publish(
+  Future<PostVm> publish(
     String storyId,
     StoryEditorWriteRequest request,
   ) async {
@@ -1658,12 +1785,17 @@ class _FakeStoryEditorApi implements StoryEditorApiGateway {
     return _storyVm(
       id: storyId,
       title: request.title,
+      format: request.format,
+      category: request.category,
+      placeName: request.placeName,
+      placeCountryCode: request.placeCountryCode,
+      placeCityId: request.placeCityId,
       revision: (request.revision ?? 0) + 1,
     ).copyWith(status: 'PUBLISHED');
   }
 
   @override
-  Future<StoryVm> archive(String storyId, {int? revision}) async {
+  Future<PostVm> archive(String storyId, {int? revision}) async {
     archiveRevisions.add(revision);
     return _storyVm(
       id: storyId,

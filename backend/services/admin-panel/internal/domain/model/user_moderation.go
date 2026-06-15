@@ -201,6 +201,59 @@ type UserRestrictionOutboxEvent struct {
 	DeliveredAt   *time.Time
 }
 
+type TrustRestrictionAppealStatus string
+
+const (
+	TrustRestrictionAppealStatusOpen     TrustRestrictionAppealStatus = "OPEN"
+	TrustRestrictionAppealStatusApproved TrustRestrictionAppealStatus = "APPROVED"
+	TrustRestrictionAppealStatusRejected TrustRestrictionAppealStatus = "REJECTED"
+)
+
+type TrustRestrictionAppealDecision string
+
+const (
+	TrustRestrictionAppealDecisionApprove TrustRestrictionAppealDecision = "APPROVE"
+	TrustRestrictionAppealDecisionReject  TrustRestrictionAppealDecision = "REJECT"
+)
+
+type TrustRestrictionAppealFilter struct {
+	Status    TrustRestrictionAppealStatus
+	Query     string
+	PageSize  int
+	PageToken string
+}
+
+type TrustRestrictionAppealListPage struct {
+	Items         []TrustRestrictionAppeal
+	NextPageToken string
+}
+
+type TrustRestrictionAppeal struct {
+	ID               uuid.UUID
+	RestrictionID    uuid.UUID
+	UserID           uuid.UUID
+	RestrictionCode  UserRestrictionCode
+	Status           TrustRestrictionAppealStatus
+	ReasonCode       string
+	UserMessage      string
+	StaffDecision    *TrustRestrictionAppealDecision
+	StaffComment     string
+	DecidedByStaffID *uuid.UUID
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	DecidedAt        *time.Time
+}
+
+type TrustRestrictionAppealDecisionInput struct {
+	AppealID       uuid.UUID
+	ActorStaffID   uuid.UUID
+	Decision       TrustRestrictionAppealDecision
+	ReasonCode     string
+	StaffComment   string
+	IdempotencyKey string
+	RequestID      string
+}
+
 type CreateUserModerationCaseParams struct {
 	TargetUserID     uuid.UUID
 	Source           UserModerationSource

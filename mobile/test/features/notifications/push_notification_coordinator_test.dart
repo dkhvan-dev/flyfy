@@ -79,6 +79,37 @@ void main() {
       await coordinator.dispose();
     });
 
+    test('routes story notifications through the content channel', () async {
+      final source = _FakePushNotificationSource();
+      final presenter = _FakePushNotificationPresenter();
+      final coordinator = PushNotificationCoordinator(
+        source: source,
+        presenter: presenter,
+        routeHandler: (_) {},
+      );
+
+      await coordinator.start();
+      source.foregroundController.add(
+        const PushNotificationEnvelope(
+          id: 'story-like-1',
+          title: 'Новая реакция на историю',
+          body: 'devdone нравится ваша история',
+          data: {
+            'category': 'content',
+            'type': 'story_like',
+            'storyId': 'story-1',
+            'deepLink': '/posts/almaty-morning',
+          },
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(presenter.shown.single.channel, PushNotificationChannel.content);
+      expect(presenter.shown.single.route, '/posts/almaty-morning');
+
+      await coordinator.dispose();
+    });
+
     test('routes notification opened from background', () async {
       final source = _FakePushNotificationSource();
       final presenter = _FakePushNotificationPresenter();

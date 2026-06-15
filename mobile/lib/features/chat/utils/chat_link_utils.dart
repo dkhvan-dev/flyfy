@@ -101,7 +101,9 @@ String? knownInternalChatRoute(String route) {
       path.startsWith('/activities/') ||
       path.startsWith('/attractions/') ||
       path.startsWith('/chats/') ||
-      path.startsWith('/stories/') ||
+      path.startsWith('/posts/') ||
+      path == '/stories/viewer' ||
+      path == '/stories/capture' ||
       path.startsWith('/excursions/') ||
       path.startsWith('/users/')) {
     return route;

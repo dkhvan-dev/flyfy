@@ -238,11 +238,13 @@ class StoryEditorRecoverySnapshot {
     required DateTime lastLocalEditAt,
     String? storyId,
     String? localDraftId,
+    String? communityId,
     List<StoryEditorPendingMediaReference> pendingMediaReferences = const [],
     this.lastRemoteRevision,
   }) : userId = _requiredTrim(userId, 'userId'),
        storyId = _normalizeNullable(storyId),
        localDraftId = _normalizeNullable(localDraftId),
+       communityId = _normalizeNullable(communityId),
        lastLocalEditAt = lastLocalEditAt.toUtc(),
        _pendingMediaReferences = List.unmodifiable(pendingMediaReferences) {
     if (this.storyId == null && this.localDraftId == null) {
@@ -260,6 +262,7 @@ class StoryEditorRecoverySnapshot {
       userId: _requiredStringFromJson(json['userId'], 'userId'),
       storyId: _nullableStringFromJson(json['storyId']),
       localDraftId: _nullableStringFromJson(json['localDraftId']),
+      communityId: _nullableStringFromJson(json['communityId']),
       metadata: StoryEditorMetadataDraft.fromJson(
         _mapFromJson(json['metadata']),
       ),
@@ -277,6 +280,7 @@ class StoryEditorRecoverySnapshot {
   final String userId;
   final String? storyId;
   final String? localDraftId;
+  final String? communityId;
   final StoryEditorMetadataDraft metadata;
   final StoryDocument document;
   final int? lastRemoteRevision;
@@ -298,6 +302,7 @@ class StoryEditorRecoverySnapshot {
       'userId': userId,
       if (storyId != null) 'storyId': storyId,
       if (localDraftId != null) 'localDraftId': localDraftId,
+      if (communityId != null) 'communityId': communityId,
       'metadata': metadata.toJson(),
       'document': _documentToJson(document),
       'pendingMediaReferences': _pendingMediaReferences

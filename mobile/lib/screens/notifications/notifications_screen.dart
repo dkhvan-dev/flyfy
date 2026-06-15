@@ -1002,6 +1002,16 @@ _NotificationCategoryMeta _categoryMeta(
         icon: Icons.chat_bubble_rounded,
         color: const Color(0xFFFFD166),
       );
+    case 'content':
+    case 'story':
+    case 'stories':
+    case 'post':
+    case 'posts':
+      return _NotificationCategoryMeta(
+        label: l10n.notificationsCategoryContent,
+        icon: Icons.auto_stories_rounded,
+        color: const Color(0xFFFFB74D),
+      );
     case 'system':
     case 'security':
       return _NotificationCategoryMeta(

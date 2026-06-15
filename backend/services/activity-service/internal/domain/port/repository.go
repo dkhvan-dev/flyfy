@@ -143,4 +143,7 @@ type ActivityRepository interface {
 
 	ListActiveBlockedURLPatterns(ctx context.Context) ([]*model.BlockedURLPattern, error)
 	CountActivitiesCreatedSince(ctx context.Context, hostUserID uuid.UUID, since time.Time) (int, error)
+	AcquireActivityIdempotencyKey(ctx context.Context, item *model.ActivityIdempotencyKey) (*model.ActivityIdempotencyKey, bool, error)
+	CompleteActivityIdempotencyKey(ctx context.Context, key string, activityID uuid.UUID) error
+	FailActivityIdempotencyKey(ctx context.Context, key string, reason string) error
 }

@@ -6,6 +6,8 @@
 {{if $detail.Activity}}{{$caseBasePath = "/admin/moderation/activities"}}{{end}}
 {{if $detail.GuideApplication}}{{$caseBasePath = "/admin/moderation/guides"}}{{end}}
 {{if $detail.ChatMessage}}{{$caseBasePath = "/admin/moderation/chats"}}{{end}}
+{{if $detail.Post}}{{$caseBasePath = "/admin/moderation/posts"}}{{end}}
+{{if $detail.PostReport}}{{$caseBasePath = "/admin/moderation/posts"}}{{end}}
 {{$queueURL := .Data.QueueURL}}
 {{if not $queueURL}}{{$queueURL = $caseBasePath}}{{end}}
 {{$returnQuery := .Data.ReturnQuery}}
@@ -13,7 +15,7 @@
   <div class="section-head">
     <div>
       <p class="eyebrow">{{t .Locale "moderation.case"}} <code>{{shortID $detail.Case.ID}}</code></p>
-      <h1>{{if $detail.Excursion}}{{excursionTitle .Locale $detail.Excursion}}{{else if $detail.Activity}}{{$detail.Activity.Title}}{{else if $detail.GuideApplication}}{{guideApplicationPrimary $detail.GuideApplication}}{{else if $detail.ChatMessage}}{{chatMessagePreview .Locale $detail.ChatMessage}}{{else}}{{t .Locale "moderation.caseTitle"}}{{end}}</h1>
+      <h1>{{if $detail.Excursion}}{{excursionTitle .Locale $detail.Excursion}}{{else if $detail.Activity}}{{$detail.Activity.Title}}{{else if $detail.GuideApplication}}{{guideApplicationPrimary $detail.GuideApplication}}{{else if $detail.ChatMessage}}{{chatMessagePreview .Locale $detail.ChatMessage}}{{else if $detail.Post}}{{$detail.Post.Title}}{{else if $detail.PostReport}}{{t .Locale "moderation.postReport"}}: {{$detail.PostReport.Reason}}{{else}}{{t .Locale "moderation.caseTitle"}}{{end}}</h1>
     </div>
     <a class="button" href="{{$queueURL}}">{{t .Locale "action.backToQueue"}}</a>
   </div>
@@ -228,6 +230,48 @@
           {{end}}
         </ol>
       {{end}}
+      {{with $detail.PostReport}}
+        <dl class="facts">
+          <div><dt>{{t $.Locale "label.status"}}</dt><dd>{{statusText $.Locale .Status}}</dd></div>
+          <div><dt>{{t $.Locale "label.post"}}</dt><dd><code>{{.StoryID}}</code></dd></div>
+          <div><dt>{{t $.Locale "label.community"}}</dt><dd>{{if .CommunityID}}<code>{{.CommunityID}}</code>{{else}}-{{end}}</dd></div>
+          <div><dt>{{t $.Locale "label.reporter"}}</dt><dd><code>{{.ReporterUserID}}</code></dd></div>
+          <div><dt>{{t $.Locale "label.author"}}</dt><dd><code>{{.AuthorUserID}}</code></dd></div>
+          <div><dt>{{t $.Locale "label.reason"}}</dt><dd>{{.Reason}}</dd></div>
+          <div><dt>{{t $.Locale "label.riskScore"}}</dt><dd>{{.ModerationRiskScore}}</dd></div>
+          <div><dt>{{t $.Locale "label.created"}}</dt><dd>{{formatTime .CreatedAt (staffTimezone $.Staff)}}</dd></div>
+          <div><dt>{{t $.Locale "label.updated"}}</dt><dd>{{formatTime .UpdatedAt (staffTimezone $.Staff)}}</dd></div>
+          {{if .ResolvedAt}}
+            <div><dt>{{t $.Locale "label.resolvedAt"}}</dt><dd>{{formatTime .ResolvedAt (staffTimezone $.Staff)}}</dd></div>
+          {{end}}
+        </dl>
+        {{if .ModerationReasonCodes}}
+          <p class="reason">{{t $.Locale "label.signals"}}: {{join .ModerationReasonCodes ", "}}</p>
+        {{end}}
+        <h2>{{t $.Locale "section.reportDetails"}}</h2>
+        <p class="preline">{{if .Details}}{{.Details}}{{else}}-{{end}}</p>
+        {{if .ResolutionNote}}
+          <h2>{{t $.Locale "section.resolution"}}</h2>
+          <p class="preline">{{.ResolutionNote}}</p>
+        {{end}}
+      {{end}}
+      {{with $detail.Post}}
+        <dl class="facts">
+          <div><dt>{{t $.Locale "label.status"}}</dt><dd>{{statusText $.Locale .ModerationStatus}}</dd></div>
+          <div><dt>{{t $.Locale "label.post"}}</dt><dd><code>{{.ID}}</code></dd></div>
+          <div><dt>{{t $.Locale "label.community"}}</dt><dd>{{if .CommunityID}}<code>{{.CommunityID}}</code>{{else}}-{{end}}</dd></div>
+          <div><dt>{{t $.Locale "label.author"}}</dt><dd><code>{{.AuthorUserID}}</code></dd></div>
+          <div><dt>{{t $.Locale "label.category"}}</dt><dd>{{.Category}}</dd></div>
+          <div><dt>{{t $.Locale "label.riskScore"}}</dt><dd>{{.ModerationRiskScore}}</dd></div>
+          <div><dt>{{t $.Locale "label.created"}}</dt><dd>{{formatTime .CreatedAt (staffTimezone $.Staff)}}</dd></div>
+          <div><dt>{{t $.Locale "label.updated"}}</dt><dd>{{formatTime .UpdatedAt (staffTimezone $.Staff)}}</dd></div>
+        </dl>
+        {{if .ModerationReasonCodes}}
+          <p class="reason">{{t $.Locale "label.signals"}}: {{join .ModerationReasonCodes ", "}}</p>
+        {{end}}
+        <h2>{{t $.Locale "moderation.communityPost"}}</h2>
+        <p class="preline">{{if .Excerpt}}{{.Excerpt}}{{else}}-{{end}}</p>
+      {{end}}
       {{with $detail.GuideApplication}}
         <dl class="facts">
           <div><dt>{{t $.Locale "label.status"}}</dt><dd>{{statusText $.Locale .Status}}</dd></div>
@@ -323,7 +367,45 @@
 
     <aside class="card">
       <h2>{{t .Locale "section.decision"}}</h2>
-      {{if chatMessageDecisionLocked $detail.ChatMessage}}
+      {{if $detail.Post}}
+        <form method="post" action="{{$caseBasePath}}/{{$detail.Case.ID}}/approve{{urlQuerySuffix $returnQuery}}" class="form compact" data-confirm-form="approve">
+          {{csrfField $.CSRFToken}}
+          <input type="hidden" name="idempotency_key" value="{{newID}}">
+          <label>
+            <span>{{t $.Locale "field.internalComment"}}</span>
+            <textarea name="internal_comment" rows="3" required placeholder="{{t $.Locale "placeholder.communityPostApproveInternalComment"}}"></textarea>
+          </label>
+          <button class="primary" type="submit">{{t $.Locale "action.approvePost"}}</button>
+        </form>
+        <form method="post" action="{{$caseBasePath}}/{{$detail.Case.ID}}/reject{{urlQuerySuffix $returnQuery}}" class="form compact danger-zone" data-confirm-form="reject">
+          {{csrfField $.CSRFToken}}
+          <input type="hidden" name="idempotency_key" value="{{newID}}">
+          <label>
+            <span>{{t $.Locale "field.internalComment"}}</span>
+            <textarea name="internal_comment" rows="3" required placeholder="{{t $.Locale "placeholder.communityPostRejectInternalComment"}}"></textarea>
+          </label>
+          <button class="danger" type="submit">{{t $.Locale "action.rejectPost"}}</button>
+        </form>
+      {{else if $detail.PostReport}}
+        <form method="post" action="{{$caseBasePath}}/{{$detail.Case.ID}}/approve{{urlQuerySuffix $returnQuery}}" class="form compact" data-confirm-form="approve">
+          {{csrfField $.CSRFToken}}
+          <input type="hidden" name="idempotency_key" value="{{newID}}">
+          <label>
+            <span>{{t $.Locale "field.internalComment"}}</span>
+            <textarea name="internal_comment" rows="3" required placeholder="{{t $.Locale "placeholder.storyReportReviewInternalComment"}}"></textarea>
+          </label>
+          <button class="primary" type="submit">{{t $.Locale "action.reviewReport"}}</button>
+        </form>
+        <form method="post" action="{{$caseBasePath}}/{{$detail.Case.ID}}/reject{{urlQuerySuffix $returnQuery}}" class="form compact danger-zone" data-confirm-form="reject">
+          {{csrfField $.CSRFToken}}
+          <input type="hidden" name="idempotency_key" value="{{newID}}">
+          <label>
+            <span>{{t $.Locale "field.internalComment"}}</span>
+            <textarea name="internal_comment" rows="3" required placeholder="{{t $.Locale "placeholder.storyReportDismissInternalComment"}}"></textarea>
+          </label>
+          <button class="danger" type="submit">{{t $.Locale "action.dismissReport"}}</button>
+        </form>
+      {{else if chatMessageDecisionLocked $detail.ChatMessage}}
         <p class="empty">{{t .Locale "moderation.chatDecisionLocked"}}</p>
       {{else if $detail.ChatMessage}}
         <form method="post" action="{{$caseBasePath}}/{{$detail.Case.ID}}/approve{{urlQuerySuffix $returnQuery}}" class="form compact" data-confirm-form="approve">

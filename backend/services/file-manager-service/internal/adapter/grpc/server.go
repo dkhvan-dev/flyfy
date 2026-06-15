@@ -92,6 +92,10 @@ func (s *Server) CompleteUpload(
 		Status:              resp.Status,
 		DetectedContentType: resp.DetectedContentType,
 		SizeBytes:           resp.SizeBytes,
+		Width:               int32PtrToValue(resp.Width),
+		Height:              int32PtrToValue(resp.Height),
+		DurationMs:          int32PtrToValue(resp.DurationMS),
+		ThumbnailFileId:     uuidValueOrEmpty(resp.ThumbnailFileID),
 	}, nil
 }
 
@@ -137,6 +141,10 @@ func (s *Server) GetFile(
 		Status:              string(file.Status),
 		OwnerType:           ownerType,
 		OwnerId:             ownerID,
+		Width:               int32PtrToValue(file.Width),
+		Height:              int32PtrToValue(file.Height),
+		DurationMs:          int32PtrToValue(file.DurationMS),
+		ThumbnailFileId:     uuidValueOrEmpty(file.ThumbnailFileID),
 	}, nil
 }
 
@@ -259,4 +267,18 @@ func stringPtrOrNil(v string) *string {
 		return nil
 	}
 	return &v
+}
+
+func int32PtrToValue(v *int) int32 {
+	if v == nil {
+		return 0
+	}
+	return int32(*v)
+}
+
+func uuidValueOrEmpty(v *uuid.UUID) string {
+	if v == nil {
+		return ""
+	}
+	return v.String()
 }

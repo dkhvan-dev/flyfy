@@ -16,7 +16,7 @@ const (
 	ModerationTargetActivity         ModerationTargetType = "ACTIVITY"
 	ModerationTargetGuideApplication ModerationTargetType = "GUIDE_APPLICATION"
 	ModerationTargetChatMessage      ModerationTargetType = "CHAT_MESSAGE"
-	ModerationTargetStory            ModerationTargetType = "STORY"
+	ModerationTargetPost             ModerationTargetType = "POST"
 )
 
 type ModerationCase struct {
@@ -261,6 +261,46 @@ type ChatMessageModerationItem struct {
 	EditedAt  *time.Time
 	DeletedAt *time.Time
 	SentAt    time.Time
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+type PostReportModerationItem struct {
+	ID               uuid.UUID
+	PostID           uuid.UUID
+	CommunityID      *uuid.UUID
+	ReporterUserID   uuid.UUID
+	AuthorUserID     uuid.UUID
+	Reason           string
+	Details          string
+	Status           string
+	ResolvedByUserID *uuid.UUID
+	ResolutionNote   string
+
+	ModerationRiskScore   int
+	ModerationReasonCodes []string
+	Revision              int
+
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	ResolvedAt *time.Time
+}
+
+type PostModerationItem struct {
+	ID           uuid.UUID
+	CommunityID  *uuid.UUID
+	AuthorUserID uuid.UUID
+
+	Title            string
+	Excerpt          string
+	Status           string
+	ModerationStatus string
+	Category         string
+
+	ModerationRiskScore   int
+	ModerationReasonCodes []string
+	Revision              int
+
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

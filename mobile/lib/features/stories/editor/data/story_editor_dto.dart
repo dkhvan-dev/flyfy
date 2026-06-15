@@ -1,5 +1,4 @@
 import '../domain/story_document.dart';
-import 'story_document_mapper.dart';
 
 class StoryEditorWriteRequest {
   StoryEditorWriteRequest({
@@ -8,12 +7,14 @@ class StoryEditorWriteRequest {
     required this.category,
     required this.status,
     required this.document,
-    this.content,
     this.revision,
     this.coverFileId,
     this.placeName,
     this.placeCountryCode,
     this.placeCityId,
+    this.communityId,
+    this.postProfileKey,
+    this.structuredData = const {},
     this.tags = const [],
     this.metadata = const {},
   });
@@ -23,12 +24,14 @@ class StoryEditorWriteRequest {
   final String category;
   final String status;
   final StoryDocument document;
-  final String? content;
   final int? revision;
   final String? coverFileId;
   final String? placeName;
   final String? placeCountryCode;
   final String? placeCityId;
+  final String? communityId;
+  final String? postProfileKey;
+  final Map<String, Object?> structuredData;
   final List<String> tags;
   final Map<String, Object?> metadata;
 
@@ -47,28 +50,37 @@ class StoryEditorWriteRequest {
 
     return {
       'title': title.trim(),
-      'format': _upper(format, fallback: 'STORY'),
+      'format': _upper(format, fallback: 'ARTICLE'),
       'category': _upper(category, fallback: 'JOURNAL'),
       'status': _upper(statusOverride ?? status, fallback: 'DRAFT'),
       'contentSchemaVersion': document.version,
       'contentBlocks': {'version': document.version, 'blocks': blocks},
-      'content': _legacyContent,
       if (revision != null) 'revision': revision,
       'coverFileId': _nullableTrim(coverFileId),
       'placeName': _nullableTrim(placeName),
       'placeCountryCode': _nullableCountryCode(placeCountryCode),
       'placeCityId': _nullableTrim(placeCityId),
+      if (_nullableTrim(communityId) != null)
+        'communityId': _nullableTrim(communityId),
+      if (_nullableTrim(postProfileKey) != null)
+        'postProfileKey': _nullableTrim(postProfileKey),
+      if (structuredData.isNotEmpty)
+        'structuredData': Map<String, Object?>.fromEntries(
+          structuredData.entries.where((entry) {
+            final key = entry.key.trim();
+            final value = entry.value;
+            if (key.isEmpty || value == null) {
+              return false;
+            }
+            if (value is String) {
+              return value.trim().isNotEmpty;
+            }
+            return true;
+          }),
+        ),
       'tags': normalizedTags,
       if (normalizedMetadata.isNotEmpty) 'metadata': normalizedMetadata,
     };
-  }
-
-  String get _legacyContent {
-    final explicitContent = (content ?? '').trim();
-    if (explicitContent.isNotEmpty) {
-      return explicitContent;
-    }
-    return StoryDocumentMapper.toLegacyContent(document);
   }
 }
 

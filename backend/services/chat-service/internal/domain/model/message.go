@@ -16,6 +16,7 @@ type Message struct {
 	StickerFileID             *string
 	StickerPayload            *StickerPayload
 	ReplyToMessageID          *uuid.UUID
+	StoryReply                *StoryReplyContext
 	ForwardedFromMessageID    *uuid.UUID
 	ForwardedFromSenderUserID *uuid.UUID
 	ForwardedFromSenderName   string
@@ -39,6 +40,19 @@ type Message struct {
 	ReadReceipts       []MessageReadReceipt
 	SenderDisplayName  string
 	SenderAvatarFileID *string
+}
+
+type StoryReplyContext struct {
+	StoryID            uuid.UUID  `json:"storyId"`
+	StoryAuthorUserID  uuid.UUID  `json:"storyAuthorUserId"`
+	StoryTitle         string     `json:"storyTitle,omitempty"`
+	StoryPreviewFileID string     `json:"storyPreviewFileId,omitempty"`
+	StoryPreviewURL    string     `json:"storyPreviewUrl,omitempty"`
+	StoryExpiresAt     *time.Time `json:"storyExpiresAt,omitempty"`
+}
+
+func (c StoryReplyContext) IsZero() bool {
+	return c.StoryID == uuid.Nil && c.StoryAuthorUserID == uuid.Nil
 }
 
 const (

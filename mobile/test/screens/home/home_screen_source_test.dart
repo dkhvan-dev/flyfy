@@ -4,6 +4,31 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test(
+    'home screen renders contextual story tray from the home feed',
+    () async {
+      final source = await File(
+        'lib/screens/home/home_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('ContextualStoryTrayBlock('));
+      expect(source, contains("surface: 'home'"));
+      expect(
+        source,
+        contains('_homeStoryTrayStoriesFromFeedBlocks(page.items)'),
+      );
+      expect(source, contains('viewerAvatarFileId:'));
+
+      final trayStart = source.indexOf('ContextualStoryTrayBlock(');
+      final authGuardStart = source.lastIndexOf(
+        'if (isLoggedIn) ...[',
+        trayStart,
+      );
+      expect(authGuardStart, isNonNegative);
+      expect(trayStart - authGuardStart, lessThan(220));
+    },
+  );
+
+  test(
     'top destinations cards size their footer from scaled text metrics',
     () async {
       final source = await File(
@@ -54,13 +79,13 @@ void main() {
   );
 
   test(
-    'top stories reserve runtime layout safety padding for the footer row',
+    'top posts reserve runtime layout safety padding for the footer row',
     () async {
       final source = await File(
         'lib/screens/home/home_screen.dart',
       ).readAsString();
-      final helperStart = source.indexOf('double _homeStoryCardHeight({');
-      final helperEnd = source.indexOf('double _measureHomeStoryTextHeight');
+      final helperStart = source.indexOf('double _homePostCardHeight({');
+      final helperEnd = source.indexOf('double _measureHomePostTextHeight');
 
       expect(helperStart, isNonNegative);
       expect(helperEnd, greaterThan(helperStart));
@@ -387,7 +412,7 @@ void main() {
       ).firstMatch(source);
       final labelStart = labelMatch?.start ?? -1;
       final nextFunctionStart = source.indexOf(
-        'String _homeStoryTagLabel',
+        'String _homePostTagLabel',
         labelStart < 0 ? 0 : labelStart,
       );
 
@@ -564,29 +589,33 @@ void main() {
 
       expect(source, contains('static const _initialHomeDataDelay'));
       expect(source, contains('static const _initialHomeDataStagger'));
+      expect(source, contains('this.initialDataLoadDelay'));
+      expect(source, contains('this.initialDataLoadStagger'));
+      expect(source, contains('this.waitForFirstFrameRasterized = true'));
       expect(initSource, contains('_scheduleInitialDataLoad();'));
       expect(initSource, isNot(contains('provider.loadActivities();')));
       expect(initSource, isNot(contains('provider.loadActivityCategories();')));
       expect(initSource, isNot(contains('_loadTopAttractions();')));
-      expect(initSource, isNot(contains('_loadTopStories();')));
+      expect(initSource, isNot(contains('_loadTopPosts();')));
       expect(
         scheduleSource,
         contains('WidgetsBinding.instance.addPostFrameCallback'),
       );
       expect(scheduleSource, contains('unawaited(_runInitialDataLoad())'));
+      expect(runSource, contains('if (widget.waitForFirstFrameRasterized)'));
       expect(runSource, contains('waitUntilFirstFrameRasterized'));
       expect(
         runSource,
-        contains('Future<void>.delayed(_initialHomeDataDelay)'),
+        contains('Future<void>.delayed(widget.initialDataLoadDelay)'),
       );
       expect(
         runSource,
-        contains('Future<void>.delayed(_initialHomeDataStagger)'),
+        contains('Future<void>.delayed(widget.initialDataLoadStagger)'),
       );
       expect(runSource, contains('provider.loadActivityCategories();'));
       expect(runSource, contains('unawaited(categoryLoad);'));
       expect(runSource, contains('unawaited(_loadTopAttractions());'));
-      expect(runSource, contains('unawaited(_loadTopStories());'));
+      expect(runSource, contains('unawaited(_loadTopPosts());'));
     },
   );
 }

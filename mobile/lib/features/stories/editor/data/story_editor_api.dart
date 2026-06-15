@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../../core/network/api_client.dart';
-import '../../models/story_vm.dart';
+import '../../models/post_vm.dart';
 import 'story_editor_dto.dart';
 
 class StoryEditorApi {
@@ -10,52 +10,52 @@ class StoryEditorApi {
 
   final ApiClient _apiClient;
 
-  Future<StoryVm> getStory(String storyId) {
+  Future<PostVm> getStory(String storyId) {
     return _sendStoryMutation(
-      () => _apiClient.dio.get('/stories/${_storyId(storyId)}'),
+      () => _apiClient.dio.get('/posts/${_storyId(storyId)}'),
     );
   }
 
-  Future<StoryVm> createDraft(StoryEditorWriteRequest request) {
+  Future<PostVm> createDraft(StoryEditorWriteRequest request) {
     return _sendStoryMutation(
       () => _apiClient.dio.post(
-        '/stories',
+        '/posts',
         data: request.toJson(statusOverride: 'DRAFT'),
       ),
     );
   }
 
-  Future<StoryVm> autosave(String storyId, StoryEditorWriteRequest request) {
+  Future<PostVm> autosave(String storyId, StoryEditorWriteRequest request) {
     return _sendStoryMutation(
       () => _apiClient.dio.post(
-        '/stories/${_storyId(storyId)}/autosave',
+        '/posts/${_storyId(storyId)}/autosave',
         data: request.toJson(),
       ),
     );
   }
 
-  Future<StoryVm> update(String storyId, StoryEditorWriteRequest request) {
+  Future<PostVm> update(String storyId, StoryEditorWriteRequest request) {
     return _sendStoryMutation(
       () => _apiClient.dio.patch(
-        '/stories/${_storyId(storyId)}',
+        '/posts/${_storyId(storyId)}',
         data: request.toJson(),
       ),
     );
   }
 
-  Future<StoryVm> publish(String storyId, StoryEditorWriteRequest request) {
+  Future<PostVm> publish(String storyId, StoryEditorWriteRequest request) {
     return _sendStoryMutation(
       () => _apiClient.dio.post(
-        '/stories/${_storyId(storyId)}/publish',
+        '/posts/${_storyId(storyId)}/publish',
         data: request.toJson(statusOverride: 'PUBLISHED'),
       ),
     );
   }
 
-  Future<StoryVm> archive(String storyId, {int? revision}) {
+  Future<PostVm> archive(String storyId, {int? revision}) {
     return _sendStoryMutation(
       () => _apiClient.dio.post(
-        '/stories/${_storyId(storyId)}/archive',
+        '/posts/${_storyId(storyId)}/archive',
         data: revision == null
             ? const <String, dynamic>{}
             : <String, dynamic>{'revision': revision},
@@ -63,12 +63,12 @@ class StoryEditorApi {
     );
   }
 
-  Future<StoryVm> _sendStoryMutation(
+  Future<PostVm> _sendStoryMutation(
     Future<Response<dynamic>> Function() send,
   ) async {
     try {
       final response = await send();
-      return StoryVm.fromJson(response.data as Map<String, dynamic>);
+      return PostVm.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (error) {
       throw StoryEditorApiException.fromDio(error);
     }
@@ -77,7 +77,7 @@ class StoryEditorApi {
   String _storyId(String value) {
     final trimmed = value.trim();
     if (trimmed.isEmpty) {
-      throw ArgumentError.value(value, 'storyId', 'Story id is required.');
+      throw ArgumentError.value(value, 'postId', 'Post id is required.');
     }
     return Uri.encodeComponent(trimmed);
   }

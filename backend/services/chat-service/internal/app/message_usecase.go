@@ -101,6 +101,7 @@ type SendMessageInput struct {
 	FileIDs             []string
 	StickerID           *uuid.UUID
 	ReplyToMessageID    *uuid.UUID
+	StoryReply          *model.StoryReplyContext
 }
 
 type ForwardMessageInput struct {
@@ -127,6 +128,7 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 	}
 
 	fileIDs := normalizeMessageFileIDs(input.FileIDs)
+	storyReply := normalizedStoryReply(input.StoryReply)
 	stickerID := input.StickerID
 	if stickerID != nil {
 		messageType = messageTypeSticker
@@ -195,6 +197,9 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 	}
 	if len(fileIDs) > maxFilesPerMessage {
 		return nil, ErrTooManyFiles
+	}
+	if storyReply != nil && (storyReply.StoryID == uuid.Nil || storyReply.StoryAuthorUserID == uuid.Nil) {
+		return nil, ErrInvalidMessageType
 	}
 
 	conv, err := u.repo.GetConversationByID(ctx, input.ConversationID)
@@ -276,6 +281,7 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 		StickerFileID:         stickerFileID,
 		StickerPayload:        stickerPayload,
 		ReplyToMessageID:      input.ReplyToMessageID,
+		StoryReply:            storyReply,
 		ModerationStatus:      moderationStatus,
 		ModerationReasonCodes: moderationReasonCodes,
 		ModerationRiskScore:   moderationRiskScore,
@@ -338,6 +344,7 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 			StickerID:                 msg.StickerID,
 			StickerFileID:             msg.StickerFileID,
 			ReplyToMessageID:          input.ReplyToMessageID,
+			StoryReply:                eventStoryReplyFromModel(msg.StoryReply),
 			ForwardedFromMessageID:    msg.ForwardedFromMessageID,
 			ForwardedFromSenderUserID: msg.ForwardedFromSenderUserID,
 			ForwardedFromSenderName:   msg.ForwardedFromSenderName,
@@ -350,6 +357,31 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 	}()
 
 	return msg, nil
+}
+
+func normalizedStoryReply(value *model.StoryReplyContext) *model.StoryReplyContext {
+	if value == nil || value.IsZero() {
+		return nil
+	}
+	next := *value
+	next.StoryTitle = strings.TrimSpace(next.StoryTitle)
+	next.StoryPreviewFileID = strings.TrimSpace(next.StoryPreviewFileID)
+	next.StoryPreviewURL = strings.TrimSpace(next.StoryPreviewURL)
+	return &next
+}
+
+func eventStoryReplyFromModel(value *model.StoryReplyContext) *event.StoryReplyContextPayload {
+	if value == nil || value.IsZero() {
+		return nil
+	}
+	return &event.StoryReplyContextPayload{
+		StoryID:            value.StoryID.String(),
+		StoryAuthorUserID:  value.StoryAuthorUserID.String(),
+		StoryTitle:         value.StoryTitle,
+		StoryPreviewFileID: value.StoryPreviewFileID,
+		StoryPreviewURL:    value.StoryPreviewURL,
+		StoryExpiresAt:     value.StoryExpiresAt,
+	}
 }
 
 func (u *MessageUseCase) existingClientMessage(ctx context.Context, input SendMessageInput) (*model.Message, error) {
@@ -461,6 +493,7 @@ func (u *MessageUseCase) ForwardMessage(ctx context.Context, input ForwardMessag
 		StickerID:                 sourceMessage.StickerID,
 		StickerFileID:             sourceMessage.StickerFileID,
 		StickerPayload:            sourceMessage.StickerPayload,
+		StoryReply:                normalizedStoryReply(sourceMessage.StoryReply),
 		ForwardedFromMessageID:    &forwardedFromMessageID,
 		ForwardedFromSenderUserID: &forwardedFromSenderUserID,
 		ForwardedFromSenderName:   forwardedFromSenderName,
@@ -522,6 +555,7 @@ func (u *MessageUseCase) ForwardMessage(ctx context.Context, input ForwardMessag
 			FileIDs:                   fileIDs,
 			StickerID:                 forwarded.StickerID,
 			StickerFileID:             forwarded.StickerFileID,
+			StoryReply:                eventStoryReplyFromModel(forwarded.StoryReply),
 			ForwardedFromMessageID:    forwarded.ForwardedFromMessageID,
 			ForwardedFromSenderUserID: forwarded.ForwardedFromSenderUserID,
 			ForwardedFromSenderName:   forwarded.ForwardedFromSenderName,

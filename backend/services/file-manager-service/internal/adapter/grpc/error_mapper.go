@@ -21,6 +21,16 @@ func mapError(err error) error {
 		return status.Error(codes.PermissionDenied, app.ErrorCodeFileNotPublic)
 	case errors.Is(err, app.ErrIdempotencyConflict):
 		return status.Error(codes.Aborted, app.ErrorCodeIdempotencyConflict)
+	case errors.Is(err, app.ErrFilePurposeMismatch):
+		return status.Error(codes.InvalidArgument, app.ErrorCodeFilePurposeMismatch)
+	case errors.Is(err, app.ErrFileOwnershipMismatch):
+		return status.Error(codes.PermissionDenied, app.ErrorCodeFileOwnershipMismatch)
+	case errors.Is(err, app.ErrFileAlreadyBound):
+		return status.Error(codes.Aborted, app.ErrorCodeFileAlreadyBound)
+	case errors.Is(err, app.ErrFraudRejected):
+		return status.Error(codes.PermissionDenied, app.ErrorCodeFraudRejected)
+	case errors.Is(err, app.ErrTrustPolicyRejected):
+		return status.Error(codes.PermissionDenied, app.ErrorCodeTrustPolicyRejected)
 	case errors.Is(err, app.ErrInvalidFileID),
 		errors.Is(err, app.ErrInvalidOwnerID),
 		errors.Is(err, app.ErrForbiddenPurpose),

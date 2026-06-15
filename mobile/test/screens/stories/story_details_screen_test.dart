@@ -4,8 +4,13 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inflap/core/network/file_api.dart';
-import 'package:inflap/features/stories/models/story_vm.dart';
+import 'package:inflap/core/network/post_api.dart';
+import 'package:inflap/core/storage/secure_storage.dart';
+import 'package:inflap/features/profile/data/profile_api.dart';
+import 'package:inflap/features/profile/models/user_profile_vm.dart';
+import 'package:inflap/features/stories/models/post_vm.dart';
 import 'package:inflap/l10n/generated/app_localizations.dart';
+import 'package:inflap/providers/auth_provider.dart';
 import 'package:inflap/providers/session_provider.dart';
 import 'package:inflap/screens/stories/story_details_screen.dart';
 import 'package:provider/provider.dart';
@@ -132,12 +137,306 @@ void main() {
         expect(firstImage, findsOneWidget);
       },
     );
+
+    testWidgets('published story submits a moderation report', (tester) async {
+      final authProvider = AuthProvider(
+        secureStorage: _AuthenticatedSecureStorage(),
+      );
+      await authProvider.checkAuthStatus();
+      final storyApi = _FakePostApi(
+        detail: PostDetailVm(
+          post: _storyVm(
+            id: 'published-story',
+            title: 'Published story',
+            status: 'PUBLISHED',
+          ),
+          related: const [],
+          comments: const [],
+        ),
+      );
+
+      await tester.pumpWidget(
+        _app(
+          StoryDetailsScreen(
+            slug: 'published-story',
+            postApi: storyApi,
+            profileApi: _FakeProfileApi(),
+            initialStory: _storyVm(
+              id: 'published-story',
+              title: 'Published story',
+              status: 'PUBLISHED',
+            ),
+          ),
+          authProvider: authProvider,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Report'));
+      await tester.tap(find.text('Report'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('story-report-details-field')),
+        'Copied listing',
+      );
+      await tester.ensureVisible(find.text('Submit report'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Submit report'));
+      await tester.pumpAndSettle();
+
+      expect(storyApi.reportedStoryIds, ['published-story']);
+      expect(storyApi.reportedReasons, ['SPAM']);
+      expect(storyApi.reportedDetails, ['Copied listing']);
+      expect(
+        find.text('Thanks. We sent this story to moderation.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('published story marks authenticated viewer as seen', (
+      tester,
+    ) async {
+      final authProvider = AuthProvider(
+        secureStorage: _AuthenticatedSecureStorage(),
+      );
+      await authProvider.checkAuthStatus();
+      final storyApi = _FakePostApi(
+        detail: PostDetailVm(
+          post: _storyVm(
+            id: 'published-story',
+            title: 'Published story',
+            status: 'PUBLISHED',
+          ),
+          related: const [],
+          comments: const [],
+        ),
+      );
+
+      await tester.pumpWidget(
+        _app(
+          StoryDetailsScreen(
+            slug: 'published-story',
+            postApi: storyApi,
+            profileApi: _FakeProfileApi(),
+            initialStory: _storyVm(
+              id: 'published-story',
+              title: 'Published story',
+              status: 'PUBLISHED',
+            ),
+          ),
+          authProvider: authProvider,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(storyApi.seenStoryIds, ['published-story']);
+    });
+
+    testWidgets('published story skips mark seen for guest viewer', (
+      tester,
+    ) async {
+      final authProvider = AuthProvider(
+        secureStorage: _UnauthenticatedSecureStorage(),
+      );
+      await authProvider.checkAuthStatus();
+      final storyApi = _FakePostApi(
+        detail: PostDetailVm(
+          post: _storyVm(
+            id: 'published-story',
+            title: 'Published story',
+            status: 'PUBLISHED',
+          ),
+          related: const [],
+          comments: const [],
+        ),
+      );
+
+      await tester.pumpWidget(
+        _app(
+          StoryDetailsScreen(
+            slug: 'published-story',
+            postApi: storyApi,
+            profileApi: _FakeProfileApi(),
+            initialStory: _storyVm(
+              id: 'published-story',
+              title: 'Published story',
+              status: 'PUBLISHED',
+            ),
+          ),
+          authProvider: authProvider,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(storyApi.seenStoryIds, isEmpty);
+    });
+
+    testWidgets('published story skips mark seen for already seen story', (
+      tester,
+    ) async {
+      final authProvider = AuthProvider(
+        secureStorage: _AuthenticatedSecureStorage(),
+      );
+      await authProvider.checkAuthStatus();
+      final storyApi = _FakePostApi(
+        detail: PostDetailVm(
+          post: _storyVm(
+            id: 'published-story',
+            title: 'Published story',
+            status: 'PUBLISHED',
+            seenByViewer: true,
+          ),
+          related: const [],
+          comments: const [],
+        ),
+      );
+
+      await tester.pumpWidget(
+        _app(
+          StoryDetailsScreen(
+            slug: 'published-story',
+            postApi: storyApi,
+            profileApi: _FakeProfileApi(),
+            initialStory: _storyVm(
+              id: 'published-story',
+              title: 'Published story',
+              status: 'PUBLISHED',
+            ),
+          ),
+          authProvider: authProvider,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(storyApi.seenStoryIds, isEmpty);
+    });
+
+    testWidgets(
+      'published story skips mark seen for expired or empty-id story',
+      (tester) async {
+        final authProvider = AuthProvider(
+          secureStorage: _AuthenticatedSecureStorage(),
+        );
+        await authProvider.checkAuthStatus();
+        final expiredApi = _FakePostApi(
+          detail: PostDetailVm(
+            post: _storyVm(
+              id: 'expired-story',
+              title: 'Expired story',
+              status: 'PUBLISHED',
+              expiresAt: DateTime.utc(2020),
+            ),
+            related: const [],
+            comments: const [],
+          ),
+        );
+
+        await tester.pumpWidget(
+          _app(
+            StoryDetailsScreen(
+              slug: 'expired-story',
+              postApi: expiredApi,
+              profileApi: _FakeProfileApi(),
+              initialStory: _storyVm(
+                id: 'expired-story',
+                title: 'Expired story',
+                status: 'PUBLISHED',
+              ),
+            ),
+            authProvider: authProvider,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(expiredApi.seenStoryIds, isEmpty);
+
+        final emptyIdApi = _FakePostApi(
+          detail: PostDetailVm(
+            post: _storyVm(
+              id: '',
+              title: 'Empty id story',
+              status: 'PUBLISHED',
+            ),
+            related: const [],
+            comments: const [],
+          ),
+        );
+
+        await tester.pumpWidget(
+          _app(
+            StoryDetailsScreen(
+              slug: 'empty-id-story',
+              postApi: emptyIdApi,
+              profileApi: _FakeProfileApi(),
+              initialStory: _storyVm(
+                id: 'empty-id-story',
+                title: 'Empty id story',
+                status: 'PUBLISHED',
+              ),
+            ),
+            authProvider: authProvider,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(emptyIdApi.seenStoryIds, isEmpty);
+      },
+    );
+
+    testWidgets('published story mark seen failure does not block rendering', (
+      tester,
+    ) async {
+      final authProvider = AuthProvider(
+        secureStorage: _AuthenticatedSecureStorage(),
+      );
+      await authProvider.checkAuthStatus();
+      final storyApi = _FakePostApi(
+        failMarkSeen: true,
+        detail: PostDetailVm(
+          post: _storyVm(
+            id: 'published-story',
+            title: 'Published story',
+            status: 'PUBLISHED',
+          ),
+          related: const [],
+          comments: const [],
+        ),
+      );
+
+      await tester.pumpWidget(
+        _app(
+          StoryDetailsScreen(
+            slug: 'published-story',
+            postApi: storyApi,
+            profileApi: _FakeProfileApi(),
+            initialStory: _storyVm(
+              id: 'published-story',
+              title: 'Published story',
+              status: 'PUBLISHED',
+            ),
+          ),
+          authProvider: authProvider,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(storyApi.seenStoryIds, ['published-story']);
+      expect(find.text('Published story'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 }
 
-Widget _app(Widget child) {
-  return ChangeNotifierProvider<SessionProvider>(
-    create: (_) => SessionProvider(),
+Widget _app(Widget child, {AuthProvider? authProvider}) {
+  return MultiProvider(
+    providers: [
+      ChangeNotifierProvider<AuthProvider>(
+        create: (_) =>
+            authProvider ??
+            AuthProvider(secureStorage: _UnauthenticatedSecureStorage()),
+      ),
+      ChangeNotifierProvider<SessionProvider>(create: (_) => SessionProvider()),
+    ],
     child: MaterialApp(
       theme: ThemeData.dark(useMaterial3: true),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -145,6 +444,22 @@ Widget _app(Widget child) {
       home: child,
     ),
   );
+}
+
+class _AuthenticatedSecureStorage extends SecureStorage {
+  @override
+  Future<String?> getAccessToken() async => 'access-token';
+
+  @override
+  Future<String?> getRefreshToken() async => null;
+}
+
+class _UnauthenticatedSecureStorage extends SecureStorage {
+  @override
+  Future<String?> getAccessToken() async => null;
+
+  @override
+  Future<String?> getRefreshToken() async => null;
 }
 
 class _FakeStoryFileApi extends FileApi {
@@ -161,13 +476,73 @@ class _FakeStoryFileApi extends FileApi {
   }
 }
 
-StoryVm _storyVm({
+class _FakePostApi extends PostApi {
+  _FakePostApi({required this.detail, this.failMarkSeen = false});
+
+  final PostDetailVm detail;
+  final bool failMarkSeen;
+  final List<String> reportedStoryIds = [];
+  final List<String> reportedReasons = [];
+  final List<String> reportedDetails = [];
+  final List<String> seenStoryIds = [];
+
+  @override
+  Future<PostDetailVm> getPublicPostBySlug(String slug) async => detail;
+
+  @override
+  Future<DateTime?> markPostSeen(String storyId) async {
+    seenStoryIds.add(storyId);
+    if (failMarkSeen) {
+      throw Exception('mark seen failed');
+    }
+    return DateTime.utc(2026, 6, 12, 12);
+  }
+
+  @override
+  Future<PostReportSubmissionVm> reportPost(
+    String storyId, {
+    required String reason,
+    String details = '',
+  }) async {
+    reportedStoryIds.add(storyId);
+    reportedReasons.add(reason);
+    reportedDetails.add(details);
+    return PostReportSubmissionVm(
+      openReportsCount: 1,
+      autoHidden: false,
+      reportId: 'report-1',
+      reportStatus: 'OPEN',
+    );
+  }
+}
+
+class _FakeProfileApi extends ProfileApi {
+  @override
+  Future<UserProfileVm> getUserById(String userId) async {
+    return UserProfileVm(
+      userId: userId,
+      status: 'ACTIVE',
+      locale: 'en',
+      timezone: 'Asia/Almaty',
+      isProfileCompleted: true,
+      roles: const [],
+      followersCount: 12,
+      isFollowedByMe: false,
+      friendshipStatus: UserFriendshipStatus.none,
+      nickname: 'Travel Author',
+    );
+  }
+}
+
+PostVm _storyVm({
   String id = 'story-1',
   String title = 'Draft story',
   String status = 'DRAFT',
+  bool seenByViewer = false,
+  DateTime? expiresAt,
   List<Map<String, dynamic>> contentBlocks = const [],
 }) {
-  return StoryVm(
+  return PostVm(
     id: id,
     slug: id,
     title: title,
@@ -183,13 +558,16 @@ StoryVm _storyVm({
     placeCountryCode: 'KZ',
     placeCityId: 'almaty',
     tags: const ['mountains'],
-    stats: StoryStatsVm(views: 0, likes: 0, comments: 0, shares: 0),
-    author: StoryAuthorVm(
+    stats: PostStatsVm(views: 0, likes: 0, comments: 0, shares: 0),
+    author: PostAuthorVm(
       userId: 'user-1',
       locale: 'en',
       timezone: 'Asia/Almaty',
     ),
     likedByViewer: false,
+    seenByViewer: seenByViewer,
+    seenAt: seenByViewer ? DateTime.utc(2026, 6, 12, 12) : null,
+    expiresAt: expiresAt,
     shareUrl: '',
     createdAt: DateTime.utc(2026, 6, 1),
     updatedAt: DateTime.utc(2026, 6, 8),

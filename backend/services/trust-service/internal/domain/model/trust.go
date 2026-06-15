@@ -55,6 +55,21 @@ const (
 	RuntimeRestrictionExpired RuntimeRestrictionStatus = "EXPIRED"
 )
 
+type RestrictionAppealStatus string
+
+const (
+	RestrictionAppealStatusPending  RestrictionAppealStatus = "PENDING"
+	RestrictionAppealStatusApproved RestrictionAppealStatus = "APPROVED"
+	RestrictionAppealStatusRejected RestrictionAppealStatus = "REJECTED"
+)
+
+type RestrictionAppealDecision string
+
+const (
+	RestrictionAppealDecisionApprove RestrictionAppealDecision = "APPROVE"
+	RestrictionAppealDecisionReject  RestrictionAppealDecision = "REJECT"
+)
+
 const (
 	RestrictionCodeChat              = "CHAT"
 	RestrictionCodeActivityCreation  = "ACTIVITY_CREATION"
@@ -134,4 +149,44 @@ type RestrictionEventInput struct {
 	LiftedByStaffID  *uuid.UUID
 	ExpiresAt        *time.Time
 	OccurredAt       time.Time
+}
+
+type RestrictionAppeal struct {
+	ID                 uuid.UUID
+	UserID             uuid.UUID
+	RestrictionID      uuid.UUID
+	Status             RestrictionAppealStatus
+	ReasonCode         string
+	UserMessage        string
+	IdempotencyKey     string
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
+	DecidedAt          *time.Time
+	DecidedByStaffID   *uuid.UUID
+	DecisionReasonCode string
+	StaffComment       string
+}
+
+type SubmitRestrictionAppealInput struct {
+	UserID         uuid.UUID
+	RestrictionID  uuid.UUID
+	ReasonCode     string
+	UserMessage    string
+	IdempotencyKey string
+	SubmittedAt    time.Time
+}
+
+type ListRestrictionAppealsInput struct {
+	Status RestrictionAppealStatus
+	UserID *uuid.UUID
+}
+
+type DecideRestrictionAppealInput struct {
+	AppealID        uuid.UUID
+	ActorStaffID    uuid.UUID
+	Decision        RestrictionAppealDecision
+	ReasonCode      string
+	StaffComment    string
+	DecisionEventID uuid.UUID
+	DecidedAt       time.Time
 }

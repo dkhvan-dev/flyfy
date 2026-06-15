@@ -256,6 +256,60 @@ void main() {
     expect(sectionSource, isNot(contains('Color(0xFFFFBD55)')));
   });
 
+  test('legacy story entry points use shared state affordances', () {
+    final storyUiSource = File(
+      'lib/features/stories/story_ui.dart',
+    ).readAsStringSync();
+    final storiesSource = File(
+      'lib/screens/stories/stories_screen.dart',
+    ).readAsStringSync();
+    final detailSource = File(
+      'lib/screens/stories/story_details_screen.dart',
+    ).readAsStringSync();
+
+    final listCardStart = storiesSource.indexOf('class _StoryListCard');
+    final metaChipStart = storiesSource.indexOf('class _StoryMetaChip');
+    expect(listCardStart, isNonNegative);
+    expect(metaChipStart, greaterThan(listCardStart));
+    final listCardSource = storiesSource.substring(
+      listCardStart,
+      metaChipStart,
+    );
+
+    final relatedStart = detailSource.indexOf('class _RelatedStoriesSection');
+    final errorStart = detailSource.indexOf('class _StoryDetailErrorState');
+    expect(relatedStart, isNonNegative);
+    expect(errorStart, greaterThan(relatedStart));
+    final relatedSource = detailSource.substring(relatedStart, errorStart);
+
+    expect(storyUiSource, contains('class StoryStateAffordance'));
+    expect(storyUiSource, contains('StoryEntryState.seen'));
+    expect(storyUiSource, contains('StoryEntryState.expired'));
+    expect(storyUiSource, contains('StoryEntryState.pending'));
+    expect(storyUiSource, contains('StoryEntryState.hidden'));
+    expect(storyUiSource, contains('bool get disablesEntry'));
+    expect(listCardSource, contains('StoryStateAffordance.fromPost('));
+    expect(relatedSource, contains('StoryStateAffordance.fromPost('));
+    expect(listCardSource, contains('enabled: !state.disablesEntry'));
+    expect(
+      listCardSource,
+      contains('onTap: state.disablesEntry ? null : onTap'),
+    );
+    expect(relatedSource, contains('onTap: state.disablesEntry'));
+    expect(relatedSource, contains(': () => onStoryTap(story)'));
+  });
+
+  test('story state affordance strings are localized', () {
+    for (final locale in ['en', 'ru', 'kk']) {
+      final arbSource = File('lib/l10n/app_$locale.arb').readAsStringSync();
+
+      expect(arbSource, contains('storyStateSeenLabel'));
+      expect(arbSource, contains('storyStateExpiredLabel'));
+      expect(arbSource, contains('storyStatePendingLabel'));
+      expect(arbSource, contains('storyStateHiddenLabel'));
+    }
+  });
+
   test('story fullscreen gallery uses attraction-style dialog route', () {
     final detailSource = File(
       'lib/screens/stories/story_details_screen.dart',
@@ -308,10 +362,10 @@ void main() {
     final loadSource = detailSource.substring(loadStart, authorStart);
 
     expect(loadSource, contains('!initialStory.isPublished'));
-    expect(loadSource, contains('getStoryById('));
+    expect(loadSource, contains('getPostById('));
     expect(
-      loadSource.indexOf('getStoryById('),
-      lessThan(loadSource.indexOf('getPublicStoryBySlug(')),
+      loadSource.indexOf('getPostById('),
+      lessThan(loadSource.indexOf('getPublicPostBySlug(')),
     );
   });
 
@@ -354,13 +408,13 @@ void main() {
       expect(likeStart, greaterThan(submitStart));
       final submitSource = detailSource.substring(submitStart, likeStart);
 
-      expect(submitSource, contains('!detail.story.isPublished'));
+      expect(submitSource, contains('!detail.post.isPublished'));
       expect(
-        submitSource.indexOf('!detail.story.isPublished'),
+        submitSource.indexOf('!detail.post.isPublished'),
         lessThan(submitSource.indexOf('createComment(')),
       );
       expect(
-        submitSource.indexOf('!detail.story.isPublished'),
+        submitSource.indexOf('!detail.post.isPublished'),
         lessThan(submitSource.indexOf('updateComment(')),
       );
     },
@@ -380,7 +434,7 @@ void main() {
     final openSource = detailSource.substring(openStart, viewerStart);
     final viewerSource = detailSource.substring(viewerStart, relatedStart);
 
-    expect(openSource, contains('!(_detail?.story.isPublished ?? true)'));
+    expect(openSource, contains('!(_detail?.post.isPublished ?? true)'));
     expect(openSource, contains('preferPrivateContent:'));
     expect(viewerSource, contains('preferPrivateContent'));
     expect(viewerSource, contains('if (preferPrivateContent) {'));
@@ -413,6 +467,10 @@ void main() {
     expect(tabsSource, contains('selectedColor: AppColors.accent'));
     expect(tabsSource, contains('backgroundColor: const Color(0xFF2A1D13)'));
     expect(tabsSource, contains('showCheckmark: false'));
+    expect(tabsSource, contains('SingleChildScrollView('));
+    expect(tabsSource, contains('scrollDirection: Axis.horizontal'));
+    expect(tabsSource, contains('Row('));
+    expect(tabsSource, isNot(contains('Wrap(')));
     expect(tabsSource, contains('Colors.white'));
     expect(tabsSource, contains('const Color(0xFFCBB8A3)'));
     expect(tabsSource, isNot(contains('const Color(0xFF211306)')));

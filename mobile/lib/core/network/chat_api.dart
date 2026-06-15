@@ -130,6 +130,7 @@ class ChatApi {
     String? stickerId,
     String? replyToMessageId,
     String? clientMessageId,
+    StoryReplyContextVm? storyReply,
   }) async {
     final response = await _apiClient.dio.post(
       '/chat/conversations/$conversationId/messages',
@@ -141,6 +142,7 @@ class ChatApi {
         if (fileIds != null && fileIds.isNotEmpty) 'fileIds': fileIds,
         if ((stickerId ?? '').trim().isNotEmpty) 'stickerId': stickerId!.trim(),
         'replyToMessageId': ?replyToMessageId,
+        if (storyReply != null) 'storyReply': storyReply.toJson(),
       },
     );
     return MessageVm.fromJson(response.data as Map<String, dynamic>);

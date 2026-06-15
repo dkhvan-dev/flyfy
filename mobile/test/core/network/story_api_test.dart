@@ -9,13 +9,26 @@ import 'package:inflap/core/network/story_api.dart';
 import 'package:inflap/core/storage/secure_storage.dart';
 
 void main() {
-  test('listStoriesPage exposes backend pagination metadata', () async {
+  test('createStory posts to dedicated story endpoint', () async {
     final adapter = _JsonAdapter({
-      'items': [_storyJson('one'), _storyJson('two')],
-      'total': 42,
-      'limit': 2,
-      'offset': 6,
-      'hasMore': true,
+      'id': 'circle-one',
+      'caption': 'Camera moment',
+      'mediaFileId': 'file-one',
+      'mediaUrl': '/api/v1/public/files/file-one/content',
+      'coverFileId': 'file-one',
+      'coverImageUrl': '/api/v1/public/files/file-one/content',
+      'mediaType': 'IMAGE',
+      'stats': const {'views': 0, 'likes': 0, 'replies': 0},
+      'author': {
+        'userId': 'author-one',
+        'locale': 'ru',
+        'timezone': 'Asia/Almaty',
+      },
+      'seenByViewer': false,
+      'shareUrl': '',
+      'expiresAt': '2026-05-11T00:00:00Z',
+      'createdAt': '2026-05-10T00:00:00Z',
+      'updatedAt': '2026-05-10T00:00:00Z',
     });
     final api = StoryApi(
       apiClient: ApiClient(
@@ -25,337 +38,153 @@ void main() {
       ),
     );
 
-    final page = await api.listStoriesPage(limit: 2, offset: 6);
-
-    expect(page.items, hasLength(2));
-    expect(page.hasMore, isTrue);
-    expect(page.total, 42);
-    expect(page.limit, 2);
-    expect(page.offset, 6);
-    expect(adapter.queryParameters['limit'], '2');
-    expect(adapter.queryParameters['offset'], '6');
-    expect(adapter.requiresAuth, isFalse);
-  });
-
-  test(
-    'public story reads and share work without a guest access token',
-    () async {
-      final listAdapter = _JsonAdapter({'items': const [], 'total': 0});
-      final listApi = StoryApi(
-        apiClient: ApiClient(
-          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
-            ..httpClientAdapter = listAdapter,
-          secureStorage: _EmptySecureStorage(),
-        ),
-      );
-
-      await listApi.listStoriesPage();
-
-      expect(listAdapter.requestPath, '/api/v1/stories');
-      expect(listAdapter.requiresAuth, isFalse);
-
-      final detailAdapter = _JsonAdapter({'story': _storyJson('one')});
-      final detailApi = StoryApi(
-        apiClient: ApiClient(
-          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
-            ..httpClientAdapter = detailAdapter,
-          secureStorage: _EmptySecureStorage(),
-        ),
-      );
-
-      await detailApi.getPublicStoryBySlug('story-one');
-
-      expect(detailAdapter.requestPath, '/api/v1/public/stories/story-one');
-      expect(detailAdapter.requiresAuth, isFalse);
-
-      final commentsAdapter = _JsonAdapter({
-        'items': [_commentJson('comment-one')],
-      });
-      final commentsApi = StoryApi(
-        apiClient: ApiClient(
-          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
-            ..httpClientAdapter = commentsAdapter,
-          secureStorage: _EmptySecureStorage(),
-        ),
-      );
-
-      await commentsApi.listComments('story-one');
-
-      expect(commentsAdapter.requestPath, '/api/v1/stories/story-one/comments');
-      expect(commentsAdapter.requiresAuth, isFalse);
-
-      final shareAdapter = _JsonAdapter({
-        'shareUrl': 'https://inflap.app/stories/story-one',
-        'shares': 2,
-      });
-      final shareApi = StoryApi(
-        apiClient: ApiClient(
-          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
-            ..httpClientAdapter = shareAdapter,
-          secureStorage: _EmptySecureStorage(),
-        ),
-      );
-
-      final share = await shareApi.shareStory('story-one');
-
-      expect(share.$2, 2);
-      expect(shareAdapter.requestPath, '/api/v1/stories/story-one/share');
-      expect(shareAdapter.requiresAuth, isFalse);
-    },
-  );
-
-  test(
-    'listStoriesPage falls back to parsed item count without total',
-    () async {
-      final adapter = _JsonAdapter({
-        'items': [_storyJson('one')],
-      });
-      final api = StoryApi(
-        apiClient: ApiClient(
-          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
-            ..httpClientAdapter = adapter,
-          secureStorage: _FakeSecureStorage(),
-        ),
-      );
-
-      final page = await api.listStoriesPage(limit: 8);
-
-      expect(page.items, hasLength(1));
-      expect(page.hasMore, isFalse);
-      expect(page.total, 1);
-    },
-  );
-
-  test(
-    'listStoriesPage uses offset lower bound when old response omits total',
-    () async {
-      final adapter = _JsonAdapter({
-        'items': [_storyJson('one'), _storyJson('two')],
-      });
-      final api = StoryApi(
-        apiClient: ApiClient(
-          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
-            ..httpClientAdapter = adapter,
-          secureStorage: _FakeSecureStorage(),
-        ),
-      );
-
-      final page = await api.listStoriesPage(limit: 8, offset: 20);
-
-      expect(page.items, hasLength(2));
-      expect(page.hasMore, isFalse);
-      expect(page.total, 22);
-    },
-  );
-
-  test(
-    'countPublishedStoriesForUser reads public author count endpoint',
-    () async {
-      final adapter = _JsonAdapter({'userId': 'user-1', 'publishedStories': 7});
-      final api = StoryApi(
-        apiClient: ApiClient(
-          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
-            ..httpClientAdapter = adapter,
-          secureStorage: _FakeSecureStorage(),
-        ),
-      );
-
-      final count = await api.countPublishedStoriesForUser('user-1');
-
-      expect(count, 7);
-      expect(
-        adapter.requestPath,
-        '/api/v1/stories/users/user-1/published-count',
-      );
-      expect(adapter.requiresAuth, isFalse);
-    },
-  );
-
-  test('getUserPopularStories filters author stories by views', () async {
-    final adapter = _JsonAdapter({
-      'items': [_storyJson('one')],
-      'total': 1,
-    });
-    final api = StoryApi(
-      apiClient: ApiClient(
-        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
-          ..httpClientAdapter = adapter,
-        secureStorage: _FakeSecureStorage(),
+    final circle = await api.createStory(
+      CreateStoryRequest(
+        caption: ' Camera moment ',
+        mediaFileId: 'file-one',
+        coverFileId: 'file-one',
+        mediaType: StoryMediaType.image,
       ),
     );
 
-    final stories = await api.getUserPopularStories(' user-1 ', limit: 3);
-
-    expect(stories.single.id, 'one');
+    expect(circle.id, 'circle-one');
+    expect(circle.expiresAt, DateTime.parse('2026-05-11T00:00:00Z'));
+    expect(adapter.method, 'POST');
     expect(adapter.requestPath, '/api/v1/stories');
-    expect(adapter.queryParameters['authorId'], 'user-1');
-    expect(adapter.queryParameters['sort'], 'popular_desc');
-    expect(adapter.queryParameters['limit'], '3');
-    expect(adapter.queryParameters['offset'], '0');
+    expect(adapter.requiresAuth, isTrue);
+    final body = jsonDecode(adapter.requestBody!) as Map<String, dynamic>;
+    expect(body['caption'], 'Camera moment');
+    expect(body['mediaFileId'], 'file-one');
+    expect(body['coverFileId'], 'file-one');
+    expect(body['mediaType'], 'IMAGE');
+    expect(body, isNot(contains('format')));
+    expect(body, isNot(contains('status')));
   });
 
-  test(
-    'listMyStoriesPage sends status and parses pagination metadata',
-    () async {
-      final adapter = _JsonAdapter({
-        'items': [_storyJson('draft')],
-        'total': 9,
-        'limit': 5,
-        'offset': 10,
-        'hasMore': true,
-      });
-      final api = StoryApi(
-        apiClient: ApiClient(
-          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
-            ..httpClientAdapter = adapter,
-          secureStorage: _FakeSecureStorage(),
-        ),
-      );
+  test('markStorySeen uses story seen endpoint', () async {
+    final adapter = _JsonAdapter({'seenAt': '2026-05-10T12:30:00Z'});
+    final api = StoryApi(
+      apiClient: ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+          ..httpClientAdapter = adapter,
+        secureStorage: _FakeSecureStorage(),
+      ),
+    );
 
-      final page = await api.listMyStoriesPage(
-        status: ' draft ',
-        limit: 5,
-        offset: 10,
-      );
+    final seenAt = await api.markStorySeen('circle-one');
 
-      expect(adapter.requestPath, '/api/v1/stories/mine');
-      expect(adapter.queryParameters['status'], 'DRAFT');
-      expect(page.total, 9);
-      expect(page.limit, 5);
-      expect(page.offset, 10);
-      expect(page.hasMore, isTrue);
-    },
-  );
+    expect(seenAt, DateTime.parse('2026-05-10T12:30:00Z'));
+    expect(adapter.method, 'POST');
+    expect(adapter.requestPath, '/api/v1/stories/circle-one/seen');
+    expect(adapter.requiresAuth, isTrue);
+  });
 
-  test(
-    'listStoriesPage sends country and city filters as first-class query params',
-    () async {
-      final adapter = _JsonAdapter({
-        'items': [_storyJson('one')],
-        'total': 1,
-      });
-      final api = StoryApi(
-        apiClient: ApiClient(
-          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
-            ..httpClientAdapter = adapter,
-          secureStorage: _FakeSecureStorage(),
-        ),
-      );
+  test('listMyArchivedStories uses author archive endpoint', () async {
+    final adapter = _JsonAdapter({
+      'items': [
+        {
+          'id': 'archived-circle-one',
+          'caption': 'Archived moment',
+          'mediaFileId': 'file-one',
+          'mediaUrl': '/api/v1/public/files/file-one/content',
+          'coverFileId': 'file-one',
+          'coverImageUrl': '/api/v1/public/files/file-one/content',
+          'mediaType': 'IMAGE',
+          'stats': const {'views': 2, 'likes': 1, 'replies': 0},
+          'author': {
+            'userId': 'author-one',
+            'locale': 'ru',
+            'timezone': 'Asia/Almaty',
+          },
+          'seenByViewer': true,
+          'shareUrl': '',
+          'expiresAt': '2026-05-11T00:00:00Z',
+          'createdAt': '2026-05-10T00:00:00Z',
+          'updatedAt': '2026-05-10T00:00:00Z',
+        },
+      ],
+      'limit': 12,
+      'offset': 24,
+      'hasMore': false,
+    });
+    final api = StoryApi(
+      apiClient: ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+          ..httpClientAdapter = adapter,
+        secureStorage: _FakeSecureStorage(),
+      ),
+    );
 
-      await api.listStoriesPage(countryCode: ' kz ', cityId: ' almaty ');
+    final page = await api.listMyArchivedStories(limit: 12, offset: 24);
 
-      expect(adapter.requestPath, '/api/v1/stories');
-      expect(adapter.queryParameters['countryCode'], 'KZ');
-      expect(adapter.queryParameters['cityId'], 'almaty');
-      expect(adapter.queryParameters, isNot(containsPair('place', 'KZ')));
-    },
-  );
+    expect(page.items.single.id, 'archived-circle-one');
+    expect(page.limit, 12);
+    expect(page.offset, 24);
+    expect(page.hasMore, isFalse);
+    expect(adapter.method, 'GET');
+    expect(adapter.requestPath, '/api/v1/stories/mine/archive');
+    expect(adapter.queryParameters['limit'], '12');
+    expect(adapter.queryParameters['offset'], '24');
+    expect(adapter.requiresAuth, isTrue);
+  });
 
-  test(
-    'story list endpoints send material format filters separately',
-    () async {
-      final publicAdapter = _JsonAdapter({
-        'items': [_storyJson('one')],
-        'total': 1,
-      });
-      final publicApi = StoryApi(
-        apiClient: ApiClient(
-          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
-            ..httpClientAdapter = publicAdapter,
-          secureStorage: _FakeSecureStorage(),
-        ),
-      );
+  test('listMyActiveStories uses author active endpoint', () async {
+    final adapter = _JsonAdapter({
+      'items': [
+        {
+          'id': 'active-circle-one',
+          'caption': 'Active moment',
+          'mediaFileId': 'file-one',
+          'mediaUrl': '/api/v1/public/files/file-one/content',
+          'coverFileId': 'file-one',
+          'coverImageUrl': '/api/v1/public/files/file-one/content',
+          'mediaType': 'IMAGE',
+          'stats': const {'views': 2, 'likes': 1, 'replies': 0},
+          'author': {
+            'userId': 'author-one',
+            'locale': 'ru',
+            'timezone': 'Asia/Almaty',
+          },
+          'seenByViewer': true,
+          'shareUrl': '',
+          'expiresAt': '2026-05-11T00:00:00Z',
+          'createdAt': '2026-05-10T00:00:00Z',
+          'updatedAt': '2026-05-10T00:00:00Z',
+        },
+      ],
+      'limit': 8,
+      'offset': 16,
+      'hasMore': false,
+    });
+    final api = StoryApi(
+      apiClient: ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+          ..httpClientAdapter = adapter,
+        secureStorage: _FakeSecureStorage(),
+      ),
+    );
 
-      await publicApi.listStoriesPage(
-        formats: const [' story ', 'GUIDE'],
-        categories: const ['JOURNAL'],
-      );
+    final page = await api.listMyActiveStories(limit: 8, offset: 16);
 
-      expect(publicAdapter.requestPath, '/api/v1/stories');
-      expect(publicAdapter.queryParameters['format'], 'story,GUIDE');
-      expect(publicAdapter.queryParameters['category'], 'JOURNAL');
-
-      final mineAdapter = _JsonAdapter({
-        'items': [_storyJson('draft')],
-        'total': 1,
-      });
-      final mineApi = StoryApi(
-        apiClient: ApiClient(
-          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
-            ..httpClientAdapter = mineAdapter,
-          secureStorage: _FakeSecureStorage(),
-        ),
-      );
-
-      await mineApi.listMyStoriesPage(formats: const ['ARTICLE']);
-
-      expect(mineAdapter.requestPath, '/api/v1/stories/mine');
-      expect(mineAdapter.queryParameters['format'], 'ARTICLE');
-    },
-  );
-}
-
-Map<String, Object?> _storyJson(String id) {
-  return {
-    'id': id,
-    'slug': 'story-$id',
-    'title': 'Story $id',
-    'excerpt': 'Excerpt',
-    'category': 'JOURNAL',
-    'status': 'PUBLISHED',
-    'tags': const <String>[],
-    'stats': const <String, int>{},
-    'author': {
-      'userId': 'author-$id',
-      'locale': 'en',
-      'timezone': 'Asia/Almaty',
-    },
-    'likedByViewer': false,
-    'shareUrl': '',
-    'createdAt': '2026-05-10T00:00:00Z',
-    'updatedAt': '2026-05-10T00:00:00Z',
-  };
-}
-
-Map<String, Object?> _commentJson(String id) {
-  return {
-    'id': id,
-    'storyId': 'story-one',
-    'body': 'Comment $id',
-    'likes': 0,
-    'likedByMe': false,
-    'shareUrl': '',
-    'author': {
-      'userId': 'author-$id',
-      'locale': 'en',
-      'timezone': 'Asia/Almaty',
-    },
-    'createdAt': '2026-05-10T00:00:00Z',
-    'updatedAt': '2026-05-10T00:00:00Z',
-  };
-}
-
-class _FakeSecureStorage extends SecureStorage {
-  @override
-  Future<String?> getAccessToken() async => 'access-token';
-
-  @override
-  Future<String?> getRefreshToken() async => null;
-}
-
-class _EmptySecureStorage extends SecureStorage {
-  @override
-  Future<String?> getAccessToken() async => null;
-
-  @override
-  Future<String?> getRefreshToken() async => null;
+    expect(page.items.single.id, 'active-circle-one');
+    expect(page.limit, 8);
+    expect(page.offset, 16);
+    expect(page.hasMore, isFalse);
+    expect(adapter.method, 'GET');
+    expect(adapter.requestPath, '/api/v1/stories/mine/active');
+    expect(adapter.queryParameters['limit'], '8');
+    expect(adapter.queryParameters['offset'], '16');
+    expect(adapter.requiresAuth, isTrue);
+  });
 }
 
 class _JsonAdapter implements HttpClientAdapter {
   _JsonAdapter(this.payload);
 
   final Map<String, Object?> payload;
+  String? method;
   String? requestPath;
+  String? requestBody;
   Map<String, String> queryParameters = const {};
   bool? requiresAuth;
 
@@ -365,9 +194,17 @@ class _JsonAdapter implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
+    method = options.method;
     requestPath = options.uri.path;
     queryParameters = options.uri.queryParameters;
     requiresAuth = options.extra['requiresAuth'] as bool?;
+    if (requestStream != null) {
+      final buffer = BytesBuilder();
+      await for (final chunk in requestStream) {
+        buffer.add(chunk);
+      }
+      requestBody = utf8.decode(buffer.takeBytes());
+    }
     return ResponseBody.fromString(
       jsonEncode(payload),
       200,
@@ -379,4 +216,12 @@ class _JsonAdapter implements HttpClientAdapter {
 
   @override
   void close({bool force = false}) {}
+}
+
+class _FakeSecureStorage extends SecureStorage {
+  @override
+  Future<String?> getAccessToken() async => 'access-token';
+
+  @override
+  Future<String?> getRefreshToken() async => null;
 }

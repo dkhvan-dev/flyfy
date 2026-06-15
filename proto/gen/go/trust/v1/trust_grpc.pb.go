@@ -22,6 +22,9 @@ const (
 	TrustService_CheckActionPolicy_FullMethodName         = "/trust.v1.TrustService/CheckActionPolicy"
 	TrustService_ApplyUserRestrictionEvent_FullMethodName = "/trust.v1.TrustService/ApplyUserRestrictionEvent"
 	TrustService_GetTrustProfile_FullMethodName           = "/trust.v1.TrustService/GetTrustProfile"
+	TrustService_SubmitRestrictionAppeal_FullMethodName   = "/trust.v1.TrustService/SubmitRestrictionAppeal"
+	TrustService_ListRestrictionAppeals_FullMethodName    = "/trust.v1.TrustService/ListRestrictionAppeals"
+	TrustService_DecideRestrictionAppeal_FullMethodName   = "/trust.v1.TrustService/DecideRestrictionAppeal"
 )
 
 // TrustServiceClient is the client API for TrustService service.
@@ -31,6 +34,9 @@ type TrustServiceClient interface {
 	CheckActionPolicy(ctx context.Context, in *CheckActionPolicyRequest, opts ...grpc.CallOption) (*CheckActionPolicyResponse, error)
 	ApplyUserRestrictionEvent(ctx context.Context, in *ApplyUserRestrictionEventRequest, opts ...grpc.CallOption) (*ApplyUserRestrictionEventResponse, error)
 	GetTrustProfile(ctx context.Context, in *GetTrustProfileRequest, opts ...grpc.CallOption) (*GetTrustProfileResponse, error)
+	SubmitRestrictionAppeal(ctx context.Context, in *SubmitRestrictionAppealRequest, opts ...grpc.CallOption) (*SubmitRestrictionAppealResponse, error)
+	ListRestrictionAppeals(ctx context.Context, in *ListRestrictionAppealsRequest, opts ...grpc.CallOption) (*ListRestrictionAppealsResponse, error)
+	DecideRestrictionAppeal(ctx context.Context, in *DecideRestrictionAppealRequest, opts ...grpc.CallOption) (*DecideRestrictionAppealResponse, error)
 }
 
 type trustServiceClient struct {
@@ -71,6 +77,36 @@ func (c *trustServiceClient) GetTrustProfile(ctx context.Context, in *GetTrustPr
 	return out, nil
 }
 
+func (c *trustServiceClient) SubmitRestrictionAppeal(ctx context.Context, in *SubmitRestrictionAppealRequest, opts ...grpc.CallOption) (*SubmitRestrictionAppealResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SubmitRestrictionAppealResponse)
+	err := c.cc.Invoke(ctx, TrustService_SubmitRestrictionAppeal_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *trustServiceClient) ListRestrictionAppeals(ctx context.Context, in *ListRestrictionAppealsRequest, opts ...grpc.CallOption) (*ListRestrictionAppealsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListRestrictionAppealsResponse)
+	err := c.cc.Invoke(ctx, TrustService_ListRestrictionAppeals_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *trustServiceClient) DecideRestrictionAppeal(ctx context.Context, in *DecideRestrictionAppealRequest, opts ...grpc.CallOption) (*DecideRestrictionAppealResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DecideRestrictionAppealResponse)
+	err := c.cc.Invoke(ctx, TrustService_DecideRestrictionAppeal_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TrustServiceServer is the server API for TrustService service.
 // All implementations must embed UnimplementedTrustServiceServer
 // for forward compatibility.
@@ -78,6 +114,9 @@ type TrustServiceServer interface {
 	CheckActionPolicy(context.Context, *CheckActionPolicyRequest) (*CheckActionPolicyResponse, error)
 	ApplyUserRestrictionEvent(context.Context, *ApplyUserRestrictionEventRequest) (*ApplyUserRestrictionEventResponse, error)
 	GetTrustProfile(context.Context, *GetTrustProfileRequest) (*GetTrustProfileResponse, error)
+	SubmitRestrictionAppeal(context.Context, *SubmitRestrictionAppealRequest) (*SubmitRestrictionAppealResponse, error)
+	ListRestrictionAppeals(context.Context, *ListRestrictionAppealsRequest) (*ListRestrictionAppealsResponse, error)
+	DecideRestrictionAppeal(context.Context, *DecideRestrictionAppealRequest) (*DecideRestrictionAppealResponse, error)
 	mustEmbedUnimplementedTrustServiceServer()
 }
 
@@ -96,6 +135,15 @@ func (UnimplementedTrustServiceServer) ApplyUserRestrictionEvent(context.Context
 }
 func (UnimplementedTrustServiceServer) GetTrustProfile(context.Context, *GetTrustProfileRequest) (*GetTrustProfileResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetTrustProfile not implemented")
+}
+func (UnimplementedTrustServiceServer) SubmitRestrictionAppeal(context.Context, *SubmitRestrictionAppealRequest) (*SubmitRestrictionAppealResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SubmitRestrictionAppeal not implemented")
+}
+func (UnimplementedTrustServiceServer) ListRestrictionAppeals(context.Context, *ListRestrictionAppealsRequest) (*ListRestrictionAppealsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListRestrictionAppeals not implemented")
+}
+func (UnimplementedTrustServiceServer) DecideRestrictionAppeal(context.Context, *DecideRestrictionAppealRequest) (*DecideRestrictionAppealResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DecideRestrictionAppeal not implemented")
 }
 func (UnimplementedTrustServiceServer) mustEmbedUnimplementedTrustServiceServer() {}
 func (UnimplementedTrustServiceServer) testEmbeddedByValue()                      {}
@@ -172,6 +220,60 @@ func _TrustService_GetTrustProfile_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TrustService_SubmitRestrictionAppeal_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SubmitRestrictionAppealRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TrustServiceServer).SubmitRestrictionAppeal(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TrustService_SubmitRestrictionAppeal_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TrustServiceServer).SubmitRestrictionAppeal(ctx, req.(*SubmitRestrictionAppealRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TrustService_ListRestrictionAppeals_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListRestrictionAppealsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TrustServiceServer).ListRestrictionAppeals(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TrustService_ListRestrictionAppeals_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TrustServiceServer).ListRestrictionAppeals(ctx, req.(*ListRestrictionAppealsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TrustService_DecideRestrictionAppeal_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DecideRestrictionAppealRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TrustServiceServer).DecideRestrictionAppeal(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TrustService_DecideRestrictionAppeal_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TrustServiceServer).DecideRestrictionAppeal(ctx, req.(*DecideRestrictionAppealRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TrustService_ServiceDesc is the grpc.ServiceDesc for TrustService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -190,6 +292,18 @@ var TrustService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTrustProfile",
 			Handler:    _TrustService_GetTrustProfile_Handler,
+		},
+		{
+			MethodName: "SubmitRestrictionAppeal",
+			Handler:    _TrustService_SubmitRestrictionAppeal_Handler,
+		},
+		{
+			MethodName: "ListRestrictionAppeals",
+			Handler:    _TrustService_ListRestrictionAppeals_Handler,
+		},
+		{
+			MethodName: "DecideRestrictionAppeal",
+			Handler:    _TrustService_DecideRestrictionAppeal_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

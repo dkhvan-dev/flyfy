@@ -12,7 +12,11 @@ const (
 
 type RoutePolicy struct {
 	Name               string
+	Method             string
 	Prefix             string
+	ExactPath          string
+	PathContains       string
+	PathSuffix         string
 	AuthMode           RouteAuthMode
 	RequiredRoles      []string
 	Upstream           string
@@ -32,7 +36,13 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 	filesLimit := 180
 	activityLimit := 180
 	guideLimit := 180
-	storiesLimit := 180
+	storiesReadLimit := 120
+	storyCreateLimit := 10
+	storyAutosaveLimit := 60
+	storyActionLimit := 60
+	trustAppealLimit := 10
+	storyCommentLimit := 20
+	communityAdminLimit := 30
 	attractionLimit := 180
 	chatLimit := 300
 	paymentLimit := 180
@@ -290,20 +300,271 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			RewritePrefix:      "/v1/sticker-packs",
 		},
 		{
-			Name:               "public-stories",
-			Prefix:             apiPrefix + "/public/stories/",
+			Name:               "public-posts",
+			Prefix:             apiPrefix + "/public/posts/",
 			AuthMode:           RouteAuthPublic,
-			Upstream:           "stories",
-			RateLimitPerMinute: &storiesLimit,
-			RewritePrefix:      "/v1/public/stories/",
+			Upstream:           "feed",
+			RateLimitPerMinute: &storiesReadLimit,
+			RewritePrefix:      "/v1/public/posts/",
 		},
 		{
-			Name:               "stories",
-			Prefix:             apiPrefix + "/stories",
+			Name:               "posts-autosave",
+			Method:             "POST",
+			Prefix:             apiPrefix + "/posts/",
+			PathSuffix:         "/autosave",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "feed",
+			RateLimitPerMinute: &storyAutosaveLimit,
+			RewritePrefix:      "/v1/posts/",
+		},
+		{
+			Name:               "posts-likes",
+			Method:             "POST",
+			Prefix:             apiPrefix + "/posts/",
+			PathSuffix:         "/likes",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "feed",
+			RateLimitPerMinute: &storyActionLimit,
+			RewritePrefix:      "/v1/posts/",
+		},
+		{
+			Name:               "posts-likes",
+			Method:             "DELETE",
+			Prefix:             apiPrefix + "/posts/",
+			PathSuffix:         "/likes",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "feed",
+			RateLimitPerMinute: &storyActionLimit,
+			RewritePrefix:      "/v1/posts/",
+		},
+		{
+			Name:               "posts-comments",
+			Method:             "GET",
+			Prefix:             apiPrefix + "/posts/",
+			PathSuffix:         "/comments",
 			AuthMode:           RouteAuthPublic,
-			Upstream:           "stories",
-			RateLimitPerMinute: &storiesLimit,
+			Upstream:           "feed",
+			RateLimitPerMinute: &storyCommentLimit,
+			RewritePrefix:      "/v1/posts/",
+		},
+		{
+			Name:               "posts-comments",
+			Method:             "POST",
+			Prefix:             apiPrefix + "/posts/",
+			PathSuffix:         "/comments",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "feed",
+			RateLimitPerMinute: &storyCommentLimit,
+			RewritePrefix:      "/v1/posts/",
+		},
+		{
+			Name:               "posts-share",
+			Method:             "POST",
+			Prefix:             apiPrefix + "/posts/",
+			PathSuffix:         "/share",
+			AuthMode:           RouteAuthPublic,
+			Upstream:           "feed",
+			RateLimitPerMinute: &storyActionLimit,
+			RewritePrefix:      "/v1/posts/",
+		},
+		{
+			Name:               "posts-views",
+			Method:             "POST",
+			Prefix:             apiPrefix + "/posts/",
+			PathSuffix:         "/views",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "feed",
+			RateLimitPerMinute: &storyActionLimit,
+			RewritePrefix:      "/v1/posts/",
+		},
+		{
+			Name:               "posts-create",
+			Method:             "POST",
+			Prefix:             apiPrefix + "/posts",
+			ExactPath:          apiPrefix + "/posts",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "feed",
+			RateLimitPerMinute: &storyCreateLimit,
+			RewritePrefix:      "/v1/posts",
+		},
+		{
+			Name:               "posts",
+			Prefix:             apiPrefix + "/posts",
+			AuthMode:           RouteAuthPublic,
+			Upstream:           "feed",
+			RateLimitPerMinute: &storiesReadLimit,
+			RewritePrefix:      "/v1/posts",
+		},
+		{
+			Name:               "stories-seen",
+			Method:             "POST",
+			Prefix:             apiPrefix + "/stories/",
+			PathSuffix:         "/seen",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "feed",
+			RateLimitPerMinute: &storyActionLimit,
+			RewritePrefix:      "/v1/stories/",
+		},
+		{
+			Name:               "stories-likes",
+			Method:             "POST",
+			Prefix:             apiPrefix + "/stories/",
+			PathSuffix:         "/likes",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "feed",
+			RateLimitPerMinute: &storyActionLimit,
+			RewritePrefix:      "/v1/stories/",
+		},
+		{
+			Name:               "stories-mine-active",
+			Method:             "GET",
+			Prefix:             apiPrefix + "/stories/mine/active",
+			ExactPath:          apiPrefix + "/stories/mine/active",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "feed",
+			RateLimitPerMinute: &storiesReadLimit,
+			RewritePrefix:      "/v1/stories/mine/active",
+		},
+		{
+			Name:               "stories-mine-archive",
+			Method:             "GET",
+			Prefix:             apiPrefix + "/stories/mine/archive",
+			ExactPath:          apiPrefix + "/stories/mine/archive",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "feed",
+			RateLimitPerMinute: &storiesReadLimit,
+			RewritePrefix:      "/v1/stories/mine/archive",
+		},
+		{
+			Name:               "stories-create",
+			Method:             "POST",
+			Prefix:             apiPrefix + "/stories",
+			ExactPath:          apiPrefix + "/stories",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "feed",
+			RateLimitPerMinute: &storyCreateLimit,
 			RewritePrefix:      "/v1/stories",
+		},
+		{
+			Name:               "content-feed-events",
+			Method:             "POST",
+			Prefix:             apiPrefix + "/feed/events",
+			ExactPath:          apiPrefix + "/feed/events",
+			AuthMode:           RouteAuthPublic,
+			Upstream:           "feed",
+			RateLimitPerMinute: &storyActionLimit,
+			RewritePrefix:      "/v1/feed/events",
+		},
+		{
+			Name:               "content-feed",
+			Prefix:             apiPrefix + "/feed",
+			AuthMode:           RouteAuthPublic,
+			Upstream:           "feed",
+			RateLimitPerMinute: &storiesReadLimit,
+			RewritePrefix:      "/v1/feed",
+		},
+		{
+			Name:               "trust-profile",
+			Method:             "GET",
+			Prefix:             apiPrefix + "/trust/profile",
+			ExactPath:          apiPrefix + "/trust/profile",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "trust",
+			RateLimitPerMinute: &storyActionLimit,
+		},
+		{
+			Name:               "trust-appeals-list",
+			Method:             "GET",
+			Prefix:             apiPrefix + "/trust/appeals",
+			ExactPath:          apiPrefix + "/trust/appeals",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "trust",
+			RateLimitPerMinute: &storyActionLimit,
+		},
+		{
+			Name:               "trust-appeals-submit",
+			Method:             "POST",
+			Prefix:             apiPrefix + "/trust/restrictions/",
+			PathSuffix:         "/appeals",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "trust",
+			RateLimitPerMinute: &trustAppealLimit,
+		},
+		{
+			Name:               "community-moderation",
+			Prefix:             apiPrefix + "/communities",
+			PathContains:       "/moderation/posts",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "feed",
+			RateLimitPerMinute: &communityAdminLimit,
+			RewritePrefix:      "/v1/communities",
+		},
+		{
+			Name:               "community-members",
+			Prefix:             apiPrefix + "/communities",
+			PathContains:       "/members",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "feed",
+			RateLimitPerMinute: &communityAdminLimit,
+			RewritePrefix:      "/v1/communities",
+		},
+		{
+			Name:               "communities-follow",
+			Method:             "POST",
+			Prefix:             apiPrefix + "/communities/",
+			PathSuffix:         "/follow",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "feed",
+			RateLimitPerMinute: &storyActionLimit,
+			RewritePrefix:      "/v1/communities/",
+		},
+		{
+			Name:               "communities-follow",
+			Method:             "DELETE",
+			Prefix:             apiPrefix + "/communities/",
+			PathSuffix:         "/follow",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "feed",
+			RateLimitPerMinute: &storyActionLimit,
+			RewritePrefix:      "/v1/communities/",
+		},
+		{
+			Name:               "communities-report",
+			Method:             "POST",
+			Prefix:             apiPrefix + "/communities/",
+			PathSuffix:         "/report",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "feed",
+			RateLimitPerMinute: &storyActionLimit,
+			RewritePrefix:      "/v1/communities/",
+		},
+		{
+			Name:               "communities-mute",
+			Method:             "POST",
+			Prefix:             apiPrefix + "/communities/",
+			PathSuffix:         "/mute",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "feed",
+			RateLimitPerMinute: &storyActionLimit,
+			RewritePrefix:      "/v1/communities/",
+		},
+		{
+			Name:               "communities-mute",
+			Method:             "DELETE",
+			Prefix:             apiPrefix + "/communities/",
+			PathSuffix:         "/mute",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "feed",
+			RateLimitPerMinute: &storyActionLimit,
+			RewritePrefix:      "/v1/communities/",
+		},
+		{
+			Name:               "communities",
+			Prefix:             apiPrefix + "/communities",
+			AuthMode:           RouteAuthPublic,
+			Upstream:           "feed",
+			RateLimitPerMinute: &storiesReadLimit,
+			RewritePrefix:      "/v1/communities",
 		},
 		{
 			Name:               "chat-conversations",
@@ -412,13 +673,37 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 }
 
 func matchRoutePolicy(path string, apiPrefix string) *RoutePolicy {
+	return matchRoutePolicyForMethod("", path, apiPrefix)
+}
+
+func matchRoutePolicyForMethod(method string, path string, apiPrefix string) *RoutePolicy {
 	for _, policy := range routePolicies(apiPrefix) {
-		if pathMatchesPolicyPrefix(path, policy.Prefix) {
+		if pathMatchesPolicy(method, path, policy) {
 			p := policy
 			return &p
 		}
 	}
 	return nil
+}
+
+func pathMatchesPolicy(method string, path string, policy RoutePolicy) bool {
+	if policy.Method != "" && method != "" && !strings.EqualFold(method, policy.Method) {
+		return false
+	}
+	cleanPath := strings.SplitN(path, "?", 2)[0]
+	if policy.ExactPath != "" && cleanPath != policy.ExactPath {
+		return false
+	}
+	if !pathMatchesPolicyPrefix(path, policy.Prefix) {
+		return false
+	}
+	if policy.PathContains != "" && !strings.Contains(cleanPath, policy.PathContains) {
+		return false
+	}
+	if policy.PathSuffix != "" && !strings.HasSuffix(cleanPath, policy.PathSuffix) {
+		return false
+	}
+	return true
 }
 
 func pathMatchesPolicyPrefix(path string, prefix string) bool {

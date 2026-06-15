@@ -192,11 +192,186 @@ func TestGetTrustProfileCreatesDefaultProfile(t *testing.T) {
 	}
 }
 
+func TestSubmitRestrictionAppealCreatesPendingAppealAndMarksProfileUnderReview(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+	restrictionID := uuid.New()
+	now := time.Date(2026, 6, 12, 15, 0, 0, 0, time.UTC)
+	repo := newTrustRepoFake()
+	repo.profiles[userID] = model.TrustProfile{
+		UserID:       userID,
+		Score:        540,
+		Band:         model.TrustBandNormal,
+		Status:       model.TrustStatusRestricted,
+		CalculatedAt: now.Add(-time.Hour),
+		CreatedAt:    now.Add(-time.Hour),
+		UpdatedAt:    now.Add(-time.Hour),
+	}
+	repo.restrictions[userID] = []model.RuntimeRestriction{{
+		ID:              restrictionID,
+		UserID:          userID,
+		RestrictionCode: model.RestrictionCodeChat,
+		Status:          model.RuntimeRestrictionActive,
+		ReasonCode:      "spam_report",
+		SourceEventID:   uuid.New(),
+		CreatedAt:       now.Add(-time.Hour),
+	}}
+	usecase := NewPolicyUseCase(repo)
+	input := model.SubmitRestrictionAppealInput{
+		UserID:         userID,
+		RestrictionID:  restrictionID,
+		ReasonCode:     "mistake",
+		UserMessage:    " Please review this restriction. ",
+		IdempotencyKey: "appeal-chat-1",
+		SubmittedAt:    now,
+	}
+
+	appeal, err := usecase.SubmitRestrictionAppeal(ctx, input)
+	if err != nil {
+		t.Fatalf("SubmitRestrictionAppeal returned error: %v", err)
+	}
+	if appeal.Status != model.RestrictionAppealStatusPending {
+		t.Fatalf("appeal status = %q, want pending", appeal.Status)
+	}
+	if appeal.UserMessage != "Please review this restriction." {
+		t.Fatalf("appeal user message = %q, want trimmed message", appeal.UserMessage)
+	}
+	if repo.profiles[userID].Status != model.TrustStatusUnderReview {
+		t.Fatalf("profile status = %q, want under review", repo.profiles[userID].Status)
+	}
+
+	duplicate, err := usecase.SubmitRestrictionAppeal(ctx, input)
+	if err != nil {
+		t.Fatalf("duplicate SubmitRestrictionAppeal returned error: %v", err)
+	}
+	if duplicate.ID != appeal.ID {
+		t.Fatalf("duplicate appeal id = %s, want %s", duplicate.ID, appeal.ID)
+	}
+	if len(repo.appeals) != 1 {
+		t.Fatalf("appeals = %d, want idempotent single appeal", len(repo.appeals))
+	}
+}
+
+func TestDecideRestrictionAppealApproveLiftsRestrictionAndRestoresActiveProfile(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+	restrictionID := uuid.New()
+	appealID := uuid.New()
+	staffID := uuid.New()
+	now := time.Date(2026, 6, 12, 15, 30, 0, 0, time.UTC)
+	repo := newTrustRepoFake()
+	repo.profiles[userID] = model.TrustProfile{
+		UserID:       userID,
+		Score:        610,
+		Band:         model.TrustBandNormal,
+		Status:       model.TrustStatusUnderReview,
+		CalculatedAt: now.Add(-time.Hour),
+		CreatedAt:    now.Add(-time.Hour),
+		UpdatedAt:    now.Add(-time.Hour),
+	}
+	repo.restrictions[userID] = []model.RuntimeRestriction{{
+		ID:              restrictionID,
+		UserID:          userID,
+		RestrictionCode: model.RestrictionCodeChat,
+		Status:          model.RuntimeRestrictionActive,
+		ReasonCode:      "spam_report",
+		SourceEventID:   uuid.New(),
+		CreatedAt:       now.Add(-time.Hour),
+	}}
+	repo.appeals[appealID] = model.RestrictionAppeal{
+		ID:            appealID,
+		UserID:        userID,
+		RestrictionID: restrictionID,
+		Status:        model.RestrictionAppealStatusPending,
+		ReasonCode:    "mistake",
+		CreatedAt:     now.Add(-time.Minute),
+		UpdatedAt:     now.Add(-time.Minute),
+	}
+	usecase := NewPolicyUseCase(repo)
+
+	appeal, err := usecase.DecideRestrictionAppeal(ctx, model.DecideRestrictionAppealInput{
+		AppealID:        appealID,
+		ActorStaffID:    staffID,
+		Decision:        model.RestrictionAppealDecisionApprove,
+		ReasonCode:      "restriction_mistake",
+		StaffComment:    "Evidence supports the appeal.",
+		DecisionEventID: uuid.New(),
+		DecidedAt:       now,
+	})
+	if err != nil {
+		t.Fatalf("DecideRestrictionAppeal returned error: %v", err)
+	}
+	if appeal.Status != model.RestrictionAppealStatusApproved {
+		t.Fatalf("appeal status = %q, want approved", appeal.Status)
+	}
+	restrictions := repo.restrictions[userID]
+	if restrictions[0].Status != model.RuntimeRestrictionLifted {
+		t.Fatalf("restriction status = %q, want lifted", restrictions[0].Status)
+	}
+	if repo.profiles[userID].Status != model.TrustStatusActive {
+		t.Fatalf("profile status = %q, want active", repo.profiles[userID].Status)
+	}
+}
+
+func TestListRestrictionAppealsFiltersByStatusAndUser(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+	otherUserID := uuid.New()
+	repo := newTrustRepoFake()
+	pendingAppeal := model.RestrictionAppeal{
+		ID:            uuid.New(),
+		UserID:        userID,
+		RestrictionID: uuid.New(),
+		Status:        model.RestrictionAppealStatusPending,
+		ReasonCode:    "mistake",
+		UserMessage:   "Please review.",
+		CreatedAt:     time.Date(2026, 6, 12, 16, 0, 0, 0, time.UTC),
+		UpdatedAt:     time.Date(2026, 6, 12, 16, 0, 0, 0, time.UTC),
+	}
+	repo.appeals[pendingAppeal.ID] = pendingAppeal
+	repo.appeals[uuid.New()] = model.RestrictionAppeal{
+		ID:            uuid.New(),
+		UserID:        userID,
+		RestrictionID: uuid.New(),
+		Status:        model.RestrictionAppealStatusRejected,
+		ReasonCode:    "duplicate",
+		UserMessage:   "Rejected appeal.",
+		CreatedAt:     time.Date(2026, 6, 12, 15, 0, 0, 0, time.UTC),
+		UpdatedAt:     time.Date(2026, 6, 12, 15, 0, 0, 0, time.UTC),
+	}
+	repo.appeals[uuid.New()] = model.RestrictionAppeal{
+		ID:            uuid.New(),
+		UserID:        otherUserID,
+		RestrictionID: uuid.New(),
+		Status:        model.RestrictionAppealStatusPending,
+		ReasonCode:    "mistake",
+		UserMessage:   "Other user appeal.",
+		CreatedAt:     time.Date(2026, 6, 12, 17, 0, 0, 0, time.UTC),
+		UpdatedAt:     time.Date(2026, 6, 12, 17, 0, 0, 0, time.UTC),
+	}
+	usecase := NewPolicyUseCase(repo)
+
+	appeals, err := usecase.ListRestrictionAppeals(ctx, model.ListRestrictionAppealsInput{
+		Status: model.RestrictionAppealStatusPending,
+		UserID: &userID,
+	})
+	if err != nil {
+		t.Fatalf("ListRestrictionAppeals returned error: %v", err)
+	}
+	if len(appeals) != 1 {
+		t.Fatalf("appeals = %d, want one pending appeal for user", len(appeals))
+	}
+	if appeals[0].ID != pendingAppeal.ID {
+		t.Fatalf("appeal id = %s, want %s", appeals[0].ID, pendingAppeal.ID)
+	}
+}
+
 type trustRepoFake struct {
 	profiles     map[uuid.UUID]model.TrustProfile
 	restrictions map[uuid.UUID][]model.RuntimeRestriction
 	events       map[uuid.UUID]struct{}
 	decisions    []model.PolicyDecisionRecord
+	appeals      map[uuid.UUID]model.RestrictionAppeal
 }
 
 func newTrustRepoFake() *trustRepoFake {
@@ -204,6 +379,7 @@ func newTrustRepoFake() *trustRepoFake {
 		profiles:     make(map[uuid.UUID]model.TrustProfile),
 		restrictions: make(map[uuid.UUID][]model.RuntimeRestriction),
 		events:       make(map[uuid.UUID]struct{}),
+		appeals:      make(map[uuid.UUID]model.RestrictionAppeal),
 	}
 }
 
@@ -262,6 +438,17 @@ func (r *trustRepoFake) UpsertRuntimeRestriction(_ context.Context, restriction 
 	return nil
 }
 
+func (r *trustRepoFake) GetRuntimeRestrictionByID(_ context.Context, restrictionID uuid.UUID) (model.RuntimeRestriction, error) {
+	for _, restrictions := range r.restrictions {
+		for _, restriction := range restrictions {
+			if restriction.ID == restrictionID {
+				return restriction, nil
+			}
+		}
+	}
+	return model.RuntimeRestriction{}, port.ErrNotFound
+}
+
 func (r *trustRepoFake) LiftRuntimeRestriction(_ context.Context, restrictionID uuid.UUID, _ uuid.UUID, liftedBy *uuid.UUID, liftedAt time.Time, reasonCode string) error {
 	for userID, restrictions := range r.restrictions {
 		for idx := range restrictions {
@@ -277,4 +464,48 @@ func (r *trustRepoFake) LiftRuntimeRestriction(_ context.Context, restrictionID 
 		}
 	}
 	return errors.New("restriction not found")
+}
+
+func (r *trustRepoFake) CreateRestrictionAppeal(_ context.Context, appeal model.RestrictionAppeal) (model.RestrictionAppeal, error) {
+	if appeal.IdempotencyKey != "" {
+		for _, existing := range r.appeals {
+			if existing.UserID == appeal.UserID &&
+				existing.RestrictionID == appeal.RestrictionID &&
+				existing.IdempotencyKey == appeal.IdempotencyKey {
+				return existing, nil
+			}
+		}
+	}
+	r.appeals[appeal.ID] = appeal
+	return appeal, nil
+}
+
+func (r *trustRepoFake) GetRestrictionAppeal(_ context.Context, appealID uuid.UUID) (model.RestrictionAppeal, error) {
+	appeal, ok := r.appeals[appealID]
+	if !ok {
+		return model.RestrictionAppeal{}, port.ErrNotFound
+	}
+	return appeal, nil
+}
+
+func (r *trustRepoFake) SaveRestrictionAppealDecision(_ context.Context, appeal model.RestrictionAppeal) (model.RestrictionAppeal, error) {
+	if _, ok := r.appeals[appeal.ID]; !ok {
+		return model.RestrictionAppeal{}, port.ErrNotFound
+	}
+	r.appeals[appeal.ID] = appeal
+	return appeal, nil
+}
+
+func (r *trustRepoFake) ListRestrictionAppeals(_ context.Context, input model.ListRestrictionAppealsInput) ([]model.RestrictionAppeal, error) {
+	var appeals []model.RestrictionAppeal
+	for _, appeal := range r.appeals {
+		if input.Status != "" && appeal.Status != input.Status {
+			continue
+		}
+		if input.UserID != nil && appeal.UserID != *input.UserID {
+			continue
+		}
+		appeals = append(appeals, appeal)
+	}
+	return appeals, nil
 }

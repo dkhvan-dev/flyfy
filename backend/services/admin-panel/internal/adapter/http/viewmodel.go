@@ -85,6 +85,8 @@ type ModerationQueueItemView struct {
 	Activity         *model.ActivityModerationItem
 	GuideApplication *model.GuideApplicationModerationItem
 	ChatMessage      *model.ChatMessageModerationItem
+	Post             *model.PostModerationItem
+	PostReport       *model.PostReportModerationItem
 	TargetTitle      string
 	TargetSubtitle   string
 	GuideName        string
@@ -111,6 +113,27 @@ type FraudBlockListViewData struct {
 	ReviewBaseURL string
 	TitleKey      string
 	EmptyKey      string
+}
+
+type FeedQualityFilterViewData struct {
+	Surface string
+	Window  string
+	Query   string
+}
+
+type FeedQualityDashboardViewData struct {
+	Page     app.FeedQualityDashboardPage
+	Filters  FeedQualityFilterViewData
+	Items    []FeedQualityMetricView
+	ResetURL string
+}
+
+type FeedQualityMetricView struct {
+	Item                model.FeedQualityMetric
+	NegativeFeedback    int64
+	ConversionRateBasis int64
+	ConversionRateText  string
+	NegativeRateText    string
 }
 
 type FraudBlockView struct {
@@ -178,6 +201,119 @@ type AttractionFormViewData struct {
 	Currencies           []AttractionOptionView
 	AccessCityOptions    []AttractionCityLinkOptionView
 	DepartureCityOptions []AttractionCityLinkOptionView
+}
+
+type CommunityFormViewData struct {
+	Input           CommunityFormInput
+	Item            *model.AdminCommunity
+	IsEdit          bool
+	SubmitURL       string
+	Locales         []AttractionOptionView
+	SlugOptions     []AttractionOptionView
+	Topics          []AttractionOptionView
+	Visibilities    []AttractionOptionView
+	PostingPolicies []AttractionOptionView
+	Statuses        []AttractionOptionView
+	Countries       []AttractionOptionView
+	Cities          []AttractionOptionView
+}
+
+type CommunityPlatformViewData struct {
+	Catalog                      model.CommunityPlatformCatalog
+	Filters                      CommunityPlatformFilterViewData
+	PostProfiles                 []CommunityPostProfileView
+	Blueprints                   []CommunityBlueprintView
+	GeoHubs                      []CommunityGeoHubView
+	Instances                    []CommunityInstanceView
+	ScopeOptions                 []AttractionOptionView
+	Countries                    []AttractionOptionView
+	Cities                       []AttractionOptionView
+	BlueprintCategoryFilters     []CommunityTableFilterOption
+	BlueprintStatusFilters       []CommunityTableFilterOption
+	GeoHubTierFilters            []CommunityTableFilterOption
+	GeoHubMaterializationFilters []CommunityTableFilterOption
+	InstanceScopeFilters         []CommunityTableFilterOption
+	InstanceStatusFilters        []CommunityTableFilterOption
+	PostProfileKindFilters       []CommunityTableFilterOption
+	PostProfileModeFilters       []CommunityTableFilterOption
+	MaterializeActionURL         string
+	CreateCommunityURL           string
+	ResetURL                     string
+}
+
+type CommunityPlatformFilterViewData struct {
+	CountryCode string
+	CityID      string
+	ScopeType   string
+	Search      string
+	Limit       int
+	Offset      int
+	Query       string
+}
+
+const maxCommunityPlatformPageSize = 500
+
+type CommunityPostProfileView struct {
+	Item                     model.CommunityPostProfile
+	KeyText                  string
+	PostKindText             string
+	ComposerPresetText       string
+	RenderPresetText         string
+	ModerationModeText       string
+	ActivityCreationModeText string
+	Meta                     string
+}
+
+type CommunityBlueprintView struct {
+	Item                      model.CommunityBlueprint
+	Title                     string
+	Description               string
+	CategoryText              string
+	DefaultPostProfileText    string
+	AllowedPostProfilesText   string
+	EnabledTabsText           string
+	SubcategoriesText         string
+	PromotionSegmentsText     string
+	RolloutPolicyText         string
+	DefaultModerationModeText string
+	AllowedScopesText         string
+}
+
+type CommunityGeoHubView struct {
+	Item          model.CommunityGeoHub
+	LocationText  string
+	EffectiveText string
+	ParentText    string
+	HubTierText   string
+	ReasonText    string
+}
+
+type CommunityInstanceView struct {
+	Item         model.CommunityInstance
+	Title        string
+	LocationText string
+	ScopeText    string
+}
+
+type CommunityTableFilterOption struct {
+	Value string
+	Text  string
+}
+
+type CommunityFormInput struct {
+	ID              string
+	Slug            string
+	TitleI18n       map[string]string
+	DescriptionI18n map[string]string
+	RulesTextI18n   map[string]string
+	Topic           string
+	CityID          string
+	CountryCode     string
+	AvatarFileID    string
+	CoverFileID     string
+	Visibility      string
+	PostingPolicy   string
+	Status          string
 }
 
 type AttractionOptionView struct {
@@ -288,6 +424,37 @@ type UserManualRestrictionView struct {
 	LiftURL string
 }
 
+type TrustAppealFilterViewData struct {
+	Status    string
+	Search    string
+	PageSize  int
+	PageToken string
+	Query     string
+}
+
+type TrustAppealListViewData struct {
+	Items       []TrustAppealItemView
+	Filters     TrustAppealFilterViewData
+	NextPageURL string
+	ResetURL    string
+	CanDecide   bool
+}
+
+type TrustAppealItemView struct {
+	Item      model.TrustRestrictionAppeal
+	DetailURL string
+	UserURL   string
+}
+
+type TrustAppealDetailViewData struct {
+	Item         model.TrustRestrictionAppeal
+	ListURL      string
+	ApproveURL   string
+	RejectURL    string
+	CanDecide    bool
+	IsActionable bool
+}
+
 func NewStaffListViewData(actor *model.StaffUser, staff []*model.StaffUser, temporaryPassword ...string) StaffListViewData {
 	value := ""
 	if len(temporaryPassword) > 0 {
@@ -342,6 +509,51 @@ func NewAuditViewData(locale string, events []*model.AuditEvent) AuditViewData {
 		items = append(items, newAuditEventView(locale, event))
 	}
 	return AuditViewData{Events: events, Items: items}
+}
+
+func NewTrustAppealListViewData(
+	page model.TrustRestrictionAppealListPage,
+	filters TrustAppealFilterViewData,
+	staff *model.StaffUser,
+) TrustAppealListViewData {
+	filters = normalizeTrustAppealFilter(filters)
+	items := make([]TrustAppealItemView, 0, len(page.Items))
+	for _, item := range page.Items {
+		items = append(items, TrustAppealItemView{
+			Item:      item,
+			DetailURL: trustAppealDetailURL(item.ID, filters.Query),
+			UserURL:   adminUserDetailURL(item.UserID),
+		})
+	}
+	nextPageURL := ""
+	if strings.TrimSpace(page.NextPageToken) != "" {
+		nextFilters := filters
+		nextFilters.PageToken = page.NextPageToken
+		nextPageURL = trustAppealListURL(nextFilters)
+	}
+	return TrustAppealListViewData{
+		Items:       items,
+		Filters:     filters,
+		NextPageURL: nextPageURL,
+		ResetURL:    "/admin/trust/appeals",
+		CanDecide:   staff != nil && staff.HasPermission(enum.PermissionUsersRestrict),
+	}
+}
+
+func NewTrustAppealDetailViewData(
+	item model.TrustRestrictionAppeal,
+	filters TrustAppealFilterViewData,
+	staff *model.StaffUser,
+) TrustAppealDetailViewData {
+	filters = normalizeTrustAppealFilter(filters)
+	return TrustAppealDetailViewData{
+		Item:         item,
+		ListURL:      trustAppealListURL(filters),
+		ApproveURL:   trustAppealDecisionURL(item.ID, "approve", filters.Query),
+		RejectURL:    trustAppealDecisionURL(item.ID, "reject", filters.Query),
+		CanDecide:    staff != nil && staff.HasPermission(enum.PermissionUsersRestrict),
+		IsActionable: item.Status == model.TrustRestrictionAppealStatusOpen,
+	}
 }
 
 func NewAdminUsersListViewData(
@@ -440,6 +652,63 @@ func NewFraudBlockListViewData(target model.FraudBlockTarget, blocks []model.Fra
 	}
 }
 
+func NewFeedQualityDashboardViewData(
+	page app.FeedQualityDashboardPage,
+	filters FeedQualityFilterViewData,
+) FeedQualityDashboardViewData {
+	filters = normalizeFeedQualityFilterView(filters)
+	items := make([]FeedQualityMetricView, 0, len(page.Metrics))
+	for _, item := range page.Metrics {
+		items = append(items, newFeedQualityMetricView(item))
+	}
+	return FeedQualityDashboardViewData{
+		Page:     page,
+		Filters:  filters,
+		Items:    items,
+		ResetURL: "/admin/feed-quality",
+	}
+}
+
+func newFeedQualityMetricView(item model.FeedQualityMetric) FeedQualityMetricView {
+	basis := item.EventCount
+	return FeedQualityMetricView{
+		Item:                item,
+		NegativeFeedback:    item.NegativeFeedbackCount(),
+		ConversionRateBasis: basis,
+		ConversionRateText:  percentText(item.ConversionCount, basis),
+		NegativeRateText:    percentText(item.NegativeFeedbackCount(), basis),
+	}
+}
+
+func normalizeFeedQualityFilterView(filters FeedQualityFilterViewData) FeedQualityFilterViewData {
+	filters.Surface = strings.ToLower(strings.TrimSpace(filters.Surface))
+	if filters.Surface != "home" && filters.Surface != "content" {
+		filters.Surface = ""
+	}
+	switch strings.ToLower(strings.TrimSpace(filters.Window)) {
+	case "24h", "30d":
+		filters.Window = strings.ToLower(strings.TrimSpace(filters.Window))
+	default:
+		filters.Window = "7d"
+	}
+	values := url.Values{}
+	if filters.Surface != "" {
+		values.Set("surface", filters.Surface)
+	}
+	if filters.Window != "" && filters.Window != "7d" {
+		values.Set("window", filters.Window)
+	}
+	filters.Query = values.Encode()
+	return filters
+}
+
+func percentText(numerator int64, denominator int64) string {
+	if denominator <= 0 {
+		return "0.0%"
+	}
+	return fmt.Sprintf("%.1f%%", float64(numerator)*100/float64(denominator))
+}
+
 func NewCaseDetailViewData(detail *app.ModerationCaseDetail, returnQuery string) CaseDetailViewData {
 	returnQuery = strings.TrimSpace(returnQuery)
 	queueURL := queueURLWithQuery(queueBaseURL(caseDetailTargetType(detail)), returnQuery)
@@ -514,6 +783,552 @@ func NewAttractionFormViewData(item *model.AdminAttraction, input model.Attracti
 		AccessCityOptions:    attractionCityLinkOptions(input.AccessCities, input.CountryCode),
 		DepartureCityOptions: attractionCityLinkOptions(input.DepartureCities, input.CountryCode),
 	}
+}
+
+var communityFormLocales = []string{"ru", "en", "kk"}
+
+func NewCommunityPlatformViewData(
+	catalog model.CommunityPlatformCatalog,
+	filters CommunityPlatformFilterViewData,
+	localeArg ...string,
+) CommunityPlatformViewData {
+	filters = normalizeCommunityPlatformFilters(filters)
+	locale := firstCommunityLocale(localeArg...)
+	postProfiles := make([]CommunityPostProfileView, 0, len(catalog.PostProfiles))
+	for _, item := range catalog.PostProfiles {
+		keyText := communityCodeText(locale, "community.postProfile.", item.Key)
+		postKindText := communityCodeText(locale, "community.postKind.", item.PostKind)
+		moderationModeText := communityCodeText(locale, "community.moderationMode.", item.ModerationMode)
+		activityCreationModeText := communityCodeText(locale, "community.activityCreationMode.", item.ActivityCreationMode)
+		postProfiles = append(postProfiles, CommunityPostProfileView{
+			Item:                     item,
+			KeyText:                  keyText,
+			PostKindText:             postKindText,
+			ComposerPresetText:       communityCodeText(locale, "community.composerPreset.", item.ComposerPreset),
+			RenderPresetText:         communityCodeText(locale, "community.renderPreset.", item.RenderPreset),
+			ModerationModeText:       moderationModeText,
+			ActivityCreationModeText: activityCreationModeText,
+			Meta: strings.Trim(strings.Join([]string{
+				postKindText,
+				moderationModeText,
+				activityCreationModeText,
+			}, " · "), " ·"),
+		})
+	}
+	blueprints := make([]CommunityBlueprintView, 0, len(catalog.Blueprints))
+	for _, item := range catalog.Blueprints {
+		blueprints = append(blueprints, CommunityBlueprintView{
+			Item:                      item,
+			Title:                     localizedCommunityText(item.TitleI18n, locale),
+			Description:               localizedCommunityText(item.DescriptionI18n, locale),
+			CategoryText:              communityCodeText(locale, "community.category.", item.Category),
+			DefaultPostProfileText:    communityCodeText(locale, "community.postProfile.", item.DefaultPostProfileKey),
+			AllowedPostProfilesText:   communityCodeListText(locale, "community.postProfile.", item.AllowedPostProfileKeys),
+			EnabledTabsText:           communityCodeListText(locale, "community.tab.", item.EnabledTabs),
+			SubcategoriesText:         communityCodeListText(locale, "community.subcategory.", item.SubcategoryKeys),
+			PromotionSegmentsText:     communityCodeListText(locale, "community.promotionSegment.", item.PromotionSegmentKeys),
+			RolloutPolicyText:         communityCodeText(locale, "community.rolloutPolicy.", item.RolloutPolicy),
+			DefaultModerationModeText: communityCodeText(locale, "community.moderationMode.", item.DefaultModerationMode),
+			AllowedScopesText:         communityScopeListText(locale, item.AllowedScopeTypes),
+		})
+	}
+	geoHubs := make([]CommunityGeoHubView, 0, len(catalog.GeoHubs))
+	for _, item := range catalog.GeoHubs {
+		geoHubs = append(geoHubs, CommunityGeoHubView{
+			Item:          item,
+			LocationText:  communityLocationText(locale, item.CountryCode, item.CityID),
+			EffectiveText: communityLocationText(locale, item.EffectiveCountry, item.EffectiveCityID),
+			ParentText:    communityOptionalLocationText(locale, item.ParentCountryCode, item.ParentCityID),
+			HubTierText:   communityCodeText(locale, "community.hubTier.", item.HubTier),
+			ReasonText:    communityCodeText(locale, "community.geoHubReason.", item.Reason),
+		})
+	}
+	instances := make([]CommunityInstanceView, 0, len(catalog.Instances))
+	for _, item := range catalog.Instances {
+		cityID := ""
+		if item.CityID != nil {
+			cityID = *item.CityID
+		}
+		locationText := communityLocationText(locale, item.CountryCode, cityID)
+		instances = append(instances, CommunityInstanceView{
+			Item:         item,
+			Title:        communityInstanceTitleText(localizedCommunityText(item.TitleI18n, locale), locationText),
+			LocationText: locationText,
+			ScopeText:    communityScopeText(locale, item.ScopeType),
+		})
+	}
+	return CommunityPlatformViewData{
+		Catalog:                      catalog,
+		Filters:                      filters,
+		PostProfiles:                 postProfiles,
+		Blueprints:                   blueprints,
+		GeoHubs:                      geoHubs,
+		Instances:                    instances,
+		ScopeOptions:                 communityScopeOptions(filters.ScopeType),
+		Countries:                    attractionCountryFilterOptions(filters.CountryCode),
+		Cities:                       attractionCityFilterOptions(filters.CityID),
+		BlueprintCategoryFilters:     communityBlueprintCategoryFilters(blueprints),
+		BlueprintStatusFilters:       communityBlueprintStatusFilters(locale, blueprints),
+		GeoHubTierFilters:            communityGeoHubTierFilters(geoHubs),
+		GeoHubMaterializationFilters: communityGeoHubMaterializationFilters(locale, geoHubs),
+		InstanceScopeFilters:         communityInstanceScopeFilters(instances),
+		InstanceStatusFilters:        communityInstanceStatusFilters(locale, instances),
+		PostProfileKindFilters:       communityPostProfileKindFilters(postProfiles),
+		PostProfileModeFilters:       communityPostProfileModeFilters(postProfiles),
+		MaterializeActionURL:         "/admin/communities/materialize",
+		CreateCommunityURL:           "/admin/communities/new",
+		ResetURL:                     "/admin/communities",
+	}
+}
+
+func NewCommunityFormViewData(input CommunityFormInput, items ...*model.AdminCommunity) CommunityFormViewData {
+	var item *model.AdminCommunity
+	if len(items) > 0 {
+		item = items[0]
+	}
+	isEdit := item != nil && item.ID != uuid.Nil
+	if isEdit && strings.TrimSpace(input.Slug) == "" {
+		input = communityFormInputFromItem(item)
+	}
+	if isEdit {
+		input.ID = item.ID.String()
+	}
+	input.Slug = strings.TrimSpace(input.Slug)
+	input.Topic = strings.ToUpper(strings.TrimSpace(input.Topic))
+	if input.Topic == "" {
+		input.Topic = "GENERAL"
+	}
+	input.CountryCode = strings.ToUpper(strings.TrimSpace(input.CountryCode))
+	input.Visibility = strings.ToUpper(strings.TrimSpace(input.Visibility))
+	if input.Visibility == "" {
+		input.Visibility = "PUBLIC"
+	}
+	input.PostingPolicy = strings.ToUpper(strings.TrimSpace(input.PostingPolicy))
+	if input.PostingPolicy == "" {
+		input.PostingPolicy = "MEMBERS_AFTER_MODERATION"
+	}
+	input.Status = strings.ToUpper(strings.TrimSpace(input.Status))
+	if input.Status == "" {
+		input.Status = "ACTIVE"
+	}
+	input.TitleI18n = normalizeCommunityFormTextMap(input.TitleI18n)
+	input.DescriptionI18n = normalizeCommunityFormTextMap(input.DescriptionI18n)
+	input.RulesTextI18n = normalizeCommunityFormTextMap(input.RulesTextI18n)
+	submitURL := "/admin/communities"
+	if isEdit {
+		submitURL = "/admin/communities/" + item.ID.String()
+	}
+	return CommunityFormViewData{
+		Input:           input,
+		Item:            item,
+		IsEdit:          isEdit,
+		SubmitURL:       submitURL,
+		Locales:         communityLocaleOptions(),
+		SlugOptions:     communitySlugOptions(input.Slug),
+		Topics:          communityOptionViews(input.Topic, communityTopicOptions()),
+		Visibilities:    communityOptionViews(input.Visibility, map[string]string{"PUBLIC": "community.visibility.PUBLIC", "HIDDEN": "community.visibility.HIDDEN", "INVITE_ONLY": "community.visibility.INVITE_ONLY"}),
+		PostingPolicies: communityOptionViews(input.PostingPolicy, map[string]string{"ADMINS_ONLY": "community.postingPolicy.ADMINS_ONLY", "MEMBERS_AFTER_MODERATION": "community.postingPolicy.MEMBERS_AFTER_MODERATION", "TRUSTED_MEMBERS": "community.postingPolicy.TRUSTED_MEMBERS", "OPEN_MEMBERS": "community.postingPolicy.OPEN_MEMBERS"}),
+		Statuses:        communityOptionViews(input.Status, map[string]string{"ACTIVE": "community.status.ACTIVE", "ARCHIVED": "community.status.ARCHIVED", "HIDDEN": "community.status.HIDDEN"}),
+		Countries:       attractionCountryFilterOptions(input.CountryCode),
+		Cities:          attractionCityFilterOptions(input.CityID),
+	}
+}
+
+func communityFormInputFromItem(item *model.AdminCommunity) CommunityFormInput {
+	if item == nil {
+		return CommunityFormInput{}
+	}
+	cityID := ""
+	if item.CityID != nil {
+		cityID = *item.CityID
+	}
+	countryCode := ""
+	if item.CountryCode != nil {
+		countryCode = *item.CountryCode
+	}
+	avatarFileID := ""
+	if item.AvatarFileID != nil {
+		avatarFileID = item.AvatarFileID.String()
+	}
+	coverFileID := ""
+	if item.CoverFileID != nil {
+		coverFileID = item.CoverFileID.String()
+	}
+	return CommunityFormInput{
+		ID:              item.ID.String(),
+		Slug:            item.Slug,
+		TitleI18n:       cloneStringMap(item.TitleI18n),
+		DescriptionI18n: cloneStringMap(item.DescriptionI18n),
+		RulesTextI18n:   communityRulesTextMap(item.RulesI18n),
+		Topic:           item.Topic,
+		CityID:          cityID,
+		CountryCode:     countryCode,
+		AvatarFileID:    avatarFileID,
+		CoverFileID:     coverFileID,
+		Visibility:      item.Visibility,
+		PostingPolicy:   item.PostingPolicy,
+		Status:          item.Status,
+	}
+}
+
+func communityRulesTextMap(input map[string][]string) map[string]string {
+	out := make(map[string]string, len(communityFormLocales))
+	for _, locale := range communityFormLocales {
+		out[locale] = strings.Join(input[locale], "\n")
+	}
+	return out
+}
+
+func cloneStringMap(input map[string]string) map[string]string {
+	out := make(map[string]string, len(input))
+	for key, value := range input {
+		out[key] = value
+	}
+	return out
+}
+
+func communitySlugOptions(selected string) []AttractionOptionView {
+	templates := []string{
+		"general",
+		"city-guides",
+		"news",
+		"real-estate",
+		"transport",
+		"sports",
+		"events",
+		"pets",
+	}
+	selected = strings.TrimSpace(selected)
+	values := make([]string, 0, len(templates)+1)
+	if selected != "" {
+		values = append(values, selected)
+	}
+	for _, value := range templates {
+		if value != selected {
+			values = append(values, value)
+		}
+	}
+	out := make([]AttractionOptionView, 0, len(values))
+	for _, value := range values {
+		out = append(out, AttractionOptionView{
+			Value:    value,
+			LabelKey: value,
+			Selected: value == selected,
+		})
+	}
+	return out
+}
+
+func normalizeCommunityFormTextMap(input map[string]string) map[string]string {
+	out := make(map[string]string, len(communityFormLocales))
+	for _, locale := range communityFormLocales {
+		out[locale] = strings.TrimSpace(input[locale])
+	}
+	return out
+}
+
+func normalizeCommunityPlatformFilters(filters CommunityPlatformFilterViewData) CommunityPlatformFilterViewData {
+	filters.CountryCode = strings.ToUpper(strings.TrimSpace(filters.CountryCode))
+	filters.CityID = strings.TrimSpace(filters.CityID)
+	filters.ScopeType = strings.ToUpper(strings.TrimSpace(filters.ScopeType))
+	if filters.ScopeType != "CITY" && filters.ScopeType != "GLOBAL" {
+		filters.ScopeType = ""
+	}
+	filters.Search = strings.TrimSpace(filters.Search)
+	if filters.Limit <= 0 {
+		filters.Limit = 50
+	}
+	if filters.Limit > maxCommunityPlatformPageSize {
+		filters.Limit = maxCommunityPlatformPageSize
+	}
+	if filters.Offset < 0 {
+		filters.Offset = 0
+	}
+	values := url.Values{}
+	if filters.CountryCode != "" {
+		values.Set("country_code", filters.CountryCode)
+	}
+	if filters.CityID != "" {
+		values.Set("city_id", filters.CityID)
+	}
+	if filters.ScopeType != "" {
+		values.Set("scope_type", filters.ScopeType)
+	}
+	if filters.Search != "" {
+		values.Set("q", filters.Search)
+	}
+	if filters.Limit != 50 {
+		values.Set("limit", strconv.Itoa(filters.Limit))
+	}
+	if filters.Offset > 0 {
+		values.Set("offset", strconv.Itoa(filters.Offset))
+	}
+	filters.Query = values.Encode()
+	return filters
+}
+
+func communityScopeOptions(selected string) []AttractionOptionView {
+	return communityOptionViews(selected, map[string]string{
+		"":       "community.scope.all",
+		"CITY":   "community.scope.CITY",
+		"GLOBAL": "community.scope.GLOBAL",
+	})
+}
+
+func firstCommunityLocale(values ...string) string {
+	for _, value := range values {
+		value = strings.ToLower(strings.TrimSpace(value))
+		if value != "" {
+			return value
+		}
+	}
+	return defaultLocale
+}
+
+func localizedCommunityText(values map[string]string, preferredLocale string) string {
+	preferredLocale = strings.ToLower(strings.TrimSpace(preferredLocale))
+	for _, locale := range []string{preferredLocale, "ru", "en", "kk"} {
+		if value := strings.TrimSpace(values[locale]); value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func communityLocationText(locale string, countryCode string, cityID string) string {
+	countryCode = strings.ToUpper(strings.TrimSpace(countryCode))
+	cityID = strings.TrimSpace(cityID)
+	switch {
+	case countryCode != "" && cityID != "":
+		return countryText(locale, countryCode) + " · " + attractionCityNameText(locale, cityID)
+	case countryCode != "":
+		return countryText(locale, countryCode)
+	case cityID != "":
+		return attractionCityNameText(locale, cityID)
+	default:
+		return "-"
+	}
+}
+
+func communityOptionalLocationText(locale string, countryCode *string, cityID *string) string {
+	country := ""
+	if countryCode != nil {
+		country = *countryCode
+	}
+	city := ""
+	if cityID != nil {
+		city = *cityID
+	}
+	return communityLocationText(locale, country, city)
+}
+
+func communityCodeText(locale string, prefix string, raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "-"
+	}
+	if value := translate(locale, prefix+raw); value != prefix+raw {
+		return value
+	}
+	return humanizeCode(raw)
+}
+
+func communityScopeText(locale string, raw string) string {
+	raw = strings.ToUpper(strings.TrimSpace(raw))
+	if raw == "" {
+		return "-"
+	}
+	return communityCodeText(locale, "community.scope.", raw)
+}
+
+func communityCodeListText(locale string, prefix string, values []string) string {
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		text := communityCodeText(locale, prefix, value)
+		if text != "-" {
+			out = append(out, text)
+		}
+	}
+	if len(out) == 0 {
+		return "-"
+	}
+	return strings.Join(out, ", ")
+}
+
+func communityScopeListText(locale string, values []string) string {
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		text := communityScopeText(locale, value)
+		if text != "-" {
+			out = append(out, text)
+		}
+	}
+	if len(out) == 0 {
+		return "-"
+	}
+	return strings.Join(out, ", ")
+}
+
+func communityInstanceTitleText(title string, locationText string) string {
+	title = strings.TrimSpace(title)
+	if title == "" {
+		return "-"
+	}
+	parts := strings.Split(title, "·")
+	if len(parts) > 1 {
+		if first := strings.TrimSpace(parts[0]); first != "" {
+			return first
+		}
+	}
+	return strings.TrimSpace(strings.TrimSuffix(title, strings.TrimSpace(locationText)))
+}
+
+func communityBlueprintCategoryFilters(items []CommunityBlueprintView) []CommunityTableFilterOption {
+	return communityFilterOptions(func(add func(string, string)) {
+		for _, item := range items {
+			add(item.Item.Category, item.CategoryText)
+		}
+	})
+}
+
+func communityBlueprintStatusFilters(locale string, items []CommunityBlueprintView) []CommunityTableFilterOption {
+	return communityFilterOptions(func(add func(string, string)) {
+		for _, item := range items {
+			add(item.Item.Status, translateStatus(locale, item.Item.Status))
+		}
+	})
+}
+
+func communityGeoHubTierFilters(items []CommunityGeoHubView) []CommunityTableFilterOption {
+	return communityFilterOptions(func(add func(string, string)) {
+		for _, item := range items {
+			add(item.Item.HubTier, item.HubTierText)
+		}
+	})
+}
+
+func communityGeoHubMaterializationFilters(locale string, items []CommunityGeoHubView) []CommunityTableFilterOption {
+	return communityFilterOptions(func(add func(string, string)) {
+		for _, item := range items {
+			if item.Item.CanMaterialize {
+				add("can_materialize", translate(locale, "community.canMaterialize"))
+			} else {
+				add("alias_only", translate(locale, "community.aliasOnly"))
+			}
+		}
+	})
+}
+
+func communityInstanceScopeFilters(items []CommunityInstanceView) []CommunityTableFilterOption {
+	return communityFilterOptions(func(add func(string, string)) {
+		for _, item := range items {
+			add(item.Item.ScopeType, item.ScopeText)
+		}
+	})
+}
+
+func communityInstanceStatusFilters(locale string, items []CommunityInstanceView) []CommunityTableFilterOption {
+	return communityFilterOptions(func(add func(string, string)) {
+		for _, item := range items {
+			add(item.Item.Status, translateStatus(locale, item.Item.Status))
+		}
+	})
+}
+
+func communityPostProfileKindFilters(items []CommunityPostProfileView) []CommunityTableFilterOption {
+	return communityFilterOptions(func(add func(string, string)) {
+		for _, item := range items {
+			add(item.Item.PostKind, item.PostKindText)
+		}
+	})
+}
+
+func communityPostProfileModeFilters(items []CommunityPostProfileView) []CommunityTableFilterOption {
+	return communityFilterOptions(func(add func(string, string)) {
+		for _, item := range items {
+			add(item.Item.ModerationMode, item.ModerationModeText)
+		}
+	})
+}
+
+func communityFilterOptions(collect func(func(string, string))) []CommunityTableFilterOption {
+	seen := make(map[string]string)
+	collect(func(value string, text string) {
+		value = strings.TrimSpace(value)
+		text = strings.TrimSpace(text)
+		if value == "" || text == "" || text == "-" {
+			return
+		}
+		if _, ok := seen[value]; !ok {
+			seen[value] = text
+		}
+	})
+	values := make([]string, 0, len(seen))
+	for value := range seen {
+		values = append(values, value)
+	}
+	sort.Slice(values, func(i, j int) bool {
+		return strings.ToLower(seen[values[i]]) < strings.ToLower(seen[values[j]])
+	})
+	out := make([]CommunityTableFilterOption, 0, len(values))
+	for _, value := range values {
+		out = append(out, CommunityTableFilterOption{Value: value, Text: seen[value]})
+	}
+	return out
+}
+
+func humanizeCode(raw string) string {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return "-"
+	}
+	value = strings.NewReplacer("_", " ", "-", " ").Replace(value)
+	words := strings.Fields(strings.ToLower(value))
+	for i, word := range words {
+		if word == "" {
+			continue
+		}
+		words[i] = strings.ToUpper(word[:1]) + word[1:]
+	}
+	if len(words) == 0 {
+		return raw
+	}
+	return strings.Join(words, " ")
+}
+
+func communityLocaleOptions() []AttractionOptionView {
+	return []AttractionOptionView{
+		{Value: "ru", LabelKey: "attraction.locale.ru"},
+		{Value: "en", LabelKey: "attraction.locale.en"},
+		{Value: "kk", LabelKey: "attraction.locale.kk"},
+	}
+}
+
+func communityTopicOptions() map[string]string {
+	return map[string]string{
+		"GENERAL":  "community.topic.GENERAL",
+		"TRAVEL":   "community.topic.TRAVEL",
+		"CITY":     "community.topic.CITY",
+		"GUIDES":   "community.topic.GUIDES",
+		"APP_NEWS": "community.topic.APP_NEWS",
+	}
+}
+
+func communityOptionViews(selected string, labels map[string]string) []AttractionOptionView {
+	order := make([]string, 0, len(labels))
+	for value := range labels {
+		order = append(order, value)
+	}
+	sort.Strings(order)
+	out := make([]AttractionOptionView, 0, len(order))
+	for _, value := range order {
+		out = append(out, AttractionOptionView{
+			Value:    value,
+			LabelKey: labels[value],
+			Selected: strings.EqualFold(selected, value),
+		})
+	}
+	return out
 }
 
 func NewDashboardViewData(
@@ -660,6 +1475,8 @@ func auditEntityTitle(locale string, event *model.AuditEvent, before auditStaffS
 		return translate(locale, "audit.entity.attraction")
 	case "fraud_assessment":
 		return translate(locale, "audit.entity.fraudAssessment")
+	case "trust_restriction_appeal":
+		return translate(locale, "audit.entity.trustRestrictionAppeal")
 	case "user":
 		if event.EntityID != nil {
 			return fmt.Sprintf("%s %s", translate(locale, "audit.entity.user"), shortTemplateID(event.EntityID))
@@ -745,6 +1562,16 @@ func auditDetails(locale string, event *model.AuditEvent, before auditStaffSnaps
 		if decision := auditMetadataValue(event.Metadata, "decision"); decision != "" {
 			details = append(details, fmt.Sprintf(translate(locale, "audit.detail.moderationDecision"), translateStatus(locale, decision)))
 		}
+	case "trust.appeal.viewed", "trust.appeal.decided", "trust.appeal.decision_failed":
+		if reason := auditMetadataValue(event.Metadata, "reasonCode"); reason != "" {
+			details = append(details, fmt.Sprintf(translate(locale, "audit.detail.reason"), reason))
+		}
+		if decision := auditMetadataValue(event.Metadata, "decision"); decision != "" {
+			details = append(details, fmt.Sprintf(translate(locale, "audit.detail.moderationDecision"), translateStatus(locale, decision)))
+		}
+		if value := auditMetadataValue(event.Metadata, "error"); value != "" {
+			details = append(details, fmt.Sprintf(translate(locale, "audit.detail.error"), value))
+		}
 	}
 	if len(details) == 0 {
 		details = append(details, translate(locale, "audit.detail.noExtraData"))
@@ -763,8 +1590,8 @@ func auditModerationTargetText(locale string, event *model.AuditEvent) string {
 		return translate(locale, "moderation.guideApplication")
 	case model.ModerationTargetChatMessage:
 		return translate(locale, "moderation.chatMessage")
-	case model.ModerationTargetStory:
-		return translate(locale, "moderation.story")
+	case model.ModerationTargetPost:
+		return translate(locale, "moderation.post")
 	default:
 		return ""
 	}
@@ -946,6 +1773,64 @@ func adminUserTrustText(band string, score *int) string {
 	return fmt.Sprintf("%s · %d", band, *score)
 }
 
+func normalizeTrustAppealFilter(filters TrustAppealFilterViewData) TrustAppealFilterViewData {
+	filters.Search = strings.TrimSpace(filters.Search)
+	filters.Status = strings.ToUpper(strings.TrimSpace(filters.Status))
+	switch model.TrustRestrictionAppealStatus(filters.Status) {
+	case model.TrustRestrictionAppealStatusApproved,
+		model.TrustRestrictionAppealStatusRejected:
+	default:
+		filters.Status = string(model.TrustRestrictionAppealStatusOpen)
+	}
+	filters.PageToken = strings.TrimSpace(filters.PageToken)
+	if filters.PageSize <= 0 {
+		filters.PageSize = 50
+	}
+	filters.Query = trustAppealQuery(filters)
+	return filters
+}
+
+func trustAppealListURL(filters TrustAppealFilterViewData) string {
+	query := trustAppealQuery(filters)
+	if query == "" {
+		return "/admin/trust/appeals"
+	}
+	return "/admin/trust/appeals?" + query
+}
+
+func trustAppealDetailURL(id uuid.UUID, returnQuery string) string {
+	base := "/admin/trust/appeals/" + id.String()
+	if strings.TrimSpace(returnQuery) == "" {
+		return base
+	}
+	return base + "?" + strings.TrimSpace(returnQuery)
+}
+
+func trustAppealDecisionURL(id uuid.UUID, action string, returnQuery string) string {
+	base := "/admin/trust/appeals/" + id.String() + "/" + action
+	if strings.TrimSpace(returnQuery) == "" {
+		return base
+	}
+	return base + "?" + strings.TrimSpace(returnQuery)
+}
+
+func trustAppealQuery(filters TrustAppealFilterViewData) string {
+	values := url.Values{}
+	if filters.Search != "" {
+		values.Set("q", filters.Search)
+	}
+	if filters.Status != "" && filters.Status != string(model.TrustRestrictionAppealStatusOpen) {
+		values.Set("status", filters.Status)
+	}
+	if filters.PageToken != "" {
+		values.Set("page_token", filters.PageToken)
+	}
+	if filters.PageSize > 0 && filters.PageSize != 50 {
+		values.Set("page_size", strconv.Itoa(filters.PageSize))
+	}
+	return values.Encode()
+}
+
 func sameRoleList(left []enum.StaffRole, right []enum.StaffRole) bool {
 	if len(left) != len(right) {
 		return false
@@ -1029,6 +1914,10 @@ func NewChatMessageQueueViewData(cases []*model.ModerationCase, filters ...Queue
 	return newQueueViewData(cases, model.ModerationTargetChatMessage, filters...)
 }
 
+func NewPostReportQueueViewData(cases []*model.ModerationCase, filters ...QueueFilterViewData) QueueViewData {
+	return newQueueViewData(cases, model.ModerationTargetPost, filters...)
+}
+
 func newQueueViewData(cases []*model.ModerationCase, targetType model.ModerationTargetType, filters ...QueueFilterViewData) QueueViewData {
 	viewFilters := QueueFilterViewData{Status: excursionQueueStatusActive}
 	if len(filters) > 0 {
@@ -1043,15 +1932,19 @@ func newQueueViewData(cases []*model.ModerationCase, targetType model.Moderation
 		activity := activityFromSnapshot(item)
 		guideApplication := guideApplicationFromSnapshot(item)
 		chatMessage := chatMessageFromSnapshot(item)
+		post := storyFromSnapshot(item)
+		postReport := postReportFromSnapshot(item)
 		view := ModerationQueueItemView{
 			Case:             item,
 			Excursion:        excursion,
 			Activity:         activity,
 			GuideApplication: guideApplication,
 			ChatMessage:      chatMessage,
+			Post:             post,
+			PostReport:       postReport,
 		}
-		view.TargetTitle = queueTargetTitle(item, excursion, activity, guideApplication, chatMessage)
-		view.TargetSubtitle = queueTargetSubtitle(excursion, activity, guideApplication, chatMessage)
+		view.TargetTitle = queueTargetTitle(item, excursion, activity, guideApplication, chatMessage, post, postReport)
+		view.TargetSubtitle = queueTargetSubtitle(excursion, activity, guideApplication, chatMessage, post, postReport)
 		if excursion != nil {
 			view.GuideName = excursionGuidePrimaryText(excursion)
 			view.GuideFullName = excursionGuideFullNameText(excursion)
@@ -1064,6 +1957,12 @@ func newQueueViewData(cases []*model.ModerationCase, targetType model.Moderation
 		} else if chatMessage != nil {
 			view.GuideName = chatMessageSenderText(chatMessage)
 			view.GuideFullName = chatMessageConversationText(defaultLocale, chatMessage)
+		} else if post != nil {
+			view.GuideName = "Author " + shortString(post.AuthorUserID.String())
+			view.GuideFullName = strings.TrimSpace(post.Category)
+		} else if postReport != nil {
+			view.GuideName = "Reporter " + shortString(postReport.ReporterUserID.String())
+			view.GuideFullName = "Author " + shortString(postReport.AuthorUserID.String())
 		}
 		if view.GuideName == "" {
 			view.GuideName = "-"
@@ -1130,6 +2029,14 @@ func NewChatMessageHistoryViewData(cases []*model.ModerationCase, filters QueueF
 	return data
 }
 
+func NewPostReportHistoryViewData(cases []*model.ModerationCase, filters QueueFilterViewData) QueueViewData {
+	data := NewPostReportQueueViewData(cases, filters)
+	data.IsHistory = true
+	data.FilterAction = data.HistoryURL
+	data.ResetURL = data.HistoryURL
+	return data
+}
+
 func excursionFromSnapshot(item *model.ModerationCase) *model.ExcursionModerationItem {
 	if item == nil || item.TargetType != model.ModerationTargetExcursion || len(item.Snapshot) == 0 {
 		return nil
@@ -1186,7 +2093,56 @@ func chatMessageFromSnapshot(item *model.ModerationCase) *model.ChatMessageModer
 	return &chatMessage
 }
 
-func queueTargetTitle(item *model.ModerationCase, excursion *model.ExcursionModerationItem, activity *model.ActivityModerationItem, guideApplication *model.GuideApplicationModerationItem, chatMessage *model.ChatMessageModerationItem) string {
+func postReportFromSnapshot(item *model.ModerationCase) *model.PostReportModerationItem {
+	if moderationCaseKind(item) == "community_post" {
+		return nil
+	}
+	if item == nil || item.TargetType != model.ModerationTargetPost || len(item.Snapshot) == 0 {
+		return nil
+	}
+	var postReport model.PostReportModerationItem
+	if err := json.Unmarshal(item.Snapshot, &postReport); err != nil {
+		return nil
+	}
+	if postReport.ID.String() == "00000000-0000-0000-0000-000000000000" {
+		postReport.ID = item.TargetID
+	}
+	return &postReport
+}
+
+func moderationCaseKind(item *model.ModerationCase) string {
+	if item == nil || len(item.Metadata) == 0 {
+		return "post_report"
+	}
+	var metadata map[string]string
+	if err := json.Unmarshal(item.Metadata, &metadata); err != nil {
+		return "post_report"
+	}
+	kind := strings.TrimSpace(metadata["moderationKind"])
+	if kind == "" {
+		return "post_report"
+	}
+	return kind
+}
+
+func storyFromSnapshot(item *model.ModerationCase) *model.PostModerationItem {
+	if moderationCaseKind(item) != "community_post" {
+		return nil
+	}
+	if item == nil || item.TargetType != model.ModerationTargetPost || len(item.Snapshot) == 0 {
+		return nil
+	}
+	var post model.PostModerationItem
+	if err := json.Unmarshal(item.Snapshot, &post); err != nil {
+		return nil
+	}
+	if post.ID.String() == "00000000-0000-0000-0000-000000000000" {
+		post.ID = item.TargetID
+	}
+	return &post
+}
+
+func queueTargetTitle(item *model.ModerationCase, excursion *model.ExcursionModerationItem, activity *model.ActivityModerationItem, guideApplication *model.GuideApplicationModerationItem, chatMessage *model.ChatMessageModerationItem, post *model.PostModerationItem, postReport *model.PostReportModerationItem) string {
 	if excursion != nil {
 		if title := strings.TrimSpace(excursion.Title); title != "" {
 			return title
@@ -1211,17 +2167,37 @@ func queueTargetTitle(item *model.ModerationCase, excursion *model.ExcursionMode
 	if chatMessage != nil {
 		return chatMessagePreviewText(defaultLocale, chatMessage)
 	}
+	if post != nil {
+		title := strings.TrimSpace(post.Title)
+		if title == "" {
+			title = "Community post"
+		}
+		return title
+	}
+	if postReport != nil {
+		reason := strings.TrimSpace(postReport.Reason)
+		if reason == "" {
+			reason = "REPORT"
+		}
+		return "Post report: " + reason
+	}
 	if item == nil {
 		return "-"
 	}
 	return string(item.TargetType) + " " + shortString(item.TargetID.String())
 }
 
-func queueTargetSubtitle(excursion *model.ExcursionModerationItem, activity *model.ActivityModerationItem, guideApplication *model.GuideApplicationModerationItem, chatMessage *model.ChatMessageModerationItem) string {
+func queueTargetSubtitle(excursion *model.ExcursionModerationItem, activity *model.ActivityModerationItem, guideApplication *model.GuideApplicationModerationItem, chatMessage *model.ChatMessageModerationItem, post *model.PostModerationItem, postReport *model.PostReportModerationItem) string {
 	if excursion == nil {
 		if activity == nil {
 			if guideApplication == nil {
 				if chatMessage == nil {
+					if post != nil {
+						return strings.TrimSpace(post.Excerpt)
+					}
+					if postReport != nil {
+						return strings.TrimSpace(postReport.Details)
+					}
 					return ""
 				}
 				return chatMessageSignalsText(defaultLocale, chatMessage)
@@ -1248,6 +2224,9 @@ func activityHostSecondaryText(item *model.ActivityModerationItem) string {
 }
 
 func queueBaseURL(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetPost {
+		return "/admin/moderation/posts"
+	}
 	if targetType == model.ModerationTargetChatMessage {
 		return "/admin/moderation/chats"
 	}
@@ -1261,7 +2240,7 @@ func queueBaseURL(targetType model.ModerationTargetType) string {
 }
 
 func queueFraudBlocksURL(targetType model.ModerationTargetType) string {
-	if targetType == model.ModerationTargetChatMessage {
+	if targetType == model.ModerationTargetChatMessage || targetType == model.ModerationTargetPost {
 		return ""
 	}
 	return queueBaseURL(targetType) + "/fraud-blocks"
@@ -1285,6 +2264,12 @@ func caseDetailTargetType(detail *app.ModerationCaseDetail) model.ModerationTarg
 	if detail.Case != nil {
 		return detail.Case.TargetType
 	}
+	if detail.Post != nil {
+		return model.ModerationTargetPost
+	}
+	if detail.PostReport != nil {
+		return model.ModerationTargetPost
+	}
 	if detail.ChatMessage != nil {
 		return model.ModerationTargetChatMessage
 	}
@@ -1302,6 +2287,9 @@ func queueDetailBaseURL(targetType model.ModerationTargetType) string {
 }
 
 func queueTitleKey(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetPost {
+		return "moderation.postReportQueue"
+	}
 	if targetType == model.ModerationTargetChatMessage {
 		return "moderation.chatQueue"
 	}
@@ -1315,6 +2303,9 @@ func queueTitleKey(targetType model.ModerationTargetType) string {
 }
 
 func queueHistoryTitleKey(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetPost {
+		return "moderation.postReportHistory"
+	}
 	if targetType == model.ModerationTargetChatMessage {
 		return "moderation.chatHistory"
 	}
@@ -1328,6 +2319,9 @@ func queueHistoryTitleKey(targetType model.ModerationTargetType) string {
 }
 
 func queueEmptyQueueKey(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetPost {
+		return "moderation.noPostReportCases"
+	}
 	if targetType == model.ModerationTargetChatMessage {
 		return "moderation.noChatCases"
 	}
@@ -1341,6 +2335,9 @@ func queueEmptyQueueKey(targetType model.ModerationTargetType) string {
 }
 
 func queueEmptyHistoryKey(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetPost {
+		return "moderation.noPostReportHistory"
+	}
 	if targetType == model.ModerationTargetChatMessage {
 		return "moderation.noChatHistory"
 	}
@@ -1354,6 +2351,9 @@ func queueEmptyHistoryKey(targetType model.ModerationTargetType) string {
 }
 
 func queueTargetHeaderKey(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetPost {
+		return "table.postReport"
+	}
 	if targetType == model.ModerationTargetChatMessage {
 		return "table.message"
 	}
@@ -1367,6 +2367,9 @@ func queueTargetHeaderKey(targetType model.ModerationTargetType) string {
 }
 
 func queueHostHeaderKey(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetPost {
+		return "table.reporter"
+	}
 	if targetType == model.ModerationTargetChatMessage {
 		return "table.sender"
 	}
@@ -1380,6 +2383,9 @@ func queueHostHeaderKey(targetType model.ModerationTargetType) string {
 }
 
 func queueLocationHeaderKey(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetPost {
+		return "table.community"
+	}
 	if targetType == model.ModerationTargetChatMessage {
 		return "table.conversation"
 	}
@@ -1387,6 +2393,9 @@ func queueLocationHeaderKey(targetType model.ModerationTargetType) string {
 }
 
 func queueSearchPlaceholderKey(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetPost {
+		return "placeholder.searchPostReports"
+	}
 	if targetType == model.ModerationTargetChatMessage {
 		return "placeholder.searchChats"
 	}

@@ -522,6 +522,11 @@ class _NotificationBannerVisual {
         color: AppColors.accent,
         label: 'Messages',
       ),
+      PushNotificationChannel.content => const _NotificationBannerVisual(
+        icon: Icons.auto_stories_rounded,
+        color: AppColors.accent,
+        label: 'Posts and stories',
+      ),
       PushNotificationChannel.system => const _NotificationBannerVisual(
         icon: Icons.notifications_active_rounded,
         color: AppColors.accent,

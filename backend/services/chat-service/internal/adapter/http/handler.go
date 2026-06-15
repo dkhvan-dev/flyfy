@@ -767,6 +767,10 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request, convID uui
 			replyTo = &parsed
 		}
 	}
+	storyReply, ok := storyReplyContextFromRequest(req.StoryReply, w, r)
+	if !ok {
+		return
+	}
 	var stickerID *uuid.UUID
 	var stickerAccessUserID *uuid.UUID
 	if req.StickerID != nil && strings.TrimSpace(*req.StickerID) != "" {
@@ -797,6 +801,7 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request, convID uui
 		FileIDs:             req.FileIDs,
 		StickerID:           stickerID,
 		ReplyToMessageID:    replyTo,
+		StoryReply:          storyReply,
 	})
 	if err != nil {
 		h.writeAppError(w, r, err, "send message failed")
@@ -1205,6 +1210,7 @@ func messageResponseFromModel(m *model.Message) dto.MessageResponse {
 		StickerFileID:             m.StickerFileID,
 		ForwardedFromMessageID:    uuidPtrToString(m.ForwardedFromMessageID),
 		ForwardedFromSenderUserID: uuidPtrToString(m.ForwardedFromSenderUserID),
+		StoryReply:                storyReplyResponseFromModel(m.StoryReply),
 		ForwardCount:              m.ForwardCount,
 		Reactions:                 reactionInfosFromModel(m.Reactions),
 		ReadReceipts:              readReceiptInfosFromModel(m.ReadReceipts),
@@ -1233,6 +1239,62 @@ func messageResponseFromModel(m *model.Message) dto.MessageResponse {
 		item.DeletedAt = &s
 	}
 	return item
+}
+
+func storyReplyContextFromRequest(
+	req *dto.StoryReplyContextRequest,
+	w http.ResponseWriter,
+	r *http.Request,
+) (*model.StoryReplyContext, bool) {
+	if req == nil {
+		return nil, true
+	}
+	storyID, err := uuid.Parse(strings.TrimSpace(req.StoryID))
+	if err != nil || storyID == uuid.Nil {
+		writeError(w, r, http.StatusBadRequest, "invalid story reply story id")
+		return nil, false
+	}
+	authorUserID, err := uuid.Parse(strings.TrimSpace(req.StoryAuthorUserID))
+	if err != nil || authorUserID == uuid.Nil {
+		writeError(w, r, http.StatusBadRequest, "invalid story reply author id")
+		return nil, false
+	}
+	var expiresAt *time.Time
+	if req.StoryExpiresAt != nil && strings.TrimSpace(*req.StoryExpiresAt) != "" {
+		parsed, err := time.Parse(time.RFC3339, strings.TrimSpace(*req.StoryExpiresAt))
+		if err != nil {
+			writeError(w, r, http.StatusBadRequest, "invalid story reply expiration")
+			return nil, false
+		}
+		expiresAt = &parsed
+	}
+	return &model.StoryReplyContext{
+		StoryID:            storyID,
+		StoryAuthorUserID:  authorUserID,
+		StoryTitle:         strings.TrimSpace(req.StoryTitle),
+		StoryPreviewFileID: strings.TrimSpace(req.StoryPreviewFileID),
+		StoryPreviewURL:    strings.TrimSpace(req.StoryPreviewURL),
+		StoryExpiresAt:     expiresAt,
+	}, true
+}
+
+func storyReplyResponseFromModel(context *model.StoryReplyContext) *dto.StoryReplyContextResponse {
+	if context == nil || context.IsZero() {
+		return nil
+	}
+	var expiresAt *string
+	if context.StoryExpiresAt != nil {
+		value := context.StoryExpiresAt.Format(time.RFC3339)
+		expiresAt = &value
+	}
+	return &dto.StoryReplyContextResponse{
+		StoryID:            context.StoryID.String(),
+		StoryAuthorUserID:  context.StoryAuthorUserID.String(),
+		StoryTitle:         context.StoryTitle,
+		StoryPreviewFileID: context.StoryPreviewFileID,
+		StoryPreviewURL:    context.StoryPreviewURL,
+		StoryExpiresAt:     expiresAt,
+	}
 }
 
 func chatMessageModerationResponseFromModel(item *model.ChatMessageModerationItem) dto.ChatMessageModerationResponse {

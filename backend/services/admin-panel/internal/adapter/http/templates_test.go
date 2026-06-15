@@ -78,6 +78,97 @@ func TestRendererRendersCoreTemplates(t *testing.T) {
 		"auth/login":           LoginViewData{Email: "moderator@inflap.local"},
 		"auth/change_password": nil,
 		"dashboard/index":      NewDashboardViewData([]*model.ModerationCase{queueCase}, nil, nil, nil),
+		"feed_quality/index": NewFeedQualityDashboardViewData(app.FeedQualityDashboardPage{
+			Metrics: []model.FeedQualityMetric{{
+				Surface:            "home",
+				BlockType:          "post_card",
+				Action:             "conversion",
+				EventCount:         12,
+				UniqueViewers:      7,
+				ConversionCount:    4,
+				HideCount:          1,
+				NotInterestedCount: 2,
+			}},
+			Totals: model.FeedQualityMetric{
+				EventCount:         12,
+				UniqueViewers:      7,
+				ConversionCount:    4,
+				HideCount:          1,
+				NotInterestedCount: 2,
+			},
+		}, FeedQualityFilterViewData{Surface: "home", Window: "7d"}),
+		"communities/index": NewCommunityPlatformViewData(model.CommunityPlatformCatalog{
+			PostProfiles: []model.CommunityPostProfile{{
+				Key:                  "quick_post_v1",
+				PostKind:             "QUICK_POST",
+				ComposerPreset:       "quick_post",
+				RenderPreset:         "quick_post_card",
+				ModerationMode:       "PUBLISH_FIRST",
+				ActivityCreationMode: "DISABLED",
+			}},
+			Blueprints: []model.CommunityBlueprint{{
+				ID:                    uuid.MustParse("00000000-0000-4000-8000-000000000014"),
+				Key:                   "football",
+				Category:              "sports",
+				DefaultPostProfileKey: "event_announcement_v1",
+				TitleI18n: map[string]string{
+					"en": "Football",
+					"ru": "Футбол",
+					"kk": "Футбол",
+				},
+				DescriptionI18n:       map[string]string{"en": "Games and meetups"},
+				AllowedScopeTypes:     []string{"CITY"},
+				RolloutPolicy:         "ELIGIBLE_HUBS",
+				DefaultModerationMode: "TRUSTED_PUBLISH_ELSE_REVIEW",
+				Status:                "ACTIVE",
+			}},
+			GeoHubs: []model.CommunityGeoHub{{
+				CountryCode:      "VN",
+				CityID:           "da-nang",
+				HubTier:          "REGIONAL",
+				CommunityEnabled: true,
+				Reason:           "tourist_demand",
+				Priority:         30,
+				CanMaterialize:   true,
+				EffectiveCountry: "VN",
+				EffectiveCityID:  "da-nang",
+				CreatedBy:        "seed",
+			}},
+			Instances: []model.CommunityInstance{{
+				ID:          uuid.MustParse("00000000-0000-4000-8000-000000000111"),
+				CommunityID: uuidPtr(uuid.MustParse("00000000-0000-4000-8000-000000000222")),
+				BlueprintID: uuid.MustParse("00000000-0000-4000-8000-000000000014"),
+				Slug:        "football-vn-da-nang",
+				CountryCode: "VN",
+				CityID:      stringPtr("da-nang"),
+				ScopeType:   "CITY",
+				TitleI18n:   map[string]string{"en": "Football · Da Nang"},
+				Status:      "ACTIVE",
+			}},
+		}, CommunityPlatformFilterViewData{
+			CountryCode: "VN",
+			CityID:      "da-nang",
+			ScopeType:   "CITY",
+			Search:      "foot",
+			Limit:       25,
+			Offset:      5,
+		}),
+		"communities/form": NewCommunityFormViewData(CommunityFormInput{
+			Slug:        "football-vn-da-nang",
+			Topic:       "SPORTS",
+			CountryCode: "VN",
+			CityID:      "da-nang",
+			TitleI18n: map[string]string{
+				"ru": "Футбол",
+				"en": "Football",
+				"kk": "Футбол",
+			},
+			DescriptionI18n: map[string]string{
+				"ru": "Игры в Дананге",
+				"en": "Games in Da Nang",
+				"kk": "Дананг ойындары",
+			},
+		}),
 		"moderation/queue": NewQueueViewData([]*model.ModerationCase{queueCase}, QueueFilterViewData{
 			Status: excursionQueueStatusActive,
 			City:   "Almaty",
@@ -124,6 +215,122 @@ func TestRendererRendersCoreTemplates(t *testing.T) {
 				}
 				if strings.Contains(body, `class="metric card"`) {
 					t.Fatal("dashboard still renders legacy metric navigation cards")
+				}
+			}
+			if name == "feed_quality/index" {
+				body := html.UnescapeString(recorder.Body.String())
+				for _, expected := range []string{
+					"Feed quality",
+					"Feed section",
+					"All feed sections",
+					"Home feed",
+					"Post card",
+					"Conversion click",
+					"Negative feedback",
+				} {
+					if !strings.Contains(body, expected) {
+						t.Fatalf("feed quality dashboard did not render %q: %s", expected, body)
+					}
+				}
+				for _, forbidden := range []string{
+					">Surface<",
+					">home<",
+					">post_card<",
+					">conversion<",
+				} {
+					if strings.Contains(body, forbidden) {
+						t.Fatalf("feed quality dashboard rendered raw code %q: %s", forbidden, body)
+					}
+				}
+				lowerBody := strings.ToLower(body)
+				for _, forbidden := range []string{"watch start", "buffering"} {
+					if strings.Contains(lowerBody, forbidden) {
+						t.Fatalf("feed quality dashboard must not render video-specific metrics: %s", body)
+					}
+				}
+			}
+			if name == "communities/index" {
+				body := html.UnescapeString(recorder.Body.String())
+				for _, expected := range []string{
+					"Community platform",
+					"Create a single community",
+					"Generate communities from templates",
+					`data-location-filter-form`,
+					`data-country-filter-input`,
+					`data-city-filter-input`,
+					`name="country_code" value="VN" data-country-filter-value`,
+					`name="city_id" value="da-nang" data-city-filter-value`,
+					`name="scope_type"`,
+					`name="q" value="foot"`,
+					`name="limit" value="25" min="1" max="500"`,
+					`data-table-search`,
+					`data-table-filter`,
+					"Football",
+					"Da Nang",
+					"Quick post",
+					`href="/admin/communities/00000000-0000-4000-8000-000000000222/edit"`,
+					"/admin/communities/materialize",
+					`data-modal-open="community-post-profiles-dialog"`,
+					`data-modal-open="community-blueprints-dialog"`,
+					`data-modal-open="community-geo-hubs-dialog"`,
+					`data-modal-open="community-instances-dialog"`,
+					`data-paginated-table`,
+				} {
+					if !strings.Contains(body, expected) {
+						t.Fatalf("community platform did not render %q: %s", expected, body)
+					}
+				}
+				for _, forbidden := range []string{
+					">quick_post_v1<",
+					">quick_post<",
+					">quick_post_card<",
+					">PUBLISH_FIRST<",
+					">REGIONAL<",
+					">tourist_demand<",
+					">CITY<",
+					">sports<",
+					"football-vn-da-nang ·",
+				} {
+					if strings.Contains(body, forbidden) {
+						t.Fatalf("community platform rendered raw code %q: %s", forbidden, body)
+					}
+				}
+				filterIndex := strings.Index(body, `class="filters card"`)
+				metricsIndex := strings.Index(body, `class="community-resource-grid"`)
+				materializeIndex := strings.Index(body, "Generate communities from templates")
+				if filterIndex < 0 || metricsIndex < 0 || materializeIndex < 0 {
+					t.Fatalf("community platform missing expected section markers: %s", body)
+				}
+				if !(filterIndex < metricsIndex && metricsIndex < materializeIndex) {
+					t.Fatalf("community platform section order = filter:%d metrics:%d materialize:%d, want filters before metrics before materialize", filterIndex, metricsIndex, materializeIndex)
+				}
+			}
+			if name == "communities/form" {
+				body := html.UnescapeString(recorder.Body.String())
+				for _, expected := range []string{
+					`enctype="multipart/form-data"`,
+					`<select name="slug"`,
+					`data-location-filter-form`,
+					`data-country-filter-input`,
+					`data-city-filter-input`,
+					`name="country_code" value="VN" data-country-filter-value`,
+					`name="city_id" value="da-nang" data-city-filter-value`,
+					`type="file" name="avatar_image"`,
+					`type="file" name="cover_image"`,
+					"football-vn-da-nang",
+					"Da Nang",
+				} {
+					if !strings.Contains(body, expected) {
+						t.Fatalf("community form did not render %q: %s", expected, body)
+					}
+				}
+				for _, forbidden := range []string{
+					`name="avatar_file_id"`,
+					`name="cover_file_id"`,
+				} {
+					if strings.Contains(body, forbidden) {
+						t.Fatalf("community form still exposes raw file id input %q: %s", forbidden, body)
+					}
 				}
 			}
 			if name == "moderation/queue" {
@@ -386,6 +593,91 @@ func TestRendererRendersUserModerationViews(t *testing.T) {
 	}
 	if strings.Contains(body, `name="reason_code" required placeholder`) {
 		t.Fatalf("user detail rendered manual reason input for moderation case: %s", body)
+	}
+}
+
+func TestRendererRendersTrustAppealViews(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	now := time.Date(2026, 6, 12, 8, 0, 0, 0, time.UTC)
+	appealID := uuid.New()
+	userID := uuid.New()
+	restrictionID := uuid.New()
+	staff := adminTemplateActor()
+	staff.Permissions = append(staff.Permissions,
+		enum.PermissionUsersRead,
+		enum.PermissionUsersRestrict,
+	)
+	item := model.TrustRestrictionAppeal{
+		ID:              appealID,
+		RestrictionID:   restrictionID,
+		UserID:          userID,
+		RestrictionCode: model.UserRestrictionChat,
+		Status:          model.TrustRestrictionAppealStatusOpen,
+		ReasonCode:      "false_positive",
+		UserMessage:     "This was a safety contact for the trip group.",
+		CreatedAt:       now,
+		UpdatedAt:       now,
+	}
+	filters := TrustAppealFilterViewData{
+		Status:   string(model.TrustRestrictionAppealStatusOpen),
+		Search:   "false",
+		PageSize: 25,
+		Query:    "page_size=25&q=false",
+	}
+	pageData := PageData{
+		Title:     "Trust appeals",
+		Locale:    localeEN,
+		Path:      "/admin/trust/appeals",
+		Staff:     staff,
+		CSRFToken: "csrf-token",
+		Data: NewTrustAppealListViewData(model.TrustRestrictionAppealListPage{
+			Items:         []model.TrustRestrictionAppeal{item},
+			NextPageToken: "cursor-2",
+		}, filters, staff),
+	}
+
+	var rendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&rendered, "trust/appeals", pageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	body := html.UnescapeString(rendered.String())
+	for _, expected := range []string{
+		"Restriction appeals",
+		"false_positive",
+		"This was a safety contact",
+		`href="/admin/trust/appeals/` + appealID.String() + `?page_size=25&q=false"`,
+		`href="/admin/users/` + userID.String() + `"`,
+		`page_token=cursor-2`,
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("trust appeal queue did not render %q: %s", expected, body)
+		}
+	}
+
+	pageData.Title = "Trust appeal"
+	pageData.Path = "/admin/trust/appeals/" + appealID.String() + "?page_size=25&q=false"
+	pageData.Data = NewTrustAppealDetailViewData(item, filters, staff)
+	rendered.Reset()
+	if err = renderer.templates.ExecuteTemplate(&rendered, "trust/appeal_detail", pageData); err != nil {
+		t.Fatalf("ExecuteTemplate detail returned error: %v", err)
+	}
+	body = html.UnescapeString(rendered.String())
+	for _, expected := range []string{
+		"This was a safety contact for the trip group.",
+		`action="/admin/trust/appeals/` + appealID.String() + `/approve?page_size=25&q=false"`,
+		`action="/admin/trust/appeals/` + appealID.String() + `/reject?page_size=25&q=false"`,
+		`name="staff_comment" rows="3" required`,
+		`name="idempotency_key"`,
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("trust appeal detail did not render %q: %s", expected, body)
+		}
 	}
 }
 
@@ -6889,6 +7181,25 @@ func TestAdminJSAttractionFilterDoesNotAutoSelectSearchSuggestions(t *testing.T)
 	}
 }
 
+func TestAdminJSPaginatedTablesKeepTotalPagesInClickHandlerScope(t *testing.T) {
+	t.Parallel()
+
+	content, err := embeddedFiles.ReadFile("static/js/admin.js")
+	if err != nil {
+		t.Fatalf("ReadFile returned error: %v", err)
+	}
+	js := string(content)
+	if !strings.Contains(js, "let totalPages = 1;") {
+		t.Fatalf("paginated tables should keep totalPages in the outer click-handler closure")
+	}
+	if strings.Contains(js, "const totalPages = Math.max(1, Math.ceil(visibleRows.length / pageSize));") {
+		t.Fatalf("totalPages must not be scoped only to renderPage")
+	}
+	if !strings.Contains(js, "totalPages = Math.max(1, Math.ceil(visibleRows.length / pageSize));") {
+		t.Fatalf("renderPage should refresh the outer totalPages value")
+	}
+}
+
 func TestAdminJSInitializesMeetingMapsWithMapLibre(t *testing.T) {
 	t.Parallel()
 
@@ -8021,6 +8332,10 @@ func floatPtr(value float64) *float64 {
 }
 
 func stringPtr(value string) *string {
+	return &value
+}
+
+func uuidPtr(value uuid.UUID) *uuid.UUID {
 	return &value
 }
 

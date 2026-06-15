@@ -123,6 +123,18 @@ func (s *attendanceRepoStub) CountActivitiesCreatedSince(ctx context.Context, ho
 	return 0, nil
 }
 
+func (s *attendanceRepoStub) AcquireActivityIdempotencyKey(ctx context.Context, item *model.ActivityIdempotencyKey) (*model.ActivityIdempotencyKey, bool, error) {
+	return item, true, nil
+}
+
+func (s *attendanceRepoStub) CompleteActivityIdempotencyKey(ctx context.Context, key string, activityID uuid.UUID) error {
+	return nil
+}
+
+func (s *attendanceRepoStub) FailActivityIdempotencyKey(ctx context.Context, key string, reason string) error {
+	return nil
+}
+
 func (s *attendanceRepoStub) GetActivityReviewByParticipantID(ctx context.Context, participantID uuid.UUID) (*model.ActivityReview, error) {
 	return nil, nil
 }

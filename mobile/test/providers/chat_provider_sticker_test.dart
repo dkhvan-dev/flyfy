@@ -127,6 +127,7 @@ class _FakeChatApi extends ChatApi {
     String? stickerId,
     String? replyToMessageId,
     String? clientMessageId,
+    StoryReplyContextVm? storyReply,
   }) async {
     sentConversationId = conversationId;
     sentType = type;

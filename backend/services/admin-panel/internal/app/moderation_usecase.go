@@ -15,13 +15,15 @@ import (
 )
 
 type ModerationUseCase struct {
-	repo      port.ModerationRepository
-	excursion port.ExcursionClient
-	activity  port.ActivityClient
-	guide     port.GuideApplicationClient
-	chat      port.ChatClient
-	audit     port.AuditRepository
-	notify    port.UserNotificationGateway
+	repo        port.ModerationRepository
+	excursion   port.ExcursionClient
+	activity    port.ActivityClient
+	guide       port.GuideApplicationClient
+	chat        port.ChatClient
+	post        port.PostReportClient
+	feedQuality port.FeedQualityClient
+	audit       port.AuditRepository
+	notify      port.UserNotificationGateway
 }
 
 type ModerationDashboard struct {
@@ -58,6 +60,8 @@ type ModerationCaseDetail struct {
 	Activity         *model.ActivityModerationItem
 	GuideApplication *model.GuideApplicationModerationItem
 	ChatMessage      *model.ChatMessageModerationItem
+	Post             *model.PostModerationItem
+	PostReport       *model.PostReportModerationItem
 	Decisions        []*model.ModerationDecision
 }
 
@@ -70,6 +74,13 @@ func NewModerationUseCase(
 	audit port.AuditRepository,
 ) *ModerationUseCase {
 	return &ModerationUseCase{repo: repo, excursion: excursion, activity: activity, guide: guide, chat: chat, audit: audit}
+}
+
+func (u *ModerationUseCase) SetPostReportClient(client port.PostReportClient) {
+	u.post = client
+	if feedQuality, ok := client.(port.FeedQualityClient); ok {
+		u.feedQuality = feedQuality
+	}
 }
 
 func (u *ModerationUseCase) SyncExcursionQueue(ctx context.Context, actor *model.StaffUser) error {
@@ -144,6 +155,42 @@ func (u *ModerationUseCase) SyncChatMessageQueue(ctx context.Context, actor *mod
 	return u.repo.CancelStaleChatMessageCases(ctx, activeIDs, time.Now().UTC())
 }
 
+func (u *ModerationUseCase) SyncPostReportQueue(ctx context.Context, actor *model.StaffUser) error {
+	if actor == nil || !actor.HasPermission(enum.PermissionModerationRead) {
+		return ErrPermissionDenied
+	}
+	if u.post == nil {
+		return ErrInvalidInput
+	}
+	items, err := u.post.ListOpenReports(ctx, 100, 0)
+	if err != nil {
+		return err
+	}
+	activeIDs := make([]uuid.UUID, 0, len(items))
+	for _, item := range items {
+		if _, err = u.repo.UpsertPostReportCase(ctx, item); err != nil {
+			return err
+		}
+		activeIDs = append(activeIDs, item.ID)
+	}
+	if err = u.repo.CancelStalePostReportCases(ctx, activeIDs, time.Now().UTC()); err != nil {
+		return err
+	}
+
+	posts, err := u.post.ListPendingCommunityPosts(ctx, 100, 0)
+	if err != nil {
+		return err
+	}
+	activePostIDs := make([]uuid.UUID, 0, len(posts))
+	for _, item := range posts {
+		if _, err = u.repo.UpsertStoryCase(ctx, item); err != nil {
+			return err
+		}
+		activePostIDs = append(activePostIDs, item.ID)
+	}
+	return u.repo.CancelStaleStoryCases(ctx, activePostIDs, time.Now().UTC())
+}
+
 func (u *ModerationUseCase) ListActiveGuides(ctx context.Context, actor *model.StaffUser, limit int, offset int) ([]model.GuideApplicationModerationItem, error) {
 	if actor == nil || !actor.HasPermission(enum.PermissionGuideModerate) {
 		return nil, ErrPermissionDenied
@@ -194,6 +241,21 @@ func normalizeModerationQueueSort(value model.ModerationQueueSort) model.Moderat
 	}
 }
 
+func moderationCaseKind(item *model.ModerationCase) string {
+	if item == nil || len(item.Metadata) == 0 {
+		return "post_report"
+	}
+	var metadata map[string]string
+	if err := json.Unmarshal(item.Metadata, &metadata); err != nil {
+		return "post_report"
+	}
+	kind := strings.TrimSpace(metadata["moderationKind"])
+	if kind == "" {
+		return "post_report"
+	}
+	return kind
+}
+
 func (u *ModerationUseCase) GetCaseDetail(ctx context.Context, actor *model.StaffUser, caseID uuid.UUID) (*ModerationCaseDetail, error) {
 	if actor == nil || !actor.HasPermission(enum.PermissionModerationRead) {
 		return nil, ErrPermissionDenied
@@ -213,6 +275,8 @@ func (u *ModerationUseCase) GetCaseDetail(ctx context.Context, actor *model.Staf
 	var activity *model.ActivityModerationItem
 	var guideApplication *model.GuideApplicationModerationItem
 	var chatMessage *model.ChatMessageModerationItem
+	var post *model.PostModerationItem
+	var postReport *model.PostReportModerationItem
 	if item.TargetType == model.ModerationTargetExcursion {
 		excursion, err = u.excursion.GetExcursion(ctx, item.TargetID)
 		if err != nil {
@@ -233,6 +297,18 @@ func (u *ModerationUseCase) GetCaseDetail(ctx context.Context, actor *model.Staf
 		if err != nil {
 			return nil, err
 		}
+	} else if item.TargetType == model.ModerationTargetPost && u.post != nil {
+		if moderationCaseKind(item) == "community_post" {
+			post, err = u.post.GetCommunityPost(ctx, item.TargetID)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			postReport, err = u.post.GetReport(ctx, item.TargetID)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 	return &ModerationCaseDetail{
 		Case:             item,
@@ -240,6 +316,8 @@ func (u *ModerationUseCase) GetCaseDetail(ctx context.Context, actor *model.Staf
 		Activity:         activity,
 		GuideApplication: guideApplication,
 		ChatMessage:      chatMessage,
+		Post:             post,
+		PostReport:       postReport,
 		Decisions:        decisions,
 	}, nil
 }
@@ -509,6 +587,175 @@ func (u *ModerationUseCase) DecideChatMessage(ctx context.Context, input Moderat
 		return nil, err
 	}
 	detail.ChatMessage = updated
+	return detail, nil
+}
+
+func (u *ModerationUseCase) DecidePostReport(ctx context.Context, input ModerationDecisionInput) (*ModerationCaseDetail, error) {
+	if input.Actor == nil || !input.Actor.HasPermission(enum.PermissionModerationAssign) {
+		return nil, ErrPermissionDenied
+	}
+	if u.post == nil {
+		return nil, ErrInvalidInput
+	}
+	caseItem, err := u.repo.GetCase(ctx, input.CaseID)
+	if err != nil {
+		return nil, err
+	}
+	if caseItem == nil || caseItem.TargetType != model.ModerationTargetPost {
+		return nil, ErrModerationCaseNotFound
+	}
+	if moderationCaseKind(caseItem) == "community_post" {
+		return u.decideCommunityPost(ctx, input, caseItem)
+	}
+	if input.Decision != enum.ModerationDecisionApprove && input.Decision != enum.ModerationDecisionReject {
+		return nil, ErrInvalidInput
+	}
+	internalComment := strings.TrimSpace(input.InternalComment)
+	if internalComment == "" {
+		return nil, ErrInvalidInput
+	}
+	idempotencyKey := strings.TrimSpace(input.IdempotencyKey)
+	if idempotencyKey == "" {
+		idempotencyKey = uuid.NewString()
+	}
+	now := time.Now().UTC()
+	decision := &model.ModerationDecision{
+		ID:              uuid.New(),
+		CaseID:          caseItem.ID,
+		DecisionType:    input.Decision,
+		SourceRevision:  caseItem.SourceRevision,
+		ReasonCodes:     normalizeReasonCodes(input.ReasonCodes),
+		PublicComment:   strings.TrimSpace(input.PublicComment),
+		InternalComment: internalComment,
+		IdempotencyKey:  idempotencyKey,
+		DecidedBy:       input.Actor.ID,
+		ApplyStatus:     enum.ModerationApplyPending,
+		CreatedAt:       now,
+	}
+	if err = u.repo.CreateDecision(ctx, decision); err != nil {
+		if errors.Is(err, ErrDuplicateDecision) {
+			return u.GetCaseDetail(ctx, input.Actor, caseItem.ID)
+		}
+		return nil, err
+	}
+	clientInput := port.PostReportDecisionInput{
+		ReportID:        caseItem.TargetID,
+		ActorStaffID:    input.Actor.ID,
+		InternalComment: decision.InternalComment,
+		IdempotencyKey:  idempotencyKey,
+		RequestID:       input.RequestMetadata.RequestID,
+	}
+	var updated *model.PostReportModerationItem
+	var raw []byte
+	switch input.Decision {
+	case enum.ModerationDecisionApprove:
+		updated, raw, err = u.post.ReviewReport(ctx, clientInput)
+	case enum.ModerationDecisionReject:
+		updated, raw, err = u.post.DismissReport(ctx, clientInput)
+	default:
+		return nil, ErrInvalidInput
+	}
+	if err != nil {
+		_ = u.repo.MarkDecisionFailed(ctx, decision.ID, errorResponseJSON(err), now)
+		u.appendModerationAudit(ctx, input.Actor.ID, "moderation.post_report.apply_failed", caseItem.ID, input.RequestMetadata, map[string]any{"decision": input.Decision, "targetId": caseItem.TargetID, "targetType": caseItem.TargetType, "error": err.Error()})
+		return nil, err
+	}
+	if err = u.repo.MarkDecisionApplied(ctx, decision.ID, raw, now); err != nil {
+		return nil, err
+	}
+	if err = u.repo.SupersedeAppliedDecisions(ctx, caseItem.ID, caseItem.SourceRevision, decision.ID, now); err != nil {
+		return nil, err
+	}
+	status := enum.ModerationCaseStatusApproved
+	if input.Decision == enum.ModerationDecisionReject {
+		status = enum.ModerationCaseStatusRejected
+	}
+	if err = u.repo.UpdateCaseStatus(ctx, caseItem.ID, status, &now, now); err != nil {
+		return nil, err
+	}
+	u.appendModerationAudit(ctx, input.Actor.ID, "moderation.post_report.applied", caseItem.ID, input.RequestMetadata, map[string]any{"decision": input.Decision, "targetId": caseItem.TargetID, "targetType": caseItem.TargetType})
+	detail, err := u.GetCaseDetail(ctx, input.Actor, caseItem.ID)
+	if err != nil {
+		return nil, err
+	}
+	detail.PostReport = updated
+	return detail, nil
+}
+
+func (u *ModerationUseCase) decideCommunityPost(ctx context.Context, input ModerationDecisionInput, caseItem *model.ModerationCase) (*ModerationCaseDetail, error) {
+	if input.Decision != enum.ModerationDecisionApprove && input.Decision != enum.ModerationDecisionReject {
+		return nil, ErrInvalidInput
+	}
+	internalComment := strings.TrimSpace(input.InternalComment)
+	if internalComment == "" {
+		return nil, ErrInvalidInput
+	}
+	idempotencyKey := strings.TrimSpace(input.IdempotencyKey)
+	if idempotencyKey == "" {
+		idempotencyKey = uuid.NewString()
+	}
+	now := time.Now().UTC()
+	decision := &model.ModerationDecision{
+		ID:              uuid.New(),
+		CaseID:          caseItem.ID,
+		DecisionType:    input.Decision,
+		SourceRevision:  caseItem.SourceRevision,
+		ReasonCodes:     normalizeReasonCodes(input.ReasonCodes),
+		PublicComment:   strings.TrimSpace(input.PublicComment),
+		InternalComment: internalComment,
+		IdempotencyKey:  idempotencyKey,
+		DecidedBy:       input.Actor.ID,
+		ApplyStatus:     enum.ModerationApplyPending,
+		CreatedAt:       now,
+	}
+	if err := u.repo.CreateDecision(ctx, decision); err != nil {
+		if errors.Is(err, ErrDuplicateDecision) {
+			return u.GetCaseDetail(ctx, input.Actor, caseItem.ID)
+		}
+		return nil, err
+	}
+	clientInput := port.CommunityPostDecisionInput{
+		PostID:          caseItem.TargetID,
+		ActorStaffID:    input.Actor.ID,
+		InternalComment: decision.InternalComment,
+		IdempotencyKey:  idempotencyKey,
+		RequestID:       input.RequestMetadata.RequestID,
+	}
+	var updated *model.PostModerationItem
+	var raw []byte
+	var err error
+	switch input.Decision {
+	case enum.ModerationDecisionApprove:
+		updated, raw, err = u.post.ApproveCommunityPost(ctx, clientInput)
+	case enum.ModerationDecisionReject:
+		updated, raw, err = u.post.RejectCommunityPost(ctx, clientInput)
+	default:
+		return nil, ErrInvalidInput
+	}
+	if err != nil {
+		_ = u.repo.MarkDecisionFailed(ctx, decision.ID, errorResponseJSON(err), now)
+		u.appendModerationAudit(ctx, input.Actor.ID, "moderation.community_post.apply_failed", caseItem.ID, input.RequestMetadata, map[string]any{"decision": input.Decision, "targetId": caseItem.TargetID, "targetType": caseItem.TargetType, "error": err.Error()})
+		return nil, err
+	}
+	if err = u.repo.MarkDecisionApplied(ctx, decision.ID, raw, now); err != nil {
+		return nil, err
+	}
+	if err = u.repo.SupersedeAppliedDecisions(ctx, caseItem.ID, caseItem.SourceRevision, decision.ID, now); err != nil {
+		return nil, err
+	}
+	status := enum.ModerationCaseStatusApproved
+	if input.Decision == enum.ModerationDecisionReject {
+		status = enum.ModerationCaseStatusRejected
+	}
+	if err = u.repo.UpdateCaseStatus(ctx, caseItem.ID, status, &now, now); err != nil {
+		return nil, err
+	}
+	u.appendModerationAudit(ctx, input.Actor.ID, "moderation.community_post.applied", caseItem.ID, input.RequestMetadata, map[string]any{"decision": input.Decision, "targetId": caseItem.TargetID, "targetType": caseItem.TargetType})
+	detail, err := u.GetCaseDetail(ctx, input.Actor, caseItem.ID)
+	if err != nil {
+		return nil, err
+	}
+	detail.Post = updated
 	return detail, nil
 }
 

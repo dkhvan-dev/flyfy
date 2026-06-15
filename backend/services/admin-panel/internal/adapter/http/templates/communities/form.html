@@ -1,0 +1,128 @@
+{{define "communities/form"}}
+{{template "pageStart" .}}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "community.eyebrow"}}</p>
+      <h1>{{if .Data.IsEdit}}{{t .Locale "community.editTitle"}}{{else}}{{t .Locale "community.createTitle"}}{{end}}</h1>
+      <p>{{t .Locale "community.subtitle"}}</p>
+    </div>
+  </div>
+
+  <form method="post" action="{{.Data.SubmitURL}}" enctype="multipart/form-data" class="form card" data-location-filter-form>
+    {{csrfField .CSRFToken}}
+    <h2>{{t .Locale "community.identity"}}</h2>
+    <div class="grid three">
+      <label>
+        <span>{{t .Locale "field.slug"}}</span>
+        <select name="slug" required>
+          {{range .Data.SlugOptions}}
+            <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Value}}</option>
+          {{end}}
+        </select>
+        <small>{{t .Locale "community.slugHelp"}}</small>
+      </label>
+      <label>
+        <span>{{t .Locale "field.topic"}}</span>
+        <select name="topic" required>
+          {{range .Data.Topics}}
+            <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{t $.Locale .LabelKey}}</option>
+          {{end}}
+        </select>
+      </label>
+      <label>
+        <span>{{t .Locale "field.status"}}</span>
+        <select name="status" required>
+          {{range .Data.Statuses}}
+            <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{t $.Locale .LabelKey}}</option>
+          {{end}}
+        </select>
+      </label>
+      <label>
+        <span>{{t .Locale "field.visibility"}}</span>
+        <select name="visibility" required>
+          {{range .Data.Visibilities}}
+            <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{t $.Locale .LabelKey}}</option>
+          {{end}}
+        </select>
+      </label>
+      <label>
+        <span>{{t .Locale "field.postingPolicy"}}</span>
+        <select name="posting_policy" required>
+          {{range .Data.PostingPolicies}}
+            <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{t $.Locale .LabelKey}}</option>
+          {{end}}
+        </select>
+      </label>
+      <label>
+        <span>{{t .Locale "field.country"}}</span>
+        <input type="hidden" name="country_code" value="{{.Data.Input.CountryCode}}" data-country-filter-value>
+        <div class="filter-combobox" data-filter-combobox>
+          <input type="search" data-country-filter-input value="{{if .Data.Input.CountryCode}}{{attractionCountry .Locale .Data.Input.CountryCode}}{{end}}" placeholder="{{t .Locale "community.locationNone"}}" autocomplete="off" autocorrect="off" spellcheck="false" aria-autocomplete="none" aria-expanded="false" aria-controls="community-form-country-suggestions">
+          <div class="filter-suggestions" id="community-form-country-suggestions" data-country-filter-suggestions role="listbox" hidden>
+            {{range .Data.Countries}}
+              <button type="button" class="filter-suggestion" data-country-filter-option data-value="{{.Value}}" data-label="{{attractionCountry $.Locale .Value}}" data-search="{{attractionCountrySearch .Value}}" role="option">
+                <span>{{attractionCountry $.Locale .Value}}</span>
+              </button>
+            {{end}}
+          </div>
+        </div>
+      </label>
+      <label data-city-filter-group {{if not .Data.Input.CountryCode}}hidden{{end}}>
+        <span>{{t .Locale "field.city"}}</span>
+        <input type="hidden" name="city_id" value="{{.Data.Input.CityID}}" data-city-filter-value {{if not .Data.Input.CountryCode}}disabled{{end}}>
+        <div class="filter-combobox" data-filter-combobox>
+          <input type="search" data-city-filter-input value="{{if .Data.Input.CityID}}{{attractionCityName .Locale .Data.Input.CityID}}{{end}}" placeholder="{{t .Locale "community.locationNone"}}" autocomplete="off" autocorrect="off" spellcheck="false" aria-autocomplete="none" aria-expanded="false" aria-controls="community-form-city-suggestions" {{if not .Data.Input.CountryCode}}disabled{{end}}>
+          <div class="filter-suggestions" id="community-form-city-suggestions" data-city-filter-suggestions role="listbox" hidden>
+            {{range .Data.Cities}}
+              <button type="button" class="filter-suggestion" data-city-filter-option data-country="{{.CountryCode}}" data-value="{{.Value}}" data-label="{{attractionCityName $.Locale .Value}}" data-search="{{attractionCitySearch .CountryCode .Value}}" role="option">
+                <span>{{attractionCityName $.Locale .Value}}</span>
+                <small>{{attractionCountry $.Locale .CountryCode}}</small>
+              </button>
+            {{end}}
+          </div>
+        </div>
+      </label>
+      <label>
+        <span>{{t .Locale "field.avatarImage"}}</span>
+        <input type="file" name="avatar_image" accept="image/jpeg,image/png,image/webp">
+        {{if .Data.IsEdit}}<small>{{t .Locale "community.imageReplaceHelp"}}</small>{{end}}
+      </label>
+      <label>
+        <span>{{t .Locale "field.coverImage"}}</span>
+        <input type="file" name="cover_image" accept="image/jpeg,image/png,image/webp">
+        {{if .Data.IsEdit}}<small>{{t .Locale "community.imageReplaceHelp"}}</small>{{end}}
+      </label>
+    </div>
+
+    <h2>{{t .Locale "community.localizedContent"}}</h2>
+    <div class="localized-fields">
+      {{range .Data.Locales}}
+        <div class="card subtle">
+          <h3>{{t $.Locale .LabelKey}}</h3>
+          <label>
+            <span>{{t $.Locale "field.title"}}</span>
+            <input name="title_{{.Value}}" value="{{index $.Data.Input.TitleI18n .Value}}" maxlength="160" required>
+            <small class="field-error">{{t $.Locale "validation.required"}}</small>
+          </label>
+          <label>
+            <span>{{t $.Locale "field.description"}}</span>
+            <textarea name="description_{{.Value}}" rows="4" maxlength="1200" required>{{index $.Data.Input.DescriptionI18n .Value}}</textarea>
+            <small class="field-error">{{t $.Locale "validation.required"}}</small>
+          </label>
+          <label>
+            <span>{{t $.Locale "field.rules"}}</span>
+            <textarea name="rules_{{.Value}}" rows="4" placeholder="{{t $.Locale "community.rulesPlaceholder"}}">{{index $.Data.Input.RulesTextI18n .Value}}</textarea>
+            <small>{{t $.Locale "community.rulesHelp"}}</small>
+          </label>
+        </div>
+      {{end}}
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="button primary">{{if .Data.IsEdit}}{{t .Locale "action.saveChanges"}}{{else}}{{t .Locale "action.createCommunity"}}{{end}}</button>
+    </div>
+  </form>
+</section>
+{{template "pageEnd" .}}
+{{end}}

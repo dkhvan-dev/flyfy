@@ -307,6 +307,107 @@ func (RestrictionEventType) EnumDescriptor() ([]byte, []int) {
 	return file_trust_v1_trust_proto_rawDescGZIP(), []int{4}
 }
 
+type RestrictionAppealStatus int32
+
+const (
+	RestrictionAppealStatus_RESTRICTION_APPEAL_STATUS_UNSPECIFIED RestrictionAppealStatus = 0
+	RestrictionAppealStatus_RESTRICTION_APPEAL_STATUS_PENDING     RestrictionAppealStatus = 1
+	RestrictionAppealStatus_RESTRICTION_APPEAL_STATUS_APPROVED    RestrictionAppealStatus = 2
+	RestrictionAppealStatus_RESTRICTION_APPEAL_STATUS_REJECTED    RestrictionAppealStatus = 3
+)
+
+// Enum value maps for RestrictionAppealStatus.
+var (
+	RestrictionAppealStatus_name = map[int32]string{
+		0: "RESTRICTION_APPEAL_STATUS_UNSPECIFIED",
+		1: "RESTRICTION_APPEAL_STATUS_PENDING",
+		2: "RESTRICTION_APPEAL_STATUS_APPROVED",
+		3: "RESTRICTION_APPEAL_STATUS_REJECTED",
+	}
+	RestrictionAppealStatus_value = map[string]int32{
+		"RESTRICTION_APPEAL_STATUS_UNSPECIFIED": 0,
+		"RESTRICTION_APPEAL_STATUS_PENDING":     1,
+		"RESTRICTION_APPEAL_STATUS_APPROVED":    2,
+		"RESTRICTION_APPEAL_STATUS_REJECTED":    3,
+	}
+)
+
+func (x RestrictionAppealStatus) Enum() *RestrictionAppealStatus {
+	p := new(RestrictionAppealStatus)
+	*p = x
+	return p
+}
+
+func (x RestrictionAppealStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RestrictionAppealStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_trust_v1_trust_proto_enumTypes[5].Descriptor()
+}
+
+func (RestrictionAppealStatus) Type() protoreflect.EnumType {
+	return &file_trust_v1_trust_proto_enumTypes[5]
+}
+
+func (x RestrictionAppealStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RestrictionAppealStatus.Descriptor instead.
+func (RestrictionAppealStatus) EnumDescriptor() ([]byte, []int) {
+	return file_trust_v1_trust_proto_rawDescGZIP(), []int{5}
+}
+
+type RestrictionAppealDecision int32
+
+const (
+	RestrictionAppealDecision_RESTRICTION_APPEAL_DECISION_UNSPECIFIED RestrictionAppealDecision = 0
+	RestrictionAppealDecision_RESTRICTION_APPEAL_DECISION_APPROVE     RestrictionAppealDecision = 1
+	RestrictionAppealDecision_RESTRICTION_APPEAL_DECISION_REJECT      RestrictionAppealDecision = 2
+)
+
+// Enum value maps for RestrictionAppealDecision.
+var (
+	RestrictionAppealDecision_name = map[int32]string{
+		0: "RESTRICTION_APPEAL_DECISION_UNSPECIFIED",
+		1: "RESTRICTION_APPEAL_DECISION_APPROVE",
+		2: "RESTRICTION_APPEAL_DECISION_REJECT",
+	}
+	RestrictionAppealDecision_value = map[string]int32{
+		"RESTRICTION_APPEAL_DECISION_UNSPECIFIED": 0,
+		"RESTRICTION_APPEAL_DECISION_APPROVE":     1,
+		"RESTRICTION_APPEAL_DECISION_REJECT":      2,
+	}
+)
+
+func (x RestrictionAppealDecision) Enum() *RestrictionAppealDecision {
+	p := new(RestrictionAppealDecision)
+	*p = x
+	return p
+}
+
+func (x RestrictionAppealDecision) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RestrictionAppealDecision) Descriptor() protoreflect.EnumDescriptor {
+	return file_trust_v1_trust_proto_enumTypes[6].Descriptor()
+}
+
+func (RestrictionAppealDecision) Type() protoreflect.EnumType {
+	return &file_trust_v1_trust_proto_enumTypes[6]
+}
+
+func (x RestrictionAppealDecision) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RestrictionAppealDecision.Descriptor instead.
+func (RestrictionAppealDecision) EnumDescriptor() ([]byte, []int) {
+	return file_trust_v1_trust_proto_rawDescGZIP(), []int{6}
+}
+
 type CheckActionPolicyRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	UserId         string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -839,6 +940,490 @@ func (x *GetTrustProfileResponse) GetProfile() *TrustProfile {
 	return nil
 }
 
+type RestrictionAppeal struct {
+	state              protoimpl.MessageState  `protogen:"open.v1"`
+	AppealId           string                  `protobuf:"bytes,1,opt,name=appeal_id,json=appealId,proto3" json:"appeal_id,omitempty"`
+	UserId             string                  `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	RestrictionId      string                  `protobuf:"bytes,3,opt,name=restriction_id,json=restrictionId,proto3" json:"restriction_id,omitempty"`
+	Status             RestrictionAppealStatus `protobuf:"varint,4,opt,name=status,proto3,enum=trust.v1.RestrictionAppealStatus" json:"status,omitempty"`
+	ReasonCode         string                  `protobuf:"bytes,5,opt,name=reason_code,json=reasonCode,proto3" json:"reason_code,omitempty"`
+	UserMessage        string                  `protobuf:"bytes,6,opt,name=user_message,json=userMessage,proto3" json:"user_message,omitempty"`
+	IdempotencyKey     string                  `protobuf:"bytes,7,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	CreatedAt          *timestamppb.Timestamp  `protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt          *timestamppb.Timestamp  `protobuf:"bytes,9,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	DecidedAt          *timestamppb.Timestamp  `protobuf:"bytes,10,opt,name=decided_at,json=decidedAt,proto3" json:"decided_at,omitempty"`
+	DecidedByStaffId   string                  `protobuf:"bytes,11,opt,name=decided_by_staff_id,json=decidedByStaffId,proto3" json:"decided_by_staff_id,omitempty"`
+	DecisionReasonCode string                  `protobuf:"bytes,12,opt,name=decision_reason_code,json=decisionReasonCode,proto3" json:"decision_reason_code,omitempty"`
+	StaffComment       string                  `protobuf:"bytes,13,opt,name=staff_comment,json=staffComment,proto3" json:"staff_comment,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *RestrictionAppeal) Reset() {
+	*x = RestrictionAppeal{}
+	mi := &file_trust_v1_trust_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RestrictionAppeal) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RestrictionAppeal) ProtoMessage() {}
+
+func (x *RestrictionAppeal) ProtoReflect() protoreflect.Message {
+	mi := &file_trust_v1_trust_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RestrictionAppeal.ProtoReflect.Descriptor instead.
+func (*RestrictionAppeal) Descriptor() ([]byte, []int) {
+	return file_trust_v1_trust_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *RestrictionAppeal) GetAppealId() string {
+	if x != nil {
+		return x.AppealId
+	}
+	return ""
+}
+
+func (x *RestrictionAppeal) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *RestrictionAppeal) GetRestrictionId() string {
+	if x != nil {
+		return x.RestrictionId
+	}
+	return ""
+}
+
+func (x *RestrictionAppeal) GetStatus() RestrictionAppealStatus {
+	if x != nil {
+		return x.Status
+	}
+	return RestrictionAppealStatus_RESTRICTION_APPEAL_STATUS_UNSPECIFIED
+}
+
+func (x *RestrictionAppeal) GetReasonCode() string {
+	if x != nil {
+		return x.ReasonCode
+	}
+	return ""
+}
+
+func (x *RestrictionAppeal) GetUserMessage() string {
+	if x != nil {
+		return x.UserMessage
+	}
+	return ""
+}
+
+func (x *RestrictionAppeal) GetIdempotencyKey() string {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return ""
+}
+
+func (x *RestrictionAppeal) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *RestrictionAppeal) GetUpdatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return nil
+}
+
+func (x *RestrictionAppeal) GetDecidedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.DecidedAt
+	}
+	return nil
+}
+
+func (x *RestrictionAppeal) GetDecidedByStaffId() string {
+	if x != nil {
+		return x.DecidedByStaffId
+	}
+	return ""
+}
+
+func (x *RestrictionAppeal) GetDecisionReasonCode() string {
+	if x != nil {
+		return x.DecisionReasonCode
+	}
+	return ""
+}
+
+func (x *RestrictionAppeal) GetStaffComment() string {
+	if x != nil {
+		return x.StaffComment
+	}
+	return ""
+}
+
+type SubmitRestrictionAppealRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	UserId         string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	RestrictionId  string                 `protobuf:"bytes,2,opt,name=restriction_id,json=restrictionId,proto3" json:"restriction_id,omitempty"`
+	ReasonCode     string                 `protobuf:"bytes,3,opt,name=reason_code,json=reasonCode,proto3" json:"reason_code,omitempty"`
+	UserMessage    string                 `protobuf:"bytes,4,opt,name=user_message,json=userMessage,proto3" json:"user_message,omitempty"`
+	IdempotencyKey string                 `protobuf:"bytes,5,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *SubmitRestrictionAppealRequest) Reset() {
+	*x = SubmitRestrictionAppealRequest{}
+	mi := &file_trust_v1_trust_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SubmitRestrictionAppealRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SubmitRestrictionAppealRequest) ProtoMessage() {}
+
+func (x *SubmitRestrictionAppealRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_trust_v1_trust_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SubmitRestrictionAppealRequest.ProtoReflect.Descriptor instead.
+func (*SubmitRestrictionAppealRequest) Descriptor() ([]byte, []int) {
+	return file_trust_v1_trust_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *SubmitRestrictionAppealRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *SubmitRestrictionAppealRequest) GetRestrictionId() string {
+	if x != nil {
+		return x.RestrictionId
+	}
+	return ""
+}
+
+func (x *SubmitRestrictionAppealRequest) GetReasonCode() string {
+	if x != nil {
+		return x.ReasonCode
+	}
+	return ""
+}
+
+func (x *SubmitRestrictionAppealRequest) GetUserMessage() string {
+	if x != nil {
+		return x.UserMessage
+	}
+	return ""
+}
+
+func (x *SubmitRestrictionAppealRequest) GetIdempotencyKey() string {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return ""
+}
+
+type SubmitRestrictionAppealResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Appeal        *RestrictionAppeal     `protobuf:"bytes,1,opt,name=appeal,proto3" json:"appeal,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SubmitRestrictionAppealResponse) Reset() {
+	*x = SubmitRestrictionAppealResponse{}
+	mi := &file_trust_v1_trust_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SubmitRestrictionAppealResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SubmitRestrictionAppealResponse) ProtoMessage() {}
+
+func (x *SubmitRestrictionAppealResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_trust_v1_trust_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SubmitRestrictionAppealResponse.ProtoReflect.Descriptor instead.
+func (*SubmitRestrictionAppealResponse) Descriptor() ([]byte, []int) {
+	return file_trust_v1_trust_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *SubmitRestrictionAppealResponse) GetAppeal() *RestrictionAppeal {
+	if x != nil {
+		return x.Appeal
+	}
+	return nil
+}
+
+type ListRestrictionAppealsRequest struct {
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Status        RestrictionAppealStatus `protobuf:"varint,1,opt,name=status,proto3,enum=trust.v1.RestrictionAppealStatus" json:"status,omitempty"`
+	UserId        string                  `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListRestrictionAppealsRequest) Reset() {
+	*x = ListRestrictionAppealsRequest{}
+	mi := &file_trust_v1_trust_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListRestrictionAppealsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListRestrictionAppealsRequest) ProtoMessage() {}
+
+func (x *ListRestrictionAppealsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_trust_v1_trust_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListRestrictionAppealsRequest.ProtoReflect.Descriptor instead.
+func (*ListRestrictionAppealsRequest) Descriptor() ([]byte, []int) {
+	return file_trust_v1_trust_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ListRestrictionAppealsRequest) GetStatus() RestrictionAppealStatus {
+	if x != nil {
+		return x.Status
+	}
+	return RestrictionAppealStatus_RESTRICTION_APPEAL_STATUS_UNSPECIFIED
+}
+
+func (x *ListRestrictionAppealsRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type ListRestrictionAppealsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Appeals       []*RestrictionAppeal   `protobuf:"bytes,1,rep,name=appeals,proto3" json:"appeals,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListRestrictionAppealsResponse) Reset() {
+	*x = ListRestrictionAppealsResponse{}
+	mi := &file_trust_v1_trust_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListRestrictionAppealsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListRestrictionAppealsResponse) ProtoMessage() {}
+
+func (x *ListRestrictionAppealsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_trust_v1_trust_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListRestrictionAppealsResponse.ProtoReflect.Descriptor instead.
+func (*ListRestrictionAppealsResponse) Descriptor() ([]byte, []int) {
+	return file_trust_v1_trust_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *ListRestrictionAppealsResponse) GetAppeals() []*RestrictionAppeal {
+	if x != nil {
+		return x.Appeals
+	}
+	return nil
+}
+
+type DecideRestrictionAppealRequest struct {
+	state           protoimpl.MessageState    `protogen:"open.v1"`
+	AppealId        string                    `protobuf:"bytes,1,opt,name=appeal_id,json=appealId,proto3" json:"appeal_id,omitempty"`
+	ActorStaffId    string                    `protobuf:"bytes,2,opt,name=actor_staff_id,json=actorStaffId,proto3" json:"actor_staff_id,omitempty"`
+	Decision        RestrictionAppealDecision `protobuf:"varint,3,opt,name=decision,proto3,enum=trust.v1.RestrictionAppealDecision" json:"decision,omitempty"`
+	ReasonCode      string                    `protobuf:"bytes,4,opt,name=reason_code,json=reasonCode,proto3" json:"reason_code,omitempty"`
+	StaffComment    string                    `protobuf:"bytes,5,opt,name=staff_comment,json=staffComment,proto3" json:"staff_comment,omitempty"`
+	DecisionEventId string                    `protobuf:"bytes,6,opt,name=decision_event_id,json=decisionEventId,proto3" json:"decision_event_id,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *DecideRestrictionAppealRequest) Reset() {
+	*x = DecideRestrictionAppealRequest{}
+	mi := &file_trust_v1_trust_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DecideRestrictionAppealRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DecideRestrictionAppealRequest) ProtoMessage() {}
+
+func (x *DecideRestrictionAppealRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_trust_v1_trust_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DecideRestrictionAppealRequest.ProtoReflect.Descriptor instead.
+func (*DecideRestrictionAppealRequest) Descriptor() ([]byte, []int) {
+	return file_trust_v1_trust_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *DecideRestrictionAppealRequest) GetAppealId() string {
+	if x != nil {
+		return x.AppealId
+	}
+	return ""
+}
+
+func (x *DecideRestrictionAppealRequest) GetActorStaffId() string {
+	if x != nil {
+		return x.ActorStaffId
+	}
+	return ""
+}
+
+func (x *DecideRestrictionAppealRequest) GetDecision() RestrictionAppealDecision {
+	if x != nil {
+		return x.Decision
+	}
+	return RestrictionAppealDecision_RESTRICTION_APPEAL_DECISION_UNSPECIFIED
+}
+
+func (x *DecideRestrictionAppealRequest) GetReasonCode() string {
+	if x != nil {
+		return x.ReasonCode
+	}
+	return ""
+}
+
+func (x *DecideRestrictionAppealRequest) GetStaffComment() string {
+	if x != nil {
+		return x.StaffComment
+	}
+	return ""
+}
+
+func (x *DecideRestrictionAppealRequest) GetDecisionEventId() string {
+	if x != nil {
+		return x.DecisionEventId
+	}
+	return ""
+}
+
+type DecideRestrictionAppealResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Appeal        *RestrictionAppeal     `protobuf:"bytes,1,opt,name=appeal,proto3" json:"appeal,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DecideRestrictionAppealResponse) Reset() {
+	*x = DecideRestrictionAppealResponse{}
+	mi := &file_trust_v1_trust_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DecideRestrictionAppealResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DecideRestrictionAppealResponse) ProtoMessage() {}
+
+func (x *DecideRestrictionAppealResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_trust_v1_trust_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DecideRestrictionAppealResponse.ProtoReflect.Descriptor instead.
+func (*DecideRestrictionAppealResponse) Descriptor() ([]byte, []int) {
+	return file_trust_v1_trust_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *DecideRestrictionAppealResponse) GetAppeal() *RestrictionAppeal {
+	if x != nil {
+		return x.Appeal
+	}
+	return nil
+}
+
 var File_trust_v1_trust_proto protoreflect.FileDescriptor
 
 const file_trust_v1_trust_proto_rawDesc = "" +
@@ -895,7 +1480,50 @@ const file_trust_v1_trust_proto_rawDesc = "" +
 	"\n" +
 	"updated_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"K\n" +
 	"\x17GetTrustProfileResponse\x120\n" +
-	"\aprofile\x18\x01 \x01(\v2\x16.trust.v1.TrustProfileR\aprofile*\x97\x02\n" +
+	"\aprofile\x18\x01 \x01(\v2\x16.trust.v1.TrustProfileR\aprofile\"\xcf\x04\n" +
+	"\x11RestrictionAppeal\x12\x1b\n" +
+	"\tappeal_id\x18\x01 \x01(\tR\bappealId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\x12%\n" +
+	"\x0erestriction_id\x18\x03 \x01(\tR\rrestrictionId\x129\n" +
+	"\x06status\x18\x04 \x01(\x0e2!.trust.v1.RestrictionAppealStatusR\x06status\x12\x1f\n" +
+	"\vreason_code\x18\x05 \x01(\tR\n" +
+	"reasonCode\x12!\n" +
+	"\fuser_message\x18\x06 \x01(\tR\vuserMessage\x12'\n" +
+	"\x0fidempotency_key\x18\a \x01(\tR\x0eidempotencyKey\x129\n" +
+	"\n" +
+	"created_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
+	"\n" +
+	"updated_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x129\n" +
+	"\n" +
+	"decided_at\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\tdecidedAt\x12-\n" +
+	"\x13decided_by_staff_id\x18\v \x01(\tR\x10decidedByStaffId\x120\n" +
+	"\x14decision_reason_code\x18\f \x01(\tR\x12decisionReasonCode\x12#\n" +
+	"\rstaff_comment\x18\r \x01(\tR\fstaffComment\"\xcd\x01\n" +
+	"\x1eSubmitRestrictionAppealRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12%\n" +
+	"\x0erestriction_id\x18\x02 \x01(\tR\rrestrictionId\x12\x1f\n" +
+	"\vreason_code\x18\x03 \x01(\tR\n" +
+	"reasonCode\x12!\n" +
+	"\fuser_message\x18\x04 \x01(\tR\vuserMessage\x12'\n" +
+	"\x0fidempotency_key\x18\x05 \x01(\tR\x0eidempotencyKey\"V\n" +
+	"\x1fSubmitRestrictionAppealResponse\x123\n" +
+	"\x06appeal\x18\x01 \x01(\v2\x1b.trust.v1.RestrictionAppealR\x06appeal\"s\n" +
+	"\x1dListRestrictionAppealsRequest\x129\n" +
+	"\x06status\x18\x01 \x01(\x0e2!.trust.v1.RestrictionAppealStatusR\x06status\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\"W\n" +
+	"\x1eListRestrictionAppealsResponse\x125\n" +
+	"\aappeals\x18\x01 \x03(\v2\x1b.trust.v1.RestrictionAppealR\aappeals\"\x96\x02\n" +
+	"\x1eDecideRestrictionAppealRequest\x12\x1b\n" +
+	"\tappeal_id\x18\x01 \x01(\tR\bappealId\x12$\n" +
+	"\x0eactor_staff_id\x18\x02 \x01(\tR\factorStaffId\x12?\n" +
+	"\bdecision\x18\x03 \x01(\x0e2#.trust.v1.RestrictionAppealDecisionR\bdecision\x12\x1f\n" +
+	"\vreason_code\x18\x04 \x01(\tR\n" +
+	"reasonCode\x12#\n" +
+	"\rstaff_comment\x18\x05 \x01(\tR\fstaffComment\x12*\n" +
+	"\x11decision_event_id\x18\x06 \x01(\tR\x0fdecisionEventId\"V\n" +
+	"\x1fDecideRestrictionAppealResponse\x123\n" +
+	"\x06appeal\x18\x01 \x01(\v2\x1b.trust.v1.RestrictionAppealR\x06appeal*\x97\x02\n" +
 	"\fPolicyAction\x12\x1d\n" +
 	"\x19POLICY_ACTION_UNSPECIFIED\x10\x00\x12!\n" +
 	"\x1dPOLICY_ACTION_ACTIVITY_CREATE\x10\x01\x12\x1e\n" +
@@ -928,11 +1556,23 @@ const file_trust_v1_trust_proto_rawDesc = "" +
 	"\x14RestrictionEventType\x12&\n" +
 	"\"RESTRICTION_EVENT_TYPE_UNSPECIFIED\x10\x00\x12\"\n" +
 	"\x1eRESTRICTION_EVENT_TYPE_CREATED\x10\x01\x12!\n" +
-	"\x1dRESTRICTION_EVENT_TYPE_LIFTED\x10\x022\xba\x02\n" +
+	"\x1dRESTRICTION_EVENT_TYPE_LIFTED\x10\x02*\xbb\x01\n" +
+	"\x17RestrictionAppealStatus\x12)\n" +
+	"%RESTRICTION_APPEAL_STATUS_UNSPECIFIED\x10\x00\x12%\n" +
+	"!RESTRICTION_APPEAL_STATUS_PENDING\x10\x01\x12&\n" +
+	"\"RESTRICTION_APPEAL_STATUS_APPROVED\x10\x02\x12&\n" +
+	"\"RESTRICTION_APPEAL_STATUS_REJECTED\x10\x03*\x99\x01\n" +
+	"\x19RestrictionAppealDecision\x12+\n" +
+	"'RESTRICTION_APPEAL_DECISION_UNSPECIFIED\x10\x00\x12'\n" +
+	"#RESTRICTION_APPEAL_DECISION_APPROVE\x10\x01\x12&\n" +
+	"\"RESTRICTION_APPEAL_DECISION_REJECT\x10\x022\x87\x05\n" +
 	"\fTrustService\x12\\\n" +
 	"\x11CheckActionPolicy\x12\".trust.v1.CheckActionPolicyRequest\x1a#.trust.v1.CheckActionPolicyResponse\x12t\n" +
 	"\x19ApplyUserRestrictionEvent\x12*.trust.v1.ApplyUserRestrictionEventRequest\x1a+.trust.v1.ApplyUserRestrictionEventResponse\x12V\n" +
-	"\x0fGetTrustProfile\x12 .trust.v1.GetTrustProfileRequest\x1a!.trust.v1.GetTrustProfileResponseB)Z'kz/inflap/proto/gen/go/trust/v1;trustv1b\x06proto3"
+	"\x0fGetTrustProfile\x12 .trust.v1.GetTrustProfileRequest\x1a!.trust.v1.GetTrustProfileResponse\x12n\n" +
+	"\x17SubmitRestrictionAppeal\x12(.trust.v1.SubmitRestrictionAppealRequest\x1a).trust.v1.SubmitRestrictionAppealResponse\x12k\n" +
+	"\x16ListRestrictionAppeals\x12'.trust.v1.ListRestrictionAppealsRequest\x1a(.trust.v1.ListRestrictionAppealsResponse\x12n\n" +
+	"\x17DecideRestrictionAppeal\x12(.trust.v1.DecideRestrictionAppealRequest\x1a).trust.v1.DecideRestrictionAppealResponseB)Z'kz/inflap/proto/gen/go/trust/v1;trustv1b\x06proto3"
 
 var (
 	file_trust_v1_trust_proto_rawDescOnce sync.Once
@@ -946,49 +1586,73 @@ func file_trust_v1_trust_proto_rawDescGZIP() []byte {
 	return file_trust_v1_trust_proto_rawDescData
 }
 
-var file_trust_v1_trust_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_trust_v1_trust_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_trust_v1_trust_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
+var file_trust_v1_trust_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_trust_v1_trust_proto_goTypes = []any{
 	(PolicyAction)(0),                         // 0: trust.v1.PolicyAction
 	(PolicyDecision)(0),                       // 1: trust.v1.PolicyDecision
 	(TrustBand)(0),                            // 2: trust.v1.TrustBand
 	(TrustStatus)(0),                          // 3: trust.v1.TrustStatus
 	(RestrictionEventType)(0),                 // 4: trust.v1.RestrictionEventType
-	(*CheckActionPolicyRequest)(nil),          // 5: trust.v1.CheckActionPolicyRequest
-	(*CheckActionPolicyResponse)(nil),         // 6: trust.v1.CheckActionPolicyResponse
-	(*ApplyUserRestrictionEventRequest)(nil),  // 7: trust.v1.ApplyUserRestrictionEventRequest
-	(*ApplyUserRestrictionEventResponse)(nil), // 8: trust.v1.ApplyUserRestrictionEventResponse
-	(*GetTrustProfileRequest)(nil),            // 9: trust.v1.GetTrustProfileRequest
-	(*TrustProfile)(nil),                      // 10: trust.v1.TrustProfile
-	(*GetTrustProfileResponse)(nil),           // 11: trust.v1.GetTrustProfileResponse
-	(*structpb.Struct)(nil),                   // 12: google.protobuf.Struct
-	(*timestamppb.Timestamp)(nil),             // 13: google.protobuf.Timestamp
+	(RestrictionAppealStatus)(0),              // 5: trust.v1.RestrictionAppealStatus
+	(RestrictionAppealDecision)(0),            // 6: trust.v1.RestrictionAppealDecision
+	(*CheckActionPolicyRequest)(nil),          // 7: trust.v1.CheckActionPolicyRequest
+	(*CheckActionPolicyResponse)(nil),         // 8: trust.v1.CheckActionPolicyResponse
+	(*ApplyUserRestrictionEventRequest)(nil),  // 9: trust.v1.ApplyUserRestrictionEventRequest
+	(*ApplyUserRestrictionEventResponse)(nil), // 10: trust.v1.ApplyUserRestrictionEventResponse
+	(*GetTrustProfileRequest)(nil),            // 11: trust.v1.GetTrustProfileRequest
+	(*TrustProfile)(nil),                      // 12: trust.v1.TrustProfile
+	(*GetTrustProfileResponse)(nil),           // 13: trust.v1.GetTrustProfileResponse
+	(*RestrictionAppeal)(nil),                 // 14: trust.v1.RestrictionAppeal
+	(*SubmitRestrictionAppealRequest)(nil),    // 15: trust.v1.SubmitRestrictionAppealRequest
+	(*SubmitRestrictionAppealResponse)(nil),   // 16: trust.v1.SubmitRestrictionAppealResponse
+	(*ListRestrictionAppealsRequest)(nil),     // 17: trust.v1.ListRestrictionAppealsRequest
+	(*ListRestrictionAppealsResponse)(nil),    // 18: trust.v1.ListRestrictionAppealsResponse
+	(*DecideRestrictionAppealRequest)(nil),    // 19: trust.v1.DecideRestrictionAppealRequest
+	(*DecideRestrictionAppealResponse)(nil),   // 20: trust.v1.DecideRestrictionAppealResponse
+	(*structpb.Struct)(nil),                   // 21: google.protobuf.Struct
+	(*timestamppb.Timestamp)(nil),             // 22: google.protobuf.Timestamp
 }
 var file_trust_v1_trust_proto_depIdxs = []int32{
 	0,  // 0: trust.v1.CheckActionPolicyRequest.action:type_name -> trust.v1.PolicyAction
-	12, // 1: trust.v1.CheckActionPolicyRequest.metadata:type_name -> google.protobuf.Struct
-	13, // 2: trust.v1.CheckActionPolicyRequest.requested_at:type_name -> google.protobuf.Timestamp
+	21, // 1: trust.v1.CheckActionPolicyRequest.metadata:type_name -> google.protobuf.Struct
+	22, // 2: trust.v1.CheckActionPolicyRequest.requested_at:type_name -> google.protobuf.Timestamp
 	1,  // 3: trust.v1.CheckActionPolicyResponse.decision:type_name -> trust.v1.PolicyDecision
 	2,  // 4: trust.v1.CheckActionPolicyResponse.trust_band:type_name -> trust.v1.TrustBand
 	4,  // 5: trust.v1.ApplyUserRestrictionEventRequest.event_type:type_name -> trust.v1.RestrictionEventType
-	13, // 6: trust.v1.ApplyUserRestrictionEventRequest.expires_at:type_name -> google.protobuf.Timestamp
-	13, // 7: trust.v1.ApplyUserRestrictionEventRequest.occurred_at:type_name -> google.protobuf.Timestamp
+	22, // 6: trust.v1.ApplyUserRestrictionEventRequest.expires_at:type_name -> google.protobuf.Timestamp
+	22, // 7: trust.v1.ApplyUserRestrictionEventRequest.occurred_at:type_name -> google.protobuf.Timestamp
 	2,  // 8: trust.v1.TrustProfile.band:type_name -> trust.v1.TrustBand
 	3,  // 9: trust.v1.TrustProfile.status:type_name -> trust.v1.TrustStatus
-	13, // 10: trust.v1.TrustProfile.calculated_at:type_name -> google.protobuf.Timestamp
-	13, // 11: trust.v1.TrustProfile.updated_at:type_name -> google.protobuf.Timestamp
-	10, // 12: trust.v1.GetTrustProfileResponse.profile:type_name -> trust.v1.TrustProfile
-	5,  // 13: trust.v1.TrustService.CheckActionPolicy:input_type -> trust.v1.CheckActionPolicyRequest
-	7,  // 14: trust.v1.TrustService.ApplyUserRestrictionEvent:input_type -> trust.v1.ApplyUserRestrictionEventRequest
-	9,  // 15: trust.v1.TrustService.GetTrustProfile:input_type -> trust.v1.GetTrustProfileRequest
-	6,  // 16: trust.v1.TrustService.CheckActionPolicy:output_type -> trust.v1.CheckActionPolicyResponse
-	8,  // 17: trust.v1.TrustService.ApplyUserRestrictionEvent:output_type -> trust.v1.ApplyUserRestrictionEventResponse
-	11, // 18: trust.v1.TrustService.GetTrustProfile:output_type -> trust.v1.GetTrustProfileResponse
-	16, // [16:19] is the sub-list for method output_type
-	13, // [13:16] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	22, // 10: trust.v1.TrustProfile.calculated_at:type_name -> google.protobuf.Timestamp
+	22, // 11: trust.v1.TrustProfile.updated_at:type_name -> google.protobuf.Timestamp
+	12, // 12: trust.v1.GetTrustProfileResponse.profile:type_name -> trust.v1.TrustProfile
+	5,  // 13: trust.v1.RestrictionAppeal.status:type_name -> trust.v1.RestrictionAppealStatus
+	22, // 14: trust.v1.RestrictionAppeal.created_at:type_name -> google.protobuf.Timestamp
+	22, // 15: trust.v1.RestrictionAppeal.updated_at:type_name -> google.protobuf.Timestamp
+	22, // 16: trust.v1.RestrictionAppeal.decided_at:type_name -> google.protobuf.Timestamp
+	14, // 17: trust.v1.SubmitRestrictionAppealResponse.appeal:type_name -> trust.v1.RestrictionAppeal
+	5,  // 18: trust.v1.ListRestrictionAppealsRequest.status:type_name -> trust.v1.RestrictionAppealStatus
+	14, // 19: trust.v1.ListRestrictionAppealsResponse.appeals:type_name -> trust.v1.RestrictionAppeal
+	6,  // 20: trust.v1.DecideRestrictionAppealRequest.decision:type_name -> trust.v1.RestrictionAppealDecision
+	14, // 21: trust.v1.DecideRestrictionAppealResponse.appeal:type_name -> trust.v1.RestrictionAppeal
+	7,  // 22: trust.v1.TrustService.CheckActionPolicy:input_type -> trust.v1.CheckActionPolicyRequest
+	9,  // 23: trust.v1.TrustService.ApplyUserRestrictionEvent:input_type -> trust.v1.ApplyUserRestrictionEventRequest
+	11, // 24: trust.v1.TrustService.GetTrustProfile:input_type -> trust.v1.GetTrustProfileRequest
+	15, // 25: trust.v1.TrustService.SubmitRestrictionAppeal:input_type -> trust.v1.SubmitRestrictionAppealRequest
+	17, // 26: trust.v1.TrustService.ListRestrictionAppeals:input_type -> trust.v1.ListRestrictionAppealsRequest
+	19, // 27: trust.v1.TrustService.DecideRestrictionAppeal:input_type -> trust.v1.DecideRestrictionAppealRequest
+	8,  // 28: trust.v1.TrustService.CheckActionPolicy:output_type -> trust.v1.CheckActionPolicyResponse
+	10, // 29: trust.v1.TrustService.ApplyUserRestrictionEvent:output_type -> trust.v1.ApplyUserRestrictionEventResponse
+	13, // 30: trust.v1.TrustService.GetTrustProfile:output_type -> trust.v1.GetTrustProfileResponse
+	16, // 31: trust.v1.TrustService.SubmitRestrictionAppeal:output_type -> trust.v1.SubmitRestrictionAppealResponse
+	18, // 32: trust.v1.TrustService.ListRestrictionAppeals:output_type -> trust.v1.ListRestrictionAppealsResponse
+	20, // 33: trust.v1.TrustService.DecideRestrictionAppeal:output_type -> trust.v1.DecideRestrictionAppealResponse
+	28, // [28:34] is the sub-list for method output_type
+	22, // [22:28] is the sub-list for method input_type
+	22, // [22:22] is the sub-list for extension type_name
+	22, // [22:22] is the sub-list for extension extendee
+	0,  // [0:22] is the sub-list for field type_name
 }
 
 func init() { file_trust_v1_trust_proto_init() }
@@ -1001,8 +1665,8 @@ func file_trust_v1_trust_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_trust_v1_trust_proto_rawDesc), len(file_trust_v1_trust_proto_rawDesc)),
-			NumEnums:      5,
-			NumMessages:   7,
+			NumEnums:      7,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

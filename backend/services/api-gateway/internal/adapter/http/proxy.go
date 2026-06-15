@@ -14,6 +14,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"kz/inflap/backend/services/api-gateway/internal/adapter"
+	trustserviceadapter "kz/inflap/backend/services/api-gateway/internal/adapter/trustservice"
 	"kz/inflap/backend/services/api-gateway/internal/config"
 )
 
@@ -26,7 +27,7 @@ type ProxyHandler struct {
 	fileManagerProxy  *httputil.ReverseProxy
 	activityProxy     *httputil.ReverseProxy
 	excursionProxy    *httputil.ReverseProxy
-	storiesProxy      *httputil.ReverseProxy
+	feedProxy         *httputil.ReverseProxy
 	chatProxy         *httputil.ReverseProxy
 	referenceProxy    *httputil.ReverseProxy
 	currencyProxy     *httputil.ReverseProxy
@@ -35,6 +36,7 @@ type ProxyHandler struct {
 	stickerProxy      *httputil.ReverseProxy
 	notificationProxy *httputil.ReverseProxy
 	adminPanelProxy   *httputil.ReverseProxy
+	trustClient       *trustserviceadapter.Client
 	userIDResolver    userIDResolver
 }
 
@@ -69,7 +71,7 @@ func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHan
 		return nil, err
 	}
 
-	storiesProxy, err := newSingleHostProxy("stories", cfg.Downstreams.StoriesService, cfg.Security.InternalServiceToken)
+	feedProxy, err := newSingleHostProxy("feed", cfg.Downstreams.FeedService, cfg.Security.InternalServiceToken)
 	if err != nil {
 		return nil, err
 	}
@@ -114,8 +116,14 @@ func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHan
 		return nil, err
 	}
 
+	trustClient, err := trustserviceadapter.New(cfg.TrustService, cfg.Security.InternalServiceToken)
+	if err != nil {
+		return nil, err
+	}
+
 	userIDResolver, err := newUserServiceUserIDResolver(cfg)
 	if err != nil {
+		_ = trustClient.Close()
 		return nil, err
 	}
 
@@ -128,7 +136,7 @@ func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHan
 		fileManagerProxy:  fileManagerProxy,
 		activityProxy:     activityProxy,
 		excursionProxy:    excursionProxy,
-		storiesProxy:      storiesProxy,
+		feedProxy:         feedProxy,
 		chatProxy:         chatProxy,
 		referenceProxy:    referenceProxy,
 		currencyProxy:     currencyProxy,
@@ -137,8 +145,16 @@ func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHan
 		stickerProxy:      stickerProxy,
 		notificationProxy: notificationProxy,
 		adminPanelProxy:   adminPanelProxy,
+		trustClient:       trustClient,
 		userIDResolver:    userIDResolver,
 	}, nil
+}
+
+func (h *ProxyHandler) Close() error {
+	if h == nil || h.trustClient == nil {
+		return nil
+	}
+	return h.trustClient.Close()
 }
 
 func (h *ProxyHandler) Register(mux *http.ServeMux) {
@@ -166,10 +182,15 @@ func (h *ProxyHandler) Ready(w http.ResponseWriter, r *http.Request) {
 func (h *ProxyHandler) Dispatch(w http.ResponseWriter, r *http.Request) {
 	policy := RoutePolicyFromContext(r.Context())
 	if policy == nil {
-		policy = matchRoutePolicy(r.URL.Path, h.cfg.Routes.APIPrefix)
+		policy = matchRoutePolicyForMethod(r.Method, r.URL.Path, h.cfg.Routes.APIPrefix)
 	}
 	if policy == nil {
 		writeBusinessError(w, r, http.StatusNotFound, errorCodeRouteNotFound)
+		return
+	}
+
+	if policy.Upstream == "trust" {
+		h.dispatchTrust(w, r, policy)
 		return
 	}
 
@@ -216,8 +237,8 @@ func (h *ProxyHandler) resolveProxy(upstream string) *httputil.ReverseProxy {
 		return h.activityProxy
 	case "excursion":
 		return h.excursionProxy
-	case "stories":
-		return h.storiesProxy
+	case "feed":
+		return h.feedProxy
 	case "chat":
 		return h.chatProxy
 	case "reference":

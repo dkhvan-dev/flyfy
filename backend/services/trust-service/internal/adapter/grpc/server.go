@@ -150,6 +150,98 @@ func (s *Server) GetTrustProfile(ctx context.Context, req *trustv1.GetTrustProfi
 	}, nil
 }
 
+func (s *Server) SubmitRestrictionAppeal(ctx context.Context, req *trustv1.SubmitRestrictionAppealRequest) (*trustv1.SubmitRestrictionAppealResponse, error) {
+	if req == nil {
+		return nil, mapError(fmt.Errorf("%w: request is required", app.ErrInvalidInput))
+	}
+	userID, err := parseRequiredUUID(req.GetUserId(), "user id")
+	if err != nil {
+		return nil, mapError(err)
+	}
+	restrictionID, err := parseRequiredUUID(req.GetRestrictionId(), "restriction id")
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	appeal, err := s.usecase.SubmitRestrictionAppeal(ctx, model.SubmitRestrictionAppealInput{
+		UserID:         userID,
+		RestrictionID:  restrictionID,
+		ReasonCode:     strings.TrimSpace(req.GetReasonCode()),
+		UserMessage:    strings.TrimSpace(req.GetUserMessage()),
+		IdempotencyKey: strings.TrimSpace(req.GetIdempotencyKey()),
+	})
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &trustv1.SubmitRestrictionAppealResponse{Appeal: restrictionAppealToProto(appeal)}, nil
+}
+
+func (s *Server) ListRestrictionAppeals(ctx context.Context, req *trustv1.ListRestrictionAppealsRequest) (*trustv1.ListRestrictionAppealsResponse, error) {
+	if req == nil {
+		return nil, mapError(fmt.Errorf("%w: request is required", app.ErrInvalidInput))
+	}
+	status, err := restrictionAppealStatusFromProto(req.GetStatus())
+	if err != nil {
+		return nil, mapError(err)
+	}
+	userID, err := parseOptionalUUID(req.GetUserId(), "user id")
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	appeals, err := s.usecase.ListRestrictionAppeals(ctx, model.ListRestrictionAppealsInput{
+		Status: status,
+		UserID: userID,
+	})
+	if err != nil {
+		return nil, mapError(err)
+	}
+	items := make([]*trustv1.RestrictionAppeal, 0, len(appeals))
+	for _, appeal := range appeals {
+		items = append(items, restrictionAppealToProto(appeal))
+	}
+	return &trustv1.ListRestrictionAppealsResponse{Appeals: items}, nil
+}
+
+func (s *Server) DecideRestrictionAppeal(ctx context.Context, req *trustv1.DecideRestrictionAppealRequest) (*trustv1.DecideRestrictionAppealResponse, error) {
+	if req == nil {
+		return nil, mapError(fmt.Errorf("%w: request is required", app.ErrInvalidInput))
+	}
+	appealID, err := parseRequiredUUID(req.GetAppealId(), "appeal id")
+	if err != nil {
+		return nil, mapError(err)
+	}
+	actorStaffID, err := parseRequiredUUID(req.GetActorStaffId(), "actor staff id")
+	if err != nil {
+		return nil, mapError(err)
+	}
+	decision, err := restrictionAppealDecisionFromProto(req.GetDecision())
+	if err != nil {
+		return nil, mapError(err)
+	}
+	decisionEventID, err := parseOptionalUUID(req.GetDecisionEventId(), "decision event id")
+	if err != nil {
+		return nil, mapError(err)
+	}
+	var eventID uuid.UUID
+	if decisionEventID != nil {
+		eventID = *decisionEventID
+	}
+
+	appeal, err := s.usecase.DecideRestrictionAppeal(ctx, model.DecideRestrictionAppealInput{
+		AppealID:        appealID,
+		ActorStaffID:    actorStaffID,
+		Decision:        decision,
+		ReasonCode:      strings.TrimSpace(req.GetReasonCode()),
+		StaffComment:    strings.TrimSpace(req.GetStaffComment()),
+		DecisionEventID: eventID,
+	})
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &trustv1.DecideRestrictionAppealResponse{Appeal: restrictionAppealToProto(appeal)}, nil
+}
+
 func policyActionFromProto(action trustv1.PolicyAction) (model.PolicyAction, error) {
 	switch action {
 	case trustv1.PolicyAction_POLICY_ACTION_ACTIVITY_CREATE:
@@ -199,6 +291,45 @@ func restrictionEventTypeFromProto(eventType trustv1.RestrictionEventType) (stri
 	}
 }
 
+func restrictionAppealStatusFromProto(status trustv1.RestrictionAppealStatus) (model.RestrictionAppealStatus, error) {
+	switch status {
+	case trustv1.RestrictionAppealStatus_RESTRICTION_APPEAL_STATUS_UNSPECIFIED:
+		return "", nil
+	case trustv1.RestrictionAppealStatus_RESTRICTION_APPEAL_STATUS_PENDING:
+		return model.RestrictionAppealStatusPending, nil
+	case trustv1.RestrictionAppealStatus_RESTRICTION_APPEAL_STATUS_APPROVED:
+		return model.RestrictionAppealStatusApproved, nil
+	case trustv1.RestrictionAppealStatus_RESTRICTION_APPEAL_STATUS_REJECTED:
+		return model.RestrictionAppealStatusRejected, nil
+	default:
+		return "", fmt.Errorf("%w: unsupported appeal status", app.ErrInvalidInput)
+	}
+}
+
+func restrictionAppealStatusToProto(status model.RestrictionAppealStatus) trustv1.RestrictionAppealStatus {
+	switch status {
+	case model.RestrictionAppealStatusPending:
+		return trustv1.RestrictionAppealStatus_RESTRICTION_APPEAL_STATUS_PENDING
+	case model.RestrictionAppealStatusApproved:
+		return trustv1.RestrictionAppealStatus_RESTRICTION_APPEAL_STATUS_APPROVED
+	case model.RestrictionAppealStatusRejected:
+		return trustv1.RestrictionAppealStatus_RESTRICTION_APPEAL_STATUS_REJECTED
+	default:
+		return trustv1.RestrictionAppealStatus_RESTRICTION_APPEAL_STATUS_UNSPECIFIED
+	}
+}
+
+func restrictionAppealDecisionFromProto(decision trustv1.RestrictionAppealDecision) (model.RestrictionAppealDecision, error) {
+	switch decision {
+	case trustv1.RestrictionAppealDecision_RESTRICTION_APPEAL_DECISION_APPROVE:
+		return model.RestrictionAppealDecisionApprove, nil
+	case trustv1.RestrictionAppealDecision_RESTRICTION_APPEAL_DECISION_REJECT:
+		return model.RestrictionAppealDecisionReject, nil
+	default:
+		return "", fmt.Errorf("%w: unsupported appeal decision", app.ErrInvalidInput)
+	}
+}
+
 func trustProfileToProto(profile model.TrustProfile) *trustv1.TrustProfile {
 	return &trustv1.TrustProfile{
 		UserId:       profile.UserID.String(),
@@ -240,6 +371,29 @@ func trustStatusToProto(status model.TrustStatus) trustv1.TrustStatus {
 	default:
 		return trustv1.TrustStatus_TRUST_STATUS_UNSPECIFIED
 	}
+}
+
+func restrictionAppealToProto(appeal model.RestrictionAppeal) *trustv1.RestrictionAppeal {
+	item := &trustv1.RestrictionAppeal{
+		AppealId:           appeal.ID.String(),
+		UserId:             appeal.UserID.String(),
+		RestrictionId:      appeal.RestrictionID.String(),
+		Status:             restrictionAppealStatusToProto(appeal.Status),
+		ReasonCode:         appeal.ReasonCode,
+		UserMessage:        appeal.UserMessage,
+		IdempotencyKey:     appeal.IdempotencyKey,
+		CreatedAt:          timestampOrNil(appeal.CreatedAt),
+		UpdatedAt:          timestampOrNil(appeal.UpdatedAt),
+		DecisionReasonCode: appeal.DecisionReasonCode,
+		StaffComment:       appeal.StaffComment,
+	}
+	if appeal.DecidedAt != nil {
+		item.DecidedAt = timestamppb.New(*appeal.DecidedAt)
+	}
+	if appeal.DecidedByStaffID != nil {
+		item.DecidedByStaffId = appeal.DecidedByStaffID.String()
+	}
+	return item
 }
 
 func parseRequiredUUID(raw string, field string) (uuid.UUID, error) {

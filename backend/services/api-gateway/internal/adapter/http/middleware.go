@@ -184,7 +184,7 @@ func requestIDMiddleware(cfg *config.Config, next http.Handler) http.Handler {
 
 func routePolicyMiddleware(cfg *config.Config, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		policy := matchRoutePolicy(r.URL.Path, cfg.Routes.APIPrefix)
+		policy := matchRoutePolicyForMethod(r.Method, r.URL.Path, cfg.Routes.APIPrefix)
 		if policy != nil {
 			ctx := context.WithValue(r.Context(), contextKeyRouteName, policy.Name)
 			ctx = context.WithValue(ctx, contextKeyPolicy, policy)

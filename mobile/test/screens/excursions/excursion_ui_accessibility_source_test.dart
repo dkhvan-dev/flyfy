@@ -216,7 +216,7 @@ void main() {
 
       expect(listSource, contains('_excursionFilterHeaderHeight(context)'));
       expect(listSource, contains('_excursionSegmentMainAxisExtent(context)'));
-    expect(listSource, contains('_excursionLanguageGridMaxHeight('));
+      expect(listSource, contains('_excursionLanguageGridMaxHeight('));
       expect(listSource, isNot(contains('height: 74')));
       expect(listSource, isNot(contains('mainAxisExtent: 48')));
       expect(listSource, isNot(contains('maxHeight: 224')));

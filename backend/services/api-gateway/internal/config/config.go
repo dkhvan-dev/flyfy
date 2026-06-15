@@ -17,6 +17,7 @@ type Config struct {
 	Routes       RoutesConfig
 	Downstreams  DownstreamsConfig
 	TokenService TokenServiceConfig
+	TrustService TrustServiceConfig
 	CORS         CORSConfig
 	RateLimit    RateLimitConfig
 	Redis        RedisConfig
@@ -64,7 +65,7 @@ type DownstreamsConfig struct {
 	FileManagerService  string `env:"FILE_MANAGER_HTTP_URL, default=http://file-manager-service:8083"`
 	ActivityService     string `env:"ACTIVITY_SERVICE_HTTP_URL, default=http://activity-service:8086"`
 	ExcursionService    string `env:"EXCURSION_SERVICE_HTTP_URL, default=http://excursion-service:8093"`
-	StoriesService      string `env:"STORIES_SERVICE_HTTP_URL, default=http://stories-service:8087"`
+	FeedService         string `env:"FEED_SERVICE_HTTP_URL, default=http://feed-service:8087"`
 	ChatService         string `env:"CHAT_SERVICE_HTTP_URL, default=http://chat-service:8088"`
 	ReferenceService    string `env:"REFERENCE_SERVICE_HTTP_URL, default=http://reference-service:8089"`
 	CurrencyService     string `env:"CURRENCY_SERVICE_HTTP_URL, default=http://currency-service:8098"`
@@ -86,6 +87,12 @@ type TokenServiceConfig struct {
 	ServiceID     string        `env:"TOKEN_SERVICE_ID, required"`
 	ServiceSecret string        `env:"TOKEN_SERVICE_SECRET, required"`
 	CallTimeout   time.Duration `env:"TOKEN_SERVICE_CALL_TIMEOUT, default=3s"`
+}
+
+type TrustServiceConfig struct {
+	Target      string        `env:"TRUST_SERVICE_GRPC_TARGET, default=dns:///trust-service:9096"`
+	ServiceName string        `env:"TRUST_SERVICE_CALLER_NAME, default=api-gateway"`
+	CallTimeout time.Duration `env:"TRUST_SERVICE_CALL_TIMEOUT, default=3s"`
 }
 
 func Load(ctx context.Context) (*Config, error) {

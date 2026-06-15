@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inflap/features/stories/editor/domain/story_document.dart';
-import 'package:inflap/features/stories/models/story_vm.dart';
+import 'package:inflap/features/stories/models/post_vm.dart';
 import 'package:inflap/features/stories/widgets/story_document_renderer.dart';
 
 void main() {
@@ -27,9 +27,9 @@ void main() {
   }
 
   group('StoryDocumentRenderer', () {
-    testWidgets('renders structured story blocks from StoryVm', (tester) async {
+    testWidgets('renders structured story blocks from PostVm', (tester) async {
       final story = _story(
-        content: 'Legacy text should not win',
+        content: 'Stale text should not win',
         contentBlocks: [
           {
             'id': 'heading-1',
@@ -103,7 +103,7 @@ void main() {
       expect(find.byType(Divider), findsOneWidget);
       expect(find.text('Kok Tobe'), findsOneWidget);
       expect(find.textContaining('KZ'), findsOneWidget);
-      expect(find.text('Legacy text should not win'), findsNothing);
+      expect(find.text('Stale text should not win'), findsNothing);
     });
 
     testWidgets('renders editor preview from structured document', (
@@ -174,16 +174,18 @@ void main() {
       ]);
     });
 
-    testWidgets('falls back to legacy marker content', (tester) async {
+    testWidgets('falls back to excerpt when structured blocks are missing', (
+      tester,
+    ) async {
       final story = _story(
-        content: 'Legacy intro.\n\n[[story-image:legacy-file]]\n\nLegacy tail.',
+        content: 'Stale content.\n\n[[story-image:legacy-file]]',
       );
 
       await pumpRenderer(tester, StoryDocumentRenderer(story: story));
 
-      expect(find.text('Legacy intro.'), findsOneWidget);
-      expect(find.text('Legacy tail.'), findsOneWidget);
-      expect(find.byType(Image), findsOneWidget);
+      expect(find.text('Story excerpt'), findsOneWidget);
+      expect(find.text('Stale content.'), findsNothing);
+      expect(find.byType(Image), findsNothing);
     });
 
     testWidgets('hides invalid empty blocks gracefully', (tester) async {
@@ -241,12 +243,12 @@ void main() {
   });
 }
 
-StoryVm _story({
+PostVm _story({
   String? content,
   List<Map<String, dynamic>> contentBlocks = const [],
 }) {
   final now = DateTime(2026, 1, 1);
-  return StoryVm(
+  return PostVm(
     id: 'story-1',
     slug: 'story-1',
     title: 'Story title',
@@ -256,8 +258,8 @@ StoryVm _story({
     category: 'JOURNAL',
     status: 'PUBLISHED',
     tags: const [],
-    stats: StoryStatsVm(views: 0, likes: 0, comments: 0, shares: 0),
-    author: StoryAuthorVm(userId: 'author-1', locale: 'en', timezone: 'UTC'),
+    stats: PostStatsVm(views: 0, likes: 0, comments: 0, shares: 0),
+    author: PostAuthorVm(userId: 'author-1', locale: 'en', timezone: 'UTC'),
     likedByViewer: false,
     shareUrl: 'https://example.test/stories/story-1',
     createdAt: now,

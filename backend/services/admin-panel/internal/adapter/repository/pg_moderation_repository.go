@@ -246,6 +246,129 @@ func (r *PGModerationRepository) CancelStaleChatMessageCases(ctx context.Context
 	return nil
 }
 
+func (r *PGModerationRepository) UpsertPostReportCase(ctx context.Context, item model.PostReportModerationItem) (*model.ModerationCase, error) {
+	now := time.Now().UTC()
+	snapshot, err := json.Marshal(item)
+	if err != nil {
+		return nil, err
+	}
+	revision := item.Revision
+	if revision <= 0 {
+		revision = 1
+	}
+	caseID := uuid.New()
+	row := r.pool.QueryRow(ctx, `
+		INSERT INTO moderation_cases (
+			id, target_type, target_id, source_service, source_revision, status,
+			priority, snapshot, metadata, opened_at, created_at, updated_at
+		)
+		VALUES ($1, 'POST', $2, 'feed-service', $3, 'OPEN',
+		        $4, $5, '{"moderationKind":"post_report"}'::jsonb, $6, $6, $6)
+		ON CONFLICT (target_type, target_id, source_revision)
+		    WHERE status IN ('OPEN', 'IN_REVIEW', 'ESCALATED')
+		DO UPDATE SET
+		    snapshot = EXCLUDED.snapshot,
+		    priority = GREATEST(moderation_cases.priority, EXCLUDED.priority),
+		    updated_at = EXCLUDED.updated_at
+		RETURNING id, target_type, target_id, source_service, source_revision, status,
+		          priority, reason, snapshot, metadata, assigned_admin_id, opened_by,
+		          opened_at, due_at, resolved_at, lock_version, created_at, updated_at
+	`, caseID, item.ID, revision, postReportModerationPriority(item), string(snapshot), now)
+	return scanModerationCase(row)
+}
+
+func (r *PGModerationRepository) CancelStalePostReportCases(ctx context.Context, activeTargetIDs []uuid.UUID, now time.Time) error {
+	ids := make([]uuid.UUID, 0, len(activeTargetIDs))
+	seen := make(map[uuid.UUID]struct{}, len(activeTargetIDs))
+	for _, id := range activeTargetIDs {
+		if id == uuid.Nil {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		ids = append(ids, id)
+	}
+	_, err := r.pool.Exec(ctx, `
+		UPDATE moderation_cases
+		SET status = 'CANCELLED',
+		    resolved_at = $1,
+		    updated_at = $1
+		WHERE target_type = 'POST'
+		  AND source_service = 'feed-service'
+		  AND COALESCE(metadata->>'moderationKind', 'post_report') = 'post_report'
+		  AND status IN ('OPEN', 'IN_REVIEW', 'ESCALATED')
+		  AND NOT (target_id = ANY($2::uuid[]))
+	`, now, ids)
+	if err != nil {
+		return fmt.Errorf("cancel stale post report cases: %w", err)
+	}
+	return nil
+}
+
+func (r *PGModerationRepository) UpsertStoryCase(ctx context.Context, item model.PostModerationItem) (*model.ModerationCase, error) {
+	now := time.Now().UTC()
+	snapshot, err := json.Marshal(item)
+	if err != nil {
+		return nil, err
+	}
+	revision := item.Revision
+	if revision <= 0 {
+		revision = 1
+	}
+	caseID := uuid.New()
+	row := r.pool.QueryRow(ctx, `
+		INSERT INTO moderation_cases (
+			id, target_type, target_id, source_service, source_revision, status,
+			priority, snapshot, metadata, opened_at, created_at, updated_at
+		)
+		VALUES ($1, 'POST', $2, 'feed-service', $3, 'OPEN',
+		        $4, $5, '{"moderationKind":"community_post"}'::jsonb, $6, $6, $6)
+		ON CONFLICT (target_type, target_id, source_revision)
+		    WHERE status IN ('OPEN', 'IN_REVIEW', 'ESCALATED')
+		DO UPDATE SET
+		    snapshot = EXCLUDED.snapshot,
+		    priority = GREATEST(moderation_cases.priority, EXCLUDED.priority),
+		    metadata = EXCLUDED.metadata,
+		    updated_at = EXCLUDED.updated_at
+		RETURNING id, target_type, target_id, source_service, source_revision, status,
+		          priority, reason, snapshot, metadata, assigned_admin_id, opened_by,
+		          opened_at, due_at, resolved_at, lock_version, created_at, updated_at
+	`, caseID, item.ID, revision, postModerationPriority(item), string(snapshot), now)
+	return scanModerationCase(row)
+}
+
+func (r *PGModerationRepository) CancelStaleStoryCases(ctx context.Context, activeTargetIDs []uuid.UUID, now time.Time) error {
+	ids := make([]uuid.UUID, 0, len(activeTargetIDs))
+	seen := make(map[uuid.UUID]struct{}, len(activeTargetIDs))
+	for _, id := range activeTargetIDs {
+		if id == uuid.Nil {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		ids = append(ids, id)
+	}
+	_, err := r.pool.Exec(ctx, `
+		UPDATE moderation_cases
+		SET status = 'CANCELLED',
+		    resolved_at = $1,
+		    updated_at = $1
+		WHERE target_type = 'POST'
+		  AND source_service = 'feed-service'
+		  AND metadata->>'moderationKind' = 'community_post'
+		  AND status IN ('OPEN', 'IN_REVIEW', 'ESCALATED')
+		  AND NOT (target_id = ANY($2::uuid[]))
+	`, now, ids)
+	if err != nil {
+		return fmt.Errorf("cancel stale community post cases: %w", err)
+	}
+	return nil
+}
+
 func (r *PGModerationRepository) ListCases(ctx context.Context, filter model.ModerationQueueFilter) ([]*model.ModerationCase, error) {
 	query, args := buildListCasesQuery(filter)
 	rows, err := r.pool.Query(ctx, query, args...)
@@ -369,6 +492,9 @@ func moderationSearchSQL() string {
 		"COALESCE(snapshot->>'SenderDisplayName', '') || ' ' || " +
 		"COALESCE(snapshot->>'ConversationTitle', '') || ' ' || " +
 		"COALESCE(snapshot->>'Participants', '') || ' ' || " +
+		"COALESCE(snapshot->>'PostID', '') || ' ' || " +
+		"COALESCE(snapshot->>'Reason', '') || ' ' || " +
+		"COALESCE(snapshot->>'Details', '') || ' ' || " +
 		"COALESCE(snapshot->>'CategorySlug', '') || ' ' || " +
 		"COALESCE(snapshot->>'AddressText', '') || ' ' || " +
 		"COALESCE(snapshot->>'GuideDisplayName', '') || ' ' || " +
@@ -564,6 +690,47 @@ func chatMessageModerationPriority(item model.ChatMessageModerationItem) int {
 		return 50
 	}
 	return 10
+}
+
+func postReportModerationPriority(item model.PostReportModerationItem) int {
+	priority := item.ModerationRiskScore
+	if priority <= 0 {
+		switch strings.ToUpper(strings.TrimSpace(item.Reason)) {
+		case "ILLEGAL", "VIOLENCE", "HATE", "SEXUAL_CONTENT":
+			priority = 90
+		case "HARASSMENT", "MISINFORMATION":
+			priority = 70
+		case "SPAM":
+			priority = 40
+		default:
+			priority = 30
+		}
+	}
+	if priority > 100 {
+		return 100
+	}
+	if priority < 0 {
+		return 0
+	}
+	return priority
+}
+
+func postModerationPriority(item model.PostModerationItem) int {
+	priority := item.ModerationRiskScore
+	if priority <= 0 {
+		if len(item.ModerationReasonCodes) > 0 {
+			priority = 45
+		} else {
+			priority = 35
+		}
+	}
+	if priority > 100 {
+		return 100
+	}
+	if priority < 0 {
+		return 0
+	}
+	return priority
 }
 
 func scanModerationCase(row staffScanner) (*model.ModerationCase, error) {

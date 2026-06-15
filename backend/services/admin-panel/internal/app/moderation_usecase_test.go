@@ -114,6 +114,66 @@ func TestSyncActivityQueueUpsertsActiveFlaggedActivityCases(t *testing.T) {
 	}
 }
 
+func TestFeedQualityDashboardRequiresModerationReadAndUsesStoryClient(t *testing.T) {
+	t.Parallel()
+
+	actor := &model.StaffUser{
+		ID:          uuid.New(),
+		Email:       "quality@inflap.local",
+		DisplayName: "Quality Lead",
+		Status:      enum.StaffStatusActive,
+		Permissions: []enum.Permission{
+			enum.PermissionModerationRead,
+		},
+	}
+	since := time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC)
+	until := since.Add(7 * 24 * time.Hour)
+	posts := &moderationPostReportClientStub{
+		feedQualityMetrics: []model.FeedQualityMetric{
+			{
+				Surface:            "home",
+				BlockType:          "post_card",
+				Action:             "conversion",
+				EventCount:         10,
+				UniqueViewers:      8,
+				ConversionCount:    3,
+				HideCount:          1,
+				NotInterestedCount: 2,
+			},
+		},
+	}
+	uc := NewModerationUseCase(&moderationRepoStub{}, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, &moderationGuideClientStub{}, &moderationChatClientStub{}, &moderationAuditRepoStub{})
+	uc.SetPostReportClient(posts)
+
+	page, err := uc.FeedQualityDashboard(context.Background(), actor, FeedQualityDashboardInput{
+		Since:   since,
+		Until:   until,
+		Surface: "home",
+		Limit:   500,
+	})
+
+	if err != nil {
+		t.Fatalf("FeedQualityDashboard() error = %v", err)
+	}
+	if len(page.Metrics) != 1 {
+		t.Fatalf("metrics length = %d, want 1", len(page.Metrics))
+	}
+	if page.Metrics[0].ConversionCount != 3 || page.Totals.NotInterestedCount != 2 {
+		t.Fatalf("dashboard page = %+v, want converted and negative feedback totals", page)
+	}
+	if posts.lastFeedQualityFilter.Surface != "home" {
+		t.Fatalf("surface = %q, want home", posts.lastFeedQualityFilter.Surface)
+	}
+	if posts.lastFeedQualityFilter.Limit != 200 {
+		t.Fatalf("limit = %d, want clamp to 200", posts.lastFeedQualityFilter.Limit)
+	}
+
+	_, err = uc.FeedQualityDashboard(context.Background(), &model.StaffUser{ID: uuid.New()}, FeedQualityDashboardInput{})
+	if !errors.Is(err, ErrPermissionDenied) {
+		t.Fatalf("unauthorized error = %v, want ErrPermissionDenied", err)
+	}
+}
+
 func TestSyncGuideApplicationQueueUpsertsPendingApplicationCases(t *testing.T) {
 	t.Parallel()
 
@@ -202,6 +262,267 @@ func TestSyncChatMessageQueueUpsertsFlaggedMessageCases(t *testing.T) {
 	}
 	if len(repo.cancelledChatMessageIDs) != 1 || repo.cancelledChatMessageIDs[0] != messageID {
 		t.Fatalf("cancelled stale chat message ids = %#v, want [%s]", repo.cancelledChatMessageIDs, messageID)
+	}
+}
+
+func TestSyncPostReportQueueUpsertsOpenReportCases(t *testing.T) {
+	t.Parallel()
+
+	actor := &model.StaffUser{
+		ID:          uuid.New(),
+		Email:       "moderation-lead@inflap.local",
+		DisplayName: "Moderation Lead",
+		Status:      enum.StaffStatusActive,
+		Permissions: []enum.Permission{
+			enum.PermissionModerationRead,
+		},
+	}
+	reportID := uuid.New()
+	postID := uuid.New()
+	pendingPostID := uuid.New()
+	communityID := uuid.New()
+	repo := &moderationRepoStub{}
+	postReports := &moderationPostReportClientStub{
+		items: []model.PostReportModerationItem{
+			{
+				ID:                  reportID,
+				PostID:              postID,
+				CommunityID:         &communityID,
+				ReporterUserID:      uuid.New(),
+				AuthorUserID:        uuid.New(),
+				Reason:              "HARASSMENT",
+				Details:             "Threatening replies in a public travel post.",
+				Status:              "OPEN",
+				ModerationRiskScore: 80,
+				Revision:            1,
+				CreatedAt:           time.Now().UTC(),
+				UpdatedAt:           time.Now().UTC(),
+			},
+		},
+		postItems: []model.PostModerationItem{
+			{
+				ID:               pendingPostID,
+				CommunityID:      &communityID,
+				AuthorUserID:     uuid.New(),
+				Title:            "Community post waiting for moderation",
+				Excerpt:          "A fresh post from the mobile editor.",
+				Status:           "PUBLISHED",
+				ModerationStatus: "PENDING",
+				Revision:         3,
+				CreatedAt:        time.Now().UTC(),
+				UpdatedAt:        time.Now().UTC(),
+			},
+		},
+	}
+	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, &moderationGuideClientStub{}, &moderationChatClientStub{}, &moderationAuditRepoStub{})
+	uc.SetPostReportClient(postReports)
+
+	if err := uc.SyncPostReportQueue(context.Background(), actor); err != nil {
+		t.Fatalf("SyncPostReportQueue() error = %v", err)
+	}
+	if len(repo.upsertedPostReports) != 1 {
+		t.Fatalf("upserted post reports = %d, want 1", len(repo.upsertedPostReports))
+	}
+	if repo.upsertedPostReports[0].ID != reportID {
+		t.Fatalf("upserted post report id = %s, want %s", repo.upsertedPostReports[0].ID, reportID)
+	}
+	if len(repo.cancelledPostReportIDs) != 1 || repo.cancelledPostReportIDs[0] != reportID {
+		t.Fatalf("cancelled stale post report ids = %#v, want [%s]", repo.cancelledPostReportIDs, reportID)
+	}
+	if len(repo.upsertedPosts) != 1 {
+		t.Fatalf("upserted community posts = %d, want 1", len(repo.upsertedPosts))
+	}
+	if repo.upsertedPosts[0].ID != pendingPostID {
+		t.Fatalf("upserted community post id = %s, want %s", repo.upsertedPosts[0].ID, pendingPostID)
+	}
+	if len(repo.cancelledPostIDs) != 1 || repo.cancelledPostIDs[0] != pendingPostID {
+		t.Fatalf("cancelled stale community post ids = %#v, want [%s]", repo.cancelledPostIDs, pendingPostID)
+	}
+}
+
+func TestDecidePostReportReviewMarksReportReviewedAndCaseApproved(t *testing.T) {
+	t.Parallel()
+
+	actor := &model.StaffUser{
+		ID:          uuid.New(),
+		Email:       "moderation-lead@inflap.local",
+		DisplayName: "Moderation Lead",
+		Status:      enum.StaffStatusActive,
+		Permissions: []enum.Permission{
+			enum.PermissionModerationRead,
+			enum.PermissionModerationAssign,
+		},
+	}
+	caseID := uuid.New()
+	reportID := uuid.New()
+	communityID := uuid.New()
+	repo := &moderationRepoStub{
+		item: &model.ModerationCase{
+			ID:             caseID,
+			TargetType:     model.ModerationTargetPost,
+			TargetID:       reportID,
+			SourceRevision: 1,
+			Status:         enum.ModerationCaseStatusOpen,
+			CreatedAt:      time.Now().UTC(),
+			UpdatedAt:      time.Now().UTC(),
+		},
+	}
+	postReports := &moderationPostReportClientStub{
+		item: &model.PostReportModerationItem{
+			ID:          reportID,
+			PostID:      uuid.New(),
+			CommunityID: &communityID,
+			Status:      "REVIEWED",
+			Revision:    1,
+			CreatedAt:   time.Now().UTC(),
+			UpdatedAt:   time.Now().UTC(),
+		},
+	}
+	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, &moderationGuideClientStub{}, &moderationChatClientStub{}, &moderationAuditRepoStub{})
+	uc.SetPostReportClient(postReports)
+
+	_, err := uc.DecidePostReport(context.Background(), ModerationDecisionInput{
+		Actor:           actor,
+		CaseID:          caseID,
+		Decision:        enum.ModerationDecisionApprove,
+		InternalComment: "Confirmed policy violation and reviewed the report.",
+		IdempotencyKey:  "post-report-review",
+		RequestMetadata: RequestMetadata{RequestID: "request-1"},
+	})
+
+	if err != nil {
+		t.Fatalf("DecidePostReport() error = %v", err)
+	}
+	if postReports.lastReviewInput.ReportID != reportID {
+		t.Fatalf("reviewed report id = %s, want %s", postReports.lastReviewInput.ReportID, reportID)
+	}
+	if postReports.lastReviewInput.InternalComment != "Confirmed policy violation and reviewed the report." {
+		t.Fatalf("internal comment sent to feed-service = %q", postReports.lastReviewInput.InternalComment)
+	}
+	if postReports.lastReviewInput.RequestID != "request-1" {
+		t.Fatalf("request id = %q, want request-1", postReports.lastReviewInput.RequestID)
+	}
+	if repo.item.Status != enum.ModerationCaseStatusApproved {
+		t.Fatalf("case status = %s, want %s", repo.item.Status, enum.ModerationCaseStatusApproved)
+	}
+}
+
+func TestDecidePostReportApproveRoutesCommunityPostToStoryReview(t *testing.T) {
+	t.Parallel()
+
+	actor := &model.StaffUser{
+		ID:          uuid.New(),
+		Email:       "moderation-lead@inflap.local",
+		DisplayName: "Moderation Lead",
+		Status:      enum.StaffStatusActive,
+		Permissions: []enum.Permission{
+			enum.PermissionModerationRead,
+			enum.PermissionModerationAssign,
+		},
+	}
+	caseID := uuid.New()
+	postID := uuid.New()
+	communityID := uuid.New()
+	metadata, _ := json.Marshal(map[string]string{"moderationKind": "community_post"})
+	repo := &moderationRepoStub{
+		item: &model.ModerationCase{
+			ID:             caseID,
+			TargetType:     model.ModerationTargetPost,
+			TargetID:       postID,
+			SourceRevision: 4,
+			Status:         enum.ModerationCaseStatusOpen,
+			Metadata:       metadata,
+			CreatedAt:      time.Now().UTC(),
+			UpdatedAt:      time.Now().UTC(),
+		},
+	}
+	posts := &moderationPostReportClientStub{
+		storyItem: &model.PostModerationItem{
+			ID:               postID,
+			CommunityID:      &communityID,
+			AuthorUserID:     uuid.New(),
+			Title:            "Community post",
+			Status:           "PUBLISHED",
+			ModerationStatus: "APPROVED",
+			Revision:         5,
+			CreatedAt:        time.Now().UTC(),
+			UpdatedAt:        time.Now().UTC(),
+		},
+	}
+	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, &moderationGuideClientStub{}, &moderationChatClientStub{}, &moderationAuditRepoStub{})
+	uc.SetPostReportClient(posts)
+
+	detail, err := uc.DecidePostReport(context.Background(), ModerationDecisionInput{
+		Actor:           actor,
+		CaseID:          caseID,
+		Decision:        enum.ModerationDecisionApprove,
+		InternalComment: "Post follows the community rules.",
+		IdempotencyKey:  "community-post-approve",
+		RequestMetadata: RequestMetadata{RequestID: "request-2"},
+	})
+
+	if err != nil {
+		t.Fatalf("DecidePostReport() error = %v", err)
+	}
+	if posts.lastApproveStoryInput.PostID != postID ||
+		posts.lastApproveStoryInput.ActorStaffID != actor.ID ||
+		posts.lastApproveStoryInput.InternalComment != "Post follows the community rules." ||
+		posts.lastApproveStoryInput.RequestID != "request-2" {
+		t.Fatalf("community post approve input = %+v", posts.lastApproveStoryInput)
+	}
+	if repo.createdDecision == nil || repo.createdDecision.SourceRevision != 4 {
+		t.Fatalf("created decision = %+v, want source revision 4", repo.createdDecision)
+	}
+	if detail == nil || detail.Post == nil || detail.Post.ID != postID {
+		t.Fatalf("detail post = %+v, want post %s", detail, postID)
+	}
+}
+
+func TestDecidePostReportDismissRequiresInternalComment(t *testing.T) {
+	t.Parallel()
+
+	actor := &model.StaffUser{
+		ID:          uuid.New(),
+		Email:       "moderation-lead@inflap.local",
+		DisplayName: "Moderation Lead",
+		Status:      enum.StaffStatusActive,
+		Permissions: []enum.Permission{
+			enum.PermissionModerationRead,
+			enum.PermissionModerationAssign,
+		},
+	}
+	caseID := uuid.New()
+	reportID := uuid.New()
+	repo := &moderationRepoStub{
+		item: &model.ModerationCase{
+			ID:             caseID,
+			TargetType:     model.ModerationTargetPost,
+			TargetID:       reportID,
+			SourceRevision: 1,
+			Status:         enum.ModerationCaseStatusOpen,
+			CreatedAt:      time.Now().UTC(),
+			UpdatedAt:      time.Now().UTC(),
+		},
+	}
+	postReports := &moderationPostReportClientStub{}
+	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, &moderationGuideClientStub{}, &moderationChatClientStub{}, &moderationAuditRepoStub{})
+	uc.SetPostReportClient(postReports)
+
+	_, err := uc.DecidePostReport(context.Background(), ModerationDecisionInput{
+		Actor:          actor,
+		CaseID:         caseID,
+		Decision:       enum.ModerationDecisionReject,
+		IdempotencyKey: "post-report-dismiss",
+	})
+
+	if !errors.Is(err, ErrInvalidInput) {
+		t.Fatalf("DecidePostReport() error = %v, want %v", err, ErrInvalidInput)
+	}
+	if repo.createdDecision != nil {
+		t.Fatal("DecidePostReport() created decision without mandatory internal comment")
+	}
+	if postReports.lastDismissInput.ReportID != uuid.Nil {
+		t.Fatal("DecidePostReport() called feed-service without mandatory internal comment")
 	}
 }
 
@@ -1011,6 +1332,10 @@ type moderationRepoStub struct {
 	cancelledGuideApplicationIDs []uuid.UUID
 	upsertedChatMessages         []model.ChatMessageModerationItem
 	cancelledChatMessageIDs      []uuid.UUID
+	upsertedPostReports          []model.PostReportModerationItem
+	cancelledPostReportIDs       []uuid.UUID
+	upsertedPosts                []model.PostModerationItem
+	cancelledPostIDs             []uuid.UUID
 }
 
 func (r *moderationRepoStub) UpsertExcursionCase(context.Context, model.ExcursionModerationItem) (*model.ModerationCase, error) {
@@ -1048,6 +1373,26 @@ func (r *moderationRepoStub) UpsertChatMessageCase(_ context.Context, item model
 
 func (r *moderationRepoStub) CancelStaleChatMessageCases(_ context.Context, activeTargetIDs []uuid.UUID, _ time.Time) error {
 	r.cancelledChatMessageIDs = append([]uuid.UUID(nil), activeTargetIDs...)
+	return nil
+}
+
+func (r *moderationRepoStub) UpsertPostReportCase(_ context.Context, item model.PostReportModerationItem) (*model.ModerationCase, error) {
+	r.upsertedPostReports = append(r.upsertedPostReports, item)
+	return nil, nil
+}
+
+func (r *moderationRepoStub) CancelStalePostReportCases(_ context.Context, activeTargetIDs []uuid.UUID, _ time.Time) error {
+	r.cancelledPostReportIDs = append([]uuid.UUID(nil), activeTargetIDs...)
+	return nil
+}
+
+func (r *moderationRepoStub) UpsertStoryCase(_ context.Context, item model.PostModerationItem) (*model.ModerationCase, error) {
+	r.upsertedPosts = append(r.upsertedPosts, item)
+	return nil, nil
+}
+
+func (r *moderationRepoStub) CancelStaleStoryCases(_ context.Context, activeTargetIDs []uuid.UUID, _ time.Time) error {
+	r.cancelledPostIDs = append([]uuid.UUID(nil), activeTargetIDs...)
 	return nil
 }
 
@@ -1167,6 +1512,64 @@ func (c *moderationChatClientStub) HideMessage(_ context.Context, input port.Cha
 	c.lastHideInput = input
 	raw, _ := json.Marshal(c.item)
 	return c.item, raw, nil
+}
+
+type moderationPostReportClientStub struct {
+	item                  *model.PostReportModerationItem
+	items                 []model.PostReportModerationItem
+	storyItem             *model.PostModerationItem
+	postItems             []model.PostModerationItem
+	feedQualityMetrics    []model.FeedQualityMetric
+	lastFeedQualityFilter model.FeedQualityMetricFilter
+	lastReviewInput       port.PostReportDecisionInput
+	lastDismissInput      port.PostReportDecisionInput
+	lastApproveStoryInput port.CommunityPostDecisionInput
+	lastRejectStoryInput  port.CommunityPostDecisionInput
+}
+
+func (c *moderationPostReportClientStub) ListOpenReports(context.Context, int, int) ([]model.PostReportModerationItem, error) {
+	return c.items, nil
+}
+
+func (c *moderationPostReportClientStub) ListPendingCommunityPosts(context.Context, int, int) ([]model.PostModerationItem, error) {
+	return c.postItems, nil
+}
+
+func (c *moderationPostReportClientStub) GetReport(context.Context, uuid.UUID) (*model.PostReportModerationItem, error) {
+	return c.item, nil
+}
+
+func (c *moderationPostReportClientStub) GetCommunityPost(context.Context, uuid.UUID) (*model.PostModerationItem, error) {
+	return c.storyItem, nil
+}
+
+func (c *moderationPostReportClientStub) ListFeedQualityMetrics(_ context.Context, filter model.FeedQualityMetricFilter) ([]model.FeedQualityMetric, error) {
+	c.lastFeedQualityFilter = filter
+	return c.feedQualityMetrics, nil
+}
+
+func (c *moderationPostReportClientStub) ReviewReport(_ context.Context, input port.PostReportDecisionInput) (*model.PostReportModerationItem, []byte, error) {
+	c.lastReviewInput = input
+	raw, _ := json.Marshal(c.item)
+	return c.item, raw, nil
+}
+
+func (c *moderationPostReportClientStub) DismissReport(_ context.Context, input port.PostReportDecisionInput) (*model.PostReportModerationItem, []byte, error) {
+	c.lastDismissInput = input
+	raw, _ := json.Marshal(c.item)
+	return c.item, raw, nil
+}
+
+func (c *moderationPostReportClientStub) ApproveCommunityPost(_ context.Context, input port.CommunityPostDecisionInput) (*model.PostModerationItem, []byte, error) {
+	c.lastApproveStoryInput = input
+	raw, _ := json.Marshal(c.storyItem)
+	return c.storyItem, raw, nil
+}
+
+func (c *moderationPostReportClientStub) RejectCommunityPost(_ context.Context, input port.CommunityPostDecisionInput) (*model.PostModerationItem, []byte, error) {
+	c.lastRejectStoryInput = input
+	raw, _ := json.Marshal(c.storyItem)
+	return c.storyItem, raw, nil
 }
 
 type moderationGuideClientStub struct {

@@ -7,13 +7,13 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
-import '../../core/network/story_api.dart';
+import '../../core/network/post_api.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/profile/data/profile_api.dart';
 import '../../features/profile/models/user_profile_vm.dart';
 import '../../features/stories/editor/domain/story_document.dart';
-import '../../features/stories/models/story_vm.dart';
+import '../../features/stories/models/post_vm.dart';
 import '../../features/stories/story_ui.dart';
 import '../../features/stories/widgets/story_document_renderer.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -26,12 +26,18 @@ class StoryDetailsScreen extends StatefulWidget {
     required this.slug,
     this.initialStory,
     this.initialCommentId,
+    PostApi? postApi,
+    ProfileApi? profileApi,
     FileApi? fileApi,
-  }) : _fileApiOverride = fileApi;
+  }) : _postApiOverride = postApi,
+       _profileApiOverride = profileApi,
+       _fileApiOverride = fileApi;
 
   final String slug;
-  final StoryVm? initialStory;
+  final PostVm? initialStory;
   final String? initialCommentId;
+  final PostApi? _postApiOverride;
+  final ProfileApi? _profileApiOverride;
   final FileApi? _fileApiOverride;
 
   @override
@@ -39,8 +45,8 @@ class StoryDetailsScreen extends StatefulWidget {
 }
 
 class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
-  final _storyApi = StoryApi();
-  final _profileApi = ProfileApi();
+  late final PostApi _postApi;
+  late final ProfileApi _profileApi;
   late final FileApi _fileApi;
   final _scrollController = ScrollController();
   final _commentController = TextEditingController();
@@ -49,14 +55,15 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
   final _commentComposerKey = GlobalKey();
   final Map<String, GlobalKey> _commentCardKeys = <String, GlobalKey>{};
 
-  StoryDetailVm? _detail;
+  PostDetailVm? _detail;
   UserProfileVm? _authorProfile;
   bool _isLoading = true;
   bool _isSubmittingComment = false;
   bool _isTogglingLike = false;
   bool _isSharing = false;
+  bool _isSubmittingReport = false;
   bool _isFollowing = false;
-  bool _didTrackView = false;
+  bool _didMarkSeen = false;
   bool _didHandleInitialCommentJump = false;
   String? _errorMessage;
   String? _editingCommentId;
@@ -64,10 +71,12 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    _postApi = widget._postApiOverride ?? PostApi();
+    _profileApi = widget._profileApiOverride ?? ProfileApi();
     _fileApi = widget._fileApiOverride ?? FileApi();
     if (widget.initialStory != null) {
-      _detail = StoryDetailVm(
-        story: widget.initialStory!,
+      _detail = PostDetailVm(
+        post: widget.initialStory!,
         related: const [],
         comments: const [],
       );
@@ -100,13 +109,13 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
         final storyId = initialStory.id.trim().isNotEmpty
             ? initialStory.id.trim()
             : widget.slug.trim();
-        final story = await _storyApi.getStoryById(storyId);
+        final story = await _postApi.getPostById(storyId);
         if (!mounted) {
           return;
         }
         setState(() {
-          _detail = StoryDetailVm(
-            story: story,
+          _detail = PostDetailVm(
+            post: story,
             related: const [],
             comments: const [],
           );
@@ -117,7 +126,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
         return;
       }
 
-      final detail = await _storyApi.getPublicStoryBySlug(widget.slug);
+      final detail = await _postApi.getPublicPostBySlug(widget.slug);
       if (!mounted) {
         return;
       }
@@ -127,7 +136,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
         _errorMessage = null;
       });
 
-      await Future.wait<void>([_loadAuthorProfile(), _trackViewIfNeeded()]);
+      await Future.wait<void>([_loadAuthorProfile(), _markSeenIfNeeded()]);
       await _handleInitialCommentJump();
     } on DioException catch (e) {
       if (!mounted) {
@@ -163,7 +172,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
   }
 
   Future<void> _loadAuthorProfile() async {
-    final story = _detail?.story;
+    final story = _detail?.post;
     if (story == null) {
       return;
     }
@@ -201,15 +210,15 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     if (detail == null) {
       return;
     }
-    if (!detail.story.isPublished) {
+    if (!detail.post.isPublished) {
       _didHandleInitialCommentJump = true;
       return;
     }
 
     if (!detail.comments.any((comment) => comment.id == targetCommentId)) {
       try {
-        final comments = await _storyApi.listComments(
-          detail.story.id,
+        final comments = await _postApi.listComments(
+          detail.post.id,
           limit: 100,
         );
         if (!mounted) {
@@ -274,12 +283,17 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     );
   }
 
-  Future<void> _trackViewIfNeeded() async {
-    if (_didTrackView) {
+  Future<void> _markSeenIfNeeded() async {
+    if (_didMarkSeen) {
       return;
     }
-    final story = _detail?.story;
-    if (story == null) {
+    final story = _detail?.post;
+    if (story == null ||
+        !story.isPublished ||
+        story.id.trim().isEmpty ||
+        story.isSeenByViewer ||
+        story.isExpired) {
+      _didMarkSeen = true;
       return;
     }
     final auth = context.read<AuthProvider>();
@@ -288,18 +302,25 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     }
 
     try {
-      final views = await _storyApi.trackView(story.id);
+      final seenAt = await _postApi.markPostSeen(story.id);
       if (!mounted) {
         return;
       }
-      _didTrackView = true;
+      _didMarkSeen = true;
       setState(() {
+        final currentStory = _detail?.post;
+        if (currentStory == null) {
+          return;
+        }
         _detail = _detail?.copyWith(
-          story: story.copyWith(stats: story.stats.copyWith(views: views)),
+          post: currentStory.copyWith(
+            seenByViewer: true,
+            seenAt: seenAt ?? DateTime.now().toUtc(),
+          ),
         );
       });
     } catch (_) {
-      _didTrackView = true;
+      _didMarkSeen = true;
     }
   }
 
@@ -311,7 +332,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
       return;
     }
     if (auth.state != AuthState.authenticated) {
-      context.push('/login?from=/stories/${Uri.encodeComponent(widget.slug)}');
+      context.push('/login?from=/posts/${Uri.encodeComponent(widget.slug)}');
       return;
     }
 
@@ -320,18 +341,18 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     });
 
     try {
-      final likes = detail.story.likedByViewer
-          ? await _storyApi.unlikeStory(detail.story.id)
-          : await _storyApi.likeStory(detail.story.id);
+      final likes = detail.post.likedByViewer
+          ? await _postApi.unlikePost(detail.post.id)
+          : await _postApi.likePost(detail.post.id);
       if (!mounted) {
         return;
       }
-      final updatedStory = detail.story.copyWith(
-        likedByViewer: !detail.story.likedByViewer,
-        stats: detail.story.stats.copyWith(likes: likes),
+      final updatedStory = detail.post.copyWith(
+        likedByViewer: !detail.post.likedByViewer,
+        stats: detail.post.stats.copyWith(likes: likes),
       );
       setState(() {
-        _detail = detail.copyWith(story: updatedStory);
+        _detail = detail.copyWith(post: updatedStory);
       });
     } on DioException catch (e) {
       if (!mounted) {
@@ -351,7 +372,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     }
   }
 
-  Future<void> _shareStory() async {
+  Future<void> _sharePost() async {
     final l10n = AppLocalizations.of(context)!;
     final detail = _detail;
     if (detail == null || _isSharing) {
@@ -363,7 +384,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     });
 
     try {
-      final result = await _storyApi.shareStory(detail.story.id);
+      final result = await _postApi.sharePost(detail.post.id);
       final shareUrl = result.$1;
       final shares = result.$2;
       if (!mounted) {
@@ -371,9 +392,9 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
       }
       setState(() {
         _detail = detail.copyWith(
-          story: detail.story.copyWith(
+          post: detail.post.copyWith(
             shareUrl: shareUrl,
-            stats: detail.story.stats.copyWith(shares: shares),
+            stats: detail.post.stats.copyWith(shares: shares),
           ),
         );
       });
@@ -382,8 +403,8 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
       }
       await _shareTextViaSystemSheet(
         text: shareUrl,
-        title: detail.story.title,
-        subject: detail.story.title,
+        title: detail.post.title,
+        subject: detail.post.title,
       );
     } on DioException catch (e) {
       if (!mounted) {
@@ -412,6 +433,72 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     }
   }
 
+  Future<void> _reportPost() async {
+    final l10n = AppLocalizations.of(context)!;
+    final auth = context.read<AuthProvider>();
+    final detail = _detail;
+    if (detail == null || _isSubmittingReport) {
+      return;
+    }
+    if (auth.state != AuthState.authenticated) {
+      context.push('/login?from=/posts/${Uri.encodeComponent(widget.slug)}');
+      return;
+    }
+
+    final report = await showModalBottomSheet<_StoryReportFormResult>(
+      context: context,
+      isDismissible: true,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: const Color(0xFF23140A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      builder: (sheetContext) {
+        return const _StoryReportSheet();
+      },
+    );
+    if (report == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _isSubmittingReport = true;
+    });
+
+    try {
+      final result = await _postApi.reportPost(
+        detail.post.id,
+        reason: report.reason,
+        details: report.details,
+      );
+      if (!mounted) {
+        return;
+      }
+      final message = result.autoHidden
+          ? l10n.storyReportAutoHidden
+          : l10n.storyReportSubmitted;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+      );
+    } on DioException catch (e) {
+      if (!mounted) {
+        return;
+      }
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: DioErrorMapper.toMessage(e),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmittingReport = false;
+        });
+      }
+    }
+  }
+
   Future<void> _toggleFollow() async {
     final l10n = AppLocalizations.of(context)!;
     final auth = context.read<AuthProvider>();
@@ -420,7 +507,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
       return;
     }
     if (auth.state != AuthState.authenticated) {
-      context.push('/login?from=/stories/${Uri.encodeComponent(widget.slug)}');
+      context.push('/login?from=/posts/${Uri.encodeComponent(widget.slug)}');
       return;
     }
 
@@ -471,13 +558,13 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     final body = _commentController.text.trim();
     final editingCommentId = _editingCommentId;
     if (detail == null ||
-        !detail.story.isPublished ||
+        !detail.post.isPublished ||
         body.isEmpty ||
         _isSubmittingComment) {
       return;
     }
     if (auth.state != AuthState.authenticated) {
-      context.push('/login?from=/stories/${Uri.encodeComponent(widget.slug)}');
+      context.push('/login?from=/posts/${Uri.encodeComponent(widget.slug)}');
       return;
     }
     if (editingCommentId == null && _commentLockEndsAt(currentUserId) != null) {
@@ -493,9 +580,9 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
 
     try {
       final result = editingCommentId == null
-          ? await _storyApi.createComment(detail.story.id, body)
-          : await _storyApi.updateComment(
-              detail.story.id,
+          ? await _postApi.createComment(detail.post.id, body)
+          : await _postApi.updateComment(
+              detail.post.id,
               editingCommentId,
               body,
             );
@@ -510,15 +597,15 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                 .map((comment) => comment.id == result.id ? result : comment)
                 .toList(growable: false);
       final nextStory = editingCommentId == null
-          ? detail.story.copyWith(
-              stats: detail.story.stats.copyWith(
-                comments: detail.story.stats.comments + 1,
+          ? detail.post.copyWith(
+              stats: detail.post.stats.copyWith(
+                comments: detail.post.stats.comments + 1,
               ),
             )
-          : detail.story;
+          : detail.post;
       setState(() {
         _editingCommentId = null;
-        _detail = detail.copyWith(story: nextStory, comments: nextComments);
+        _detail = detail.copyWith(post: nextStory, comments: nextComments);
       });
       if (editingCommentId == null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -543,7 +630,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     }
   }
 
-  Future<void> _toggleCommentLike(StoryCommentVm comment) async {
+  Future<void> _toggleCommentLike(PostCommentVm comment) async {
     final l10n = AppLocalizations.of(context)!;
     final auth = context.read<AuthProvider>();
     final detail = _detail;
@@ -551,14 +638,14 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
       return;
     }
     if (auth.state != AuthState.authenticated) {
-      context.push('/login?from=/stories/${Uri.encodeComponent(widget.slug)}');
+      context.push('/login?from=/posts/${Uri.encodeComponent(widget.slug)}');
       return;
     }
 
     try {
       final result = comment.likedByMe
-          ? await _storyApi.unlikeComment(detail.story.id, comment.id)
-          : await _storyApi.likeComment(detail.story.id, comment.id);
+          ? await _postApi.unlikeComment(detail.post.id, comment.id)
+          : await _postApi.likeComment(detail.post.id, comment.id);
       if (!mounted) {
         return;
       }
@@ -584,7 +671,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     }
   }
 
-  Future<void> _shareComment(StoryCommentVm comment) async {
+  Future<void> _shareComment(PostCommentVm comment) async {
     final l10n = AppLocalizations.of(context)!;
     final detail = _detail;
     if (detail == null) {
@@ -593,12 +680,12 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
 
     final shareUrl = comment.shareUrl.trim().isNotEmpty
         ? comment.shareUrl.trim()
-        : '${detail.story.shareUrl}?comment=${comment.id}';
+        : '${detail.post.shareUrl}?comment=${comment.id}';
     try {
       await _shareTextViaSystemSheet(
         text: shareUrl,
-        title: detail.story.title,
-        subject: detail.story.title,
+        title: detail.post.title,
+        subject: detail.post.title,
       );
     } catch (_) {
       if (!mounted) {
@@ -639,7 +726,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     List<StoryImagePayload> images,
     int initialIndex,
   ) async {
-    final preferPrivateContent = !(_detail?.story.isPublished ?? true);
+    final preferPrivateContent = !(_detail?.post.isPublished ?? true);
     final visibleImages = images
         .where((image) {
           final fileId = image.fileId.trim();
@@ -674,7 +761,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     );
   }
 
-  void _startEditingComment(StoryCommentVm comment) {
+  void _startEditingComment(PostCommentVm comment) {
     setState(() {
       _editingCommentId = comment.id;
       _commentController.text = comment.body;
@@ -693,7 +780,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     _commentFocusNode.unfocus();
   }
 
-  StoryCommentVm? _latestRecentOwnComment(String currentUserId) {
+  PostCommentVm? _latestRecentOwnComment(String currentUserId) {
     final normalizedUserId = currentUserId.trim();
     if (normalizedUserId.isEmpty) {
       return null;
@@ -704,7 +791,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     }
 
     final now = DateTime.now();
-    StoryCommentVm? latest;
+    PostCommentVm? latest;
     for (final comment in detail.comments) {
       if (comment.author.userId.trim() != normalizedUserId) {
         continue;
@@ -740,7 +827,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     )!.storyCommentCooldownUntil(formattedTime);
   }
 
-  Future<void> _deleteComment(StoryCommentVm comment) async {
+  Future<void> _deleteComment(PostCommentVm comment) async {
     final l10n = AppLocalizations.of(context)!;
     final detail = _detail;
     if (detail == null) {
@@ -786,16 +873,16 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     }
 
     try {
-      await _storyApi.deleteComment(detail.story.id, comment.id);
+      await _postApi.deleteComment(detail.post.id, comment.id);
       if (!mounted) {
         return;
       }
       final nextComments = detail.comments
           .where((item) => item.id != comment.id)
           .toList(growable: false);
-      final nextStory = detail.story.copyWith(
-        stats: detail.story.stats.copyWith(
-          comments: (detail.story.stats.comments - 1).clamp(0, 1 << 31),
+      final nextStory = detail.post.copyWith(
+        stats: detail.post.stats.copyWith(
+          comments: (detail.post.stats.comments - 1).clamp(0, 1 << 31),
         ),
       );
       setState(() {
@@ -803,7 +890,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
           _editingCommentId = null;
           _commentController.clear();
         }
-        _detail = detail.copyWith(story: nextStory, comments: nextComments);
+        _detail = detail.copyWith(post: nextStory, comments: nextComments);
       });
     } on DioException catch (e) {
       if (!mounted) {
@@ -818,21 +905,21 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
   }
 
   Future<void> _editStory() async {
-    final story = _detail?.story;
+    final story = _detail?.post;
     if (story == null) {
       return;
     }
     final result = await context.push<Object?>(
-      '/stories/${story.id}/edit',
+      '/posts/${story.id}/edit',
       extra: story,
     );
-    if (result is! StoryVm || !mounted) {
+    if (result is! PostVm || !mounted) {
       return;
     }
     final refreshed = result;
     if (mounted) {
       setState(() {
-        _detail = _detail?.copyWith(story: refreshed);
+        _detail = _detail?.copyWith(post: refreshed);
       });
       await _loadDetail(silent: true);
       if (!mounted) {
@@ -842,9 +929,9 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     }
   }
 
-  Future<void> _deleteStory() async {
+  Future<void> _deletePost() async {
     final l10n = AppLocalizations.of(context)!;
-    final story = _detail?.story;
+    final story = _detail?.post;
     if (story == null) {
       return;
     }
@@ -890,7 +977,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     }
 
     try {
-      await _storyApi.deleteStory(story.id);
+      await _postApi.deletePost(story.id);
       if (!mounted) {
         return;
       }
@@ -914,7 +1001,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     final detail = _detail;
     final currentUserId =
         (context.watch<SessionProvider>().profile?.userId ?? '').trim();
-    final story = detail?.story;
+    final story = detail?.post;
     final isAuthor = story?.isOwnedBy(currentUserId) ?? false;
 
     return Scaffold(
@@ -936,7 +1023,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
               : Builder(
                   builder: (context) {
                     final currentDetail = detail!;
-                    final showSocialSections = currentDetail.story.isPublished;
+                    final showSocialSections = currentDetail.post.isPublished;
                     final commentLockEndsAt =
                         showSocialSections && _editingCommentId == null
                         ? _commentLockEndsAt(currentUserId)
@@ -952,7 +1039,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                             titleLabel: l10n.storyDetailsTitle,
                             isSharing: _isSharing,
                             onBackTap: () => context.pop(false),
-                            onShareTap: _shareStory,
+                            onShareTap: _sharePost,
                             onOpenImages: _openStoryImages,
                           ),
                         ),
@@ -981,7 +1068,11 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                                     },
                                     onFollowTap: _toggleFollow,
                                     onEditTap: _editStory,
-                                    onDeleteTap: _deleteStory,
+                                    onDeleteTap: _deletePost,
+                                    onReportTap: showSocialSections && !isAuthor
+                                        ? _reportPost
+                                        : null,
+                                    isReporting: _isSubmittingReport,
                                     onViewsTap: null,
                                     onLikesTap: _toggleLike,
                                     onCommentsTap: showSocialSections
@@ -989,7 +1080,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                                             focusComposer: true,
                                           )
                                         : null,
-                                    onSharesTap: _shareStory,
+                                    onSharesTap: _sharePost,
                                   ),
                                 ),
                                 SizedBox(height: adaptive.scale(18)),
@@ -1038,7 +1129,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                                     stories: currentDetail.related,
                                     onStoryTap: (story) {
                                       context.pushReplacement(
-                                        '/stories/${Uri.encodeComponent(story.slug)}',
+                                        '/posts/${Uri.encodeComponent(story.slug)}',
                                         extra: story,
                                       );
                                     },
@@ -1058,6 +1149,210 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
   }
 }
 
+const _storyReportReasons = <String>[
+  'SPAM',
+  'HARASSMENT',
+  'HATE',
+  'SEXUAL_CONTENT',
+  'VIOLENCE',
+  'MISINFORMATION',
+  'ILLEGAL',
+  'OTHER',
+];
+
+class _StoryReportFormResult {
+  const _StoryReportFormResult({required this.reason, required this.details});
+
+  final String reason;
+  final String details;
+}
+
+class _StoryReportSheet extends StatefulWidget {
+  const _StoryReportSheet();
+
+  @override
+  State<_StoryReportSheet> createState() => _StoryReportSheetState();
+}
+
+class _StoryReportSheetState extends State<_StoryReportSheet> {
+  final _detailsController = TextEditingController();
+  String _reason = _storyReportReasons.first;
+
+  @override
+  void dispose() {
+    _detailsController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final adaptive = StoryAdaptive.of(context);
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.88;
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          adaptive.scale(18),
+          adaptive.scale(18),
+          adaptive.scale(18),
+          bottomInset + adaptive.scale(18),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: adaptive.scale(42),
+                height: adaptive.scale(4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.22),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            ),
+            SizedBox(height: adaptive.scale(18)),
+            Text(
+              l10n.storyReportTitle,
+              style: TextStyle(
+                color: StoryPalette.text,
+                fontSize: adaptive.scale(20),
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            SizedBox(height: adaptive.scale(8)),
+            Text(
+              l10n.storyReportSubtitle,
+              style: TextStyle(
+                color: StoryPalette.textSoft,
+                fontSize: adaptive.scale(13),
+                height: 1.35,
+              ),
+            ),
+            SizedBox(height: adaptive.scale(14)),
+            RadioGroup<String>(
+              groupValue: _reason,
+              onChanged: (value) {
+                if (value == null) {
+                  return;
+                }
+                setState(() {
+                  _reason = value;
+                });
+              },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final reason in _storyReportReasons)
+                    RadioListTile<String>(
+                      value: reason,
+                      activeColor: AppColors.accent,
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        _storyReportReasonLabel(l10n, reason),
+                        style: TextStyle(
+                          color: StoryPalette.text,
+                          fontSize: adaptive.scale(13),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            SizedBox(height: adaptive.scale(8)),
+            TextField(
+              key: const ValueKey('story-report-details-field'),
+              controller: _detailsController,
+              maxLines: 4,
+              maxLength: 500,
+              textInputAction: TextInputAction.newline,
+              style: const TextStyle(color: StoryPalette.text),
+              decoration: InputDecoration(
+                labelText: l10n.storyReportDetailsLabel,
+                hintText: l10n.storyReportDetailsHint,
+                labelStyle: const TextStyle(color: StoryPalette.textMuted),
+                hintStyle: const TextStyle(color: StoryPalette.textMuted),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(adaptive.radius(18)),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.12),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(adaptive.radius(18)),
+                  borderSide: const BorderSide(color: AppColors.accent),
+                ),
+              ),
+            ),
+            SizedBox(height: adaptive.scale(14)),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text(l10n.cancel),
+                  ),
+                ),
+                SizedBox(width: adaptive.scale(10)),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pop(
+                        _StoryReportFormResult(
+                          reason: _reason,
+                          details: _detailsController.text.trim(),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.accent,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          adaptive.radius(18),
+                        ),
+                      ),
+                    ),
+                    icon: const Icon(Icons.flag_outlined),
+                    label: Text(l10n.storyReportSubmitAction),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _storyReportReasonLabel(AppLocalizations l10n, String reason) {
+  switch (reason) {
+    case 'SPAM':
+      return l10n.storyReportReasonSpam;
+    case 'HARASSMENT':
+      return l10n.storyReportReasonHarassment;
+    case 'HATE':
+      return l10n.storyReportReasonHate;
+    case 'SEXUAL_CONTENT':
+      return l10n.storyReportReasonSexualContent;
+    case 'VIOLENCE':
+      return l10n.storyReportReasonViolence;
+    case 'MISINFORMATION':
+      return l10n.storyReportReasonMisinformation;
+    case 'ILLEGAL':
+      return l10n.storyReportReasonIllegal;
+    case 'OTHER':
+    default:
+      return l10n.storyReportReasonOther;
+  }
+}
+
 class _StoryHero extends StatelessWidget {
   const _StoryHero({
     required this.story,
@@ -1068,7 +1363,7 @@ class _StoryHero extends StatelessWidget {
     required this.onOpenImages,
   });
 
-  final StoryVm story;
+  final PostVm story;
   final String titleLabel;
   final bool isSharing;
   final VoidCallback onBackTap;
@@ -1315,13 +1610,15 @@ class _AuthorCard extends StatelessWidget {
     required this.onFollowTap,
     required this.onEditTap,
     required this.onDeleteTap,
+    required this.onReportTap,
+    required this.isReporting,
     required this.onViewsTap,
     required this.onLikesTap,
     required this.onCommentsTap,
     required this.onSharesTap,
   });
 
-  final StoryVm story;
+  final PostVm story;
   final UserProfileVm? authorProfile;
   final bool isAuthor;
   final bool isFollowing;
@@ -1329,6 +1626,8 @@ class _AuthorCard extends StatelessWidget {
   final VoidCallback onFollowTap;
   final VoidCallback onEditTap;
   final VoidCallback onDeleteTap;
+  final VoidCallback? onReportTap;
+  final bool isReporting;
   final VoidCallback? onViewsTap;
   final VoidCallback? onLikesTap;
   final VoidCallback? onCommentsTap;
@@ -1445,27 +1744,57 @@ class _AuthorCard extends StatelessWidget {
                 ),
               ],
             )
-          else if (authorProfile != null)
+          else if (authorProfile != null || onReportTap != null)
             Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton(
-                onPressed: isFollowing ? null : onFollowTap,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.accent,
-                  side: BorderSide(
-                    color: AppColors.accent.withValues(alpha: 0.24),
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(adaptive.radius(999)),
-                  ),
-                ),
-                child: Text(
-                  authorProfile!.isFollowedByMe
-                      ? l10n.storyFollowingAction
-                      : (isFollowing
+              child: Wrap(
+                spacing: adaptive.scale(10),
+                runSpacing: adaptive.scale(8),
+                children: [
+                  if (authorProfile != null)
+                    OutlinedButton(
+                      onPressed: isFollowing ? null : onFollowTap,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.accent,
+                        side: BorderSide(
+                          color: AppColors.accent.withValues(alpha: 0.24),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            adaptive.radius(999),
+                          ),
+                        ),
+                      ),
+                      child: Text(
+                        authorProfile!.isFollowedByMe
                             ? l10n.storyFollowingAction
-                            : l10n.storyFollowAction),
-                ),
+                            : (isFollowing
+                                  ? l10n.storyFollowingAction
+                                  : l10n.storyFollowAction),
+                      ),
+                    ),
+                  if (onReportTap != null)
+                    OutlinedButton.icon(
+                      onPressed: isReporting ? null : onReportTap,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.destructive,
+                        side: BorderSide(
+                          color: AppColors.destructive.withValues(alpha: 0.26),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            adaptive.radius(999),
+                          ),
+                        ),
+                      ),
+                      icon: Icon(Icons.flag_outlined, size: adaptive.scale(16)),
+                      label: Text(
+                        isReporting
+                            ? l10n.storyReportSending
+                            : l10n.storyReportAction,
+                      ),
+                    ),
+                ],
               ),
             ),
           SizedBox(height: adaptive.scale(12)),
@@ -1580,7 +1909,7 @@ class _StatItem extends StatelessWidget {
 class _StoryArticle extends StatelessWidget {
   const _StoryArticle({required this.story, required this.onOpenImages});
 
-  final StoryVm story;
+  final PostVm story;
   final StoryImageOpenCallback onOpenImages;
 
   @override
@@ -1813,12 +2142,12 @@ class _CommentsSection extends StatelessWidget {
     required this.onShareComment,
   });
 
-  final List<StoryCommentVm> comments;
+  final List<PostCommentVm> comments;
   final GlobalKey Function(String commentId) commentKeyForId;
-  final ValueChanged<StoryCommentVm> onEditComment;
-  final ValueChanged<StoryCommentVm> onDeleteComment;
-  final ValueChanged<StoryCommentVm> onLikeComment;
-  final ValueChanged<StoryCommentVm> onShareComment;
+  final ValueChanged<PostCommentVm> onEditComment;
+  final ValueChanged<PostCommentVm> onDeleteComment;
+  final ValueChanged<PostCommentVm> onLikeComment;
+  final ValueChanged<PostCommentVm> onShareComment;
 
   @override
   Widget build(BuildContext context) {
@@ -1880,7 +2209,7 @@ class _CommentCard extends StatelessWidget {
     this.onDelete,
   });
 
-  final StoryCommentVm comment;
+  final PostCommentVm comment;
   final VoidCallback onLike;
   final VoidCallback onShare;
   final VoidCallback? onEdit;
@@ -2652,8 +2981,8 @@ class _RelatedStoriesSection extends StatelessWidget {
     required this.onStoryTap,
   });
 
-  final List<StoryVm> stories;
-  final ValueChanged<StoryVm> onStoryTap;
+  final List<PostVm> stories;
+  final ValueChanged<PostVm> onStoryTap;
 
   @override
   Widget build(BuildContext context) {
@@ -2692,7 +3021,7 @@ class _RelatedStoriesSection extends StatelessWidget {
               ),
             ),
             GestureDetector(
-              onTap: () => context.go('/stories'),
+              onTap: () => context.go('/posts'),
               child: Text(
                 l10n.storyViewAll,
                 style: TextStyle(
@@ -2718,88 +3047,116 @@ class _RelatedStoriesSection extends StatelessWidget {
           Column(
             children: [
               for (final story in stories) ...[
-                GestureDetector(
-                  onTap: () => onStoryTap(story),
-                  child: Container(
-                    margin: EdgeInsets.only(bottom: adaptive.scale(14)),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(adaptive.radius(14)),
-                      gradient: const LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Color(0xFF22140A), Color(0xFF1B1008)],
-                      ),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.03),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          height: adaptive.scale(220),
-                          clipBehavior: Clip.antiAlias,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.vertical(
-                              top: Radius.circular(adaptive.radius(14)),
+                Builder(
+                  builder: (context) {
+                    final state = resolvePostEntryState(story);
+                    return GestureDetector(
+                      onTap: state.disablesEntry
+                          ? null
+                          : () => onStoryTap(story),
+                      child: Container(
+                        margin: EdgeInsets.only(bottom: adaptive.scale(14)),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(
+                            adaptive.radius(14),
+                          ),
+                          gradient: const LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Color(0xFF22140A), Color(0xFF1B1008)],
+                          ),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.03),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              height: adaptive.scale(220),
+                              clipBehavior: Clip.antiAlias,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(adaptive.radius(14)),
+                                ),
+                              ),
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  StoryCoverImage(url: story.coverUrl),
+                                  if (state.disablesEntry)
+                                    Positioned.fill(
+                                      child: ColoredBox(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.38,
+                                        ),
+                                      ),
+                                    ),
+                                  Positioned(
+                                    left: adaptive.scale(10),
+                                    top: adaptive.scale(10),
+                                    child: _HeroChip(
+                                      label:
+                                          (story.placeName ?? '').trim().isEmpty
+                                          ? formatStoryCategory(
+                                              l10n,
+                                              story.category,
+                                            )
+                                          : story.placeName!.trim(),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    left: adaptive.scale(10),
+                                    bottom: adaptive.scale(10),
+                                    child: StoryStateAffordance.fromPost(
+                                      story,
+                                      compact: true,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              StoryCoverImage(url: story.coverUrl),
-                              Positioned(
-                                left: adaptive.scale(10),
-                                top: adaptive.scale(10),
-                                child: _HeroChip(
-                                  label: (story.placeName ?? '').trim().isEmpty
-                                      ? formatStoryCategory(
-                                          l10n,
-                                          story.category,
-                                        )
-                                      : story.placeName!.trim(),
-                                ),
+                            Padding(
+                              padding: EdgeInsets.fromLTRB(
+                                adaptive.scale(12),
+                                adaptive.scale(12),
+                                adaptive.scale(12),
+                                adaptive.scale(14),
                               ),
-                            ],
-                          ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    story.title,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: const Color(0xFFF6EDE2),
+                                      fontSize: adaptive.scale(15),
+                                      height: 1.15,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  SizedBox(height: adaptive.scale(4)),
+                                  Text(
+                                    story.author.preferredName,
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.48,
+                                      ),
+                                      fontSize: adaptive.scale(10),
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 1.0,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        Padding(
-                          padding: EdgeInsets.fromLTRB(
-                            adaptive.scale(12),
-                            adaptive.scale(12),
-                            adaptive.scale(12),
-                            adaptive.scale(14),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                story.title,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: const Color(0xFFF6EDE2),
-                                  fontSize: adaptive.scale(15),
-                                  height: 1.15,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              SizedBox(height: adaptive.scale(4)),
-                              Text(
-                                story.author.preferredName,
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.48),
-                                  fontSize: adaptive.scale(10),
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 1.0,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                      ),
+                    );
+                  },
                 ),
               ],
             ],

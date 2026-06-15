@@ -105,6 +105,11 @@ class ApiClient {
               handler.reject(_missingAccessTokenError(options));
               return;
             }
+          } else if (_usesOptionalAuth(options)) {
+            final accessToken = await _secureStorage.getAccessToken();
+            if (accessToken != null && accessToken.isNotEmpty) {
+              options.headers['Authorization'] = 'Bearer $accessToken';
+            }
           }
 
           handler.next(options);
@@ -155,7 +160,14 @@ class ApiClient {
     if (requiresAuthFromExtra == false) {
       return false;
     }
+    if (_usesOptionalAuth(options)) {
+      return false;
+    }
     return !_isAuthRoute(options.path);
+  }
+
+  bool _usesOptionalAuth(RequestOptions options) {
+    return options.extra['optionalAuth'] == true;
   }
 
   bool _isAuthRoute(String path) => path.startsWith('/auth/');

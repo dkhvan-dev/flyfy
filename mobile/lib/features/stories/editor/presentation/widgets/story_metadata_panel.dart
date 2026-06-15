@@ -23,6 +23,11 @@ class StoryMetadataPanel extends StatefulWidget {
     required this.onClearCover,
     required this.onApplyTemplate,
     this.fieldKeys,
+    this.hidePlaceFields = false,
+    this.showTemplatePicker = true,
+    this.showMaterialTaxonomy = true,
+    this.showTags = true,
+    this.showCover = true,
     this.onTextFieldFocusChanged,
     this.onTextFieldFocused,
   });
@@ -44,6 +49,11 @@ class StoryMetadataPanel extends StatefulWidget {
   final VoidCallback onPickCover;
   final VoidCallback onClearCover;
   final ValueChanged<StoryEditorTemplatePreset> onApplyTemplate;
+  final bool hidePlaceFields;
+  final bool showTemplatePicker;
+  final bool showMaterialTaxonomy;
+  final bool showTags;
+  final bool showCover;
   final ValueChanged<bool>? onTextFieldFocusChanged;
   final ValueChanged<BuildContext>? onTextFieldFocused;
 
@@ -77,7 +87,7 @@ class _StoryMetadataPanelState extends State<StoryMetadataPanel> {
   bool _textFieldFocusActive = false;
 
   static const _formats = [
-    'STORY',
+    'POST',
     'GUIDE',
     'PHOTO_ESSAY',
     'ARTICLE',
@@ -167,363 +177,385 @@ class _StoryMetadataPanelState extends State<StoryMetadataPanel> {
               ),
             ),
             const SizedBox(height: StoryEditorSpacing.md),
-            _StoryTemplatePickerField(
-              key: const ValueKey('story-editor-template-picker'),
-              selectedPreset: _templatePresetFromId(
-                widget.state.template.appliedTemplateId,
+            if (widget.showTemplatePicker) ...[
+              _StoryTemplatePickerField(
+                key: const ValueKey('story-editor-template-picker'),
+                selectedPreset: _templatePresetFromId(
+                  widget.state.template.appliedTemplateId,
+                ),
+                onSelected: widget.onApplyTemplate,
               ),
-              onSelected: widget.onApplyTemplate,
-            ),
-            const SizedBox(height: StoryEditorSpacing.md),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final stack = constraints.maxWidth < 520;
-                final children = [
-                  _MetadataPopupField(
-                    key: const ValueKey('story-editor-format-field'),
-                    label: l10n.storyEditorFormatLabel,
-                    value: _safeValue(metadata.format, _formats),
-                    values: _formats,
-                    displayValue: (value) => _displayFormat(l10n, value),
-                    leadingIcon: Icons.auto_stories_outlined,
-                    iconFor: _metadataFormatIcon,
-                    errorText: formatError,
-                    onChanged: widget.onFormatChanged,
-                  ),
-                  _MetadataPopupField(
-                    key: const ValueKey('story-editor-category-field'),
-                    label: l10n.storyEditorChecklistCategory,
-                    value: _safeValue(metadata.category, _categories),
-                    values: _categories,
-                    displayValue: (value) => _displayCategory(l10n, value),
-                    leadingIcon: Icons.category_outlined,
-                    iconFor: _metadataCategoryIcon,
-                    errorText: categoryError,
-                    onChanged: widget.onCategoryChanged,
-                  ),
-                ];
-                if (stack) {
-                  return Column(
+              const SizedBox(height: StoryEditorSpacing.md),
+            ],
+            if (widget.showMaterialTaxonomy) ...[
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final stack = constraints.maxWidth < 520;
+                  final children = [
+                    _MetadataPopupField(
+                      key: const ValueKey('story-editor-format-field'),
+                      label: l10n.storyEditorFormatLabel,
+                      value: _safeValue(metadata.format, _formats),
+                      values: _formats,
+                      displayValue: (value) => _displayFormat(l10n, value),
+                      leadingIcon: Icons.auto_stories_outlined,
+                      iconFor: _metadataFormatIcon,
+                      errorText: formatError,
+                      onChanged: widget.onFormatChanged,
+                    ),
+                    _MetadataPopupField(
+                      key: const ValueKey('story-editor-category-field'),
+                      label: l10n.storyEditorChecklistCategory,
+                      value: _safeValue(metadata.category, _categories),
+                      values: _categories,
+                      displayValue: (value) => _displayCategory(l10n, value),
+                      leadingIcon: Icons.category_outlined,
+                      iconFor: _metadataCategoryIcon,
+                      errorText: categoryError,
+                      onChanged: widget.onCategoryChanged,
+                    ),
+                  ];
+                  if (stack) {
+                    return Column(
+                      children: [
+                        KeyedSubtree(
+                          key: widget.fieldKeys?.format,
+                          child: children[0],
+                        ),
+                        const SizedBox(height: StoryEditorSpacing.md),
+                        KeyedSubtree(
+                          key: widget.fieldKeys?.category,
+                          child: children[1],
+                        ),
+                      ],
+                    );
+                  }
+                  return Row(
                     children: [
-                      KeyedSubtree(
-                        key: widget.fieldKeys?.format,
-                        child: children[0],
+                      Expanded(
+                        child: KeyedSubtree(
+                          key: widget.fieldKeys?.format,
+                          child: children[0],
+                        ),
                       ),
-                      const SizedBox(height: StoryEditorSpacing.md),
-                      KeyedSubtree(
-                        key: widget.fieldKeys?.category,
-                        child: children[1],
+                      const SizedBox(width: StoryEditorSpacing.md),
+                      Expanded(
+                        child: KeyedSubtree(
+                          key: widget.fieldKeys?.category,
+                          child: children[1],
+                        ),
                       ),
                     ],
                   );
-                }
-                return Row(
-                  children: [
-                    Expanded(
-                      child: KeyedSubtree(
-                        key: widget.fieldKeys?.format,
-                        child: children[0],
-                      ),
+                },
+              ),
+            ],
+            if (!widget.hidePlaceFields) ...[
+              const SizedBox(height: StoryEditorSpacing.md),
+              KeyedSubtree(
+                key: widget.fieldKeys?.place,
+                child: StoryEditorRevealOnFocus(
+                  onFocus: widget.onTextFieldFocused,
+                  child: TextField(
+                    key: const ValueKey('story-editor-place-field'),
+                    controller: _placeController,
+                    focusNode: _placeFocusNode,
+                    textInputAction: TextInputAction.next,
+                    decoration: storyEditorInputDecoration(
+                      label: l10n.storyEditorPlaceLabel,
+                      errorText: placeError,
                     ),
-                    const SizedBox(width: StoryEditorSpacing.md),
-                    Expanded(
-                      child: KeyedSubtree(
-                        key: widget.fieldKeys?.category,
-                        child: children[1],
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: StoryEditorSpacing.md),
-            KeyedSubtree(
-              key: widget.fieldKeys?.place,
-              child: StoryEditorRevealOnFocus(
-                onFocus: widget.onTextFieldFocused,
-                child: TextField(
-                  key: const ValueKey('story-editor-place-field'),
-                  controller: _placeController,
-                  focusNode: _placeFocusNode,
-                  textInputAction: TextInputAction.next,
-                  decoration: storyEditorInputDecoration(
-                    label: l10n.storyEditorPlaceLabel,
-                    errorText: placeError,
+                    onChanged: (value) =>
+                        widget.onPlaceChanged(placeName: value),
                   ),
-                  onChanged: (value) => widget.onPlaceChanged(placeName: value),
                 ),
               ),
-            ),
-            const SizedBox(height: StoryEditorSpacing.md),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final metadata = widget.state.metadata;
-                final stack = constraints.maxWidth < 520;
-                final maxResultsHeight =
-                    MediaQuery.sizeOf(context).height * 0.24;
-                final selectedCountry = AppCountryFilterValue.fromParts(
-                  countryCode: metadata.placeCountryCode,
-                );
-                final selectedCity = AppCityFilterValue.fromParts(
-                  cityId: metadata.placeCityId,
-                  cityName: metadata.placeName,
-                  countryCode: metadata.placeCountryCode,
-                );
-                final country = AppCountryFilterSection(
-                  title: l10n.storyFilterCountry,
-                  allCountriesLabel: l10n.storyFilterCountryAll,
-                  searchHint: l10n.storyFilterCountrySearchHint,
-                  noResultsText: l10n.storyFilterCountryNoResults,
-                  selectedCountry: selectedCountry,
-                  maxResultsHeight: maxResultsHeight,
-                  onChanged: (value) {
-                    widget.onPlaceChanged(
-                      placeCountryCode: value?.countryCode,
-                      clearCountryCode: value == null,
-                      clearCityId: true,
+              const SizedBox(height: StoryEditorSpacing.md),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final metadata = widget.state.metadata;
+                  final stack = constraints.maxWidth < 520;
+                  final maxResultsHeight =
+                      MediaQuery.sizeOf(context).height * 0.24;
+                  final selectedCountry = AppCountryFilterValue.fromParts(
+                    countryCode: metadata.placeCountryCode,
+                  );
+                  final selectedCity = AppCityFilterValue.fromParts(
+                    cityId: metadata.placeCityId,
+                    cityName: metadata.placeName,
+                    countryCode: metadata.placeCountryCode,
+                  );
+                  final country = AppCountryFilterSection(
+                    title: l10n.storyFilterCountry,
+                    allCountriesLabel: l10n.storyFilterCountryAll,
+                    searchHint: l10n.storyFilterCountrySearchHint,
+                    noResultsText: l10n.storyFilterCountryNoResults,
+                    selectedCountry: selectedCountry,
+                    maxResultsHeight: maxResultsHeight,
+                    onChanged: (value) {
+                      widget.onPlaceChanged(
+                        placeCountryCode: value?.countryCode,
+                        clearCountryCode: value == null,
+                        clearCityId: true,
+                      );
+                    },
+                  );
+                  final city = AppCityFilterSection(
+                    title: l10n.locationFilterCitySection,
+                    allCitiesLabel: l10n.locationFilterAllCities,
+                    searchHint: l10n.locationFilterCitySearchHint,
+                    noResultsText: l10n.locationFilterCityNoResults,
+                    selectedCity: selectedCity,
+                    countryCode: selectedCountry?.countryCode,
+                    maxResultsHeight: maxResultsHeight,
+                    onChanged: (value) {
+                      widget.onPlaceChanged(
+                        placeName: value?.cityName,
+                        placeCountryCode:
+                            value?.countryCode ?? selectedCountry?.countryCode,
+                        placeCityId: value?.cityId,
+                        clearCityId: value == null,
+                      );
+                    },
+                  );
+                  if (stack) {
+                    return Column(
+                      children: [
+                        country,
+                        const SizedBox(height: StoryEditorSpacing.md),
+                        city,
+                      ],
                     );
-                  },
-                );
-                final city = AppCityFilterSection(
-                  title: l10n.locationFilterCitySection,
-                  allCitiesLabel: l10n.locationFilterAllCities,
-                  searchHint: l10n.locationFilterCitySearchHint,
-                  noResultsText: l10n.locationFilterCityNoResults,
-                  selectedCity: selectedCity,
-                  countryCode: selectedCountry?.countryCode,
-                  maxResultsHeight: maxResultsHeight,
-                  onChanged: (value) {
-                    widget.onPlaceChanged(
-                      placeName: value?.cityName,
-                      placeCountryCode:
-                          value?.countryCode ?? selectedCountry?.countryCode,
-                      placeCityId: value?.cityId,
-                      clearCityId: value == null,
-                    );
-                  },
-                );
-                if (stack) {
-                  return Column(
+                  }
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      country,
-                      const SizedBox(height: StoryEditorSpacing.md),
-                      city,
+                      Expanded(child: country),
+                      const SizedBox(width: StoryEditorSpacing.md),
+                      Expanded(child: city),
                     ],
                   );
-                }
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: country),
-                    const SizedBox(width: StoryEditorSpacing.md),
-                    Expanded(child: city),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: StoryEditorSpacing.md),
-            _TagsEditor(
-              controller: _tagsController,
-              focusNode: _tagsFocusNode,
-              tags: metadata.tags,
-              onTagsChanged: widget.onTagsChanged,
-              onInputChanged: (_) => setState(() {}),
-              onTextFieldFocused: widget.onTextFieldFocused,
-            ),
-            const SizedBox(height: StoryEditorSpacing.lg),
-            KeyedSubtree(
-              key: widget.fieldKeys?.cover,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final textScale = MediaQuery.textScalerOf(context).scale(1);
-                  final stackActions =
-                      constraints.maxWidth < 360 || textScale > 1.25;
-                  final actionWidth = stackActions
-                      ? constraints.maxWidth - StoryEditorSpacing.md * 2
-                      : null;
-                  final borderColor = coverError == null
-                      ? Theme.of(context).dividerColor
-                      : AppColors.destructive;
-                  final coverImage = _coverImageProvider(
-                    coverUpload,
-                    metadata.coverFileId,
-                  );
-                  return DecoratedBox(
-                    key: const ValueKey('story-editor-cover-field'),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.04),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: borderColor, width: 1.4),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(StoryEditorSpacing.md),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (coverImage != null) ...[
-                            Align(
-                              alignment: AlignmentDirectional.centerStart,
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  maxWidth: stackActions
-                                      ? constraints.maxWidth
-                                      : constraints.maxWidth * 0.52,
-                                ),
-                                child: ClipRRect(
-                                  key: const ValueKey(
-                                    'story-editor-cover-thumbnail',
+                },
+              ),
+              const SizedBox(height: StoryEditorSpacing.md),
+            ],
+            if (widget.showTags) ...[
+              SizedBox(
+                key: const ValueKey('story-editor-topic-tags-gap'),
+                height: widget.showMaterialTaxonomy
+                    ? StoryEditorSpacing.lg
+                    : StoryEditorSpacing.md,
+              ),
+              _TagsEditor(
+                controller: _tagsController,
+                focusNode: _tagsFocusNode,
+                tags: metadata.tags,
+                onTagsChanged: widget.onTagsChanged,
+                onInputChanged: (_) => setState(() {}),
+                onTextFieldFocused: widget.onTextFieldFocused,
+              ),
+            ],
+            if (widget.showCover) ...[
+              const SizedBox(height: StoryEditorSpacing.lg),
+              KeyedSubtree(
+                key: widget.fieldKeys?.cover,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final textScale = MediaQuery.textScalerOf(context).scale(1);
+                    final stackActions =
+                        constraints.maxWidth < 360 || textScale > 1.25;
+                    final actionWidth = stackActions
+                        ? constraints.maxWidth - StoryEditorSpacing.md * 2
+                        : null;
+                    final borderColor = coverError == null
+                        ? Theme.of(context).dividerColor
+                        : AppColors.destructive;
+                    final coverImage = _coverImageProvider(
+                      coverUpload,
+                      metadata.coverFileId,
+                    );
+                    return DecoratedBox(
+                      key: const ValueKey('story-editor-cover-field'),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.04),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: borderColor, width: 1.4),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(StoryEditorSpacing.md),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (coverImage != null) ...[
+                              Align(
+                                alignment: AlignmentDirectional.centerStart,
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxWidth: stackActions
+                                        ? constraints.maxWidth
+                                        : constraints.maxWidth * 0.52,
                                   ),
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: AspectRatio(
-                                    aspectRatio: 16 / 9,
-                                    child: Stack(
-                                      fit: StackFit.expand,
-                                      children: [
-                                        Image(
-                                          image: coverImage,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, _, _) =>
-                                              DecoratedBox(
-                                                decoration: BoxDecoration(
-                                                  color: StoryPalette
-                                                      .surfaceRaised,
-                                                  border: Border.all(
-                                                    color: AppColors.border,
-                                                  ),
-                                                ),
-                                                child: const Center(
-                                                  child: Icon(
-                                                    Icons.broken_image_outlined,
-                                                    color:
-                                                        AppColors.textCaption,
-                                                  ),
-                                                ),
-                                              ),
-                                        ),
-                                        if (hasCover && !isCoverUploading)
-                                          PositionedDirectional(
-                                            top: StoryEditorSpacing.xs,
-                                            end: StoryEditorSpacing.xs,
-                                            child: Tooltip(
-                                              message: l10n.storyEditorClear,
-                                              child: IconButton(
-                                                key: const ValueKey(
-                                                  'story-editor-cover-remove-overlay',
-                                                ),
-                                                visualDensity:
-                                                    VisualDensity.compact,
-                                                constraints:
-                                                    const BoxConstraints(
-                                                      minWidth: 40,
-                                                      minHeight: 40,
+                                  child: ClipRRect(
+                                    key: const ValueKey(
+                                      'story-editor-cover-thumbnail',
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: AspectRatio(
+                                      aspectRatio: 16 / 9,
+                                      child: Stack(
+                                        fit: StackFit.expand,
+                                        children: [
+                                          Image(
+                                            image: coverImage,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, _, _) =>
+                                                DecoratedBox(
+                                                  decoration: BoxDecoration(
+                                                    color: StoryPalette
+                                                        .surfaceRaised,
+                                                    border: Border.all(
+                                                      color: AppColors.border,
                                                     ),
-                                                style: IconButton.styleFrom(
-                                                  backgroundColor: AppColors
-                                                      .surface
-                                                      .withValues(alpha: 0.86),
-                                                  foregroundColor:
-                                                      AppColors.destructive,
-                                                  side: BorderSide(
-                                                    color: AppColors.destructive
-                                                        .withValues(
-                                                          alpha: 0.45,
-                                                        ),
+                                                  ),
+                                                  child: const Center(
+                                                    child: Icon(
+                                                      Icons
+                                                          .broken_image_outlined,
+                                                      color:
+                                                          AppColors.textCaption,
+                                                    ),
                                                   ),
                                                 ),
-                                                icon: const Icon(
-                                                  Icons.close_rounded,
-                                                  size: 18,
+                                          ),
+                                          if (hasCover && !isCoverUploading)
+                                            PositionedDirectional(
+                                              top: StoryEditorSpacing.xs,
+                                              end: StoryEditorSpacing.xs,
+                                              child: Tooltip(
+                                                message: l10n.storyEditorClear,
+                                                child: IconButton(
+                                                  key: const ValueKey(
+                                                    'story-editor-cover-remove-overlay',
+                                                  ),
+                                                  visualDensity:
+                                                      VisualDensity.compact,
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                        minWidth: 40,
+                                                        minHeight: 40,
+                                                      ),
+                                                  style: IconButton.styleFrom(
+                                                    backgroundColor: AppColors
+                                                        .surface
+                                                        .withValues(
+                                                          alpha: 0.86,
+                                                        ),
+                                                    foregroundColor:
+                                                        AppColors.destructive,
+                                                    side: BorderSide(
+                                                      color: AppColors
+                                                          .destructive
+                                                          .withValues(
+                                                            alpha: 0.45,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  icon: const Icon(
+                                                    Icons.close_rounded,
+                                                    size: 18,
+                                                  ),
+                                                  onPressed:
+                                                      widget.onClearCover,
                                                 ),
-                                                onPressed: widget.onClearCover,
                                               ),
                                             ),
-                                          ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
+                              const SizedBox(height: StoryEditorSpacing.md),
+                            ],
+                            Wrap(
+                              spacing: StoryEditorSpacing.md,
+                              runSpacing: StoryEditorSpacing.sm,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                if (isCoverUploading)
+                                  const SizedBox.square(
+                                    key: ValueKey(
+                                      'story-editor-cover-upload-loader',
+                                    ),
+                                    dimension: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.4,
+                                      color: AppColors.accent,
+                                    ),
+                                  )
+                                else
+                                  Icon(
+                                    hasCover
+                                        ? Icons.image_rounded
+                                        : Icons.add_photo_alternate_outlined,
+                                  ),
+                                ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxWidth: stackActions
+                                        ? constraints.maxWidth -
+                                              StoryEditorSpacing.md * 2 -
+                                              40
+                                        : constraints.maxWidth,
+                                  ),
+                                  child: Text(
+                                    isCoverUploading
+                                        ? l10n.storyEditorMediaUploading
+                                        : hasCover
+                                        ? l10n.storyEditorCoverSelected
+                                        : l10n.storyEditorCoverRequired,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: coverError == null
+                                        ? null
+                                        : Theme.of(
+                                            context,
+                                          ).textTheme.bodyMedium?.copyWith(
+                                            color: AppColors.destructive,
+                                          ),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: actionWidth,
+                                  child: FilledButton(
+                                    onPressed: isCoverUploading
+                                        ? null
+                                        : widget.onPickCover,
+                                    child: _MetadataButtonLabelContent(
+                                      icon: Icons.upload_rounded,
+                                      label: hasCover
+                                          ? l10n.storyEditorReplaceCover
+                                          : l10n.storyEditorAddCover,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: StoryEditorSpacing.md),
-                          ],
-                          Wrap(
-                            spacing: StoryEditorSpacing.md,
-                            runSpacing: StoryEditorSpacing.sm,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              if (isCoverUploading)
-                                const SizedBox.square(
-                                  key: ValueKey(
-                                    'story-editor-cover-upload-loader',
-                                  ),
-                                  dimension: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.4,
-                                    color: AppColors.accent,
-                                  ),
-                                )
-                              else
-                                Icon(
-                                  hasCover
-                                      ? Icons.image_rounded
-                                      : Icons.add_photo_alternate_outlined,
-                                ),
-                              ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  maxWidth: stackActions
-                                      ? constraints.maxWidth -
-                                            StoryEditorSpacing.md * 2 -
-                                            40
-                                      : constraints.maxWidth,
-                                ),
-                                child: Text(
-                                  isCoverUploading
-                                      ? l10n.storyEditorMediaUploading
-                                      : hasCover
-                                      ? l10n.storyEditorCoverSelected
-                                      : l10n.storyEditorCoverRequired,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: coverError == null
-                                      ? null
-                                      : Theme.of(
-                                          context,
-                                        ).textTheme.bodyMedium?.copyWith(
-                                          color: AppColors.destructive,
-                                        ),
-                                ),
-                              ),
-                              SizedBox(
-                                width: actionWidth,
-                                child: FilledButton(
-                                  onPressed: isCoverUploading
-                                      ? null
-                                      : widget.onPickCover,
-                                  child: _MetadataButtonLabelContent(
-                                    icon: Icons.upload_rounded,
-                                    label: hasCover
-                                        ? l10n.storyEditorReplaceCover
-                                        : l10n.storyEditorAddCover,
-                                  ),
-                                ),
+                            if (coverError != null) ...[
+                              const SizedBox(height: StoryEditorSpacing.sm),
+                              Text(
+                                coverError,
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(color: AppColors.destructive),
                               ),
                             ],
-                          ),
-                          if (coverError != null) ...[
-                            const SizedBox(height: StoryEditorSpacing.sm),
-                            Text(
-                              coverError,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: AppColors.destructive),
-                            ),
                           ],
-                        ],
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -562,6 +594,7 @@ class _StoryMetadataPanelState extends State<StoryMetadataPanel> {
 
   String _displayFormat(AppLocalizations l10n, String value) {
     return switch (value.trim().toUpperCase()) {
+      'POST' => l10n.storyFormatStory,
       'GUIDE' => l10n.storyFormatGuide,
       'PHOTO_ESSAY' => l10n.storyFormatPhotoEssay,
       'ARTICLE' => l10n.storyFormatArticle,
@@ -1106,11 +1139,11 @@ IconData _templatePresetIcon(StoryEditorTemplatePreset preset) {
 
 IconData _metadataFormatIcon(String value) {
   return switch (value.trim().toUpperCase()) {
+    'POST' => Icons.chat_bubble_outline_rounded,
     'GUIDE' => Icons.map_outlined,
     'PHOTO_ESSAY' => Icons.photo_library_outlined,
     'ARTICLE' => Icons.article_outlined,
     'CULINARY' => Icons.restaurant_menu_rounded,
-    'STORY' => Icons.auto_stories_outlined,
     _ => Icons.dashboard_customize_outlined,
   };
 }

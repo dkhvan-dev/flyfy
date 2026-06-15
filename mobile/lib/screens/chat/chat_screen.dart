@@ -3852,6 +3852,104 @@ class _ForwardedMessageLabel extends StatelessWidget {
   }
 }
 
+class _StoryReplyContextCard extends StatelessWidget {
+  const _StoryReplyContextCard({required this.contextVm, required this.l10n});
+
+  final StoryReplyContextVm contextVm;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final previewUrl = contextVm.previewUrl;
+    final title = contextVm.storyTitle.trim();
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.22),
+        borderRadius: BorderRadius.circular(_scale(context, 14)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(_scale(context, 10)),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (previewUrl != null) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(_scale(context, 10)),
+                child: Image.network(
+                  previewUrl,
+                  width: _scale(context, 42),
+                  height: _scale(context, 56),
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) =>
+                      _StoryReplyPreviewFallback(l10n: l10n),
+                ),
+              ),
+              SizedBox(width: _scale(context, 10)),
+            ],
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    l10n.chatStoryReplyLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: _scale(context, 12),
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.accent,
+                    ),
+                  ),
+                  SizedBox(height: _scale(context, 3)),
+                  Text(
+                    contextVm.isStoryUnavailable
+                        ? l10n.chatStoryReplyUnavailable
+                        : title.isEmpty
+                        ? l10n.storyCaptureDefaultTitle
+                        : title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: _scale(context, 13),
+                      height: 1.25,
+                      color: Colors.white.withValues(alpha: 0.76),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StoryReplyPreviewFallback extends StatelessWidget {
+  const _StoryReplyPreviewFallback({required this.l10n});
+
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: _scale(context, 42),
+      height: _scale(context, 56),
+      color: Colors.white.withValues(alpha: 0.08),
+      alignment: Alignment.center,
+      child: Icon(
+        Icons.auto_stories_rounded,
+        color: Colors.white.withValues(alpha: 0.62),
+        size: _scale(context, 20),
+        semanticLabel: l10n.chatStoryReplyLabel,
+      ),
+    );
+  }
+}
+
 class _HyperlinkedMessageText extends StatefulWidget {
   const _HyperlinkedMessageText({
     required this.text,
@@ -4226,6 +4324,14 @@ class _MessageBubble extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      if (!isDeleted && message.storyReply != null)
+                        Padding(
+                          padding: EdgeInsets.only(bottom: _scale(context, 12)),
+                          child: _StoryReplyContextCard(
+                            contextVm: message.storyReply!,
+                            l10n: l10n,
+                          ),
+                        ),
                       if (!isDeleted && message.isForwarded)
                         Padding(
                           padding: EdgeInsets.only(bottom: _scale(context, 10)),

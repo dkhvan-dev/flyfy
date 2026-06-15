@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'app_colors.dart';
 
-enum AppBottomNavItem { home, qr, map, services, chats }
+enum AppBottomNavItem { home, feed, qr, map, services, chats }
 
 enum AppBottomNavCreateBackgroundStyle { elevated, flat }
 
@@ -16,20 +16,32 @@ class CommonBottomNavigationBar extends StatelessWidget {
     required this.onServicesTap,
     required this.onChatsTap,
     this.activeItem,
+    this.onFeedTap,
+    this.onCenterCreateTap,
+    this.centerCreateSemanticsLabel,
+    this.showFeedItem = false,
   });
 
   final AppBottomNavItem? activeItem;
   final VoidCallback onHomeTap;
   final VoidCallback onQrTap;
+  final VoidCallback? onFeedTap;
+  final VoidCallback? onCenterCreateTap;
   final VoidCallback onMapTap;
   final VoidCallback onServicesTap;
   final VoidCallback onChatsTap;
+  final String? centerCreateSemanticsLabel;
+  final bool showFeedItem;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final layout = _BottomNavLayout.common(context);
+    final useCenterCreate = onCenterCreateTap != null;
+    final layout = useCenterCreate
+        ? _BottomNavLayout.withCreate(context)
+        : _BottomNavLayout.common(context);
     final safeBottom = MediaQuery.paddingOf(context).bottom;
+    final renderFeedItem = showFeedItem || activeItem == AppBottomNavItem.feed;
 
     return SizedBox(
       height: layout.barHeight + safeBottom,
@@ -63,20 +75,34 @@ class CommonBottomNavigationBar extends StatelessWidget {
                 Expanded(
                   child: _BottomNavButton(
                     layout: layout,
-                    label: l10n.homeNavQr,
-                    icon: Icons.qr_code_2_rounded,
-                    active: activeItem == AppBottomNavItem.qr,
-                    onTap: onQrTap,
+                    label: renderFeedItem ? l10n.feedNavLabel : l10n.homeNavQr,
+                    icon: renderFeedItem
+                        ? Icons.dynamic_feed_rounded
+                        : Icons.qr_code_2_rounded,
+                    active:
+                        activeItem ==
+                        (renderFeedItem
+                            ? AppBottomNavItem.feed
+                            : AppBottomNavItem.qr),
+                    onTap: renderFeedItem ? (onFeedTap ?? onQrTap) : onQrTap,
                   ),
                 ),
                 Expanded(
-                  child: _BottomNavButton(
-                    layout: layout,
-                    label: l10n.homeNavMap,
-                    icon: Icons.map_outlined,
-                    active: activeItem == AppBottomNavItem.map,
-                    onTap: onMapTap,
-                  ),
+                  child: useCenterCreate
+                      ? _CreateBottomNavFab(
+                          layout: layout,
+                          semanticsLabel:
+                              centerCreateSemanticsLabel ??
+                              l10n.communityProfileCreatePostAction,
+                          onTap: onCenterCreateTap!,
+                        )
+                      : _BottomNavButton(
+                          layout: layout,
+                          label: l10n.homeNavMap,
+                          icon: Icons.map_outlined,
+                          active: activeItem == AppBottomNavItem.map,
+                          onTap: onMapTap,
+                        ),
                 ),
                 Expanded(
                   child: _BottomNavButton(
@@ -275,7 +301,7 @@ class _BottomNavButton extends StatelessWidget {
                           color: color,
                           fontSize: layout.labelSize,
                           fontWeight: FontWeight.w600,
-                          letterSpacing: -0.2,
+                          letterSpacing: 0,
                           height: 1,
                         ),
                       ),
@@ -305,6 +331,7 @@ class _CreateBottomNavFab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
+      key: const ValueKey('bottom-nav-create-action'),
       button: true,
       label: semanticsLabel,
       child: Material(

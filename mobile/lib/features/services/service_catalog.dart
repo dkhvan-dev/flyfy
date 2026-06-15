@@ -34,9 +34,9 @@ List<TravelServiceEntry> buildTravelServiceCatalog(AppLocalizations l10n) {
       route: '/guides',
     ),
     TravelServiceEntry(
-      title: l10n.homeServiceStories,
-      icon: Icons.article_rounded,
-      route: '/stories',
+      title: l10n.feedNavLabel,
+      icon: Icons.dynamic_feed_rounded,
+      route: '/feed',
     ),
     TravelServiceEntry(
       title: l10n.homeServiceAttractions,

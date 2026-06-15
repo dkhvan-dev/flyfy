@@ -63,6 +63,7 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to initialize proxy handler")
 	}
+	defer proxyHandler.Close()
 
 	mux := http.NewServeMux()
 	proxyHandler.Register(mux)

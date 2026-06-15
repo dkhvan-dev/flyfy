@@ -44,6 +44,287 @@ func TestStickerCatalogRouteProxiesToStickerService(t *testing.T) {
 	}
 }
 
+func TestContentFeedRoutesProxyToFeedServicePublicly(t *testing.T) {
+	feedPolicy := matchRoutePolicyForMethod("GET", "/api/v1/feed?surface=home", "/api/v1")
+	if feedPolicy == nil {
+		t.Fatal("expected feed route policy")
+	}
+	if feedPolicy.Upstream != "feed" {
+		t.Fatalf("feed upstream = %q, want stories", feedPolicy.Upstream)
+	}
+	if feedPolicy.AuthMode != RouteAuthPublic {
+		t.Fatalf("feed auth mode = %q, want public", feedPolicy.AuthMode)
+	}
+	if feedPolicy.RewritePrefix != "/v1/feed" {
+		t.Fatalf("feed rewrite prefix = %q, want /v1/feed", feedPolicy.RewritePrefix)
+	}
+	assertRouteLimit(t, feedPolicy, 120)
+
+	communityPolicy := matchRoutePolicyForMethod("GET", "/api/v1/communities/investments", "/api/v1")
+	if communityPolicy == nil {
+		t.Fatal("expected communities route policy")
+	}
+	if communityPolicy.Upstream != "feed" {
+		t.Fatalf("communities upstream = %q, want stories", communityPolicy.Upstream)
+	}
+	if communityPolicy.AuthMode != RouteAuthPublic {
+		t.Fatalf("communities auth mode = %q, want public", communityPolicy.AuthMode)
+	}
+	if communityPolicy.RewritePrefix != "/v1/communities" {
+		t.Fatalf("communities rewrite prefix = %q, want /v1/communities", communityPolicy.RewritePrefix)
+	}
+	assertRouteLimit(t, communityPolicy, 120)
+}
+
+func TestContentFeedEventRouteUsesWritePolicy(t *testing.T) {
+	policy := matchRoutePolicyForMethod("POST", "/api/v1/feed/events", "/api/v1")
+	if policy == nil {
+		t.Fatal("expected feed events route policy")
+	}
+	if policy.Name != "content-feed-events" {
+		t.Fatalf("name = %q, want content-feed-events", policy.Name)
+	}
+	if policy.Upstream != "feed" {
+		t.Fatalf("upstream = %q, want stories", policy.Upstream)
+	}
+	if policy.AuthMode != RouteAuthPublic {
+		t.Fatalf("auth mode = %q, want public", policy.AuthMode)
+	}
+	if policy.RewritePrefix != "/v1/feed/events" {
+		t.Fatalf("rewrite prefix = %q, want /v1/feed/events", policy.RewritePrefix)
+	}
+	if policy.Cacheable {
+		t.Fatal("feed event writes must not be cacheable")
+	}
+	assertRouteLimit(t, policy, 60)
+}
+
+func TestTrustRoutesUseAuthenticatedGrpcBridgePolicies(t *testing.T) {
+	tests := map[string]struct {
+		method    string
+		path      string
+		name      string
+		rateLimit int
+	}{
+		"profile": {
+			method:    "GET",
+			path:      "/api/v1/trust/profile",
+			name:      "trust-profile",
+			rateLimit: 60,
+		},
+		"appeals list": {
+			method:    "GET",
+			path:      "/api/v1/trust/appeals",
+			name:      "trust-appeals-list",
+			rateLimit: 60,
+		},
+		"appeal submit": {
+			method:    "POST",
+			path:      "/api/v1/trust/restrictions/restriction-1/appeals",
+			name:      "trust-appeals-submit",
+			rateLimit: 10,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			policy := matchRoutePolicyForMethod(tc.method, tc.path, "/api/v1")
+			if policy == nil {
+				t.Fatal("expected trust route policy")
+			}
+			if policy.Name != tc.name {
+				t.Fatalf("name = %q, want %q", policy.Name, tc.name)
+			}
+			if policy.Upstream != "trust" {
+				t.Fatalf("upstream = %q, want trust", policy.Upstream)
+			}
+			if policy.AuthMode != RouteAuthAuthenticated {
+				t.Fatalf("auth mode = %q, want authenticated", policy.AuthMode)
+			}
+			assertRouteLimit(t, policy, tc.rateLimit)
+		})
+	}
+}
+
+func TestStoryActionRoutesUseMethodAwarePolicies(t *testing.T) {
+	tests := map[string]struct {
+		method    string
+		path      string
+		name      string
+		authMode  RouteAuthMode
+		rateLimit int
+	}{
+		"create story": {
+			method:    "POST",
+			path:      "/api/v1/stories",
+			name:      "stories-create",
+			authMode:  RouteAuthAuthenticated,
+			rateLimit: 10,
+		},
+		"create post": {
+			method:    "POST",
+			path:      "/api/v1/posts",
+			name:      "posts-create",
+			authMode:  RouteAuthAuthenticated,
+			rateLimit: 10,
+		},
+		"autosave post": {
+			method:    "POST",
+			path:      "/api/v1/posts/story-1/autosave",
+			name:      "posts-autosave",
+			authMode:  RouteAuthAuthenticated,
+			rateLimit: 60,
+		},
+		"list post comments": {
+			method:    "GET",
+			path:      "/api/v1/posts/post-1/comments?limit=20&offset=0",
+			name:      "posts-comments",
+			authMode:  RouteAuthPublic,
+			rateLimit: 20,
+		},
+		"mark story seen": {
+			method:    "POST",
+			path:      "/api/v1/stories/story-1/seen",
+			name:      "stories-seen",
+			authMode:  RouteAuthAuthenticated,
+			rateLimit: 60,
+		},
+		"like story": {
+			method:    "POST",
+			path:      "/api/v1/stories/story-1/likes",
+			name:      "stories-likes",
+			authMode:  RouteAuthAuthenticated,
+			rateLimit: 60,
+		},
+		"list my archived stories": {
+			method:    "GET",
+			path:      "/api/v1/stories/mine/archive?limit=20&offset=0",
+			name:      "stories-mine-archive",
+			authMode:  RouteAuthAuthenticated,
+			rateLimit: 120,
+		},
+		"list my active stories": {
+			method:    "GET",
+			path:      "/api/v1/stories/mine/active?limit=20&offset=0",
+			name:      "stories-mine-active",
+			authMode:  RouteAuthAuthenticated,
+			rateLimit: 120,
+		},
+		"follow community": {
+			method:    "POST",
+			path:      "/api/v1/communities/community-1/follow",
+			name:      "communities-follow",
+			authMode:  RouteAuthAuthenticated,
+			rateLimit: 60,
+		},
+		"unfollow community": {
+			method:    "DELETE",
+			path:      "/api/v1/communities/community-1/follow",
+			name:      "communities-follow",
+			authMode:  RouteAuthAuthenticated,
+			rateLimit: 60,
+		},
+		"report community": {
+			method:    "POST",
+			path:      "/api/v1/communities/community-1/report",
+			name:      "communities-report",
+			authMode:  RouteAuthAuthenticated,
+			rateLimit: 60,
+		},
+		"mute community": {
+			method:    "POST",
+			path:      "/api/v1/communities/community-1/mute",
+			name:      "communities-mute",
+			authMode:  RouteAuthAuthenticated,
+			rateLimit: 60,
+		},
+		"unmute community": {
+			method:    "DELETE",
+			path:      "/api/v1/communities/community-1/mute",
+			name:      "communities-mute",
+			authMode:  RouteAuthAuthenticated,
+			rateLimit: 60,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			policy := matchRoutePolicyForMethod(tc.method, tc.path, "/api/v1")
+			if policy == nil {
+				t.Fatal("expected route policy")
+			}
+			if policy.Name != tc.name {
+				t.Fatalf("name = %q, want %q", policy.Name, tc.name)
+			}
+			if policy.AuthMode != tc.authMode {
+				t.Fatalf("auth mode = %q, want %q", policy.AuthMode, tc.authMode)
+			}
+			assertRouteLimit(t, policy, tc.rateLimit)
+		})
+	}
+}
+
+func TestCommunityModerationRouteRequiresAuthentication(t *testing.T) {
+	policy := matchRoutePolicyForMethod("POST", "/api/v1/communities/community-1/moderation/posts/post-1/approve", "/api/v1")
+	if policy == nil {
+		t.Fatal("expected community moderation route policy")
+	}
+	if policy.Upstream != "feed" {
+		t.Fatalf("upstream = %q, want stories", policy.Upstream)
+	}
+	if policy.AuthMode != RouteAuthAuthenticated {
+		t.Fatalf("auth mode = %q, want authenticated", policy.AuthMode)
+	}
+	if policy.RewritePrefix != "/v1/communities" {
+		t.Fatalf("rewrite prefix = %q, want /v1/communities", policy.RewritePrefix)
+	}
+	assertRouteLimit(t, policy, 30)
+}
+
+func TestCommunityMemberRoleRouteRequiresAuthentication(t *testing.T) {
+	policy := matchRoutePolicyForMethod("PATCH", "/api/v1/communities/community-1/members/user-1/role", "/api/v1")
+	if policy == nil {
+		t.Fatal("expected community member role route policy")
+	}
+	if policy.Upstream != "feed" {
+		t.Fatalf("upstream = %q, want stories", policy.Upstream)
+	}
+	if policy.AuthMode != RouteAuthAuthenticated {
+		t.Fatalf("auth mode = %q, want authenticated", policy.AuthMode)
+	}
+	if policy.RewritePrefix != "/v1/communities" {
+		t.Fatalf("rewrite prefix = %q, want /v1/communities", policy.RewritePrefix)
+	}
+	assertRouteLimit(t, policy, 30)
+}
+
+func TestCommunityMembersRouteRequiresAuthentication(t *testing.T) {
+	policy := matchRoutePolicyForMethod("GET", "/api/v1/communities/community-1/members", "/api/v1")
+	if policy == nil {
+		t.Fatal("expected community members route policy")
+	}
+	if policy.Upstream != "feed" {
+		t.Fatalf("upstream = %q, want stories", policy.Upstream)
+	}
+	if policy.AuthMode != RouteAuthAuthenticated {
+		t.Fatalf("auth mode = %q, want authenticated", policy.AuthMode)
+	}
+	if policy.RewritePrefix != "/v1/communities" {
+		t.Fatalf("rewrite prefix = %q, want /v1/communities", policy.RewritePrefix)
+	}
+	assertRouteLimit(t, policy, 30)
+}
+
+func assertRouteLimit(t *testing.T, policy *RoutePolicy, want int) {
+	t.Helper()
+	if policy.RateLimitPerMinute == nil {
+		t.Fatalf("%s rate limit is nil, want %d", policy.Name, want)
+	}
+	if *policy.RateLimitPerMinute != want {
+		t.Fatalf("%s rate limit = %d, want %d", policy.Name, *policy.RateLimitPerMinute, want)
+	}
+}
+
 func TestCurrencyRoutesProxyToCurrencyServicePublicly(t *testing.T) {
 	policy := matchRoutePolicy("/api/v1/currency/convert", "/api/v1")
 

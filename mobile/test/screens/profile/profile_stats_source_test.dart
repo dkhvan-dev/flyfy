@@ -104,9 +104,9 @@ void main() {
     );
     final gridSource = source.substring(gridStart, gridEnd);
 
-    expect(source, contains("import '../../core/network/story_api.dart';"));
-    expect(source, contains('StoryApi _storyApi = StoryApi()'));
-    expect(statsFutureSource, contains('countPublishedStoriesForUser('));
+    expect(source, contains("import '../../core/network/post_api.dart';"));
+    expect(source, contains('PostApi _postApi = PostApi()'));
+    expect(statsFutureSource, contains('countPublishedPostsForUser('));
     expect(statsFutureSource, contains('profile.userId.trim()'));
     expect(gridSource, contains('publishedStoriesCountFuture'));
     expect(gridSource, contains('publishedStoriesCount'));

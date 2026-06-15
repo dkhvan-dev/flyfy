@@ -15,9 +15,11 @@ class AppListSearchField extends StatelessWidget {
     this.onClear,
     this.onSubmitted,
     this.onTapOutside,
+    this.textFieldKey,
   });
 
   final TextEditingController controller;
+  final Key? textFieldKey;
   final FocusNode? focusNode;
   final String hintText;
   final String filterTooltip;
@@ -43,6 +45,7 @@ class AppListSearchField extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: TextField(
+              key: textFieldKey,
               controller: controller,
               focusNode: focusNode,
               onSubmitted: onSubmitted,

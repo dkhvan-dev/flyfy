@@ -9,8 +9,8 @@ void main() {
       final profileSource = await File(
         'lib/screens/profile/profile_screen.dart',
       ).readAsString();
-      final profileStoryCardSource = await File(
-        'lib/screens/profile/widgets/profile_story_card.dart',
+      final profilePostCardSource = await File(
+        'lib/screens/profile/widgets/profile_post_card.dart',
       ).readAsString();
       final routerSource = await File(
         'lib/core/router/app_router.dart',
@@ -19,7 +19,7 @@ void main() {
         'lib/screens/stories/stories_screen.dart',
       ).readAsString();
       final apiSource = await File(
-        'lib/core/network/story_api.dart',
+        'lib/core/network/post_api.dart',
       ).readAsString();
 
       expect(
@@ -30,10 +30,10 @@ void main() {
       );
       expect(
         profileSource,
-        contains('Future<List<StoryVm>>? _foreignPopularStoriesFuture'),
+        contains('Future<List<PostVm>>? _foreignPopularStoriesFuture'),
       );
       expect(profileSource, contains('_popularStoriesFutureFor'));
-      expect(profileSource, contains('getUserPopularStories('));
+      expect(profileSource, contains('getUserPopularPosts('));
       expect(
         profileSource,
         contains('limit: _foreignProfilePopularStoriesPreviewLimit'),
@@ -41,20 +41,20 @@ void main() {
       expect(profileSource, contains('_ForeignPopularStoriesSection('));
       expect(
         profileSource,
-        contains("'/users/\${Uri.encodeComponent(userId)}/stories'"),
+        contains("'/users/\${Uri.encodeComponent(userId)}/posts'"),
       );
       expect(profileSource, contains('profilePopularStoriesTitle'));
       expect(profileSource, contains('profileViewAllStories'));
 
-      expect(profileStoryCardSource, contains('class ProfileStoryCard'));
+      expect(profilePostCardSource, contains('class ProfilePostCard'));
       expect(
-        profileStoryCardSource,
-        contains('StoryCoverImage(url: story.coverUrl)'),
+        profilePostCardSource,
+        contains('StoryCoverImage(url: post.coverUrl)'),
       );
-      expect(profileStoryCardSource, contains('story.stats.views'));
-      expect(profileStoryCardSource, contains('formatStoryCountCompact'));
+      expect(profilePostCardSource, contains('post.stats.views'));
+      expect(profilePostCardSource, contains('formatStoryCountCompact'));
 
-      expect(routerSource, contains("path: '/users/:userId/stories'"));
+      expect(routerSource, contains("path: '/users/:userId/posts'"));
       expect(routerSource, contains('StoriesScreen(authorId: userId)'));
 
       expect(storiesScreenSource, contains('this.authorId'));
@@ -62,11 +62,8 @@ void main() {
       expect(storiesScreenSource, contains('authorId: widget.authorId'));
       expect(storiesScreenSource, contains('profileUserStoriesTitle'));
 
-      expect(
-        apiSource,
-        contains('Future<List<StoryVm>> getUserPopularStories'),
-      );
-      expect(apiSource, contains('Future<StoryListPage> getUserStoriesPage'));
+      expect(apiSource, contains('Future<List<PostVm>> getUserPopularPosts'));
+      expect(apiSource, contains('Future<PostListPage> getUserPostsPage'));
       expect(apiSource, contains("sort: 'popular_desc'"));
       expect(apiSource, contains('authorId: trimmedUserId'));
     },

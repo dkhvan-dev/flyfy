@@ -1089,34 +1089,34 @@ class AppLocalizationsKk extends AppLocalizations {
       'Пайдаланушы аяқталған ашық белсенділікке қатысқанда, ол осы жерде көрсетіледі.';
 
   @override
-  String get profilePopularStoriesTitle => 'Танымал хикаялар';
+  String get profilePopularStoriesTitle => 'Танымал посттар';
 
   @override
   String get profileViewAllStories => 'Барлығы';
 
   @override
-  String get profileStoriesLoadFailed => 'Хикаяларды жүктеу мүмкін болмады';
+  String get profileStoriesLoadFailed => 'Посттарды жүктеу мүмкін болмады';
 
   @override
   String get profileStoriesLoadFailedHint =>
       'Байланысты тексеріп, қайта көріңіз.';
 
   @override
-  String get profileStoriesEmptyTitle => 'Әзірге хикаялар жоқ';
+  String get profileStoriesEmptyTitle => 'Әзірге посттар жоқ';
 
   @override
   String get profileStoriesEmptySubtitle =>
-      'Пайдаланушының жарияланған хикаялары осы жерде көрсетіледі.';
+      'Пайдаланушының жарияланған посттары осы жерде көрсетіледі.';
 
   @override
-  String get profileUserStoriesTitle => 'Пайдаланушы хикаялары';
+  String get profileUserStoriesTitle => 'Пайдаланушы посттары';
 
   @override
-  String get profileStoriesTitle => 'Соңғы хикаялар';
+  String get profileStoriesTitle => 'Соңғы посттар';
 
   @override
   String get profileStoriesUnavailable =>
-      'Ашық хикаялар мен саяхат мақалалары қолданбада әлі қолжетімді емес.';
+      'Ашық посттар мен саяхат мақалалары қолданбада әлі қолжетімді емес.';
 
   @override
   String get profileUnavailableTitle => 'Жақында';
@@ -2121,7 +2121,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get homeSeeAll => 'Барлығын көру';
 
   @override
-  String get homeTopStories => 'Үздік хикаялар';
+  String get homeTopStories => 'Үздік посттар';
 
   @override
   String get homeFeaturedStays => 'Ұсынылған тұру орындары';
@@ -2292,6 +2292,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get homeNavHome => 'Басты';
 
   @override
+  String get feedNavLabel => 'Лента';
+
+  @override
   String get homeNavQr => 'QR';
 
   @override
@@ -2302,6 +2305,718 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get homeNavMy => 'Менің';
+
+  @override
+  String get feedTitle => 'Лента';
+
+  @override
+  String get feedTabForYou => 'Сіз үшін';
+
+  @override
+  String get feedTabFollowing => 'Жазылымдар';
+
+  @override
+  String get feedStoriesSectionTitle => 'Хикаялар';
+
+  @override
+  String get feedCreateStoryAction => 'Сіздің хикаяңыз';
+
+  @override
+  String get storyCaptureTitle => 'Хикаяға қосу';
+
+  @override
+  String get storyCapturePreviewTitle => 'Алдын ала қарау';
+
+  @override
+  String get storyCaptureCloseLabel => 'Жабу';
+
+  @override
+  String get storyCaptureSettingsLabel => 'Баптаулар';
+
+  @override
+  String get storyCaptureGalleryAction => 'Галерея';
+
+  @override
+  String get storyCapturePhotoFromGallery => 'Фото таңдау';
+
+  @override
+  String get storyCaptureVideoFromGallery => 'Видео таңдау';
+
+  @override
+  String get storyCaptureCameraUnavailable =>
+      'Камера қолжетімсіз. Рұқсаттарды тексеріп, қайта көріңіз.';
+
+  @override
+  String get storyCapturePermissionDenied =>
+      'Камераға немесе микрофонға рұқсат жоқ.';
+
+  @override
+  String get storyCaptureCaptureFailed =>
+      'Хикая түсіру мүмкін болмады. Қайта көріңіз.';
+
+  @override
+  String get storyCaptureFlashOffLabel => 'Жарқыл өшірулі';
+
+  @override
+  String get storyCaptureFlashAutoLabel => 'Жарқыл авто';
+
+  @override
+  String get storyCaptureFlashOnLabel => 'Жарқыл қосулы';
+
+  @override
+  String get storyCaptureFlashUnsupported => 'Бұл камерада жарқыл қолжетімсіз.';
+
+  @override
+  String get storyCapturePhotoMode => 'Фото';
+
+  @override
+  String get storyCaptureVideoMode => 'Видео';
+
+  @override
+  String get storyCaptureCaptureButtonLabel => 'Фото түсіру';
+
+  @override
+  String get storyCaptureRecordButtonLabel => 'Видео жазу';
+
+  @override
+  String get storyCaptureStopButtonLabel => 'Жазуды тоқтату';
+
+  @override
+  String get storyCaptureFlipCameraLabel => 'Камераны ауыстыру';
+
+  @override
+  String get storyCaptureCaptionHint => 'Қолтаңба қосыңыз...';
+
+  @override
+  String get storyCaptureRetakeAction => 'Қайта түсіру';
+
+  @override
+  String get storyCapturePublishAction => 'Жариялау';
+
+  @override
+  String get storyCapturePublishing => 'Жариялануда...';
+
+  @override
+  String get storyCapturePublishFailed =>
+      'Хикаяны жариялау мүмкін болмады. Қайта көріңіз.';
+
+  @override
+  String get storyReplyInputHint => 'Жауап беру';
+
+  @override
+  String get storyReplySendAction => 'Жауап жіберу';
+
+  @override
+  String get storyReplySentMessage => 'Жауап жіберілді';
+
+  @override
+  String get storyReplySendFailed =>
+      'Жауап жіберу мүмкін болмады. Қайта көріңіз.';
+
+  @override
+  String get storyLikeAction => 'Хикая ұнады';
+
+  @override
+  String get storyLikeSendFailed =>
+      'Хикаяға лайк қою мүмкін болмады. Қайта көріңіз.';
+
+  @override
+  String get storyCaptureDefaultTitle => 'Менің хикаям';
+
+  @override
+  String get storyCaptureDefaultBody => 'Жаңа хикая';
+
+  @override
+  String get storyCaptureDefaultPlace => 'Хикая';
+
+  @override
+  String get storyCapturePublishedMessage => 'Хикая жарияланды';
+
+  @override
+  String get feedSuggestedCommunitiesTitle => 'Жазылуға ұсынылады';
+
+  @override
+  String get feedJoinCommunityAction => 'Жазылу';
+
+  @override
+  String get feedCommunityJoinedAction => 'Жазылған';
+
+  @override
+  String get feedCommunityModerationAction => 'Модерация';
+
+  @override
+  String get feedCommunityActionFailed =>
+      'Жазылымды жаңарту мүмкін болмады. Қайта көріңіз.';
+
+  @override
+  String feedCommunityMembersLabel(String count) {
+    return '$count жазылушы';
+  }
+
+  @override
+  String get feedMySubscriptionsTitle => 'Менің жазылымдарым';
+
+  @override
+  String feedMySubscriptionsSummary(int communities, int people) {
+    return '$communities қауымдастық · $people адам';
+  }
+
+  @override
+  String get feedMySubscriptionsViewAll => 'Барлығын көру';
+
+  @override
+  String get feedMySubscriptionsCommunitiesTab => 'Қауымдастықтар';
+
+  @override
+  String get feedMySubscriptionsPeopleTab => 'Адамдар';
+
+  @override
+  String get feedMySubscriptionsSearchHint => 'Жазылымдарды іздеу';
+
+  @override
+  String get feedMySubscriptionsSheetSubtitle =>
+      'Лентада жақын ұстайтын қауымдастықтар, достар және жазылған адамдар.';
+
+  @override
+  String get feedMySubscriptionsFilterAll => 'Барлығы';
+
+  @override
+  String get feedMySubscriptionsFilterStatusSection => 'Жазылым күйі';
+
+  @override
+  String get feedMySubscriptionsFilterPeopleSection => 'Байланыс түрі';
+
+  @override
+  String get feedMySubscriptionsFilterCommunityActivitySection => 'Белсенділік';
+
+  @override
+  String get feedMySubscriptionsFilterCommunityTopicSection => 'Тақырыптар';
+
+  @override
+  String get feedMySubscriptionsFilterPeopleConnectionSection => 'Байланыс';
+
+  @override
+  String get feedMySubscriptionsFilterPeopleActivitySection => 'Белсенділік';
+
+  @override
+  String get feedMySubscriptionsFilterSortSection => 'Сұрыптау';
+
+  @override
+  String get feedMySubscriptionsFilterSubscribed => 'Жазылған';
+
+  @override
+  String get feedMySubscriptionsFilterUnsubscribed => 'Жазылмаған';
+
+  @override
+  String get feedMySubscriptionsFilterCurrentCity => 'Менің қалам';
+
+  @override
+  String get feedMySubscriptionsFilterActive => 'Посттары бар';
+
+  @override
+  String get feedMySubscriptionsFilterPopular => 'Танымал';
+
+  @override
+  String get feedMySubscriptionsFilterFriends => 'Достар';
+
+  @override
+  String get feedMySubscriptionsFilterFollowing => 'Жазылымдар';
+
+  @override
+  String get feedMySubscriptionsFilterOnline => 'Онлайн';
+
+  @override
+  String get feedMySubscriptionsSortRelevant => 'Ұсынылған';
+
+  @override
+  String get feedMySubscriptionsSortMostActive => 'Ең белсенді';
+
+  @override
+  String get feedMySubscriptionsSortMostPopular => 'Жазылушысы көп';
+
+  @override
+  String get feedMySubscriptionsSortName => 'А-Я';
+
+  @override
+  String get feedMySubscriptionsSortOnlineFirst => 'Алдымен онлайн';
+
+  @override
+  String get feedPostSortRecommended => 'Ұсынылған';
+
+  @override
+  String get feedPostSortNewest => 'Жаңа';
+
+  @override
+  String get feedPostSortPopular => 'Танымал';
+
+  @override
+  String get feedPostSortDiscussed => 'Талқыланатын';
+
+  @override
+  String get feedMySubscriptionsApplyFilters => 'Сүзгілерді қолдану';
+
+  @override
+  String feedMySubscriptionsShowCommunitiesCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count қауымдастықты көрсету',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String feedMySubscriptionsShowPeopleCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count адамды көрсету',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get feedMySubscriptionsEmptyMessage =>
+      'Бұл сүзгілер бойынша ештеңе табылмады.';
+
+  @override
+  String get feedMySubscriptionsFriendBadge => 'Дос';
+
+  @override
+  String get feedMySubscriptionsFollowingBadge => 'Жазылым';
+
+  @override
+  String get feedMySubscriptionsOnlineBadge => 'Онлайн';
+
+  @override
+  String get feedMySubscriptionsUnknownPerson => 'Пайдаланушы';
+
+  @override
+  String get feedSystemPostsTitle => 'Ресми жаңалықтар';
+
+  @override
+  String get feedSystemPostsViewAll => 'Барлығын көру';
+
+  @override
+  String get feedSystemPostsSheetTitle => 'Ресми посттар';
+
+  @override
+  String get communityDiscoveryTitle => 'Қауымдастықтар';
+
+  @override
+  String get communityDiscoveryEmptyTitle => 'Әзірге қауымдастық жоқ';
+
+  @override
+  String get communityDiscoveryEmptyMessage =>
+      'Ресми қауымдастықтар іске қосылған кезде осында пайда болады.';
+
+  @override
+  String get communityDiscoveryLoadFailedTitle =>
+      'Қауымдастықтарды жүктеу мүмкін болмады';
+
+  @override
+  String get communityDiscoveryLoadFailedMessage =>
+      'Байланысты тексеріп, қайта көріңіз.';
+
+  @override
+  String get communityDiscoverySearchHint => 'Қауымдастық іздеу';
+
+  @override
+  String get communityDiscoveryFiltersTitle => 'Сүзгілер';
+
+  @override
+  String get communityDiscoveryShowResults => 'Қауымдастықтарды көрсету';
+
+  @override
+  String communityDiscoveryShowResultsCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count қауымдастықты',
+      one: '1 қауымдастықты',
+      zero: '0 қауымдастықты',
+    );
+    return '$_temp0 көрсету';
+  }
+
+  @override
+  String get communityDiscoveryRequiredLocationMessage =>
+      'Белсенді жергілікті қауымдастықтарды табу үшін ел мен қаланы таңдаңыз.';
+
+  @override
+  String get communityDiscoveryTopicSection => 'Қауымдастық түрі';
+
+  @override
+  String get communityDiscoveryTopicAll => 'Барлығы';
+
+  @override
+  String get communityDiscoveryTopicTravel => 'Саяхат';
+
+  @override
+  String get communityDiscoveryTopicCity => 'Қалалар';
+
+  @override
+  String get communityDiscoveryTopicGuides => 'Гидтер мен турлар';
+
+  @override
+  String get communityDiscoveryTopicAppNews => 'Inflap жаңалықтары';
+
+  @override
+  String get communityTopicLanguages => 'Тілдер';
+
+  @override
+  String get communityTopicHousing => 'Тұрғын үй';
+
+  @override
+  String get communityTopicTransport => 'Көлік';
+
+  @override
+  String get communityTopicSports => 'Спорт';
+
+  @override
+  String get communityTopicOutdoor => 'Сапарлар және табиғат';
+
+  @override
+  String get communityTopicHobbies => 'Хобби және шеберлік сабақтары';
+
+  @override
+  String get communityTopicWellness => 'Wellness және денсаулық';
+
+  @override
+  String get communityTopicPets => 'Үй жануарлары';
+
+  @override
+  String get communityTopicCityLife => 'Қала өмірі';
+
+  @override
+  String get communityTopicContent => 'Жаңалықтар және гидтер';
+
+  @override
+  String get communityTopicFamily => 'Отбасылар';
+
+  @override
+  String get communityTopicGeneral => 'Жалпы';
+
+  @override
+  String get communityProfileTitle => 'Қауымдастық';
+
+  @override
+  String get communityProfileActionsTooltip => 'Қауымдастық әрекеттері';
+
+  @override
+  String get communityProfileCreatePostAction => 'Пост жасау';
+
+  @override
+  String get communityPostModeSelectorLabel => 'Жариялау режимі';
+
+  @override
+  String get communityPostModeArticle => 'Посттар';
+
+  @override
+  String get communityPostModeQuickPost => 'Талқылаулар';
+
+  @override
+  String get communityPostModeListing => 'Хабарландырулар';
+
+  @override
+  String get communityPostModeEventAnnouncement => 'Афиша';
+
+  @override
+  String get communityPostModeQuestionAnswer => 'Сұрақтар';
+
+  @override
+  String get communityPostModeTripPlan => 'Сапарлар';
+
+  @override
+  String get communityProfileUnfollowConfirmTitle =>
+      'Қауымдастықтан жазылымды тоқтату керек пе?';
+
+  @override
+  String get communityProfileRulesTitle => 'Қауымдастық ережелері';
+
+  @override
+  String get communityProfilePostsSectionTitle => 'Посттар';
+
+  @override
+  String get communityProfileNoPostsTitle => 'Әзірге пост жоқ';
+
+  @override
+  String get communityProfileNoPostsMessage =>
+      'Бұл қауымдастықтың жаңа посттары осында пайда болады.';
+
+  @override
+  String get communityProfilePostsLoadFailedTitle =>
+      'Посттарды жүктеу мүмкін болмады';
+
+  @override
+  String communityProfilePostsLabel(String count) {
+    return '$count пост';
+  }
+
+  @override
+  String get communityProfileLoadFailedTitle =>
+      'Қауымдастықты жүктеу мүмкін болмады';
+
+  @override
+  String get communityProfileLoadFailedMessage =>
+      'Байланысты тексеріп, қайта көріңіз.';
+
+  @override
+  String get communityTrustReportAction => 'Қауымдастыққа шағымдану';
+
+  @override
+  String get communityTrustMuteAction => 'Қауымдастықты жасыру';
+
+  @override
+  String get communityTrustUnmuteAction => 'Қауымдастықты қайтару';
+
+  @override
+  String get communityTrustBlockedTitle => 'Жариялау бұғатталған';
+
+  @override
+  String get communityTrustBlockedMessage =>
+      'Модераторлар шектеуді алып тастамайынша, бұл қауымдастықта пост жариялай алмайсыз.';
+
+  @override
+  String get communityTrustMutedTitle => 'Қауымдастық жасырылды';
+
+  @override
+  String get communityTrustMutedMessage =>
+      'Бұл қауымдастық лентаңыздан жасырылды. Оны кез келген уақытта қайтара аласыз.';
+
+  @override
+  String get communityTrustAppealPendingTitle => 'Апелляция қаралуда';
+
+  @override
+  String get communityTrustAppealPendingMessage =>
+      'Модераторлар осы қауымдастық бойынша апелляцияңызды қарап жатыр.';
+
+  @override
+  String get communityTrustAppealRejectedTitle => 'Апелляция қабылданбады';
+
+  @override
+  String get communityTrustAppealRejectedMessage =>
+      'Модераторлар тексергеннен кейін шектеу белсенді болып қалады.';
+
+  @override
+  String get communityTrustAppealAction => 'Апелляция';
+
+  @override
+  String get communityTrustAppealMessage =>
+      'Қауымдастықтағы шектеуімді қайта қарап шығыңыз.';
+
+  @override
+  String get communityTrustReportSubmitted =>
+      'Қауымдастық модерацияға жіберілді.';
+
+  @override
+  String get communityTrustMutedSubmitted => 'Қауымдастық жасырылды.';
+
+  @override
+  String get communityTrustUnmutedSubmitted => 'Қауымдастық қайтарылды.';
+
+  @override
+  String get communityTrustAppealSubmitted =>
+      'Апелляция модераторларға жіберілді.';
+
+  @override
+  String get communityTrustActionUnavailable =>
+      'Бұл trust әрекеті әзірге қолжетімсіз.';
+
+  @override
+  String get communityTrustActionFailed =>
+      'Trust әрекетін орындау мүмкін болмады. Қайта көріңіз.';
+
+  @override
+  String get feedEmptyTitle => 'Лентада әзірге ештеңе жоқ';
+
+  @override
+  String get feedEmptyMessage =>
+      'Лентаңызды қалыптастыру үшін саяхатшылар мен қауымдастықтарға жазылыңыз.';
+
+  @override
+  String get feedLoadFailedTitle => 'Лентаны жүктеу мүмкін болмады';
+
+  @override
+  String get feedLoadFailedMessage => 'Байланысты тексеріп, қайта көріңіз.';
+
+  @override
+  String get feedRetryAction => 'Қайталау';
+
+  @override
+  String get communityModerationTitle => 'Модерация кезегі';
+
+  @override
+  String communityModerationSubtitle(int count) {
+    return '$count тексерісте';
+  }
+
+  @override
+  String get communityModerationEmptyTitle => 'Тексерілетін пост жоқ';
+
+  @override
+  String get communityModerationEmptyMessage =>
+      'Тексеруді қажет ететін жаңа қауымдастық посттары осында шығады.';
+
+  @override
+  String get communityModerationLoadFailedTitle =>
+      'Модерация кезегін жүктеу мүмкін болмады';
+
+  @override
+  String get communityModerationLoadFailedMessage =>
+      'Байланысты тексеріп, қайта көріңіз.';
+
+  @override
+  String get communityModerationApproveAction => 'Мақұлдау';
+
+  @override
+  String get communityModerationRejectAction => 'Қабылдамау';
+
+  @override
+  String get communityModerationHistoryAction => 'Тарих';
+
+  @override
+  String get communityModerationApprovedMessage => 'Пост мақұлданды';
+
+  @override
+  String get communityModerationRejectedMessage => 'Пост қабылданбады';
+
+  @override
+  String get communityModerationActionFailed =>
+      'Постты жаңарту мүмкін болмады. Қайта көріңіз.';
+
+  @override
+  String get communityModerationDecisionHistoryTitle => 'Шешімдер тарихы';
+
+  @override
+  String get communityModerationDecisionHistoryEmpty =>
+      'Модерация шешімдері әлі жоқ.';
+
+  @override
+  String get communityModerationDecisionHistoryFailed =>
+      'Шешімдер тарихын жүктеу мүмкін болмады.';
+
+  @override
+  String get communityModerationRejectReasonLabel => 'Қабылдамау себебі';
+
+  @override
+  String get communityModerationRejectConfirmAction => 'Постты қабылдамау';
+
+  @override
+  String get communityModerationRejectCancelAction => 'Бас тарту';
+
+  @override
+  String get communityMembersTitle => 'Қатысушылар';
+
+  @override
+  String get communityMembersSubtitle => 'Қолжетімділік пен рөлдерді басқару';
+
+  @override
+  String get communityMembersAction => 'Қатысушылар';
+
+  @override
+  String get communityMembersEmptyTitle => 'Қатысушылар табылмады';
+
+  @override
+  String get communityMembersEmptyMessage =>
+      'Таңдалған сүзгілерге сай қатысушылар осында шығады.';
+
+  @override
+  String get communityMembersLoadFailedTitle =>
+      'Қатысушыларды жүктеу мүмкін болмады';
+
+  @override
+  String get communityMembersLoadFailedMessage =>
+      'Байланысты тексеріп, қайта көріңіз.';
+
+  @override
+  String get communityMembersRoleFilterLabel => 'Рөл';
+
+  @override
+  String get communityMembersStatusFilterLabel => 'Мәртебе';
+
+  @override
+  String get communityMembersAllFilter => 'Барлығы';
+
+  @override
+  String get communityMembersActiveStatus => 'Белсенді';
+
+  @override
+  String get communityMembersMutedStatus => 'Шектелген';
+
+  @override
+  String get communityMembersBannedStatus => 'Бұғатталған';
+
+  @override
+  String get communityMembersLeftStatus => 'Шыққан';
+
+  @override
+  String get communityMembersTrustedRole => 'Сенімді қатысушы';
+
+  @override
+  String get communityMembersModeratorRole => 'Модератор';
+
+  @override
+  String get communityMembersAdminRole => 'Админ';
+
+  @override
+  String get communityMembersMemberRole => 'Қатысушы';
+
+  @override
+  String get communityMembersChangeRoleAction => 'Рөлді өзгерту';
+
+  @override
+  String get communityMembersRoleHistoryAction => 'Рөлдер тарихы';
+
+  @override
+  String get communityMembersRoleHistoryTitle => 'Рөлдер тарихы';
+
+  @override
+  String get communityMembersRoleHistoryChangedBy => 'Өзгерткен';
+
+  @override
+  String get communityMembersRoleHistoryEmptyTitle => 'Рөл өзгерістері жоқ';
+
+  @override
+  String get communityMembersRoleHistoryEmptyMessage =>
+      'Бұл қатысушының рөл жаңартулары осында шығады.';
+
+  @override
+  String get communityMembersRoleHistoryLoadFailedTitle =>
+      'Рөлдер тарихын жүктеу мүмкін болмады';
+
+  @override
+  String get communityMembersRoleHistoryLoadFailedMessage =>
+      'Байланысты тексеріп, қайта көріңіз.';
+
+  @override
+  String get communityMembersChangeStatusAction => 'Мәртебені өзгерту';
+
+  @override
+  String get communityMembersMuteAction => 'Қатысушыны шектеу';
+
+  @override
+  String get communityMembersBanAction => 'Қатысушыны бұғаттау';
+
+  @override
+  String get communityMembersRemoveAction => 'Қатысушыны өшіру';
+
+  @override
+  String get communityMembersRestoreAction => 'Қатысушыны қалпына келтіру';
+
+  @override
+  String get communityMembersStatusUpdatedMessage => 'Мәртебе жаңартылды';
+
+  @override
+  String get communityMembersStatusUpdateFailed =>
+      'Қатысушы мәртебесін жаңарту мүмкін болмады. Қайта көріңіз.';
+
+  @override
+  String get communityMembersRoleUpdatedMessage => 'Рөл жаңартылды';
+
+  @override
+  String get communityMembersRoleUpdateFailed =>
+      'Қатысушыны жаңарту мүмкін болмады. Қайта көріңіз.';
 
   @override
   String get mapNearbyPlacesLabel => 'Жақын жерлер';
@@ -4360,7 +5075,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get myActivitiesTitle => 'Менің белсенділіктерім';
 
   @override
-  String get myStoriesTitle => 'Менің тарихтарым';
+  String get myStoriesTitle => 'Менің посттарым';
+
+  @override
+  String get myStoryArchiveTitle => 'Менің хикаяларым';
 
   @override
   String get myActivitiesEmpty => 'Сізде әлі жасалған белсенділіктер жоқ';
@@ -5374,19 +6092,19 @@ class AppLocalizationsKk extends AppLocalizations {
   String get backButtonLabel => 'Артқа';
 
   @override
-  String get storiesDiscoverTitle => 'Хикаялар';
+  String get storiesDiscoverTitle => 'Посттар';
 
   @override
-  String get storiesNavLabel => 'Хикаялар';
+  String get storiesNavLabel => 'Посттар';
 
   @override
   String get storiesActivitiesNavLabel => 'Белсенділіктер';
 
   @override
-  String get storySearchHint => 'Хикаяларды, авторларды немесе орындарды іздеу';
+  String get storySearchHint => 'Посттарды, авторларды немесе орындарды іздеу';
 
   @override
-  String get storySearchCompactHint => 'Хикаяларды іздеу';
+  String get storySearchCompactHint => 'Посттарды іздеу';
 
   @override
   String get storyFiltersTitle => 'Сүзгілер';
@@ -5421,9 +6139,9 @@ class AppLocalizationsKk extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count хикаяны',
-      one: '1 хикаяны',
-      zero: '0 хикаяны',
+      other: '$count постты',
+      one: '1 постты',
+      zero: '0 постты',
     );
     return '$_temp0 көрсету';
   }
@@ -5441,13 +6159,13 @@ class AppLocalizationsKk extends AppLocalizations {
   String get storySortComments => 'Пікірлер';
 
   @override
-  String get storyCreateCta => 'Хикаямен бөлісу';
+  String get storyCreateCta => 'Пост жасау';
 
   @override
-  String get storyCreateFirst => 'Алғашқы хикаяны жасау';
+  String get storyCreateFirst => 'Алғашқы постты жасау';
 
   @override
-  String get storyEmptyTitle => 'Әзірге хикая жоқ';
+  String get storyEmptyTitle => 'Әзірге пост жоқ';
 
   @override
   String get storyEmptySubtitle =>
@@ -5455,23 +6173,26 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get storyEmptyAuthenticatedSubtitle =>
-      'Лентаны бастау үшін хикая, мақала, гид немесе визуалды эссе жасаңыз.';
+      'Лентаны бастау үшін пост, мақала, гид немесе визуалды эссе жасаңыз.';
 
   @override
-  String get storyFilteredEmptyTitle => 'Бұл сүзгілер бойынша хикая жоқ';
+  String get storyFilteredEmptyTitle => 'Бұл сүзгілер бойынша пост жоқ';
 
   @override
   String get storyFilteredEmptySubtitle =>
       'Басқа іздеу, ел, қала немесе санатты қолданып көріңіз.';
 
   @override
-  String get storyResetFiltersAction => 'Сүзгілерді тазалау';
+  String get storyResetFiltersAction => 'Тазалау';
 
   @override
   String get storyLoginCreateAction => 'Кіріп, жасау';
 
   @override
   String get myStoriesDraftsTab => 'Нобайлар';
+
+  @override
+  String get myStoriesPendingReviewTab => 'Тексерілуде';
 
   @override
   String get myStoriesPublishedTab => 'Жарияланған';
@@ -5484,27 +6205,93 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get myStoriesDraftEmptySubtitle =>
-      'Идеяларды хикаялар лентасына жарияламас бұрын нобай ретінде сақтаңыз.';
+      'Идеяларды посттар лентасына жарияламас бұрын нобай ретінде сақтаңыз.';
 
   @override
-  String get myStoriesPublishedEmptyTitle => 'Әзірге жарияланған хикая жоқ';
+  String get myStoriesPendingReviewEmptyTitle => 'Тексерілудегі посттар жоқ';
+
+  @override
+  String get myStoriesPendingReviewEmptySubtitle =>
+      'Модератор тексеруін күтіп тұрған посттар осы жерде көрсетіледі.';
+
+  @override
+  String get myStoriesPublishedEmptyTitle => 'Әзірге жарияланған пост жоқ';
 
   @override
   String get myStoriesPublishedEmptySubtitle =>
-      'Жарияланған хикаялар, гидтер, мақалалар және визуалды эсселер осы жерде көрсетіледі.';
+      'Жарияланған посттар, гидтер, мақалалар және визуалды эсселер осы жерде көрсетіледі.';
 
   @override
-  String get myStoriesArchivedEmptyTitle => 'Әзірге архивтегі хикая жоқ';
+  String get myStoriesArchivedEmptyTitle => 'Әзірге архивтегі пост жоқ';
 
   @override
   String get myStoriesArchivedEmptySubtitle =>
-      'Архивтегі хикаялар тарих және қайта пайдалану үшін осы жерде сақталады.';
+      'Архивтегі посттар тарих және қайта пайдалану үшін осы жерде сақталады.';
 
   @override
   String get myStoriesCreateDraftAction => 'Нобай жасау';
 
   @override
-  String get storyLoadFailed => 'Хикаяларды жүктеу мүмкін болмады';
+  String get storyArchiveActiveTab => 'Белсенді';
+
+  @override
+  String get storyArchiveArchiveTab => 'Архив';
+
+  @override
+  String get storyArchiveActiveSubtitle =>
+      'Мұнда басқа пайдаланушыларға әлі көрінетін хикаяларыңыз сақталады.';
+
+  @override
+  String get storyArchiveActiveEmptyTitle => 'Әзірге белсенді хикая жоқ';
+
+  @override
+  String get storyArchiveActiveEmptySubtitle =>
+      'Хикая 24 сағат осы жерде тұруы үшін фото немесе видео түсіріңіз.';
+
+  @override
+  String get storyArchiveActiveUntilPrefix => 'Белсенді';
+
+  @override
+  String get storyArchiveSubtitle =>
+      'Хикаялар 24 сағат өмір сүреді, содан кейін осында тек сіз үшін сақталады.';
+
+  @override
+  String get storyArchiveEmptyTitle => 'Әзірге архивтегі хикая жоқ';
+
+  @override
+  String get storyArchiveEmptySubtitle =>
+      'Камерамен түсірген хикаяларыңыз жарияланғаннан кейін 24 сағаттан соң осы жерде көрсетіледі.';
+
+  @override
+  String get storyArchiveLoadFailedTitle => 'Хикаяларды жүктеу мүмкін болмады';
+
+  @override
+  String get storyArchiveLoadFailedMessage =>
+      'Байланысты тексеріп, қайта көріңіз.';
+
+  @override
+  String get storyArchiveRetryAction => 'Қайталап көру';
+
+  @override
+  String get storyArchiveLoadMoreAction => 'Тағы жүктеу';
+
+  @override
+  String get storyArchiveExpiredPrefix => 'Архивке өтті';
+
+  @override
+  String get storyStateSeenLabel => 'Көрілді';
+
+  @override
+  String get storyStateExpiredLabel => 'Мерзімі өтті';
+
+  @override
+  String get storyStatePendingLabel => 'Тексерілуде';
+
+  @override
+  String get storyStateHiddenLabel => 'Жасырылды';
+
+  @override
+  String get storyLoadFailed => 'Посттарды жүктеу мүмкін болмады';
 
   @override
   String get storyViewsSuffix => 'қаралым';
@@ -5522,7 +6309,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get storyCategoryCulinary => 'Гастрономия';
 
   @override
-  String get storyFormatStory => 'Хикая';
+  String get storyFormatStory => 'Пост';
 
   @override
   String get storyFormatGuide => 'Гид';
@@ -5537,14 +6324,67 @@ class AppLocalizationsKk extends AppLocalizations {
   String get storyFormatCulinary => 'Гастрономия';
 
   @override
-  String get storyDetailsTitle => 'Хикая туралы';
+  String get storyDetailsTitle => 'Пост туралы';
 
   @override
-  String get storyLinkCopied => 'Хикая сілтемесі көшірілді';
+  String get storyLinkCopied => 'Пост сілтемесі көшірілді';
 
   @override
   String get storyShareFailed =>
       'Сілтемені бөлісу терезесін ашу мүмкін болмады. Қайта көріңіз.';
+
+  @override
+  String get storyReportAction => 'Шағымдану';
+
+  @override
+  String get storyReportSending => 'Жіберілуде...';
+
+  @override
+  String get storyReportTitle => 'Постқа шағымдану';
+
+  @override
+  String get storyReportSubtitle =>
+      'Мәселені сипаттаңыз. Шағымдар модераторларға travel-контентті қауіпсіз әрі пайдалы ұстауға көмектеседі.';
+
+  @override
+  String get storyReportDetailsLabel => 'Толығырақ';
+
+  @override
+  String get storyReportDetailsHint => 'Модераторларға контекст қосыңыз';
+
+  @override
+  String get storyReportSubmitAction => 'Шағым жіберу';
+
+  @override
+  String get storyReportSubmitted => 'Рақмет. Пост модерацияға жіберілді.';
+
+  @override
+  String get storyReportAutoHidden =>
+      'Рақмет. Пост модераторлар тексергенше жасырылды.';
+
+  @override
+  String get storyReportReasonSpam => 'Спам немесе жаңылыстыру';
+
+  @override
+  String get storyReportReasonHarassment => 'Қорлау немесе қудалау';
+
+  @override
+  String get storyReportReasonHate => 'Өшпенділік немесе кемсіту';
+
+  @override
+  String get storyReportReasonSexualContent => 'Сексуалдық контент';
+
+  @override
+  String get storyReportReasonViolence => 'Зорлық немесе шок контент';
+
+  @override
+  String get storyReportReasonMisinformation => 'Жалған ақпарат';
+
+  @override
+  String get storyReportReasonIllegal => 'Заңсыз әрекет';
+
+  @override
+  String get storyReportReasonOther => 'Басқа';
 
   @override
   String get storyAuthorLabel => 'Автор';
@@ -5597,6 +6437,10 @@ class AppLocalizationsKk extends AppLocalizations {
       'Пікірді бөлісу терезесін ашу мүмкін болмады. Қайта көріңіз.';
 
   @override
+  String get storyLikeActionFailed =>
+      'Лайкты жаңарту мүмкін болмады. Қайта көріңіз.';
+
+  @override
   String get storyCommentEditingTitle => 'Пікірді өңдеу';
 
   @override
@@ -5618,10 +6462,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get storyRelatedEyebrow => 'Әрі қарай зерттеңіз';
 
   @override
-  String get storyRelatedTitle => 'Ұқсас хикаялар';
+  String get storyRelatedTitle => 'Ұқсас посттар';
 
   @override
-  String get storyRelatedEmpty => 'Әзірге ұқсас хикая жоқ';
+  String get storyRelatedEmpty => 'Әзірге ұқсас пост жоқ';
 
   @override
   String get storyViewAll => 'Барлығын көру';
@@ -5630,10 +6474,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get storyEditAction => 'Өңдеу';
 
   @override
-  String get storyDeleteTitle => 'Хикаяны өшіру керек пе?';
+  String get storyDeleteTitle => 'Постты өшіру керек пе?';
 
   @override
-  String get storyDeleteMessage => 'Хикая ашық лентадан алынып тасталады.';
+  String get storyDeleteMessage => 'Пост ашық лентадан алынып тасталады.';
 
   @override
   String get storyDeleteAction => 'Өшіру';
@@ -5769,6 +6613,16 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get storyEditorTitle => 'Хикая редакторы';
+
+  @override
+  String get storyEditorQuickPostTitle => 'Жылдам пост';
+
+  @override
+  String get storyEditorQuickPostSubtitle =>
+      'Қауымдастықпен қысқа жаңалық, сұрақ немесе жергілікті кеңес бөлісіңіз.';
+
+  @override
+  String get storyEditorQuickPostHint => 'Не бөліскіңіз келеді?';
 
   @override
   String get storyEditorLoading => 'Хикая жүктелуде';
@@ -6262,6 +7116,21 @@ class AppLocalizationsKk extends AppLocalizations {
       'Медиа жүктеліп болғанша күтіңіз.';
 
   @override
+  String get postCreateRateLimitTitle => 'Пост лимиті';
+
+  @override
+  String postCreateRateLimitMessage(int minutes) {
+    return 'Соңғы бір сағатта ең көп пост санын жасадыңыз. Жаңа постты шамамен $minutes мин. кейін жасауға болады.';
+  }
+
+  @override
+  String get postCreateRateLimitAction => 'Түсінікті';
+
+  @override
+  String get postCreatePreflightFailed =>
+      'Пост лимитін тексеру мүмкін болмады. Жариялау кезінде қайта тексереміз.';
+
+  @override
   String get chatListTitle => 'Чаттар';
 
   @override
@@ -6734,6 +7603,12 @@ class AppLocalizationsKk extends AppLocalizations {
   String get chatForwardedLabel => 'Жіберілген';
 
   @override
+  String get chatStoryReplyLabel => 'Хикаяға жауап';
+
+  @override
+  String get chatStoryReplyUnavailable => 'Хикая енді қолжетімсіз';
+
+  @override
   String chatForwardedFrom(Object name) {
     return '$name жіберген хабар';
   }
@@ -7045,6 +7920,9 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get notificationsCategoryChat => 'Хабарламалар';
+
+  @override
+  String get notificationsCategoryContent => 'Посттар мен хикаялар';
 
   @override
   String get notificationsCategorySystem => 'Жүйе';

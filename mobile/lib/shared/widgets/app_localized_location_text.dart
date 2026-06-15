@@ -10,6 +10,7 @@ class AppLocalizedLocationText extends StatefulWidget {
     required this.cityName,
     required this.fallbackText,
     this.addressText,
+    this.includeCountry = true,
     this.resolver,
     this.style,
     this.maxLines,
@@ -22,6 +23,7 @@ class AppLocalizedLocationText extends StatefulWidget {
   final String? cityName;
   final String fallbackText;
   final String? addressText;
+  final bool includeCountry;
   final AppLocationLabelResolver? resolver;
   final TextStyle? style;
   final int? maxLines;
@@ -53,8 +55,6 @@ class _AppLocalizedLocationTextState extends State<AppLocalizedLocationText> {
     final resolved = _resolvedText?.trim() ?? '';
     if (resolved.isNotEmpty) return resolved;
 
-    if (_hasReferenceLookup) return '';
-
     return widget.fallbackText.trim();
   }
 
@@ -72,6 +72,7 @@ class _AppLocalizedLocationTextState extends State<AppLocalizedLocationText> {
         oldWidget.cityName != widget.cityName ||
         oldWidget.fallbackText != widget.fallbackText ||
         oldWidget.addressText != widget.addressText ||
+        oldWidget.includeCountry != widget.includeCountry ||
         oldWidget.resolver != widget.resolver) {
       _resolve();
     }
@@ -110,8 +111,13 @@ class _AppLocalizedLocationTextState extends State<AppLocalizedLocationText> {
       resolved = fallback;
     }
     if (!mounted || serial != _requestSerial) return;
+    final displayResolved = widget.includeCountry
+        ? resolved
+        : _cityOnlyLabel(resolved);
     setState(
-      () => _resolvedText = resolved.trim().isEmpty ? fallback : resolved,
+      () => _resolvedText = displayResolved.trim().isEmpty
+          ? fallback
+          : displayResolved,
     );
   }
 
@@ -125,4 +131,13 @@ class _AppLocalizedLocationTextState extends State<AppLocalizedLocationText> {
       style: widget.style,
     );
   }
+}
+
+String _cityOnlyLabel(String value) {
+  final parts = value
+      .split(',')
+      .map((part) => part.trim())
+      .where((part) => part.isNotEmpty)
+      .toList(growable: false);
+  return parts.isEmpty ? value.trim() : parts.first;
 }

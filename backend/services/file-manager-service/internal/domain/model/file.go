@@ -30,6 +30,7 @@ var (
 	ErrDeletedFileMutation   = errors.New("cannot mutate deleted file")
 	ErrEmptyUploadedByUserID = errors.New("uploaded_by_user_id cannot be empty uuid")
 	ErrInvalidPolicyStatus   = errors.New("invalid policy status")
+	ErrInvalidMediaMetadata  = errors.New("invalid media metadata")
 )
 
 type FilePolicyStatus string
@@ -62,6 +63,10 @@ type File struct {
 	DetectedContentType *string
 	SizeBytes           int64
 	ChecksumSHA256      *string
+	Width               *int
+	Height              *int
+	DurationMS          *int
+	ThumbnailFileID     *uuid.UUID
 	Visibility          enum.FileVisibility
 	Purpose             enum.FilePurpose
 	Status              enum.FileStatus
@@ -187,6 +192,25 @@ func (f *File) Validate() error {
 	return nil
 }
 
+func (f *File) ApplyMediaMetadata(width *int, height *int, durationMS *int, thumbnailFileID *uuid.UUID) error {
+	if f.IsDeleted {
+		return ErrDeletedFileMutation
+	}
+	if !validPositiveOptionalInt(width) || !validPositiveOptionalInt(height) || !validPositiveOptionalInt(durationMS) {
+		return ErrInvalidMediaMetadata
+	}
+	if thumbnailFileID != nil && *thumbnailFileID == uuid.Nil {
+		return ErrInvalidMediaMetadata
+	}
+
+	f.Width = width
+	f.Height = height
+	f.DurationMS = durationMS
+	f.ThumbnailFileID = thumbnailFileID
+	f.UpdatedAt = time.Now().UTC()
+	return nil
+}
+
 func (f *File) ApplyPolicyDecision(status FilePolicyStatus, reasonCode string, decisionID string) error {
 	if f.IsDeleted {
 		return ErrDeletedFileMutation
@@ -283,4 +307,8 @@ func nilIfEmpty(s string) *string {
 	}
 	v := s
 	return &v
+}
+
+func validPositiveOptionalInt(v *int) bool {
+	return v == nil || *v > 0
 }

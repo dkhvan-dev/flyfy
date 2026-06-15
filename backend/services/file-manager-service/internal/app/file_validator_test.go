@@ -76,15 +76,37 @@ func TestStoryMediaAllowsPublicImages(t *testing.T) {
 	}
 }
 
-func TestStoryMediaRejectsVideoUploads(t *testing.T) {
+func TestStoryMediaAllowsVideoUploads(t *testing.T) {
 	validator := NewFileValidator(DefaultUploadPolicies(0))
 
 	if err := validator.ValidateForCreate(
-		"weekend-reel.mp4",
+		"weekend-clip.mp4",
 		"video/mp4",
-		2*1024*1024,
+		24*1024*1024,
 		enum.FilePurposeStoryMedia,
-	); err != ErrExtensionNotAllowed {
-		t.Fatalf("expected story video media to be rejected by extension, got %v", err)
+	); err != nil {
+		t.Fatalf("expected story video media to be allowed, got %v", err)
+	}
+
+	if err := validator.ValidateUploadedObject(
+		"weekend-clip.mov",
+		"video/quicktime; charset=binary",
+		24*1024*1024,
+		enum.FilePurposeStoryMedia,
+	); err != nil {
+		t.Fatalf("expected uploaded story video media to be allowed, got %v", err)
+	}
+}
+
+func TestStoryMediaAllowsPhoneNativeImages(t *testing.T) {
+	validator := NewFileValidator(DefaultUploadPolicies(0))
+
+	if err := validator.ValidateForCreate(
+		"camera-roll.heic",
+		"image/heic",
+		4*1024*1024,
+		enum.FilePurposeStoryMedia,
+	); err != nil {
+		t.Fatalf("expected story heic image media to be allowed, got %v", err)
 	}
 }

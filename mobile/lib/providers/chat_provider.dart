@@ -320,6 +320,7 @@ class ChatProvider extends ChangeNotifier {
     List<String>? fileIds,
     String? stickerId,
     String? replyToMessageId,
+    StoryReplyContextVm? storyReply,
   }) async {
     final normalizedFileIds =
         fileIds
@@ -358,6 +359,7 @@ class ChatProvider extends ChangeNotifier {
         stickerId: normalizedStickerId.isEmpty ? null : normalizedStickerId,
         replyToMessageId: replyToMessageId,
         clientMessageId: _newClientMessageId(),
+        storyReply: storyReply,
       );
       _messages = _uniqueMessages([msg, ..._messages]);
       _upsertConversationPreviewFromMessage(_activeConversation!.id, msg);

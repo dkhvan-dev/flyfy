@@ -4,7 +4,8 @@ import 'dart:io' as io;
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/network/file_api.dart';
-import '../../models/story_vm.dart';
+import '../../models/post_profile_contract.dart';
+import '../../models/post_vm.dart';
 import '../data/story_editor_api.dart';
 import '../data/story_editor_dto.dart';
 import '../data/story_editor_recovery_store.dart';
@@ -116,17 +117,17 @@ class StoryEditorTemplateState {
 const int _maxRecoverablePreviewBytes = 64 * 1024;
 
 abstract class StoryEditorApiGateway {
-  Future<StoryVm> getStory(String storyId);
+  Future<PostVm> getStory(String storyId);
 
-  Future<StoryVm> createDraft(StoryEditorWriteRequest request);
+  Future<PostVm> createDraft(StoryEditorWriteRequest request);
 
-  Future<StoryVm> autosave(String storyId, StoryEditorWriteRequest request);
+  Future<PostVm> autosave(String storyId, StoryEditorWriteRequest request);
 
-  Future<StoryVm> update(String storyId, StoryEditorWriteRequest request);
+  Future<PostVm> update(String storyId, StoryEditorWriteRequest request);
 
-  Future<StoryVm> publish(String storyId, StoryEditorWriteRequest request);
+  Future<PostVm> publish(String storyId, StoryEditorWriteRequest request);
 
-  Future<StoryVm> archive(String storyId, {int? revision});
+  Future<PostVm> archive(String storyId, {int? revision});
 }
 
 class StoryEditorApiGatewayAdapter implements StoryEditorApiGateway {
@@ -136,32 +137,32 @@ class StoryEditorApiGatewayAdapter implements StoryEditorApiGateway {
   final StoryEditorApi _api;
 
   @override
-  Future<StoryVm> getStory(String storyId) {
+  Future<PostVm> getStory(String storyId) {
     return _api.getStory(storyId);
   }
 
   @override
-  Future<StoryVm> createDraft(StoryEditorWriteRequest request) {
+  Future<PostVm> createDraft(StoryEditorWriteRequest request) {
     return _api.createDraft(request);
   }
 
   @override
-  Future<StoryVm> autosave(String storyId, StoryEditorWriteRequest request) {
+  Future<PostVm> autosave(String storyId, StoryEditorWriteRequest request) {
     return _api.autosave(storyId, request);
   }
 
   @override
-  Future<StoryVm> update(String storyId, StoryEditorWriteRequest request) {
+  Future<PostVm> update(String storyId, StoryEditorWriteRequest request) {
     return _api.update(storyId, request);
   }
 
   @override
-  Future<StoryVm> publish(String storyId, StoryEditorWriteRequest request) {
+  Future<PostVm> publish(String storyId, StoryEditorWriteRequest request) {
     return _api.publish(storyId, request);
   }
 
   @override
-  Future<StoryVm> archive(String storyId, {int? revision}) {
+  Future<PostVm> archive(String storyId, {int? revision}) {
     return _api.archive(storyId, revision: revision);
   }
 }
@@ -299,13 +300,13 @@ class StoryEditorFileMediaUploadGateway
     final mimeType = _normalizeNullable(request.mimeType) ?? 'image/jpeg';
     final sizeBytes = request.byteSize ?? bytes.length;
     final upload = switch (request.kind) {
-      StoryEditorMediaUploadKind.cover => await _fileApi.createStoryCoverUpload(
+      StoryEditorMediaUploadKind.cover => await _fileApi.createPostCoverUpload(
         originalName: fileName,
         contentType: mimeType,
         sizeBytes: sizeBytes,
       ),
       StoryEditorMediaUploadKind.inlineImage =>
-        await _fileApi.createStoryInlineImageUpload(
+        await _fileApi.createPostInlineImageUpload(
           originalName: fileName,
           contentType: mimeType,
           sizeBytes: sizeBytes,
@@ -338,8 +339,8 @@ class StoryEditorFileMediaLifecycleGateway
   StoryEditorFileMediaLifecycleGateway([FileApi? fileApi])
     : _fileApi = fileApi ?? FileApi();
 
-  static const _storyOwnerType = 'STORY';
-  static const _storyMediaPurpose = 'STORY_MEDIA';
+  static const _postOwnerType = 'POST';
+  static const _postMediaPurpose = 'POST_MEDIA';
 
   final FileApi _fileApi;
 
@@ -354,9 +355,9 @@ class StoryEditorFileMediaLifecycleGateway
     if (normalizedCoverFileId != null) {
       await _fileApi.bindFile(
         fileId: normalizedCoverFileId,
-        ownerType: _storyOwnerType,
+        ownerType: _postOwnerType,
         ownerId: normalizedStoryId,
-        purpose: _storyMediaPurpose,
+        purpose: _postMediaPurpose,
         isPrimary: true,
       );
     }
@@ -367,9 +368,9 @@ class StoryEditorFileMediaLifecycleGateway
       }
       await _fileApi.bindFile(
         fileId: fileId,
-        ownerType: _storyOwnerType,
+        ownerType: _postOwnerType,
         ownerId: normalizedStoryId,
-        purpose: _storyMediaPurpose,
+        purpose: _postMediaPurpose,
       );
     }
   }
@@ -562,6 +563,8 @@ class StoryEditorState {
     required this.document,
     this.storyId,
     this.localDraftId,
+    this.communityId,
+    this.postProfileKey,
     this.selectedBlockId,
     this.revision,
     this.isDirty = false,
@@ -586,7 +589,7 @@ class StoryEditorState {
       mode: StoryEditorMode.create,
       metadata: StoryEditorMetadataDraft(
         title: '',
-        format: 'STORY',
+        format: 'ARTICLE',
         category: 'JOURNAL',
         status: 'DRAFT',
       ),
@@ -599,6 +602,8 @@ class StoryEditorState {
   final StoryEditorMode mode;
   final String? storyId;
   final String? localDraftId;
+  final String? communityId;
+  final String? postProfileKey;
   final StoryEditorMetadataDraft metadata;
   final StoryDocument document;
   final String? selectedBlockId;
@@ -633,6 +638,8 @@ class StoryEditorState {
     StoryEditorMode? mode,
     Object? storyId = _sentinel,
     Object? localDraftId = _sentinel,
+    Object? communityId = _sentinel,
+    Object? postProfileKey = _sentinel,
     StoryEditorMetadataDraft? metadata,
     StoryDocument? document,
     Object? selectedBlockId = _sentinel,
@@ -657,6 +664,12 @@ class StoryEditorState {
       localDraftId: identical(localDraftId, _sentinel)
           ? this.localDraftId
           : localDraftId as String?,
+      communityId: identical(communityId, _sentinel)
+          ? this.communityId
+          : communityId as String?,
+      postProfileKey: identical(postProfileKey, _sentinel)
+          ? this.postProfileKey
+          : postProfileKey as String?,
       metadata: metadata ?? this.metadata,
       document: document ?? this.document,
       selectedBlockId: identical(selectedBlockId, _sentinel)
@@ -724,28 +737,39 @@ class StoryEditorController extends ChangeNotifier {
     initializeEdit(userId: userId, story: story);
   }
 
-  void initializeCreate({required String userId}) {
+  void initializeCreate({
+    required String userId,
+    String? communityId,
+    String? postProfileKey,
+    String? placeName,
+    String? placeCountryCode,
+    String? placeCityId,
+  }) {
     _changeGeneration++;
     _clearHistory();
     _boundStoryFileIds.clear();
+    final normalizedPostProfileKey = _normalizePostProfileKey(postProfileKey);
+    final metadata = _metadataCopyWith(
+      _metadataForPostProfileKey(normalizedPostProfileKey),
+      placeName: _normalizeNullable(placeName),
+      placeCountryCode: _normalizeNullable(placeCountryCode),
+      placeCityId: _normalizeNullable(placeCityId),
+    );
     _setState(
       StoryEditorState(
         userId: _requiredTrim(userId),
         mode: StoryEditorMode.create,
         localDraftId: _localDraftIdFactory(),
-        metadata: StoryEditorMetadataDraft(
-          title: '',
-          format: 'STORY',
-          category: 'JOURNAL',
-          status: 'DRAFT',
-        ),
+        communityId: _normalizeNullable(communityId),
+        postProfileKey: normalizedPostProfileKey,
+        metadata: metadata,
         document: StoryDocument(),
         template: StoryEditorTemplateState.empty(),
       ),
     );
   }
 
-  void initializeEdit({required String userId, required StoryVm story}) {
+  void initializeEdit({required String userId, required PostVm story}) {
     _changeGeneration++;
     _clearHistory();
     _boundStoryFileIds
@@ -761,6 +785,8 @@ class StoryEditorController extends ChangeNotifier {
         userId: _requiredTrim(userId),
         mode: StoryEditorMode.edit,
         storyId: _normalizeNullable(story.id),
+        communityId: _normalizeNullable(story.communityId),
+        postProfileKey: _normalizePostProfileKey(story.postProfileKey),
         metadata: _metadataFromStory(story),
         document: _documentFromStory(story),
         revision: story.revision,
@@ -788,6 +814,42 @@ class StoryEditorController extends ChangeNotifier {
       _metadataCopyWith(_state.metadata, category: category),
       template: _state.template.copyWith(categoryTouchedByUser: true),
     );
+  }
+
+  void changePostProfileKey(String? postProfileKey) {
+    final normalizedPostProfileKey = _normalizePostProfileKey(postProfileKey);
+    if (_state.postProfileKey == normalizedPostProfileKey) {
+      return;
+    }
+
+    _recordHistory();
+    var metadata = _metadataForPostProfileKey(normalizedPostProfileKey);
+    if ((_state.communityId ?? '').trim().isNotEmpty) {
+      metadata = _metadataCopyWith(
+        metadata,
+        placeName: _state.metadata.placeName,
+        placeCountryCode: _state.metadata.placeCountryCode,
+        placeCityId: _state.metadata.placeCityId,
+      );
+    }
+    _changeGeneration++;
+    _setState(
+      _state.copyWith(
+        postProfileKey: normalizedPostProfileKey,
+        metadata: metadata,
+        publishValidation: _validateForPublish(
+          metadata,
+          _state.document,
+          _state.mediaQueue.items,
+          postProfileKey: normalizedPostProfileKey,
+        ),
+        conflict: StoryEditorConflictState.none(),
+        isDirty: true,
+        canUndo: _undoStack.isNotEmpty,
+        canRedo: _redoStack.isNotEmpty,
+      ),
+    );
+    _scheduleAutosave();
   }
 
   void changePlace({
@@ -1466,7 +1528,7 @@ class StoryEditorController extends ChangeNotifier {
     );
   }
 
-  Future<StoryVm?> saveDraft({bool showSuccessStatus = true}) async {
+  Future<PostVm?> saveDraft({bool showSuccessStatus = true}) async {
     final localValidation = _validateForDraft(_state.metadata, _state.document);
     if (!localValidation.isValid) {
       _setState(
@@ -1522,11 +1584,12 @@ class StoryEditorController extends ChangeNotifier {
     }
   }
 
-  Future<StoryVm?> publish({bool showSuccessStatus = true}) async {
+  Future<PostVm?> publish({bool showSuccessStatus = true}) async {
     final localValidation = _validateForPublish(
       _state.metadata,
       _state.document,
       _state.mediaQueue.items,
+      postProfileKey: _state.postProfileKey,
     );
     if (!localValidation.isValid) {
       _setState(
@@ -1655,6 +1718,7 @@ class StoryEditorController extends ChangeNotifier {
         metadata: snapshot.metadata,
         document: document,
         revision: snapshot.lastRemoteRevision,
+        communityId: snapshot.communityId,
         mediaQueue: StoryEditorMediaQueueState(items: mediaItems),
         recovery: StoryEditorRecoveryState(snapshot: snapshot),
         publishValidation: _validateForPublish(
@@ -1799,6 +1863,7 @@ class StoryEditorController extends ChangeNotifier {
       userId: editorSnapshot.userId,
       storyId: editorSnapshot.storyId,
       localDraftId: editorSnapshot.localDraftId,
+      communityId: editorSnapshot.communityId,
       metadata: editorSnapshot.metadata,
       document: editorSnapshot.document,
       pendingMediaReferences: editorSnapshot.mediaQueue.items
@@ -1821,7 +1886,7 @@ class StoryEditorController extends ChangeNotifier {
 
   Future<void> _runRemoteSave(
     _StoryEditorSnapshot snapshot,
-    Future<StoryVm> Function() save, {
+    Future<PostVm> Function() save, {
     bool clearRecoveryOnSuccess = false,
   }) async {
     try {
@@ -1841,7 +1906,7 @@ class StoryEditorController extends ChangeNotifier {
   }
 
   void _applySavedStory(
-    StoryVm story, {
+    PostVm story, {
     bool clearLocalDraft = false,
     StoryEditorSaveStatus? saveStatus,
   }) {
@@ -1851,6 +1916,8 @@ class StoryEditorController extends ChangeNotifier {
         mode: StoryEditorMode.edit,
         storyId: _normalizeNullable(story.id),
         localDraftId: clearLocalDraft ? null : _state.localDraftId,
+        communityId:
+            _normalizeNullable(story.communityId) ?? _state.communityId,
         metadata: metadata,
         revision: story.revision,
         saveStatus:
@@ -1874,7 +1941,7 @@ class StoryEditorController extends ChangeNotifier {
   }
 
   Future<void> _bindSavedStoryMedia(
-    StoryVm story,
+    PostVm story,
     _StoryEditorSnapshot snapshot,
   ) async {
     final storyId = _normalizeNullable(story.id);
@@ -1941,6 +2008,9 @@ class StoryEditorController extends ChangeNotifier {
       placeName: metadata.placeName,
       placeCountryCode: metadata.placeCountryCode,
       placeCityId: metadata.placeCityId,
+      communityId: state.communityId,
+      postProfileKey: state.postProfileKey,
+      structuredData: _structuredDataForPostProfile(state),
       tags: metadata.tags,
       metadata: metadata.metadata,
     );
@@ -1953,8 +2023,13 @@ class StoryEditorController extends ChangeNotifier {
   ) {
     return switch (_state.validationScope) {
       StoryEditorValidationScope.draft => _validateForDraft(metadata, document),
-      StoryEditorValidationScope.publish || StoryEditorValidationScope.none =>
-        _validateForPublish(metadata, document, mediaItems),
+      StoryEditorValidationScope.publish ||
+      StoryEditorValidationScope.none => _validateForPublish(
+        metadata,
+        document,
+        mediaItems,
+        postProfileKey: _state.postProfileKey,
+      ),
     };
   }
 
@@ -2134,6 +2209,7 @@ class StoryEditorController extends ChangeNotifier {
       userId: state.userId,
       storyId: state.storyId,
       localDraftId: state.localDraftId,
+      communityId: state.communityId,
       metadata: state.metadata,
       document: state.document,
       revision: state.revision,
@@ -2170,6 +2246,7 @@ class _StoryEditorSnapshot {
     required this.userId,
     required this.storyId,
     required this.localDraftId,
+    required this.communityId,
     required this.metadata,
     required this.document,
     required this.revision,
@@ -2181,6 +2258,7 @@ class _StoryEditorSnapshot {
   final String userId;
   final String? storyId;
   final String? localDraftId;
+  final String? communityId;
   final StoryEditorMetadataDraft metadata;
   final StoryDocument document;
   final int? revision;
@@ -2237,14 +2315,14 @@ class _StoryEditorHistoryEntry {
 }
 
 StoryEditorMetadataDraft _metadataFromStory(
-  StoryVm story, {
+  PostVm story, {
   StoryEditorMetadataDraft? fallback,
 }) {
   return StoryEditorMetadataDraft(
     title: story.title.isNotEmpty ? story.title : fallback?.title ?? '',
     format: story.format.isNotEmpty
         ? story.format
-        : fallback?.format ?? 'STORY',
+        : fallback?.format ?? 'ARTICLE',
     category: story.category.isNotEmpty
         ? story.category
         : fallback?.category ?? 'JOURNAL',
@@ -2260,6 +2338,96 @@ StoryEditorMetadataDraft _metadataFromStory(
     tags: story.tags.isNotEmpty ? story.tags : fallback?.tags ?? const [],
     metadata: fallback?.metadata ?? const {},
   );
+}
+
+String? _normalizePostProfileKey(String? value) {
+  return PostProfileContract.normalizeForApi(value);
+}
+
+StoryEditorMetadataDraft _metadataForPostProfileKey(String? postProfileKey) {
+  final profile = PostProfileContract.resolve(postProfileKey);
+  if (profile.composerPreset != PostComposerPreset.richArticle) {
+    return StoryEditorMetadataDraft(
+      title: '',
+      format: 'POST',
+      category: 'GUIDE',
+      status: 'DRAFT',
+    );
+  }
+  return StoryEditorMetadataDraft(
+    title: '',
+    format: 'ARTICLE',
+    category: 'JOURNAL',
+    status: 'DRAFT',
+  );
+}
+
+Map<String, Object?> _structuredDataForPostProfile(StoryEditorState state) {
+  final profile = PostProfileContract.resolve(state.postProfileKey);
+  final metadata = state.metadata;
+  final title = metadata.title.trim();
+  final body = state.document.plainText.trim();
+  final location = _structuredLocation(metadata);
+
+  if (profile.isInlineThread) {
+    return body.isEmpty ? const {} : {'body': body};
+  }
+  switch (profile.composerPreset) {
+    case PostComposerPreset.listingForm:
+      return {
+        if (title.isNotEmpty) 'title': title,
+        if (body.isNotEmpty) 'body': body,
+        if (location.isNotEmpty) 'location': location,
+      };
+    case PostComposerPreset.eventAnnouncementForm:
+      return {
+        if (title.isNotEmpty) 'title': title,
+        if (body.isNotEmpty) 'description': body,
+        if (location.isNotEmpty) 'location': location,
+        if (_metadataString(metadata, 'starts_at') != null)
+          'starts_at': _metadataString(metadata, 'starts_at'),
+        if (_metadataString(metadata, 'ends_at') != null)
+          'ends_at': _metadataString(metadata, 'ends_at'),
+      };
+    case PostComposerPreset.questionForm:
+      return {
+        if (title.isNotEmpty) 'question': title,
+        if (body.isNotEmpty) 'details': body,
+        if (metadata.tags.isNotEmpty) 'tags': metadata.tags,
+        if (location.isNotEmpty) 'location': location,
+      };
+    case PostComposerPreset.tripPlanForm:
+      return {
+        if (title.isNotEmpty) 'title': title,
+        if (body.isNotEmpty) 'route': body,
+        if (location.isNotEmpty) 'meeting_point': location,
+        if (_metadataString(metadata, 'starts_at') != null)
+          'starts_at': _metadataString(metadata, 'starts_at'),
+      };
+    case PostComposerPreset.richArticle:
+    case PostComposerPreset.quickPost:
+      break;
+  }
+  return const {};
+}
+
+Map<String, Object?> _structuredLocation(StoryEditorMetadataDraft metadata) {
+  final values = <String, Object?>{};
+  final name = _normalizeNullable(metadata.placeName);
+  final countryCode = _normalizeNullable(metadata.placeCountryCode);
+  final cityId = _normalizeNullable(metadata.placeCityId);
+  if (name != null) values['name'] = name;
+  if (countryCode != null) values['country_code'] = countryCode;
+  if (cityId != null) values['city_id'] = cityId;
+  return values;
+}
+
+String? _metadataString(StoryEditorMetadataDraft metadata, String key) {
+  final rawValue = metadata.metadata[key];
+  if (rawValue is! String) {
+    return null;
+  }
+  return _normalizeNullable(rawValue);
 }
 
 StoryEditorMetadataDraft _metadataCopyWith(
@@ -2297,7 +2465,7 @@ StoryEditorMetadataDraft _metadataCopyWith(
   );
 }
 
-StoryDocument _documentFromStory(StoryVm story) {
+StoryDocument _documentFromStory(PostVm story) {
   if (story.contentBlocks.isEmpty) {
     return StoryDocument();
   }
@@ -2538,10 +2706,12 @@ StoryEditorPublishValidationSummary _validateForDraft(
 StoryEditorPublishValidationSummary _validateForPublish(
   StoryEditorMetadataDraft metadata,
   StoryDocument document,
-  List<StoryEditorMediaQueueItem> mediaItems,
-) {
+  List<StoryEditorMediaQueueItem> mediaItems, {
+  String? postProfileKey,
+}) {
   final errors = <StoryEditorFieldError>[];
-  if (metadata.title.trim().isEmpty) {
+  final profile = PostProfileContract.resolve(postProfileKey);
+  if (profile.requiresTitle && metadata.title.trim().isEmpty) {
     errors.add(
       const StoryEditorFieldError(
         field: 'title',
@@ -2550,7 +2720,7 @@ StoryEditorPublishValidationSummary _validateForPublish(
       ),
     );
   }
-  if (metadata.format.trim().isEmpty) {
+  if (profile.requiresMaterialTaxonomy && metadata.format.trim().isEmpty) {
     errors.add(
       const StoryEditorFieldError(
         field: 'format',
@@ -2559,7 +2729,7 @@ StoryEditorPublishValidationSummary _validateForPublish(
       ),
     );
   }
-  if (metadata.category.trim().isEmpty) {
+  if (profile.requiresMaterialTaxonomy && metadata.category.trim().isEmpty) {
     errors.add(
       const StoryEditorFieldError(
         field: 'category',
@@ -2568,7 +2738,7 @@ StoryEditorPublishValidationSummary _validateForPublish(
       ),
     );
   }
-  if ((metadata.coverFileId ?? '').trim().isEmpty) {
+  if (profile.requiresCover && (metadata.coverFileId ?? '').trim().isEmpty) {
     errors.add(
       const StoryEditorFieldError(
         field: 'coverFileId',
@@ -2580,7 +2750,7 @@ StoryEditorPublishValidationSummary _validateForPublish(
   final hasPlace =
       (metadata.placeName ?? '').trim().isNotEmpty ||
       (metadata.placeCityId ?? '').trim().isNotEmpty;
-  if (!hasPlace) {
+  if (profile.requiresPlace && !hasPlace) {
     errors.add(
       const StoryEditorFieldError(
         field: 'place',
@@ -2589,7 +2759,8 @@ StoryEditorPublishValidationSummary _validateForPublish(
       ),
     );
   }
-  if ((metadata.placeCountryCode ?? '').trim().isEmpty) {
+  if (profile.requiresPlace &&
+      (metadata.placeCountryCode ?? '').trim().isEmpty) {
     errors.add(
       const StoryEditorFieldError(
         field: 'country',

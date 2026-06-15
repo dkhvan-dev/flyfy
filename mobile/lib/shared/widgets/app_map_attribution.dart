@@ -10,7 +10,10 @@ class AppMapAttribution extends StatelessWidget {
     this.padding = const EdgeInsets.all(10),
   });
 
-  static final Uri _inflapMapUri = Uri.https(AppMapLinks.host, AppMapLinks.path);
+  static final Uri _inflapMapUri = Uri.https(
+    AppMapLinks.host,
+    AppMapLinks.path,
+  );
   static final Uri _openMapTilesUri = Uri.parse('https://openmaptiles.org');
   static final Uri _openStreetMapUri = Uri.parse(
     'https://www.openstreetmap.org/copyright',

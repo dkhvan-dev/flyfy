@@ -349,6 +349,8 @@ func normalizeNotificationCategory(category string) string {
 		return "excursion"
 	case "chat", "message", "messages":
 		return "chat"
+	case "content", "story", "stories", "post", "posts":
+		return "content"
 	case "marketing", "promotion", "promotions", "offer", "offers":
 		return "marketing"
 	case "system", "security":

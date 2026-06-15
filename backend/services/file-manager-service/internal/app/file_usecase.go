@@ -295,6 +295,10 @@ type CompleteUploadOutput struct {
 	Status              string
 	DetectedContentType string
 	SizeBytes           int64
+	Width               *int
+	Height              *int
+	DurationMS          *int
+	ThumbnailFileID     *uuid.UUID
 }
 
 type PublicContentURLOutput struct {
@@ -354,9 +358,24 @@ func (u *FileUseCase) CompleteUpload(ctx context.Context, fileID uuid.UUID) (*Co
 	checksum := sha256String(
 		fmt.Sprintf("%s:%s:%d:%s", meta.Bucket, meta.ObjectKey, meta.SizeBytes, meta.ETag),
 	)
+	detectedContentType := normalizeContentType(meta.ContentType)
+	mediaMetadata, err := u.readUploadMediaMetadata(ctx, file, detectedContentType)
+	if err != nil {
+		_ = file.MarkFailed()
+		_ = u.repo.Update(ctx, file)
+		return nil, err
+	}
 
-	if err = file.MarkUploaded(normalizeContentType(meta.ContentType), meta.SizeBytes, &checksum); err != nil {
+	if err = file.MarkUploaded(detectedContentType, meta.SizeBytes, &checksum); err != nil {
 		return nil, fmt.Errorf("mark uploaded: %w", err)
+	}
+	if err = file.ApplyMediaMetadata(
+		mediaMetadata.Width,
+		mediaMetadata.Height,
+		mediaMetadata.DurationMS,
+		mediaMetadata.ThumbnailFileID,
+	); err != nil {
+		return nil, fmt.Errorf("apply media metadata: %w", err)
 	}
 
 	if err = file.MarkReady(); err != nil {
@@ -372,6 +391,10 @@ func (u *FileUseCase) CompleteUpload(ctx context.Context, fileID uuid.UUID) (*Co
 		Status:              string(file.Status),
 		DetectedContentType: valueOrEmpty(file.DetectedContentType),
 		SizeBytes:           file.SizeBytes,
+		Width:               file.Width,
+		Height:              file.Height,
+		DurationMS:          file.DurationMS,
+		ThumbnailFileID:     file.ThumbnailFileID,
 	}, nil
 }
 

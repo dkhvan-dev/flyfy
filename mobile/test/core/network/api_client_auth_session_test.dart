@@ -143,6 +143,99 @@ void main() {
       await sub.cancel();
     },
   );
+
+  test(
+    'optional auth request attaches stored access token without requiring one',
+    () async {
+      final events = AuthSessionEvents();
+      var expiredCount = 0;
+      final sub = events.sessionExpired.listen((_) => expiredCount++);
+      final storage = _MemorySecureStorage(accessToken: 'access-token');
+      final adapter = _AuthAdapter();
+      final client = ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+          ..httpClientAdapter = adapter,
+        secureStorage: storage,
+        authSessionEvents: events,
+      );
+
+      await client.dio.get(
+        '/feed',
+        options: Options(extra: const {'optionalAuth': true}),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        adapter.requests.single.headers['Authorization'],
+        'Bearer access-token',
+      );
+      expect(expiredCount, 0);
+      await sub.cancel();
+    },
+  );
+
+  test(
+    'optional auth request continues anonymously when tokens are missing',
+    () async {
+      final events = AuthSessionEvents();
+      var expiredCount = 0;
+      final sub = events.sessionExpired.listen((_) => expiredCount++);
+      final adapter = _AuthAdapter();
+      final client = ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+          ..httpClientAdapter = adapter,
+        secureStorage: _MemorySecureStorage(),
+        authSessionEvents: events,
+      );
+
+      await client.dio.get(
+        '/feed',
+        options: Options(extra: const {'optionalAuth': true}),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(adapter.requests.single.headers['Authorization'], isNull);
+      expect(expiredCount, 0);
+      await sub.cancel();
+    },
+  );
+
+  test(
+    'optional auth request does not refresh when only refresh token exists',
+    () async {
+      final events = AuthSessionEvents();
+      var expiredCount = 0;
+      final sub = events.sessionExpired.listen((_) => expiredCount++);
+      final storage = _MemorySecureStorage(refreshToken: 'refresh-token');
+      final adapter = _AuthAdapter(
+        responses: {
+          '/api/v1/auth/refresh': _JsonResponse(200, {
+            'access_token': 'fresh-access',
+            'refresh_token': 'fresh-refresh',
+            'is_new_user': false,
+          }),
+        },
+      );
+      final client = ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+          ..httpClientAdapter = adapter,
+        secureStorage: storage,
+        authSessionEvents: events,
+      );
+
+      await client.dio.get(
+        '/feed',
+        options: Options(extra: const {'optionalAuth': true}),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(adapter.requests.map((item) => item.uri.path), ['/api/v1/feed']);
+      expect(storage.accessToken, isNull);
+      expect(storage.refreshToken, 'refresh-token');
+      expect(expiredCount, 0);
+      await sub.cancel();
+    },
+  );
 }
 
 class _MemorySecureStorage extends SecureStorage {

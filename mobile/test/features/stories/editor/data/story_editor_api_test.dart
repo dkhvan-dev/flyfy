@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -13,7 +14,7 @@ import 'package:inflap/features/stories/editor/domain/story_document.dart';
 
 void main() {
   test(
-    'createDraft posts a structured draft body and parses new story fields',
+    'createDraft posts a structured draft body and parses post fields',
     () async {
       final adapter = _QueuedJsonAdapter([
         _ResponseStub(_storyJson('story-1')),
@@ -23,11 +24,12 @@ void main() {
       final story = await api.createDraft(_editorRequest());
 
       expect(adapter.captured.single.method, 'POST');
-      expect(adapter.captured.single.path, '/api/v1/stories');
+      expect(adapter.captured.single.path, '/api/v1/posts');
       expect(adapter.captured.single.body['status'], 'DRAFT');
       expect(adapter.captured.single.body['format'], 'GUIDE');
+      expect(adapter.captured.single.body['communityId'], 'community-1');
       expect(adapter.captured.single.body['contentSchemaVersion'], 1);
-      expect(adapter.captured.single.body['content'], contains('Arrival'));
+      expect(adapter.captured.single.body, isNot(contains('content')));
 
       final document =
           adapter.captured.single.body['contentBlocks'] as Map<String, dynamic>;
@@ -78,7 +80,43 @@ void main() {
     },
   );
 
-  test('editor mutations use dedicated story lifecycle endpoints', () async {
+  test(
+    'story editor writes structured blocks without legacy rollback switch',
+    () {
+      final body = _editorRequest().toJson();
+
+      expect(body, isNot(contains('content')));
+
+      final apiSource = File(
+        'lib/features/stories/editor/data/story_editor_api.dart',
+      ).readAsStringSync();
+      final dtoSource = File(
+        'lib/features/stories/editor/data/story_editor_dto.dart',
+      ).readAsStringSync();
+      final configSource = File(
+        'lib/core/config/app_config.dart',
+      ).readAsStringSync();
+      final legacyFlag = ['send', 'Legacy', 'Story', 'Content'].join();
+      final legacyDefine = [
+        'INFLAP',
+        'SEND',
+        'LEGACY',
+        'STORY',
+        'CONTENT',
+      ].join('_');
+      final includeLegacyParameter = ['include', 'Legacy', 'Content'].join();
+      final privateLegacyGetter = ['_', 'legacy', 'Content'].join();
+
+      expect(apiSource, isNot(contains(legacyFlag)));
+      expect(apiSource, isNot(contains(includeLegacyParameter)));
+      expect(dtoSource, isNot(contains(includeLegacyParameter)));
+      expect(dtoSource, isNot(contains(privateLegacyGetter)));
+      expect(configSource, isNot(contains(legacyFlag)));
+      expect(configSource, isNot(contains(legacyDefine)));
+    },
+  );
+
+  test('editor mutations use dedicated post lifecycle endpoints', () async {
     final adapter = _QueuedJsonAdapter([
       _ResponseStub(_storyJson('story-1')),
       _ResponseStub(_storyJson('story-1')),
@@ -95,10 +133,10 @@ void main() {
     expect(
       adapter.captured.map((request) => '${request.method} ${request.path}'),
       [
-        'POST /api/v1/stories/story-1/autosave',
-        'PATCH /api/v1/stories/story-1',
-        'POST /api/v1/stories/story-1/publish',
-        'POST /api/v1/stories/story-1/archive',
+        'POST /api/v1/posts/story-1/autosave',
+        'PATCH /api/v1/posts/story-1',
+        'POST /api/v1/posts/story-1/publish',
+        'POST /api/v1/posts/story-1/archive',
       ],
     );
     expect(adapter.captured.last.body, {'revision': 8});
@@ -255,7 +293,7 @@ StoryEditorWriteRequest _editorRequest() {
     category: ' journal ',
     status: 'draft',
     document: document,
-    content: 'Arrival legacy',
+    communityId: ' community-1 ',
     revision: 7,
     coverFileId: ' cover-1 ',
     placeName: ' Almaty ',

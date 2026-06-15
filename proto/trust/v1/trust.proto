@@ -11,6 +11,9 @@ service TrustService {
   rpc CheckActionPolicy(CheckActionPolicyRequest) returns (CheckActionPolicyResponse);
   rpc ApplyUserRestrictionEvent(ApplyUserRestrictionEventRequest) returns (ApplyUserRestrictionEventResponse);
   rpc GetTrustProfile(GetTrustProfileRequest) returns (GetTrustProfileResponse);
+  rpc SubmitRestrictionAppeal(SubmitRestrictionAppealRequest) returns (SubmitRestrictionAppealResponse);
+  rpc ListRestrictionAppeals(ListRestrictionAppealsRequest) returns (ListRestrictionAppealsResponse);
+  rpc DecideRestrictionAppeal(DecideRestrictionAppealRequest) returns (DecideRestrictionAppealResponse);
 }
 
 enum PolicyAction {
@@ -54,6 +57,19 @@ enum RestrictionEventType {
   RESTRICTION_EVENT_TYPE_UNSPECIFIED = 0;
   RESTRICTION_EVENT_TYPE_CREATED = 1;
   RESTRICTION_EVENT_TYPE_LIFTED = 2;
+}
+
+enum RestrictionAppealStatus {
+  RESTRICTION_APPEAL_STATUS_UNSPECIFIED = 0;
+  RESTRICTION_APPEAL_STATUS_PENDING = 1;
+  RESTRICTION_APPEAL_STATUS_APPROVED = 2;
+  RESTRICTION_APPEAL_STATUS_REJECTED = 3;
+}
+
+enum RestrictionAppealDecision {
+  RESTRICTION_APPEAL_DECISION_UNSPECIFIED = 0;
+  RESTRICTION_APPEAL_DECISION_APPROVE = 1;
+  RESTRICTION_APPEAL_DECISION_REJECT = 2;
 }
 
 message CheckActionPolicyRequest {
@@ -110,4 +126,54 @@ message TrustProfile {
 
 message GetTrustProfileResponse {
   TrustProfile profile = 1;
+}
+
+message RestrictionAppeal {
+  string appeal_id = 1;
+  string user_id = 2;
+  string restriction_id = 3;
+  RestrictionAppealStatus status = 4;
+  string reason_code = 5;
+  string user_message = 6;
+  string idempotency_key = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+  google.protobuf.Timestamp decided_at = 10;
+  string decided_by_staff_id = 11;
+  string decision_reason_code = 12;
+  string staff_comment = 13;
+}
+
+message SubmitRestrictionAppealRequest {
+  string user_id = 1;
+  string restriction_id = 2;
+  string reason_code = 3;
+  string user_message = 4;
+  string idempotency_key = 5;
+}
+
+message SubmitRestrictionAppealResponse {
+  RestrictionAppeal appeal = 1;
+}
+
+message ListRestrictionAppealsRequest {
+  RestrictionAppealStatus status = 1;
+  string user_id = 2;
+}
+
+message ListRestrictionAppealsResponse {
+  repeated RestrictionAppeal appeals = 1;
+}
+
+message DecideRestrictionAppealRequest {
+  string appeal_id = 1;
+  string actor_staff_id = 2;
+  RestrictionAppealDecision decision = 3;
+  string reason_code = 4;
+  string staff_comment = 5;
+  string decision_event_id = 6;
+}
+
+message DecideRestrictionAppealResponse {
+  RestrictionAppeal appeal = 1;
 }

@@ -21,6 +21,7 @@ class ServicesScreen extends StatelessWidget {
     final services = buildTravelServiceCatalog(l10n);
 
     return Scaffold(
+      key: const ValueKey('services-screen'),
       backgroundColor: const Color(0xFF160D07),
       bottomNavigationBar: CommonBottomNavigationBar(
         activeItem: AppBottomNavItem.services,

@@ -95,6 +95,7 @@ func authContextMiddleware(cfg *config.Config, next http.Handler) http.Handler {
 		userID := strings.TrimSpace(r.Header.Get(userIDHeader))
 		roles := splitCSV(strings.TrimSpace(r.Header.Get(rolesHeader)))
 		subject := strings.TrimSpace(r.Header.Get(subjectHeader))
+		hasInternalToken := hasValidInternalServiceToken(cfg, r)
 
 		ctx := r.Context()
 		if userID != "" {
@@ -108,7 +109,7 @@ func authContextMiddleware(cfg *config.Config, next http.Handler) http.Handler {
 		}
 
 		if cfg.Security.RequireAuthenticatedWrites && isWriteMethod(r.Method) {
-			if subject == "" {
+			if subject == "" && !hasInternalToken {
 				writeError(w, http.StatusUnauthorized, "missing authenticated subject")
 				return
 			}
@@ -116,6 +117,18 @@ func authContextMiddleware(cfg *config.Config, next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func hasValidInternalServiceToken(cfg *config.Config, r *http.Request) bool {
+	expected := strings.TrimSpace(cfg.Security.InternalServiceToken)
+	if expected == "" {
+		return false
+	}
+	token := strings.TrimSpace(r.Header.Get("X-Internal-Service-Token"))
+	if token == "" {
+		token = bearerToken(r.Header.Get("Authorization"))
+	}
+	return token == expected
 }
 
 func fraudSignalsMiddleware(next http.Handler) http.Handler {

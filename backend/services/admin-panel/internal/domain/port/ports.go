@@ -88,6 +88,12 @@ type TrustRestrictionEventClient interface {
 	ApplyUserRestrictionEvent(ctx context.Context, event model.UserRestrictionOutboxEvent) (bool, error)
 }
 
+type TrustRestrictionAppealClient interface {
+	ListRestrictionAppeals(ctx context.Context, filter model.TrustRestrictionAppealFilter) (model.TrustRestrictionAppealListPage, error)
+	GetRestrictionAppeal(ctx context.Context, id uuid.UUID) (model.TrustRestrictionAppeal, error)
+	DecideRestrictionAppeal(ctx context.Context, input model.TrustRestrictionAppealDecisionInput) (model.TrustRestrictionAppeal, error)
+}
+
 type ModerationRepository interface {
 	UpsertExcursionCase(ctx context.Context, item model.ExcursionModerationItem) (*model.ModerationCase, error)
 	CancelStaleExcursionCases(ctx context.Context, activeTargetIDs []uuid.UUID, now time.Time) error
@@ -97,6 +103,10 @@ type ModerationRepository interface {
 	CancelStaleGuideApplicationCases(ctx context.Context, activeTargetIDs []uuid.UUID, now time.Time) error
 	UpsertChatMessageCase(ctx context.Context, item model.ChatMessageModerationItem) (*model.ModerationCase, error)
 	CancelStaleChatMessageCases(ctx context.Context, activeTargetIDs []uuid.UUID, now time.Time) error
+	UpsertPostReportCase(ctx context.Context, item model.PostReportModerationItem) (*model.ModerationCase, error)
+	CancelStalePostReportCases(ctx context.Context, activeTargetIDs []uuid.UUID, now time.Time) error
+	UpsertStoryCase(ctx context.Context, item model.PostModerationItem) (*model.ModerationCase, error)
+	CancelStaleStoryCases(ctx context.Context, activeTargetIDs []uuid.UUID, now time.Time) error
 	ListCases(ctx context.Context, filter model.ModerationQueueFilter) ([]*model.ModerationCase, error)
 	GetCase(ctx context.Context, id uuid.UUID) (*model.ModerationCase, error)
 	ListDecisions(ctx context.Context, caseID uuid.UUID) ([]*model.ModerationDecision, error)
@@ -174,6 +184,82 @@ type ChatClient interface {
 	HideMessage(ctx context.Context, input ChatMessageDecisionInput) (*model.ChatMessageModerationItem, []byte, error)
 }
 
+type PostReportClient interface {
+	ListOpenReports(ctx context.Context, limit int, offset int) ([]model.PostReportModerationItem, error)
+	ListPendingCommunityPosts(ctx context.Context, limit int, offset int) ([]model.PostModerationItem, error)
+	GetReport(ctx context.Context, id uuid.UUID) (*model.PostReportModerationItem, error)
+	GetCommunityPost(ctx context.Context, id uuid.UUID) (*model.PostModerationItem, error)
+	ReviewReport(ctx context.Context, input PostReportDecisionInput) (*model.PostReportModerationItem, []byte, error)
+	DismissReport(ctx context.Context, input PostReportDecisionInput) (*model.PostReportModerationItem, []byte, error)
+	ApproveCommunityPost(ctx context.Context, input CommunityPostDecisionInput) (*model.PostModerationItem, []byte, error)
+	RejectCommunityPost(ctx context.Context, input CommunityPostDecisionInput) (*model.PostModerationItem, []byte, error)
+}
+
+type CommunityAdminClient interface {
+	CreateCommunity(ctx context.Context, input CreateCommunityInput) (model.AdminCommunity, error)
+	GetCommunity(ctx context.Context, id uuid.UUID) (model.AdminCommunity, error)
+	UpdateCommunity(ctx context.Context, id uuid.UUID, input UpdateCommunityInput) (model.AdminCommunity, error)
+	CommunityPlatformCatalog(ctx context.Context, input CommunityPlatformCatalogInput) (model.CommunityPlatformCatalog, error)
+	MaterializeCommunityInstances(ctx context.Context, input MaterializeCommunityInstancesInput) (model.CommunityMaterializationResult, error)
+}
+
+type CreateCommunityInput struct {
+	ActorStaffID    uuid.UUID
+	Slug            string
+	TitleI18n       map[string]string
+	DescriptionI18n map[string]string
+	RulesI18n       map[string][]string
+	Topic           string
+	CityID          *string
+	CountryCode     *string
+	AvatarFileID    *uuid.UUID
+	CoverFileID     *uuid.UUID
+	Visibility      string
+	PostingPolicy   string
+	Status          string
+	RequestID       string
+}
+
+type UpdateCommunityInput struct {
+	ActorStaffID    uuid.UUID
+	Slug            string
+	TitleI18n       map[string]string
+	DescriptionI18n map[string]string
+	RulesI18n       map[string][]string
+	Topic           string
+	CityID          *string
+	CountryCode     *string
+	AvatarFileID    *uuid.UUID
+	CoverFileID     *uuid.UUID
+	Visibility      string
+	PostingPolicy   string
+	Status          string
+	RequestID       string
+}
+
+type CommunityPlatformCatalogInput struct {
+	CountryCode string
+	CityID      string
+	ScopeType   string
+	Search      string
+	Limit       int
+	Offset      int
+}
+
+type MaterializeCommunityInstancesInput struct {
+	ActorStaffID uuid.UUID
+	BlueprintID  uuid.UUID
+	CountryCode  string
+	CityID       string
+	ScopeType    string
+	Limit        int
+	RequestID    string
+}
+
+type FeedQualityClient interface {
+	ListFeedQualityMetrics(ctx context.Context, filter model.FeedQualityMetricFilter) ([]model.FeedQualityMetric, error)
+}
+
 type AntiFraudClient interface {
 	ListFraudBlocks(ctx context.Context, target model.FraudBlockTarget, limit int, offset int) ([]model.FraudBlock, error)
 	ReviewFraudBlock(ctx context.Context, input model.FraudBlockReviewInput) (*model.FraudBlock, error)
@@ -184,6 +270,22 @@ type ChatMessageDecisionInput struct {
 	ActorStaffID    uuid.UUID
 	ReasonCodes     []string
 	PublicComment   string
+	InternalComment string
+	IdempotencyKey  string
+	RequestID       string
+}
+
+type PostReportDecisionInput struct {
+	ReportID        uuid.UUID
+	ActorStaffID    uuid.UUID
+	InternalComment string
+	IdempotencyKey  string
+	RequestID       string
+}
+
+type CommunityPostDecisionInput struct {
+	PostID          uuid.UUID
+	ActorStaffID    uuid.UUID
 	InternalComment string
 	IdempotencyKey  string
 	RequestID       string

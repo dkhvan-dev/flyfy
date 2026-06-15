@@ -49,8 +49,8 @@ func (r *PGChatRepository) WithTx(ctx context.Context, fn func(repo port.ChatTxR
 
 const conversationColumns = `id, type, title, avatar_file_id, activity_id, excursion_schedule_slot_id, pinned_message_id, messaging_available_until, created_at, last_activity_at`
 const conversationSelectColumns = `c.id, c.type, c.title, c.avatar_file_id, c.activity_id, c.excursion_schedule_slot_id, c.pinned_message_id, c.messaging_available_until, c.created_at, c.last_activity_at`
-const messageColumns = `id, conversation_id, sender_user_id, client_message_id, type, content, sticker_id, sticker_file_id, sticker_payload, reply_to_message_id, forwarded_from_message_id, forwarded_from_sender_user_id, forwarded_from_sender_name, forward_count, edited_at, deleted_at, moderation_status, moderation_reason_codes, moderation_risk_score, moderation_triggered_at, moderation_reviewed_at, moderation_reviewed_by, moderation_public_comment, moderation_internal_comment, moderation_revision, sent_at`
-const messageSelectColumns = `m.id, m.conversation_id, m.sender_user_id, m.client_message_id, m.type, m.content, m.sticker_id, m.sticker_file_id, m.sticker_payload, m.reply_to_message_id, m.forwarded_from_message_id, m.forwarded_from_sender_user_id, m.forwarded_from_sender_name, m.forward_count, m.edited_at, m.deleted_at, m.moderation_status, m.moderation_reason_codes, m.moderation_risk_score, m.moderation_triggered_at, m.moderation_reviewed_at, m.moderation_reviewed_by, m.moderation_public_comment, m.moderation_internal_comment, m.moderation_revision, m.sent_at`
+const messageColumns = `id, conversation_id, sender_user_id, client_message_id, type, content, sticker_id, sticker_file_id, sticker_payload, reply_to_message_id, story_reply, forwarded_from_message_id, forwarded_from_sender_user_id, forwarded_from_sender_name, forward_count, edited_at, deleted_at, moderation_status, moderation_reason_codes, moderation_risk_score, moderation_triggered_at, moderation_reviewed_at, moderation_reviewed_by, moderation_public_comment, moderation_internal_comment, moderation_revision, sent_at`
+const messageSelectColumns = `m.id, m.conversation_id, m.sender_user_id, m.client_message_id, m.type, m.content, m.sticker_id, m.sticker_file_id, m.sticker_payload, m.reply_to_message_id, m.story_reply, m.forwarded_from_message_id, m.forwarded_from_sender_user_id, m.forwarded_from_sender_name, m.forward_count, m.edited_at, m.deleted_at, m.moderation_status, m.moderation_reason_codes, m.moderation_risk_score, m.moderation_triggered_at, m.moderation_reviewed_at, m.moderation_reviewed_by, m.moderation_public_comment, m.moderation_internal_comment, m.moderation_revision, m.sent_at`
 const chatNotificationOutboxColumns = `id, event_type, conversation_id, message_id, actor_user_id, reaction_emoji, attempts, next_attempt_at, locked_at, processed_at, failed_at, last_error, created_at, updated_at`
 
 func scanConversation(row pgx.Row) (*model.Conversation, error) {
@@ -146,6 +146,7 @@ func (r *PGChatRepository) ListConversationsByUserID(ctx context.Context, filter
 func scanMessage(row pgx.Row) (*model.Message, error) {
 	var m model.Message
 	var stickerPayload []byte
+	var storyReplyPayload []byte
 	var forwardedFromSenderName *string
 	var moderationStatus *string
 	var moderationReasonCodes []string
@@ -154,7 +155,7 @@ func scanMessage(row pgx.Row) (*model.Message, error) {
 	err := row.Scan(
 		&m.ID, &m.ConversationID, &m.SenderUserID, &m.ClientMessageID, &m.Type, &m.Content,
 		&m.StickerID, &m.StickerFileID, &stickerPayload,
-		&m.ReplyToMessageID, &m.ForwardedFromMessageID,
+		&m.ReplyToMessageID, &storyReplyPayload, &m.ForwardedFromMessageID,
 		&m.ForwardedFromSenderUserID, &forwardedFromSenderName,
 		&m.ForwardCount, &m.EditedAt, &m.DeletedAt,
 		&moderationStatus, &moderationReasonCodes, &m.ModerationRiskScore,
@@ -169,6 +170,7 @@ func scanMessage(row pgx.Row) (*model.Message, error) {
 		return nil, fmt.Errorf("scan message: %w", err)
 	}
 	m.StickerPayload = decodeStickerPayload(stickerPayload)
+	m.StoryReply = decodeStoryReplyContext(storyReplyPayload)
 	if forwardedFromSenderName != nil {
 		m.ForwardedFromSenderName = *forwardedFromSenderName
 	}
@@ -252,6 +254,17 @@ func stickerPayloadJSON(payload *model.StickerPayload) any {
 	return data
 }
 
+func storyReplyContextJSON(context *model.StoryReplyContext) any {
+	if context == nil || context.IsZero() {
+		return nil
+	}
+	data, err := json.Marshal(context)
+	if err != nil {
+		return nil
+	}
+	return data
+}
+
 func nullableString(value string) *string {
 	trimmed := strings.TrimSpace(value)
 	if trimmed == "" {
@@ -288,6 +301,17 @@ func decodeStickerPayload(data []byte) *model.StickerPayload {
 	}
 	var payload model.StickerPayload
 	if err := json.Unmarshal(data, &payload); err != nil {
+		return nil
+	}
+	return &payload
+}
+
+func decodeStoryReplyContext(data []byte) *model.StoryReplyContext {
+	if len(data) == 0 {
+		return nil
+	}
+	var payload model.StoryReplyContext
+	if err := json.Unmarshal(data, &payload); err != nil || payload.IsZero() {
 		return nil
 	}
 	return &payload
@@ -364,6 +388,7 @@ func (r *PGChatRepository) ListMessages(ctx context.Context, filter port.Message
 	for rows.Next() {
 		var m model.Message
 		var stickerPayload []byte
+		var storyReplyPayload []byte
 		var forwardedFromSenderName *string
 		var moderationStatus *string
 		var moderationReasonCodes []string
@@ -372,7 +397,7 @@ func (r *PGChatRepository) ListMessages(ctx context.Context, filter port.Message
 		if err := rows.Scan(
 			&m.ID, &m.ConversationID, &m.SenderUserID, &m.ClientMessageID, &m.Type, &m.Content,
 			&m.StickerID, &m.StickerFileID, &stickerPayload,
-			&m.ReplyToMessageID, &m.ForwardedFromMessageID,
+			&m.ReplyToMessageID, &storyReplyPayload, &m.ForwardedFromMessageID,
 			&m.ForwardedFromSenderUserID, &forwardedFromSenderName,
 			&m.ForwardCount, &m.EditedAt, &m.DeletedAt,
 			&moderationStatus, &moderationReasonCodes, &m.ModerationRiskScore,
@@ -383,6 +408,7 @@ func (r *PGChatRepository) ListMessages(ctx context.Context, filter port.Message
 			return nil, fmt.Errorf("scan message row: %w", err)
 		}
 		m.StickerPayload = decodeStickerPayload(stickerPayload)
+		m.StoryReply = decodeStoryReplyContext(storyReplyPayload)
 		if forwardedFromSenderName != nil {
 			m.ForwardedFromSenderName = *forwardedFromSenderName
 		}
@@ -615,6 +641,7 @@ func (r *PGChatRepository) ListPinnedMessagesByConversationID(
 	for rows.Next() {
 		pin := &model.ConversationPin{Message: &model.Message{}}
 		var stickerPayload []byte
+		var storyReplyPayload []byte
 		var forwardedFromSenderName *string
 		var moderationStatus *string
 		var moderationReasonCodes []string
@@ -636,6 +663,7 @@ func (r *PGChatRepository) ListPinnedMessagesByConversationID(
 			&pin.Message.StickerFileID,
 			&stickerPayload,
 			&pin.Message.ReplyToMessageID,
+			&storyReplyPayload,
 			&pin.Message.ForwardedFromMessageID,
 			&pin.Message.ForwardedFromSenderUserID,
 			&forwardedFromSenderName,
@@ -656,6 +684,7 @@ func (r *PGChatRepository) ListPinnedMessagesByConversationID(
 			return nil, fmt.Errorf("scan pinned message: %w", err)
 		}
 		pin.Message.StickerPayload = decodeStickerPayload(stickerPayload)
+		pin.Message.StoryReply = decodeStoryReplyContext(storyReplyPayload)
 		if forwardedFromSenderName != nil {
 			pin.Message.ForwardedFromSenderName = *forwardedFromSenderName
 		}
@@ -885,6 +914,7 @@ func (r *PGChatRepository) UpdateMessageModeration(
 func scanMessageWithTrailingConversation(row pgx.Row) (*model.ChatMessageModerationItem, error) {
 	var message model.Message
 	var stickerPayload []byte
+	var storyReplyPayload []byte
 	var forwardedFromSenderName *string
 	var moderationStatus *string
 	var moderationReasonCodes []string
@@ -896,7 +926,7 @@ func scanMessageWithTrailingConversation(row pgx.Row) (*model.ChatMessageModerat
 		&message.ID, &message.ConversationID, &message.SenderUserID, &message.ClientMessageID,
 		&message.Type, &message.Content,
 		&message.StickerID, &message.StickerFileID, &stickerPayload,
-		&message.ReplyToMessageID, &message.ForwardedFromMessageID,
+		&message.ReplyToMessageID, &storyReplyPayload, &message.ForwardedFromMessageID,
 		&message.ForwardedFromSenderUserID, &forwardedFromSenderName,
 		&message.ForwardCount, &message.EditedAt, &message.DeletedAt,
 		&moderationStatus, &moderationReasonCodes, &message.ModerationRiskScore,
@@ -915,6 +945,7 @@ func scanMessageWithTrailingConversation(row pgx.Row) (*model.ChatMessageModerat
 		message.ForwardedFromSenderName = *forwardedFromSenderName
 	}
 	message.StickerPayload = decodeStickerPayload(stickerPayload)
+	message.StoryReply = decodeStoryReplyContext(storyReplyPayload)
 	message.ModerationStatus = model.MessageModerationStatusVisible
 	if moderationStatus != nil && strings.TrimSpace(*moderationStatus) != "" {
 		message.ModerationStatus = strings.TrimSpace(*moderationStatus)
@@ -1430,7 +1461,7 @@ func (tx *pgChatTxRepository) CreateMessage(ctx context.Context, msg *model.Mess
 	_, err := tx.tx.Exec(ctx, `
 		INSERT INTO messages (
 			id, conversation_id, sender_user_id, client_message_id, type, content, sticker_id,
-			sticker_file_id, sticker_payload, reply_to_message_id,
+			sticker_file_id, sticker_payload, reply_to_message_id, story_reply,
 			forwarded_from_message_id, forwarded_from_sender_user_id,
 			forwarded_from_sender_name, forward_count, edited_at, deleted_at,
 			moderation_status, moderation_reason_codes, moderation_risk_score,
@@ -1439,10 +1470,10 @@ func (tx *pgChatTxRepository) CreateMessage(ctx context.Context, msg *model.Mess
 			sent_at
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
-		        $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
+		        $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)
 	`, msg.ID, msg.ConversationID, msg.SenderUserID, msg.ClientMessageID,
 		msg.Type, msg.Content, msg.StickerID, msg.StickerFileID, stickerPayloadJSON(msg.StickerPayload),
-		msg.ReplyToMessageID, msg.ForwardedFromMessageID,
+		msg.ReplyToMessageID, storyReplyContextJSON(msg.StoryReply), msg.ForwardedFromMessageID,
 		msg.ForwardedFromSenderUserID, nullableString(msg.ForwardedFromSenderName),
 		msg.ForwardCount, msg.EditedAt, msg.DeletedAt,
 		defaultMessageModerationStatus(msg.ModerationStatus),

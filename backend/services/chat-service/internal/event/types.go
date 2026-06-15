@@ -24,22 +24,32 @@ func New(eventType string, conversationID uuid.UUID, payload any) Event {
 }
 
 type MessageSentPayload struct {
-	MessageID                 uuid.UUID  `json:"messageId"`
-	ClientMessageID           *uuid.UUID `json:"clientMessageId,omitempty"`
-	SenderUserID              uuid.UUID  `json:"senderUserId"`
-	SenderDisplayName         string     `json:"senderDisplayName"`
-	SenderAvatarFileID        *string    `json:"senderAvatarFileId,omitempty"`
-	Type                      string     `json:"type"`
-	Content                   string     `json:"content"`
-	FileIDs                   []string   `json:"fileIds,omitempty"`
-	StickerID                 *uuid.UUID `json:"stickerId,omitempty"`
-	StickerFileID             *string    `json:"stickerFileId,omitempty"`
-	ReplyToMessageID          *uuid.UUID `json:"replyToMessageId,omitempty"`
-	ForwardedFromMessageID    *uuid.UUID `json:"forwardedFromMessageId,omitempty"`
-	ForwardedFromSenderUserID *uuid.UUID `json:"forwardedFromSenderUserId,omitempty"`
-	ForwardedFromSenderName   string     `json:"forwardedFromSenderName,omitempty"`
-	ForwardCount              int        `json:"forwardCount"`
-	SentAt                    time.Time  `json:"sentAt"`
+	MessageID                 uuid.UUID                 `json:"messageId"`
+	ClientMessageID           *uuid.UUID                `json:"clientMessageId,omitempty"`
+	SenderUserID              uuid.UUID                 `json:"senderUserId"`
+	SenderDisplayName         string                    `json:"senderDisplayName"`
+	SenderAvatarFileID        *string                   `json:"senderAvatarFileId,omitempty"`
+	Type                      string                    `json:"type"`
+	Content                   string                    `json:"content"`
+	FileIDs                   []string                  `json:"fileIds,omitempty"`
+	StickerID                 *uuid.UUID                `json:"stickerId,omitempty"`
+	StickerFileID             *string                   `json:"stickerFileId,omitempty"`
+	ReplyToMessageID          *uuid.UUID                `json:"replyToMessageId,omitempty"`
+	StoryReply                *StoryReplyContextPayload `json:"storyReply,omitempty"`
+	ForwardedFromMessageID    *uuid.UUID                `json:"forwardedFromMessageId,omitempty"`
+	ForwardedFromSenderUserID *uuid.UUID                `json:"forwardedFromSenderUserId,omitempty"`
+	ForwardedFromSenderName   string                    `json:"forwardedFromSenderName,omitempty"`
+	ForwardCount              int                       `json:"forwardCount"`
+	SentAt                    time.Time                 `json:"sentAt"`
+}
+
+type StoryReplyContextPayload struct {
+	StoryID            string     `json:"storyId"`
+	StoryAuthorUserID  string     `json:"storyAuthorUserId"`
+	StoryTitle         string     `json:"storyTitle,omitempty"`
+	StoryPreviewFileID string     `json:"storyPreviewFileId,omitempty"`
+	StoryPreviewURL    string     `json:"storyPreviewUrl,omitempty"`
+	StoryExpiresAt     *time.Time `json:"storyExpiresAt,omitempty"`
 }
 
 type MessageForwardedPayload struct {

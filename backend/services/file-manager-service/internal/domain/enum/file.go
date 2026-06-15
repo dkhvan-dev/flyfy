@@ -42,7 +42,9 @@ const (
 	FilePurposeAvatar                FilePurpose = "AVATAR"
 	FilePurposeGuideVerificationDoc  FilePurpose = "GUIDE_VERIFICATION_DOC"
 	FilePurposeActivityMedia         FilePurpose = "ACTIVITY_MEDIA"
+	FilePurposePostMedia             FilePurpose = "POST_MEDIA"
 	FilePurposeStoryMedia            FilePurpose = "STORY_MEDIA"
+	FilePurposeCommunityMedia        FilePurpose = "COMMUNITY_MEDIA"
 	FilePurposeExcursionMedia        FilePurpose = "EXCURSION_MEDIA"
 	FilePurposeAttractionMedia       FilePurpose = "ATTRACTION_MEDIA"
 	FilePurposeAttractionReviewMedia FilePurpose = "ATTRACTION_REVIEW_MEDIA"
@@ -56,7 +58,9 @@ func (p FilePurpose) IsValid() bool {
 	case FilePurposeAvatar,
 		FilePurposeGuideVerificationDoc,
 		FilePurposeActivityMedia,
+		FilePurposePostMedia,
 		FilePurposeStoryMedia,
+		FilePurposeCommunityMedia,
 		FilePurposeExcursionMedia,
 		FilePurposeAttractionMedia,
 		FilePurposeAttractionReviewMedia,
@@ -76,7 +80,9 @@ const (
 	OwnerTypeGuideProfile             OwnerType = "GUIDE_PROFILE"
 	OwnerTypeGuideVerificationRequest OwnerType = "GUIDE_VERIFICATION_REQUEST"
 	OwnerTypeActivity                 OwnerType = "ACTIVITY"
+	OwnerTypePost                     OwnerType = "POST"
 	OwnerTypeStory                    OwnerType = "STORY"
+	OwnerTypeCommunity                OwnerType = "COMMUNITY"
 	OwnerTypeAttraction               OwnerType = "ATTRACTION"
 	OwnerTypeExcursion                OwnerType = "EXCURSION"
 	OwnerTypeOrganization             OwnerType = "ORGANIZATION"
@@ -88,7 +94,9 @@ func (o OwnerType) IsValid() bool {
 		OwnerTypeGuideProfile,
 		OwnerTypeGuideVerificationRequest,
 		OwnerTypeActivity,
+		OwnerTypePost,
 		OwnerTypeStory,
+		OwnerTypeCommunity,
 		OwnerTypeAttraction,
 		OwnerTypeExcursion,
 		OwnerTypeOrganization:

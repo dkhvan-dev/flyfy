@@ -16,6 +16,7 @@ import '../../features/attractions/data/attraction_api.dart';
 import '../../features/attractions/models/attraction_vm.dart';
 import '../../features/profile/profile_completion_gate.dart';
 import '../../features/profile/profile_guard_result.dart';
+import '../../features/feed/widgets/contextual_story_tray.dart';
 import '../../features/excursions/models/excursion_vm.dart';
 import '../../features/excursions/excursion_cover_url.dart';
 import '../../features/excursions/excursion_localization.dart';
@@ -658,8 +659,10 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final auth = context.watch<AuthProvider>();
     final profile = context.watch<SessionProvider>().profile;
     final locationProvider = context.watch<HomeLocationProvider>();
+    final isLoggedIn = auth.state == AuthState.authenticated;
     final canCreateExcursion = profile?.isGuide == true;
 
     _scheduleApplyDefaultCityFilter(locationProvider);
@@ -735,7 +738,16 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
                                   onFilterTap: _showFilters,
                                   activeFilterCount: _filters.activeCount,
                                 ),
-                                const SizedBox(height: 26),
+                                const SizedBox(height: 18),
+                                if (isLoggedIn) ...[
+                                  SurfaceStoryTray(
+                                    surface: 'excursions',
+                                    viewerAvatarFileId: profile?.avatarFileId,
+                                    viewerInitials: profile?.initials ?? 'F',
+                                    viewerUserId: profile?.userId,
+                                  ),
+                                  const SizedBox(height: 22),
+                                ],
                                 const Divider(
                                   height: 1,
                                   color: Color(0x1AFFFFFF),
@@ -1119,7 +1131,7 @@ class ExcursionsBottomNavigation extends StatelessWidget {
 
     return CommonBottomNavigationBar(
       onHomeTap: onHomeTap,
-      onQrTap: onQrTap,
+      onQrTap: () => context.push('/qr'),
       onMapTap: onMapTap,
       onServicesTap: onServicesTap,
       onChatsTap: onChatsTap,

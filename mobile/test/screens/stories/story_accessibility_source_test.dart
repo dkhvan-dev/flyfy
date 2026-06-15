@@ -17,7 +17,7 @@ void main() {
     expect(cardSource, contains('Semantics('));
     expect(cardSource, contains('button: true'));
     expect(cardSource, contains('label: story.title'));
-    expect(cardSource, contains('onTap: onTap'));
+    expect(cardSource, contains('onTap: state.disablesEntry ? null : onTap'));
 
     final navStart = source.indexOf('class _StoriesNavButton');
     expect(navStart, isNonNegative);

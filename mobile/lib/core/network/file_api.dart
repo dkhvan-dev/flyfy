@@ -13,6 +13,36 @@ String? resolvePublicFileContentUrl(String fileId) {
   return '${AppConfig.apiBaseUrl}/public/files/$trimmed/content';
 }
 
+String? resolvePublicFileContentUrlFromResponse({
+  String? fileId,
+  String? contentUrl,
+}) {
+  final normalizedContentUrl = resolveApiRelativeUrl(contentUrl);
+  if (normalizedContentUrl != null) {
+    return normalizedContentUrl;
+  }
+  return resolvePublicFileContentUrl(fileId ?? '');
+}
+
+String? resolveApiRelativeUrl(String? value) {
+  final trimmed = (value ?? '').trim();
+  if (trimmed.isEmpty) {
+    return null;
+  }
+
+  final uri = Uri.tryParse(trimmed);
+  if (uri != null && uri.hasScheme && uri.hasAuthority) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith('/')) {
+    final origin = Uri.parse(AppConfig.apiBaseUrl).origin;
+    return '$origin$trimmed';
+  }
+
+  return '${AppConfig.apiBaseUrl}/$trimmed';
+}
+
 class FileApi {
   FileApi({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();
 
@@ -46,6 +76,20 @@ class FileApi {
     );
   }
 
+  Future<FileUploadRequestVm> createPostCoverUpload({
+    required String originalName,
+    required String contentType,
+    required int sizeBytes,
+  }) async {
+    return _createUploadRequest(
+      originalName: originalName,
+      contentType: contentType,
+      sizeBytes: sizeBytes,
+      purpose: 'POST_MEDIA',
+      visibility: 'PUBLIC',
+    );
+  }
+
   Future<FileUploadRequestVm> createStoryInlineImageUpload({
     required String originalName,
     required String contentType,
@@ -56,6 +100,20 @@ class FileApi {
       contentType: contentType,
       sizeBytes: sizeBytes,
       purpose: 'STORY_MEDIA',
+      visibility: 'PUBLIC',
+    );
+  }
+
+  Future<FileUploadRequestVm> createPostInlineImageUpload({
+    required String originalName,
+    required String contentType,
+    required int sizeBytes,
+  }) async {
+    return _createUploadRequest(
+      originalName: originalName,
+      contentType: contentType,
+      sizeBytes: sizeBytes,
+      purpose: 'POST_MEDIA',
       visibility: 'PUBLIC',
     );
   }

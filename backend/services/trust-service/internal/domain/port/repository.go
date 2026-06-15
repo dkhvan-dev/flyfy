@@ -20,5 +20,10 @@ type TrustRepository interface {
 	HasProcessedEvent(ctx context.Context, eventID uuid.UUID) (bool, error)
 	MarkProcessedEvent(ctx context.Context, eventID uuid.UUID, eventType string, occurredAt time.Time) error
 	UpsertRuntimeRestriction(ctx context.Context, restriction model.RuntimeRestriction) error
+	GetRuntimeRestrictionByID(ctx context.Context, restrictionID uuid.UUID) (model.RuntimeRestriction, error)
 	LiftRuntimeRestriction(ctx context.Context, restrictionID uuid.UUID, eventID uuid.UUID, liftedBy *uuid.UUID, liftedAt time.Time, reasonCode string) error
+	CreateRestrictionAppeal(ctx context.Context, appeal model.RestrictionAppeal) (model.RestrictionAppeal, error)
+	GetRestrictionAppeal(ctx context.Context, appealID uuid.UUID) (model.RestrictionAppeal, error)
+	ListRestrictionAppeals(ctx context.Context, input model.ListRestrictionAppealsInput) ([]model.RestrictionAppeal, error)
+	SaveRestrictionAppealDecision(ctx context.Context, appeal model.RestrictionAppeal) (model.RestrictionAppeal, error)
 }

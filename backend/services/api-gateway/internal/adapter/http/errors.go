@@ -15,6 +15,8 @@ const (
 	errorCodeAuthRequired        = "gateway.auth_required"
 	errorCodeInvalidAccessToken  = "gateway.invalid_access_token"
 	errorCodeInsufficientRole    = "gateway.insufficient_role"
+	errorCodeInvalidRequest      = "gateway.invalid_request"
+	errorCodeResourceNotFound    = "gateway.resource_not_found"
 	errorCodeUpstreamUnavailable = "gateway.downstream_unavailable"
 	errorCodeUserResolution      = "gateway.user_resolution_failed"
 	errorCodeTechnical           = "gateway.technical"
@@ -54,6 +56,14 @@ var localizedErrors = map[string]map[string]localizedError{
 			title:   "Недостаточно прав",
 			message: "У вас нет доступа к этому действию.",
 		},
+		errorCodeInvalidRequest: {
+			title:   "Некорректный запрос",
+			message: "Проверьте данные и повторите запрос.",
+		},
+		errorCodeResourceNotFound: {
+			title:   "Данные не найдены",
+			message: "Запрошенный объект не найден.",
+		},
 		errorCodeUpstreamUnavailable: {
 			title:   "Техническая ошибка",
 			message: "На сервере возникла проблема. Попробуйте позже.",
@@ -88,6 +98,14 @@ var localizedErrors = map[string]map[string]localizedError{
 			title:   "Insufficient permissions",
 			message: "You do not have access to this action.",
 		},
+		errorCodeInvalidRequest: {
+			title:   "Invalid request",
+			message: "Check the request data and try again.",
+		},
+		errorCodeResourceNotFound: {
+			title:   "Not found",
+			message: "The requested resource was not found.",
+		},
 		errorCodeUpstreamUnavailable: {
 			title:   "Technical error",
 			message: "A server problem occurred. Please try again later.",
@@ -121,6 +139,14 @@ var localizedErrors = map[string]map[string]localizedError{
 		errorCodeInsufficientRole: {
 			title:   "Құқық жеткіліксіз",
 			message: "Бұл әрекетке қол жеткізу құқығыңыз жоқ.",
+		},
+		errorCodeInvalidRequest: {
+			title:   "Сұрау қате",
+			message: "Деректерді тексеріп, қайта көріңіз.",
+		},
+		errorCodeResourceNotFound: {
+			title:   "Деректер табылмады",
+			message: "Сұралған объект табылмады.",
 		},
 		errorCodeUpstreamUnavailable: {
 			title:   "Техникалық қате",

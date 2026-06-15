@@ -2,9 +2,12 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../core/ui/app_colors.dart';
 import '../../l10n/generated/app_localizations.dart';
+import 'models/post_vm.dart';
+import 'models/story_vm.dart';
 
 class StoryAdaptive {
   StoryAdaptive._({
@@ -124,6 +127,208 @@ String formatStoryCountCompact(int value) {
   return value.toString();
 }
 
+enum StoryEntryState { available, seen, expired, pending, hidden }
+
+extension StoryEntryStateX on StoryEntryState {
+  bool get disablesEntry {
+    return switch (this) {
+      StoryEntryState.expired ||
+      StoryEntryState.pending ||
+      StoryEntryState.hidden => true,
+      StoryEntryState.available || StoryEntryState.seen => false,
+    };
+  }
+
+  String get keySuffix {
+    return switch (this) {
+      StoryEntryState.available => 'available',
+      StoryEntryState.seen => 'seen',
+      StoryEntryState.expired => 'expired',
+      StoryEntryState.pending => 'pending',
+      StoryEntryState.hidden => 'hidden',
+    };
+  }
+
+  IconData get icon {
+    return switch (this) {
+      StoryEntryState.available => Icons.auto_stories_outlined,
+      StoryEntryState.seen => Icons.check_rounded,
+      StoryEntryState.expired => Icons.schedule_rounded,
+      StoryEntryState.pending => Icons.hourglass_top_rounded,
+      StoryEntryState.hidden => Icons.visibility_off_rounded,
+    };
+  }
+
+  Color get foreground {
+    return switch (this) {
+      StoryEntryState.available => StoryPalette.textSoft,
+      StoryEntryState.seen => const Color(0xFF072012),
+      StoryEntryState.expired => const Color(0xFFFFE4C4),
+      StoryEntryState.pending => const Color(0xFF2B1A05),
+      StoryEntryState.hidden => const Color(0xFFFFE4E4),
+    };
+  }
+
+  Color background(BuildContext context) {
+    return switch (this) {
+      StoryEntryState.available => Colors.transparent,
+      StoryEntryState.seen => AppColors.success,
+      StoryEntryState.expired => Colors.black.withValues(alpha: 0.64),
+      StoryEntryState.pending => const Color(0xFFF2B84B),
+      StoryEntryState.hidden => AppColors.destructive.withValues(alpha: 0.88),
+    };
+  }
+
+  String label(AppLocalizations l10n) {
+    return switch (this) {
+      StoryEntryState.available => '',
+      StoryEntryState.seen => l10n.storyStateSeenLabel,
+      StoryEntryState.expired => l10n.storyStateExpiredLabel,
+      StoryEntryState.pending => l10n.storyStatePendingLabel,
+      StoryEntryState.hidden => l10n.storyStateHiddenLabel,
+    };
+  }
+}
+
+StoryEntryState resolveStoryEntryState(StoryVm story) {
+  final status = story.status.trim().toUpperCase();
+  final moderationStatus = story.moderationStatus.trim().toUpperCase();
+  if (_isHiddenStoryState(status) || _isHiddenStoryState(moderationStatus)) {
+    return StoryEntryState.hidden;
+  }
+  if (story.isExpired) {
+    return StoryEntryState.expired;
+  }
+  if (_isPendingStoryState(status) || _isPendingStoryState(moderationStatus)) {
+    return StoryEntryState.pending;
+  }
+  if (story.isSeenByViewer) {
+    return StoryEntryState.seen;
+  }
+  return StoryEntryState.available;
+}
+
+StoryEntryState resolvePostEntryState(PostVm post) {
+  final status = post.status.trim().toUpperCase();
+  final moderationStatus = post.moderationStatus.trim().toUpperCase();
+  if (_isHiddenStoryState(status) || _isHiddenStoryState(moderationStatus)) {
+    return StoryEntryState.hidden;
+  }
+  if (_isPendingStoryState(status) || _isPendingStoryState(moderationStatus)) {
+    return StoryEntryState.pending;
+  }
+  if (post.isSeenByViewer) {
+    return StoryEntryState.seen;
+  }
+  return StoryEntryState.available;
+}
+
+bool _isHiddenStoryState(String value) {
+  return value == 'HIDDEN' ||
+      value == 'AUTO_HIDDEN' ||
+      value == 'TAKEN_DOWN' ||
+      value == 'REMOVED';
+}
+
+bool _isPendingStoryState(String value) {
+  return value == 'PENDING' ||
+      value == 'PENDING_REVIEW' ||
+      value == 'IN_REVIEW' ||
+      value == 'QUEUED';
+}
+
+class StoryStateAffordance extends StatelessWidget {
+  const StoryStateAffordance({
+    super.key,
+    required this.state,
+    this.compact = false,
+  });
+
+  factory StoryStateAffordance.fromStory(
+    StoryVm story, {
+    Key? key,
+    bool compact = false,
+  }) {
+    return StoryStateAffordance(
+      key: key,
+      state: resolveStoryEntryState(story),
+      compact: compact,
+    );
+  }
+
+  factory StoryStateAffordance.fromPost(
+    PostVm post, {
+    Key? key,
+    bool compact = false,
+  }) {
+    return StoryStateAffordance(
+      key: key,
+      state: resolvePostEntryState(post),
+      compact: compact,
+    );
+  }
+
+  final StoryEntryState state;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    if (state == StoryEntryState.available) {
+      return const SizedBox.shrink();
+    }
+
+    final adaptive = StoryAdaptive.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final label = state.label(l10n);
+    final horizontalPadding = compact ? 8.0 : 10.0;
+    final verticalPadding = compact ? 5.0 : 7.0;
+
+    return Semantics(
+      label: label,
+      container: true,
+      child: Container(
+        key: ValueKey('story-state-pill-${state.keySuffix}'),
+        constraints: BoxConstraints(
+          maxWidth: adaptive.scale(compact ? 128 : 180),
+        ),
+        padding: EdgeInsets.symmetric(
+          horizontal: adaptive.scale(horizontalPadding),
+          vertical: adaptive.scale(verticalPadding),
+        ),
+        decoration: BoxDecoration(
+          color: state.background(context),
+          borderRadius: BorderRadius.circular(adaptive.radius(999)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              state.icon,
+              color: state.foreground,
+              size: adaptive.scale(compact ? 13 : 15),
+            ),
+            SizedBox(width: adaptive.scale(5)),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: state.foreground,
+                  fontSize: adaptive.scale(compact ? 11 : 12),
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 BoxDecoration storyScreenBackground() {
   return const BoxDecoration(
     gradient: LinearGradient(
@@ -216,6 +421,34 @@ class StoryAvatar extends StatelessWidget {
   }
 }
 
+class StorySeenMarker extends StatelessWidget {
+  const StorySeenMarker({super.key, this.size = 18});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.success,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: const Color(0xFF120B06).withValues(alpha: 0.82),
+          width: math.max(1.2, size * 0.08),
+        ),
+      ),
+      child: SizedBox.square(
+        dimension: size,
+        child: Icon(
+          Icons.check_rounded,
+          color: const Color(0xFF07140A),
+          size: size * 0.72,
+        ),
+      ),
+    );
+  }
+}
+
 class StoryCoverImage extends StatelessWidget {
   const StoryCoverImage({super.key, this.url});
 
@@ -255,18 +488,98 @@ class StoryCoverImage extends StatelessWidget {
         return const _StoryImageLoadingPlaceholder();
       },
       errorBuilder: (context, error, stackTrace) {
-        return const DecoratedBox(
-          decoration: BoxDecoration(color: Color(0xFF22160D)),
-          child: Center(
-            child: Icon(
-              Icons.broken_image_outlined,
-              color: Colors.white54,
-              size: 34,
-            ),
-          ),
-        );
+        return _StoryVideoCover(url: url!);
       },
     );
+  }
+}
+
+class _StoryVideoCover extends StatefulWidget {
+  const _StoryVideoCover({required this.url});
+
+  final String url;
+
+  @override
+  State<_StoryVideoCover> createState() => _StoryVideoCoverState();
+}
+
+class _StoryVideoCoverState extends State<_StoryVideoCover> {
+  VideoPlayerController? _controller;
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initialize();
+  }
+
+  @override
+  void didUpdateWidget(covariant _StoryVideoCover oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url) {
+      _controller?.dispose();
+      _controller = null;
+      _failed = false;
+      _initialize();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _initialize() async {
+    final controller = VideoPlayerController.networkUrl(Uri.parse(widget.url));
+    _controller = controller;
+    try {
+      await controller.initialize();
+      await controller.setLooping(true);
+      await controller.setVolume(0);
+      await controller.play();
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (_) {
+      await controller.dispose();
+      if (mounted) {
+        setState(() {
+          if (_controller == controller) {
+            _controller = null;
+          }
+          _failed = true;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = _controller;
+    if (controller != null && controller.value.isInitialized) {
+      return FittedBox(
+        fit: BoxFit.cover,
+        child: SizedBox(
+          width: controller.value.size.width,
+          height: controller.value.size.height,
+          child: VideoPlayer(controller),
+        ),
+      );
+    }
+    if (_failed) {
+      return const DecoratedBox(
+        decoration: BoxDecoration(color: Color(0xFF22160D)),
+        child: Center(
+          child: Icon(
+            Icons.broken_image_outlined,
+            color: Colors.white54,
+            size: 34,
+          ),
+        ),
+      );
+    }
+    return const _StoryImageLoadingPlaceholder();
   }
 }
 

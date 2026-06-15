@@ -1,3 +1,5 @@
+import '../../../core/network/file_api.dart';
+
 class MessageVm {
   final String id;
   final String? clientMessageId;
@@ -10,6 +12,7 @@ class MessageVm {
   final String? stickerId;
   final String? stickerFileId;
   final String? replyToMessageId;
+  final StoryReplyContextVm? storyReply;
   final String? forwardedFromMessageId;
   final String? forwardedFromSenderUserId;
   final String? forwardedFromSenderName;
@@ -34,6 +37,7 @@ class MessageVm {
     this.stickerId,
     this.stickerFileId,
     this.replyToMessageId,
+    this.storyReply,
     this.forwardedFromMessageId,
     this.forwardedFromSenderUserId,
     this.forwardedFromSenderName,
@@ -73,6 +77,7 @@ class MessageVm {
     String? stickerId,
     String? stickerFileId,
     String? replyToMessageId,
+    StoryReplyContextVm? storyReply,
     String? forwardedFromMessageId,
     String? forwardedFromSenderUserId,
     String? forwardedFromSenderName,
@@ -96,6 +101,7 @@ class MessageVm {
       stickerId: stickerId ?? this.stickerId,
       stickerFileId: stickerFileId ?? this.stickerFileId,
       replyToMessageId: replyToMessageId ?? this.replyToMessageId,
+      storyReply: storyReply ?? this.storyReply,
       forwardedFromMessageId:
           forwardedFromMessageId ?? this.forwardedFromMessageId,
       forwardedFromSenderUserId:
@@ -131,6 +137,7 @@ class MessageVm {
       stickerId: json['stickerId']?.toString(),
       stickerFileId: json['stickerFileId']?.toString(),
       replyToMessageId: json['replyToMessageId'] as String?,
+      storyReply: StoryReplyContextVm.fromJsonOrNull(json['storyReply']),
       forwardedFromMessageId: json['forwardedFromMessageId']?.toString(),
       forwardedFromSenderUserId: json['forwardedFromSenderUserId']?.toString(),
       forwardedFromSenderName: json['forwardedFromSenderName']?.toString(),
@@ -158,6 +165,72 @@ class MessageVm {
               .toList(growable: false) ??
           const [],
       sentAt: DateTime.parse(json['sentAt'] as String),
+    );
+  }
+}
+
+class StoryReplyContextVm {
+  const StoryReplyContextVm({
+    required this.storyId,
+    required this.storyAuthorUserId,
+    this.storyTitle = '',
+    this.storyPreviewFileId,
+    this.storyPreviewUrl,
+    this.storyExpiresAt,
+  });
+
+  final String storyId;
+  final String storyAuthorUserId;
+  final String storyTitle;
+  final String? storyPreviewFileId;
+  final String? storyPreviewUrl;
+  final DateTime? storyExpiresAt;
+
+  bool get isStoryUnavailable {
+    final expiresAt = storyExpiresAt;
+    return expiresAt != null && !expiresAt.isAfter(DateTime.now().toUtc());
+  }
+
+  String? get previewUrl {
+    if (isStoryUnavailable) return null;
+    return resolvePublicFileContentUrlFromResponse(
+      fileId: storyPreviewFileId,
+      contentUrl: storyPreviewUrl,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'storyId': storyId.trim(),
+      'storyAuthorUserId': storyAuthorUserId.trim(),
+      if (storyTitle.trim().isNotEmpty) 'storyTitle': storyTitle.trim(),
+      if ((storyPreviewFileId ?? '').trim().isNotEmpty)
+        'storyPreviewFileId': storyPreviewFileId!.trim(),
+      if ((storyPreviewUrl ?? '').trim().isNotEmpty)
+        'storyPreviewUrl': storyPreviewUrl!.trim(),
+      if (storyExpiresAt != null)
+        'storyExpiresAt': storyExpiresAt!.toUtc().toIso8601String(),
+    };
+  }
+
+  static StoryReplyContextVm? fromJsonOrNull(Object? raw) {
+    if (raw is! Map<String, dynamic>) {
+      return null;
+    }
+    final storyId = raw['storyId']?.toString().trim() ?? '';
+    final authorId = raw['storyAuthorUserId']?.toString().trim() ?? '';
+    if (storyId.isEmpty || authorId.isEmpty) {
+      return null;
+    }
+    return StoryReplyContextVm(
+      storyId: storyId,
+      storyAuthorUserId: authorId,
+      storyTitle: raw['storyTitle']?.toString() ?? '',
+      storyPreviewFileId: _trimmedStringOrNull(raw['storyPreviewFileId']),
+      storyPreviewUrl: _trimmedStringOrNull(raw['storyPreviewUrl']),
+      storyExpiresAt: DateTime.tryParse(
+        raw['storyExpiresAt']?.toString() ?? '',
+      ),
     );
   }
 }

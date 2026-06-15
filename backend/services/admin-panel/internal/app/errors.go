@@ -20,4 +20,5 @@ var (
 	ErrModerationCaseNotFound = errors.New("moderation case not found")
 	ErrUserNotFound           = errors.New("user not found")
 	ErrAttractionNotFound     = errors.New("attraction not found")
+	ErrIntegrationNotReady    = errors.New("integration is not ready")
 )

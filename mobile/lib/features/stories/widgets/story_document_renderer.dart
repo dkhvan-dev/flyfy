@@ -4,9 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/network/file_api.dart';
 import '../../../core/ui/app_colors.dart';
-import '../editor/data/story_document_mapper.dart';
 import '../editor/domain/story_document.dart';
-import '../models/story_vm.dart';
+import '../models/post_vm.dart';
 import '../story_ui.dart';
 
 typedef StoryImageOpenCallback =
@@ -21,7 +20,7 @@ class StoryDocumentRenderer extends StatelessWidget {
     this.onOpenImages,
   });
 
-  final StoryVm? story;
+  final PostVm? story;
   final StoryDocument? document;
   final String? fallbackContent;
   final StoryImageOpenCallback? onOpenImages;
@@ -71,11 +70,6 @@ class StoryDocumentRenderer extends StatelessWidget {
         );
       }
 
-      final legacyContent = (currentStory.content ?? '').trim();
-      if (legacyContent.isNotEmpty) {
-        return StoryDocumentMapper.fromLegacyContent(legacyContent);
-      }
-
       final excerpt = currentStory.excerpt.trim();
       if (excerpt.isNotEmpty) {
         return StoryDocument(
@@ -86,7 +80,9 @@ class StoryDocumentRenderer extends StatelessWidget {
 
     final fallback = (fallbackContent ?? '').trim();
     if (fallback.isNotEmpty) {
-      return StoryDocumentMapper.fromLegacyContent(fallback);
+      return StoryDocument(
+        blocks: [StoryBlock.paragraph(id: 'fallback-0', text: fallback)],
+      );
     }
     return StoryDocument();
   }

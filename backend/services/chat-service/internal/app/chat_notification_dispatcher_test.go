@@ -23,7 +23,7 @@ func TestChatNotificationDispatcherSendsMessageOutboxAndMarksSent(t *testing.T) 
 	mutedRecipientID := uuid.New()
 	blockedRecipientID := uuid.New()
 	outboxID := uuid.New()
-	mutedUntil := now.Add(time.Hour)
+	mutedUntil := time.Now().UTC().Add(time.Hour)
 	repo := newFakeMessageRepo(conversationID, senderID)
 	repo.claimedNotificationOutbox = []*model.ChatNotificationOutbox{
 		{

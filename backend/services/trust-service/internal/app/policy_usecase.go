@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -24,6 +25,10 @@ const (
 	publicMessageNeedsReview       = "trust.policy.needs_review"
 	publicMessageQuarantined       = "trust.policy.quarantined"
 	publicMessageTemporarilyDenied = "trust.policy.temporarily_denied"
+	maxAppealReasonCodeLength      = 80
+	maxAppealMessageLength         = 2000
+	maxAppealIdempotencyKeyLength  = 128
+	maxAppealStaffCommentLength    = 2000
 )
 
 type PolicyUseCase struct {
@@ -152,6 +157,143 @@ func (u *PolicyUseCase) ApplyUserRestrictionEvent(ctx context.Context, input mod
 	return true, nil
 }
 
+func (u *PolicyUseCase) SubmitRestrictionAppeal(ctx context.Context, input model.SubmitRestrictionAppealInput) (model.RestrictionAppeal, error) {
+	if u == nil || u.repo == nil {
+		return model.RestrictionAppeal{}, fmt.Errorf("%w: trust repository is required", ErrInvalidInput)
+	}
+	if input.UserID == uuid.Nil {
+		return model.RestrictionAppeal{}, fmt.Errorf("%w: user id is required", ErrInvalidInput)
+	}
+	if input.RestrictionID == uuid.Nil {
+		return model.RestrictionAppeal{}, fmt.Errorf("%w: restriction id is required", ErrInvalidInput)
+	}
+	reasonCode := strings.TrimSpace(input.ReasonCode)
+	userMessage := strings.TrimSpace(input.UserMessage)
+	idempotencyKey := strings.TrimSpace(input.IdempotencyKey)
+	if reasonCode == "" || userMessage == "" {
+		return model.RestrictionAppeal{}, fmt.Errorf("%w: appeal reason and message are required", ErrInvalidInput)
+	}
+	if len(reasonCode) > maxAppealReasonCodeLength ||
+		len(userMessage) > maxAppealMessageLength ||
+		len(idempotencyKey) > maxAppealIdempotencyKeyLength {
+		return model.RestrictionAppeal{}, fmt.Errorf("%w: appeal fields are too long", ErrInvalidInput)
+	}
+
+	restriction, err := u.repo.GetRuntimeRestrictionByID(ctx, input.RestrictionID)
+	if err != nil {
+		return model.RestrictionAppeal{}, err
+	}
+	if restriction.UserID != input.UserID || restriction.Status != model.RuntimeRestrictionActive {
+		return model.RestrictionAppeal{}, fmt.Errorf("%w: active restriction is required", ErrInvalidInput)
+	}
+
+	now := input.SubmittedAt
+	if now.IsZero() {
+		now = time.Now().UTC()
+	} else {
+		now = now.UTC()
+	}
+	appeal := model.RestrictionAppeal{
+		ID:             uuid.New(),
+		UserID:         input.UserID,
+		RestrictionID:  input.RestrictionID,
+		Status:         model.RestrictionAppealStatusPending,
+		ReasonCode:     reasonCode,
+		UserMessage:    userMessage,
+		IdempotencyKey: idempotencyKey,
+		CreatedAt:      now,
+		UpdatedAt:      now,
+	}
+	stored, err := u.repo.CreateRestrictionAppeal(ctx, appeal)
+	if err != nil {
+		return model.RestrictionAppeal{}, err
+	}
+	if err := u.setProfileStatus(ctx, input.UserID, model.TrustStatusUnderReview, now); err != nil {
+		return model.RestrictionAppeal{}, err
+	}
+	return stored, nil
+}
+
+func (u *PolicyUseCase) DecideRestrictionAppeal(ctx context.Context, input model.DecideRestrictionAppealInput) (model.RestrictionAppeal, error) {
+	if u == nil || u.repo == nil {
+		return model.RestrictionAppeal{}, fmt.Errorf("%w: trust repository is required", ErrInvalidInput)
+	}
+	if input.AppealID == uuid.Nil {
+		return model.RestrictionAppeal{}, fmt.Errorf("%w: appeal id is required", ErrInvalidInput)
+	}
+	if input.ActorStaffID == uuid.Nil {
+		return model.RestrictionAppeal{}, fmt.Errorf("%w: actor staff id is required", ErrInvalidInput)
+	}
+	if input.Decision != model.RestrictionAppealDecisionApprove && input.Decision != model.RestrictionAppealDecisionReject {
+		return model.RestrictionAppeal{}, fmt.Errorf("%w: unsupported appeal decision", ErrInvalidInput)
+	}
+	reasonCode := strings.TrimSpace(input.ReasonCode)
+	staffComment := strings.TrimSpace(input.StaffComment)
+	if reasonCode == "" || staffComment == "" {
+		return model.RestrictionAppeal{}, fmt.Errorf("%w: decision reason and staff comment are required", ErrInvalidInput)
+	}
+	if len(reasonCode) > maxAppealReasonCodeLength || len(staffComment) > maxAppealStaffCommentLength {
+		return model.RestrictionAppeal{}, fmt.Errorf("%w: appeal decision fields are too long", ErrInvalidInput)
+	}
+
+	appeal, err := u.repo.GetRestrictionAppeal(ctx, input.AppealID)
+	if err != nil {
+		return model.RestrictionAppeal{}, err
+	}
+	if appeal.Status != model.RestrictionAppealStatusPending {
+		return model.RestrictionAppeal{}, fmt.Errorf("%w: appeal already decided", ErrInvalidInput)
+	}
+
+	now := input.DecidedAt
+	if now.IsZero() {
+		now = time.Now().UTC()
+	} else {
+		now = now.UTC()
+	}
+	appeal.UpdatedAt = now
+	appeal.DecidedAt = &now
+	appeal.DecidedByStaffID = &input.ActorStaffID
+	appeal.DecisionReasonCode = reasonCode
+	appeal.StaffComment = staffComment
+	if input.Decision == model.RestrictionAppealDecisionApprove {
+		appeal.Status = model.RestrictionAppealStatusApproved
+		eventID := input.DecisionEventID
+		if eventID == uuid.Nil {
+			eventID = uuid.New()
+		}
+		if err := u.repo.LiftRuntimeRestriction(ctx, appeal.RestrictionID, eventID, &input.ActorStaffID, now, reasonCode); err != nil {
+			return model.RestrictionAppeal{}, err
+		}
+	} else {
+		appeal.Status = model.RestrictionAppealStatusRejected
+	}
+
+	stored, err := u.repo.SaveRestrictionAppealDecision(ctx, appeal)
+	if err != nil {
+		return model.RestrictionAppeal{}, err
+	}
+	if err := u.refreshProfileStatusFromActiveRestrictions(ctx, appeal.UserID, now); err != nil {
+		return model.RestrictionAppeal{}, err
+	}
+	return stored, nil
+}
+
+func (u *PolicyUseCase) ListRestrictionAppeals(ctx context.Context, input model.ListRestrictionAppealsInput) ([]model.RestrictionAppeal, error) {
+	if u == nil || u.repo == nil {
+		return nil, fmt.Errorf("%w: trust repository is required", ErrInvalidInput)
+	}
+	if input.UserID != nil && *input.UserID == uuid.Nil {
+		return nil, fmt.Errorf("%w: user id is required", ErrInvalidInput)
+	}
+	if input.Status != "" && !isSupportedRestrictionAppealStatus(input.Status) {
+		return nil, fmt.Errorf("%w: unsupported appeal status", ErrInvalidInput)
+	}
+	if input.Status == "" && input.UserID == nil {
+		return nil, fmt.Errorf("%w: status or user id filter is required", ErrInvalidInput)
+	}
+	return u.repo.ListRestrictionAppeals(ctx, input)
+}
+
 func (u *PolicyUseCase) GetTrustProfile(ctx context.Context, userID uuid.UUID) (model.TrustProfile, error) {
 	if u == nil || u.repo == nil {
 		return model.TrustProfile{}, fmt.Errorf("%w: trust repository is required", ErrInvalidInput)
@@ -192,6 +334,18 @@ func (u *PolicyUseCase) setProfileStatus(ctx context.Context, userID uuid.UUID, 
 	profile.Status = status
 	profile.UpdatedAt = now
 	return u.repo.UpsertTrustProfile(ctx, profile)
+}
+
+func (u *PolicyUseCase) refreshProfileStatusFromActiveRestrictions(ctx context.Context, userID uuid.UUID, now time.Time) error {
+	restrictions, err := u.repo.ListActiveRestrictions(ctx, userID, now)
+	if err != nil {
+		return err
+	}
+	status := model.TrustStatusActive
+	if len(restrictions) > 0 {
+		status = model.TrustStatusRestricted
+	}
+	return u.setProfileStatus(ctx, userID, status, now)
 }
 
 func evaluatePolicy(action model.PolicyAction, profile model.TrustProfile, restrictions []model.RuntimeRestriction) (model.PolicyDecision, string, string, string, []uuid.UUID) {
@@ -288,4 +442,15 @@ func isSupportedAction(action model.PolicyAction) bool {
 
 func isRiskyAction(action model.PolicyAction) bool {
 	return isSupportedAction(action)
+}
+
+func isSupportedRestrictionAppealStatus(status model.RestrictionAppealStatus) bool {
+	switch status {
+	case model.RestrictionAppealStatusPending,
+		model.RestrictionAppealStatusApproved,
+		model.RestrictionAppealStatusRejected:
+		return true
+	default:
+		return false
+	}
 }

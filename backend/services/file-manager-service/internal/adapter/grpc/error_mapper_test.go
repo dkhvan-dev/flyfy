@@ -34,6 +34,24 @@ func TestMapErrorReturnsSafeBusinessMessages(t *testing.T) {
 			code:    codes.PermissionDenied,
 			message: "file_not_public",
 		},
+		{
+			name:    "file purpose mismatch",
+			err:     app.ErrFilePurposeMismatch,
+			code:    codes.InvalidArgument,
+			message: "file_purpose_mismatch",
+		},
+		{
+			name:    "file ownership mismatch",
+			err:     app.ErrFileOwnershipMismatch,
+			code:    codes.PermissionDenied,
+			message: "file_ownership_mismatch",
+		},
+		{
+			name:    "file already bound",
+			err:     app.ErrFileAlreadyBound,
+			code:    codes.Aborted,
+			message: "file_already_bound",
+		},
 	}
 
 	for _, tt := range tests {

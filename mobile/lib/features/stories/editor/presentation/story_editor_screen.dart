@@ -10,11 +10,14 @@ import '../../../../core/network/file_api.dart';
 import '../../../../core/ui/app_colors.dart';
 import '../../../../core/ui/filter_sheet_chrome.dart';
 import '../../../../l10n/generated/app_localizations.dart';
-import '../../models/story_vm.dart';
+import '../../../trust/widgets/trust_status_banner.dart';
+import '../../models/post_profile_contract.dart';
+import '../../models/post_vm.dart';
 import '../../story_ui.dart';
 import '../../widgets/story_document_renderer.dart';
 import '../domain/story_document.dart';
 import 'story_editor_controller.dart';
+import 'story_editor_trust_context.dart';
 import 'widgets/story_add_block_sheet.dart';
 import 'widgets/story_block_canvas.dart';
 import 'widgets/story_editor_style.dart';
@@ -244,14 +247,30 @@ class StoryEditorScreen extends StatefulWidget {
     this.userId = 'local-user',
     this.initialStory,
     this.storyId,
+    this.communityId,
+    this.postProfileKey,
+    this.availablePostProfileKeys,
+    this.communityCountryCode,
+    this.communityCityId,
+    this.communityCityName,
+    this.communityTrustContext,
+    this.returnOnSave = false,
     this.onOpenField,
   });
 
   final StoryEditorController? controller;
   final StoryEditorImagePickerGateway? imagePicker;
   final String userId;
-  final StoryVm? initialStory;
+  final PostVm? initialStory;
   final String? storyId;
+  final String? communityId;
+  final String? postProfileKey;
+  final List<String>? availablePostProfileKeys;
+  final String? communityCountryCode;
+  final String? communityCityId;
+  final String? communityCityName;
+  final StoryEditorTrustContext? communityTrustContext;
+  final bool returnOnSave;
   final ValueChanged<String>? onOpenField;
 
   @override
@@ -278,6 +297,8 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
   final _categoryFieldKey = GlobalKey();
   final _coverFieldKey = GlobalKey();
   final _placeFieldKey = GlobalKey();
+  final _quickPostTextController = TextEditingController();
+  final _quickPostFocusNode = FocusNode();
   final _textSelections = <String, TextSelection>{};
   bool _preserveSelectionForInlineToolbarTap = false;
   bool _metadataTextFieldFocused = false;
@@ -290,6 +311,11 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
   Timer? _focusedFieldRevealLongTimer;
   int _blockSequence = 0;
   int _mediaSequence = 0;
+
+  bool get _isCommunityPostCreate =>
+      (widget.communityId ?? '').trim().isNotEmpty &&
+      widget.initialStory == null &&
+      (widget.storyId ?? '').trim().isEmpty;
 
   @override
   void initState() {
@@ -306,7 +332,12 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
   void didUpdateWidget(covariant StoryEditorScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.initialStory?.id != widget.initialStory?.id ||
-        oldWidget.userId != widget.userId) {
+        oldWidget.userId != widget.userId ||
+        oldWidget.communityId != widget.communityId ||
+        oldWidget.postProfileKey != widget.postProfileKey ||
+        oldWidget.communityCountryCode != widget.communityCountryCode ||
+        oldWidget.communityCityId != widget.communityCityId ||
+        oldWidget.communityCityName != widget.communityCityName) {
       _initializeControllerIfNeeded(force: true);
     }
   }
@@ -315,6 +346,8 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
   void dispose() {
     _focusedFieldRevealShortTimer?.cancel();
     _focusedFieldRevealLongTimer?.cancel();
+    _quickPostTextController.dispose();
+    _quickPostFocusNode.dispose();
     _controller.removeListener(_onControllerChanged);
     if (_ownsController) {
       _controller.dispose();
@@ -335,6 +368,10 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
             builder: (context, _) {
               final state = _controller.state;
               final submissionLocked = _isSubmissionLocked(state);
+              final isQuickPost = _isQuickPost(state);
+              if (isQuickPost) {
+                _syncQuickPostTextController(state);
+              }
               final keyboardBottomInset = MediaQuery.viewInsetsOf(
                 context,
               ).bottom;
@@ -344,12 +381,14 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
               final showKeyboardFormattingToolbar =
                   !_previewMode &&
                   !submissionLocked &&
+                  !isQuickPost &&
                   !metadataTextEditing &&
                   _hasSelectedTextBlock(state) &&
                   (keyboardVisible || _hasSelectedTextRange(state));
               final showEditorToolbar =
                   !_previewMode &&
                   !submissionLocked &&
+                  !isQuickPost &&
                   !metadataTextEditing &&
                   !showKeyboardFormattingToolbar;
               final toolbarVisible =
@@ -402,11 +441,10 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
                 child: Scaffold(
                   resizeToAvoidBottomInset: false,
                   appBar: _StoryEditorAppBar(
-                    title: state.metadata.title.trim().isEmpty
-                        ? l10n.storyEditorTitle
-                        : state.metadata.title.trim(),
+                    title: _editorTitle(l10n, state),
                     previewMode: _previewMode,
                     isLocked: submissionLocked,
+                    onBack: () => unawaited(_requestClose()),
                     onTogglePreview: () {
                       FocusScope.of(context).unfocus();
                       _controller.selectBlock(null);
@@ -445,12 +483,23 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
                                       child: FocusScope(
                                         canRequestFocus: !submissionLocked,
                                         child: _StoryEditorSubmissionBody(
+                                          quickPostMode: _isQuickPost(state),
                                           previewMode: _previewMode,
                                           state: state,
                                           constraints: constraints,
                                           metadataKey: _metadataKey,
                                           canvasKey: _canvasKey,
                                           publishKey: _publishKey,
+                                          trustBanner: _trustBanner(),
+                                          postModeSelector: _postModeSelector(
+                                            state,
+                                          ),
+                                          quickComposer: _quickPostComposer(
+                                            state,
+                                          ),
+                                          quickMedia: _quickPostMediaPanel(
+                                            state,
+                                          ),
                                           metadata: _metadataPanel(state),
                                           canvas: _canvasOrPreview(state),
                                           publish: _publishPanel(state),
@@ -529,6 +578,134 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
     );
   }
 
+  bool _isQuickPost(StoryEditorState state) =>
+      PostProfileContract.resolve(state.postProfileKey).isInlineThread;
+
+  String _editorTitle(AppLocalizations l10n, StoryEditorState state) {
+    final title = state.metadata.title.trim();
+    if (title.isNotEmpty) {
+      return title;
+    }
+    return _isQuickPost(state)
+        ? l10n.storyEditorQuickPostTitle
+        : l10n.storyEditorTitle;
+  }
+
+  void _syncQuickPostTextController(StoryEditorState state) {
+    if (_quickPostFocusNode.hasFocus) {
+      return;
+    }
+    final body = _quickPostBodyText(state);
+    if (_quickPostTextController.text == body) {
+      return;
+    }
+    final selection = _quickPostTextController.selection;
+    final nextOffset = math.min(body.length, math.max(0, selection.baseOffset));
+    _quickPostTextController.value = TextEditingValue(
+      text: body,
+      selection: TextSelection.collapsed(offset: nextOffset),
+    );
+  }
+
+  String _quickPostBodyText(StoryEditorState state) {
+    for (final block in state.document.blocks) {
+      if (block.isTextBlock) {
+        return block.text ?? '';
+      }
+    }
+    return '';
+  }
+
+  Widget _quickPostComposer(StoryEditorState state) {
+    return _QuickPostComposer(
+      controller: _quickPostTextController,
+      focusNode: _quickPostFocusNode,
+      onChanged: _updateQuickPostBody,
+    );
+  }
+
+  Widget? _postModeSelector(StoryEditorState state) {
+    final keys = _availablePostProfileKeys(state);
+    if (keys.length < 2) {
+      return null;
+    }
+    return _StoryEditorPostModeSelector(
+      postProfileKeys: keys,
+      selectedPostProfileKey:
+          PostProfileContract.normalize(state.postProfileKey) ??
+          PostProfileKeys.article,
+      onSelected: (key) {
+        FocusScope.of(context).unfocus();
+        _controller.changePostProfileKey(key);
+      },
+    );
+  }
+
+  List<String> _availablePostProfileKeys(StoryEditorState state) {
+    final allowed = widget.availablePostProfileKeys ?? const <String>[];
+    final keys = <String>[];
+    for (final rawKey in allowed) {
+      final key = PostProfileContract.normalize(rawKey);
+      if (key == null || keys.contains(key)) {
+        continue;
+      }
+      if (PostProfileKeys.supported.contains(key)) {
+        keys.add(key);
+      }
+    }
+    final currentKey =
+        PostProfileContract.normalize(state.postProfileKey) ??
+        PostProfileKeys.article;
+    if (!keys.contains(currentKey) &&
+        PostProfileKeys.supported.contains(currentKey)) {
+      keys.insert(0, currentKey);
+    }
+    return keys;
+  }
+
+  Widget _quickPostMediaPanel(StoryEditorState state) {
+    return _QuickPostMediaPanel(
+      state: state,
+      onAddPhoto: () => unawaited(_addQuickPostPhoto()),
+      onClearCover: () => _controller.changeCover(null),
+      onRemoveMedia: _controller.removeMediaUpload,
+      onRetryMedia: (localMediaId) =>
+          unawaited(_controller.retryMediaUpload(localMediaId)),
+    );
+  }
+
+  Future<void> _addQuickPostPhoto() async {
+    if (_hasQuickPostCoverMedia(_controller.state)) {
+      await _addImageBlock();
+      return;
+    }
+    await _queueCoverUpload();
+  }
+
+  void _updateQuickPostBody(String text) {
+    final blocks = _controller.state.document.blocks;
+    StoryBlock? bodyBlock;
+    for (final block in blocks) {
+      if (block.isTextBlock) {
+        bodyBlock = block;
+        break;
+      }
+    }
+    if (bodyBlock == null) {
+      if (text.isEmpty) {
+        return;
+      }
+      _controller.addBlock(
+        StoryBlock.paragraph(id: 'quick-post-body', text: text),
+      );
+      return;
+    }
+    _controller.updateBlock(
+      bodyBlock.id,
+      (block) => block.copyWith(text: text, marks: const []),
+    );
+  }
+
   bool _isSubmissionLocked(StoryEditorState state) {
     return state.saveStatus.phase == StoryEditorSavePhase.saving &&
         (state.validationScope == StoryEditorValidationScope.draft ||
@@ -536,10 +713,16 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
   }
 
   Widget _metadataPanel(StoryEditorState state) {
+    final profile = PostProfileContract.resolve(state.postProfileKey);
     return KeyedSubtree(
       key: _metadataKey,
       child: StoryMetadataPanel(
         state: state,
+        hidePlaceFields: _isCommunityPostCreate,
+        showTemplatePicker: profile.showTemplatePicker,
+        showMaterialTaxonomy: profile.showMaterialTaxonomy,
+        showTags: profile.showTags,
+        showCover: profile.showCover,
         fieldKeys: StoryMetadataPanelFieldKeys(
           title: _titleFieldKey,
           format: _formatFieldKey,
@@ -596,10 +779,13 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
   }
 
   Widget _publishPanel(StoryEditorState state) {
+    final trustContext = widget.communityTrustContext;
     return KeyedSubtree(
       key: _publishKey,
       child: StoryPublishPanel(
         state: state,
+        publishEnabled: trustContext?.blocksPublishing != true,
+        hidePlaceChecks: _isCommunityPostCreate,
         onSaveDraft: () => unawaited(_saveDraftAndRevealErrors()),
         onPublish: () => unawaited(_publishAndRevealErrors()),
         onOpenField: _openField,
@@ -607,12 +793,36 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
     );
   }
 
+  Widget? _trustBanner() {
+    final trustContext = widget.communityTrustContext;
+    if (trustContext == null) {
+      return null;
+    }
+    return TrustStatusBanner(
+      kind: _trustBannerKind(trustContext.kind),
+      title: trustContext.title,
+      message: trustContext.message,
+    );
+  }
+
+  TrustStatusBannerKind _trustBannerKind(StoryEditorTrustBannerKind kind) {
+    return switch (kind) {
+      StoryEditorTrustBannerKind.blocked => TrustStatusBannerKind.blocked,
+      StoryEditorTrustBannerKind.muted => TrustStatusBannerKind.muted,
+      StoryEditorTrustBannerKind.pendingAppeal =>
+        TrustStatusBannerKind.pendingAppeal,
+      StoryEditorTrustBannerKind.rejected => TrustStatusBannerKind.rejected,
+    };
+  }
+
   Future<void> _saveDraftAndRevealErrors() async {
     FocusScope.of(context).unfocus();
+    final returnToCaller =
+        _controller.state.mode == StoryEditorMode.create || widget.returnOnSave;
     final story = await _controller.saveDraft(showSuccessStatus: false);
     if (!mounted) return;
     if (story != null) {
-      _openStoryDetails(story);
+      _openSavedPost(story, returnToCaller: returnToCaller);
       return;
     }
     _openFirstValidationError();
@@ -620,25 +830,47 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
 
   Future<void> _publishAndRevealErrors() async {
     FocusScope.of(context).unfocus();
+    final returnToCaller =
+        _controller.state.mode == StoryEditorMode.create || widget.returnOnSave;
     final story = await _controller.publish(showSuccessStatus: false);
     if (!mounted) return;
     if (story != null) {
-      _openStoryDetails(story);
+      _openSavedPost(story, returnToCaller: returnToCaller);
       return;
     }
     _openFirstValidationError();
   }
 
-  void _openStoryDetails(StoryVm story) {
+  void _openSavedPost(PostVm story, {required bool returnToCaller}) {
+    if (returnToCaller) {
+      Navigator.of(context).pop(story);
+      return;
+    }
     final slug = story.slug.trim().isNotEmpty ? story.slug.trim() : story.id;
     final normalized = slug.trim();
     if (normalized.isEmpty) {
       return;
     }
     context.pushReplacement(
-      '/stories/${Uri.encodeComponent(normalized)}',
+      '/posts/${Uri.encodeComponent(normalized)}',
       extra: story,
     );
+  }
+
+  Future<void> _requestClose() async {
+    final state = _controller.state;
+    if (_isSubmissionLocked(state)) {
+      return;
+    }
+    FocusScope.of(context).unfocus();
+    if (!_hasUnsavedChanges(state)) {
+      Navigator.of(context).maybePop();
+      return;
+    }
+    final discard = await _confirmDiscardChanges();
+    if (discard && mounted) {
+      Navigator.of(context).pop();
+    }
   }
 
   void _initializeControllerIfNeeded({bool force = false}) {
@@ -655,7 +887,14 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
       _loadStoryForEdit(storyId);
       return;
     }
-    _controller.initializeCreate(userId: widget.userId);
+    _controller.initializeCreate(
+      userId: widget.userId,
+      communityId: widget.communityId,
+      postProfileKey: widget.postProfileKey,
+      placeCountryCode: widget.communityCountryCode,
+      placeCityId: widget.communityCityId,
+      placeName: widget.communityCityName,
+    );
   }
 
   Future<void> _loadStoryForEdit(String storyId) async {
@@ -1493,23 +1732,33 @@ class _StoryEditorSubmissionLockOverlay extends StatelessWidget {
 
 class _StoryEditorSubmissionBody extends StatelessWidget {
   const _StoryEditorSubmissionBody({
+    required this.quickPostMode,
     required this.previewMode,
     required this.state,
     required this.constraints,
     required this.metadataKey,
     required this.canvasKey,
     required this.publishKey,
+    required this.trustBanner,
+    required this.postModeSelector,
+    required this.quickComposer,
+    required this.quickMedia,
     required this.metadata,
     required this.canvas,
     required this.publish,
   });
 
+  final bool quickPostMode;
   final bool previewMode;
   final StoryEditorState state;
   final BoxConstraints constraints;
   final GlobalKey metadataKey;
   final GlobalKey canvasKey;
   final GlobalKey publishKey;
+  final Widget? trustBanner;
+  final Widget? postModeSelector;
+  final Widget quickComposer;
+  final Widget quickMedia;
   final Widget metadata;
   final Widget canvas;
   final Widget publish;
@@ -1519,14 +1768,478 @@ class _StoryEditorSubmissionBody extends StatelessWidget {
     if (previewMode) {
       return _StoryEditorPreviewPage(state: state);
     }
+    if (quickPostMode) {
+      return _QuickPostEditorLayout(
+        trustBanner: trustBanner,
+        postModeSelector: postModeSelector,
+        composer: quickComposer,
+        media: quickMedia,
+        publish: publish,
+      );
+    }
     return _EditorFormLayout(
       constraints: constraints,
       metadataKey: metadataKey,
       canvasKey: canvasKey,
       publishKey: publishKey,
+      trustBanner: trustBanner,
+      postModeSelector: postModeSelector,
       metadata: metadata,
       canvas: canvas,
       publish: publish,
+    );
+  }
+}
+
+class _QuickPostEditorLayout extends StatelessWidget {
+  const _QuickPostEditorLayout({
+    required this.trustBanner,
+    required this.postModeSelector,
+    required this.composer,
+    required this.media,
+    required this.publish,
+  });
+
+  final Widget? trustBanner;
+  final Widget? postModeSelector;
+  final Widget composer;
+  final Widget media;
+  final Widget publish;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 720),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (trustBanner != null) ...[
+              trustBanner!,
+              const SizedBox(height: StoryEditorSpacing.lg),
+            ],
+            if (postModeSelector != null) ...[
+              postModeSelector!,
+              const SizedBox(height: StoryEditorSpacing.lg),
+            ],
+            composer,
+            const SizedBox(height: StoryEditorSpacing.lg),
+            media,
+            const SizedBox(height: StoryEditorSpacing.lg),
+            publish,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StoryEditorPostModeSelector extends StatelessWidget {
+  const _StoryEditorPostModeSelector({
+    required this.postProfileKeys,
+    required this.selectedPostProfileKey,
+    required this.onSelected,
+  });
+
+  final List<String> postProfileKeys;
+  final String selectedPostProfileKey;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return DecoratedBox(
+      key: const ValueKey('story-editor-post-mode-selector'),
+      decoration: BoxDecoration(
+        color: StoryPalette.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.22)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(StoryEditorSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.communityPostModeSelectorLabel,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: AppColors.accent,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: StoryEditorSpacing.sm),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final key in postProfileKeys)
+                  ChoiceChip(
+                    key: ValueKey('story-editor-post-mode-$key'),
+                    label: Text(_postProfileModeLabel(key, l10n)),
+                    selected: key == selectedPostProfileKey,
+                    showCheckmark: false,
+                    onSelected: (_) => onSelected(key),
+                    backgroundColor: StoryPalette.surfaceRaised.withValues(
+                      alpha: 0.72,
+                    ),
+                    selectedColor: AppColors.accent.withValues(alpha: 0.22),
+                    side: BorderSide(
+                      color: key == selectedPostProfileKey
+                          ? AppColors.accent
+                          : AppColors.accent.withValues(alpha: 0.16),
+                    ),
+                    labelStyle: Theme.of(context).textTheme.labelLarge
+                        ?.copyWith(
+                          color: key == selectedPostProfileKey
+                              ? AppColors.accent
+                              : StoryPalette.textSoft,
+                          fontWeight: FontWeight.w800,
+                        ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickPostComposer extends StatelessWidget {
+  const _QuickPostComposer({
+    required this.controller,
+    required this.focusNode,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return DecoratedBox(
+      key: const ValueKey('quick-post-composer'),
+      decoration: BoxDecoration(
+        color: StoryPalette.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.24)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 24,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(StoryEditorSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.storyEditorQuickPostTitle,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: StoryPalette.text,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: StoryEditorSpacing.xs),
+            Text(
+              l10n.storyEditorQuickPostSubtitle,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: StoryPalette.textSoft,
+                height: 1.35,
+              ),
+            ),
+            const SizedBox(height: StoryEditorSpacing.lg),
+            TextField(
+              key: const ValueKey('quick-post-body-field'),
+              controller: controller,
+              focusNode: focusNode,
+              autofocus: true,
+              minLines: 6,
+              maxLines: 12,
+              maxLength: StoryDocumentLimits.maxTextBlockLength,
+              keyboardType: TextInputType.multiline,
+              textInputAction: TextInputAction.newline,
+              onChanged: onChanged,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: StoryPalette.text,
+                height: 1.35,
+              ),
+              decoration: InputDecoration(
+                hintText: l10n.storyEditorQuickPostHint,
+                hintStyle: TextStyle(
+                  color: StoryPalette.textMuted.withValues(alpha: 0.82),
+                ),
+                filled: true,
+                fillColor: StoryPalette.surfaceRaised.withValues(alpha: 0.72),
+                counterStyle: TextStyle(color: StoryPalette.textMuted),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: AppColors.accent),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _postProfileModeLabel(String key, AppLocalizations l10n) {
+  return switch (PostProfileContract.normalize(key)) {
+    PostProfileKeys.quickPost => l10n.communityPostModeQuickPost,
+    PostProfileKeys.listing => l10n.communityPostModeListing,
+    PostProfileKeys.eventAnnouncement =>
+      l10n.communityPostModeEventAnnouncement,
+    PostProfileKeys.questionAnswer => l10n.communityPostModeQuestionAnswer,
+    PostProfileKeys.tripPlan => l10n.communityPostModeTripPlan,
+    _ => l10n.communityPostModeArticle,
+  };
+}
+
+class _QuickPostMediaPanel extends StatelessWidget {
+  const _QuickPostMediaPanel({
+    required this.state,
+    required this.onAddPhoto,
+    required this.onClearCover,
+    required this.onRemoveMedia,
+    required this.onRetryMedia,
+  });
+
+  final StoryEditorState state;
+  final VoidCallback onAddPhoto;
+  final VoidCallback onClearCover;
+  final ValueChanged<String> onRemoveMedia;
+  final ValueChanged<String> onRetryMedia;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final mediaItems = state.mediaQueue.items
+        .where((item) => item.status != StoryEditorMediaStatus.removed)
+        .toList(growable: false);
+
+    return DecoratedBox(
+      key: const ValueKey('quick-post-media-panel'),
+      decoration: BoxDecoration(
+        color: StoryPalette.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.22)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(StoryEditorSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l10n.storyEditorChecklistMedia,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: StoryPalette.text,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                FilledButton.icon(
+                  key: const ValueKey('quick-post-add-photo'),
+                  onPressed: onAddPhoto,
+                  icon: const Icon(Icons.add_photo_alternate_outlined),
+                  label: Text(l10n.storyInlineImageAddAction),
+                ),
+              ],
+            ),
+            if (mediaItems.isEmpty) ...[
+              const SizedBox(height: StoryEditorSpacing.sm),
+              Text(
+                l10n.storyContinueSectionLabel,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: StoryPalette.textSoft,
+                  height: 1.35,
+                ),
+              ),
+            ] else ...[
+              const SizedBox(height: StoryEditorSpacing.md),
+              SizedBox(
+                height: 112,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: mediaItems.length,
+                  separatorBuilder: (_, _) =>
+                      const SizedBox(width: StoryEditorSpacing.sm),
+                  itemBuilder: (context, index) {
+                    final item = mediaItems[index];
+                    return _QuickPostMediaThumbnail(
+                      item: item,
+                      onRetry: () => onRetryMedia(item.localMediaId),
+                      onRemove: () {
+                        if (item.kind == StoryEditorMediaUploadKind.cover) {
+                          onClearCover();
+                        }
+                        onRemoveMedia(item.localMediaId);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickPostMediaThumbnail extends StatelessWidget {
+  const _QuickPostMediaThumbnail({
+    required this.item,
+    required this.onRetry,
+    required this.onRemove,
+  });
+
+  final StoryEditorMediaQueueItem item;
+  final VoidCallback onRetry;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final preview = _quickPostMediaPreview(item);
+    final isCover = item.kind == StoryEditorMediaUploadKind.cover;
+    final isUploading = item.status == StoryEditorMediaStatus.uploading;
+    final isFailed = item.status == StoryEditorMediaStatus.failed;
+
+    return SizedBox(
+      width: 108,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: StoryPalette.surfaceRaised,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isCover
+                ? AppColors.accent.withValues(alpha: 0.62)
+                : Colors.white.withValues(alpha: 0.08),
+          ),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (preview != null)
+                Image(image: preview, fit: BoxFit.cover)
+              else
+                const Center(
+                  child: Icon(
+                    Icons.image_outlined,
+                    color: AppColors.accent,
+                    size: 30,
+                  ),
+                ),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.10),
+                      Colors.black.withValues(alpha: 0.58),
+                    ],
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 4,
+                right: 4,
+                child: IconButton.filledTonal(
+                  onPressed: onRemove,
+                  iconSize: 16,
+                  constraints: const BoxConstraints.tightFor(
+                    width: 30,
+                    height: 30,
+                  ),
+                  padding: EdgeInsets.zero,
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.black.withValues(alpha: 0.48),
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: const Icon(Icons.close_rounded),
+                ),
+              ),
+              Positioned(
+                left: 8,
+                right: 8,
+                bottom: 8,
+                child: Row(
+                  children: [
+                    if (isUploading)
+                      const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.accent,
+                        ),
+                      )
+                    else if (isFailed)
+                      GestureDetector(
+                        onTap: onRetry,
+                        child: const Icon(
+                          Icons.refresh_rounded,
+                          size: 18,
+                          color: AppColors.accent,
+                        ),
+                      )
+                    else
+                      Icon(
+                        isCover
+                            ? Icons.image_rounded
+                            : Icons.check_circle_rounded,
+                        size: 16,
+                        color: AppColors.accent,
+                      ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        isCover
+                            ? l10n.storyEditorChecklistCover
+                            : l10n.storyEditorBlockImage,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -1537,12 +2250,14 @@ class _StoryEditorAppBar extends StatelessWidget
     required this.title,
     required this.previewMode,
     required this.isLocked,
+    required this.onBack,
     required this.onTogglePreview,
   });
 
   final String title;
   final bool previewMode;
   final bool isLocked;
+  final VoidCallback onBack;
   final VoidCallback onTogglePreview;
 
   @override
@@ -1561,7 +2276,13 @@ class _StoryEditorAppBar extends StatelessWidget
       backgroundColor: StoryPalette.backgroundTop,
       surfaceTintColor: Colors.transparent,
       foregroundColor: StoryPalette.text,
-      automaticallyImplyLeading: !isLocked,
+      automaticallyImplyLeading: false,
+      leading: IconButton(
+        key: const ValueKey('story-editor-back-button'),
+        tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+        onPressed: isLocked ? null : onBack,
+        icon: const Icon(Icons.arrow_back_ios_new_rounded),
+      ),
       titleSpacing: StoryEditorSpacing.md,
       title: Text(
         title,
@@ -1615,6 +2336,8 @@ class _EditorFormLayout extends StatelessWidget {
     required this.metadataKey,
     required this.canvasKey,
     required this.publishKey,
+    required this.trustBanner,
+    required this.postModeSelector,
     required this.metadata,
     required this.canvas,
     required this.publish,
@@ -1624,6 +2347,8 @@ class _EditorFormLayout extends StatelessWidget {
   final GlobalKey metadataKey;
   final GlobalKey canvasKey;
   final GlobalKey publishKey;
+  final Widget? trustBanner;
+  final Widget? postModeSelector;
   final Widget metadata;
   final Widget canvas;
   final Widget publish;
@@ -1634,6 +2359,14 @@ class _EditorFormLayout extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (trustBanner != null) ...[
+          trustBanner!,
+          const SizedBox(height: StoryEditorSpacing.lg),
+        ],
+        if (postModeSelector != null) ...[
+          postModeSelector!,
+          const SizedBox(height: StoryEditorSpacing.lg),
+        ],
         if (expanded)
           _ExpandedEditorLayout(
             metadata: metadata,
@@ -2163,6 +2896,26 @@ StoryEditorMediaQueueItem? _activeCoverUploadForState(StoryEditorState state) {
     }
   }
   return null;
+}
+
+bool _hasQuickPostCoverMedia(StoryEditorState state) {
+  if ((state.metadata.coverFileId ?? '').trim().isNotEmpty) {
+    return true;
+  }
+  return _activeCoverUploadForState(state) != null;
+}
+
+ImageProvider<Object>? _quickPostMediaPreview(StoryEditorMediaQueueItem item) {
+  final previewBytes = item.previewBytes;
+  if (previewBytes != null && previewBytes.isNotEmpty) {
+    return MemoryImage(previewBytes);
+  }
+
+  final url = resolvePublicFileContentUrl(item.fileId ?? '');
+  if (url == null) {
+    return null;
+  }
+  return NetworkImage(url);
 }
 
 void unawaited(Future<void> future) {}

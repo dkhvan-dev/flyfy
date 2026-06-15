@@ -23,6 +23,7 @@ import (
 	guideadapter "kz/inflap/backend/services/admin-panel/internal/adapter/guide"
 	httpadapter "kz/inflap/backend/services/admin-panel/internal/adapter/http"
 	notificationadapter "kz/inflap/backend/services/admin-panel/internal/adapter/notification"
+	postadapter "kz/inflap/backend/services/admin-panel/internal/adapter/post"
 	"kz/inflap/backend/services/admin-panel/internal/adapter/repository"
 	trustadapter "kz/inflap/backend/services/admin-panel/internal/adapter/trust"
 	useradapter "kz/inflap/backend/services/admin-panel/internal/adapter/user"
@@ -74,6 +75,11 @@ func main() {
 	chatClient := chatadapter.NewClient(
 		cfg.Chat.BaseURL,
 		cfg.Chat.Timeout,
+		cfg.Security.TrustedInternalToken,
+	)
+	postClient := postadapter.NewClient(
+		cfg.FeedService.BaseURL,
+		cfg.FeedService.Timeout,
 		cfg.Security.TrustedInternalToken,
 	)
 	userClient, err := useradapter.New(
@@ -133,7 +139,9 @@ func main() {
 	})
 	staffUC := app.NewStaffUseCase(staffRepo, auditRepo, sessionRepo)
 	moderationUC := app.NewModerationUseCase(moderationRepo, excursionClient, activityClient, guideClient, chatClient, auditRepo)
+	moderationUC.SetPostReportClient(postClient)
 	userModerationUC := app.NewUserModerationUseCase(userClient, userModerationRepo, auditRepo)
+	trustAppealUC := app.NewTrustAppealUseCase(trustClient, auditRepo)
 	if notificationClient != nil {
 		moderationUC.SetNotificationGateway(notificationClient)
 		userModerationUC.SetNotificationGateway(notificationClient)
@@ -152,6 +160,14 @@ func main() {
 	attractionUC := app.NewAttractionContentUseCase(attractionClient, fileManagerClient, auditRepo, app.AttractionContentConfig{
 		MaxImageBytes: cfg.FileManager.MaxAttractionImageBytes,
 	})
+	communityAdminUC := app.NewCommunityAdminUseCase(
+		postClient,
+		auditRepo,
+		app.WithCommunityAdminFileUploads(
+			fileManagerClient,
+			cfg.FileManager.MaxAttractionImageBytes,
+		),
+	)
 	auditUC := app.NewAuditUseCase(auditRepo)
 
 	if created, err := bootstrapSuperAdmin(ctx, cfg, staffUC); err != nil {
@@ -168,6 +184,8 @@ func main() {
 	}
 	adminServer := httpadapter.NewServer(cfg, renderer, authUC, staffUC, moderationUC, userModerationUC, auditUC, attractionUC, fraudUC)
 	adminServer.SetReadinessCheck(pool.Ping)
+	adminServer.SetTrustAppealUseCase(trustAppealUC)
+	adminServer.SetCommunityAdminUseCase(communityAdminUC)
 
 	go restrictionOutboxWorker.Start(ctx)
 

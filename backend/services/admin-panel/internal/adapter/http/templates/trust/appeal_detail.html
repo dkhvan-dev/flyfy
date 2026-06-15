@@ -1,0 +1,95 @@
+{{define "trust/appeal_detail"}}
+{{template "pageStart" .}}
+{{if .Data.Item.ID}}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "trust.appeal"}} <code>{{shortID .Data.Item.ID}}</code></p>
+      <h1>{{statusText .Locale .Data.Item.RestrictionCode}}</h1>
+    </div>
+    <a class="button" href="{{.Data.ListURL}}">{{t .Locale "trust.backToAppeals"}}</a>
+  </div>
+
+  <div class="split">
+    <article class="card detail">
+      <div class="meta-row">
+        <span class="{{statusClass .Data.Item.Status}}">{{statusText .Locale .Data.Item.Status}}</span>
+        <span>{{t .Locale "label.reason"}} {{.Data.Item.ReasonCode}}</span>
+      </div>
+      <dl class="facts">
+        <div><dt>{{t .Locale "table.user"}}</dt><dd><a href="/admin/users/{{.Data.Item.UserID}}"><code>{{.Data.Item.UserID}}</code></a></dd></div>
+        <div><dt>{{t .Locale "label.restriction"}}</dt><dd><code>{{.Data.Item.RestrictionID}}</code></dd></div>
+        <div><dt>{{t .Locale "users.restrictionCode"}}</dt><dd>{{statusText .Locale .Data.Item.RestrictionCode}}</dd></div>
+        <div><dt>{{t .Locale "label.status"}}</dt><dd>{{statusText .Locale .Data.Item.Status}}</dd></div>
+        <div><dt>{{t .Locale "label.created"}}</dt><dd>{{formatTime .Data.Item.CreatedAt (staffTimezone .Staff)}}</dd></div>
+        <div><dt>{{t .Locale "label.updated"}}</dt><dd>{{formatTime .Data.Item.UpdatedAt (staffTimezone .Staff)}}</dd></div>
+        {{if .Data.Item.DecidedAt}}
+          <div><dt>{{t .Locale "trust.decidedAt"}}</dt><dd>{{formatTime .Data.Item.DecidedAt (staffTimezone .Staff)}}</dd></div>
+        {{end}}
+      </dl>
+
+      <h2>{{t .Locale "trust.userAppeal"}}</h2>
+      <p class="preline">{{if .Data.Item.UserMessage}}{{.Data.Item.UserMessage}}{{else}}-{{end}}</p>
+
+      {{if .Data.Item.StaffDecision}}
+        <h2>{{t .Locale "section.decision"}}</h2>
+        <dl class="facts">
+          <div><dt>{{t .Locale "table.decision"}}</dt><dd>{{with .Data.Item.StaffDecision}}{{statusText $.Locale .}}{{end}}</dd></div>
+          <div><dt>{{t .Locale "field.internalComment"}}</dt><dd class="preline">{{.Data.Item.StaffComment}}</dd></div>
+        </dl>
+      {{end}}
+    </article>
+
+    <aside class="card">
+      <h2>{{t .Locale "section.decision"}}</h2>
+      {{if and .Data.CanDecide .Data.IsActionable}}
+        <form method="post" action="{{.Data.ApproveURL}}" class="form compact">
+          {{csrfField .CSRFToken}}
+          <input type="hidden" name="idempotency_key" value="{{newID}}">
+          <label>
+            <span>{{t .Locale "field.reason"}}</span>
+            <select name="reason_code" required>
+              <option value="false_positive">{{t .Locale "trust.reason.falsePositive"}}</option>
+              <option value="restriction_expired_context">{{t .Locale "trust.reason.expiredContext"}}</option>
+              <option value="manual_override">{{t .Locale "trust.reason.manualOverride"}}</option>
+            </select>
+          </label>
+          <label>
+            <span>{{t .Locale "field.internalComment"}}</span>
+            <textarea name="staff_comment" rows="3" required placeholder="{{t .Locale "trust.approveCommentPlaceholder"}}"></textarea>
+          </label>
+          <button class="primary" type="submit">{{t .Locale "trust.approveAppeal"}}</button>
+        </form>
+
+        <form method="post" action="{{.Data.RejectURL}}" class="form compact danger-zone">
+          {{csrfField .CSRFToken}}
+          <input type="hidden" name="idempotency_key" value="{{newID}}">
+          <label>
+            <span>{{t .Locale "field.reason"}}</span>
+            <select name="reason_code" required>
+              <option value="restriction_still_valid">{{t .Locale "trust.reason.stillValid"}}</option>
+              <option value="insufficient_evidence">{{t .Locale "trust.reason.insufficientEvidence"}}</option>
+              <option value="repeat_violation">{{t .Locale "trust.reason.repeatViolation"}}</option>
+            </select>
+          </label>
+          <label>
+            <span>{{t .Locale "field.internalComment"}}</span>
+            <textarea name="staff_comment" rows="3" required placeholder="{{t .Locale "trust.rejectCommentPlaceholder"}}"></textarea>
+          </label>
+          <button class="danger" type="submit">{{t .Locale "trust.rejectAppeal"}}</button>
+        </form>
+      {{else if not .Data.CanDecide}}
+        <p class="empty">{{t .Locale "trust.noDecisionPermission"}}</p>
+      {{else}}
+        <p class="empty">{{t .Locale "trust.appealClosed"}}</p>
+      {{end}}
+    </aside>
+  </div>
+</section>
+{{else}}
+<section class="section">
+  <a class="button" href="{{.Data.ListURL}}">{{t .Locale "trust.backToAppeals"}}</a>
+</section>
+{{end}}
+{{template "pageEnd" .}}
+{{end}}

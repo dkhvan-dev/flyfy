@@ -34,6 +34,15 @@ func NewRenderer() (*Renderer, error) {
 		"t": func(locale any, key string) string {
 			return translate(fmt.Sprint(locale), key)
 		},
+		"feedQualitySurface": func(locale any, value any) string {
+			return feedQualitySurfaceText(fmt.Sprint(locale), value)
+		},
+		"feedQualityBlockType": func(locale any, value any) string {
+			return feedQualityBlockTypeText(fmt.Sprint(locale), value)
+		},
+		"feedQualityAction": func(locale any, value any) string {
+			return feedQualityActionText(fmt.Sprint(locale), value)
+		},
 		"localeURL": localeURL,
 		"urlQuerySuffix": func(query string) template.URL {
 			query = strings.TrimSpace(query)

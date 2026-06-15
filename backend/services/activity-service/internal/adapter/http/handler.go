@@ -57,6 +57,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/activity-categories", h.ListActivityCategories)
 	mux.HandleFunc("GET /v1/activity-reviews", h.ListActivityReviews)
 	mux.HandleFunc("GET /v1/activity-organizer-reviews", h.ListActivityOrganizerReviews)
+	mux.HandleFunc("POST /internal/v1/activities/from-post", h.CreateActivityFromPost)
 	mux.HandleFunc("POST /v1/activities", h.CreateActivity)
 	mux.HandleFunc("GET /v1/activities", h.ListActivities)
 
@@ -366,39 +367,112 @@ func (h *Handler) CreateActivity(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	input, errCode := createActivityInputFromRequest(actorUserID, req)
+	if errCode != "" {
+		writeError(w, http.StatusBadRequest, errCode)
+		return
+	}
+
+	item, err := h.activityUC.CreateActivity(r.Context(), input)
+	if err != nil {
+		h.writeAppError(w, err, "failed to create activity")
+		return
+	}
+
+	resp, err := h.toActivityResponse(r.Context(), item)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to build activity response")
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, resp)
+}
+
+func (h *Handler) CreateActivityFromPost(w http.ResponseWriter, r *http.Request) {
+	if !h.requireInternalService(w, r) {
+		return
+	}
+
+	var req dto.CreateActivityFromPostRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	hostUserID, err := uuid.Parse(strings.TrimSpace(req.HostUserID))
+	if err != nil || hostUserID == uuid.Nil {
+		writeError(w, http.StatusBadRequest, "invalid hostUserId")
+		return
+	}
+
+	input, errCode := createActivityInputFromRequest(hostUserID, req.CreateActivityRequest)
+	if errCode != "" {
+		writeError(w, http.StatusBadRequest, errCode)
+		return
+	}
+
+	item, err := h.activityUC.CreateActivityFromPost(r.Context(), app.CreateActivityFromPostInput{
+		IdempotencyKey: strings.TrimSpace(req.IdempotencyKey),
+		SourceService:  "feed-service",
+		SourcePostID:   strings.TrimSpace(req.SourcePostID),
+		Input:          input,
+	})
+	if err != nil {
+		h.writeAppError(w, err, "failed to create activity from post")
+		return
+	}
+
+	resp, err := h.toActivityResponse(r.Context(), item)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to build activity response")
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, resp)
+}
+
+func (h *Handler) requireInternalService(w http.ResponseWriter, r *http.Request) bool {
+	if h.internalToken == "" {
+		return true
+	}
+	token := strings.TrimSpace(r.Header.Get("X-Internal-Service-Token"))
+	if token == "" {
+		token = bearerToken(r.Header.Get("Authorization"))
+	}
+	if token != h.internalToken {
+		writeError(w, http.StatusForbidden, "invalid internal service token")
+		return false
+	}
+	return true
+}
+
+func createActivityInputFromRequest(actorUserID uuid.UUID, req dto.CreateActivityRequest) (app.CreateActivityInput, string) {
 	startAt, err := parseRFC3339(req.StartAt)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid startAt")
-		return
+		return app.CreateActivityInput{}, "invalid startAt"
 	}
 	endAt, err := parseRFC3339(req.EndAt)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid endAt")
-		return
+		return app.CreateActivityInput{}, "invalid endAt"
 	}
 
 	confirmationDeadline, err := parseOptionalRFC3339(req.ConfirmationDeadline)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid confirmationDeadline")
-		return
+		return app.CreateActivityInput{}, "invalid confirmationDeadline"
 	}
 	coverFileID, err := parseOptionalUUIDString(req.CoverFileID)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid coverFileId")
-		return
+		return app.CreateActivityInput{}, "invalid coverFileId"
 	}
 	cityID, err := parseOptionalReferenceCityID(req.CityID)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid cityId")
-		return
+		return app.CreateActivityInput{}, "invalid cityId"
 	}
 	authorCityID, err := parseOptionalReferenceCityID(req.AuthorCityID)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid authorCityId")
-		return
+		return app.CreateActivityInput{}, "invalid authorCityId"
 	}
 
-	input := app.CreateActivityInput{
+	return app.CreateActivityInput{
 		HostUserID:                     actorUserID,
 		Title:                          req.Title,
 		Description:                    req.Description,
@@ -434,21 +508,7 @@ func (h *Handler) CreateActivity(w http.ResponseWriter, r *http.Request) {
 		AuthorCityID:                   authorCityID,
 		AuthorCityName:                 req.AuthorCityName,
 		VisibilityPassword:             req.VisibilityPassword,
-	}
-
-	item, err := h.activityUC.CreateActivity(r.Context(), input)
-	if err != nil {
-		h.writeAppError(w, err, "failed to create activity")
-		return
-	}
-
-	resp, err := h.toActivityResponse(r.Context(), item)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to build activity response")
-		return
-	}
-
-	writeJSON(w, http.StatusCreated, resp)
+	}, ""
 }
 
 func (h *Handler) GetActivityByID(w http.ResponseWriter, r *http.Request, activityID uuid.UUID) {
@@ -1510,6 +1570,8 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, app.ErrMeetingAddressUpdateClosed),
 		errors.Is(err, app.ErrModerationStateInvalid),
 		errors.Is(err, app.ErrActivityNotReviewable),
+		errors.Is(err, app.ErrActivityCreationInProgress),
+		errors.Is(err, app.ErrActivityIdempotencyConflict),
 		errors.Is(err, model.ErrActivityReviewAlreadyExists),
 		errors.Is(err, model.ErrActivityOrganizerReviewAlreadyExists):
 		writeError(w, http.StatusConflict, err.Error())

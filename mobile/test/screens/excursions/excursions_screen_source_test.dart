@@ -3,6 +3,26 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('excursions screen renders the excursions story tray surface', () async {
+    final source = await File(
+      'lib/screens/excursions/excursions_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('SurfaceStoryTray('));
+    expect(source, contains("surface: 'excursions'"));
+    expect(source, contains('viewerAvatarFileId: profile?.avatarFileId'));
+    expect(source, contains('viewerInitials: profile?.initials ??'));
+    expect(source, contains('auth.state == AuthState.authenticated'));
+
+    final trayStart = source.indexOf('SurfaceStoryTray(');
+    final authGuardStart = source.lastIndexOf(
+      'if (isLoggedIn) ...[',
+      trayStart,
+    );
+    expect(authGuardStart, isNonNegative);
+    expect(trayStart - authGuardStart, lessThan(180));
+  });
+
   test(
     'excursions screen loads public excursions and guards guide-only creation',
     () async {

@@ -476,10 +476,7 @@ void main() {
         contains('final List<_ExcursionItineraryDraft> _itinerary = [];'),
       );
       expect(source, contains('l10n.createExcursionItineraryEmpty'));
-      expect(
-        source,
-        contains('setState(() => _itinerary.remove(item));'),
-      );
+      expect(source, contains('setState(() => _itinerary.remove(item));'));
       expect(source, contains('_scheduleAutosave();'));
       expect(source, isNot(contains('Meet at base camp')));
       expect(source, isNot(contains('Mountain ascent and photography')));

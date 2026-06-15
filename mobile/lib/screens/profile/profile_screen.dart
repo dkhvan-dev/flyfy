@@ -11,7 +11,7 @@ import '../../core/network/chat_api.dart';
 import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
 import '../../core/network/excursion_api.dart';
-import '../../core/network/story_api.dart';
+import '../../core/network/post_api.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
@@ -23,13 +23,13 @@ import '../../features/profile/data/profile_api.dart';
 import '../../features/profile/models/guide_profile_vm.dart';
 import '../../features/profile/models/profile_follower_vm.dart';
 import '../../features/profile/models/user_profile_vm.dart';
-import '../../features/stories/models/story_vm.dart';
+import '../../features/stories/models/post_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/session_provider.dart';
 import 'edit_profile_screen.dart';
 import 'profile_style.dart';
 import 'widgets/profile_activity_card.dart';
-import 'widgets/profile_story_card.dart';
+import 'widgets/profile_post_card.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key, this.userId, this.initialProfile});
@@ -51,14 +51,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final ActivityApi _activityApi = ActivityApi();
   final ChatApi _chatApi = ChatApi();
   final ExcursionApi _excursionApi = ExcursionApi();
-  final StoryApi _storyApi = StoryApi();
+  final PostApi _postApi = PostApi();
 
   Future<UserProfileVm>? _foreignProfileFuture;
   UserProfileVm? _initialForeignProfile;
   Future<_ProfileExtras>? _extrasFuture;
   Future<int>? _activityCountFuture;
   Future<List<ActivityListItemVm>>? _foreignRecentActivitiesFuture;
-  Future<List<StoryVm>>? _foreignPopularStoriesFuture;
+  Future<List<PostVm>>? _foreignPopularStoriesFuture;
   Future<ProfileFollowersPageVm>? _incomingFriendRequestsFuture;
   Future<int>? _publishedStoriesCountFuture;
   Future<ExcursionReviewsPage>? _guideReviewsFuture;
@@ -570,13 +570,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return _foreignRecentActivitiesFuture!;
   }
 
-  Future<List<StoryVm>> _popularStoriesFutureFor(UserProfileVm profile) {
+  Future<List<PostVm>> _popularStoriesFutureFor(UserProfileVm profile) {
     final key =
         '${profile.userId.trim()}|$_foreignProfilePopularStoriesPreviewLimit';
     if (_foreignPopularStoriesFuture == null ||
         _foreignPopularStoriesKey != key) {
       _foreignPopularStoriesKey = key;
-      _foreignPopularStoriesFuture = _storyApi.getUserPopularStories(
+      _foreignPopularStoriesFuture = _postApi.getUserPopularPosts(
         profile.userId.trim(),
         limit: _foreignProfilePopularStoriesPreviewLimit,
       );
@@ -601,7 +601,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (_publishedStoriesCountFuture == null ||
         _publishedStoriesCountKey != key) {
       _publishedStoriesCountKey = key;
-      _publishedStoriesCountFuture = _storyApi.countPublishedStoriesForUser(
+      _publishedStoriesCountFuture = _postApi.countPublishedPostsForUser(
         profile.userId.trim(),
       );
     }
@@ -708,6 +708,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         requestedUserId.isEmpty || requestedUserId == currentUserId;
 
     return Scaffold(
+      key: ValueKey(
+        'profile-screen-${requestedUserId.isEmpty ? 'me' : requestedUserId}',
+      ),
       backgroundColor: Colors.transparent,
       body: ProfileResponsiveScope(
         child: ProfileGlassBackground(
@@ -924,7 +927,7 @@ class _ProfileBody extends StatelessWidget {
   final Future<ActivityOrganizerReviewsPage>? activityOrganizerReviewsFuture;
   final Future<UserBlockStatusVm>? blockStatusFuture;
   final Future<List<ActivityListItemVm>>? recentActivitiesFuture;
-  final Future<List<StoryVm>>? popularStoriesFuture;
+  final Future<List<PostVm>>? popularStoriesFuture;
   final Future<ProfileFollowersPageVm>? incomingFriendRequestsFuture;
   final Future<int> activityCountFuture;
   final Future<int> publishedStoriesCountFuture;
@@ -2452,7 +2455,7 @@ class _OwnProfileSections extends StatelessWidget {
   final bool isGuideProfile;
   final Future<ProfileFollowersPageVm>? incomingFriendRequestsFuture;
   final Future<List<ActivityListItemVm>>? recentActivitiesFuture;
-  final Future<List<StoryVm>>? popularStoriesFuture;
+  final Future<List<PostVm>>? popularStoriesFuture;
 
   @override
   Widget build(BuildContext context) {
@@ -2568,7 +2571,7 @@ class _ForeignProfileSections extends StatelessWidget {
   final Future<ActivityReviewsPage>? activityReviewsFuture;
   final Future<ActivityOrganizerReviewsPage>? activityOrganizerReviewsFuture;
   final Future<List<ActivityListItemVm>>? recentActivitiesFuture;
-  final Future<List<StoryVm>>? popularStoriesFuture;
+  final Future<List<PostVm>>? popularStoriesFuture;
 
   @override
   Widget build(BuildContext context) {
@@ -2733,7 +2736,7 @@ class _ForeignPopularStoriesSection extends StatelessWidget {
   });
 
   final String userId;
-  final Future<List<StoryVm>>? popularStoriesFuture;
+  final Future<List<PostVm>>? popularStoriesFuture;
 
   @override
   Widget build(BuildContext context) {
@@ -2755,7 +2758,7 @@ class _ForeignPopularStoriesSection extends StatelessWidget {
                   ? null
                   : () {
                       context.push(
-                        '/users/${Uri.encodeComponent(userId)}/stories',
+                        '/users/${Uri.encodeComponent(userId)}/posts',
                       );
                     },
               icon: const Icon(Icons.arrow_forward_rounded),
@@ -2777,7 +2780,7 @@ class _ForeignPopularStoriesSection extends StatelessWidget {
             subtitle: l10n.profileStoriesEmptySubtitle,
           )
         else
-          FutureBuilder<List<StoryVm>>(
+          FutureBuilder<List<PostVm>>(
             future: popularStoriesFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -2790,7 +2793,7 @@ class _ForeignPopularStoriesSection extends StatelessWidget {
                 );
               }
 
-              final stories = snapshot.data ?? const <StoryVm>[];
+              final stories = snapshot.data ?? const <PostVm>[];
               if (stories.isEmpty) {
                 return _PlaceholderShowcaseCard(
                   title: l10n.profileStoriesEmptyTitle,
@@ -2801,10 +2804,10 @@ class _ForeignPopularStoriesSection extends StatelessWidget {
               return Column(
                 children: [
                   for (var i = 0; i < stories.length; i++) ...[
-                    ProfileStoryCard(
-                      story: stories[i],
+                    ProfilePostCard(
+                      post: stories[i],
                       onTap: () => context.push(
-                        '/stories/${Uri.encodeComponent(stories[i].slug)}',
+                        '/posts/${Uri.encodeComponent(stories[i].slug)}',
                         extra: stories[i],
                       ),
                     ),

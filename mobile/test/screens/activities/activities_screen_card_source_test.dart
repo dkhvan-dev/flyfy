@@ -3,6 +3,25 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('activities screen renders the activities story tray surface', () async {
+    final source = await File(
+      'lib/screens/activities/activities_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('SurfaceStoryTray('));
+    expect(source, contains("surface: 'activities'"));
+    expect(source, contains('viewerAvatarFileId: profile?.avatarFileId'));
+    expect(source, contains('viewerInitials: profile?.initials ??'));
+
+    final trayStart = source.indexOf('SurfaceStoryTray(');
+    final authGuardStart = source.lastIndexOf(
+      'if (isLoggedIn) ...[',
+      trayStart,
+    );
+    expect(authGuardStart, isNonNegative);
+    expect(trayStart - authGuardStart, lessThan(180));
+  });
+
   test(
     'activities card does not duplicate location under category label',
     () async {

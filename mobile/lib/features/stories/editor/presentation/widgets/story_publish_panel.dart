@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../../core/ui/app_colors.dart';
 import '../../../../../l10n/generated/app_localizations.dart';
+import '../../../models/post_profile_contract.dart';
 import '../../data/story_editor_dto.dart';
 import '../story_editor_controller.dart';
 import 'story_editor_style.dart';
@@ -13,70 +14,26 @@ class StoryPublishPanel extends StatelessWidget {
     required this.onSaveDraft,
     required this.onPublish,
     required this.onOpenField,
+    this.publishEnabled = true,
+    this.hidePlaceChecks = false,
   });
 
   final StoryEditorState state;
   final VoidCallback onSaveDraft;
   final VoidCallback onPublish;
   final ValueChanged<String> onOpenField;
+  final bool publishEnabled;
+  final bool hidePlaceChecks;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final errors = state.publishValidation.errors;
-    final metadata = state.metadata;
-    final checks = [
-      _ChecklistItem(
-        field: 'title',
-        label: l10n.storyEditorChecklistTitle,
-        complete: metadata.title.trim().isNotEmpty,
-      ),
-      _ChecklistItem(
-        field: 'format',
-        label: l10n.storyEditorChecklistFormat,
-        complete: metadata.format.trim().isNotEmpty,
-      ),
-      _ChecklistItem(
-        field: 'category',
-        label: l10n.storyEditorChecklistCategory,
-        complete: metadata.category.trim().isNotEmpty,
-      ),
-      _ChecklistItem(
-        field: 'coverFileId',
-        label: l10n.storyEditorChecklistCover,
-        complete: (metadata.coverFileId ?? '').trim().isNotEmpty,
-      ),
-      _ChecklistItem(
-        field: 'place',
-        label: l10n.storyEditorChecklistPlace,
-        complete:
-            (metadata.placeName ?? '').trim().isNotEmpty ||
-            (metadata.placeCityId ?? '').trim().isNotEmpty,
-      ),
-      _ChecklistItem(
-        field: 'country',
-        label: l10n.storyEditorChecklistCountry,
-        complete: (metadata.placeCountryCode ?? '').trim().isNotEmpty,
-      ),
-      _ChecklistItem(
-        field: 'contentBlocks',
-        label: l10n.storyEditorChecklistContent,
-        complete: state.document.validateForPublish().issues.every(
-          (issue) => issue.code != 'content_required',
-        ),
-      ),
-      _ChecklistItem(
-        field: 'mediaQueue',
-        label: l10n.storyEditorChecklistMedia,
-        complete:
-            state.mediaQueue.items.isEmpty ||
-            state.mediaQueue.items.every(
-              (item) =>
-                  item.status == StoryEditorMediaStatus.uploaded ||
-                  item.status == StoryEditorMediaStatus.removed,
-            ),
-      ),
-    ];
+    final checks = _publishChecklistItems(
+      l10n,
+      state,
+      hidePlaceChecks: hidePlaceChecks,
+    );
     final isSaving = state.saveStatus.phase == StoryEditorSavePhase.saving;
     final saveStatusMessage = _saveStatusMessage(l10n, state.saveStatus);
 
@@ -158,7 +115,7 @@ class StoryPublishPanel extends StatelessWidget {
                   label: l10n.storyEditorPublishSemantic,
                   button: true,
                   child: FilledButton(
-                    onPressed: isSaving ? null : onPublish,
+                    onPressed: isSaving || !publishEnabled ? null : onPublish,
                     child: _ButtonLabelContent(
                       icon: Icons.publish_rounded,
                       label: l10n.storyEditorPublish,
@@ -171,6 +128,90 @@ class StoryPublishPanel extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  List<_ChecklistItem> _publishChecklistItems(
+    AppLocalizations l10n,
+    StoryEditorState state, {
+    bool hidePlaceChecks = false,
+  }) {
+    final metadata = state.metadata;
+    final coreChecks = [
+      _ChecklistItem(
+        field: 'contentBlocks',
+        label: l10n.storyEditorChecklistContent,
+        complete: state.document.validateForPublish().issues.every(
+          (issue) => issue.code != 'content_required',
+        ),
+      ),
+      _ChecklistItem(
+        field: 'mediaQueue',
+        label: l10n.storyEditorChecklistMedia,
+        complete:
+            state.mediaQueue.items.isEmpty ||
+            state.mediaQueue.items.every(
+              (item) =>
+                  item.status == StoryEditorMediaStatus.uploaded ||
+                  item.status == StoryEditorMediaStatus.removed,
+            ),
+      ),
+    ];
+
+    final profile = PostProfileContract.resolve(state.postProfileKey);
+    if (profile.isInlineThread) {
+      return coreChecks;
+    }
+
+    final metadataChecks = <_ChecklistItem>[];
+    if (profile.requiresTitle) {
+      metadataChecks.add(
+        _ChecklistItem(
+          field: 'title',
+          label: l10n.storyEditorChecklistTitle,
+          complete: metadata.title.trim().isNotEmpty,
+        ),
+      );
+    }
+    if (profile.requiresMaterialTaxonomy) {
+      metadataChecks.addAll([
+        _ChecklistItem(
+          field: 'format',
+          label: l10n.storyEditorChecklistFormat,
+          complete: metadata.format.trim().isNotEmpty,
+        ),
+        _ChecklistItem(
+          field: 'category',
+          label: l10n.storyEditorChecklistCategory,
+          complete: metadata.category.trim().isNotEmpty,
+        ),
+      ]);
+    }
+    if (profile.requiresCover) {
+      metadataChecks.add(
+        _ChecklistItem(
+          field: 'coverFileId',
+          label: l10n.storyEditorChecklistCover,
+          complete: (metadata.coverFileId ?? '').trim().isNotEmpty,
+        ),
+      );
+    }
+    if (profile.requiresPlace && !hidePlaceChecks) {
+      metadataChecks.addAll([
+        _ChecklistItem(
+          field: 'place',
+          label: l10n.storyEditorChecklistPlace,
+          complete:
+              (metadata.placeName ?? '').trim().isNotEmpty ||
+              (metadata.placeCityId ?? '').trim().isNotEmpty,
+        ),
+        _ChecklistItem(
+          field: 'country',
+          label: l10n.storyEditorChecklistCountry,
+          complete: (metadata.placeCountryCode ?? '').trim().isNotEmpty,
+        ),
+      ]);
+    }
+    return [...metadataChecks, ...coreChecks];
   }
 
   String _saveStatusLabel(AppLocalizations l10n, StoryEditorSavePhase phase) {
@@ -327,10 +368,22 @@ class _PublishChecklistTile extends StatelessWidget {
             ),
           ],
         );
-        final action = TextButton(
-          key: ValueKey('publish-check-${item.field}-open'),
-          onPressed: onOpen,
-          child: Text(openLabel, overflow: TextOverflow.ellipsis),
+        final action = ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 72, minHeight: 40),
+          child: Align(
+            alignment: AlignmentDirectional.topEnd,
+            child: TextButton(
+              key: ValueKey('publish-check-${item.field}-open'),
+              onPressed: onOpen,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+              ),
+              child: Text(openLabel, overflow: TextOverflow.ellipsis),
+            ),
+          ),
         );
 
         return Padding(
@@ -354,12 +407,19 @@ class _PublishChecklistTile extends StatelessWidget {
                   ],
                 )
               : Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    icon,
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: icon,
+                    ),
                     const SizedBox(width: StoryEditorSpacing.md),
                     Expanded(child: copy),
                     const SizedBox(width: StoryEditorSpacing.sm),
-                    action,
+                    Align(
+                      alignment: AlignmentDirectional.topEnd,
+                      child: action,
+                    ),
                   ],
                 ),
         );

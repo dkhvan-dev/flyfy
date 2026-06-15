@@ -4,14 +4,18 @@ import 'package:go_router/go_router.dart';
 import '../navigation/android_back_swipe_scope.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/profile/models/user_profile_vm.dart';
-import '../../features/stories/models/story_vm.dart';
+import '../../features/stories/editor/presentation/story_editor_trust_context.dart';
+import '../../features/stories/models/post_vm.dart';
 import '../../providers/auth_provider.dart';
 import '../../screens/auth/login_screen.dart';
 import '../../screens/auth/otp_screen.dart';
 import '../../screens/auth/password_reset_screen.dart';
 import '../../screens/home/home_screen.dart';
 import '../../screens/stories/create_story_screen.dart';
+import '../../screens/stories/my_story_archive_screen.dart';
+import '../../screens/stories/story_capture_screen.dart';
 import '../../screens/stories/story_details_screen.dart';
+import '../../screens/stories/story_tray_viewer_screen.dart';
 import '../../screens/stories/stories_screen.dart';
 import '../../screens/profile/profile_screen.dart';
 import '../../screens/profile/profile_user_activities_screen.dart';
@@ -44,6 +48,12 @@ import '../../screens/attractions/attractions_screen.dart';
 import '../../screens/attractions/attraction_details_screen.dart';
 import '../../features/attractions/models/attraction_vm.dart';
 import '../../features/excursions/models/excursion_vm.dart';
+import '../../features/feed/presentation/community_members_screen.dart';
+import '../../features/feed/presentation/community_moderation_screen.dart';
+import '../../features/feed/presentation/community_discovery_screen.dart';
+import '../../features/feed/presentation/community_profile_screen.dart';
+import '../../features/feed/presentation/feed_screen.dart';
+import '../../features/feed/models/feed_block_vm.dart';
 import '../../features/notifications/data/notification_api.dart';
 import '../../shared/map/app_map_links.dart';
 import '../../screens/common/feature_stub_screen.dart';
@@ -86,6 +96,59 @@ class AppRouter {
       routes: [
         GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
         GoRoute(
+          path: '/feed',
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const FeedScreen()),
+        ),
+        GoRoute(
+          path: '/communities',
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const CommunityDiscoveryScreen()),
+        ),
+        GoRoute(
+          path: '/communities/:communityId',
+          builder: (context, state) {
+            final communityId = state.pathParameters['communityId'] ?? '';
+            final initialCommunity = state.extra is FeedCommunityVm
+                ? state.extra! as FeedCommunityVm
+                : null;
+            final initialPostId = state.uri.queryParameters['postId'];
+            return _withAndroidBackSwipe(
+              CommunityProfileScreen(
+                communityId: communityId,
+                initialCommunity: initialCommunity,
+                initialPostId: initialPostId,
+              ),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/communities/:communityId/moderation',
+          builder: (context, state) {
+            final communityId = state.pathParameters['communityId'] ?? '';
+            final communityTitle = state.uri.queryParameters['title'];
+            return _withAndroidBackSwipe(
+              CommunityModerationScreen(
+                communityId: communityId,
+                communityTitle: communityTitle,
+              ),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/communities/:communityId/members',
+          builder: (context, state) {
+            final communityId = state.pathParameters['communityId'] ?? '';
+            final communityTitle = state.uri.queryParameters['title'];
+            return _withAndroidBackSwipe(
+              CommunityMembersScreen(
+                communityId: communityId,
+                communityTitle: communityTitle,
+              ),
+            );
+          },
+        ),
+        GoRoute(
           path: '/login',
           builder: (context, state) {
             final from = state.uri.queryParameters['from'];
@@ -110,45 +173,90 @@ class AppRouter {
               _withAndroidBackSwipe(const PasswordResetScreen()),
         ),
         GoRoute(
-          path: '/stories',
+          path: '/posts',
           builder: (context, state) =>
               _withAndroidBackSwipe(const StoriesScreen()),
         ),
         GoRoute(
-          path: '/me/stories',
+          path: '/me/posts',
           builder: (context, state) =>
               _withAndroidBackSwipe(const StoriesScreen(myOnly: true)),
         ),
         GoRoute(
-          path: '/stories/create',
+          path: '/me/stories',
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const MyStoryArchiveScreen()),
+        ),
+        GoRoute(
+          path: '/posts/create',
           builder: (context, state) {
-            final initialStory = state.extra is StoryVm
-                ? state.extra! as StoryVm
+            final extra = state.extra;
+            final initialStory = extra is PostVm ? extra : null;
+            final communityTrustContext = extra is StoryEditorTrustContext
+                ? extra
                 : null;
+            final communityId = state.uri.queryParameters['communityId'];
+            final postProfileKey = state.uri.queryParameters['postProfileKey'];
+            final availablePostProfileKeys = _splitCsvQueryValue(
+              state.uri.queryParameters['postProfileKeys'],
+            );
+            final communityCountryCode =
+                state.uri.queryParameters['communityCountryCode'];
+            final communityCityId =
+                state.uri.queryParameters['communityCityId'];
+            final communityCityName =
+                state.uri.queryParameters['communityCityName'];
             return _withAndroidBackSwipe(
-              CreateStoryScreen(initialStory: initialStory),
+              CreateStoryScreen(
+                initialStory: initialStory,
+                communityId: communityId,
+                postProfileKey: postProfileKey,
+                availablePostProfileKeys: availablePostProfileKeys,
+                communityCountryCode: communityCountryCode,
+                communityCityId: communityCityId,
+                communityCityName: communityCityName,
+                communityTrustContext: communityTrustContext,
+              ),
             );
           },
         ),
         GoRoute(
-          path: '/stories/:storyId/edit',
+          path: '/stories/capture',
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const StoryCaptureScreen()),
+        ),
+        GoRoute(
+          path: '/posts/:postId/edit',
           builder: (context, state) {
-            final storyId = state.pathParameters['storyId'] ?? '';
-            final initialStory = state.extra is StoryVm
-                ? state.extra! as StoryVm
+            final storyId = state.pathParameters['postId'] ?? '';
+            final initialStory = state.extra is PostVm
+                ? state.extra! as PostVm
                 : null;
             return _withAndroidBackSwipe(
-              CreateStoryScreen(storyId: storyId, initialStory: initialStory),
+              CreateStoryScreen(
+                storyId: storyId,
+                initialStory: initialStory,
+                returnOnSave: state.uri.queryParameters['returnOnSave'] == '1',
+              ),
             );
           },
         ),
         GoRoute(
-          path: '/stories/:slug',
+          path: '/stories/viewer',
+          builder: (context, state) {
+            final data = state.extra is StoryTrayViewerRouteData
+                ? state.extra! as StoryTrayViewerRouteData
+                : const StoryTrayViewerRouteData(stories: []);
+            return _withAndroidBackSwipe(StoryTrayViewerScreen(data: data));
+          },
+        ),
+        GoRoute(
+          path: '/posts/:slug',
           builder: (context, state) {
             final slug = state.pathParameters['slug'] ?? '';
             final initialCommentId = state.uri.queryParameters['comment'];
-            final initialStory = state.extra is StoryVm
-                ? state.extra! as StoryVm
+            final initialStory = state.extra is PostVm
+                ? state.extra! as PostVm
                 : null;
             return _withAndroidBackSwipe(
               StoryDetailsScreen(
@@ -235,7 +343,7 @@ class AppRouter {
           },
         ),
         GoRoute(
-          path: '/users/:userId/stories',
+          path: '/users/:userId/posts',
           builder: (context, state) {
             final userId = state.pathParameters['userId'] ?? '';
             return _withAndroidBackSwipe(StoriesScreen(authorId: userId));
@@ -601,8 +709,11 @@ class AppRouter {
 
     if (location == '/activities' ||
         location == '/excursions' ||
+        location == '/feed' ||
+        location == '/communities' ||
         location == '/guides' ||
-        location == '/stories' ||
+        location == '/posts' ||
+        location == '/stories/viewer' ||
         location == '/menu' ||
         location == '/map' ||
         location == '/services' ||
@@ -617,7 +728,25 @@ class AppRouter {
       return true;
     }
 
-    if (location.startsWith('/stories/')) {
+    if (location.startsWith('/communities/')) {
+      final isProtectedCommunitySubroute =
+          location.contains('/moderation') || location.contains('/members');
+      return !isProtectedCommunitySubroute;
+    }
+
+    if (location.startsWith('/posts/create')) {
+      return false;
+    }
+
+    if (location.startsWith('/stories/capture')) {
+      return false;
+    }
+
+    if (location.startsWith('/posts/') && location.endsWith('/edit')) {
+      return false;
+    }
+
+    if (location.startsWith('/posts/')) {
       return true;
     }
 
@@ -685,6 +814,15 @@ class KeyboardDismissRouteObserver extends NavigatorObserver {
 
 Widget _withAndroidBackSwipe(Widget child) {
   return AndroidBackSwipeScope(child: child);
+}
+
+List<String>? _splitCsvQueryValue(String? value) {
+  final parts = (value ?? '')
+      .split(',')
+      .map((part) => part.trim())
+      .where((part) => part.isNotEmpty)
+      .toList(growable: false);
+  return parts.isEmpty ? null : parts;
 }
 
 MapTarget? _mapTargetFromQuery(GoRouterState state) {

@@ -260,6 +260,43 @@ func (r *PGTrustRepository) UpsertRuntimeRestriction(ctx context.Context, restri
 	return nil
 }
 
+func (r *PGTrustRepository) GetRuntimeRestrictionByID(ctx context.Context, restrictionID uuid.UUID) (model.RuntimeRestriction, error) {
+	const query = `
+		SELECT
+			id, user_id, case_id, restriction_code, status, reason_code, source_event_id,
+			created_by_staff_id, expires_at, created_at, lifted_at, lifted_by_staff_id
+		FROM runtime_restrictions
+		WHERE id = $1
+		LIMIT 1
+	`
+	var (
+		item      model.RuntimeRestriction
+		statusRaw string
+	)
+	err := r.pool.QueryRow(ctx, query, restrictionID).Scan(
+		&item.ID,
+		&item.UserID,
+		&item.CaseID,
+		&item.RestrictionCode,
+		&statusRaw,
+		&item.ReasonCode,
+		&item.SourceEventID,
+		&item.CreatedByStaffID,
+		&item.ExpiresAt,
+		&item.CreatedAt,
+		&item.LiftedAt,
+		&item.LiftedByStaffID,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return model.RuntimeRestriction{}, port.ErrNotFound
+		}
+		return model.RuntimeRestriction{}, fmt.Errorf("select runtime restriction: %w", err)
+	}
+	item.Status = model.RuntimeRestrictionStatus(statusRaw)
+	return item, nil
+}
+
 func (r *PGTrustRepository) LiftRuntimeRestriction(ctx context.Context, restrictionID uuid.UUID, _ uuid.UUID, liftedBy *uuid.UUID, liftedAt time.Time, reasonCode string) error {
 	if liftedAt.IsZero() {
 		liftedAt = time.Now().UTC()
@@ -287,4 +324,170 @@ func (r *PGTrustRepository) LiftRuntimeRestriction(ctx context.Context, restrict
 		return fmt.Errorf("lift runtime restriction: %w", err)
 	}
 	return nil
+}
+
+func (r *PGTrustRepository) CreateRestrictionAppeal(ctx context.Context, appeal model.RestrictionAppeal) (model.RestrictionAppeal, error) {
+	if appeal.CreatedAt.IsZero() {
+		appeal.CreatedAt = time.Now().UTC()
+	}
+	if appeal.UpdatedAt.IsZero() {
+		appeal.UpdatedAt = appeal.CreatedAt
+	}
+	const query = `
+		INSERT INTO restriction_appeals (
+			id, user_id, restriction_id, status, reason_code, user_message,
+			idempotency_key, created_at, updated_at
+		) VALUES (
+			$1, $2, $3, $4, $5, $6,
+			$7, $8, $9
+		)
+		ON CONFLICT (user_id, restriction_id, idempotency_key)
+			WHERE idempotency_key <> ''
+		DO UPDATE SET
+			updated_at = restriction_appeals.updated_at
+		RETURNING
+			id, user_id, restriction_id, status, reason_code, user_message,
+			idempotency_key, created_at, updated_at, decided_at, decided_by_staff_id,
+			decision_reason_code, staff_comment
+	`
+	stored, err := scanRestrictionAppealRow(r.pool.QueryRow(
+		ctx,
+		query,
+		appeal.ID,
+		appeal.UserID,
+		appeal.RestrictionID,
+		string(appeal.Status),
+		appeal.ReasonCode,
+		appeal.UserMessage,
+		appeal.IdempotencyKey,
+		appeal.CreatedAt,
+		appeal.UpdatedAt,
+	))
+	if err != nil {
+		return model.RestrictionAppeal{}, fmt.Errorf("insert restriction appeal: %w", err)
+	}
+	return stored, nil
+}
+
+func (r *PGTrustRepository) GetRestrictionAppeal(ctx context.Context, appealID uuid.UUID) (model.RestrictionAppeal, error) {
+	const query = `
+		SELECT
+			id, user_id, restriction_id, status, reason_code, user_message,
+			idempotency_key, created_at, updated_at, decided_at, decided_by_staff_id,
+			decision_reason_code, staff_comment
+		FROM restriction_appeals
+		WHERE id = $1
+		LIMIT 1
+	`
+	appeal, err := scanRestrictionAppealRow(r.pool.QueryRow(ctx, query, appealID))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return model.RestrictionAppeal{}, port.ErrNotFound
+		}
+		return model.RestrictionAppeal{}, fmt.Errorf("select restriction appeal: %w", err)
+	}
+	return appeal, nil
+}
+
+func (r *PGTrustRepository) ListRestrictionAppeals(ctx context.Context, input model.ListRestrictionAppealsInput) ([]model.RestrictionAppeal, error) {
+	const query = `
+		SELECT
+			id, user_id, restriction_id, status, reason_code, user_message,
+			idempotency_key, created_at, updated_at, decided_at, decided_by_staff_id,
+			decision_reason_code, staff_comment
+		FROM restriction_appeals
+		WHERE ($1 = '' OR status = $1)
+			AND ($2::uuid IS NULL OR user_id = $2)
+		ORDER BY created_at DESC, id DESC
+	`
+	rows, err := r.pool.Query(ctx, query, string(input.Status), input.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("list restriction appeals: %w", err)
+	}
+	defer rows.Close()
+
+	var appeals []model.RestrictionAppeal
+	for rows.Next() {
+		appeal, err := scanRestrictionAppealRow(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scan restriction appeal: %w", err)
+		}
+		appeals = append(appeals, appeal)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate restriction appeals: %w", err)
+	}
+	return appeals, nil
+}
+
+func (r *PGTrustRepository) SaveRestrictionAppealDecision(ctx context.Context, appeal model.RestrictionAppeal) (model.RestrictionAppeal, error) {
+	if appeal.UpdatedAt.IsZero() {
+		appeal.UpdatedAt = time.Now().UTC()
+	}
+	const query = `
+		UPDATE restriction_appeals
+		SET
+			status = $2,
+			updated_at = $3,
+			decided_at = $4,
+			decided_by_staff_id = $5,
+			decision_reason_code = $6,
+			staff_comment = $7
+		WHERE id = $1
+			AND status = $8
+		RETURNING
+			id, user_id, restriction_id, status, reason_code, user_message,
+			idempotency_key, created_at, updated_at, decided_at, decided_by_staff_id,
+			decision_reason_code, staff_comment
+	`
+	stored, err := scanRestrictionAppealRow(r.pool.QueryRow(
+		ctx,
+		query,
+		appeal.ID,
+		string(appeal.Status),
+		appeal.UpdatedAt,
+		appeal.DecidedAt,
+		appeal.DecidedByStaffID,
+		appeal.DecisionReasonCode,
+		appeal.StaffComment,
+		string(model.RestrictionAppealStatusPending),
+	))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return model.RestrictionAppeal{}, port.ErrNotFound
+		}
+		return model.RestrictionAppeal{}, fmt.Errorf("update restriction appeal decision: %w", err)
+	}
+	return stored, nil
+}
+
+type appealRowScanner interface {
+	Scan(dest ...any) error
+}
+
+func scanRestrictionAppealRow(row appealRowScanner) (model.RestrictionAppeal, error) {
+	var (
+		appeal    model.RestrictionAppeal
+		statusRaw string
+	)
+	err := row.Scan(
+		&appeal.ID,
+		&appeal.UserID,
+		&appeal.RestrictionID,
+		&statusRaw,
+		&appeal.ReasonCode,
+		&appeal.UserMessage,
+		&appeal.IdempotencyKey,
+		&appeal.CreatedAt,
+		&appeal.UpdatedAt,
+		&appeal.DecidedAt,
+		&appeal.DecidedByStaffID,
+		&appeal.DecisionReasonCode,
+		&appeal.StaffComment,
+	)
+	if err != nil {
+		return model.RestrictionAppeal{}, err
+	}
+	appeal.Status = model.RestrictionAppealStatus(statusRaw)
+	return appeal, nil
 }

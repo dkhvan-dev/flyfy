@@ -22,6 +22,7 @@ import '../../features/activities/activity_formatters.dart';
 import '../../features/activities/activity_taxonomy_resolver.dart';
 import '../../features/activities/models/activity_category_vm.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
+import '../../features/feed/widgets/contextual_story_tray.dart';
 import '../../features/profile/data/guide_api.dart';
 import '../../features/profile/profile_completion_gate.dart';
 import '../../features/profile/profile_guard_result.dart';
@@ -471,6 +472,8 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
         onMyExcursionsTap: () =>
             _runDrawerAction(() async => context.push('/me/excursions')),
         onMyStoriesTap: () =>
+            _runDrawerAction(() async => context.push('/me/posts')),
+        onMyStoryArchiveTap: () =>
             _runDrawerAction(() async => context.push('/me/stories')),
         onActivitiesTap: () => _runDrawerAction(() async {}),
         onLoginTap: () => _runDrawerAction(
@@ -567,6 +570,15 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                     horizontalPadding: 0,
                                   ),
                                   SizedBox(height: layout.sectionGap),
+                                  if (isLoggedIn) ...[
+                                    SurfaceStoryTray(
+                                      surface: 'activities',
+                                      viewerAvatarFileId: profile?.avatarFileId,
+                                      viewerInitials: profile?.initials ?? 'F',
+                                      viewerUserId: profile?.userId,
+                                    ),
+                                    SizedBox(height: layout.sectionGap),
+                                  ],
                                   _DiscoverSearchField(
                                     controller: _searchController,
                                     focusNode: _searchFocusNode,

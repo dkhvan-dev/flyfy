@@ -1,11 +1,11 @@
 import 'dart:async';
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/network/story_api.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
 import '../../features/activities/activity_cover_url.dart';
@@ -15,10 +15,14 @@ import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/attractions/attraction_ui.dart';
 import '../../features/attractions/data/attraction_api.dart';
 import '../../features/attractions/models/attraction_vm.dart';
+import '../../features/feed/data/feed_api.dart';
+import '../../features/feed/models/feed_block_vm.dart';
+import '../../features/feed/widgets/contextual_story_tray.dart';
 import '../../features/profile/data/guide_api.dart';
 import '../../features/services/service_catalog.dart';
 import '../../features/services/widgets/service_grid.dart';
 import '../../features/stories/models/story_vm.dart';
+import '../../features/stories/models/post_vm.dart';
 import '../../features/stories/story_ui.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
@@ -32,7 +36,25 @@ import '../common/app_side_drawer.dart';
 import 'widgets/home_location_picker_sheet.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({
+    super.key,
+    this.feedApi,
+    this.attractionApi,
+    this.guideApi,
+    this.initialDataLoadDelay = _initialHomeDataDelay,
+    this.initialDataLoadStagger = _initialHomeDataStagger,
+    this.waitForFirstFrameRasterized = true,
+  });
+
+  static const _initialHomeDataDelay = Duration(milliseconds: 350);
+  static const _initialHomeDataStagger = Duration(milliseconds: 160);
+
+  final FeedApi? feedApi;
+  final AttractionApi? attractionApi;
+  final GuideApi? guideApi;
+  final Duration initialDataLoadDelay;
+  final Duration initialDataLoadStagger;
+  final bool waitForFirstFrameRasterized;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -43,9 +65,10 @@ class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
       GlobalKey<RefreshIndicatorState>();
   final ScrollController _scrollController = ScrollController();
-  final GuideApi _guideApi = GuideApi();
-  final AttractionApi _attractionApi = AttractionApi();
-  final StoryApi _storyApi = StoryApi();
+  late final GuideApi _guideApi = widget.guideApi ?? GuideApi();
+  late final AttractionApi _attractionApi =
+      widget.attractionApi ?? AttractionApi();
+  late final FeedApi _feedApi = widget.feedApi ?? FeedApi();
   String? _requestedHostedActivitiesForUserId;
   String? _requestedJoinedActivitiesForUserId;
   String? _requestedTopAttractionsLocale;
@@ -53,12 +76,14 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isGuideBadgeLoading = false;
   int _guideBadgeRequestVersion = 0;
   List<AttractionVm> _topAttractions = const [];
-  List<StoryVm> _topStories = const [];
+  List<StoryVm> _homeStoryTrayStories = const [];
+  List<PostVm> _topPosts = const [];
+  Map<String, _HomePostFeedEventTarget> _topPostFeedTargets = const {};
   bool _topAttractionsLoading = true;
   bool _topAttractionsLoadFailed = false;
-  bool _topStoriesLoading = true;
-  bool _topStoriesLoadFailed = false;
-  bool _topStoriesRequestStarted = false;
+  bool _topPostsLoading = true;
+  bool _topPostsLoadFailed = false;
+  bool _topPostsRequestStarted = false;
   bool _showGuideBadge = false;
   bool _isGuideStatusRevoked = false;
   bool _suppressGuideFallback = false;
@@ -68,9 +93,6 @@ class _HomeScreenState extends State<HomeScreen> {
       'https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?auto=format&fit=crop&w=900&q=80';
   static const _promoMountainImageUrl =
       'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=900&q=80';
-
-  static const _initialHomeDataDelay = Duration(milliseconds: 350);
-  static const _initialHomeDataStagger = Duration(milliseconds: 160);
 
   @override
   void initState() {
@@ -89,8 +111,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _runInitialDataLoad() async {
-    await WidgetsBinding.instance.waitUntilFirstFrameRasterized;
-    await Future<void>.delayed(_initialHomeDataDelay);
+    if (widget.waitForFirstFrameRasterized) {
+      await WidgetsBinding.instance.waitUntilFirstFrameRasterized;
+    }
+    await Future<void>.delayed(widget.initialDataLoadDelay);
     if (!mounted) return;
 
     final provider = context.read<ActivityProvider>();
@@ -112,14 +136,14 @@ class _HomeScreenState extends State<HomeScreen> {
       unawaited(categoryLoad);
     }
 
-    await Future<void>.delayed(_initialHomeDataStagger);
+    await Future<void>.delayed(widget.initialDataLoadStagger);
     if (!mounted) return;
     if (provider.state == ActivitiesState.initial && provider.items.isEmpty) {
       final activitiesLoad = provider.loadActivities();
       unawaited(activitiesLoad);
     }
 
-    await Future<void>.delayed(_initialHomeDataStagger);
+    await Future<void>.delayed(widget.initialDataLoadStagger);
     if (!mounted) return;
     final currentUserId = (sessionProvider.profile?.userId ?? '').trim();
     if (currentUserId.isNotEmpty &&
@@ -129,13 +153,13 @@ class _HomeScreenState extends State<HomeScreen> {
       unawaited(joinedLoad);
     }
 
-    await Future<void>.delayed(_initialHomeDataStagger);
+    await Future<void>.delayed(widget.initialDataLoadStagger);
     if (!mounted) return;
     unawaited(_loadTopAttractions());
 
-    await Future<void>.delayed(_initialHomeDataStagger);
+    await Future<void>.delayed(widget.initialDataLoadStagger);
     if (!mounted) return;
-    unawaited(_loadTopStories());
+    unawaited(_loadTopPosts());
   }
 
   @override
@@ -214,17 +238,124 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openStories() {
-    context.push('/stories');
+    context.push('/posts');
   }
 
-  void _openStoryDetails(StoryVm story) {
-    final slug = story.slug.trim();
+  void _openTopPost(PostVm post) {
+    _trackTopPostClick(post);
+    final slug = post.slug.trim();
     if (slug.isEmpty) {
-      _openStories();
+      return;
+    }
+    context.push('/posts/${Uri.encodeComponent(slug)}', extra: post);
+  }
+
+  void _trackTopPostClick(PostVm post) {
+    final postKey = _homePostKey(post);
+    final postId = post.id.trim();
+    if (postKey.isEmpty || postId.isEmpty) {
       return;
     }
 
-    context.push('/stories/${Uri.encodeComponent(slug)}', extra: story);
+    final target = _topPostFeedTargets[postKey];
+    if (target == null) {
+      return;
+    }
+
+    _trackHomeFeedEvents([
+      FeedEventRequest(
+        eventId: _homeFeedUuidV4(),
+        eventType: 'click',
+        surface: 'home',
+        tab: 'for_you',
+        blockId: target.blockId,
+        blockType: target.blockType,
+        postId: postId,
+        rank: target.rank,
+        occurredAt: DateTime.now().toUtc(),
+        metadata: {'entityType': 'post', 'entityId': postId},
+      ),
+    ]);
+  }
+
+  void _trackHomeEntityConversionClick({
+    required String blockId,
+    required String blockType,
+    required String entityType,
+    required String entityId,
+    required String source,
+    required int rank,
+    Map<String, Object?> metadata = const {},
+  }) {
+    final normalizedEntityId = entityId.trim();
+    if (normalizedEntityId.isEmpty) {
+      return;
+    }
+
+    final eventMetadata = <String, Object?>{
+      'action': 'conversion',
+      'entityType': entityType.trim(),
+      'entityId': normalizedEntityId,
+      'source': source.trim(),
+    };
+    for (final entry in metadata.entries) {
+      final key = entry.key.trim();
+      final value = entry.value;
+      if (key.isEmpty || value == null) {
+        continue;
+      }
+      if (value is String) {
+        final trimmed = value.trim();
+        if (trimmed.isNotEmpty) {
+          eventMetadata[key] = trimmed;
+        }
+        continue;
+      }
+      if (value is bool || value is num) {
+        eventMetadata[key] = value;
+        continue;
+      }
+      if (value is Iterable) {
+        final items = value
+            .whereType<String>()
+            .map((item) => item.trim())
+            .where((item) => item.isNotEmpty && item.length <= 64)
+            .take(20)
+            .toList(growable: false);
+        if (items.isNotEmpty) {
+          eventMetadata[key] = items;
+        }
+      }
+    }
+
+    _trackHomeFeedEvents([
+      FeedEventRequest(
+        eventId: _homeFeedUuidV4(),
+        eventType: 'click',
+        surface: 'home',
+        tab: 'for_you',
+        blockId: blockId,
+        blockType: blockType,
+        rank: rank < 0 ? 0 : rank,
+        occurredAt: DateTime.now().toUtc(),
+        metadata: eventMetadata,
+      ),
+    ]);
+  }
+
+  void _trackHomeFeedEvents(List<FeedEventRequest> events) {
+    if (events.isEmpty) {
+      return;
+    }
+    unawaited(_sendHomeFeedEvents(events));
+  }
+
+  Future<void> _sendHomeFeedEvents(List<FeedEventRequest> events) async {
+    try {
+      await _feedApi.trackFeedEvents(events);
+    } catch (_) {
+      // Feed analytics should never block the Home browsing flow.
+    }
   }
 
   void _openAttractions() {
@@ -237,14 +368,71 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _openService(TravelServiceEntry service) {
     if (!service.isAvailable || service.route.trim().isEmpty) return;
+    final conversionTarget = _homeServiceConversionTarget(service);
+    if (conversionTarget != null) {
+      _trackHomeEntityConversionClick(
+        blockId: 'home:services',
+        blockType: conversionTarget.blockType,
+        entityType: conversionTarget.entityType,
+        entityId: conversionTarget.entityId,
+        source: 'home_services',
+        rank: conversionTarget.rank,
+        metadata: {
+          'title': service.title,
+          'route': service.route,
+          'categorySlug': conversionTarget.categorySlug,
+          'semanticTags': conversionTarget.semanticTags,
+        },
+      );
+    }
     context.push(service.route);
   }
 
   void _openAttractionDetails(AttractionVm attraction) {
+    final attractionId = attraction.id.trim();
+    final rank = _topAttractions.indexWhere(
+      (item) => item.id.trim() == attractionId,
+    );
+    _trackHomeEntityConversionClick(
+      blockId: 'home:top_destinations',
+      blockType: 'attraction_card',
+      entityType: 'attraction',
+      entityId: attractionId,
+      source: 'home_top_destinations',
+      rank: rank,
+      metadata: {
+        'title': attraction.title,
+        'category': attraction.category,
+        'countryCode': attraction.countryCode,
+        'cityId': attraction.cityId,
+        'tags': attraction.tags,
+      },
+    );
     context.push('/attractions/${attraction.id}', extra: attraction);
   }
 
-  void _openActivityDetails(String activityId) {
+  void _openRecommendedActivityDetails(ActivityListItemVm activity, int rank) {
+    final activityId = activity.id.trim();
+    _trackHomeEntityConversionClick(
+      blockId: 'home:recommended_activities',
+      blockType: 'activity_card',
+      entityType: 'activity',
+      entityId: activityId,
+      source: 'home_recommended_activities',
+      rank: rank,
+      metadata: {
+        'title': activity.title,
+        'categorySlug': activity.categorySlug,
+        'format': activity.format,
+        'countryCode': activity.countryCode,
+        'cityId': activity.cityId,
+        'tags': activity.tags,
+      },
+    );
+    _openActivityDetailsById(activityId);
+  }
+
+  void _openActivityDetailsById(String activityId) {
     final authProvider = context.read<AuthProvider>();
 
     if (authProvider.state != AuthState.authenticated) {
@@ -269,7 +457,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     await Future.wait<void>([
       _loadTopAttractions(force: true),
-      _loadTopStories(force: true),
+      _loadTopPosts(force: true),
     ]);
   }
 
@@ -344,32 +532,45 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _loadTopStories({bool force = false}) async {
+  Future<void> _loadTopPosts({bool force = false}) async {
     if (!mounted) return;
     if (!force &&
-        _topStoriesRequestStarted &&
-        (_topStories.isNotEmpty || _topStoriesLoading)) {
+        _topPostsRequestStarted &&
+        (_topPosts.isNotEmpty || _topPostsLoading)) {
       return;
     }
 
-    _topStoriesRequestStarted = true;
+    _topPostsRequestStarted = true;
     setState(() {
-      _topStoriesLoading = _topStories.isEmpty;
-      _topStoriesLoadFailed = false;
+      _topPostsLoading = _topPosts.isEmpty;
+      _topPostsLoadFailed = false;
     });
 
     try {
-      final stories = await _storyApi.listStories(sort: 'popular', limit: 5);
+      final page = await _feedApi.getFeed(
+        surface: 'home',
+        tab: 'for_you',
+        limit: 20,
+      );
+      final storyTrayStories = _homeStoryTrayStoriesFromFeedBlocks(page.items);
+      final feedItems = _homePostFeedItemsFromFeedBlocks(page.items);
+      final topItems = feedItems.take(5).toList(growable: false);
       if (!mounted) return;
       setState(() {
-        _topStories = stories.take(5).toList(growable: false);
-        _topStoriesLoading = false;
+        _homeStoryTrayStories = storyTrayStories;
+        _topPosts = topItems.map((item) => item.post).toList(growable: false);
+        _topPostFeedTargets =
+            Map<String, _HomePostFeedEventTarget>.unmodifiable({
+              for (final item in topItems)
+                _homePostKey(item.post): item.eventTarget,
+            });
+        _topPostsLoading = false;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _topStoriesLoading = false;
-        _topStoriesLoadFailed = true;
+        _topPostsLoading = false;
+        _topPostsLoadFailed = true;
       });
     }
   }
@@ -796,7 +997,8 @@ class _HomeScreenState extends State<HomeScreen> {
         onMyActivitiesTap: () => _runDrawerAction(_openMyActivities),
         onMyExcursionsTap: () =>
             _runDrawerAction(() => context.push('/me/excursions')),
-        onMyStoriesTap: () =>
+        onMyStoriesTap: () => _runDrawerAction(() => context.push('/me/posts')),
+        onMyStoryArchiveTap: () =>
             _runDrawerAction(() => context.push('/me/stories')),
         onActivitiesTap: () => _runDrawerAction(_openActivities),
         onLoginTap: () => _runDrawerAction(() => context.push('/login')),
@@ -892,7 +1094,20 @@ class _HomeScreenState extends State<HomeScreen> {
                                         hint: l10n.homeSearchHint,
                                         onTap: _openActivities,
                                       ),
-                                      SizedBox(height: isCompact ? 30 : 36),
+                                      if (isLoggedIn) ...[
+                                        const SizedBox(height: 16),
+                                        ContextualStoryTrayBlock(
+                                          surface: 'home',
+                                          stories: _homeStoryTrayStories,
+                                          viewerAvatarFileId:
+                                              profile?.avatarFileId,
+                                          viewerInitials:
+                                              profile?.initials ?? 'F',
+                                          viewerUserId: profile?.userId,
+                                        ),
+                                        SizedBox(height: isCompact ? 24 : 30),
+                                      ] else
+                                        SizedBox(height: isCompact ? 24 : 30),
                                       _SectionHeader(
                                         title: l10n.servicesSectionTitle,
                                         actionLabel: l10n.servicesAllButton,
@@ -927,13 +1142,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                         onActionTap: _openStories,
                                       ),
                                       const SizedBox(height: 14),
-                                      _TopStoriesCarousel(
-                                        stories: _topStories,
-                                        isLoading: _topStoriesLoading,
-                                        hasError: _topStoriesLoadFailed,
-                                        onStoryTap: _openStoryDetails,
+                                      _TopPostsCarousel(
+                                        posts: _topPosts,
+                                        isLoading: _topPostsLoading,
+                                        hasError: _topPostsLoadFailed,
+                                        onPostTap: _openTopPost,
                                         onRetry: () =>
-                                            _loadTopStories(force: true),
+                                            _loadTopPosts(force: true),
                                         onEmptyTap: _openStories,
                                       ),
                                       SizedBox(height: isCompact ? 30 : 34),
@@ -951,7 +1166,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                           _refreshActivities();
                                         },
                                         onEmptyTap: _openActivities,
-                                        onActivityTap: _openActivityDetails,
+                                        onActivityTap:
+                                            _openRecommendedActivityDetails,
                                         location: homeLocation,
                                       ),
                                     ],
@@ -972,6 +1188,48 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+}
+
+class _HomeServiceConversionTarget {
+  const _HomeServiceConversionTarget({
+    required this.blockType,
+    required this.entityType,
+    required this.entityId,
+    required this.rank,
+    required this.categorySlug,
+    required this.semanticTags,
+  });
+
+  final String blockType;
+  final String entityType;
+  final String entityId;
+  final int rank;
+  final String categorySlug;
+  final List<String> semanticTags;
+}
+
+_HomeServiceConversionTarget? _homeServiceConversionTarget(
+  TravelServiceEntry service,
+) {
+  return switch (service.route.trim()) {
+    '/excursions' => const _HomeServiceConversionTarget(
+      blockType: 'tour_card',
+      entityType: 'tour',
+      entityId: 'excursions',
+      rank: 1,
+      categorySlug: 'tour',
+      semanticTags: ['tour', 'excursion'],
+    ),
+    '/guides' => const _HomeServiceConversionTarget(
+      blockType: 'guide_card',
+      entityType: 'guide',
+      entityId: 'guides',
+      rank: 2,
+      categorySlug: 'guide',
+      semanticTags: ['guide', 'local_expert'],
+    ),
+    _ => null,
+  };
 }
 
 class _LogoutConfirmDialog extends StatelessWidget {
@@ -2166,20 +2424,20 @@ class _TopDestinationMessageAction extends StatelessWidget {
   }
 }
 
-class _TopStoriesCarousel extends StatelessWidget {
-  const _TopStoriesCarousel({
-    required this.stories,
+class _TopPostsCarousel extends StatelessWidget {
+  const _TopPostsCarousel({
+    required this.posts,
     required this.isLoading,
     required this.hasError,
-    required this.onStoryTap,
+    required this.onPostTap,
     required this.onRetry,
     required this.onEmptyTap,
   });
 
-  final List<StoryVm> stories;
+  final List<PostVm> posts;
   final bool isLoading;
   final bool hasError;
-  final ValueChanged<StoryVm> onStoryTap;
+  final ValueChanged<PostVm> onPostTap;
   final VoidCallback onRetry;
   final VoidCallback onEmptyTap;
 
@@ -2199,7 +2457,7 @@ class _TopStoriesCarousel extends StatelessWidget {
         final loadingCardHeight =
             imageHeight + (isCompact ? 166.0 : 170.0) * textScale;
 
-        if (isLoading && stories.isEmpty) {
+        if (isLoading && posts.isEmpty) {
           return MediaQuery(
             data: MediaQuery.of(
               context,
@@ -2214,14 +2472,14 @@ class _TopStoriesCarousel extends StatelessWidget {
                 separatorBuilder: (_, _) => SizedBox(width: gap),
                 itemBuilder: (_, _) => SizedBox(
                   width: cardWidth,
-                  child: _TopStoryLoadingCard(imageHeight: imageHeight),
+                  child: _TopPostLoadingCard(imageHeight: imageHeight),
                 ),
               ),
             ),
           );
         }
 
-        if (hasError && stories.isEmpty) {
+        if (hasError && posts.isEmpty) {
           return _TopDestinationMessage(
             icon: Icons.cloud_off_rounded,
             message: l10n.storyLoadFailed,
@@ -2230,7 +2488,7 @@ class _TopStoriesCarousel extends StatelessWidget {
           );
         }
 
-        if (stories.isEmpty) {
+        if (posts.isEmpty) {
           return _TopDestinationMessage(
             icon: Icons.auto_stories_rounded,
             message: l10n.storyEmptyTitle,
@@ -2239,11 +2497,11 @@ class _TopStoriesCarousel extends StatelessWidget {
           );
         }
 
-        final items = stories.take(5).toList(growable: false);
-        final cardHeight = _homeStoryCardHeight(
+        final items = posts.take(5).toList(growable: false);
+        final cardHeight = _homePostCardHeight(
           context: context,
           l10n: l10n,
-          stories: items,
+          posts: items,
           cardWidth: cardWidth,
           imageHeight: imageHeight,
           isCompact: isCompact,
@@ -2262,14 +2520,14 @@ class _TopStoriesCarousel extends StatelessWidget {
               itemCount: items.length,
               separatorBuilder: (_, _) => SizedBox(width: gap),
               itemBuilder: (context, index) {
-                final story = items[index];
+                final post = items[index];
                 return SizedBox(
                   width: cardWidth,
                   height: cardHeight,
-                  child: _TopStoryCard(
-                    story: story,
+                  child: _TopPostCard(
+                    post: post,
                     imageHeight: imageHeight,
-                    onTap: () => onStoryTap(story),
+                    onTap: () => onPostTap(post),
                   ),
                 );
               },
@@ -2281,14 +2539,14 @@ class _TopStoriesCarousel extends StatelessWidget {
   }
 }
 
-class _TopStoryCard extends StatelessWidget {
-  const _TopStoryCard({
-    required this.story,
+class _TopPostCard extends StatelessWidget {
+  const _TopPostCard({
+    required this.post,
     required this.imageHeight,
     required this.onTap,
   });
 
-  final StoryVm story;
+  final PostVm post;
   final double imageHeight;
   final VoidCallback onTap;
 
@@ -2313,149 +2571,162 @@ class _TopStoryCard extends StatelessWidget {
       height: excerptLineHeight,
       fontWeight: FontWeight.w500,
     );
-    final tagLabel = _homeStoryTagLabel(l10n, story);
-    final excerpt = _truncateHomeStoryExcerpt(
-      story.excerpt.trim().isNotEmpty ? story.excerpt.trim() : tagLabel,
+    final tagLabel = _homePostTagLabel(l10n, post);
+    final excerpt = _truncateHomePostExcerpt(
+      post.excerpt.trim().isNotEmpty ? post.excerpt.trim() : tagLabel,
     );
     final avatarSize = (isCompact ? 24.0 : 26.0) * textScale.clamp(1.0, 1.18);
+    final isExpired = post.isExpired;
+    final isInteractive = !isExpired;
+    final borderColor = isExpired
+        ? Colors.white.withValues(alpha: 0.04)
+        : AppColors.accent.withValues(alpha: 0.18);
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF2B190D), Color(0xFF21140B)],
-            ),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.28),
-                blurRadius: 30,
-                offset: const Offset(0, 12),
+    return Opacity(
+      opacity: isExpired ? 0.56 : 1,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          key: ValueKey('open-home-top-post-${post.id}'),
+          onTap: isInteractive ? onTap : null,
+          borderRadius: BorderRadius.circular(24),
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF2B190D), Color(0xFF21140B)],
               ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  height: imageHeight,
-                  width: double.infinity,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      StoryCoverImage(url: story.coverUrl),
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.black.withValues(alpha: 0.08),
-                              Colors.black.withValues(alpha: 0.62),
-                            ],
-                            stops: const [0.42, 1],
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        left: 12,
-                        right: 12,
-                        bottom: 12,
-                        child: _TopStoryTag(label: tagLabel),
-                      ),
-                    ],
-                  ),
+              border: Border.all(color: borderColor),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.28),
+                  blurRadius: 30,
+                  offset: const Offset(0, 12),
                 ),
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      isCompact ? 14 : 16,
-                      isCompact ? 13 : 14,
-                      isCompact ? 14 : 16,
-                      isCompact ? 12 : 14,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    height: imageHeight,
+                    width: double.infinity,
+                    child: Stack(
+                      fit: StackFit.expand,
                       children: [
-                        Text(
-                          story.title,
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                          style: titleStyle,
-                          strutStyle: StrutStyle(
-                            fontSize: titleFontSize,
-                            height: titleLineHeight,
-                            forceStrutHeight: true,
+                        StoryCoverImage(url: post.coverUrl),
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.black.withValues(alpha: 0.08),
+                                Colors.black.withValues(alpha: 0.62),
+                              ],
+                              stops: const [0.42, 1],
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          excerpt,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: excerptStyle,
-                          strutStyle: StrutStyle(
-                            fontSize: excerptFontSize,
-                            height: excerptLineHeight,
-                            forceStrutHeight: true,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        const Spacer(),
-                        Row(
-                          children: [
-                            StoryAvatar(
-                              label: story.author.initials,
-                              imageUrl: story.author.avatarUrl,
-                              size: avatarSize,
-                              borderColor: AppColors.accent.withValues(
-                                alpha: 0.30,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                story.author.preferredName,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: const Color(0xFFD9C8B8),
-                                  fontSize: isCompact ? 11.5 : 12,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Icon(
-                              Icons.remove_red_eye_outlined,
-                              color: AppColors.accent,
-                              size: isCompact ? 15 : 16,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              formatStoryCountCompact(story.stats.views),
-                              style: TextStyle(
-                                color: AppColors.accent,
-                                fontSize: isCompact ? 11.5 : 12,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ],
+                        Positioned(
+                          left: 12,
+                          right: 12,
+                          bottom: 12,
+                          child: _TopPostTag(label: tagLabel),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        isCompact ? 14 : 16,
+                        isCompact ? 13 : 14,
+                        isCompact ? 14 : 16,
+                        isCompact ? 12 : 14,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            post.title,
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: titleStyle.copyWith(
+                              color: isExpired
+                                  ? const Color(0xFFD9C8B8)
+                                  : titleStyle.color,
+                            ),
+                            strutStyle: StrutStyle(
+                              fontSize: titleFontSize,
+                              height: titleLineHeight,
+                              forceStrutHeight: true,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            excerpt,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: excerptStyle,
+                            strutStyle: StrutStyle(
+                              fontSize: excerptFontSize,
+                              height: excerptLineHeight,
+                              forceStrutHeight: true,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          const Spacer(),
+                          Row(
+                            children: [
+                              StoryAvatar(
+                                label: post.author.initials,
+                                imageUrl: post.author.avatarUrl,
+                                size: avatarSize,
+                                borderColor: AppColors.accent.withValues(
+                                  alpha: isExpired ? 0.16 : 0.30,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  post.author.preferredName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: const Color(0xFFD9C8B8),
+                                    fontSize: isCompact ? 11.5 : 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.remove_red_eye_outlined,
+                                color: AppColors.accent,
+                                size: isCompact ? 15 : 16,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                formatStoryCountCompact(post.stats.views),
+                                style: TextStyle(
+                                  color: AppColors.accent,
+                                  fontSize: isCompact ? 11.5 : 12,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -2464,8 +2735,8 @@ class _TopStoryCard extends StatelessWidget {
   }
 }
 
-class _TopStoryTag extends StatelessWidget {
-  const _TopStoryTag({required this.label});
+class _TopPostTag extends StatelessWidget {
+  const _TopPostTag({required this.label});
 
   final String label;
 
@@ -2510,8 +2781,8 @@ class _TopStoryTag extends StatelessWidget {
   }
 }
 
-class _TopStoryLoadingCard extends StatelessWidget {
-  const _TopStoryLoadingCard({required this.imageHeight});
+class _TopPostLoadingCard extends StatelessWidget {
+  const _TopPostLoadingCard({required this.imageHeight});
 
   final double imageHeight;
 
@@ -2582,7 +2853,7 @@ class _RecommendedActivitiesSection extends StatelessWidget {
   final HomeLocationPreference location;
   final VoidCallback onRetry;
   final VoidCallback onEmptyTap;
-  final ValueChanged<String> onActivityTap;
+  final void Function(ActivityListItemVm activity, int rank) onActivityTap;
 
   @override
   Widget build(BuildContext context) {
@@ -2719,7 +2990,7 @@ class _RecommendedActivitiesSection extends StatelessWidget {
             categories: provider.categoryItems,
             languageCode: languageCode,
             isJoined: joinedIds.contains(items[index].id),
-            onTap: () => onActivityTap(items[index].id),
+            onTap: () => onActivityTap(items[index], index),
           ),
           if (index != items.length - 1) const SizedBox(height: 14),
         ],
@@ -3461,17 +3732,161 @@ String _homeAttractionCategoryLabel(
   }
 }
 
-String _homeStoryTagLabel(AppLocalizations l10n, StoryVm story) {
-  final placeName = (story.placeName ?? '').trim();
+String _homePostTagLabel(AppLocalizations l10n, PostVm post) {
+  final placeName = (post.placeName ?? '').trim();
   if (placeName.isNotEmpty) return placeName;
 
-  return formatStoryCategory(l10n, story.category);
+  return formatStoryCategory(l10n, post.category);
 }
 
-double _homeStoryCardHeight({
+class _HomePostFeedItem {
+  const _HomePostFeedItem({required this.post, required this.eventTarget});
+
+  final PostVm post;
+  final _HomePostFeedEventTarget eventTarget;
+}
+
+class _HomePostFeedEventTarget {
+  const _HomePostFeedEventTarget({
+    required this.blockId,
+    required this.blockType,
+    required this.rank,
+  });
+
+  final String blockId;
+  final String blockType;
+  final int rank;
+}
+
+List<StoryVm> _homeStoryTrayStoriesFromFeedBlocks(List<FeedBlockVm> blocks) {
+  for (final block in blocks) {
+    if (block.type == FeedBlockType.storiesTray) {
+      return block.stories;
+    }
+  }
+  return const [];
+}
+
+List<_HomePostFeedItem> _homePostFeedItemsFromFeedBlocks(
+  List<FeedBlockVm> blocks,
+) {
+  final items = <_HomePostFeedItem>[];
+  final seenKeys = <String>{};
+
+  void addPost({
+    required PostVm? post,
+    required FeedBlockVm block,
+    required String blockType,
+    required int rank,
+  }) {
+    if (post == null || !_isHomePostViewable(post)) return;
+
+    final key = _homePostKey(post);
+    if (key.isEmpty || !seenKeys.add(key)) {
+      return;
+    }
+
+    final blockId = block.id.trim().isNotEmpty ? block.id.trim() : blockType;
+    items.add(
+      _HomePostFeedItem(
+        post: post,
+        eventTarget: _HomePostFeedEventTarget(
+          blockId: blockId,
+          blockType: blockType,
+          rank: rank,
+        ),
+      ),
+    );
+  }
+
+  for (var blockIndex = 0; blockIndex < blocks.length; blockIndex++) {
+    final block = blocks[blockIndex];
+    final blockType = _homeFeedBlockTypeWire(block.type);
+    if (blockType == null) {
+      continue;
+    }
+
+    switch (block.type) {
+      case FeedBlockType.storiesTray:
+        break;
+      case FeedBlockType.systemPosts:
+        for (var index = 0; index < block.posts.length; index++) {
+          addPost(
+            post: block.posts[index],
+            block: block,
+            blockType: blockType,
+            rank: blockIndex + index,
+          );
+        }
+        break;
+      case FeedBlockType.postCard:
+        addPost(
+          post: block.post,
+          block: block,
+          blockType: blockType,
+          rank: blockIndex,
+        );
+        break;
+      case FeedBlockType.tourCard:
+      case FeedBlockType.guideCard:
+      case FeedBlockType.profileCard:
+      case FeedBlockType.officialNewsCard:
+      case FeedBlockType.suggestedCommunities:
+      case FeedBlockType.mySubscriptions:
+      case FeedBlockType.unknown:
+        break;
+    }
+  }
+
+  return List<_HomePostFeedItem>.unmodifiable(items);
+}
+
+String _homePostKey(PostVm post) {
+  final id = post.id.trim();
+  if (id.isNotEmpty) return id;
+
+  return post.slug.trim();
+}
+
+bool _isHomePostViewable(PostVm post) {
+  return post.isPublished && !post.isExpired && post.slug.trim().isNotEmpty;
+}
+
+String? _homeFeedBlockTypeWire(FeedBlockType type) {
+  return switch (type) {
+    FeedBlockType.storiesTray => 'stories_tray',
+    FeedBlockType.suggestedCommunities => 'suggested_communities',
+    FeedBlockType.mySubscriptions => 'my_subscriptions',
+    FeedBlockType.systemPosts => 'system_posts',
+    FeedBlockType.postCard => 'post_card',
+    FeedBlockType.tourCard => 'tour_card',
+    FeedBlockType.guideCard => 'guide_card',
+    FeedBlockType.profileCard => 'profile_card',
+    FeedBlockType.officialNewsCard => 'official_news_card',
+    FeedBlockType.unknown => null,
+  };
+}
+
+String _homeFeedUuidV4() {
+  final random = Random.secure();
+  final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  String hexByte(int value) => value.toRadixString(16).padLeft(2, '0');
+  final hex = bytes.map(hexByte).join();
+  return [
+    hex.substring(0, 8),
+    hex.substring(8, 12),
+    hex.substring(12, 16),
+    hex.substring(16, 20),
+    hex.substring(20),
+  ].join('-');
+}
+
+double _homePostCardHeight({
   required BuildContext context,
   required AppLocalizations l10n,
-  required List<StoryVm> stories,
+  required List<PostVm> posts,
   required double cardWidth,
   required double imageHeight,
   required bool isCompact,
@@ -3497,13 +3912,13 @@ double _homeStoryCardHeight({
   final textDirection = Directionality.of(context);
   var contentBodyHeight = 0.0;
 
-  for (final story in stories) {
-    final tagLabel = _homeStoryTagLabel(l10n, story);
-    final excerpt = _truncateHomeStoryExcerpt(
-      story.excerpt.trim().isNotEmpty ? story.excerpt.trim() : tagLabel,
+  for (final post in posts) {
+    final tagLabel = _homePostTagLabel(l10n, post);
+    final excerpt = _truncateHomePostExcerpt(
+      post.excerpt.trim().isNotEmpty ? post.excerpt.trim() : tagLabel,
     );
-    final titleHeight = _measureHomeStoryTextHeight(
-      text: story.title,
+    final titleHeight = _measureHomePostTextHeight(
+      text: post.title,
       style: titleStyle,
       strutStyle: StrutStyle(
         fontSize: titleFontSize,
@@ -3515,7 +3930,7 @@ double _homeStoryCardHeight({
       textDirection: textDirection,
       textScale: textScale,
     );
-    final excerptHeight = _measureHomeStoryTextHeight(
+    final excerptHeight = _measureHomePostTextHeight(
       text: excerpt,
       style: excerptStyle,
       strutStyle: StrutStyle(
@@ -3539,7 +3954,7 @@ double _homeStoryCardHeight({
   return imageHeight + verticalPadding + contentBodyHeight + safetyPadding;
 }
 
-double _measureHomeStoryTextHeight({
+double _measureHomePostTextHeight({
   required String text,
   required TextStyle style,
   required StrutStyle strutStyle,
@@ -3559,7 +3974,7 @@ double _measureHomeStoryTextHeight({
   return painter.height;
 }
 
-String _truncateHomeStoryExcerpt(String value) {
+String _truncateHomePostExcerpt(String value) {
   const maxLength = 100;
   final normalized = value.trim().replaceAll(RegExp(r'\s+'), ' ');
   if (normalized.length <= maxLength) return normalized;

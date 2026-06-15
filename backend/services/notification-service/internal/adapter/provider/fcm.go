@@ -279,6 +279,13 @@ func androidChannelID(delivery model.Delivery) string {
 	if strings.Contains(category, "chat") || delivery.Payload.Data["conversationId"] != "" {
 		return "inflap_messages"
 	}
+	if strings.Contains(category, "content") ||
+		strings.Contains(category, "story") ||
+		strings.Contains(category, "post") ||
+		delivery.Payload.Data["storyId"] != "" ||
+		delivery.Payload.Data["postId"] != "" {
+		return "inflap_content"
+	}
 	if strings.Contains(category, "activity") ||
 		strings.Contains(category, "excursion") ||
 		strings.Contains(category, "booking") ||

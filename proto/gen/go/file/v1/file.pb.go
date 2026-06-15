@@ -263,6 +263,10 @@ type CompleteUploadResponse struct {
 	Status              string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
 	DetectedContentType string                 `protobuf:"bytes,3,opt,name=detected_content_type,json=detectedContentType,proto3" json:"detected_content_type,omitempty"`
 	SizeBytes           int64                  `protobuf:"varint,4,opt,name=size_bytes,json=sizeBytes,proto3" json:"size_bytes,omitempty"`
+	Width               int32                  `protobuf:"varint,5,opt,name=width,proto3" json:"width,omitempty"`
+	Height              int32                  `protobuf:"varint,6,opt,name=height,proto3" json:"height,omitempty"`
+	DurationMs          int32                  `protobuf:"varint,7,opt,name=duration_ms,json=durationMs,proto3" json:"duration_ms,omitempty"`
+	ThumbnailFileId     string                 `protobuf:"bytes,8,opt,name=thumbnail_file_id,json=thumbnailFileId,proto3" json:"thumbnail_file_id,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -325,6 +329,34 @@ func (x *CompleteUploadResponse) GetSizeBytes() int64 {
 	return 0
 }
 
+func (x *CompleteUploadResponse) GetWidth() int32 {
+	if x != nil {
+		return x.Width
+	}
+	return 0
+}
+
+func (x *CompleteUploadResponse) GetHeight() int32 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
+}
+
+func (x *CompleteUploadResponse) GetDurationMs() int32 {
+	if x != nil {
+		return x.DurationMs
+	}
+	return 0
+}
+
+func (x *CompleteUploadResponse) GetThumbnailFileId() string {
+	if x != nil {
+		return x.ThumbnailFileId
+	}
+	return ""
+}
+
 type GetFileRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	FileId        string                 `protobuf:"bytes,1,opt,name=file_id,json=fileId,proto3" json:"file_id,omitempty"`
@@ -383,6 +415,10 @@ type GetFileResponse struct {
 	Status              string                 `protobuf:"bytes,10,opt,name=status,proto3" json:"status,omitempty"`
 	OwnerType           string                 `protobuf:"bytes,11,opt,name=owner_type,json=ownerType,proto3" json:"owner_type,omitempty"`
 	OwnerId             string                 `protobuf:"bytes,12,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
+	Width               int32                  `protobuf:"varint,13,opt,name=width,proto3" json:"width,omitempty"`
+	Height              int32                  `protobuf:"varint,14,opt,name=height,proto3" json:"height,omitempty"`
+	DurationMs          int32                  `protobuf:"varint,15,opt,name=duration_ms,json=durationMs,proto3" json:"duration_ms,omitempty"`
+	ThumbnailFileId     string                 `protobuf:"bytes,16,opt,name=thumbnail_file_id,json=thumbnailFileId,proto3" json:"thumbnail_file_id,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -497,6 +533,34 @@ func (x *GetFileResponse) GetOwnerType() string {
 func (x *GetFileResponse) GetOwnerId() string {
 	if x != nil {
 		return x.OwnerId
+	}
+	return ""
+}
+
+func (x *GetFileResponse) GetWidth() int32 {
+	if x != nil {
+		return x.Width
+	}
+	return 0
+}
+
+func (x *GetFileResponse) GetHeight() int32 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
+}
+
+func (x *GetFileResponse) GetDurationMs() int32 {
+	if x != nil {
+		return x.DurationMs
+	}
+	return 0
+}
+
+func (x *GetFileResponse) GetThumbnailFileId() string {
+	if x != nil {
+		return x.ThumbnailFileId
 	}
 	return ""
 }
@@ -1058,15 +1122,20 @@ const file_files_file_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"0\n" +
 	"\x15CompleteUploadRequest\x12\x17\n" +
-	"\afile_id\x18\x01 \x01(\tR\x06fileId\"\x9c\x01\n" +
+	"\afile_id\x18\x01 \x01(\tR\x06fileId\"\x97\x02\n" +
 	"\x16CompleteUploadResponse\x12\x17\n" +
 	"\afile_id\x18\x01 \x01(\tR\x06fileId\x12\x16\n" +
 	"\x06status\x18\x02 \x01(\tR\x06status\x122\n" +
 	"\x15detected_content_type\x18\x03 \x01(\tR\x13detectedContentType\x12\x1d\n" +
 	"\n" +
-	"size_bytes\x18\x04 \x01(\x03R\tsizeBytes\")\n" +
+	"size_bytes\x18\x04 \x01(\x03R\tsizeBytes\x12\x14\n" +
+	"\x05width\x18\x05 \x01(\x05R\x05width\x12\x16\n" +
+	"\x06height\x18\x06 \x01(\x05R\x06height\x12\x1f\n" +
+	"\vduration_ms\x18\a \x01(\x05R\n" +
+	"durationMs\x12*\n" +
+	"\x11thumbnail_file_id\x18\b \x01(\tR\x0fthumbnailFileId\")\n" +
 	"\x0eGetFileRequest\x12\x17\n" +
-	"\afile_id\x18\x01 \x01(\tR\x06fileId\"\x88\x03\n" +
+	"\afile_id\x18\x01 \x01(\tR\x06fileId\"\x83\x04\n" +
 	"\x0fGetFileResponse\x12\x17\n" +
 	"\afile_id\x18\x01 \x01(\tR\x06fileId\x12\x16\n" +
 	"\x06bucket\x18\x02 \x01(\tR\x06bucket\x12\x1d\n" +
@@ -1085,7 +1154,12 @@ const file_files_file_proto_rawDesc = "" +
 	" \x01(\tR\x06status\x12\x1d\n" +
 	"\n" +
 	"owner_type\x18\v \x01(\tR\townerType\x12\x19\n" +
-	"\bowner_id\x18\f \x01(\tR\aownerId\"3\n" +
+	"\bowner_id\x18\f \x01(\tR\aownerId\x12\x14\n" +
+	"\x05width\x18\r \x01(\x05R\x05width\x12\x16\n" +
+	"\x06height\x18\x0e \x01(\x05R\x06height\x12\x1f\n" +
+	"\vduration_ms\x18\x0f \x01(\x05R\n" +
+	"durationMs\x12*\n" +
+	"\x11thumbnail_file_id\x18\x10 \x01(\tR\x0fthumbnailFileId\"3\n" +
 	"\x18CreateDownloadUrlRequest\x12\x17\n" +
 	"\afile_id\x18\x01 \x01(\tR\x06fileId\"L\n" +
 	"\x19CreateDownloadUrlResponse\x12\x10\n" +

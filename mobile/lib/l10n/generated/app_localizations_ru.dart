@@ -1084,34 +1084,34 @@ class AppLocalizationsRu extends AppLocalizations {
       'Когда пользователь посетит публичную завершенную активность, она появится здесь.';
 
   @override
-  String get profilePopularStoriesTitle => 'Популярные истории';
+  String get profilePopularStoriesTitle => 'Популярные посты';
 
   @override
   String get profileViewAllStories => 'Все';
 
   @override
-  String get profileStoriesLoadFailed => 'Не удалось загрузить истории';
+  String get profileStoriesLoadFailed => 'Не удалось загрузить посты';
 
   @override
   String get profileStoriesLoadFailedHint =>
       'Проверьте подключение и попробуйте еще раз.';
 
   @override
-  String get profileStoriesEmptyTitle => 'Историй пока нет';
+  String get profileStoriesEmptyTitle => 'Постов пока нет';
 
   @override
   String get profileStoriesEmptySubtitle =>
-      'Опубликованные истории пользователя появятся здесь.';
+      'Опубликованные посты пользователя появятся здесь.';
 
   @override
-  String get profileUserStoriesTitle => 'Истории пользователя';
+  String get profileUserStoriesTitle => 'Посты пользователя';
 
   @override
-  String get profileStoriesTitle => 'Последние истории';
+  String get profileStoriesTitle => 'Последние посты';
 
   @override
   String get profileStoriesUnavailable =>
-      'Публичные истории и travel-статьи пока недоступны в приложении.';
+      'Публичные посты и travel-статьи пока недоступны в приложении.';
 
   @override
   String get profileUnavailableTitle => 'Скоро появится';
@@ -2104,7 +2104,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get homeSeeAll => 'Смотреть все';
 
   @override
-  String get homeTopStories => 'Топ историй';
+  String get homeTopStories => 'Топ постов';
 
   @override
   String get homeFeaturedStays => 'Рекомендуемое жилье';
@@ -2275,6 +2275,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get homeNavHome => 'Главная';
 
   @override
+  String get feedNavLabel => 'Лента';
+
+  @override
   String get homeNavQr => 'QR';
 
   @override
@@ -2285,6 +2288,728 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get homeNavMy => 'Мои';
+
+  @override
+  String get feedTitle => 'Лента';
+
+  @override
+  String get feedTabForYou => 'Для вас';
+
+  @override
+  String get feedTabFollowing => 'Подписки';
+
+  @override
+  String get feedStoriesSectionTitle => 'Истории';
+
+  @override
+  String get feedCreateStoryAction => 'Ваша история';
+
+  @override
+  String get storyCaptureTitle => 'Добавить в историю';
+
+  @override
+  String get storyCapturePreviewTitle => 'Предпросмотр';
+
+  @override
+  String get storyCaptureCloseLabel => 'Закрыть';
+
+  @override
+  String get storyCaptureSettingsLabel => 'Настройки';
+
+  @override
+  String get storyCaptureGalleryAction => 'Галерея';
+
+  @override
+  String get storyCapturePhotoFromGallery => 'Выбрать фото';
+
+  @override
+  String get storyCaptureVideoFromGallery => 'Выбрать видео';
+
+  @override
+  String get storyCaptureCameraUnavailable =>
+      'Камера недоступна. Проверьте разрешения и попробуйте снова.';
+
+  @override
+  String get storyCapturePermissionDenied =>
+      'Нет доступа к камере или микрофону.';
+
+  @override
+  String get storyCaptureCaptureFailed =>
+      'Не удалось снять историю. Попробуйте еще раз.';
+
+  @override
+  String get storyCaptureFlashOffLabel => 'Вспышка выключена';
+
+  @override
+  String get storyCaptureFlashAutoLabel => 'Вспышка авто';
+
+  @override
+  String get storyCaptureFlashOnLabel => 'Вспышка включена';
+
+  @override
+  String get storyCaptureFlashUnsupported =>
+      'Вспышка недоступна для этой камеры.';
+
+  @override
+  String get storyCapturePhotoMode => 'Фото';
+
+  @override
+  String get storyCaptureVideoMode => 'Видео';
+
+  @override
+  String get storyCaptureCaptureButtonLabel => 'Снять фото';
+
+  @override
+  String get storyCaptureRecordButtonLabel => 'Записать видео';
+
+  @override
+  String get storyCaptureStopButtonLabel => 'Остановить запись';
+
+  @override
+  String get storyCaptureFlipCameraLabel => 'Переключить камеру';
+
+  @override
+  String get storyCaptureCaptionHint => 'Добавьте подпись...';
+
+  @override
+  String get storyCaptureRetakeAction => 'Переснять';
+
+  @override
+  String get storyCapturePublishAction => 'Опубликовать';
+
+  @override
+  String get storyCapturePublishing => 'Публикуем...';
+
+  @override
+  String get storyCapturePublishFailed =>
+      'Не удалось опубликовать историю. Попробуйте еще раз.';
+
+  @override
+  String get storyReplyInputHint => 'Ответить';
+
+  @override
+  String get storyReplySendAction => 'Отправить ответ';
+
+  @override
+  String get storyReplySentMessage => 'Ответ отправлен';
+
+  @override
+  String get storyReplySendFailed =>
+      'Не удалось отправить ответ. Попробуйте еще раз.';
+
+  @override
+  String get storyLikeAction => 'Нравится история';
+
+  @override
+  String get storyLikeSendFailed =>
+      'Не удалось поставить лайк истории. Попробуйте еще раз.';
+
+  @override
+  String get storyCaptureDefaultTitle => 'Моя история';
+
+  @override
+  String get storyCaptureDefaultBody => 'Новая история';
+
+  @override
+  String get storyCaptureDefaultPlace => 'История';
+
+  @override
+  String get storyCapturePublishedMessage => 'История опубликована';
+
+  @override
+  String get feedSuggestedCommunitiesTitle => 'Рекомендуем подписаться';
+
+  @override
+  String get feedJoinCommunityAction => 'Подписаться';
+
+  @override
+  String get feedCommunityJoinedAction => 'Вы подписаны';
+
+  @override
+  String get feedCommunityModerationAction => 'Модерация';
+
+  @override
+  String get feedCommunityActionFailed =>
+      'Не удалось обновить подписку. Попробуйте еще раз.';
+
+  @override
+  String feedCommunityMembersLabel(String count) {
+    return '$count подписчиков';
+  }
+
+  @override
+  String get feedMySubscriptionsTitle => 'Мои подписки';
+
+  @override
+  String feedMySubscriptionsSummary(int communities, int people) {
+    return '$communities сообществ · $people людей';
+  }
+
+  @override
+  String get feedMySubscriptionsViewAll => 'Смотреть все';
+
+  @override
+  String get feedMySubscriptionsCommunitiesTab => 'Сообщества';
+
+  @override
+  String get feedMySubscriptionsPeopleTab => 'Люди';
+
+  @override
+  String get feedMySubscriptionsSearchHint => 'Поиск подписок';
+
+  @override
+  String get feedMySubscriptionsSheetSubtitle =>
+      'Сообщества, друзья и люди, которых вы держите ближе в ленте.';
+
+  @override
+  String get feedMySubscriptionsFilterAll => 'Все';
+
+  @override
+  String get feedMySubscriptionsFilterStatusSection => 'Статус подписки';
+
+  @override
+  String get feedMySubscriptionsFilterPeopleSection => 'Тип связи';
+
+  @override
+  String get feedMySubscriptionsFilterCommunityActivitySection => 'Активность';
+
+  @override
+  String get feedMySubscriptionsFilterCommunityTopicSection => 'Темы';
+
+  @override
+  String get feedMySubscriptionsFilterPeopleConnectionSection => 'Связь';
+
+  @override
+  String get feedMySubscriptionsFilterPeopleActivitySection => 'Активность';
+
+  @override
+  String get feedMySubscriptionsFilterSortSection => 'Сортировка';
+
+  @override
+  String get feedMySubscriptionsFilterSubscribed => 'Подписан';
+
+  @override
+  String get feedMySubscriptionsFilterUnsubscribed => 'Отписан';
+
+  @override
+  String get feedMySubscriptionsFilterCurrentCity => 'Мой город';
+
+  @override
+  String get feedMySubscriptionsFilterActive => 'Есть посты';
+
+  @override
+  String get feedMySubscriptionsFilterPopular => 'Популярные';
+
+  @override
+  String get feedMySubscriptionsFilterFriends => 'Друзья';
+
+  @override
+  String get feedMySubscriptionsFilterFollowing => 'Подписки';
+
+  @override
+  String get feedMySubscriptionsFilterOnline => 'Онлайн';
+
+  @override
+  String get feedMySubscriptionsSortRelevant => 'Рекомендованные';
+
+  @override
+  String get feedMySubscriptionsSortMostActive => 'Самые активные';
+
+  @override
+  String get feedMySubscriptionsSortMostPopular => 'Больше подписчиков';
+
+  @override
+  String get feedMySubscriptionsSortName => 'А-Я';
+
+  @override
+  String get feedMySubscriptionsSortOnlineFirst => 'Сначала онлайн';
+
+  @override
+  String get feedPostSortRecommended => 'Рекомендованные';
+
+  @override
+  String get feedPostSortNewest => 'Новые';
+
+  @override
+  String get feedPostSortPopular => 'Популярные';
+
+  @override
+  String get feedPostSortDiscussed => 'Обсуждаемые';
+
+  @override
+  String get feedMySubscriptionsApplyFilters => 'Применить фильтры';
+
+  @override
+  String feedMySubscriptionsShowCommunitiesCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Показать $count сообщества',
+      many: 'Показать $count сообществ',
+      few: 'Показать $count сообщества',
+      one: 'Показать $count сообщество',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String feedMySubscriptionsShowPeopleCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Показать $count людей',
+      many: 'Показать $count людей',
+      few: 'Показать $count людей',
+      one: 'Показать $count человека',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get feedMySubscriptionsEmptyMessage =>
+      'Под эти фильтры ничего не найдено.';
+
+  @override
+  String get feedMySubscriptionsFriendBadge => 'Друг';
+
+  @override
+  String get feedMySubscriptionsFollowingBadge => 'Подписка';
+
+  @override
+  String get feedMySubscriptionsOnlineBadge => 'Онлайн';
+
+  @override
+  String get feedMySubscriptionsUnknownPerson => 'Пользователь';
+
+  @override
+  String get feedSystemPostsTitle => 'Официальные новости';
+
+  @override
+  String get feedSystemPostsViewAll => 'Смотреть все';
+
+  @override
+  String get feedSystemPostsSheetTitle => 'Официальные посты';
+
+  @override
+  String get communityDiscoveryTitle => 'Сообщества';
+
+  @override
+  String get communityDiscoveryEmptyTitle => 'Сообществ пока нет';
+
+  @override
+  String get communityDiscoveryEmptyMessage =>
+      'Официальные сообщества появятся здесь после запуска.';
+
+  @override
+  String get communityDiscoveryLoadFailedTitle =>
+      'Не удалось загрузить сообщества';
+
+  @override
+  String get communityDiscoveryLoadFailedMessage =>
+      'Проверьте соединение и попробуйте снова.';
+
+  @override
+  String get communityDiscoverySearchHint => 'Поиск сообщества';
+
+  @override
+  String get communityDiscoveryFiltersTitle => 'Фильтры';
+
+  @override
+  String get communityDiscoveryShowResults => 'Показать сообщества';
+
+  @override
+  String communityDiscoveryShowResultsCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count сообщества',
+      many: '$count сообществ',
+      few: '$count сообщества',
+      one: '$count сообщество',
+      zero: '0 сообществ',
+    );
+    return 'Показать $_temp0';
+  }
+
+  @override
+  String get communityDiscoveryRequiredLocationMessage =>
+      'Выберите страну и город, чтобы найти активные локальные сообщества.';
+
+  @override
+  String get communityDiscoveryTopicSection => 'Тип сообщества';
+
+  @override
+  String get communityDiscoveryTopicAll => 'Все';
+
+  @override
+  String get communityDiscoveryTopicTravel => 'Путешествия';
+
+  @override
+  String get communityDiscoveryTopicCity => 'Города';
+
+  @override
+  String get communityDiscoveryTopicGuides => 'Гиды и туры';
+
+  @override
+  String get communityDiscoveryTopicAppNews => 'Новости Inflap';
+
+  @override
+  String get communityTopicLanguages => 'Языки';
+
+  @override
+  String get communityTopicHousing => 'Жилье';
+
+  @override
+  String get communityTopicTransport => 'Транспорт';
+
+  @override
+  String get communityTopicSports => 'Спорт';
+
+  @override
+  String get communityTopicOutdoor => 'Поездки и природа';
+
+  @override
+  String get communityTopicHobbies => 'Хобби и мастер-классы';
+
+  @override
+  String get communityTopicWellness => 'Здоровье и wellness';
+
+  @override
+  String get communityTopicPets => 'Питомцы';
+
+  @override
+  String get communityTopicCityLife => 'Городская жизнь';
+
+  @override
+  String get communityTopicContent => 'Новости и гайды';
+
+  @override
+  String get communityTopicFamily => 'Семьи';
+
+  @override
+  String get communityTopicGeneral => 'Общее';
+
+  @override
+  String get communityProfileTitle => 'Сообщество';
+
+  @override
+  String get communityProfileActionsTooltip => 'Действия сообщества';
+
+  @override
+  String get communityProfileCreatePostAction => 'Создать пост';
+
+  @override
+  String get communityPostModeSelectorLabel => 'Режим публикации';
+
+  @override
+  String get communityPostModeArticle => 'Посты';
+
+  @override
+  String get communityPostModeQuickPost => 'Обсуждения';
+
+  @override
+  String get communityPostModeListing => 'Объявления';
+
+  @override
+  String get communityPostModeEventAnnouncement => 'Афиша';
+
+  @override
+  String get communityPostModeQuestionAnswer => 'Вопросы';
+
+  @override
+  String get communityPostModeTripPlan => 'Поездки';
+
+  @override
+  String get communityProfileUnfollowConfirmTitle =>
+      'Отписаться от сообщества?';
+
+  @override
+  String get communityProfileRulesTitle => 'Правила сообщества';
+
+  @override
+  String get communityProfilePostsSectionTitle => 'Посты';
+
+  @override
+  String get communityProfileNoPostsTitle => 'Постов пока нет';
+
+  @override
+  String get communityProfileNoPostsMessage =>
+      'Здесь появятся новые посты этого сообщества.';
+
+  @override
+  String get communityProfilePostsLoadFailedTitle =>
+      'Не удалось загрузить посты';
+
+  @override
+  String communityProfilePostsLabel(String count) {
+    return '$count постов';
+  }
+
+  @override
+  String get communityProfileLoadFailedTitle =>
+      'Не удалось загрузить сообщество';
+
+  @override
+  String get communityProfileLoadFailedMessage =>
+      'Проверьте соединение и попробуйте снова.';
+
+  @override
+  String get communityTrustReportAction => 'Пожаловаться на сообщество';
+
+  @override
+  String get communityTrustMuteAction => 'Скрыть сообщество';
+
+  @override
+  String get communityTrustUnmuteAction => 'Вернуть сообщество';
+
+  @override
+  String get communityTrustBlockedTitle => 'Публикация заблокирована';
+
+  @override
+  String get communityTrustBlockedMessage =>
+      'Вы не можете публиковать посты в этом сообществе, пока модераторы не снимут ограничение.';
+
+  @override
+  String get communityTrustMutedTitle => 'Сообщество скрыто';
+
+  @override
+  String get communityTrustMutedMessage =>
+      'Это сообщество скрыто из вашей ленты. Его можно вернуть в любой момент.';
+
+  @override
+  String get communityTrustAppealPendingTitle => 'Апелляция на проверке';
+
+  @override
+  String get communityTrustAppealPendingMessage =>
+      'Модераторы рассматривают вашу апелляцию по этому сообществу.';
+
+  @override
+  String get communityTrustAppealRejectedTitle => 'Апелляция отклонена';
+
+  @override
+  String get communityTrustAppealRejectedMessage =>
+      'Ограничение остается активным после проверки модераторами.';
+
+  @override
+  String get communityTrustAppealAction => 'Апелляция';
+
+  @override
+  String get communityTrustAppealMessage =>
+      'Пожалуйста, пересмотрите мое ограничение в сообществе.';
+
+  @override
+  String get communityTrustReportSubmitted =>
+      'Сообщество отправлено на модерацию.';
+
+  @override
+  String get communityTrustMutedSubmitted => 'Сообщество скрыто.';
+
+  @override
+  String get communityTrustUnmutedSubmitted => 'Сообщество возвращено.';
+
+  @override
+  String get communityTrustAppealSubmitted =>
+      'Апелляция отправлена модераторам.';
+
+  @override
+  String get communityTrustActionUnavailable =>
+      'Это trust-действие пока недоступно.';
+
+  @override
+  String get communityTrustActionFailed =>
+      'Не удалось выполнить trust-действие. Попробуйте еще раз.';
+
+  @override
+  String get feedEmptyTitle => 'В ленте пока пусто';
+
+  @override
+  String get feedEmptyMessage =>
+      'Подпишитесь на путешественников и сообщества, чтобы собрать свою ленту.';
+
+  @override
+  String get feedLoadFailedTitle => 'Не удалось загрузить ленту';
+
+  @override
+  String get feedLoadFailedMessage =>
+      'Проверьте соединение и попробуйте снова.';
+
+  @override
+  String get feedRetryAction => 'Повторить';
+
+  @override
+  String get communityModerationTitle => 'Очередь модерации';
+
+  @override
+  String communityModerationSubtitle(int count) {
+    return '$count на проверке';
+  }
+
+  @override
+  String get communityModerationEmptyTitle => 'Постов на проверке нет';
+
+  @override
+  String get communityModerationEmptyMessage =>
+      'Новые посты сообщества, которым нужна проверка, появятся здесь.';
+
+  @override
+  String get communityModerationLoadFailedTitle =>
+      'Не удалось загрузить очередь модерации';
+
+  @override
+  String get communityModerationLoadFailedMessage =>
+      'Проверьте соединение и попробуйте снова.';
+
+  @override
+  String get communityModerationApproveAction => 'Одобрить';
+
+  @override
+  String get communityModerationRejectAction => 'Отклонить';
+
+  @override
+  String get communityModerationHistoryAction => 'История';
+
+  @override
+  String get communityModerationApprovedMessage => 'Пост одобрен';
+
+  @override
+  String get communityModerationRejectedMessage => 'Пост отклонен';
+
+  @override
+  String get communityModerationActionFailed =>
+      'Не удалось обновить пост. Попробуйте еще раз.';
+
+  @override
+  String get communityModerationDecisionHistoryTitle => 'История решений';
+
+  @override
+  String get communityModerationDecisionHistoryEmpty =>
+      'Решений по модерации пока нет.';
+
+  @override
+  String get communityModerationDecisionHistoryFailed =>
+      'Не удалось загрузить историю решений.';
+
+  @override
+  String get communityModerationRejectReasonLabel => 'Причина отклонения';
+
+  @override
+  String get communityModerationRejectConfirmAction => 'Отклонить пост';
+
+  @override
+  String get communityModerationRejectCancelAction => 'Отмена';
+
+  @override
+  String get communityMembersTitle => 'Участники';
+
+  @override
+  String get communityMembersSubtitle => 'Управление доступом и ролями';
+
+  @override
+  String get communityMembersAction => 'Участники';
+
+  @override
+  String get communityMembersEmptyTitle => 'Участники не найдены';
+
+  @override
+  String get communityMembersEmptyMessage =>
+      'Участники по выбранным фильтрам появятся здесь.';
+
+  @override
+  String get communityMembersLoadFailedTitle =>
+      'Не удалось загрузить участников';
+
+  @override
+  String get communityMembersLoadFailedMessage =>
+      'Проверьте соединение и попробуйте снова.';
+
+  @override
+  String get communityMembersRoleFilterLabel => 'Роль';
+
+  @override
+  String get communityMembersStatusFilterLabel => 'Статус';
+
+  @override
+  String get communityMembersAllFilter => 'Все';
+
+  @override
+  String get communityMembersActiveStatus => 'Активные';
+
+  @override
+  String get communityMembersMutedStatus => 'Ограниченные';
+
+  @override
+  String get communityMembersBannedStatus => 'Заблокированные';
+
+  @override
+  String get communityMembersLeftStatus => 'Покинувшие';
+
+  @override
+  String get communityMembersTrustedRole => 'Доверенный участник';
+
+  @override
+  String get communityMembersModeratorRole => 'Модератор';
+
+  @override
+  String get communityMembersAdminRole => 'Админ';
+
+  @override
+  String get communityMembersMemberRole => 'Участник';
+
+  @override
+  String get communityMembersChangeRoleAction => 'Изменить роль';
+
+  @override
+  String get communityMembersRoleHistoryAction => 'История ролей';
+
+  @override
+  String get communityMembersRoleHistoryTitle => 'История ролей';
+
+  @override
+  String get communityMembersRoleHistoryChangedBy => 'Изменил';
+
+  @override
+  String get communityMembersRoleHistoryEmptyTitle => 'Изменений ролей нет';
+
+  @override
+  String get communityMembersRoleHistoryEmptyMessage =>
+      'Обновления ролей этого участника появятся здесь.';
+
+  @override
+  String get communityMembersRoleHistoryLoadFailedTitle =>
+      'Не удалось загрузить историю ролей';
+
+  @override
+  String get communityMembersRoleHistoryLoadFailedMessage =>
+      'Проверьте соединение и попробуйте снова.';
+
+  @override
+  String get communityMembersChangeStatusAction => 'Изменить статус';
+
+  @override
+  String get communityMembersMuteAction => 'Ограничить участника';
+
+  @override
+  String get communityMembersBanAction => 'Заблокировать участника';
+
+  @override
+  String get communityMembersRemoveAction => 'Удалить участника';
+
+  @override
+  String get communityMembersRestoreAction => 'Восстановить участника';
+
+  @override
+  String get communityMembersStatusUpdatedMessage => 'Статус обновлен';
+
+  @override
+  String get communityMembersStatusUpdateFailed =>
+      'Не удалось обновить статус участника. Попробуйте еще раз.';
+
+  @override
+  String get communityMembersRoleUpdatedMessage => 'Роль обновлена';
+
+  @override
+  String get communityMembersRoleUpdateFailed =>
+      'Не удалось обновить участника. Попробуйте еще раз.';
 
   @override
   String get mapNearbyPlacesLabel => 'Места рядом';
@@ -4351,7 +5076,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get myActivitiesTitle => 'Мои активности';
 
   @override
-  String get myStoriesTitle => 'Мои истории';
+  String get myStoriesTitle => 'Мои посты';
+
+  @override
+  String get myStoryArchiveTitle => 'Мои истории';
 
   @override
   String get myActivitiesEmpty => 'У вас пока нет созданных активностей';
@@ -5357,19 +6085,19 @@ class AppLocalizationsRu extends AppLocalizations {
   String get backButtonLabel => 'Назад';
 
   @override
-  String get storiesDiscoverTitle => 'Истории';
+  String get storiesDiscoverTitle => 'Посты';
 
   @override
-  String get storiesNavLabel => 'Истории';
+  String get storiesNavLabel => 'Посты';
 
   @override
   String get storiesActivitiesNavLabel => 'Активности';
 
   @override
-  String get storySearchHint => 'Поиск историй, авторов или мест';
+  String get storySearchHint => 'Поиск постов, авторов или мест';
 
   @override
-  String get storySearchCompactHint => 'Поиск историй';
+  String get storySearchCompactHint => 'Поиск постов';
 
   @override
   String get storyFiltersTitle => 'Фильтры';
@@ -5403,11 +6131,11 @@ class AppLocalizationsRu extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count истории',
-      many: '$count историй',
-      few: '$count истории',
-      one: '$count историю',
-      zero: '0 историй',
+      other: '$count поста',
+      many: '$count постов',
+      few: '$count поста',
+      one: '$count пост',
+      zero: '0 постов',
     );
     return 'Показать $_temp0';
   }
@@ -5425,13 +6153,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get storySortComments => 'Комментарии';
 
   @override
-  String get storyCreateCta => 'Поделиться историей';
+  String get storyCreateCta => 'Создать пост';
 
   @override
-  String get storyCreateFirst => 'Создать первую историю';
+  String get storyCreateFirst => 'Создать первый пост';
 
   @override
-  String get storyEmptyTitle => 'Историй пока нет';
+  String get storyEmptyTitle => 'Постов пока нет';
 
   @override
   String get storyEmptySubtitle =>
@@ -5439,23 +6167,26 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get storyEmptyAuthenticatedSubtitle =>
-      'Создайте историю, статью, гид или визуальное эссе, чтобы запустить ленту.';
+      'Создайте пост, статью, гид или визуальное эссе, чтобы запустить ленту.';
 
   @override
-  String get storyFilteredEmptyTitle => 'По этим фильтрам историй нет';
+  String get storyFilteredEmptyTitle => 'По этим фильтрам постов нет';
 
   @override
   String get storyFilteredEmptySubtitle =>
       'Попробуйте другой поиск, страну, город или категорию.';
 
   @override
-  String get storyResetFiltersAction => 'Сбросить фильтры';
+  String get storyResetFiltersAction => 'Очистить';
 
   @override
   String get storyLoginCreateAction => 'Войти и создать';
 
   @override
   String get myStoriesDraftsTab => 'Черновики';
+
+  @override
+  String get myStoriesPendingReviewTab => 'На проверке';
 
   @override
   String get myStoriesPublishedTab => 'Опубликовано';
@@ -5468,27 +6199,93 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get myStoriesDraftEmptySubtitle =>
-      'Сохраняйте идеи как черновики перед публикацией в ленту историй.';
+      'Сохраняйте идеи как черновики перед публикацией в ленту постов.';
 
   @override
-  String get myStoriesPublishedEmptyTitle => 'Опубликованных историй пока нет';
+  String get myStoriesPendingReviewEmptyTitle => 'Постов на проверке пока нет';
+
+  @override
+  String get myStoriesPendingReviewEmptySubtitle =>
+      'Посты, ожидающие проверки модератором, появятся здесь.';
+
+  @override
+  String get myStoriesPublishedEmptyTitle => 'Опубликованных постов пока нет';
 
   @override
   String get myStoriesPublishedEmptySubtitle =>
-      'Опубликованные истории, гиды, статьи и визуальные эссе появятся здесь.';
+      'Опубликованные посты, гиды, статьи и визуальные эссе появятся здесь.';
 
   @override
-  String get myStoriesArchivedEmptyTitle => 'Архивных историй пока нет';
+  String get myStoriesArchivedEmptyTitle => 'Архивных постов пока нет';
 
   @override
   String get myStoriesArchivedEmptySubtitle =>
-      'Архивные истории хранятся здесь для истории и повторного использования.';
+      'Архивные посты хранятся здесь для истории и повторного использования.';
 
   @override
   String get myStoriesCreateDraftAction => 'Создать черновик';
 
   @override
-  String get storyLoadFailed => 'Не удалось загрузить истории';
+  String get storyArchiveActiveTab => 'Активные';
+
+  @override
+  String get storyArchiveArchiveTab => 'Архив';
+
+  @override
+  String get storyArchiveActiveSubtitle =>
+      'Здесь ваши истории, которые еще видны другим пользователям.';
+
+  @override
+  String get storyArchiveActiveEmptyTitle => 'Активных историй пока нет';
+
+  @override
+  String get storyArchiveActiveEmptySubtitle =>
+      'Снимите фото или видео в кружочке, чтобы история появилась здесь на 24 часа.';
+
+  @override
+  String get storyArchiveActiveUntilPrefix => 'Активна до';
+
+  @override
+  String get storyArchiveSubtitle =>
+      'Истории живут 24 часа, а затем остаются здесь только для вас.';
+
+  @override
+  String get storyArchiveEmptyTitle => 'Архивных историй пока нет';
+
+  @override
+  String get storyArchiveEmptySubtitle =>
+      'Ваши истории с камеры появятся здесь через 24 часа после публикации.';
+
+  @override
+  String get storyArchiveLoadFailedTitle => 'Не удалось загрузить истории';
+
+  @override
+  String get storyArchiveLoadFailedMessage =>
+      'Проверьте соединение и попробуйте еще раз.';
+
+  @override
+  String get storyArchiveRetryAction => 'Попробовать снова';
+
+  @override
+  String get storyArchiveLoadMoreAction => 'Загрузить еще';
+
+  @override
+  String get storyArchiveExpiredPrefix => 'В архиве с';
+
+  @override
+  String get storyStateSeenLabel => 'Просмотрено';
+
+  @override
+  String get storyStateExpiredLabel => 'Истекла';
+
+  @override
+  String get storyStatePendingLabel => 'На проверке';
+
+  @override
+  String get storyStateHiddenLabel => 'Скрыта';
+
+  @override
+  String get storyLoadFailed => 'Не удалось загрузить посты';
 
   @override
   String get storyViewsSuffix => 'просмотров';
@@ -5506,7 +6303,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get storyCategoryCulinary => 'Гастрономия';
 
   @override
-  String get storyFormatStory => 'История';
+  String get storyFormatStory => 'Пост';
 
   @override
   String get storyFormatGuide => 'Гид';
@@ -5521,14 +6318,67 @@ class AppLocalizationsRu extends AppLocalizations {
   String get storyFormatCulinary => 'Гастрономия';
 
   @override
-  String get storyDetailsTitle => 'Детали истории';
+  String get storyDetailsTitle => 'Детали поста';
 
   @override
-  String get storyLinkCopied => 'Ссылка на историю скопирована';
+  String get storyLinkCopied => 'Ссылка на пост скопирована';
 
   @override
   String get storyShareFailed =>
       'Не удалось открыть окно отправки ссылки. Попробуйте еще раз.';
+
+  @override
+  String get storyReportAction => 'Пожаловаться';
+
+  @override
+  String get storyReportSending => 'Отправляем...';
+
+  @override
+  String get storyReportTitle => 'Пожаловаться на пост';
+
+  @override
+  String get storyReportSubtitle =>
+      'Расскажите, что не так. Жалобы помогают модераторам сохранять travel-контент безопасным и полезным.';
+
+  @override
+  String get storyReportDetailsLabel => 'Детали';
+
+  @override
+  String get storyReportDetailsHint => 'Добавьте контекст для модераторов';
+
+  @override
+  String get storyReportSubmitAction => 'Отправить жалобу';
+
+  @override
+  String get storyReportSubmitted => 'Спасибо. Мы отправили пост на модерацию.';
+
+  @override
+  String get storyReportAutoHidden =>
+      'Спасибо. Пост скрыт до проверки модераторами.';
+
+  @override
+  String get storyReportReasonSpam => 'Спам или вводит в заблуждение';
+
+  @override
+  String get storyReportReasonHarassment => 'Травля или оскорбления';
+
+  @override
+  String get storyReportReasonHate => 'Ненависть или дискриминация';
+
+  @override
+  String get storyReportReasonSexualContent => 'Сексуальный контент';
+
+  @override
+  String get storyReportReasonViolence => 'Насилие или шокирующий контент';
+
+  @override
+  String get storyReportReasonMisinformation => 'Недостоверная информация';
+
+  @override
+  String get storyReportReasonIllegal => 'Незаконная активность';
+
+  @override
+  String get storyReportReasonOther => 'Другое';
 
   @override
   String get storyAuthorLabel => 'Автор';
@@ -5581,6 +6431,10 @@ class AppLocalizationsRu extends AppLocalizations {
       'Не удалось открыть окно отправки комментария. Попробуйте еще раз.';
 
   @override
+  String get storyLikeActionFailed =>
+      'Не удалось обновить лайк. Попробуйте еще раз.';
+
+  @override
   String get storyCommentEditingTitle => 'Редактирование комментария';
 
   @override
@@ -5603,10 +6457,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get storyRelatedEyebrow => 'Исследуйте дальше';
 
   @override
-  String get storyRelatedTitle => 'Похожие истории';
+  String get storyRelatedTitle => 'Похожие посты';
 
   @override
-  String get storyRelatedEmpty => 'Похожих историй пока нет';
+  String get storyRelatedEmpty => 'Похожих постов пока нет';
 
   @override
   String get storyViewAll => 'Смотреть все';
@@ -5615,10 +6469,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get storyEditAction => 'Редактировать';
 
   @override
-  String get storyDeleteTitle => 'Удалить историю?';
+  String get storyDeleteTitle => 'Удалить пост?';
 
   @override
-  String get storyDeleteMessage => 'История будет убрана из публичной ленты.';
+  String get storyDeleteMessage => 'Пост будет убран из публичной ленты.';
 
   @override
   String get storyDeleteAction => 'Удалить';
@@ -5756,6 +6610,16 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get storyEditorTitle => 'Редактор истории';
+
+  @override
+  String get storyEditorQuickPostTitle => 'Быстрый пост';
+
+  @override
+  String get storyEditorQuickPostSubtitle =>
+      'Поделитесь коротким обновлением, вопросом или локальным советом с сообществом.';
+
+  @override
+  String get storyEditorQuickPostHint => 'Что хотите рассказать?';
 
   @override
   String get storyEditorLoading => 'Загрузка истории';
@@ -6248,6 +7112,21 @@ class AppLocalizationsRu extends AppLocalizations {
       'Дождитесь завершения загрузки медиа.';
 
   @override
+  String get postCreateRateLimitTitle => 'Лимит постов';
+
+  @override
+  String postCreateRateLimitMessage(int minutes) {
+    return 'Вы уже создали максимум постов за последний час. Новый пост можно будет создать примерно через $minutes мин.';
+  }
+
+  @override
+  String get postCreateRateLimitAction => 'Понятно';
+
+  @override
+  String get postCreatePreflightFailed =>
+      'Не удалось проверить лимит. Проверим при публикации.';
+
+  @override
   String get chatListTitle => 'Чаты';
 
   @override
@@ -6730,6 +7609,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get chatForwardedLabel => 'Переслано';
 
   @override
+  String get chatStoryReplyLabel => 'Ответ на историю';
+
+  @override
+  String get chatStoryReplyUnavailable => 'История больше недоступна';
+
+  @override
   String chatForwardedFrom(Object name) {
     return 'Переслано от $name';
   }
@@ -7042,6 +7927,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get notificationsCategoryChat => 'Сообщения';
+
+  @override
+  String get notificationsCategoryContent => 'Посты и истории';
 
   @override
   String get notificationsCategorySystem => 'Система';

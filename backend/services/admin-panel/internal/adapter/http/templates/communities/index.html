@@ -1,0 +1,461 @@
+{{define "communities/index"}}
+{{template "pageStart" .}}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "community.eyebrow"}}</p>
+      <h1>{{t .Locale "community.platformTitle"}}</h1>
+      <p>{{t .Locale "community.platformSubtitle"}}</p>
+    </div>
+    <a class="button primary" href="{{.Data.CreateCommunityURL}}">{{t .Locale "action.createCommunity"}}</a>
+  </div>
+
+  <form method="get" action="/admin/communities" class="filters card" data-location-filter-form>
+    <div class="filter-field">
+      <span>{{t .Locale "field.country"}}</span>
+      <input type="hidden" name="country_code" value="{{.Data.Filters.CountryCode}}" data-country-filter-value>
+      <div class="filter-combobox" data-filter-combobox>
+        <input type="search" data-country-filter-input value="{{if .Data.Filters.CountryCode}}{{attractionCountry .Locale .Data.Filters.CountryCode}}{{end}}" placeholder="{{t .Locale "filter.country.all"}}" autocomplete="off" autocorrect="off" spellcheck="false" aria-autocomplete="none" aria-expanded="false" aria-controls="community-country-filter-suggestions">
+        <div class="filter-suggestions" id="community-country-filter-suggestions" data-country-filter-suggestions role="listbox" hidden>
+          {{range .Data.Countries}}
+            <button type="button" class="filter-suggestion" data-country-filter-option data-value="{{.Value}}" data-label="{{attractionCountry $.Locale .Value}}" data-search="{{attractionCountrySearch .Value}}" role="option">
+              <span>{{attractionCountry $.Locale .Value}}</span>
+            </button>
+          {{end}}
+        </div>
+      </div>
+    </div>
+    <div class="filter-field" data-city-filter-group {{if not .Data.Filters.CountryCode}}hidden{{end}}>
+      <span>{{t .Locale "field.city"}}</span>
+      <input type="hidden" name="city_id" value="{{.Data.Filters.CityID}}" data-city-filter-value {{if not .Data.Filters.CountryCode}}disabled{{end}}>
+      <div class="filter-combobox" data-filter-combobox>
+        <input type="search" data-city-filter-input value="{{if .Data.Filters.CityID}}{{attractionCityName .Locale .Data.Filters.CityID}}{{end}}" placeholder="{{t .Locale "filter.city.all"}}" autocomplete="off" autocorrect="off" spellcheck="false" aria-autocomplete="none" aria-expanded="false" aria-controls="community-city-filter-suggestions" {{if not .Data.Filters.CountryCode}}disabled{{end}}>
+        <div class="filter-suggestions" id="community-city-filter-suggestions" data-city-filter-suggestions role="listbox" hidden>
+          {{range .Data.Cities}}
+            <button type="button" class="filter-suggestion" data-city-filter-option data-country="{{.CountryCode}}" data-value="{{.Value}}" data-label="{{attractionCityName $.Locale .Value}}" data-search="{{attractionCitySearch .CountryCode .Value}}" role="option">
+              <span>{{attractionCityName $.Locale .Value}}</span>
+              <small>{{attractionCountry $.Locale .CountryCode}}</small>
+            </button>
+          {{end}}
+        </div>
+      </div>
+    </div>
+    <label>
+      <span>{{t .Locale "community.scope"}}</span>
+      <select name="scope_type">
+        {{range .Data.ScopeOptions}}
+          <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{t $.Locale .LabelKey}}</option>
+        {{end}}
+      </select>
+    </label>
+    <label>
+      <span>{{t .Locale "field.search"}}</span>
+      <input type="search" name="q" value="{{.Data.Filters.Search}}" placeholder="{{t .Locale "placeholder.searchCommunities"}}">
+    </label>
+    <label>
+      <span>{{t .Locale "field.pageSize"}}</span>
+      <input type="number" name="limit" value="{{.Data.Filters.Limit}}" min="1" max="500">
+    </label>
+    <div class="filter-actions">
+      <button type="submit" class="button">{{t .Locale "action.applyFilters"}}</button>
+      <a class="button secondary" href="{{.Data.ResetURL}}">{{t .Locale "action.resetFilters"}}</a>
+    </div>
+  </form>
+
+  <div class="community-resource-grid">
+    <button type="button" class="community-resource-card card" data-modal-open="community-post-profiles-dialog">
+      <span>{{t .Locale "community.metricProfiles"}}</span>
+      <strong>{{len .Data.PostProfiles}}</strong>
+      <small>{{t .Locale "community.openTable"}}</small>
+    </button>
+    <button type="button" class="community-resource-card card" data-modal-open="community-blueprints-dialog">
+      <span>{{t .Locale "community.metricBlueprints"}}</span>
+      <strong>{{len .Data.Blueprints}}</strong>
+      <small>{{t .Locale "community.openTable"}}</small>
+    </button>
+    <button type="button" class="community-resource-card card" data-modal-open="community-geo-hubs-dialog">
+      <span>{{t .Locale "community.metricGeoHubs"}}</span>
+      <strong>{{len .Data.GeoHubs}}</strong>
+      <small>{{t .Locale "community.openTable"}}</small>
+    </button>
+    <button type="button" class="community-resource-card card" data-modal-open="community-instances-dialog">
+      <span>{{t .Locale "community.metricInstances"}}</span>
+      <strong>{{len .Data.Instances}}</strong>
+      <small>{{t .Locale "community.openTable"}}</small>
+    </button>
+  </div>
+
+  <form method="post" action="{{.Data.MaterializeActionURL}}" class="form card" data-location-filter-form>
+    {{csrfField .CSRFToken}}
+    <div class="section-head compact">
+      <div>
+        <h2>{{t .Locale "community.materializeTitle"}}</h2>
+        <p>{{t .Locale "community.materializeSubtitle"}}</p>
+      </div>
+      <button type="submit" class="button primary">{{t .Locale "action.materializeCommunities"}}</button>
+    </div>
+    <div class="grid four">
+      <label>
+        <span>{{t .Locale "community.blueprint"}}</span>
+        <select name="blueprint_id">
+          <option value="">{{t .Locale "community.blueprintAll"}}</option>
+          {{range .Data.Blueprints}}
+            <option value="{{.Item.ID}}">{{.Title}}</option>
+          {{end}}
+        </select>
+      </label>
+      <label>
+        <span>{{t .Locale "field.country"}}</span>
+        <input type="hidden" name="country_code" value="{{.Data.Filters.CountryCode}}" data-country-filter-value>
+        <div class="filter-combobox" data-filter-combobox>
+          <input type="search" data-country-filter-input value="{{if .Data.Filters.CountryCode}}{{attractionCountry .Locale .Data.Filters.CountryCode}}{{end}}" placeholder="{{t .Locale "filter.country.all"}}" autocomplete="off" autocorrect="off" spellcheck="false" aria-autocomplete="none" aria-expanded="false" aria-controls="community-materialize-country-suggestions">
+          <div class="filter-suggestions" id="community-materialize-country-suggestions" data-country-filter-suggestions role="listbox" hidden>
+            {{range .Data.Countries}}
+              <button type="button" class="filter-suggestion" data-country-filter-option data-value="{{.Value}}" data-label="{{attractionCountry $.Locale .Value}}" data-search="{{attractionCountrySearch .Value}}" role="option">
+                <span>{{attractionCountry $.Locale .Value}}</span>
+              </button>
+            {{end}}
+          </div>
+        </div>
+      </label>
+      <label data-city-filter-group {{if not .Data.Filters.CountryCode}}hidden{{end}}>
+        <span>{{t .Locale "field.city"}}</span>
+        <input type="hidden" name="city_id" value="{{.Data.Filters.CityID}}" data-city-filter-value {{if not .Data.Filters.CountryCode}}disabled{{end}}>
+        <div class="filter-combobox" data-filter-combobox>
+          <input type="search" data-city-filter-input value="{{if .Data.Filters.CityID}}{{attractionCityName .Locale .Data.Filters.CityID}}{{end}}" placeholder="{{t .Locale "filter.city.all"}}" autocomplete="off" autocorrect="off" spellcheck="false" aria-autocomplete="none" aria-expanded="false" aria-controls="community-materialize-city-suggestions" {{if not .Data.Filters.CountryCode}}disabled{{end}}>
+          <div class="filter-suggestions" id="community-materialize-city-suggestions" data-city-filter-suggestions role="listbox" hidden>
+            {{range .Data.Cities}}
+              <button type="button" class="filter-suggestion" data-city-filter-option data-country="{{.CountryCode}}" data-value="{{.Value}}" data-label="{{attractionCityName $.Locale .Value}}" data-search="{{attractionCitySearch .CountryCode .Value}}" role="option">
+                <span>{{attractionCityName $.Locale .Value}}</span>
+                <small>{{attractionCountry $.Locale .CountryCode}}</small>
+              </button>
+            {{end}}
+          </div>
+        </div>
+      </label>
+      <label>
+        <span>{{t .Locale "community.scope"}}</span>
+        <select name="scope_type">
+          {{range .Data.ScopeOptions}}
+            <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{t $.Locale .LabelKey}}</option>
+          {{end}}
+        </select>
+      </label>
+      <label>
+        <span>{{t .Locale "community.materializeLimit"}}</span>
+        <input type="number" name="limit" value="5000" min="1" max="5000">
+      </label>
+    </div>
+  </form>
+
+  <dialog class="table-dialog" id="community-blueprints-dialog" aria-labelledby="community-blueprints-title" data-close-on-backdrop>
+    <div class="table-dialog-panel">
+      <div class="section-head compact">
+        <div>
+          <h2 id="community-blueprints-title">{{t .Locale "community.blueprintsTitle"}}</h2>
+          <p>{{t .Locale "community.modalTableHint"}}</p>
+        </div>
+        <button type="button" data-modal-close>{{t .Locale "action.close"}}</button>
+      </div>
+      {{if .Data.Blueprints}}
+        <div class="table-wrap" data-paginated-table data-page-size="10">
+          <div class="table-tools">
+            <label>
+              <span>{{t .Locale "field.search"}}</span>
+              <input type="search" data-table-search placeholder="{{t .Locale "placeholder.searchCommunities"}}">
+            </label>
+            <label>
+              <span>{{t .Locale "table.category"}}</span>
+              <select data-table-filter="category">
+                <option value="">{{t .Locale "community.filterAll"}}</option>
+                {{range .Data.BlueprintCategoryFilters}}
+                  <option value="{{.Value}}">{{.Text}}</option>
+                {{end}}
+              </select>
+            </label>
+            <label>
+              <span>{{t .Locale "table.status"}}</span>
+              <select data-table-filter="status">
+                <option value="">{{t .Locale "community.filterAll"}}</option>
+                {{range .Data.BlueprintStatusFilters}}
+                  <option value="{{.Value}}">{{.Text}}</option>
+                {{end}}
+              </select>
+            </label>
+          </div>
+          <table>
+            <thead>
+            <tr>
+              <th>{{t .Locale "table.community"}}</th>
+              <th>{{t .Locale "table.category"}}</th>
+              <th>{{t .Locale "community.profileKey"}}</th>
+              <th>{{t .Locale "community.allowedProfiles"}}</th>
+              <th>{{t .Locale "community.enabledTabs"}}</th>
+              <th>{{t .Locale "community.subcategories"}}</th>
+              <th>{{t .Locale "community.promotionSegments"}}</th>
+              <th>{{t .Locale "community.scope"}}</th>
+              <th>{{t .Locale "community.profileMode"}}</th>
+              <th>{{t .Locale "table.status"}}</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{range .Data.Blueprints}}
+              <tr data-table-row data-filter-category="{{.Item.Category}}" data-filter-status="{{.Item.Status}}">
+                <td>
+                  <strong>{{.Title}}</strong>
+                  {{if .Description}}<small>{{.Description}}</small>{{end}}
+                </td>
+                <td>{{.CategoryText}}</td>
+                <td>{{.DefaultPostProfileText}}</td>
+                <td>{{.AllowedPostProfilesText}}</td>
+                <td>{{.EnabledTabsText}}</td>
+                <td>{{.SubcategoriesText}}</td>
+                <td>{{.PromotionSegmentsText}}</td>
+                <td>{{.AllowedScopesText}}</td>
+                <td>{{.DefaultModerationModeText}} · {{.RolloutPolicyText}}</td>
+                <td><span class="{{statusClass .Item.Status}}">{{statusText $.Locale .Item.Status}}</span></td>
+              </tr>
+            {{end}}
+            </tbody>
+          </table>
+          <nav class="pagination table-pagination" aria-label="{{t .Locale "pagination.label"}}" data-table-pagination>
+            <button type="button" data-table-page-prev>{{t .Locale "action.previousPage"}}</button>
+            <span class="muted" data-table-page-status></span>
+            <button type="button" data-table-page-next>{{t .Locale "action.nextPage"}}</button>
+          </nav>
+          <p class="empty" data-table-empty hidden>{{t .Locale "community.noTableMatches"}}</p>
+        </div>
+      {{else}}
+        <p class="empty">{{t .Locale "community.noBlueprints"}}</p>
+      {{end}}
+    </div>
+  </dialog>
+
+  <dialog class="table-dialog" id="community-geo-hubs-dialog" aria-labelledby="community-geo-hubs-title" data-close-on-backdrop>
+    <div class="table-dialog-panel">
+      <div class="section-head compact">
+        <div>
+          <h2 id="community-geo-hubs-title">{{t .Locale "community.geoHubsTitle"}}</h2>
+          <p>{{t .Locale "community.modalTableHint"}}</p>
+        </div>
+        <button type="button" data-modal-close>{{t .Locale "action.close"}}</button>
+      </div>
+      {{if .Data.GeoHubs}}
+        <div class="table-wrap" data-paginated-table data-page-size="10">
+          <div class="table-tools">
+            <label>
+              <span>{{t .Locale "field.search"}}</span>
+              <input type="search" data-table-search placeholder="{{t .Locale "placeholder.searchCommunities"}}">
+            </label>
+            <label>
+              <span>{{t .Locale "community.hubTier"}}</span>
+              <select data-table-filter="tier">
+                <option value="">{{t .Locale "community.filterAll"}}</option>
+                {{range .Data.GeoHubTierFilters}}
+                  <option value="{{.Value}}">{{.Text}}</option>
+                {{end}}
+              </select>
+            </label>
+            <label>
+              <span>{{t .Locale "table.status"}}</span>
+              <select data-table-filter="materialization">
+                <option value="">{{t .Locale "community.filterAll"}}</option>
+                {{range .Data.GeoHubMaterializationFilters}}
+                  <option value="{{.Value}}">{{.Text}}</option>
+                {{end}}
+              </select>
+            </label>
+          </div>
+          <table>
+            <thead>
+            <tr>
+              <th>{{t .Locale "table.city"}}</th>
+              <th>{{t .Locale "community.hubTier"}}</th>
+              <th>{{t .Locale "community.effectiveHub"}}</th>
+              <th>{{t .Locale "table.reason"}}</th>
+              <th>{{t .Locale "table.status"}}</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{range .Data.GeoHubs}}
+              <tr data-table-row data-filter-tier="{{.Item.HubTier}}" data-filter-materialization="{{if .Item.CanMaterialize}}can_materialize{{else}}alias_only{{end}}">
+                <td><strong>{{.LocationText}}</strong></td>
+                <td>{{.HubTierText}}</td>
+                <td>{{.EffectiveText}}</td>
+                <td>{{.ReasonText}}</td>
+                <td>
+                  {{if .Item.CanMaterialize}}
+                    <span class="badge badge-success">{{t $.Locale "community.canMaterialize"}}</span>
+                  {{else}}
+                    <span class="badge">{{t $.Locale "community.aliasOnly"}}</span>
+                  {{end}}
+                </td>
+              </tr>
+            {{end}}
+            </tbody>
+          </table>
+          <nav class="pagination table-pagination" aria-label="{{t .Locale "pagination.label"}}" data-table-pagination>
+            <button type="button" data-table-page-prev>{{t .Locale "action.previousPage"}}</button>
+            <span class="muted" data-table-page-status></span>
+            <button type="button" data-table-page-next>{{t .Locale "action.nextPage"}}</button>
+          </nav>
+          <p class="empty" data-table-empty hidden>{{t .Locale "community.noTableMatches"}}</p>
+        </div>
+      {{else}}
+        <p class="empty">{{t .Locale "community.noGeoHubs"}}</p>
+      {{end}}
+    </div>
+  </dialog>
+
+  <dialog class="table-dialog" id="community-instances-dialog" aria-labelledby="community-instances-title" data-close-on-backdrop>
+    <div class="table-dialog-panel">
+      <div class="section-head compact">
+        <div>
+          <h2 id="community-instances-title">{{t .Locale "community.instancesTitle"}}</h2>
+          <p>{{t .Locale "community.modalTableHint"}}</p>
+        </div>
+        <button type="button" data-modal-close>{{t .Locale "action.close"}}</button>
+      </div>
+      {{if .Data.Instances}}
+        <div class="table-wrap" data-paginated-table data-page-size="10">
+          <div class="table-tools">
+            <label>
+              <span>{{t .Locale "field.search"}}</span>
+              <input type="search" data-table-search placeholder="{{t .Locale "placeholder.searchCommunities"}}">
+            </label>
+            <label>
+              <span>{{t .Locale "community.scope"}}</span>
+              <select data-table-filter="scope">
+                <option value="">{{t .Locale "community.filterAll"}}</option>
+                {{range .Data.InstanceScopeFilters}}
+                  <option value="{{.Value}}">{{.Text}}</option>
+                {{end}}
+              </select>
+            </label>
+            <label>
+              <span>{{t .Locale "table.status"}}</span>
+              <select data-table-filter="status">
+                <option value="">{{t .Locale "community.filterAll"}}</option>
+                {{range .Data.InstanceStatusFilters}}
+                  <option value="{{.Value}}">{{.Text}}</option>
+                {{end}}
+              </select>
+            </label>
+          </div>
+          <table>
+            <thead>
+            <tr>
+              <th>{{t .Locale "table.community"}}</th>
+              <th>{{t .Locale "table.city"}}</th>
+              <th>{{t .Locale "community.scope"}}</th>
+              <th>{{t .Locale "table.status"}}</th>
+              <th>{{t .Locale "community.members"}}</th>
+              <th>{{t .Locale "table.actions"}}</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{range .Data.Instances}}
+              <tr data-table-row data-filter-scope="{{.Item.ScopeType}}" data-filter-status="{{.Item.Status}}">
+                <td>
+                  <strong>{{.Title}}</strong>
+                </td>
+                <td>{{.LocationText}}</td>
+                <td>{{.ScopeText}}</td>
+                <td><span class="{{statusClass .Item.Status}}">{{statusText $.Locale .Item.Status}}</span></td>
+                <td>{{.Item.MemberCount}}</td>
+                <td>
+                  {{with .Item.CommunityID}}
+                    <a class="button secondary" href="/admin/communities/{{.}}/edit">{{t $.Locale "action.edit"}}</a>
+                  {{else}}
+                    <span class="muted">-</span>
+                  {{end}}
+                </td>
+              </tr>
+            {{end}}
+            </tbody>
+          </table>
+          <nav class="pagination table-pagination" aria-label="{{t .Locale "pagination.label"}}" data-table-pagination>
+            <button type="button" data-table-page-prev>{{t .Locale "action.previousPage"}}</button>
+            <span class="muted" data-table-page-status></span>
+            <button type="button" data-table-page-next>{{t .Locale "action.nextPage"}}</button>
+          </nav>
+          <p class="empty" data-table-empty hidden>{{t .Locale "community.noTableMatches"}}</p>
+        </div>
+      {{else}}
+        <p class="empty">{{t .Locale "community.noInstances"}}</p>
+      {{end}}
+    </div>
+  </dialog>
+
+  <dialog class="table-dialog" id="community-post-profiles-dialog" aria-labelledby="community-post-profiles-title" data-close-on-backdrop>
+    <div class="table-dialog-panel">
+      <div class="section-head compact">
+        <div>
+          <h2 id="community-post-profiles-title">{{t .Locale "community.postProfilesTitle"}}</h2>
+          <p>{{t .Locale "community.modalTableHint"}}</p>
+        </div>
+        <button type="button" data-modal-close>{{t .Locale "action.close"}}</button>
+      </div>
+      {{if .Data.PostProfiles}}
+        <div class="table-wrap" data-paginated-table data-page-size="10">
+          <div class="table-tools">
+            <label>
+              <span>{{t .Locale "field.search"}}</span>
+              <input type="search" data-table-search placeholder="{{t .Locale "placeholder.searchCommunities"}}">
+            </label>
+            <label>
+              <span>{{t .Locale "community.postKind"}}</span>
+              <select data-table-filter="kind">
+                <option value="">{{t .Locale "community.filterAll"}}</option>
+                {{range .Data.PostProfileKindFilters}}
+                  <option value="{{.Value}}">{{.Text}}</option>
+                {{end}}
+              </select>
+            </label>
+            <label>
+              <span>{{t .Locale "community.profileMode"}}</span>
+              <select data-table-filter="mode">
+                <option value="">{{t .Locale "community.filterAll"}}</option>
+                {{range .Data.PostProfileModeFilters}}
+                  <option value="{{.Value}}">{{.Text}}</option>
+                {{end}}
+              </select>
+            </label>
+          </div>
+          <table>
+            <thead>
+            <tr>
+              <th>{{t .Locale "community.profileKey"}}</th>
+              <th>{{t .Locale "community.postKind"}}</th>
+              <th>{{t .Locale "community.composerPreset"}}</th>
+              <th>{{t .Locale "community.renderPreset"}}</th>
+              <th>{{t .Locale "community.profileMode"}}</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{range .Data.PostProfiles}}
+              <tr data-table-row data-filter-kind="{{.Item.PostKind}}" data-filter-mode="{{.Item.ModerationMode}}">
+                <td><strong>{{.KeyText}}</strong></td>
+                <td>{{.PostKindText}}</td>
+                <td>{{.ComposerPresetText}}</td>
+                <td>{{.RenderPresetText}}</td>
+                <td>{{.ModerationModeText}} · {{.ActivityCreationModeText}}</td>
+              </tr>
+            {{end}}
+            </tbody>
+          </table>
+          <nav class="pagination table-pagination" aria-label="{{t .Locale "pagination.label"}}" data-table-pagination>
+            <button type="button" data-table-page-prev>{{t .Locale "action.previousPage"}}</button>
+            <span class="muted" data-table-page-status></span>
+            <button type="button" data-table-page-next>{{t .Locale "action.nextPage"}}</button>
+          </nav>
+          <p class="empty" data-table-empty hidden>{{t .Locale "community.noTableMatches"}}</p>
+        </div>
+      {{else}}
+        <p class="empty">{{t .Locale "community.noPostProfiles"}}</p>
+      {{end}}
+    </div>
+  </dialog>
+</section>
+{{template "pageEnd" .}}
+{{end}}

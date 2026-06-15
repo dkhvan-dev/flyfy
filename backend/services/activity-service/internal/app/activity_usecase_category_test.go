@@ -29,6 +29,9 @@ type activityRepoStub struct {
 	listParticipantsByActivityID                 func(ctx context.Context, activityID uuid.UUID, limit int, offset int) ([]*model.ActivityParticipant, error)
 	countActivityCompletionStatsByUserID         func(ctx context.Context, userID uuid.UUID) (port.ActivityCompletionStats, error)
 	countActivitiesCreatedSince                  func(ctx context.Context, hostUserID uuid.UUID, since time.Time) (int, error)
+	acquireActivityIdempotencyKey                func(ctx context.Context, item *model.ActivityIdempotencyKey) (*model.ActivityIdempotencyKey, bool, error)
+	completeActivityIdempotencyKey               func(ctx context.Context, key string, activityID uuid.UUID) error
+	failActivityIdempotencyKey                   func(ctx context.Context, key string, reason string) error
 	listActivitiesDueForRegistrationFinalization func(ctx context.Context, before time.Time, limit int) ([]*model.Activity, error)
 	withTx                                       func(ctx context.Context, fn func(repo port.ActivityTxRepository) error) error
 }
@@ -212,6 +215,27 @@ func (s *activityRepoStub) CountActivitiesCreatedSince(ctx context.Context, host
 		return s.countActivitiesCreatedSince(ctx, hostUserID, since)
 	}
 	return 0, nil
+}
+
+func (s *activityRepoStub) AcquireActivityIdempotencyKey(ctx context.Context, item *model.ActivityIdempotencyKey) (*model.ActivityIdempotencyKey, bool, error) {
+	if s.acquireActivityIdempotencyKey != nil {
+		return s.acquireActivityIdempotencyKey(ctx, item)
+	}
+	return item, true, nil
+}
+
+func (s *activityRepoStub) CompleteActivityIdempotencyKey(ctx context.Context, key string, activityID uuid.UUID) error {
+	if s.completeActivityIdempotencyKey != nil {
+		return s.completeActivityIdempotencyKey(ctx, key, activityID)
+	}
+	return nil
+}
+
+func (s *activityRepoStub) FailActivityIdempotencyKey(ctx context.Context, key string, reason string) error {
+	if s.failActivityIdempotencyKey != nil {
+		return s.failActivityIdempotencyKey(ctx, key, reason)
+	}
+	return nil
 }
 
 type activityTxRepoStub struct {

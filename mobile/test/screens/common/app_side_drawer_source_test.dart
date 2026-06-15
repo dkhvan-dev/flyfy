@@ -3,6 +3,29 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('drawer pins footer while only the menu section scrolls', () async {
+    final source = await File(
+      'lib/screens/common/app_side_drawer.dart',
+    ).readAsString();
+
+    final drawerStart = source.indexOf('class AppSideDrawer');
+    final helpersStart = source.indexOf(
+      'String _resolveLocalizedCountry',
+      drawerStart,
+    );
+
+    expect(drawerStart, isNonNegative);
+    expect(helpersStart, greaterThan(drawerStart));
+
+    final drawerSource = source.substring(drawerStart, helpersStart);
+
+    expect(drawerSource, contains('Expanded('));
+    expect(drawerSource, contains('SingleChildScrollView('));
+    expect(drawerSource, contains('_DrawerPinnedFooter('));
+    expect(drawerSource, isNot(contains('CustomScrollView(')));
+    expect(drawerSource, isNot(contains('SliverFillRemaining(')));
+  });
+
   test('drawer header does not show location under logged-in nickname', () async {
     final source = await File(
       'lib/screens/common/app_side_drawer.dart',

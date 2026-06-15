@@ -233,6 +233,57 @@ func TestSendMessageStoresTextContent(t *testing.T) {
 	}
 }
 
+func TestSendMessageStoresStoryReplyContext(t *testing.T) {
+	t.Parallel()
+
+	conversationID := uuid.New()
+	senderID := uuid.New()
+	storyID := uuid.New()
+	storyAuthorID := uuid.New()
+	expiresAt := time.Now().UTC().Add(24 * time.Hour)
+	repo := newFakeMessageRepo(conversationID, senderID)
+	useCase := NewMessageUseCase(repo, &fakeEventPublisher{}, nil)
+
+	msg, err := useCase.SendMessage(context.Background(), SendMessageInput{
+		ConversationID: conversationID,
+		SenderUserID:   senderID,
+		Type:           "text",
+		Content:        "Looks great",
+		StoryReply: &model.StoryReplyContext{
+			StoryID:            storyID,
+			StoryAuthorUserID:  storyAuthorID,
+			StoryTitle:         "Morning route",
+			StoryPreviewFileID: "cover-one",
+			StoryPreviewURL:    "https://cdn.example.test/cover-one.jpg",
+			StoryExpiresAt:     &expiresAt,
+		},
+	})
+	if err != nil {
+		t.Fatalf("SendMessage error: %v", err)
+	}
+
+	if msg.StoryReply == nil {
+		t.Fatal("StoryReply must be returned")
+	}
+	if msg.StoryReply.StoryID != storyID ||
+		msg.StoryReply.StoryAuthorUserID != storyAuthorID ||
+		msg.StoryReply.StoryTitle != "Morning route" ||
+		msg.StoryReply.StoryPreviewFileID != "cover-one" ||
+		msg.StoryReply.StoryPreviewURL != "https://cdn.example.test/cover-one.jpg" {
+		t.Fatalf("StoryReply = %+v, want normalized story context", msg.StoryReply)
+	}
+	if msg.StoryReply.StoryExpiresAt == nil || !msg.StoryReply.StoryExpiresAt.Equal(expiresAt) {
+		t.Fatalf("StoryExpiresAt = %v, want %v", msg.StoryReply.StoryExpiresAt, expiresAt)
+	}
+	if repo.createdMessage == nil || repo.createdMessage.StoryReply == nil {
+		t.Fatalf("repository did not receive story reply context: %+v", repo.createdMessage)
+	}
+	if repo.createdMessage.StoryReply.StoryID != storyID ||
+		repo.createdMessage.StoryReply.StoryAuthorUserID != storyAuthorID {
+		t.Fatalf("repository StoryReply = %+v, want story %s author %s", repo.createdMessage.StoryReply, storyID, storyAuthorID)
+	}
+}
+
 func TestSendMessageReturnsExistingMessageForDuplicateClientMessageID(t *testing.T) {
 	t.Parallel()
 

@@ -249,6 +249,93 @@
     });
   });
 
+  document.querySelectorAll("[data-paginated-table]").forEach((container) => {
+    const rows = Array.from(container.querySelectorAll("[data-table-row]"));
+    const pagination = container.querySelector("[data-table-pagination]");
+    const previousButton = pagination ? pagination.querySelector("[data-table-page-prev]") : null;
+    const nextButton = pagination ? pagination.querySelector("[data-table-page-next]") : null;
+    const status = pagination ? pagination.querySelector("[data-table-page-status]") : null;
+    const searchInput = container.querySelector("[data-table-search]");
+    const filters = Array.from(container.querySelectorAll("[data-table-filter]"));
+    const emptyState = container.querySelector("[data-table-empty]");
+    const pageSize = Math.max(1, Number.parseInt(container.getAttribute("data-page-size") || "10", 10));
+    let page = 0;
+    let totalPages = 1;
+    const normalizeTableSearch = (value) =>
+      String(value || "")
+        .trim()
+        .toLocaleLowerCase()
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "");
+    const rowMatchesControls = (row) => {
+      const query = searchInput ? normalizeTableSearch(searchInput.value) : "";
+      if (query !== "") {
+        const searchable = normalizeTableSearch(row.getAttribute("data-table-search") || row.textContent || "");
+        if (!searchable.includes(query)) {
+          return false;
+        }
+      }
+      return filters.every((filter) => {
+        const value = (filter.value || "").trim();
+        if (value === "") {
+          return true;
+        }
+        const key = filter.getAttribute("data-table-filter") || "";
+        return (row.getAttribute(`data-filter-${key}`) || "").trim() === value;
+      });
+    };
+    const renderPage = () => {
+      const visibleRows = rows.filter(rowMatchesControls);
+      totalPages = Math.max(1, Math.ceil(visibleRows.length / pageSize));
+      page = Math.min(page, totalPages - 1);
+      rows.forEach((row) => {
+        const visibleIndex = visibleRows.indexOf(row);
+        const visible = visibleIndex >= page * pageSize && visibleIndex < (page + 1) * pageSize;
+        row.hidden = !visible;
+      });
+      if (previousButton) {
+        previousButton.disabled = page === 0;
+      }
+      if (nextButton) {
+        nextButton.disabled = page >= totalPages - 1;
+      }
+      if (status) {
+        const first = visibleRows.length === 0 ? 0 : page * pageSize + 1;
+        const last = Math.min(visibleRows.length, (page + 1) * pageSize);
+        status.textContent = `${first}-${last} / ${visibleRows.length}`;
+      }
+      if (pagination) {
+        pagination.hidden = visibleRows.length <= pageSize;
+      }
+      if (emptyState) {
+        emptyState.hidden = visibleRows.length !== 0;
+      }
+    };
+    const resetAndRender = () => {
+      page = 0;
+      renderPage();
+    };
+    if (previousButton) {
+      previousButton.addEventListener("click", () => {
+        page = Math.max(0, page - 1);
+        renderPage();
+      });
+    }
+    if (nextButton) {
+      nextButton.addEventListener("click", () => {
+        page = Math.min(totalPages - 1, page + 1);
+        renderPage();
+      });
+    }
+    if (searchInput) {
+      searchInput.addEventListener("input", resetAndRender);
+    }
+    filters.forEach((filter) => {
+      filter.addEventListener("change", resetAndRender);
+    });
+    renderPage();
+  });
+
   const syncAttractionRequiredLocale = (form) => {
     const localeSelect = form.querySelector("[data-default-locale-select]");
     if (!localeSelect) {

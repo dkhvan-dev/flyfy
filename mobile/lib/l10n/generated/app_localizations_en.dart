@@ -1080,34 +1080,34 @@ class AppLocalizationsEn extends AppLocalizations {
       'When this user attends a completed public activity, it will appear here.';
 
   @override
-  String get profilePopularStoriesTitle => 'Popular stories';
+  String get profilePopularStoriesTitle => 'Popular posts';
 
   @override
   String get profileViewAllStories => 'All';
 
   @override
-  String get profileStoriesLoadFailed => 'Failed to load stories';
+  String get profileStoriesLoadFailed => 'Failed to load posts';
 
   @override
   String get profileStoriesLoadFailedHint =>
       'Check your connection and try again.';
 
   @override
-  String get profileStoriesEmptyTitle => 'No stories yet';
+  String get profileStoriesEmptyTitle => 'No posts yet';
 
   @override
   String get profileStoriesEmptySubtitle =>
-      'Published stories from this user will appear here.';
+      'Published posts from this user will appear here.';
 
   @override
-  String get profileUserStoriesTitle => 'User stories';
+  String get profileUserStoriesTitle => 'User posts';
 
   @override
-  String get profileStoriesTitle => 'Recent stories';
+  String get profileStoriesTitle => 'Recent posts';
 
   @override
   String get profileStoriesUnavailable =>
-      'Public stories and travel articles are not available in the app yet.';
+      'Public posts and travel articles are not available in the app yet.';
 
   @override
   String get profileUnavailableTitle => 'Coming soon';
@@ -2101,7 +2101,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeSeeAll => 'See All';
 
   @override
-  String get homeTopStories => 'Top Stories';
+  String get homeTopStories => 'Top Posts';
 
   @override
   String get homeFeaturedStays => 'Featured Stays';
@@ -2272,6 +2272,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeNavHome => 'Home';
 
   @override
+  String get feedNavLabel => 'Feed';
+
+  @override
   String get homeNavQr => 'QR';
 
   @override
@@ -2282,6 +2285,712 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeNavMy => 'My';
+
+  @override
+  String get feedTitle => 'Feed';
+
+  @override
+  String get feedTabForYou => 'For you';
+
+  @override
+  String get feedTabFollowing => 'Following';
+
+  @override
+  String get feedStoriesSectionTitle => 'Stories';
+
+  @override
+  String get feedCreateStoryAction => 'Your story';
+
+  @override
+  String get storyCaptureTitle => 'Add to story';
+
+  @override
+  String get storyCapturePreviewTitle => 'Preview';
+
+  @override
+  String get storyCaptureCloseLabel => 'Close';
+
+  @override
+  String get storyCaptureSettingsLabel => 'Settings';
+
+  @override
+  String get storyCaptureGalleryAction => 'Gallery';
+
+  @override
+  String get storyCapturePhotoFromGallery => 'Choose photo';
+
+  @override
+  String get storyCaptureVideoFromGallery => 'Choose video';
+
+  @override
+  String get storyCaptureCameraUnavailable =>
+      'Camera is unavailable. Check permissions and try again.';
+
+  @override
+  String get storyCapturePermissionDenied =>
+      'Camera or microphone access is denied.';
+
+  @override
+  String get storyCaptureCaptureFailed =>
+      'Could not capture the story. Try again.';
+
+  @override
+  String get storyCaptureFlashOffLabel => 'Flash off';
+
+  @override
+  String get storyCaptureFlashAutoLabel => 'Auto flash';
+
+  @override
+  String get storyCaptureFlashOnLabel => 'Flash on';
+
+  @override
+  String get storyCaptureFlashUnsupported =>
+      'Flash is not available for this camera.';
+
+  @override
+  String get storyCapturePhotoMode => 'Photo';
+
+  @override
+  String get storyCaptureVideoMode => 'Video';
+
+  @override
+  String get storyCaptureCaptureButtonLabel => 'Take photo';
+
+  @override
+  String get storyCaptureRecordButtonLabel => 'Record video';
+
+  @override
+  String get storyCaptureStopButtonLabel => 'Stop recording';
+
+  @override
+  String get storyCaptureFlipCameraLabel => 'Switch camera';
+
+  @override
+  String get storyCaptureCaptionHint => 'Add a caption...';
+
+  @override
+  String get storyCaptureRetakeAction => 'Retake';
+
+  @override
+  String get storyCapturePublishAction => 'Publish';
+
+  @override
+  String get storyCapturePublishing => 'Publishing...';
+
+  @override
+  String get storyCapturePublishFailed =>
+      'Could not publish the story. Try again.';
+
+  @override
+  String get storyReplyInputHint => 'Reply';
+
+  @override
+  String get storyReplySendAction => 'Send reply';
+
+  @override
+  String get storyReplySentMessage => 'Reply sent';
+
+  @override
+  String get storyReplySendFailed => 'Could not send reply. Try again.';
+
+  @override
+  String get storyLikeAction => 'Like story';
+
+  @override
+  String get storyLikeSendFailed => 'Could not like the story. Try again.';
+
+  @override
+  String get storyCaptureDefaultTitle => 'My story';
+
+  @override
+  String get storyCaptureDefaultBody => 'New story';
+
+  @override
+  String get storyCaptureDefaultPlace => 'Story';
+
+  @override
+  String get storyCapturePublishedMessage => 'Story published';
+
+  @override
+  String get feedSuggestedCommunitiesTitle => 'Communities to follow';
+
+  @override
+  String get feedJoinCommunityAction => 'Join';
+
+  @override
+  String get feedCommunityJoinedAction => 'Following';
+
+  @override
+  String get feedCommunityModerationAction => 'Moderate';
+
+  @override
+  String get feedCommunityActionFailed =>
+      'Could not update the subscription. Try again.';
+
+  @override
+  String feedCommunityMembersLabel(String count) {
+    return '$count members';
+  }
+
+  @override
+  String get feedMySubscriptionsTitle => 'My subscriptions';
+
+  @override
+  String feedMySubscriptionsSummary(int communities, int people) {
+    return '$communities communities · $people people';
+  }
+
+  @override
+  String get feedMySubscriptionsViewAll => 'View all';
+
+  @override
+  String get feedMySubscriptionsCommunitiesTab => 'Communities';
+
+  @override
+  String get feedMySubscriptionsPeopleTab => 'People';
+
+  @override
+  String get feedMySubscriptionsSearchHint => 'Search subscriptions';
+
+  @override
+  String get feedMySubscriptionsSheetSubtitle =>
+      'Communities, friends, and followed people you keep close in the feed.';
+
+  @override
+  String get feedMySubscriptionsFilterAll => 'All';
+
+  @override
+  String get feedMySubscriptionsFilterStatusSection => 'Subscription status';
+
+  @override
+  String get feedMySubscriptionsFilterPeopleSection => 'Connection type';
+
+  @override
+  String get feedMySubscriptionsFilterCommunityActivitySection => 'Activity';
+
+  @override
+  String get feedMySubscriptionsFilterCommunityTopicSection => 'Topics';
+
+  @override
+  String get feedMySubscriptionsFilterPeopleConnectionSection => 'Relationship';
+
+  @override
+  String get feedMySubscriptionsFilterPeopleActivitySection => 'Activity';
+
+  @override
+  String get feedMySubscriptionsFilterSortSection => 'Sort';
+
+  @override
+  String get feedMySubscriptionsFilterSubscribed => 'Subscribed';
+
+  @override
+  String get feedMySubscriptionsFilterUnsubscribed => 'Unsubscribed';
+
+  @override
+  String get feedMySubscriptionsFilterCurrentCity => 'My city';
+
+  @override
+  String get feedMySubscriptionsFilterActive => 'Has posts';
+
+  @override
+  String get feedMySubscriptionsFilterPopular => 'Popular';
+
+  @override
+  String get feedMySubscriptionsFilterFriends => 'Friends';
+
+  @override
+  String get feedMySubscriptionsFilterFollowing => 'Following';
+
+  @override
+  String get feedMySubscriptionsFilterOnline => 'Online';
+
+  @override
+  String get feedMySubscriptionsSortRelevant => 'Recommended';
+
+  @override
+  String get feedMySubscriptionsSortMostActive => 'Most active';
+
+  @override
+  String get feedMySubscriptionsSortMostPopular => 'Most followed';
+
+  @override
+  String get feedMySubscriptionsSortName => 'A-Z';
+
+  @override
+  String get feedMySubscriptionsSortOnlineFirst => 'Online first';
+
+  @override
+  String get feedPostSortRecommended => 'Recommended';
+
+  @override
+  String get feedPostSortNewest => 'Newest';
+
+  @override
+  String get feedPostSortPopular => 'Popular';
+
+  @override
+  String get feedPostSortDiscussed => 'Discussed';
+
+  @override
+  String get feedMySubscriptionsApplyFilters => 'Apply filters';
+
+  @override
+  String feedMySubscriptionsShowCommunitiesCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Show $count communities',
+      one: 'Show $count community',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String feedMySubscriptionsShowPeopleCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Show $count people',
+      one: 'Show $count person',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get feedMySubscriptionsEmptyMessage =>
+      'No subscriptions match these filters.';
+
+  @override
+  String get feedMySubscriptionsFriendBadge => 'Friend';
+
+  @override
+  String get feedMySubscriptionsFollowingBadge => 'Following';
+
+  @override
+  String get feedMySubscriptionsOnlineBadge => 'Online';
+
+  @override
+  String get feedMySubscriptionsUnknownPerson => 'User';
+
+  @override
+  String get feedSystemPostsTitle => 'Official updates';
+
+  @override
+  String get feedSystemPostsViewAll => 'View all';
+
+  @override
+  String get feedSystemPostsSheetTitle => 'Official posts';
+
+  @override
+  String get communityDiscoveryTitle => 'Communities';
+
+  @override
+  String get communityDiscoveryEmptyTitle => 'No communities yet';
+
+  @override
+  String get communityDiscoveryEmptyMessage =>
+      'Official communities will appear here as they launch.';
+
+  @override
+  String get communityDiscoveryLoadFailedTitle => 'Could not load communities';
+
+  @override
+  String get communityDiscoveryLoadFailedMessage =>
+      'Check your connection and try again.';
+
+  @override
+  String get communityDiscoverySearchHint => 'Search communities';
+
+  @override
+  String get communityDiscoveryFiltersTitle => 'Filters';
+
+  @override
+  String get communityDiscoveryShowResults => 'Show communities';
+
+  @override
+  String communityDiscoveryShowResultsCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count communities',
+      one: '1 community',
+      zero: '0 communities',
+    );
+    return 'Show $_temp0';
+  }
+
+  @override
+  String get communityDiscoveryRequiredLocationMessage =>
+      'Choose a country and city to find active local communities.';
+
+  @override
+  String get communityDiscoveryTopicSection => 'Community type';
+
+  @override
+  String get communityDiscoveryTopicAll => 'All';
+
+  @override
+  String get communityDiscoveryTopicTravel => 'Travel';
+
+  @override
+  String get communityDiscoveryTopicCity => 'Cities';
+
+  @override
+  String get communityDiscoveryTopicGuides => 'Guides and tours';
+
+  @override
+  String get communityDiscoveryTopicAppNews => 'Inflap news';
+
+  @override
+  String get communityTopicLanguages => 'Languages';
+
+  @override
+  String get communityTopicHousing => 'Housing';
+
+  @override
+  String get communityTopicTransport => 'Transport';
+
+  @override
+  String get communityTopicSports => 'Sports';
+
+  @override
+  String get communityTopicOutdoor => 'Trips and outdoors';
+
+  @override
+  String get communityTopicHobbies => 'Hobbies and workshops';
+
+  @override
+  String get communityTopicWellness => 'Wellness';
+
+  @override
+  String get communityTopicPets => 'Pets';
+
+  @override
+  String get communityTopicCityLife => 'City life';
+
+  @override
+  String get communityTopicContent => 'News and guides';
+
+  @override
+  String get communityTopicFamily => 'Families';
+
+  @override
+  String get communityTopicGeneral => 'General';
+
+  @override
+  String get communityProfileTitle => 'Community';
+
+  @override
+  String get communityProfileActionsTooltip => 'Community actions';
+
+  @override
+  String get communityProfileCreatePostAction => 'Create post';
+
+  @override
+  String get communityPostModeSelectorLabel => 'Publishing mode';
+
+  @override
+  String get communityPostModeArticle => 'Posts';
+
+  @override
+  String get communityPostModeQuickPost => 'Discussions';
+
+  @override
+  String get communityPostModeListing => 'Listings';
+
+  @override
+  String get communityPostModeEventAnnouncement => 'Events';
+
+  @override
+  String get communityPostModeQuestionAnswer => 'Questions';
+
+  @override
+  String get communityPostModeTripPlan => 'Trips';
+
+  @override
+  String get communityProfileUnfollowConfirmTitle => 'Unfollow community?';
+
+  @override
+  String get communityProfileRulesTitle => 'Community rules';
+
+  @override
+  String get communityProfilePostsSectionTitle => 'Posts';
+
+  @override
+  String get communityProfileNoPostsTitle => 'No posts yet';
+
+  @override
+  String get communityProfileNoPostsMessage =>
+      'New posts from this community will appear here.';
+
+  @override
+  String get communityProfilePostsLoadFailedTitle => 'Could not load posts';
+
+  @override
+  String communityProfilePostsLabel(String count) {
+    return '$count posts';
+  }
+
+  @override
+  String get communityProfileLoadFailedTitle => 'Could not load community';
+
+  @override
+  String get communityProfileLoadFailedMessage =>
+      'Check your connection and try again.';
+
+  @override
+  String get communityTrustReportAction => 'Report community';
+
+  @override
+  String get communityTrustMuteAction => 'Mute community';
+
+  @override
+  String get communityTrustUnmuteAction => 'Unmute community';
+
+  @override
+  String get communityTrustBlockedTitle => 'Posting blocked';
+
+  @override
+  String get communityTrustBlockedMessage =>
+      'You cannot post in this community until moderators lift the restriction.';
+
+  @override
+  String get communityTrustMutedTitle => 'Community muted';
+
+  @override
+  String get communityTrustMutedMessage =>
+      'This community is muted in your feed. You can unmute it anytime.';
+
+  @override
+  String get communityTrustAppealPendingTitle => 'Appeal in review';
+
+  @override
+  String get communityTrustAppealPendingMessage =>
+      'Moderators are reviewing your appeal for this community.';
+
+  @override
+  String get communityTrustAppealRejectedTitle => 'Appeal rejected';
+
+  @override
+  String get communityTrustAppealRejectedMessage =>
+      'The restriction remains active after moderator review.';
+
+  @override
+  String get communityTrustAppealAction => 'Appeal';
+
+  @override
+  String get communityTrustAppealMessage =>
+      'Please review my community restriction again.';
+
+  @override
+  String get communityTrustReportSubmitted => 'Community sent to moderation.';
+
+  @override
+  String get communityTrustMutedSubmitted => 'Community muted.';
+
+  @override
+  String get communityTrustUnmutedSubmitted => 'Community unmuted.';
+
+  @override
+  String get communityTrustAppealSubmitted => 'Appeal sent to moderators.';
+
+  @override
+  String get communityTrustActionUnavailable =>
+      'This trust action is not available yet.';
+
+  @override
+  String get communityTrustActionFailed =>
+      'Could not complete the trust action. Try again.';
+
+  @override
+  String get feedEmptyTitle => 'No feed items yet';
+
+  @override
+  String get feedEmptyMessage =>
+      'Follow travelers and communities to shape your feed.';
+
+  @override
+  String get feedLoadFailedTitle => 'Could not load feed';
+
+  @override
+  String get feedLoadFailedMessage => 'Check your connection and try again.';
+
+  @override
+  String get feedRetryAction => 'Retry';
+
+  @override
+  String get communityModerationTitle => 'Moderation queue';
+
+  @override
+  String communityModerationSubtitle(int count) {
+    return '$count pending';
+  }
+
+  @override
+  String get communityModerationEmptyTitle => 'No posts waiting';
+
+  @override
+  String get communityModerationEmptyMessage =>
+      'New community posts that need review will appear here.';
+
+  @override
+  String get communityModerationLoadFailedTitle =>
+      'Could not load moderation queue';
+
+  @override
+  String get communityModerationLoadFailedMessage =>
+      'Check your connection and try again.';
+
+  @override
+  String get communityModerationApproveAction => 'Approve';
+
+  @override
+  String get communityModerationRejectAction => 'Reject';
+
+  @override
+  String get communityModerationHistoryAction => 'History';
+
+  @override
+  String get communityModerationApprovedMessage => 'Post approved';
+
+  @override
+  String get communityModerationRejectedMessage => 'Post rejected';
+
+  @override
+  String get communityModerationActionFailed =>
+      'Could not update this post. Try again.';
+
+  @override
+  String get communityModerationDecisionHistoryTitle => 'Decision history';
+
+  @override
+  String get communityModerationDecisionHistoryEmpty =>
+      'No moderation decisions yet.';
+
+  @override
+  String get communityModerationDecisionHistoryFailed =>
+      'Could not load decision history.';
+
+  @override
+  String get communityModerationRejectReasonLabel => 'Reason for rejection';
+
+  @override
+  String get communityModerationRejectConfirmAction => 'Reject post';
+
+  @override
+  String get communityModerationRejectCancelAction => 'Cancel';
+
+  @override
+  String get communityMembersTitle => 'Members';
+
+  @override
+  String get communityMembersSubtitle => 'Manage access and roles';
+
+  @override
+  String get communityMembersAction => 'Members';
+
+  @override
+  String get communityMembersEmptyTitle => 'No members found';
+
+  @override
+  String get communityMembersEmptyMessage =>
+      'Members matching the selected filters will appear here.';
+
+  @override
+  String get communityMembersLoadFailedTitle => 'Could not load members';
+
+  @override
+  String get communityMembersLoadFailedMessage =>
+      'Check your connection and try again.';
+
+  @override
+  String get communityMembersRoleFilterLabel => 'Role';
+
+  @override
+  String get communityMembersStatusFilterLabel => 'Status';
+
+  @override
+  String get communityMembersAllFilter => 'All';
+
+  @override
+  String get communityMembersActiveStatus => 'Active';
+
+  @override
+  String get communityMembersMutedStatus => 'Muted';
+
+  @override
+  String get communityMembersBannedStatus => 'Banned';
+
+  @override
+  String get communityMembersLeftStatus => 'Left';
+
+  @override
+  String get communityMembersTrustedRole => 'Trusted member';
+
+  @override
+  String get communityMembersModeratorRole => 'Moderator';
+
+  @override
+  String get communityMembersAdminRole => 'Admin';
+
+  @override
+  String get communityMembersMemberRole => 'Member';
+
+  @override
+  String get communityMembersChangeRoleAction => 'Change role';
+
+  @override
+  String get communityMembersRoleHistoryAction => 'Role history';
+
+  @override
+  String get communityMembersRoleHistoryTitle => 'Role history';
+
+  @override
+  String get communityMembersRoleHistoryChangedBy => 'Changed by';
+
+  @override
+  String get communityMembersRoleHistoryEmptyTitle => 'No role changes';
+
+  @override
+  String get communityMembersRoleHistoryEmptyMessage =>
+      'Role updates for this member will appear here.';
+
+  @override
+  String get communityMembersRoleHistoryLoadFailedTitle =>
+      'Could not load role history';
+
+  @override
+  String get communityMembersRoleHistoryLoadFailedMessage =>
+      'Check your connection and try again.';
+
+  @override
+  String get communityMembersChangeStatusAction => 'Change status';
+
+  @override
+  String get communityMembersMuteAction => 'Mute member';
+
+  @override
+  String get communityMembersBanAction => 'Ban member';
+
+  @override
+  String get communityMembersRemoveAction => 'Remove member';
+
+  @override
+  String get communityMembersRestoreAction => 'Restore member';
+
+  @override
+  String get communityMembersStatusUpdatedMessage => 'Status updated';
+
+  @override
+  String get communityMembersStatusUpdateFailed =>
+      'Could not update this member status. Try again.';
+
+  @override
+  String get communityMembersRoleUpdatedMessage => 'Role updated';
+
+  @override
+  String get communityMembersRoleUpdateFailed =>
+      'Could not update this member. Try again.';
 
   @override
   String get mapNearbyPlacesLabel => 'Nearby places';
@@ -4324,7 +5033,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myActivitiesTitle => 'My Activities';
 
   @override
-  String get myStoriesTitle => 'My Stories';
+  String get myStoriesTitle => 'My Posts';
+
+  @override
+  String get myStoryArchiveTitle => 'My Stories';
 
   @override
   String get myActivitiesEmpty => 'You haven\'t created any activities yet';
@@ -5328,19 +6040,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backButtonLabel => 'Back';
 
   @override
-  String get storiesDiscoverTitle => 'Discover Stories';
+  String get storiesDiscoverTitle => 'Posts';
 
   @override
-  String get storiesNavLabel => 'Stories';
+  String get storiesNavLabel => 'Posts';
 
   @override
   String get storiesActivitiesNavLabel => 'Activities';
 
   @override
-  String get storySearchHint => 'Search stories, authors, or places';
+  String get storySearchHint => 'Search posts, authors, or places';
 
   @override
-  String get storySearchCompactHint => 'Search stories';
+  String get storySearchCompactHint => 'Search posts';
 
   @override
   String get storyFiltersTitle => 'Filters';
@@ -5374,9 +6086,9 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count stories',
-      one: '1 story',
-      zero: '0 stories',
+      other: '$count posts',
+      one: '1 post',
+      zero: '0 posts',
     );
     return 'Show $_temp0';
   }
@@ -5394,13 +6106,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storySortComments => 'Comments';
 
   @override
-  String get storyCreateCta => 'Share Your Story';
+  String get storyCreateCta => 'Share a post';
 
   @override
-  String get storyCreateFirst => 'Create the first story';
+  String get storyCreateFirst => 'Create the first post';
 
   @override
-  String get storyEmptyTitle => 'No stories yet';
+  String get storyEmptyTitle => 'No posts yet';
 
   @override
   String get storyEmptySubtitle =>
@@ -5408,23 +6120,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storyEmptyAuthenticatedSubtitle =>
-      'Create a story, article, guide, or visual essay to start the feed.';
+      'Create a post, article, guide, or visual essay to start the feed.';
 
   @override
-  String get storyFilteredEmptyTitle => 'No stories match your filters';
+  String get storyFilteredEmptyTitle => 'No posts match your filters';
 
   @override
   String get storyFilteredEmptySubtitle =>
       'Try a different search, country, city, or category.';
 
   @override
-  String get storyResetFiltersAction => 'Reset filters';
+  String get storyResetFiltersAction => 'Clear';
 
   @override
   String get storyLoginCreateAction => 'Log in to create';
 
   @override
   String get myStoriesDraftsTab => 'Drafts';
+
+  @override
+  String get myStoriesPendingReviewTab => 'In review';
 
   @override
   String get myStoriesPublishedTab => 'Published';
@@ -5437,27 +6152,93 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get myStoriesDraftEmptySubtitle =>
-      'Save ideas as drafts before publishing them to the stories feed.';
+      'Save ideas as drafts before publishing them to the posts feed.';
 
   @override
-  String get myStoriesPublishedEmptyTitle => 'No published stories yet';
+  String get myStoriesPendingReviewEmptyTitle => 'No posts in review';
+
+  @override
+  String get myStoriesPendingReviewEmptySubtitle =>
+      'Posts waiting for moderator review will appear here.';
+
+  @override
+  String get myStoriesPublishedEmptyTitle => 'No published posts yet';
 
   @override
   String get myStoriesPublishedEmptySubtitle =>
-      'Published stories, guides, articles, and visual essays will appear here.';
+      'Published posts, guides, articles, and visual essays will appear here.';
 
   @override
-  String get myStoriesArchivedEmptyTitle => 'No archived stories yet';
+  String get myStoriesArchivedEmptyTitle => 'No archived posts yet';
 
   @override
   String get myStoriesArchivedEmptySubtitle =>
-      'Archived stories are kept here for history and reuse.';
+      'Archived posts are kept here for history and reuse.';
 
   @override
   String get myStoriesCreateDraftAction => 'Create a draft';
 
   @override
-  String get storyLoadFailed => 'Failed to load stories';
+  String get storyArchiveActiveTab => 'Active';
+
+  @override
+  String get storyArchiveArchiveTab => 'Archive';
+
+  @override
+  String get storyArchiveActiveSubtitle =>
+      'These are your stories that are still visible to other users.';
+
+  @override
+  String get storyArchiveActiveEmptyTitle => 'No active stories yet';
+
+  @override
+  String get storyArchiveActiveEmptySubtitle =>
+      'Capture a photo or video story to keep it here for 24 hours.';
+
+  @override
+  String get storyArchiveActiveUntilPrefix => 'Active until';
+
+  @override
+  String get storyArchiveSubtitle =>
+      'Stories live for 24 hours, then stay here for you.';
+
+  @override
+  String get storyArchiveEmptyTitle => 'No archived stories yet';
+
+  @override
+  String get storyArchiveEmptySubtitle =>
+      'Your camera stories will appear here after 24 hours.';
+
+  @override
+  String get storyArchiveLoadFailedTitle => 'Could not load stories';
+
+  @override
+  String get storyArchiveLoadFailedMessage =>
+      'Check the connection and try again.';
+
+  @override
+  String get storyArchiveRetryAction => 'Try again';
+
+  @override
+  String get storyArchiveLoadMoreAction => 'Load more';
+
+  @override
+  String get storyArchiveExpiredPrefix => 'Archived';
+
+  @override
+  String get storyStateSeenLabel => 'Seen';
+
+  @override
+  String get storyStateExpiredLabel => 'Expired';
+
+  @override
+  String get storyStatePendingLabel => 'Pending review';
+
+  @override
+  String get storyStateHiddenLabel => 'Hidden';
+
+  @override
+  String get storyLoadFailed => 'Failed to load posts';
 
   @override
   String get storyViewsSuffix => 'views';
@@ -5475,7 +6256,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storyCategoryCulinary => 'Culinary';
 
   @override
-  String get storyFormatStory => 'Story';
+  String get storyFormatStory => 'Post';
 
   @override
   String get storyFormatGuide => 'Guide';
@@ -5490,14 +6271,67 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storyFormatCulinary => 'Culinary';
 
   @override
-  String get storyDetailsTitle => 'Story Details';
+  String get storyDetailsTitle => 'Post details';
 
   @override
-  String get storyLinkCopied => 'Story link copied';
+  String get storyLinkCopied => 'Post link copied';
 
   @override
   String get storyShareFailed =>
       'Unable to open the share sheet. Please try again.';
+
+  @override
+  String get storyReportAction => 'Report';
+
+  @override
+  String get storyReportSending => 'Sending...';
+
+  @override
+  String get storyReportTitle => 'Report post';
+
+  @override
+  String get storyReportSubtitle =>
+      'Tell us what is wrong. Reports help moderators keep travel content safe and useful.';
+
+  @override
+  String get storyReportDetailsLabel => 'Details';
+
+  @override
+  String get storyReportDetailsHint => 'Add context for moderators';
+
+  @override
+  String get storyReportSubmitAction => 'Submit report';
+
+  @override
+  String get storyReportSubmitted => 'Thanks. We sent this post to moderation.';
+
+  @override
+  String get storyReportAutoHidden =>
+      'Thanks. This post is hidden while moderators review it.';
+
+  @override
+  String get storyReportReasonSpam => 'Spam or misleading';
+
+  @override
+  String get storyReportReasonHarassment => 'Harassment';
+
+  @override
+  String get storyReportReasonHate => 'Hate or discrimination';
+
+  @override
+  String get storyReportReasonSexualContent => 'Sexual content';
+
+  @override
+  String get storyReportReasonViolence => 'Violence or graphic content';
+
+  @override
+  String get storyReportReasonMisinformation => 'Misinformation';
+
+  @override
+  String get storyReportReasonIllegal => 'Illegal activity';
+
+  @override
+  String get storyReportReasonOther => 'Other';
 
   @override
   String get storyAuthorLabel => 'Author';
@@ -5549,6 +6383,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Unable to open the comment share sheet. Please try again.';
 
   @override
+  String get storyLikeActionFailed =>
+      'Could not update the like. Please try again.';
+
+  @override
   String get storyCommentEditingTitle => 'Editing comment';
 
   @override
@@ -5571,23 +6409,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storyRelatedEyebrow => 'Keep Exploring';
 
   @override
-  String get storyRelatedTitle => 'Related Stories';
+  String get storyRelatedTitle => 'Related posts';
 
   @override
-  String get storyRelatedEmpty => 'No related stories yet';
+  String get storyRelatedEmpty => 'No related posts yet';
 
   @override
   String get storyViewAll => 'View all';
 
   @override
-  String get storyEditAction => 'Edit Story';
+  String get storyEditAction => 'Edit post';
 
   @override
-  String get storyDeleteTitle => 'Delete story?';
+  String get storyDeleteTitle => 'Delete post?';
 
   @override
-  String get storyDeleteMessage =>
-      'The story will be removed from public feed.';
+  String get storyDeleteMessage => 'The post will be removed from public feed.';
 
   @override
   String get storyDeleteAction => 'Delete';
@@ -5723,6 +6560,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storyEditorTitle => 'Story editor';
+
+  @override
+  String get storyEditorQuickPostTitle => 'Quick post';
+
+  @override
+  String get storyEditorQuickPostSubtitle =>
+      'Share a short update, question, or local tip with the community.';
+
+  @override
+  String get storyEditorQuickPostHint => 'What do you want to share?';
 
   @override
   String get storyEditorLoading => 'Loading story';
@@ -6209,6 +7056,21 @@ class AppLocalizationsEn extends AppLocalizations {
       'Wait until media uploads finish.';
 
   @override
+  String get postCreateRateLimitTitle => 'Post limit';
+
+  @override
+  String postCreateRateLimitMessage(int minutes) {
+    return 'You have created the maximum number of posts in the last hour. You can create another post in about $minutes min.';
+  }
+
+  @override
+  String get postCreateRateLimitAction => 'Got it';
+
+  @override
+  String get postCreatePreflightFailed =>
+      'Could not check the post limit. We will check again when you publish.';
+
+  @override
   String get chatListTitle => 'Chats';
 
   @override
@@ -6679,6 +7541,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatForwardedLabel => 'Forwarded';
 
   @override
+  String get chatStoryReplyLabel => 'Reply to story';
+
+  @override
+  String get chatStoryReplyUnavailable => 'Story is no longer available';
+
+  @override
   String chatForwardedFrom(Object name) {
     return 'Forwarded from $name';
   }
@@ -6988,6 +7856,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notificationsCategoryChat => 'Messages';
+
+  @override
+  String get notificationsCategoryContent => 'Posts and stories';
 
   @override
   String get notificationsCategorySystem => 'System';

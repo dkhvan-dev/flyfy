@@ -29,6 +29,10 @@ type CompleteUploadResponse struct {
 	Status              string `json:"status"`
 	DetectedContentType string `json:"detectedContentType"`
 	SizeBytes           int64  `json:"sizeBytes"`
+	Width               *int   `json:"width,omitempty"`
+	Height              *int   `json:"height,omitempty"`
+	DurationMS          *int   `json:"durationMs,omitempty"`
+	ThumbnailFileID     string `json:"thumbnailFileId,omitempty"`
 }
 
 type FileResponse struct {
@@ -43,6 +47,10 @@ type FileResponse struct {
 	DetectedContentType *string `json:"detectedContentType,omitempty"`
 	SizeBytes           int64   `json:"sizeBytes"`
 	ChecksumSHA256      *string `json:"checksumSha256,omitempty"`
+	Width               *int    `json:"width,omitempty"`
+	Height              *int    `json:"height,omitempty"`
+	DurationMS          *int    `json:"durationMs,omitempty"`
+	ThumbnailFileID     *string `json:"thumbnailFileId,omitempty"`
 	Visibility          string  `json:"visibility"`
 	Purpose             string  `json:"purpose"`
 	Status              string  `json:"status"`

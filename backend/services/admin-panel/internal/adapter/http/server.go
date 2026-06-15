@@ -20,16 +20,18 @@ import (
 )
 
 type Server struct {
-	cfg         *config.Config
-	renderer    *Renderer
-	auth        *app.AuthUseCase
-	staff       *app.StaffUseCase
-	moderation  *app.ModerationUseCase
-	users       *app.UserModerationUseCase
-	audit       *app.AuditUseCase
-	attractions *app.AttractionContentUseCase
-	fraud       *app.FraudUseCase
-	readiness   func(context.Context) error
+	cfg          *config.Config
+	renderer     *Renderer
+	auth         *app.AuthUseCase
+	staff        *app.StaffUseCase
+	moderation   *app.ModerationUseCase
+	users        *app.UserModerationUseCase
+	trustAppeals *app.TrustAppealUseCase
+	audit        *app.AuditUseCase
+	attractions  *app.AttractionContentUseCase
+	communities  *app.CommunityAdminUseCase
+	fraud        *app.FraudUseCase
+	readiness    func(context.Context) error
 }
 
 func NewServer(
@@ -60,6 +62,14 @@ func (s *Server) SetReadinessCheck(check func(context.Context) error) {
 	s.readiness = check
 }
 
+func (s *Server) SetTrustAppealUseCase(useCase *app.TrustAppealUseCase) {
+	s.trustAppeals = useCase
+}
+
+func (s *Server) SetCommunityAdminUseCase(useCase *app.CommunityAdminUseCase) {
+	s.communities = useCase
+}
+
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("GET /admin/static/", http.StripPrefix("/admin/static/", s.renderer.StaticHandler()))
@@ -71,6 +81,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /admin/password/change", s.ChangePasswordPage)
 	mux.HandleFunc("POST /admin/password/change", s.ChangePassword)
 	mux.HandleFunc("GET /admin", s.Dashboard)
+	mux.HandleFunc("GET /admin/feed-quality", s.FeedQualityDashboard)
 	mux.HandleFunc("GET /admin/me", s.StaffProfile)
 	mux.HandleFunc("POST /admin/me/timezone", s.UpdateOwnTimezone)
 	mux.HandleFunc("GET /admin/users", s.AdminUserList)
@@ -79,6 +90,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /admin/users/{userID}/moderation-cases/{caseID}/resolve", s.ResolveUserModerationCase)
 	mux.HandleFunc("POST /admin/users/{userID}/restrictions", s.CreateUserRestriction)
 	mux.HandleFunc("POST /admin/users/{userID}/restrictions/{restrictionID}/lift", s.LiftUserRestriction)
+	mux.HandleFunc("GET /admin/trust/appeals", s.TrustAppealQueue)
+	mux.HandleFunc("GET /admin/trust/appeals/{appealID}", s.TrustAppealDetail)
+	mux.HandleFunc("POST /admin/trust/appeals/{appealID}/approve", s.ApproveTrustAppeal)
+	mux.HandleFunc("POST /admin/trust/appeals/{appealID}/reject", s.RejectTrustAppeal)
 	mux.HandleFunc("GET /admin/moderation/excursions", s.ExcursionQueue)
 	mux.HandleFunc("GET /admin/moderation/excursions/fraud-blocks", s.ExcursionFraudBlocks)
 	mux.HandleFunc("POST /admin/moderation/excursions/fraud-blocks/{assessmentID}/confirm", s.ConfirmExcursionFraudBlock)
@@ -105,6 +120,12 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /admin/moderation/chats/sync", s.SyncChatMessageQueue)
 	mux.HandleFunc("POST /admin/moderation/chats/{caseID}/approve", s.ApproveChatMessage)
 	mux.HandleFunc("POST /admin/moderation/chats/{caseID}/reject", s.RejectChatMessage)
+	mux.HandleFunc("GET /admin/moderation/posts", s.PostReportQueue)
+	mux.HandleFunc("GET /admin/moderation/posts/history", s.PostReportHistory)
+	mux.HandleFunc("GET /admin/moderation/posts/{caseID}", s.PostReportCase)
+	mux.HandleFunc("POST /admin/moderation/posts/sync", s.SyncPostReportQueue)
+	mux.HandleFunc("POST /admin/moderation/posts/{caseID}/approve", s.ApprovePostReport)
+	mux.HandleFunc("POST /admin/moderation/posts/{caseID}/reject", s.RejectPostReport)
 	mux.HandleFunc("GET /admin/moderation/guides", s.GuideApplicationQueue)
 	mux.HandleFunc("GET /admin/moderation/guides/fraud-blocks", s.GuideFraudBlocks)
 	mux.HandleFunc("POST /admin/moderation/guides/fraud-blocks/{assessmentID}/confirm", s.ConfirmGuideFraudBlock)
@@ -126,6 +147,12 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /admin/attractions/{attractionID}/edit", s.EditAttractionPage)
 	mux.HandleFunc("POST /admin/attractions/{attractionID}", s.UpdateAttraction)
 	mux.HandleFunc("POST /admin/attractions/{attractionID}/media", s.ReplaceAttractionMedia)
+	mux.HandleFunc("GET /admin/communities", s.CommunityPlatformPage)
+	mux.HandleFunc("GET /admin/communities/new", s.NewCommunityPage)
+	mux.HandleFunc("POST /admin/communities", s.CreateCommunity)
+	mux.HandleFunc("GET /admin/communities/{communityID}/edit", s.EditCommunityPage)
+	mux.HandleFunc("POST /admin/communities/{communityID}", s.UpdateCommunity)
+	mux.HandleFunc("POST /admin/communities/materialize", s.MaterializeCommunityInstances)
 	mux.HandleFunc("GET /admin/staff", s.StaffList)
 	mux.HandleFunc("POST /admin/staff", s.CreateStaff)
 	mux.HandleFunc("GET /admin/staff/{staffID}/edit", s.EditStaffPage)
@@ -228,6 +255,50 @@ func (s *Server) Dashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.renderPage(w, http.StatusOK, r, "dashboard/index", "dashboard.title", "dashboard", data, "")
+}
+
+func (s *Server) FeedQualityDashboard(w http.ResponseWriter, r *http.Request) {
+	staff := staffFromContext(r.Context())
+	filters := parseFeedQualityFilters(r)
+	data := NewFeedQualityDashboardViewData(app.FeedQualityDashboardPage{}, filters)
+	if s.moderation == nil {
+		s.renderPage(w, http.StatusServiceUnavailable, r, "feed_quality/index", "feedQuality.title", "feed_quality", data, publicError(localeFromContext(r.Context()), app.ErrIntegrationNotReady))
+		return
+	}
+	page, err := s.moderation.FeedQualityDashboard(r.Context(), staff, feedQualityDashboardInput(filters, time.Now().UTC()))
+	if err != nil {
+		s.renderPage(w, errorStatus(err), r, "feed_quality/index", "feedQuality.title", "feed_quality", data, publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	s.renderPage(w, http.StatusOK, r, "feed_quality/index", "feedQuality.title", "feed_quality", NewFeedQualityDashboardViewData(page, filters), "")
+}
+
+func parseFeedQualityFilters(r *http.Request) FeedQualityFilterViewData {
+	query := r.URL.Query()
+	return normalizeFeedQualityFilterView(FeedQualityFilterViewData{
+		Surface: query.Get("surface"),
+		Window:  query.Get("window"),
+	})
+}
+
+func feedQualityDashboardInput(filters FeedQualityFilterViewData, now time.Time) app.FeedQualityDashboardInput {
+	if now.IsZero() {
+		now = time.Now().UTC()
+	}
+	until := now.UTC()
+	window := 7 * 24 * time.Hour
+	switch filters.Window {
+	case "24h":
+		window = 24 * time.Hour
+	case "30d":
+		window = 30 * 24 * time.Hour
+	}
+	return app.FeedQualityDashboardInput{
+		Since:   until.Add(-window),
+		Until:   until,
+		Surface: filters.Surface,
+		Limit:   50,
+	}
 }
 
 func (s *Server) AdminUserList(w http.ResponseWriter, r *http.Request) {
@@ -630,6 +701,76 @@ func (s *Server) ApproveChatMessage(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) RejectChatMessage(w http.ResponseWriter, r *http.Request) {
 	s.decideChatMessage(w, r, enum.ModerationDecisionReject)
+}
+
+func (s *Server) SyncPostReportQueue(w http.ResponseWriter, r *http.Request) {
+	staff := staffFromContext(r.Context())
+	if err := s.moderation.SyncPostReportQueue(r.Context(), staff); err != nil {
+		_, viewFilter := parseExcursionQueueFilter(r)
+		s.renderPage(w, errorStatus(err), r, "moderation/queue", "moderation.postReportQueue", "posts", NewPostReportQueueViewData(nil, viewFilter), publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	redirectURL := "/admin/moderation/posts"
+	if r.URL.RawQuery != "" {
+		redirectURL += "?" + r.URL.RawQuery
+	}
+	http.Redirect(w, r, redirectWithFlash(redirectURL, "moderation.queueSynced"), http.StatusSeeOther)
+}
+
+func (s *Server) PostReportQueue(w http.ResponseWriter, r *http.Request) {
+	staff := staffFromContext(r.Context())
+	_ = s.moderation.SyncPostReportQueue(r.Context(), staff)
+	targetType := model.ModerationTargetPost
+	filter, viewFilter := parseExcursionQueueFilter(r)
+	filter.TargetType = &targetType
+	filter.Limit = 100
+	cases, err := s.moderation.ListQueue(r.Context(), staff, filter)
+	if err != nil {
+		s.renderPage(w, errorStatus(err), r, "moderation/queue", "moderation.postReportQueue", "posts", NewPostReportQueueViewData(nil, viewFilter), publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	s.renderPage(w, http.StatusOK, r, "moderation/queue", "moderation.postReportQueue", "posts", NewPostReportQueueViewData(cases, viewFilter), "")
+}
+
+func (s *Server) PostReportHistory(w http.ResponseWriter, r *http.Request) {
+	staff := staffFromContext(r.Context())
+	targetType := model.ModerationTargetPost
+	filter, viewFilter := parseExcursionHistoryFilter(r)
+	filter.TargetType = &targetType
+	filter.Limit = 100
+	cases, err := s.moderation.ListQueue(r.Context(), staff, filter)
+	if err != nil {
+		s.renderPage(w, errorStatus(err), r, "moderation/queue", "moderation.postReportHistory", "posts", NewPostReportHistoryViewData(nil, viewFilter), publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	s.renderPage(w, http.StatusOK, r, "moderation/queue", "moderation.postReportHistory", "posts", NewPostReportHistoryViewData(cases, viewFilter), "")
+}
+
+func (s *Server) PostReportCase(w http.ResponseWriter, r *http.Request) {
+	caseID, ok := parsePathUUID(w, r, "caseID")
+	if !ok {
+		return
+	}
+	returnQuery := moderationQueueReturnQuery(r)
+	staff := staffFromContext(r.Context())
+	detail, err := s.moderation.GetCaseDetail(r.Context(), staff, caseID)
+	if err != nil {
+		s.renderPage(w, errorStatus(err), r, "moderation/detail", "moderation.caseTitle", "posts", NewCaseDetailViewData(nil, returnQuery), publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	if detail.Case == nil || detail.Case.TargetType != model.ModerationTargetPost {
+		s.renderPage(w, http.StatusNotFound, r, "moderation/detail", "moderation.caseTitle", "posts", NewCaseDetailViewData(detail, returnQuery), publicError(localeFromContext(r.Context()), app.ErrModerationCaseNotFound))
+		return
+	}
+	s.renderPage(w, http.StatusOK, r, "moderation/detail", "moderation.caseTitle", "posts", NewCaseDetailViewData(detail, returnQuery), "")
+}
+
+func (s *Server) ApprovePostReport(w http.ResponseWriter, r *http.Request) {
+	s.decidePostReport(w, r, enum.ModerationDecisionApprove)
+}
+
+func (s *Server) RejectPostReport(w http.ResponseWriter, r *http.Request) {
+	s.decidePostReport(w, r, enum.ModerationDecisionReject)
 }
 
 func (s *Server) SyncGuideApplicationQueue(w http.ResponseWriter, r *http.Request) {
@@ -1088,6 +1229,32 @@ func (s *Server) decideChatMessage(w http.ResponseWriter, r *http.Request, decis
 		return
 	}
 	http.Redirect(w, r, redirectWithFlash(queueURLWithQuery("/admin/moderation/chats/"+caseID.String(), returnQuery), "moderation.decisionSaved"), http.StatusSeeOther)
+}
+
+func (s *Server) decidePostReport(w http.ResponseWriter, r *http.Request, decision enum.ModerationDecisionType) {
+	caseID, ok := parsePathUUID(w, r, "caseID")
+	if !ok {
+		return
+	}
+	returnQuery := moderationQueueReturnQuery(r)
+	staff := staffFromContext(r.Context())
+	_, err := s.moderation.DecidePostReport(r.Context(), app.ModerationDecisionInput{
+		Actor:           staff,
+		CaseID:          caseID,
+		Decision:        decision,
+		InternalComment: r.Form.Get("internal_comment"),
+		IdempotencyKey:  r.Form.Get("idempotency_key"),
+		RequestMetadata: requestMetadata(r),
+	})
+	if err != nil {
+		viewData := NewCaseDetailViewData(nil, returnQuery)
+		if detail, detailErr := s.moderation.GetCaseDetail(r.Context(), staff, caseID); detailErr == nil {
+			viewData = NewCaseDetailViewData(detail, returnQuery)
+		}
+		s.renderPage(w, errorStatus(err), r, "moderation/detail", "moderation.caseTitle", "posts", viewData, publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	http.Redirect(w, r, redirectWithFlash(queueURLWithQuery("/admin/moderation/posts/"+caseID.String(), returnQuery), "moderation.decisionSaved"), http.StatusSeeOther)
 }
 
 func (s *Server) decideGuideApplication(w http.ResponseWriter, r *http.Request, decision enum.ModerationDecisionType) {
@@ -1669,6 +1836,9 @@ func publicError(locale string, err error) string {
 	if errors.Is(err, app.ErrAttractionNotFound) {
 		return translate(locale, "error.attractionNotFound")
 	}
+	if errors.Is(err, app.ErrIntegrationNotReady) {
+		return translate(locale, "error.integrationNotReady")
+	}
 	if errors.Is(err, app.ErrDuplicateDecision) {
 		return translate(locale, "error.duplicateDecision")
 	}
@@ -1693,6 +1863,8 @@ func errorStatus(err error) int {
 		return http.StatusNotFound
 	case errors.Is(err, app.ErrAttractionNotFound):
 		return http.StatusNotFound
+	case errors.Is(err, app.ErrIntegrationNotReady):
+		return http.StatusServiceUnavailable
 	case errors.Is(err, app.ErrDuplicateDecision):
 		return http.StatusConflict
 	case errors.Is(err, app.ErrModerationCaseConflict):

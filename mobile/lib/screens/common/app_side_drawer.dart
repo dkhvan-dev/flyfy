@@ -9,7 +9,13 @@ import '../../features/profile/models/user_profile_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/locale_provider.dart';
 
-enum AppDrawerActiveItem { none, myActivities, myExcursions, myStories }
+enum AppDrawerActiveItem {
+  none,
+  myActivities,
+  myExcursions,
+  myStories,
+  myStoryArchive,
+}
 
 const Map<String, Map<String, String>> _localizedCountryNames = {
   'KZ': {'en': 'Kazakhstan', 'ru': 'Казахстан', 'kk': 'Қазақстан'},
@@ -295,6 +301,7 @@ class AppSideDrawer extends StatelessWidget {
     required this.onMyActivitiesTap,
     required this.onMyExcursionsTap,
     required this.onMyStoriesTap,
+    required this.onMyStoryArchiveTap,
     required this.onActivitiesTap,
     required this.onLoginTap,
     required this.onLogoutTap,
@@ -315,6 +322,7 @@ class AppSideDrawer extends StatelessWidget {
   final VoidCallback onMyActivitiesTap;
   final VoidCallback onMyExcursionsTap;
   final VoidCallback onMyStoriesTap;
+  final VoidCallback onMyStoryArchiveTap;
   final VoidCallback onActivitiesTap;
   final VoidCallback onLoginTap;
   final VoidCallback onLogoutTap;
@@ -401,271 +409,243 @@ class AppSideDrawer extends StatelessWidget {
                 ),
               ),
               SafeArea(
-                child: CustomScrollView(
-                  physics: const BouncingScrollPhysics(
-                    parent: AlwaysScrollableScrollPhysics(),
-                  ),
-                  slivers: [
-                    SliverPadding(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
                       padding: EdgeInsets.fromLTRB(
                         layout.horizontalPadding,
                         layout.topPadding,
                         layout.horizontalPadding,
                         layout.sectionGap,
                       ),
-                      sliver: SliverToBoxAdapter(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Semantics(
-                              button: true,
-                              enabled: true,
-                              label: headerSemanticLabel,
-                              child: ExcludeSemantics(
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    onTap: isLoggedIn
-                                        ? onProfileTap
-                                        : onLoginTap,
-                                    borderRadius: BorderRadius.circular(
-                                      layout.cardRadius,
-                                    ),
-                                    child: Ink(
-                                      padding: EdgeInsets.all(
-                                        layout.cardPadding,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(
-                                          layout.cardRadius,
-                                        ),
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                          colors: [
-                                            Colors.white.withValues(
-                                              alpha: 0.05,
-                                            ),
-                                            AppColors.accent.withValues(
-                                              alpha: 0.10,
-                                            ),
-                                          ],
-                                        ),
-                                        border: Border.all(
-                                          color: AppColors.accent.withValues(
-                                            alpha: 0.24,
-                                          ),
-                                        ),
-                                      ),
-                                      child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Stack(
-                                            clipBehavior: Clip.none,
-                                            children: [
-                                              Container(
-                                                width: layout.avatarSize,
-                                                height: layout.avatarSize,
-                                                decoration: BoxDecoration(
-                                                  shape: BoxShape.circle,
-                                                  gradient:
-                                                      const LinearGradient(
-                                                        begin:
-                                                            Alignment.topCenter,
-                                                        end: Alignment
-                                                            .bottomCenter,
-                                                        colors: [
-                                                          Color(0xFFFDF9F4),
-                                                          Color(0xFFF2E7DA),
-                                                        ],
-                                                      ),
-                                                  border: Border.all(
-                                                    color: AppColors.accent,
-                                                    width: 3,
-                                                  ),
-                                                  boxShadow: [
-                                                    BoxShadow(
-                                                      color: AppColors.accent
-                                                          .withValues(
-                                                            alpha: 0.18,
-                                                          ),
-                                                      blurRadius: 22,
-                                                      offset: const Offset(
-                                                        0,
-                                                        10,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                child: Center(
-                                                  child: ClipOval(
-                                                    child: SizedBox.expand(
-                                                      child: avatarUrl == null
-                                                          ? Center(
-                                                              child: Text(
-                                                                avatarText,
-                                                                style: TextStyle(
-                                                                  color: AppColors
-                                                                      .background,
-                                                                  fontSize: layout
-                                                                      .avatarTextSize,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w800,
-                                                                ),
-                                                              ),
-                                                            )
-                                                          : Image.network(
-                                                              avatarUrl,
-                                                              fit: BoxFit.cover,
-                                                              errorBuilder: (_, _, _) => Center(
-                                                                child: Text(
-                                                                  avatarText,
-                                                                  style: TextStyle(
-                                                                    color: AppColors
-                                                                        .background,
-                                                                    fontSize: layout
-                                                                        .avatarTextSize,
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w800,
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                            ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                              if (showGuideBadge)
-                                                Positioned(
-                                                  right: -2,
-                                                  bottom: 8,
-                                                  child: Container(
-                                                    width:
-                                                        layout.avatarBadgeSize,
-                                                    height:
-                                                        layout.avatarBadgeSize,
-                                                    decoration: BoxDecoration(
-                                                      shape: BoxShape.circle,
-                                                      gradient:
-                                                          const LinearGradient(
-                                                            begin: Alignment
-                                                                .topCenter,
-                                                            end: Alignment
-                                                                .bottomCenter,
-                                                            colors: [
-                                                              Color(0xFFFFB347),
-                                                              Color(0xFFF98C06),
-                                                            ],
-                                                          ),
-                                                      border: Border.all(
-                                                        color: const Color(
-                                                          0xFF2B170C,
-                                                        ),
-                                                        width: 3,
-                                                      ),
-                                                    ),
-                                                    child: Icon(
-                                                      Icons.verified_rounded,
-                                                      size: layout
-                                                          .avatarBadgeIconSize,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                ),
-                                            ],
-                                          ),
-                                          SizedBox(width: layout.profileGap),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  profileTitle,
-                                                  maxLines: 2,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                  style: TextStyle(
-                                                    color:
-                                                        AppColors.textPrimary,
-                                                    fontSize:
-                                                        layout.profileTitleSize,
-                                                    height: 1.05,
-                                                    fontWeight: FontWeight.w800,
-                                                  ),
-                                                ),
-                                                SizedBox(
-                                                  height: layout.profileTextGap,
-                                                ),
-                                                Container(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 10,
-                                                        vertical: 6,
-                                                      ),
-                                                  decoration: BoxDecoration(
-                                                    color: AppColors.accent
-                                                        .withValues(
-                                                          alpha: 0.18,
-                                                        ),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          999,
-                                                        ),
-                                                  ),
-                                                  child: Text(
-                                                    identityStatus,
-                                                    style: TextStyle(
-                                                      color: AppColors.accent,
-                                                      fontSize:
-                                                          layout.metaLabelSize,
-                                                      fontWeight:
-                                                          FontWeight.w800,
-                                                      letterSpacing: 0.4,
-                                                    ),
-                                                  ),
-                                                ),
-                                                if (!isLoggedIn) ...[
-                                                  SizedBox(
-                                                    height:
-                                                        layout.profileTextGap,
-                                                  ),
-                                                  Text(
-                                                    l10n.homeSubtitle,
-                                                    maxLines: 3,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                    style: TextStyle(
-                                                      color: Colors.white
-                                                          .withValues(
-                                                            alpha: 0.74,
-                                                          ),
-                                                      fontSize: layout
-                                                          .profileSubtitleSize,
-                                                      height: 1.45,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ],
-                                            ),
-                                          ),
-                                          SizedBox(width: layout.trailingGap),
-                                          Icon(
-                                            Icons.chevron_right_rounded,
-                                            color: AppColors.accent,
-                                            size: layout.trailingIconSize,
-                                          ),
-                                        ],
-                                      ),
+                      child: Semantics(
+                        button: true,
+                        enabled: true,
+                        label: headerSemanticLabel,
+                        child: ExcludeSemantics(
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: isLoggedIn ? onProfileTap : onLoginTap,
+                              borderRadius: BorderRadius.circular(
+                                layout.cardRadius,
+                              ),
+                              child: Ink(
+                                padding: EdgeInsets.all(layout.cardPadding),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(
+                                    layout.cardRadius,
+                                  ),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      Colors.white.withValues(alpha: 0.05),
+                                      AppColors.accent.withValues(alpha: 0.10),
+                                    ],
+                                  ),
+                                  border: Border.all(
+                                    color: AppColors.accent.withValues(
+                                      alpha: 0.24,
                                     ),
                                   ),
                                 ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Stack(
+                                      clipBehavior: Clip.none,
+                                      children: [
+                                        Container(
+                                          width: layout.avatarSize,
+                                          height: layout.avatarSize,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            gradient: const LinearGradient(
+                                              begin: Alignment.topCenter,
+                                              end: Alignment.bottomCenter,
+                                              colors: [
+                                                Color(0xFFFDF9F4),
+                                                Color(0xFFF2E7DA),
+                                              ],
+                                            ),
+                                            border: Border.all(
+                                              color: AppColors.accent,
+                                              width: 3,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: AppColors.accent
+                                                    .withValues(alpha: 0.18),
+                                                blurRadius: 22,
+                                                offset: const Offset(0, 10),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Center(
+                                            child: ClipOval(
+                                              child: SizedBox.expand(
+                                                child: avatarUrl == null
+                                                    ? Center(
+                                                        child: Text(
+                                                          avatarText,
+                                                          style: TextStyle(
+                                                            color: AppColors
+                                                                .background,
+                                                            fontSize: layout
+                                                                .avatarTextSize,
+                                                            fontWeight:
+                                                                FontWeight.w800,
+                                                          ),
+                                                        ),
+                                                      )
+                                                    : Image.network(
+                                                        avatarUrl,
+                                                        fit: BoxFit.cover,
+                                                        errorBuilder: (_, _, _) => Center(
+                                                          child: Text(
+                                                            avatarText,
+                                                            style: TextStyle(
+                                                              color: AppColors
+                                                                  .background,
+                                                              fontSize: layout
+                                                                  .avatarTextSize,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w800,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        if (showGuideBadge)
+                                          Positioned(
+                                            right: -2,
+                                            bottom: 8,
+                                            child: Container(
+                                              width: layout.avatarBadgeSize,
+                                              height: layout.avatarBadgeSize,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                gradient: const LinearGradient(
+                                                  begin: Alignment.topCenter,
+                                                  end: Alignment.bottomCenter,
+                                                  colors: [
+                                                    Color(0xFFFFB347),
+                                                    Color(0xFFF98C06),
+                                                  ],
+                                                ),
+                                                border: Border.all(
+                                                  color: const Color(
+                                                    0xFF2B170C,
+                                                  ),
+                                                  width: 3,
+                                                ),
+                                              ),
+                                              child: Icon(
+                                                Icons.verified_rounded,
+                                                size:
+                                                    layout.avatarBadgeIconSize,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    SizedBox(width: layout.profileGap),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            profileTitle,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              color: AppColors.textPrimary,
+                                              fontSize: layout.profileTitleSize,
+                                              height: 1.05,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                          ),
+                                          SizedBox(
+                                            height: layout.profileTextGap,
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 6,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.accent
+                                                  .withValues(alpha: 0.18),
+                                              borderRadius:
+                                                  BorderRadius.circular(999),
+                                            ),
+                                            child: Text(
+                                              identityStatus,
+                                              style: TextStyle(
+                                                color: AppColors.accent,
+                                                fontSize: layout.metaLabelSize,
+                                                fontWeight: FontWeight.w800,
+                                                letterSpacing: 0.4,
+                                              ),
+                                            ),
+                                          ),
+                                          if (!isLoggedIn) ...[
+                                            SizedBox(
+                                              height: layout.profileTextGap,
+                                            ),
+                                            Text(
+                                              l10n.homeSubtitle,
+                                              maxLines: 3,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.74,
+                                                ),
+                                                fontSize:
+                                                    layout.profileSubtitleSize,
+                                                height: 1.45,
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                    SizedBox(width: layout.trailingGap),
+                                    Icon(
+                                      Icons.chevron_right_rounded,
+                                      color: AppColors.accent,
+                                      size: layout.trailingIconSize,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                            SizedBox(height: layout.sectionGap),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(
+                          parent: AlwaysScrollableScrollPhysics(),
+                        ),
+                        padding: EdgeInsets.fromLTRB(
+                          layout.horizontalPadding,
+                          0,
+                          layout.horizontalPadding,
+                          layout.sectionGap,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             _DrawerMenuItem(
                               layout: layout,
                               icon: Icons.language_rounded,
@@ -723,90 +703,108 @@ class AppSideDrawer extends StatelessWidget {
                               onTap: onMyStoriesTap,
                             ),
                             SizedBox(height: layout.menuGap),
-                          ],
-                        ),
-                      ),
-                    ),
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      fillOverscroll: true,
-                      child: Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          layout.horizontalPadding,
-                          0,
-                          layout.horizontalPadding,
-                          layout.bottomPadding,
-                        ),
-                        child: Column(
-                          children: [
-                            const Spacer(),
-                            Container(
-                              padding: EdgeInsets.only(
-                                top: layout.footerTopPadding,
-                              ),
-                              decoration: BoxDecoration(
-                                border: Border(
-                                  top: BorderSide(color: AppColors.accent),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          l10n.homeTitle,
-                                          style: TextStyle(
-                                            color: AppColors.accent,
-                                            fontSize: layout.brandTitleSize,
-                                            fontWeight: FontWeight.w800,
-                                            letterSpacing: -0.5,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          l10n.homeSubtitle,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            color: Colors.white.withValues(
-                                              alpha: 0.50,
-                                            ),
-                                            fontSize: layout.brandSubtitleSize,
-                                            height: 1.4,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  SizedBox(width: layout.footerGap),
-                                  _DrawerFooterAction(
-                                    layout: layout,
-                                    icon: isLoggedIn
-                                        ? Icons.logout_rounded
-                                        : Icons.login_rounded,
-                                    semanticLabel: isLoggedIn
-                                        ? l10n.logoutButton
-                                        : l10n.authLoginAction,
-                                    isAccent: !isLoggedIn,
-                                    onTap: isLoggedIn
-                                        ? onLogoutTap
-                                        : onLoginTap,
-                                  ),
-                                ],
-                              ),
+                            _DrawerMenuItem(
+                              layout: layout,
+                              label: l10n.myStoryArchiveTitle,
+                              icon: Icons.auto_awesome_motion_rounded,
+                              isActive:
+                                  activeItem ==
+                                  AppDrawerActiveItem.myStoryArchive,
+                              usePreferencePalette: true,
+                              onTap: onMyStoryArchiveTap,
                             ),
                           ],
                         ),
                       ),
+                    ),
+                    _DrawerPinnedFooter(
+                      layout: layout,
+                      l10n: l10n,
+                      isLoggedIn: isLoggedIn,
+                      onLoginTap: onLoginTap,
+                      onLogoutTap: onLogoutTap,
                     ),
                   ],
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DrawerPinnedFooter extends StatelessWidget {
+  const _DrawerPinnedFooter({
+    required this.layout,
+    required this.l10n,
+    required this.isLoggedIn,
+    required this.onLoginTap,
+    required this.onLogoutTap,
+  });
+
+  final _AppDrawerLayout layout;
+  final AppLocalizations l10n;
+  final bool isLoggedIn;
+  final VoidCallback onLoginTap;
+  final VoidCallback onLogoutTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        layout.horizontalPadding,
+        0,
+        layout.horizontalPadding,
+        layout.bottomPadding,
+      ),
+      child: Container(
+        padding: EdgeInsets.only(top: layout.footerTopPadding),
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: AppColors.accent)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    l10n.homeTitle,
+                    style: TextStyle(
+                      color: AppColors.accent,
+                      fontSize: layout.brandTitleSize,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    l10n.homeSubtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.50),
+                      fontSize: layout.brandSubtitleSize,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: layout.footerGap),
+            _DrawerFooterAction(
+              layout: layout,
+              icon: isLoggedIn ? Icons.logout_rounded : Icons.login_rounded,
+              semanticLabel: isLoggedIn
+                  ? l10n.logoutButton
+                  : l10n.authLoginAction,
+              isAccent: !isLoggedIn,
+              onTap: isLoggedIn ? onLogoutTap : onLoginTap,
+            ),
+          ],
         ),
       ),
     );

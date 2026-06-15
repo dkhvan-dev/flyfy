@@ -46,6 +46,11 @@ enum PushNotificationChannel {
     name: 'Messages',
     description: 'Chats and direct messages',
   ),
+  content(
+    id: 'inflap_content',
+    name: 'Posts and stories',
+    description: 'Likes, replies, and updates for posts and stories',
+  ),
   system(
     id: 'inflap_system',
     name: 'Inflap updates',
@@ -167,6 +172,13 @@ class PushNotificationCoordinator {
         type.contains('chat') ||
         _value(data, 'conversationId').isNotEmpty) {
       return PushNotificationChannel.messages;
+    }
+    if (category.contains('content') ||
+        category.contains('story') ||
+        category.contains('post') ||
+        _value(data, 'storyId').isNotEmpty ||
+        _value(data, 'postId').isNotEmpty) {
+      return PushNotificationChannel.content;
     }
     if (category.contains('activity') ||
         category.contains('excursion') ||
@@ -316,6 +328,7 @@ class LocalPushNotificationPresenter implements PushNotificationPresenter {
   ) {
     return switch (channel) {
       PushNotificationChannel.messages => AndroidNotificationCategory.message,
+      PushNotificationChannel.content => AndroidNotificationCategory.social,
       PushNotificationChannel.activity => AndroidNotificationCategory.event,
       PushNotificationChannel.system => AndroidNotificationCategory.status,
     };
@@ -372,7 +385,7 @@ class PushNotificationDeepLinkResolver {
 
     final storySlug = _value(data, 'storySlug');
     if (storySlug.isNotEmpty) {
-      return '/stories/${Uri.encodeComponent(storySlug)}';
+      return '/posts/${Uri.encodeComponent(storySlug)}';
     }
 
     return fallbackRoute;

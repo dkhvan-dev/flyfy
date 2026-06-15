@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:inflap/core/config/app_config.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inflap/core/network/api_client.dart';
 import 'package:inflap/core/network/file_api.dart';
@@ -42,6 +43,25 @@ void main() {
 
     expect(adapter.captured.single.method, 'POST');
     expect(adapter.captured.single.path, '/api/v1/files/file-1/release');
+  });
+
+  test('resolves public file content urls from backend story responses', () {
+    expect(
+      resolvePublicFileContentUrlFromResponse(
+        contentUrl: '/api/v1/public/files/cover-1/content',
+      ),
+      '${Uri.parse(AppConfig.apiBaseUrl).origin}/api/v1/public/files/cover-1/content',
+    );
+    expect(
+      resolvePublicFileContentUrlFromResponse(
+        contentUrl: 'https://cdn.example.test/cover.jpg',
+      ),
+      'https://cdn.example.test/cover.jpg',
+    );
+    expect(
+      resolvePublicFileContentUrlFromResponse(fileId: 'cover-2'),
+      '${AppConfig.apiBaseUrl}/public/files/cover-2/content',
+    );
   });
 }
 

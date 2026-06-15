@@ -141,7 +141,7 @@
               <strong>{{.GuideName}}</strong>
               {{if .GuideFullName}}<span class="muted block">{{.GuideFullName}}</span>{{end}}
             </td>
-            <td>{{if .Excursion}}{{excursionLocation $.Locale .Excursion}}{{else if .Activity}}{{activityLocation $.Locale .Activity}}{{else if .ChatMessage}}{{chatMessageConversation $.Locale .ChatMessage}}{{else}}{{guideApplicationLocation $.Locale .GuideApplication}}{{end}}</td>
+            <td>{{if .Excursion}}{{excursionLocation $.Locale .Excursion}}{{else if .Activity}}{{activityLocation $.Locale .Activity}}{{else if .ChatMessage}}{{chatMessageConversation $.Locale .ChatMessage}}{{else if .PostReport}}{{if .PostReport.CommunityID}}{{shortID .PostReport.CommunityID}}{{else}}-{{end}}{{else}}{{guideApplicationLocation $.Locale .GuideApplication}}{{end}}</td>
             <td>{{formatTime .Case.OpenedAt (staffTimezone $.Staff)}}</td>
             <td class="right"><a class="button" href="{{.DetailURL}}">{{t $.Locale "action.review"}}</a></td>
           </tr>

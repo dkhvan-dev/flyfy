@@ -19,8 +19,14 @@
       <a class="{{if eq .ActiveNav "activities"}}active{{end}}" href="/admin/moderation/activities">{{t .Locale "nav.activities"}}</a>
       <a class="{{if eq .ActiveNav "guides"}}active{{end}}" href="/admin/moderation/guides">{{t .Locale "nav.guides"}}</a>
       <a class="{{if eq .ActiveNav "chats"}}active{{end}}" href="/admin/moderation/chats">{{t .Locale "nav.chats"}}</a>
+      <a class="{{if eq .ActiveNav "posts"}}active{{end}}" href="/admin/moderation/posts">{{t .Locale "nav.posts"}}</a>
+      <a class="{{if eq .ActiveNav "communities"}}active{{end}}" href="/admin/communities">{{t .Locale "nav.communities"}}</a>
+      {{if hasPermission .Staff "moderation.read"}}
+        <a class="{{if eq .ActiveNav "feed_quality"}}active{{end}}" href="/admin/feed-quality">{{t .Locale "nav.feedQuality"}}</a>
+      {{end}}
       {{if hasPermission .Staff "users.read"}}
         <a class="{{if eq .ActiveNav "users"}}active{{end}}" href="/admin/users">{{t .Locale "nav.users"}}</a>
+        <a class="{{if eq .ActiveNav "trust"}}active{{end}}" href="/admin/trust/appeals">{{t .Locale "nav.trust"}}</a>
       {{end}}
       {{if hasPermission .Staff "attraction.manage"}}
         <a class="{{if eq .ActiveNav "attractions"}}active{{end}}" href="/admin/attractions">{{t .Locale "nav.attractions"}}</a>

@@ -1,17 +1,25 @@
+// Compatibility constructor normalizes legacy post fixtures and true story API
+// payloads while the editor/post UI finishes moving to PostVm.
+// ignore_for_file: prefer_initializing_formals
+
 import '../../../core/network/file_api.dart';
 
 class StoryStatsVm {
   StoryStatsVm({
     required this.views,
     required this.likes,
-    required this.comments,
-    required this.shares,
-  });
+    int? replies,
+    int? comments,
+    int? shares,
+  }) : replies = replies ?? comments ?? 0,
+       shares = shares ?? 0;
 
   final int views;
   final int likes;
-  final int comments;
+  final int replies;
   final int shares;
+
+  int get comments => replies;
 
   factory StoryStatsVm.fromJson(Map<String, dynamic> json) {
     int parse(String key) => int.tryParse(json[key]?.toString() ?? '') ?? 0;
@@ -19,23 +27,21 @@ class StoryStatsVm {
     return StoryStatsVm(
       views: parse('views'),
       likes: parse('likes'),
-      comments: parse('comments'),
-      shares: parse('shares'),
+      replies: parse('replies') > 0 ? parse('replies') : parse('comments'),
     );
   }
 
-  StoryStatsVm copyWith({int? views, int? likes, int? comments, int? shares}) {
+  StoryStatsVm copyWith({int? views, int? likes, int? replies}) {
     return StoryStatsVm(
       views: views ?? this.views,
       likes: likes ?? this.likes,
-      comments: comments ?? this.comments,
-      shares: shares ?? this.shares,
+      replies: replies ?? this.replies,
     );
   }
 }
 
 class StoryAuthorVm {
-  StoryAuthorVm({
+  const StoryAuthorVm({
     required this.userId,
     required this.locale,
     required this.timezone,
@@ -54,11 +60,11 @@ class StoryAuthorVm {
   factory StoryAuthorVm.fromJson(Map<String, dynamic> json) {
     return StoryAuthorVm(
       userId: json['userId']?.toString() ?? '',
-      nickname: json['nickname']?.toString(),
-      avatarFileId: json['avatarFileId']?.toString(),
-      countryCode: json['countryCode']?.toString(),
-      locale: json['locale']?.toString() ?? 'ru',
-      timezone: json['timezone']?.toString() ?? 'Asia/Almaty',
+      nickname: _trimmedStringOrNull(json['nickname'] ?? json['displayName']),
+      avatarFileId: _trimmedStringOrNull(json['avatarFileId']),
+      countryCode: _trimmedStringOrNull(json['countryCode']),
+      locale: _trimmedStringOrNull(json['locale']) ?? 'ru',
+      timezone: _trimmedStringOrNull(json['timezone']) ?? 'Asia/Almaty',
     );
   }
 
@@ -67,13 +73,9 @@ class StoryAuthorVm {
     if (value.isNotEmpty) {
       return value;
     }
-    if (userId.trim().isNotEmpty) {
-      final compact = userId.replaceAll('-', '');
-      final short = compact.substring(
-        0,
-        compact.length >= 8 ? 8 : compact.length,
-      );
-      return 'user_$short';
+    final compact = userId.replaceAll('-', '');
+    if (compact.isNotEmpty) {
+      return 'user_${compact.substring(0, compact.length >= 8 ? 8 : compact.length)}';
     }
     return 'Inflap';
   }
@@ -85,8 +87,8 @@ class StoryAuthorVm {
     }
     final parts = source
         .split(RegExp(r'\s+'))
-        .where((e) => e.isNotEmpty)
-        .toList();
+        .where((part) => part.isNotEmpty)
+        .toList(growable: false);
     if (parts.length >= 2) {
       return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
     }
@@ -105,322 +107,281 @@ class StoryAuthorVm {
 class StoryVm {
   StoryVm({
     required this.id,
-    required this.slug,
-    required this.title,
-    required this.excerpt,
-    required this.category,
-    required this.status,
-    required this.tags,
-    required this.stats,
-    required this.author,
-    required this.likedByViewer,
-    required this.shareUrl,
+    String? caption,
+    String? mediaFileId,
+    String? mediaType,
+    StoryStatsVm? stats,
+    StoryAuthorVm? author,
+    bool seenByViewer = false,
+    String shareUrl = '',
+    DateTime? expiresAt,
     required this.createdAt,
     required this.updatedAt,
-    this.format = 'STORY',
-    this.contentBlocks = const [],
-    this.contentSchemaVersion = 1,
-    this.revision = 1,
-    this.moderationStatus = 'NOT_REQUIRED',
-    this.content,
+    this.mediaUrl,
     this.coverFileId,
-    this.placeName,
-    this.placeCountryCode,
-    this.placeCityId,
-    this.publishedAt,
-    this.lastAutosavedAt,
-    this.archivedAt,
-  });
-
-  final String id;
-  final String slug;
-  final String title;
-  final String excerpt;
-  final String? content;
-  final String format;
-  final List<Map<String, dynamic>> contentBlocks;
-  final int contentSchemaVersion;
-  final int revision;
-  final String category;
-  final String status;
-  final String moderationStatus;
-  final String? coverFileId;
-  final String? placeName;
-  final String? placeCountryCode;
-  final String? placeCityId;
-  final List<String> tags;
-  final StoryStatsVm stats;
-  final StoryAuthorVm author;
-  final bool likedByViewer;
-  final String shareUrl;
-  final DateTime? publishedAt;
-  final DateTime? lastAutosavedAt;
-  final DateTime? archivedAt;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-
-  factory StoryVm.fromJson(Map<String, dynamic> json) {
-    final rawTags = json['tags'];
-    final contentBlocks = _parseContentBlocks(json['contentBlocks']);
-    return StoryVm(
-      id: json['id']?.toString() ?? '',
-      slug: json['slug']?.toString() ?? '',
-      title: json['title']?.toString() ?? '',
-      excerpt: json['excerpt']?.toString() ?? '',
-      content: json['content']?.toString(),
-      format: json['format']?.toString() ?? 'STORY',
-      contentBlocks: contentBlocks,
-      contentSchemaVersion:
-          int.tryParse(json['contentSchemaVersion']?.toString() ?? '') ?? 1,
-      revision: int.tryParse(json['revision']?.toString() ?? '') ?? 1,
-      category: json['category']?.toString() ?? 'JOURNAL',
-      status: json['status']?.toString() ?? 'DRAFT',
-      moderationStatus: json['moderationStatus']?.toString() ?? 'NOT_REQUIRED',
-      coverFileId: json['coverFileId']?.toString(),
-      placeName: json['placeName']?.toString(),
-      placeCountryCode: json['placeCountryCode']?.toString(),
-      placeCityId: json['placeCityId']?.toString(),
-      tags: rawTags is List
-          ? rawTags
-                .map((item) => item.toString())
-                .where((e) => e.trim().isNotEmpty)
-                .toList(growable: false)
-          : const [],
-      stats: StoryStatsVm.fromJson(
-        json['stats'] as Map<String, dynamic>? ?? const {},
-      ),
-      author: StoryAuthorVm.fromJson(
-        json['author'] as Map<String, dynamic>? ?? const {},
-      ),
-      likedByViewer: json['likedByViewer'] == true,
-      shareUrl: json['shareUrl']?.toString() ?? '',
-      publishedAt: DateTime.tryParse(json['publishedAt']?.toString() ?? ''),
-      lastAutosavedAt: DateTime.tryParse(
-        json['lastAutosavedAt']?.toString() ?? '',
-      ),
-      archivedAt: DateTime.tryParse(json['archivedAt']?.toString() ?? ''),
-      createdAt:
-          DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
-          DateTime.fromMillisecondsSinceEpoch(0),
-      updatedAt:
-          DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
-          DateTime.fromMillisecondsSinceEpoch(0),
-    );
-  }
-
-  bool get isPublished => status.trim().toUpperCase() == 'PUBLISHED';
-
-  bool isOwnedBy(String? userId) {
-    final current = (userId ?? '').trim();
-    if (current.isEmpty) {
-      return false;
-    }
-    return author.userId.trim() == current;
-  }
-
-  DateTime get sortDate => publishedAt ?? createdAt;
-
-  String? get coverUrl {
-    final trimmed = (coverFileId ?? '').trim();
-    if (trimmed.isEmpty) {
-      return null;
-    }
-    return resolvePublicFileContentUrl(trimmed);
-  }
-
-  StoryVm copyWith({
-    StoryStatsVm? stats,
-    bool? likedByViewer,
-    String? shareUrl,
+    this.coverImageUrl,
+    this.seenAt,
+    String? slug,
     String? title,
     String? excerpt,
     String? content,
     String? format,
-    List<Map<String, dynamic>>? contentBlocks,
-    int? contentSchemaVersion,
-    int? revision,
     String? category,
     String? status,
     String? moderationStatus,
-    String? coverFileId,
-    String? placeName,
-    String? placeCountryCode,
-    String? placeCityId,
     List<String>? tags,
+    bool likedByViewer = false,
     DateTime? publishedAt,
     DateTime? lastAutosavedAt,
     DateTime? archivedAt,
+    int revision = 1,
+    int contentSchemaVersion = 1,
+    List<Map<String, dynamic>> contentBlocks = const [],
+    String? communityId,
+    String? placeName,
+    String? placeCountryCode,
+    String? placeCityId,
+  }) : caption = caption ?? excerpt ?? title ?? '',
+       mediaFileId = mediaFileId ?? coverFileId ?? '',
+       mediaType = mediaType ?? 'IMAGE',
+       stats = stats ?? StoryStatsVm(views: 0, likes: 0),
+       author =
+           author ??
+           const StoryAuthorVm(
+             userId: '',
+             locale: 'ru',
+             timezone: 'Asia/Almaty',
+           ),
+       seenByViewer = seenByViewer,
+       shareUrl = shareUrl,
+       expiresAt =
+           expiresAt ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+       _slug = slug,
+       _title = title,
+       _excerpt = excerpt,
+       _content = content,
+       _format = format,
+       _category = category,
+       _status = status,
+       _moderationStatus = moderationStatus,
+       _tags = tags == null ? null : List<String>.unmodifiable(tags),
+       _likedByViewer = likedByViewer,
+       _publishedAt = publishedAt,
+       _lastAutosavedAt = lastAutosavedAt,
+       _archivedAt = archivedAt,
+       _revision = revision,
+       _contentSchemaVersion = contentSchemaVersion,
+       _contentBlocks = List<Map<String, dynamic>>.unmodifiable(contentBlocks),
+       _communityId = communityId,
+       _placeName = placeName,
+       _placeCountryCode = placeCountryCode,
+       _placeCityId = placeCityId;
+
+  final String id;
+  final String caption;
+  final String mediaFileId;
+  final String? mediaUrl;
+  final String? coverFileId;
+  final String? coverImageUrl;
+  final String mediaType;
+  final StoryStatsVm stats;
+  final StoryAuthorVm author;
+  final bool seenByViewer;
+  final DateTime? seenAt;
+  final String shareUrl;
+  final DateTime expiresAt;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String? _slug;
+  final String? _title;
+  final String? _excerpt;
+  final String? _content;
+  final String? _format;
+  final String? _category;
+  final String? _status;
+  final String? _moderationStatus;
+  final List<String>? _tags;
+  final bool _likedByViewer;
+  final DateTime? _publishedAt;
+  final DateTime? _lastAutosavedAt;
+  final DateTime? _archivedAt;
+  final int _revision;
+  final int _contentSchemaVersion;
+  final List<Map<String, dynamic>> _contentBlocks;
+  final String? _communityId;
+  final String? _placeName;
+  final String? _placeCountryCode;
+  final String? _placeCityId;
+
+  factory StoryVm.fromJson(Map<String, dynamic> json) {
+    final statsJson = _stringKeyedMap(json['stats']);
+    return StoryVm(
+      id: json['id']?.toString() ?? '',
+      caption:
+          _trimmedStringOrNull(json['caption']) ??
+          _trimmedStringOrNull(json['title']) ??
+          '',
+      mediaFileId:
+          _trimmedStringOrNull(json['mediaFileId']) ??
+          _trimmedStringOrNull(json['coverFileId']) ??
+          '',
+      mediaUrl: _trimmedStringOrNull(json['mediaUrl']),
+      coverFileId:
+          _trimmedStringOrNull(json['coverFileId']) ??
+          _trimmedStringOrNull(json['mediaFileId']),
+      coverImageUrl:
+          _trimmedStringOrNull(json['coverImageUrl']) ??
+          _trimmedStringOrNull(json['mediaUrl']),
+      mediaType: _trimmedStringOrNull(json['mediaType']) ?? 'IMAGE',
+      stats: StoryStatsVm.fromJson(statsJson),
+      author: StoryAuthorVm.fromJson(_stringKeyedMap(json['author'])),
+      seenByViewer: json['seenByViewer'] == true,
+      seenAt: DateTime.tryParse(json['seenAt']?.toString() ?? ''),
+      shareUrl: json['shareUrl']?.toString() ?? '',
+      expiresAt:
+          DateTime.tryParse(json['expiresAt']?.toString() ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+      createdAt:
+          DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+      updatedAt:
+          DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+    );
+  }
+
+  String get slug => _slug ?? id;
+
+  String get title {
+    final explicit = (_title ?? '').trim();
+    if (explicit.isNotEmpty) {
+      return explicit;
+    }
+    final value = caption.trim();
+    return value.isEmpty ? author.preferredName : value;
+  }
+
+  String get excerpt => _excerpt ?? caption;
+
+  String? get content => _content ?? caption;
+
+  String get format => _format ?? 'STORY';
+
+  String get category => _category ?? 'STORY';
+
+  String get status => _status ?? 'PUBLISHED';
+
+  String get moderationStatus => _moderationStatus ?? 'NOT_REQUIRED';
+
+  List<String> get tags => _tags ?? const ['story'];
+
+  bool get likedByViewer => _likedByViewer;
+
+  bool get isPublished => status.trim().toUpperCase() == 'PUBLISHED';
+
+  DateTime? get publishedAt => _publishedAt ?? createdAt;
+
+  DateTime? get lastAutosavedAt => _lastAutosavedAt;
+
+  DateTime? get archivedAt => _archivedAt;
+
+  int get revision => _revision;
+
+  int get contentSchemaVersion => _contentSchemaVersion;
+
+  List<Map<String, dynamic>> get contentBlocks => _contentBlocks;
+
+  String? get communityId => _communityId;
+
+  String? get placeName => _placeName;
+
+  String? get placeCountryCode => _placeCountryCode;
+
+  String? get placeCityId => _placeCityId;
+
+  String? get coverUrl {
+    return resolvePublicFileContentUrlFromResponse(
+      fileId: coverFileId ?? mediaFileId,
+      contentUrl: coverImageUrl ?? mediaUrl,
+    );
+  }
+
+  bool get isSeenByViewer => seenByViewer || seenAt != null;
+
+  bool get isExpired => !expiresAt.isAfter(DateTime.now().toUtc());
+
+  DateTime get sortDate => createdAt;
+
+  bool isOwnedBy(String? userId) {
+    final current = (userId ?? '').trim();
+    return current.isNotEmpty && author.userId.trim() == current;
+  }
+
+  StoryVm copyWith({
+    String? caption,
+    String? mediaFileId,
+    String? mediaUrl,
+    String? coverFileId,
+    String? coverImageUrl,
+    String? mediaType,
+    StoryStatsVm? stats,
+    bool? seenByViewer,
+    String? shareUrl,
+    DateTime? expiresAt,
+    DateTime? seenAt,
     DateTime? updatedAt,
   }) {
     return StoryVm(
       id: id,
-      slug: slug,
-      title: title ?? this.title,
-      excerpt: excerpt ?? this.excerpt,
-      content: content ?? this.content,
-      format: format ?? this.format,
-      contentBlocks: contentBlocks ?? this.contentBlocks,
-      contentSchemaVersion: contentSchemaVersion ?? this.contentSchemaVersion,
-      revision: revision ?? this.revision,
-      category: category ?? this.category,
-      status: status ?? this.status,
-      moderationStatus: moderationStatus ?? this.moderationStatus,
+      caption: caption ?? this.caption,
+      mediaFileId: mediaFileId ?? this.mediaFileId,
+      mediaUrl: mediaUrl ?? this.mediaUrl,
       coverFileId: coverFileId ?? this.coverFileId,
-      placeName: placeName ?? this.placeName,
-      placeCountryCode: placeCountryCode ?? this.placeCountryCode,
-      placeCityId: placeCityId ?? this.placeCityId,
-      tags: tags ?? this.tags,
+      coverImageUrl: coverImageUrl ?? this.coverImageUrl,
+      mediaType: mediaType ?? this.mediaType,
       stats: stats ?? this.stats,
       author: author,
-      likedByViewer: likedByViewer ?? this.likedByViewer,
+      seenByViewer: seenByViewer ?? this.seenByViewer,
       shareUrl: shareUrl ?? this.shareUrl,
-      publishedAt: publishedAt ?? this.publishedAt,
-      lastAutosavedAt: lastAutosavedAt ?? this.lastAutosavedAt,
-      archivedAt: archivedAt ?? this.archivedAt,
+      expiresAt: expiresAt ?? this.expiresAt,
+      seenAt: seenAt ?? this.seenAt,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      slug: _slug,
+      title: _title,
+      excerpt: _excerpt,
+      content: _content,
+      format: _format,
+      category: _category,
+      status: _status,
+      moderationStatus: _moderationStatus,
+      tags: _tags,
+      likedByViewer: _likedByViewer,
+      publishedAt: _publishedAt,
+      lastAutosavedAt: _lastAutosavedAt,
+      archivedAt: _archivedAt,
+      revision: _revision,
+      contentSchemaVersion: _contentSchemaVersion,
+      contentBlocks: _contentBlocks,
+      communityId: _communityId,
+      placeName: _placeName,
+      placeCountryCode: _placeCountryCode,
+      placeCityId: _placeCityId,
     );
   }
 }
 
-List<Map<String, dynamic>> _parseContentBlocks(Object? rawContentBlocks) {
-  final rawBlocks = switch (rawContentBlocks) {
-    final List<dynamic> blocks => blocks,
-    final Map<String, dynamic> document when document['blocks'] is List =>
-      document['blocks'] as List<dynamic>,
-    _ => const <dynamic>[],
-  };
+Map<String, dynamic> _stringKeyedMap(Object? rawMap) {
+  if (rawMap is! Map) {
+    return const {};
+  }
 
-  return rawBlocks
-      .whereType<Map<String, dynamic>>()
-      .map(Map<String, dynamic>.unmodifiable)
-      .toList(growable: false);
-}
-
-class StoryCommentVm {
-  StoryCommentVm({
-    required this.id,
-    required this.storyId,
-    required this.body,
-    required this.editable,
-    required this.deletable,
-    required this.edited,
-    required this.likes,
-    required this.likedByMe,
-    required this.shareUrl,
-    required this.author,
-    required this.createdAt,
-    required this.updatedAt,
+  return Map<String, dynamic>.unmodifiable({
+    for (final entry in rawMap.entries) entry.key.toString(): entry.value,
   });
-
-  final String id;
-  final String storyId;
-  final String body;
-  final bool editable;
-  final bool deletable;
-  final bool edited;
-  final int likes;
-  final bool likedByMe;
-  final String shareUrl;
-  final StoryAuthorVm author;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-
-  factory StoryCommentVm.fromJson(Map<String, dynamic> json) {
-    return StoryCommentVm(
-      id: json['id']?.toString() ?? '',
-      storyId: json['storyId']?.toString() ?? '',
-      body: json['body']?.toString() ?? '',
-      editable: json['editable'] == true,
-      deletable: json['deletable'] == true,
-      edited: json['edited'] == true,
-      likes: int.tryParse(json['likes']?.toString() ?? '') ?? 0,
-      likedByMe: json['likedByMe'] == true,
-      shareUrl: json['shareUrl']?.toString() ?? '',
-      author: StoryAuthorVm.fromJson(
-        json['author'] as Map<String, dynamic>? ?? const {},
-      ),
-      createdAt:
-          DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
-          DateTime.fromMillisecondsSinceEpoch(0),
-      updatedAt:
-          DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
-          DateTime.fromMillisecondsSinceEpoch(0),
-    );
-  }
-
-  StoryCommentVm copyWith({
-    String? body,
-    bool? editable,
-    bool? deletable,
-    bool? edited,
-    int? likes,
-    bool? likedByMe,
-    String? shareUrl,
-    StoryAuthorVm? author,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-  }) {
-    return StoryCommentVm(
-      id: id,
-      storyId: storyId,
-      body: body ?? this.body,
-      editable: editable ?? this.editable,
-      deletable: deletable ?? this.deletable,
-      edited: edited ?? this.edited,
-      likes: likes ?? this.likes,
-      likedByMe: likedByMe ?? this.likedByMe,
-      shareUrl: shareUrl ?? this.shareUrl,
-      author: author ?? this.author,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-    );
-  }
 }
 
-class StoryDetailVm {
-  StoryDetailVm({
-    required this.story,
-    required this.related,
-    required this.comments,
-  });
-
-  final StoryVm story;
-  final List<StoryVm> related;
-  final List<StoryCommentVm> comments;
-
-  factory StoryDetailVm.fromJson(Map<String, dynamic> json) {
-    final rawRelated = json['related'];
-    final rawComments = json['comments'];
-
-    return StoryDetailVm(
-      story: StoryVm.fromJson(
-        json['story'] as Map<String, dynamic>? ?? const {},
-      ),
-      related: rawRelated is List
-          ? rawRelated
-                .whereType<Map<String, dynamic>>()
-                .map(StoryVm.fromJson)
-                .toList(growable: false)
-          : const [],
-      comments: rawComments is List
-          ? rawComments
-                .whereType<Map<String, dynamic>>()
-                .map(StoryCommentVm.fromJson)
-                .toList(growable: false)
-          : const [],
-    );
-  }
-
-  StoryDetailVm copyWith({
-    StoryVm? story,
-    List<StoryVm>? related,
-    List<StoryCommentVm>? comments,
-  }) {
-    return StoryDetailVm(
-      story: story ?? this.story,
-      related: related ?? this.related,
-      comments: comments ?? this.comments,
-    );
-  }
+String? _trimmedStringOrNull(Object? value) {
+  final trimmed = (value?.toString() ?? '').trim();
+  return trimmed.isEmpty ? null : trimmed;
 }
