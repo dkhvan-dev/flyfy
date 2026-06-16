@@ -93,7 +93,7 @@ void main() {
       final helperSource = source.substring(helperStart, helperEnd);
 
       expect(helperSource, contains('final safetyPadding ='));
-      expect(helperSource, contains('isCompact ? 18.0 : 20.0'));
+      expect(helperSource, contains('isCompact ? 24.0 : 26.0'));
       expect(helperSource, contains('contentBodyHeight + safetyPadding'));
       expect(helperSource, isNot(contains('contentBodyHeight + 4')));
     },
@@ -596,7 +596,7 @@ void main() {
       expect(initSource, isNot(contains('provider.loadActivities();')));
       expect(initSource, isNot(contains('provider.loadActivityCategories();')));
       expect(initSource, isNot(contains('_loadTopAttractions();')));
-      expect(initSource, isNot(contains('_loadTopPosts();')));
+      expect(initSource, isNot(contains('_loadHomeFeed();')));
       expect(
         scheduleSource,
         contains('WidgetsBinding.instance.addPostFrameCallback'),
@@ -615,7 +615,7 @@ void main() {
       expect(runSource, contains('provider.loadActivityCategories();'));
       expect(runSource, contains('unawaited(categoryLoad);'));
       expect(runSource, contains('unawaited(_loadTopAttractions());'));
-      expect(runSource, contains('unawaited(_loadTopPosts());'));
+      expect(runSource, contains('unawaited(_loadHomeFeed());'));
     },
   );
 }

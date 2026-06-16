@@ -2,6 +2,7 @@ package port
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -91,4 +92,14 @@ type UserRepository interface {
 		primaryPhone *string,
 		primaryEmail *string,
 	) error
+}
+
+type UserSocialOutboxRepository interface {
+	ListDueUserSocialOutboxEvents(ctx context.Context, limit int, now time.Time) ([]model.UserSocialOutboxEvent, error)
+	MarkUserSocialOutboxDelivered(ctx context.Context, eventID uuid.UUID, deliveredAt time.Time) error
+	MarkUserSocialOutboxFailed(ctx context.Context, eventID uuid.UUID, reason string, nextAttemptAt time.Time) error
+}
+
+type UserSocialEventPublisher interface {
+	PublishUserSocialEvent(ctx context.Context, event model.UserSocialOutboxEvent) error
 }

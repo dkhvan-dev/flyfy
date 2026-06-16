@@ -19,7 +19,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('loads home top posts from feed surface and ignores stories', (
+  testWidgets('loads home trending posts and smart stream from feed surface', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
@@ -35,6 +35,24 @@ void main() {
             id: 'home-post-card',
             type: FeedBlockType.postCard,
             post: _post('hidden-courtyards-of-turkistan'),
+          ),
+          FeedBlockVm(
+            id: 'home-post-card-2',
+            type: FeedBlockType.postCard,
+            post: _post(
+              'danang-weekend-markets',
+              title: 'Da Nang weekend markets',
+            ),
+          ),
+          FeedBlockVm(
+            id: 'home-post-card-3',
+            type: FeedBlockType.postCard,
+            post: _post('almaty-photo-walk', title: 'Almaty photo walk'),
+          ),
+          FeedBlockVm(
+            id: 'home-post-card-4',
+            type: FeedBlockType.postCard,
+            post: _post('local-cafe-notes', title: 'Local cafe notes'),
           ),
         ],
       ),
@@ -57,9 +75,81 @@ void main() {
     expect(feedApi.calls, [
       const _FeedCall(surface: 'home', tab: 'for_you', limit: 20),
     ]);
-    expect(find.text('Top Posts'), findsOneWidget);
+    expect(find.text('Trending now'), findsOneWidget);
+    expect(find.text('For you'), findsOneWidget);
     expect(find.text('Hidden courtyards of Turkistan'), findsOneWidget);
+    expect(find.text('Local cafe notes'), findsOneWidget);
     expect(find.text('Silk Road notes'), findsNothing);
+  });
+
+  testWidgets('loads the next home smart post page from feed cursor', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final feedApi = _FakeFeedApi(
+      pages: [
+        FeedPageVm(
+          nextCursor: 'page-2',
+          items: [
+            for (final id in [
+              'post-1',
+              'post-2',
+              'post-3',
+              'post-4',
+              'post-5',
+              'post-6',
+            ])
+              FeedBlockVm(
+                id: 'home-$id',
+                type: FeedBlockType.postCard,
+                post: _post(id, title: 'Home post $id'),
+              ),
+          ],
+        ),
+        FeedPageVm(
+          items: [
+            FeedBlockVm(
+              id: 'home-post-7',
+              type: FeedBlockType.postCard,
+              post: _post('post-7', title: 'Home post post-7'),
+            ),
+          ],
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      _homeApp(
+        HomeScreen(
+          feedApi: feedApi,
+          attractionApi: _FakeAttractionApi(),
+          initialDataLoadDelay: Duration.zero,
+          initialDataLoadStagger: Duration.zero,
+          waitForFirstFrameRasterized: false,
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Home post post-6'),
+      520,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump();
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -900));
+    await tester.pumpAndSettle();
+
+    expect(feedApi.calls, [
+      const _FeedCall(surface: 'home', tab: 'for_you', limit: 20),
+      const _FeedCall(
+        surface: 'home',
+        tab: 'for_you',
+        cursor: 'page-2',
+        limit: 20,
+      ),
+    ]);
+    expect(find.text('Home post post-7'), findsOneWidget);
   });
 
   testWidgets('tracks home top post clicks with feed block metadata', (
@@ -503,9 +593,10 @@ class _FakeAttractionApi extends AttractionApi {
 }
 
 class _FakeFeedApi implements FeedApi {
-  _FakeFeedApi({required this.page});
+  _FakeFeedApi({FeedPageVm? page, List<FeedPageVm>? pages})
+    : _pages = pages ?? [page ?? FeedPageVm(items: const [])];
 
-  final FeedPageVm page;
+  final List<FeedPageVm> _pages;
   final List<_FeedCall> calls = [];
   final List<FeedEventRequest> trackedEvents = [];
 
@@ -528,7 +619,11 @@ class _FakeFeedApi implements FeedApi {
         limit: limit,
       ),
     );
-    return page;
+    final pageIndex = calls.length - 1;
+    if (pageIndex >= _pages.length) {
+      return FeedPageVm(items: const []);
+    }
+    return _pages[pageIndex];
   }
 
   @override
@@ -606,12 +701,12 @@ class _FeedCall {
   }
 }
 
-PostVm _post(String id, {bool seenByViewer = false}) {
+PostVm _post(String id, {String? title, bool seenByViewer = false}) {
   final now = DateTime.utc(2026, 1, 1);
   return PostVm(
     id: id,
     slug: id,
-    title: 'Hidden courtyards of Turkistan',
+    title: title ?? 'Hidden courtyards of Turkistan',
     excerpt: 'A compact route for a slow travel day.',
     category: 'JOURNAL',
     status: 'PUBLISHED',

@@ -1262,6 +1262,20 @@ func (r *PGPostRepository) ListPosts(ctx context.Context, filter model.PostListF
 			),
 		)
 	}
+	if filter.ExcludeFollowedByUserID != nil && *filter.ExcludeFollowedByUserID != uuid.Nil {
+		args = append(args, *filter.ExcludeFollowedByUserID)
+		userIDPos := len(args)
+		args = append(args, string(enum.CommunityMembershipStatusActive))
+		statusPos := len(args)
+		clauses = append(
+			clauses,
+			fmt.Sprintf(
+				"(community_id IS NULL OR NOT EXISTS (SELECT 1 FROM community_memberships scm WHERE scm.community_id = posts.community_id AND scm.user_id = $%d AND scm.status = $%d))",
+				userIDPos,
+				statusPos,
+			),
+		)
+	}
 	if filter.FeedCursorPublishedAt != nil && filter.FeedCursorPostID != nil && *filter.FeedCursorPostID != uuid.Nil {
 		args = append(args, filter.FeedCursorPublishedAt.UTC())
 		publishedAtPos := len(args)
@@ -1399,6 +1413,35 @@ func (r *PGPostRepository) CountPosts(ctx context.Context, filter model.PostList
 	}
 	if filter.OnlyCommunityPosts {
 		clauses = append(clauses, "community_id IS NOT NULL")
+	}
+	if filter.FollowedByUserID != nil && *filter.FollowedByUserID != uuid.Nil {
+		args = append(args, *filter.FollowedByUserID)
+		userIDPos := len(args)
+		args = append(args, string(enum.CommunityMembershipStatusActive))
+		statusPos := len(args)
+		clauses = append(
+			clauses,
+			"community_id IS NOT NULL",
+			fmt.Sprintf(
+				"EXISTS (SELECT 1 FROM community_memberships scm WHERE scm.community_id = posts.community_id AND scm.user_id = $%d AND scm.status = $%d)",
+				userIDPos,
+				statusPos,
+			),
+		)
+	}
+	if filter.ExcludeFollowedByUserID != nil && *filter.ExcludeFollowedByUserID != uuid.Nil {
+		args = append(args, *filter.ExcludeFollowedByUserID)
+		userIDPos := len(args)
+		args = append(args, string(enum.CommunityMembershipStatusActive))
+		statusPos := len(args)
+		clauses = append(
+			clauses,
+			fmt.Sprintf(
+				"(community_id IS NULL OR NOT EXISTS (SELECT 1 FROM community_memberships scm WHERE scm.community_id = posts.community_id AND scm.user_id = $%d AND scm.status = $%d))",
+				userIDPos,
+				statusPos,
+			),
+		)
 	}
 
 	var count int64

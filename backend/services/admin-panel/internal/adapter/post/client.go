@@ -589,25 +589,58 @@ func (r communityResponse) toModel() model.AdminCommunity {
 
 type feedQualityMetricResponse struct {
 	Surface            string `json:"surface"`
+	Tab                string `json:"tab"`
 	BlockType          string `json:"blockType"`
+	RankingExperiment  string `json:"rankingExperiment"`
+	CandidateSource    string `json:"candidateSource"`
+	CommunityID        string `json:"communityId"`
 	Action             string `json:"action"`
+	PostProfile        string `json:"postProfile"`
+	PostProfileKey     string `json:"postProfileKey"`
 	EventCount         int64  `json:"eventCount"`
 	UniqueViewers      int64  `json:"uniqueViewers"`
+	ImpressionCount    int64  `json:"impressionCount"`
+	ClickCount         int64  `json:"clickCount"`
+	DwellCount         int64  `json:"dwellCount"`
+	AvgDwellMs         int64  `json:"avgDwellMs"`
+	LikeCount          int64  `json:"likeCount"`
+	CommentCount       int64  `json:"commentCount"`
+	ShareCount         int64  `json:"shareCount"`
+	SubscribeCount     int64  `json:"subscribeCount"`
 	ConversionCount    int64  `json:"conversionCount"`
 	HideCount          int64  `json:"hideCount"`
 	NotInterestedCount int64  `json:"notInterestedCount"`
+	ReportCount        int64  `json:"reportCount"`
 }
 
 func (r feedQualityMetricResponse) toModel() model.FeedQualityMetric {
+	postProfile := strings.TrimSpace(r.PostProfile)
+	if postProfile == "" {
+		postProfile = strings.TrimSpace(r.PostProfileKey)
+	}
 	return model.FeedQualityMetric{
 		Surface:            strings.TrimSpace(r.Surface),
+		Tab:                strings.TrimSpace(r.Tab),
 		BlockType:          strings.TrimSpace(r.BlockType),
+		RankingExperiment:  strings.TrimSpace(r.RankingExperiment),
+		CandidateSource:    strings.TrimSpace(r.CandidateSource),
+		CommunityID:        strings.TrimSpace(r.CommunityID),
 		Action:             strings.TrimSpace(r.Action),
+		PostProfile:        postProfile,
 		EventCount:         r.EventCount,
 		UniqueViewers:      r.UniqueViewers,
+		ImpressionCount:    r.ImpressionCount,
+		ClickCount:         r.ClickCount,
+		DwellCount:         r.DwellCount,
+		AvgDwellMs:         r.AvgDwellMs,
+		LikeCount:          r.LikeCount,
+		CommentCount:       r.CommentCount,
+		ShareCount:         r.ShareCount,
+		SubscribeCount:     r.SubscribeCount,
 		ConversionCount:    r.ConversionCount,
 		HideCount:          r.HideCount,
 		NotInterestedCount: r.NotInterestedCount,
+		ReportCount:        r.ReportCount,
 	}
 }
 

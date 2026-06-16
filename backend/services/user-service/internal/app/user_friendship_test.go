@@ -258,6 +258,33 @@ func TestFilterFriendUserIDsReturnsOnlyAcceptedFriendships(t *testing.T) {
 	}
 }
 
+func TestFilterFollowingUserIDsReturnsOnlyFollowedCandidates(t *testing.T) {
+	ctx := context.Background()
+	viewerID := uuid.New()
+	followedID := uuid.New()
+	strangerID := uuid.New()
+	repo := newFriendshipTestRepository(viewerID, followedID, strangerID)
+	useCase := NewUserUseCase(repo, nil)
+
+	if err := repo.FollowUser(ctx, viewerID, followedID); err != nil {
+		t.Fatalf("FollowUser returned error: %v", err)
+	}
+
+	got, err := useCase.FilterFollowingUserIDs(ctx, viewerID, []uuid.UUID{
+		followedID,
+		strangerID,
+		followedID,
+		uuid.Nil,
+		viewerID,
+	})
+	if err != nil {
+		t.Fatalf("FilterFollowingUserIDs returned error: %v", err)
+	}
+	if len(got) != 1 || got[0] != followedID {
+		t.Fatalf("filtered ids = %v, want [%s]", got, followedID)
+	}
+}
+
 func TestListFollowingPaginatesFollowedUsers(t *testing.T) {
 	ctx := context.Background()
 	viewerID := uuid.New()
@@ -496,8 +523,9 @@ func (r *friendshipTestRepository) CountFollowersByUserID(context.Context, uuid.
 	return 0, nil
 }
 
-func (r *friendshipTestRepository) IsFollowing(context.Context, uuid.UUID, uuid.UUID) (bool, error) {
-	return false, nil
+func (r *friendshipTestRepository) IsFollowing(_ context.Context, followerUserID uuid.UUID, followedUserID uuid.UUID) (bool, error) {
+	_, ok := r.follows[followPairKey(followerUserID, followedUserID)]
+	return ok, nil
 }
 
 func (r *friendshipTestRepository) UpdateProfile(_ context.Context, profile *model.UserProfile) error {

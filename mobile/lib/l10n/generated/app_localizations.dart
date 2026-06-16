@@ -3871,8 +3871,20 @@ abstract class AppLocalizations {
   /// No description provided for @homeTopStories.
   ///
   /// In en, this message translates to:
-  /// **'Top Posts'**
+  /// **'Trending now'**
   String get homeTopStories;
+
+  /// No description provided for @homeSmartPostsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'For you'**
+  String get homeSmartPostsTitle;
+
+  /// No description provided for @homeSmartPostsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Posts picked for you will appear here.'**
+  String get homeSmartPostsEmpty;
 
   /// No description provided for @homeFeaturedStays.
   ///
@@ -4683,6 +4695,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Discussed'**
   String get feedPostSortDiscussed;
+
+  /// No description provided for @feedPostLikeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Like post'**
+  String get feedPostLikeAction;
+
+  /// No description provided for @feedPostUnlikeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove like'**
+  String get feedPostUnlikeAction;
+
+  /// No description provided for @feedPostShareAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Share post'**
+  String get feedPostShareAction;
+
+  /// No description provided for @feedPostMoreActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Post actions'**
+  String get feedPostMoreActions;
+
+  /// No description provided for @feedPostHideAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide post'**
+  String get feedPostHideAction;
+
+  /// No description provided for @feedPostNotInterestedAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Not interested'**
+  String get feedPostNotInterestedAction;
+
+  /// No description provided for @feedPostActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update the post. Try again.'**
+  String get feedPostActionFailed;
 
   /// No description provided for @feedMySubscriptionsApplyFilters.
   ///

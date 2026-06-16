@@ -652,6 +652,12 @@ func TestFeedEventsMigrationCreatesIdempotentAppendOnlyLog(t *testing.T) {
 		"idx_post_feed_events_surface_type_received",
 		"idx_post_feed_events_viewer_post_hide",
 		"not_interested",
+		"'report'",
+		"like",
+		"comment",
+		"share",
+		"dwell",
+		"subscribe",
 		"idx_post_feed_events_viewer_post_negative",
 	} {
 		if !strings.Contains(migration, needle) {
@@ -785,8 +791,24 @@ func TestRepositoryCreateFeedEventsInsertsBatchIdempotently(t *testing.T) {
 		"INSERT INTO post_feed_events",
 		"ON CONFLICT (event_id) DO NOTHING",
 		"pgx.Batch",
-		"json.Marshal(event.Metadata)",
+		"json.Marshal(feedEventMetadataWithRankingExperiment",
 		"send feed event batch",
+	} {
+		if !strings.Contains(source, needle) {
+			t.Fatalf("CreateFeedEvents source must contain %q", needle)
+		}
+	}
+}
+
+func TestRepositoryCreateFeedEventsProjectsReportAsStrongNegativeSignal(t *testing.T) {
+	sourceBytes, err := os.ReadFile("pg_feed_repository.go")
+	if err != nil {
+		t.Fatalf("read feed repository source: %v", err)
+	}
+	source := string(sourceBytes)
+	for _, needle := range []string{
+		"WHEN event_type = 'report' THEN -6.0000",
+		"CASE WHEN event_type IN ('hide', 'report') THEN 1 ELSE 0 END AS hide_count",
 	} {
 		if !strings.Contains(source, needle) {
 			t.Fatalf("CreateFeedEvents source must contain %q", needle)
@@ -818,6 +840,8 @@ func TestFeedUserInterestsMigrationCreatesViewerInterestReadModel(t *testing.T) 
 		"'activity'",
 		"'attraction'",
 		"'post'",
+		"'author'",
+		"'post_profile'",
 	} {
 		if !strings.Contains(migration, needle) {
 			t.Fatalf("feed user interests migration must contain %q", needle)
@@ -830,6 +854,61 @@ func TestFeedUserInterestsMigrationCreatesViewerInterestReadModel(t *testing.T) 
 	}
 	if !strings.Contains(string(down), "DROP TABLE IF EXISTS post_feed_user_interests") {
 		t.Fatalf("rollback migration must drop post_feed_user_interests")
+	}
+}
+
+func TestFeedSocialEdgesMigrationCreatesViewerScopedReadModel(t *testing.T) {
+	up, err := os.ReadFile("../../../migrations/001_init.up.sql")
+	if err != nil {
+		t.Fatalf("read feed social edges migration: %v", err)
+	}
+	migration := string(up)
+	for _, needle := range []string{
+		"CREATE TABLE IF NOT EXISTS post_feed_social_edges",
+		"viewer_user_id uuid NOT NULL",
+		"target_user_id uuid NOT NULL",
+		"edge_type text NOT NULL",
+		"active boolean DEFAULT true NOT NULL",
+		"source_event_id uuid",
+		"source_updated_at timestamp with time zone DEFAULT now() NOT NULL",
+		"PRIMARY KEY (viewer_user_id, target_user_id, edge_type)",
+		"post_feed_social_edges_self_check",
+		"post_feed_social_edges_edge_type_check",
+		"idx_post_feed_social_edges_viewer_type",
+		"idx_post_feed_social_edges_target",
+		"'friend'",
+		"'following'",
+	} {
+		if !strings.Contains(migration, needle) {
+			t.Fatalf("feed social edges migration must contain %q", needle)
+		}
+	}
+
+	down, err := os.ReadFile("../../../migrations/001_init.down.sql")
+	if err != nil {
+		t.Fatalf("read feed social edges rollback migration: %v", err)
+	}
+	if !strings.Contains(string(down), "DROP TABLE IF EXISTS post_feed_social_edges") {
+		t.Fatalf("rollback migration must drop post_feed_social_edges")
+	}
+}
+
+func TestFeedSocialRepositoryIgnoresStaleAndNoopEvents(t *testing.T) {
+	source, err := os.ReadFile("pg_feed_social_repository.go")
+	if err != nil {
+		t.Fatalf("read feed social repository source: %v", err)
+	}
+	sql := string(source)
+	for _, needle := range []string{
+		"post_feed_social_edges.source_updated_at < EXCLUDED.source_updated_at",
+		"post_feed_social_edges.source_updated_at = EXCLUDED.source_updated_at",
+		"post_feed_social_edges.active IS DISTINCT FROM true",
+		"post_feed_social_edges.active IS DISTINCT FROM false",
+		"post_feed_social_edges.source_event_id IS DISTINCT FROM EXCLUDED.source_event_id",
+	} {
+		if !strings.Contains(sql, needle) {
+			t.Fatalf("feed social repository SQL must contain %q", needle)
+		}
 	}
 }
 
@@ -846,6 +925,7 @@ func TestFeedInterestAffinityTypesMigrationExtendsConstraint(t *testing.T) {
 		"'country'",
 		"'category'",
 		"'tag'",
+		"'post_profile'",
 	} {
 		if !strings.Contains(migration, needle) {
 			t.Fatalf("feed interest affinity types migration must contain %q", needle)
@@ -902,10 +982,15 @@ func TestRepositoryCreateFeedEventsProjectsDerivedAffinitySignals(t *testing.T) 
 		"metadata->>'cityId'",
 		"metadata->>'countryCode'",
 		"COALESCE(NULLIF(metadata->>'categorySlug', ''), NULLIF(metadata->>'category', ''))",
+		"JOIN posts event_post ON event_post.id = signal.post_id",
+		"'author' AS entity_type",
+		"event_post.author_user_id::text",
+		"score * 0.55",
 		"jsonb_array_elements_text(signal.metadata->'tags')",
 		"'city'",
 		"'country'",
 		"'category'",
+		"'author'",
 		"'tag'",
 		"score * 0.45",
 		"score * 0.25",
@@ -957,6 +1042,50 @@ func TestRepositoryCreateFeedEventsProjectsRicherSemanticMappings(t *testing.T) 
 	}
 }
 
+func TestRepositoryCreateFeedEventsProjectsPostProfileAffinitySignals(t *testing.T) {
+	sourceBytes, err := os.ReadFile("pg_feed_repository.go")
+	if err != nil {
+		t.Fatalf("read feed repository source: %v", err)
+	}
+	source := string(sourceBytes)
+	for _, needle := range []string{
+		"'post_profile' AS entity_type",
+		"COALESCE(NULLIF(signal.metadata->>'postProfileKey', ''), NULLIF(profile_post.post_profile_key, ''))",
+		"JOIN posts profile_post ON profile_post.id = signal.post_id",
+		"score * 0.30",
+		"'post_profile'",
+	} {
+		if !strings.Contains(source, needle) {
+			t.Fatalf("CreateFeedEvents post profile affinity source must contain %q", needle)
+		}
+	}
+}
+
+func TestRepositoryListFeedPostsBoostsLocalSocialEdgesWithoutUserServiceReadPath(t *testing.T) {
+	sourceBytes, err := os.ReadFile("pg_feed_ranking_policy.go")
+	if err != nil {
+		t.Fatalf("read feed ranking policy source: %v", err)
+	}
+	source := string(sourceBytes)
+	for _, needle := range []string{
+		"post_feed_social_edges social_friend",
+		"social_friend.viewer_user_id = $%d",
+		"social_friend.target_user_id = s.author_user_id",
+		"social_friend.edge_type = 'friend'",
+		"social_friend.active = true",
+		"post_feed_social_edges social_following",
+		"social_following.edge_type = 'following'",
+		"social_following.active = true",
+		"SocialFriendBoostHours",
+		"SocialFollowingBoostHours",
+		"socialEdgeScoreExpression",
+	} {
+		if !strings.Contains(source, needle) {
+			t.Fatalf("feed ranking policy social source must contain %q", needle)
+		}
+	}
+}
+
 func TestRepositoryListsViewerInterestsForRanking(t *testing.T) {
 	sourceBytes, err := os.ReadFile("pg_feed_repository.go")
 	if err != nil {
@@ -985,13 +1114,34 @@ func TestRepositoryListFeedQualityMetricsAggregatesSafeDashboardCounters(t *test
 	source := string(sourceBytes)
 	for _, needle := range []string{
 		"func (r *PGPostRepository) ListFeedQualityMetrics",
+		"WITH grouped_events AS",
+		"report_metrics AS",
 		"FROM post_feed_events",
-		"COALESCE(NULLIF(metadata->>'action', ''), event_type) AS action",
-		"COUNT(DISTINCT viewer_user_id) FILTER",
+		"LEFT JOIN posts quality_post",
+		"tab",
+		"COALESCE(NULLIF(post_feed_events.metadata->>'rankingExperiment', ''), 'control') AS ranking_experiment",
+		"COALESCE(NULLIF(post_feed_events.metadata->>'candidateSource', ''), '') AS candidate_source",
+		"COALESCE(NULLIF(post_feed_events.metadata->>'postProfileKey', ''), NULLIF(quality_post.post_profile_key, ''), '') AS post_profile",
+		"COALESCE(COALESCE(post_feed_events.community_id, quality_post.community_id)::text, '') AS community_id",
+		"COALESCE(NULLIF(post_feed_events.metadata->>'action', ''), post_feed_events.event_type) AS action",
+		"COUNT(DISTINCT post_feed_events.viewer_user_id) FILTER",
+		"impression_count",
+		"click_count",
+		"dwell_count",
+		"avg_dwell_ms",
+		"like_count",
+		"comment_count",
+		"share_count",
+		"subscribe_count",
 		"conversion_count",
 		"hide_count",
 		"not_interested_count",
-		"GROUP BY surface, block_type, action",
+		"COUNT(*) FILTER (WHERE post_feed_events.event_type = 'report') AS feed_report_count",
+		"post_reports",
+		"grouped_events.feed_report_count + COALESCE(report_metrics.report_count, 0) AS report_count",
+		"GROUP BY 1, 2, 3, 4, 5, 6, 7, 8",
+		"report_metrics.candidate_source = grouped_events.candidate_source",
+		"report_metrics.community_id = grouped_events.community_id",
 	} {
 		if !strings.Contains(source, needle) {
 			t.Fatalf("ListFeedQualityMetrics source must contain %q", needle)
@@ -1145,12 +1295,15 @@ func TestRepositoryListFeedPostsAppliesPageLevelDiversityBeforeLimit(t *testing.
 		"effectiveCommunityIDExpression, feedRankedAtExpression",
 		"ROW_NUMBER() OVER (PARTITION BY s.category",
 		"ROW_NUMBER() OVER (PARTITION BY s.author_user_id",
+		"ROW_NUMBER() OVER (PARTITION BY s.post_profile_key",
 		"community_row_number <= %d",
 		"category_row_number <= %d",
 		"author_row_number <= %d",
+		"profile_row_number <= %d",
 		"policy.MaxPostsPerCommunityPerPage",
 		"policy.MaxPostsPerCategoryPerPage",
 		"policy.MaxPostsPerAuthorPerPage",
+		"policy.MaxPostsPerProfilePerPage",
 		"FROM ranked_feed_candidates",
 		"ORDER BY feed_ranked_at DESC, id DESC",
 	} {
@@ -1172,7 +1325,25 @@ func TestRepositoryListFeedPostsExcludesViewerHiddenPosts(t *testing.T) {
 		"FROM post_feed_events hidden",
 		"hidden.viewer_user_id",
 		"hidden.post_id = fi.post_id",
-		"hidden.event_type = 'hide'",
+		"hidden.event_type IN ('hide', 'report')",
+	} {
+		if !strings.Contains(source, needle) {
+			t.Fatalf("ListFeedPosts source must contain %q", needle)
+		}
+	}
+}
+
+func TestRepositoryListFeedPostsExcludesViewerMutedCommunities(t *testing.T) {
+	sourceBytes, err := os.ReadFile("pg_feed_repository.go")
+	if err != nil {
+		t.Fatalf("read feed repository source: %v", err)
+	}
+	source := string(sourceBytes)
+	for _, needle := range []string{
+		"FROM community_memberships muted_community",
+		"muted_community.community_id",
+		"muted_community.user_id",
+		"muted_community.status = 'MUTED'",
 	} {
 		if !strings.Contains(source, needle) {
 			t.Fatalf("ListFeedPosts source must contain %q", needle)
@@ -1188,8 +1359,10 @@ func TestRepositoryListFeedPostsDownranksViewerNegativeFeedback(t *testing.T) {
 		"FROM post_feed_events negative",
 		"negative.viewer_user_id",
 		"negative.post_id = fi.post_id",
-		"negative.event_type = 'not_interested'",
-		"p.durationSQL(p.NotInterestedPenalty)",
+		"negative.event_type IN ('not_interested', 'report')",
+		"directNegativeFeedbackPenaltyExpression",
+		"DirectNegativeFeedbackDecayWindow",
+		"negative.received_at >= NOW() -",
 		"feedPostScanner",
 	} {
 		if !strings.Contains(source, needle) {
@@ -1208,12 +1381,22 @@ func TestRepositoryListFeedPostsAppliesBoundedViewerInterestRanking(t *testing.T
 		"LEFT JOIN post_feed_user_interests community_interest",
 		"community_interest.entity_type = 'community'",
 		"community_interest.entity_id = fi.community_id::text",
-		"COALESCE(post_interest.score, 0) * %s",
-		"COALESCE(community_interest.score, 0) * %s",
-		"COALESCE(city_interest.score, 0) * %s",
-		"COALESCE(country_interest.score, 0) * %s",
-		"COALESCE(category_interest.score, 0) * %s",
-		"COALESCE(tag_interest.score, 0) * %s",
+		"LEFT JOIN post_feed_user_interests profile_interest",
+		"profile_interest.entity_type = 'post_profile'",
+		"profile_interest.entity_id = lower(s.post_profile_key)",
+		"LEFT JOIN post_feed_user_interests author_interest",
+		"author_interest.entity_type = 'author'",
+		"author_interest.entity_id = s.author_user_id::text",
+		`p.interestScoreExpression("post_interest")`,
+		`p.interestScoreExpression("community_interest")`,
+		`p.interestScoreExpression("profile_interest")`,
+		`p.interestScoreExpression("author_interest")`,
+		`p.interestScoreExpression("city_interest")`,
+		`p.interestScoreExpression("country_interest")`,
+		`p.interestScoreExpression("category_interest")`,
+		`p.interestScoreExpression("tag_interest")`,
+		"NegativeInterestDecayWindow",
+		"NegativeInterestMinWeight",
 		"LEAST(%d, GREATEST(-%d",
 		"make_interval(hours =>",
 	} {
@@ -1250,6 +1433,7 @@ func TestRepositoryListFeedPostsUsesStableInterestSnapshot(t *testing.T) {
 		"freshnessSQL := p.durationSQL(p.InterestFreshnessDelay)",
 		"post_interest.updated_at < NOW() - %s",
 		"community_interest.updated_at < NOW() - %s",
+		"author_interest.updated_at < NOW() - %s",
 		"city_interest.updated_at < NOW() - %s",
 		"country_interest.updated_at < NOW() - %s",
 		"category_interest.updated_at < NOW() - %s",
@@ -1273,6 +1457,12 @@ func TestRepositoryListFeedPostsMapsAffinityInterestsToPostAttributes(t *testing
 		"LEFT JOIN post_feed_user_interests category_interest",
 		"category_interest.entity_type = 'category'",
 		"category_interest.entity_id = lower(s.category)",
+		"LEFT JOIN post_feed_user_interests profile_interest",
+		"profile_interest.entity_type = 'post_profile'",
+		"profile_interest.entity_id = lower(s.post_profile_key)",
+		"LEFT JOIN post_feed_user_interests author_interest",
+		"author_interest.entity_type = 'author'",
+		"author_interest.entity_id = s.author_user_id::text",
 		"LEFT JOIN LATERAL",
 		"FROM post_feed_user_interests tag_interest",
 		"tag_interest.entity_type = 'tag'",
@@ -1280,6 +1470,38 @@ func TestRepositoryListFeedPostsMapsAffinityInterestsToPostAttributes(t *testing
 	} {
 		if !strings.Contains(source, needle) {
 			t.Fatalf("ListFeedPosts affinity mapping source must contain %q", needle)
+		}
+	}
+}
+
+func TestRepositoryListFeedPostsAppliesExplicitCandidateSourceFilters(t *testing.T) {
+	source := readRepositorySources(t, "pg_feed_repository.go")
+	for _, needle := range []string{
+		"filter.CandidateSource",
+		"case model.PostCandidateSourceSocial",
+		"FROM post_feed_social_edges source_social",
+		"source_social.target_user_id = s.author_user_id",
+		"source_social.edge_type IN ('friend', 'following')",
+		"case model.PostCandidateSourceSystem",
+		"s.post_profile_key = 'article_v1'",
+		"official_updates",
+		"travel_alerts",
+		"local_news",
+		"case model.PostCandidateSourceGeo",
+		"COALESCE(s.place_city_id, ci.city_id, '')",
+		"COALESCE(s.place_country_code, ci.country_code, '')",
+		"case model.PostCandidateSourceInterest",
+		"FROM post_feed_user_interests source_interest",
+		"source_interest.score > 0",
+		"source_interest.entity_type = 'post_profile'",
+		"source_interest.entity_type = 'tag'",
+		"case model.PostCandidateSourceColdStart",
+		"FROM post_feed_user_interests cold_start_source_interest",
+		"NOT EXISTS",
+		"cold_start_source_interest.score > 0",
+	} {
+		if !strings.Contains(source, needle) {
+			t.Fatalf("ListFeedPosts candidate source filter must contain %q", needle)
 		}
 	}
 }

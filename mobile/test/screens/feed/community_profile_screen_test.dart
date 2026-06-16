@@ -186,7 +186,12 @@ void main() {
 
   testWidgets('toggles community follow from profile', (tester) async {
     final api = _FakeFeedApi(
-      community: _community(followedByViewer: false, membersCount: 42),
+      community: _community(
+        followedByViewer: false,
+        membersCount: 42,
+        countryCode: 'KZ',
+        cityId: 'almaty',
+      ),
     );
 
     await tester.pumpWidget(_profileApp(api));
@@ -198,6 +203,20 @@ void main() {
     expect(api.followedCommunityIds, ['community-1']);
     expect(find.text('Following'), findsOneWidget);
     expect(find.text('43 members'), findsOneWidget);
+    final subscribeEvent = api.trackedEvents.lastWhere(
+      (event) =>
+          event.eventType == 'subscribe' && event.communityId == 'community-1',
+    );
+    expect(subscribeEvent.blockType, 'community_card');
+    expect(
+      subscribeEvent.metadata,
+      containsPair('source', 'community_profile'),
+    );
+    expect(subscribeEvent.metadata, containsPair('entityType', 'community'));
+    expect(subscribeEvent.metadata, containsPair('entityId', 'community-1'));
+    expect(subscribeEvent.metadata, containsPair('topic', 'FINANCE'));
+    expect(subscribeEvent.metadata, containsPair('countryCode', 'KZ'));
+    expect(subscribeEvent.metadata, containsPair('cityId', 'almaty'));
   });
 
   testWidgets('confirms before unfollowing community from profile', (
@@ -250,6 +269,19 @@ void main() {
     await _scrollUntilVisible(tester, find.text('Community muted'));
     expect(find.text('Community muted'), findsOneWidget);
     expect(find.text('Community muted.'), findsOneWidget);
+    final muteEvent = api.trackedEvents.singleWhere(
+      (event) => event.eventType == FeedEventTypes.hide,
+    );
+    expect(muteEvent.communityId, 'community-1');
+    expect(muteEvent.blockId, 'community:community-1:profile');
+    expect(muteEvent.blockType, 'community_card');
+    expect(muteEvent.metadata, containsPair('source', 'community_mute'));
+    expect(muteEvent.metadata, containsPair('entityType', 'community'));
+    expect(muteEvent.metadata, containsPair('entityId', 'community-1'));
+    expect(
+      muteEvent.metadata,
+      containsPair('feedbackType', FeedEventTypes.hide),
+    );
 
     await _scrollProfileToTop(tester);
     expect(find.byTooltip('Community actions'), findsOneWidget);
@@ -283,6 +315,19 @@ void main() {
 
     expect(trustApi.reportRequest?.target.entityId, 'community-1');
     expect(find.text('Community sent to moderation.'), findsOneWidget);
+    final reportEvent = api.trackedEvents.singleWhere(
+      (event) => event.eventType == FeedEventTypes.report,
+    );
+    expect(reportEvent.communityId, 'community-1');
+    expect(reportEvent.blockId, 'community:community-1:profile');
+    expect(reportEvent.blockType, 'community_card');
+    expect(reportEvent.metadata, containsPair('source', 'community_profile'));
+    expect(reportEvent.metadata, containsPair('entityType', 'community'));
+    expect(reportEvent.metadata, containsPair('entityId', 'community-1'));
+    expect(
+      reportEvent.metadata,
+      containsPair('feedbackType', FeedEventTypes.report),
+    );
   });
 
   testWidgets('opens community post composer when viewer can post', (
@@ -383,7 +428,9 @@ void main() {
         postingPolicy: 'MEMBERS_AFTER_MODERATION',
       ),
     );
-    final storyApi = _FakePostApi(stories: [_story('story-1')]);
+    final storyApi = _FakePostApi(
+      stories: [_story('story-1', postProfileKey: 'article_v1')],
+    );
 
     await tester.pumpWidget(
       _profileApp(
@@ -406,6 +453,49 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(openedStory?.id, 'story-1');
+    final clickEvent = feedApi.trackedEvents.lastWhere(
+      (event) => event.eventType == 'click' && event.postId == 'story-1',
+    );
+    expect(clickEvent.communityId, 'community-1');
+    expect(clickEvent.metadata, containsPair('source', 'community_profile'));
+    expect(clickEvent.metadata, containsPair('action', 'click'));
+    expect(clickEvent.metadata, containsPair('postProfileKey', 'article_v1'));
+  });
+
+  testWidgets('tracks community post dwell after returning from details', (
+    tester,
+  ) async {
+    var now = DateTime.utc(2026, 6, 16, 12);
+    final feedApi = _FakeFeedApi(community: _community());
+    final postApi = _FakePostApi(
+      stories: [_story('story-1', postProfileKey: 'article_v1')],
+    );
+
+    await tester.pumpWidget(
+      _profileRouterApp(feedApi, postApi: postApi, analyticsNow: () => now),
+    );
+    await tester.pumpAndSettle();
+
+    await _scrollUntilVisible(tester, find.text('Community story story-1'));
+    await tester.tap(find.text('Community story story-1'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Post details story-1'), findsOneWidget);
+
+    now = now.add(const Duration(seconds: 4));
+    await tester.tap(find.byKey(const ValueKey('close-post-details')));
+    await tester.pumpAndSettle();
+
+    final dwellEvent = feedApi.trackedEvents.lastWhere(
+      (event) => event.eventType == 'dwell' && event.postId == 'story-1',
+    );
+    expect(dwellEvent.communityId, 'community-1');
+    expect(dwellEvent.metadata, containsPair('source', 'community_profile'));
+    expect(
+      dwellEvent.metadata,
+      containsPair('dwellMs', greaterThanOrEqualTo(1000)),
+    );
+    expect(dwellEvent.metadata, containsPair('postProfileKey', 'article_v1'));
   });
 
   testWidgets('merges viewer community posts from mine list after reload', (
@@ -522,6 +612,16 @@ void main() {
 
     expect(postApi.createdComments, {'quick-1': 'Подскажите детали?'});
     expect(find.text('Подскажите детали?'), findsOneWidget);
+    final commentEvent = feedApi.trackedEvents.lastWhere(
+      (event) => event.eventType == 'comment' && event.postId == 'quick-1',
+    );
+    expect(commentEvent.communityId, 'community-1');
+    expect(commentEvent.metadata, containsPair('action', 'comment'));
+    expect(commentEvent.metadata, containsPair('engagementType', 'comment'));
+    expect(
+      commentEvent.metadata,
+      containsPair('postProfileKey', 'quick_post_v1'),
+    );
   });
 
   testWidgets('shows quick post views and toggles likes inline', (
@@ -558,6 +658,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(postApi.likedPostIds, ['quick-1']);
+    final likeEvent = feedApi.trackedEvents.lastWhere(
+      (event) => event.eventType == 'like' && event.postId == 'quick-1',
+    );
+    expect(likeEvent.communityId, 'community-1');
+    expect(likeEvent.metadata, containsPair('action', 'like'));
+    expect(likeEvent.metadata, containsPair('engagementType', 'like'));
+    expect(likeEvent.metadata, containsPair('postProfileKey', 'quick_post_v1'));
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('quick-post-like-quick-1')),
@@ -832,6 +939,7 @@ Widget _profileApp(
   String? initialPostId,
   ValueChanged<FeedCommunityVm>? onCreatePost,
   ValueChanged<PostVm>? onStoryOpen,
+  DateTime Function()? analyticsNow,
 }) {
   return ChangeNotifierProvider<AuthProvider>(
     create: (_) => _AuthenticatedAuthProvider(),
@@ -847,12 +955,17 @@ Widget _profileApp(
         initialPostId: initialPostId,
         onCreatePost: onCreatePost,
         onStoryOpen: onStoryOpen,
+        analyticsNow: analyticsNow,
       ),
     ),
   );
 }
 
-Widget _profileRouterApp(FeedApi api, {PostApi? postApi}) {
+Widget _profileRouterApp(
+  FeedApi api, {
+  PostApi? postApi,
+  DateTime Function()? analyticsNow,
+}) {
   final router = GoRouter(
     routes: [
       GoRoute(
@@ -861,6 +974,7 @@ Widget _profileRouterApp(FeedApi api, {PostApi? postApi}) {
           communityId: 'community-1',
           feedApi: api,
           postApi: postApi ?? _FakePostApi(stories: const []),
+          analyticsNow: analyticsNow,
         ),
       ),
       GoRoute(
@@ -877,6 +991,24 @@ Widget _profileRouterApp(FeedApi api, {PostApi? postApi}) {
             ],
           ),
         ),
+      ),
+      GoRoute(
+        path: '/posts/:slug',
+        builder: (context, state) {
+          final slug = state.pathParameters['slug'] ?? '';
+          return Scaffold(
+            body: Column(
+              children: [
+                Text('Post details $slug'),
+                ElevatedButton(
+                  key: const ValueKey('close-post-details'),
+                  onPressed: () => context.pop(),
+                  child: const Text('Back'),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     ],
   );

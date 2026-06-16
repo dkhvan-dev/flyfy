@@ -80,6 +80,19 @@ void main() {
     expect(api.followedCommunityIds, ['community-1']);
     expect(find.text('Following'), findsOneWidget);
     expect(find.textContaining('43'), findsOneWidget);
+    final subscribeEvent = api.trackedEvents.singleWhere(
+      (event) =>
+          event.eventType == 'subscribe' && event.communityId == 'community-1',
+    );
+    expect(subscribeEvent.surface, 'content');
+    expect(subscribeEvent.tab, 'for_you');
+    expect(subscribeEvent.blockType, 'suggested_communities');
+    expect(subscribeEvent.metadata, containsPair('action', 'subscribe'));
+    expect(subscribeEvent.metadata, containsPair('entityType', 'community'));
+    expect(subscribeEvent.metadata, containsPair('entityId', 'community-1'));
+    expect(subscribeEvent.metadata, containsPair('topic', 'FINANCE'));
+    expect(subscribeEvent.metadata, containsPair('countryCode', 'KZ'));
+    expect(subscribeEvent.metadata, containsPair('cityId', 'almaty'));
   });
 
   testWidgets('shows retryable error state when communities fail to load', (
@@ -154,6 +167,9 @@ FeedCommunityVm _community({
     subtitle: description,
     description: description,
     topic: 'FINANCE',
+    countryCode: 'KZ',
+    cityId: 'almaty',
+    cityName: 'Almaty',
     membersCount: membersCount,
     postCount: postCount,
     followedByViewer: followedByViewer,
@@ -181,6 +197,7 @@ class _FakeFeedApi implements FeedApi {
   final List<String> listCalls = [];
   final List<String> followedCommunityIds = [];
   final List<String> unfollowedCommunityIds = [];
+  final List<FeedEventRequest> trackedEvents = [];
   final Map<String, FeedCommunityVm> _overrides = {};
 
   @override
@@ -285,7 +302,8 @@ class _FakeFeedApi implements FeedApi {
   }
 
   @override
-  Future<int> trackFeedEvents(List<FeedEventRequest> events) {
-    throw UnimplementedError();
+  Future<int> trackFeedEvents(List<FeedEventRequest> events) async {
+    trackedEvents.addAll(events);
+    return events.length;
   }
 }

@@ -18,12 +18,47 @@ func TestFeedQualityLabelsUseRequestedLocale(t *testing.T) {
 		{
 			name: "russian block type",
 			got:  feedQualityBlockTypeText(localeRU, "post_card"),
-			want: "Карточка истории",
+			want: "Карточка поста",
 		},
 		{
 			name: "russian action",
 			got:  feedQualityActionText(localeRU, "conversion"),
 			want: "Конверсионный клик",
+		},
+		{
+			name: "russian dwell action",
+			got:  feedQualityActionText(localeRU, "dwell"),
+			want: "Просмотр по времени",
+		},
+		{
+			name: "russian subscribe action",
+			got:  feedQualityActionText(localeRU, "subscribe"),
+			want: "Подписка",
+		},
+		{
+			name: "russian tab",
+			got:  feedQualityTabText(localeRU, "for_you"),
+			want: "Для вас",
+		},
+		{
+			name: "russian post profile",
+			got:  feedQualityPostProfileText(localeRU, "event_announcement_v1"),
+			want: "Анонс события",
+		},
+		{
+			name: "russian ranking experiment",
+			got:  feedQualityExperimentText(localeRU, "control"),
+			want: "Контроль",
+		},
+		{
+			name: "russian candidate source",
+			got:  feedQualityCandidateSourceText(localeRU, "social"),
+			want: "Друзья и подписки",
+		},
+		{
+			name: "unknown ranking experiment fallback",
+			got:  feedQualityExperimentText(localeRU, "rank-v2"),
+			want: "Rank V2",
 		},
 		{
 			name: "unknown code fallback",

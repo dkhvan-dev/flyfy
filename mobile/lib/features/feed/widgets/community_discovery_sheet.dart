@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 
@@ -145,10 +146,17 @@ class _CommunityDiscoverySheetState extends State<CommunityDiscoverySheet> {
       final updatedCommunity = community.followedByViewer
           ? await widget.feedApi.unfollowCommunity(communityId)
           : await widget.feedApi.followCommunity(communityId);
+      final mergedCommunity = _mergeCommunityForDiscovery(
+        community,
+        updatedCommunity,
+      );
+      if (!community.followedByViewer) {
+        _trackCommunitySubscribe(mergedCommunity);
+      }
       if (!mounted) {
         return;
       }
-      widget.onCommunityUpdated(updatedCommunity);
+      widget.onCommunityUpdated(mergedCommunity);
       setState(() {
         _communities = [
           for (final item in _communities)
@@ -178,6 +186,40 @@ class _CommunityDiscoverySheetState extends State<CommunityDiscoverySheet> {
         });
       }
     }
+  }
+
+  void _trackCommunitySubscribe(FeedCommunityVm community) {
+    final communityId = community.id.trim();
+    if (communityId.isEmpty) {
+      return;
+    }
+    final rank = _communities.indexWhere((item) => item.id == community.id);
+    unawaited(
+      widget.feedApi.trackFeedEvents([
+        FeedEventRequest(
+          eventId: _uuidV4(),
+          eventType: FeedEventTypes.subscribe,
+          surface: 'content',
+          tab: 'for_you',
+          blockId: 'communities:discovery_sheet',
+          blockType: 'suggested_communities',
+          communityId: communityId,
+          rank: rank < 0 ? 0 : rank,
+          occurredAt: DateTime.now().toUtc(),
+          metadata: {
+            'action': FeedEventTypes.subscribe,
+            'entityType': 'community',
+            'entityId': communityId,
+            if ((community.topic ?? '').trim().isNotEmpty)
+              'topic': community.topic!.trim(),
+            if ((community.countryCode ?? '').trim().isNotEmpty)
+              'countryCode': community.countryCode!.trim(),
+            if ((community.cityId ?? '').trim().isNotEmpty)
+              'cityId': community.cityId!.trim(),
+          },
+        ),
+      ]),
+    );
   }
 
   int get _activeFilterCount =>
@@ -1029,4 +1071,20 @@ String _communityInitial(String title) {
     return 'C';
   }
   return trimmed.substring(0, 1).toUpperCase();
+}
+
+String _uuidV4() {
+  final random = Random.secure();
+  final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  String hexByte(int value) => value.toRadixString(16).padLeft(2, '0');
+  final hex = bytes.map(hexByte).join();
+  return [
+    hex.substring(0, 8),
+    hex.substring(8, 12),
+    hex.substring(12, 16),
+    hex.substring(16, 20),
+    hex.substring(20),
+  ].join('-');
 }

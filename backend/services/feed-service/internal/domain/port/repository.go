@@ -37,6 +37,9 @@ type PostRepository interface {
 	CreateFeedEvents(ctx context.Context, events []model.FeedEvent) error
 	ListFeedUserInterests(ctx context.Context, filter model.FeedUserInterestListFilter) ([]model.FeedUserInterest, error)
 	ListFeedQualityMetrics(ctx context.Context, filter model.FeedQualityMetricsFilter) ([]model.FeedQualityMetric, error)
+	UpsertFeedSocialEdge(ctx context.Context, edge model.FeedSocialEdge) (bool, error)
+	DeleteFeedSocialEdge(ctx context.Context, viewerUserID uuid.UUID, targetUserID uuid.UUID, edgeType string, sourceUpdatedAt time.Time) (bool, error)
+	ListFeedSocialEdges(ctx context.Context, viewerUserID uuid.UUID, targetUserIDs []uuid.UUID) (map[uuid.UUID]model.FeedSocialEdgeSet, error)
 	CountPosts(ctx context.Context, filter model.PostListFilter) (int, error)
 	CountPublishedPostsByAuthorID(ctx context.Context, authorUserID uuid.UUID) (int, error)
 	CountPostsCreatedByAuthorSince(ctx context.Context, authorUserID uuid.UUID, since time.Time) (int, error)

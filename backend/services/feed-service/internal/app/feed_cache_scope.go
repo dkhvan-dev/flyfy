@@ -21,6 +21,13 @@ func postFeedCacheFollowingScope(viewerUserID uuid.UUID) string {
 	return "post-feed:user:" + viewerUserID.String() + ":following"
 }
 
+func postFeedCacheDiscoveryScope(viewerUserID uuid.UUID) string {
+	if viewerUserID == uuid.Nil {
+		return postFeedCacheGlobalScope
+	}
+	return "post-feed:user:" + viewerUserID.String() + ":discovery"
+}
+
 func postFeedCacheAuthorScope(authorUserID uuid.UUID) string {
 	if authorUserID == uuid.Nil {
 		return postFeedCacheGlobalScope

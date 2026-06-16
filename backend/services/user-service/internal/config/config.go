@@ -18,6 +18,8 @@ type Config struct {
 	Security    SecurityConfig
 	Phone       PhoneVerificationConfig
 	FileManager FileManagerConfig
+	FeedService FeedServiceConfig
+	Social      SocialOutboxConfig
 }
 
 type AppConfig struct {
@@ -121,4 +123,20 @@ func Load(ctx context.Context) (*Config, error) {
 
 type FileManagerConfig struct {
 	Target string `env:"FILE_MANAGER_GRPC_TARGET, default=dns:///file-manager-service:9093"`
+}
+
+type FeedServiceConfig struct {
+	HTTPURL        string        `env:"FEED_SERVICE_HTTP_URL, default=http://feed-service:8087"`
+	RequestTimeout time.Duration `env:"FEED_SERVICE_REQUEST_TIMEOUT, default=3s"`
+}
+
+type SocialOutboxConfig struct {
+	WorkerEnabled          bool          `env:"USER_SOCIAL_OUTBOX_WORKER_ENABLED, default=true"`
+	WorkerPollInterval     time.Duration `env:"USER_SOCIAL_OUTBOX_WORKER_POLL_INTERVAL, default=5s"`
+	WorkerBatchSize        int           `env:"USER_SOCIAL_OUTBOX_WORKER_BATCH_SIZE, default=50"`
+	WorkerMaxAttempts      int           `env:"USER_SOCIAL_OUTBOX_WORKER_MAX_ATTEMPTS, default=20"`
+	WorkerBaseBackoff      time.Duration `env:"USER_SOCIAL_OUTBOX_WORKER_BASE_BACKOFF, default=1s"`
+	StartupBackfillEnabled bool          `env:"USER_SOCIAL_OUTBOX_STARTUP_BACKFILL_ENABLED, default=false"`
+	StartupDrainEnabled    bool          `env:"USER_SOCIAL_OUTBOX_STARTUP_DRAIN_ENABLED, default=false"`
+	StartupMaxDrainBatches int           `env:"USER_SOCIAL_OUTBOX_STARTUP_MAX_DRAIN_BATCHES, default=0"`
 }

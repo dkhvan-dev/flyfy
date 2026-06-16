@@ -39,6 +39,10 @@ class AppLocationLabelResolver {
   final Map<String, ReferenceCity?> _cityCache = {};
   final Map<String, ReferenceCity?> _citySearchCache = {};
   final Map<String, List<ReferenceCity>> _citiesByCountryCache = {};
+  final Map<String, Future<ReferenceCountry?>> _countryInFlight = {};
+  final Map<String, Future<ReferenceCity?>> _cityInFlight = {};
+  final Map<String, Future<ReferenceCity?>> _citySearchInFlight = {};
+  final Map<String, Future<List<ReferenceCity>>> _citiesByCountryInFlight = {};
 
   Future<String> resolve({
     String? countryCode,
@@ -136,9 +140,20 @@ class AppLocationLabelResolver {
     if (_countryCache.containsKey(key)) {
       return _countryCache[key];
     }
-    final country = await (_countryLookup ?? _api.getCountry)(code, lang: lang);
-    _countryCache[key] = country;
-    return country;
+    final inFlight = _countryInFlight[key];
+    if (inFlight != null) {
+      return inFlight;
+    }
+    final lookup = (_countryLookup ?? _api.getCountry)(code, lang: lang)
+        .then((country) {
+          _countryCache[key] = country;
+          return country;
+        })
+        .whenComplete(() {
+          _countryInFlight.remove(key);
+        });
+    _countryInFlight[key] = lookup;
+    return lookup;
   }
 
   Future<ReferenceCity?> _resolveCity(String id, String lang) async {
@@ -146,9 +161,20 @@ class AppLocationLabelResolver {
     if (_cityCache.containsKey(key)) {
       return _cityCache[key];
     }
-    final city = await (_cityLookup ?? _api.getCity)(id, lang: lang);
-    _cityCache[key] = city;
-    return city;
+    final inFlight = _cityInFlight[key];
+    if (inFlight != null) {
+      return inFlight;
+    }
+    final lookup = (_cityLookup ?? _api.getCity)(id, lang: lang)
+        .then((city) {
+          _cityCache[key] = city;
+          return city;
+        })
+        .whenComplete(() {
+          _cityInFlight.remove(key);
+        });
+    _cityInFlight[key] = lookup;
+    return lookup;
   }
 
   Future<ReferenceCity?> _resolveCityByName(
@@ -166,20 +192,34 @@ class AppLocationLabelResolver {
     if (_citySearchCache.containsKey(key)) {
       return _citySearchCache[key];
     }
+    final inFlight = _citySearchInFlight[key];
+    if (inFlight != null) {
+      return inFlight;
+    }
 
-    final cities = await (_citySearchLookup ?? _api.searchCities)(
-      normalizedCityName,
-      countryCode: normalizedCountryCode,
-      lang: lang,
-      limit: 5,
-    );
-    final city = _pickBestCityMatch(
-      cities,
-      cityName: normalizedCityName,
-      countryCode: normalizedCountryCode,
-    );
-    _citySearchCache[key] = city;
-    return city;
+    final lookup =
+        (_citySearchLookup ?? _api.searchCities)(
+              normalizedCityName,
+              countryCode: normalizedCountryCode,
+              lang: lang,
+              limit: 5,
+            )
+            .then(
+              (cities) => _pickBestCityMatch(
+                cities,
+                cityName: normalizedCityName,
+                countryCode: normalizedCountryCode,
+              ),
+            )
+            .then((city) {
+              _citySearchCache[key] = city;
+              return city;
+            })
+            .whenComplete(() {
+              _citySearchInFlight.remove(key);
+            });
+    _citySearchInFlight[key] = lookup;
+    return lookup;
   }
 
   Future<ReferenceCity?> _resolveCityFromCountryCatalog(
@@ -219,18 +259,27 @@ class AppLocationLabelResolver {
     final key = '$lang|$countryCode';
     final cached = _citiesByCountryCache[key];
     if (cached != null) return cached;
+    final inFlight = _citiesByCountryInFlight[key];
+    if (inFlight != null) return inFlight;
 
-    try {
-      final cities = await (_citiesByCountryLookup ?? _api.citiesByCountry)(
-        countryCode,
-        lang: lang,
-      );
-      _citiesByCountryCache[key] = cities;
-      return cities;
-    } catch (_) {
-      _citiesByCountryCache[key] = const [];
-      return const [];
-    }
+    final lookup =
+        (_citiesByCountryLookup ?? _api.citiesByCountry)(
+              countryCode,
+              lang: lang,
+            )
+            .then((cities) {
+              _citiesByCountryCache[key] = cities;
+              return cities;
+            })
+            .catchError((Object _) {
+              _citiesByCountryCache[key] = const <ReferenceCity>[];
+              return const <ReferenceCity>[];
+            })
+            .whenComplete(() {
+              _citiesByCountryInFlight.remove(key);
+            });
+    _citiesByCountryInFlight[key] = lookup;
+    return lookup;
   }
 }
 

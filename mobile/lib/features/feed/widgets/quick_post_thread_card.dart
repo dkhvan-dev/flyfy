@@ -4,8 +4,12 @@ import '../../../core/network/file_api.dart';
 import '../../../core/network/post_api.dart';
 import '../../../core/ui/app_colors.dart';
 import '../../../l10n/generated/app_localizations.dart';
+import '../data/feed_api.dart';
 import '../../stories/models/post_vm.dart';
 import '../../stories/story_ui.dart';
+
+typedef QuickPostEngagementCallback =
+    void Function(PostVm post, String eventType);
 
 class QuickPostThreadCard extends StatefulWidget {
   const QuickPostThreadCard({
@@ -14,12 +18,14 @@ class QuickPostThreadCard extends StatefulWidget {
     required this.postApi,
     this.previewCommentLimit = 3,
     this.onEdit,
+    this.onEngagement,
   });
 
   final PostVm post;
   final PostApi postApi;
   final int previewCommentLimit;
   final ValueChanged<PostVm>? onEdit;
+  final QuickPostEngagementCallback? onEngagement;
 
   @override
   State<QuickPostThreadCard> createState() => _QuickPostThreadCardState();
@@ -152,6 +158,7 @@ class _QuickPostThreadCardState extends State<QuickPostThreadCard> {
         _commentCount += 1;
         _isSubmitting = false;
       });
+      widget.onEngagement?.call(widget.post, FeedEventTypes.comment);
     } catch (_) {
       if (!mounted) {
         return;
@@ -178,6 +185,7 @@ class _QuickPostThreadCardState extends State<QuickPostThreadCard> {
     });
 
     try {
+      final wasLikedByViewer = _likedByViewer;
       final likes = _likedByViewer
           ? await widget.postApi.unlikePost(postId)
           : await widget.postApi.likePost(postId);
@@ -189,6 +197,9 @@ class _QuickPostThreadCardState extends State<QuickPostThreadCard> {
         _likedByViewer = !_likedByViewer;
         _isTogglingLike = false;
       });
+      if (!wasLikedByViewer) {
+        widget.onEngagement?.call(widget.post, FeedEventTypes.like);
+      }
     } catch (_) {
       if (!mounted) {
         return;

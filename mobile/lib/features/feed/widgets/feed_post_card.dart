@@ -1,14 +1,165 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/ui/app_colors.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../stories/models/post_vm.dart';
 import '../../stories/story_ui.dart';
 
-class FeedPostCard extends StatelessWidget {
-  const FeedPostCard({super.key, required this.post, this.onOpen});
+typedef FeedPostLikeCallback =
+    Future<FeedPostLikeResult?> Function(PostVm post, bool likedByViewer);
+typedef FeedPostActionCallback = Future<void> Function(PostVm post);
+
+class FeedPostLikeResult {
+  const FeedPostLikeResult({required this.likes, required this.likedByViewer});
+
+  final int likes;
+  final bool likedByViewer;
+}
+
+enum FeedPostFeedbackAction { hide, notInterested }
+
+class FeedPostCard extends StatefulWidget {
+  const FeedPostCard({
+    super.key,
+    required this.post,
+    this.onOpen,
+    this.onLike,
+    this.onShare,
+    this.onHide,
+    this.onNotInterested,
+  });
 
   final PostVm post;
   final ValueChanged<PostVm>? onOpen;
+  final FeedPostLikeCallback? onLike;
+  final FeedPostActionCallback? onShare;
+  final FeedPostActionCallback? onHide;
+  final FeedPostActionCallback? onNotInterested;
+
+  @override
+  State<FeedPostCard> createState() => _FeedPostCardState();
+}
+
+class _FeedPostCardState extends State<FeedPostCard> {
+  late int _likeCount;
+  late bool _likedByViewer;
+  bool _isTogglingLike = false;
+  bool _isSharing = false;
+
+  PostVm get post => widget.post;
+  ValueChanged<PostVm>? get onOpen => widget.onOpen;
+  FeedPostLikeCallback? get onLike => widget.onLike;
+  FeedPostActionCallback? get onShare => widget.onShare;
+  FeedPostActionCallback? get onHide => widget.onHide;
+  FeedPostActionCallback? get onNotInterested => widget.onNotInterested;
+
+  @override
+  void initState() {
+    super.initState();
+    _likeCount = widget.post.stats.likes;
+    _likedByViewer = widget.post.likedByViewer;
+  }
+
+  @override
+  void didUpdateWidget(covariant FeedPostCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.post.id != widget.post.id ||
+        oldWidget.post.stats.likes != widget.post.stats.likes) {
+      _likeCount = widget.post.stats.likes;
+    }
+    if (oldWidget.post.id != widget.post.id ||
+        oldWidget.post.likedByViewer != widget.post.likedByViewer) {
+      _likedByViewer = widget.post.likedByViewer;
+    }
+  }
+
+  Future<void> _handleLike() async {
+    final onLike = widget.onLike;
+    if (onLike == null || _isTogglingLike) {
+      return;
+    }
+    setState(() {
+      _isTogglingLike = true;
+    });
+    try {
+      final result = await onLike(widget.post, _likedByViewer);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        if (result != null) {
+          _likeCount = result.likes;
+          _likedByViewer = result.likedByViewer;
+        } else {
+          _likedByViewer = !_likedByViewer;
+          final nextLikeCount = _likeCount + (_likedByViewer ? 1 : -1);
+          _likeCount = nextLikeCount < 0 ? 0 : nextLikeCount;
+        }
+        _isTogglingLike = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isTogglingLike = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.feedPostActionFailed),
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleShare() async {
+    final onShare = widget.onShare;
+    if (onShare == null || _isSharing) {
+      return;
+    }
+    setState(() {
+      _isSharing = true;
+    });
+    try {
+      await onShare(widget.post);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.feedPostActionFailed),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSharing = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleFeedback(FeedPostFeedbackAction action) async {
+    final callback = switch (action) {
+      FeedPostFeedbackAction.hide => widget.onHide,
+      FeedPostFeedbackAction.notInterested => widget.onNotInterested,
+    };
+    if (callback == null) {
+      return;
+    }
+    try {
+      await callback(widget.post);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.feedPostActionFailed),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,6 +168,12 @@ class FeedPostCard extends StatelessWidget {
     final isSeen = state == StoryEntryState.seen;
     final isBlocked = state.disablesEntry;
     final isInteractive = !isBlocked && onOpen != null;
+    final hasActions =
+        onLike != null ||
+        onShare != null ||
+        onHide != null ||
+        onNotInterested != null;
+    final l10n = hasActions ? AppLocalizations.of(context) : null;
     final borderColor = isBlocked
         ? Colors.white.withValues(alpha: 0.08)
         : isSeen
@@ -199,9 +356,7 @@ class FeedPostCard extends StatelessWidget {
                                   ),
                                   _StoryMetaChip(
                                     icon: Icons.favorite_border_rounded,
-                                    label: formatStoryCountCompact(
-                                      post.stats.likes,
-                                    ),
+                                    label: formatStoryCountCompact(_likeCount),
                                   ),
                                   _StoryMetaChip(
                                     icon: Icons.chat_bubble_outline_rounded,
@@ -218,6 +373,55 @@ class FeedPostCard extends StatelessWidget {
                             ],
                           ],
                         ),
+                        if (hasActions) ...[
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              _PostActionButton(
+                                key: ValueKey('feed-post-like-${post.id}'),
+                                icon: _likedByViewer
+                                    ? Icons.favorite_rounded
+                                    : Icons.favorite_border_rounded,
+                                label: formatStoryCountCompact(_likeCount),
+                                tooltip: _likedByViewer
+                                    ? l10n?.feedPostUnlikeAction ??
+                                          'Remove like'
+                                    : l10n?.feedPostLikeAction ?? 'Like post',
+                                isSelected: _likedByViewer,
+                                isBusy: _isTogglingLike,
+                                onPressed: onLike == null ? null : _handleLike,
+                              ),
+                              const SizedBox(width: 8),
+                              _PostActionButton(
+                                key: ValueKey('feed-post-share-${post.id}'),
+                                icon: Icons.ios_share_rounded,
+                                label: l10n?.storyCommentShareAction ?? 'Share',
+                                tooltip:
+                                    l10n?.feedPostShareAction ?? 'Share post',
+                                isBusy: _isSharing,
+                                onPressed: onShare == null
+                                    ? null
+                                    : _handleShare,
+                              ),
+                              const Spacer(),
+                              if (onHide != null || onNotInterested != null)
+                                _PostFeedbackMenu(
+                                  postId: post.id,
+                                  onSelected: _handleFeedback,
+                                  hideLabel:
+                                      l10n?.feedPostHideAction ?? 'Hide post',
+                                  notInterestedLabel:
+                                      l10n?.feedPostNotInterestedAction ??
+                                      'Not interested',
+                                  tooltip:
+                                      l10n?.feedPostMoreActions ??
+                                      'Post actions',
+                                  hasHide: onHide != null,
+                                  hasNotInterested: onNotInterested != null,
+                                ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -250,6 +454,152 @@ class _OpenPostAffordance extends StatelessWidget {
           size: 20,
         ),
       ),
+    );
+  }
+}
+
+class _PostActionButton extends StatelessWidget {
+  const _PostActionButton({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.tooltip,
+    this.isSelected = false,
+    this.isBusy = false,
+    this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+  final String tooltip;
+  final bool isSelected;
+  final bool isBusy;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = isSelected ? const Color(0xFF1B1208) : AppColors.accent;
+    final background = isSelected
+        ? AppColors.accent
+        : AppColors.accent.withValues(alpha: 0.12);
+
+    return Tooltip(
+      message: tooltip,
+      child: FilledButton.icon(
+        onPressed: isBusy ? null : onPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: background,
+          disabledBackgroundColor: background.withValues(alpha: 0.54),
+          foregroundColor: foreground,
+          disabledForegroundColor: foreground.withValues(alpha: 0.70),
+          visualDensity: VisualDensity.compact,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          minimumSize: const Size(44, 36),
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(999),
+            side: BorderSide(
+              color: AppColors.accent.withValues(alpha: isSelected ? 0 : 0.22),
+            ),
+          ),
+        ),
+        icon: isBusy
+            ? SizedBox.square(
+                dimension: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: foreground,
+                ),
+              )
+            : Icon(icon, size: 18),
+        label: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontWeight: FontWeight.w900),
+        ),
+      ),
+    );
+  }
+}
+
+class _PostFeedbackMenu extends StatelessWidget {
+  const _PostFeedbackMenu({
+    required this.postId,
+    required this.onSelected,
+    required this.hideLabel,
+    required this.notInterestedLabel,
+    required this.tooltip,
+    required this.hasHide,
+    required this.hasNotInterested,
+  });
+
+  final String postId;
+  final ValueChanged<FeedPostFeedbackAction> onSelected;
+  final String hideLabel;
+  final String notInterestedLabel;
+  final String tooltip;
+  final bool hasHide;
+  final bool hasNotInterested;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<FeedPostFeedbackAction>(
+      key: ValueKey('feed-post-more-$postId'),
+      tooltip: tooltip,
+      position: PopupMenuPosition.under,
+      color: const Color(0xFF2A1A0E),
+      surfaceTintColor: Colors.transparent,
+      icon: const Icon(Icons.more_horiz_rounded, color: AppColors.accent),
+      onSelected: onSelected,
+      itemBuilder: (context) => [
+        if (hasHide)
+          PopupMenuItem<FeedPostFeedbackAction>(
+            key: ValueKey('feed-post-hide-$postId'),
+            value: FeedPostFeedbackAction.hide,
+            child: _PostFeedbackMenuItem(
+              icon: Icons.visibility_off_outlined,
+              label: hideLabel,
+            ),
+          ),
+        if (hasNotInterested)
+          PopupMenuItem<FeedPostFeedbackAction>(
+            key: ValueKey('feed-post-not-interested-$postId'),
+            value: FeedPostFeedbackAction.notInterested,
+            child: _PostFeedbackMenuItem(
+              icon: Icons.thumb_down_alt_outlined,
+              label: notInterestedLabel,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _PostFeedbackMenuItem extends StatelessWidget {
+  const _PostFeedbackMenuItem({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: AppColors.accent, size: 20),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Color(0xFFFFF7ED),
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

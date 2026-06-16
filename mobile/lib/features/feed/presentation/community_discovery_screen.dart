@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -128,6 +131,9 @@ class _CommunityDiscoveryScreenState extends State<CommunityDiscoveryScreen> {
       final updatedCommunity = community.followedByViewer
           ? await _feedApi.unfollowCommunity(communityId)
           : await _feedApi.followCommunity(communityId);
+      if (!community.followedByViewer) {
+        _trackCommunitySubscribe(updatedCommunity);
+      }
       if (!mounted) {
         return;
       }
@@ -158,6 +164,40 @@ class _CommunityDiscoveryScreenState extends State<CommunityDiscoveryScreen> {
         });
       }
     }
+  }
+
+  void _trackCommunitySubscribe(FeedCommunityVm community) {
+    final communityId = community.id.trim();
+    if (communityId.isEmpty) {
+      return;
+    }
+    final rank = _communities.indexWhere((item) => item.id == community.id);
+    unawaited(
+      _feedApi.trackFeedEvents([
+        FeedEventRequest(
+          eventId: _uuidV4(),
+          eventType: FeedEventTypes.subscribe,
+          surface: 'content',
+          tab: 'for_you',
+          blockId: 'communities:discovery',
+          blockType: 'suggested_communities',
+          communityId: communityId,
+          rank: rank < 0 ? 0 : rank,
+          occurredAt: DateTime.now().toUtc(),
+          metadata: {
+            'action': FeedEventTypes.subscribe,
+            'entityType': 'community',
+            'entityId': communityId,
+            if ((community.topic ?? '').trim().isNotEmpty)
+              'topic': community.topic!.trim(),
+            if ((community.countryCode ?? '').trim().isNotEmpty)
+              'countryCode': community.countryCode!.trim(),
+            if ((community.cityId ?? '').trim().isNotEmpty)
+              'cityId': community.cityId!.trim(),
+          },
+        ),
+      ]),
+    );
   }
 
   void _openCommunity(FeedCommunityVm community) {
@@ -394,4 +434,20 @@ double _horizontalPadding(double width) {
     return 24;
   }
   return 16;
+}
+
+String _uuidV4() {
+  final random = Random.secure();
+  final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  String hexByte(int value) => value.toRadixString(16).padLeft(2, '0');
+  final hex = bytes.map(hexByte).join();
+  return [
+    hex.substring(0, 8),
+    hex.substring(8, 12),
+    hex.substring(12, 16),
+    hex.substring(16, 20),
+    hex.substring(20),
+  ].join('-');
 }

@@ -2121,7 +2121,14 @@ class AppLocalizationsKk extends AppLocalizations {
   String get homeSeeAll => 'Барлығын көру';
 
   @override
-  String get homeTopStories => 'Үздік посттар';
+  String get homeTopStories => 'Қазір талқылануда';
+
+  @override
+  String get homeSmartPostsTitle => 'Сіз үшін';
+
+  @override
+  String get homeSmartPostsEmpty =>
+      'Сізге арналған посттар осы жерде пайда болады.';
 
   @override
   String get homeFeaturedStays => 'Ұсынылған тұру орындары';
@@ -2551,6 +2558,28 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get feedPostSortDiscussed => 'Талқыланатын';
+
+  @override
+  String get feedPostLikeAction => 'Пост ұнады';
+
+  @override
+  String get feedPostUnlikeAction => 'Лайкты алып тастау';
+
+  @override
+  String get feedPostShareAction => 'Постпен бөлісу';
+
+  @override
+  String get feedPostMoreActions => 'Пост әрекеттері';
+
+  @override
+  String get feedPostHideAction => 'Постты жасыру';
+
+  @override
+  String get feedPostNotInterestedAction => 'Қызық емес';
+
+  @override
+  String get feedPostActionFailed =>
+      'Постты жаңарту мүмкін болмады. Қайта көріңіз.';
 
   @override
   String get feedMySubscriptionsApplyFilters => 'Сүзгілерді қолдану';

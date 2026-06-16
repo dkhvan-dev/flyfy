@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../core/network/file_api.dart';
 import '../../../core/network/post_api.dart';
@@ -27,6 +28,9 @@ import '../widgets/feed_block_list.dart';
 import '../widgets/feed_post_card.dart';
 import '../widgets/my_subscriptions_block.dart';
 
+typedef FeedPostShareLauncher =
+    Future<void> Function(PostVm post, String shareUrl);
+
 class FeedScreen extends StatefulWidget {
   const FeedScreen({
     super.key,
@@ -38,6 +42,8 @@ class FeedScreen extends StatefulWidget {
     this.onCommunityOpen,
     this.onCommunityModerationOpen,
     this.locationLabelResolver,
+    this.analyticsNow,
+    this.postShareLauncher,
   });
 
   final FeedApi? feedApi;
@@ -48,6 +54,8 @@ class FeedScreen extends StatefulWidget {
   final ValueChanged<FeedCommunityVm>? onCommunityOpen;
   final ValueChanged<FeedCommunityVm>? onCommunityModerationOpen;
   final AppLocationLabelResolver? locationLabelResolver;
+  final DateTime Function()? analyticsNow;
+  final FeedPostShareLauncher? postShareLauncher;
 
   @override
   State<FeedScreen> createState() => _FeedScreenState();
@@ -282,6 +290,8 @@ class _FeedScreenState extends State<FeedScreen>
     if (communityId.isEmpty || _updatingCommunityIds.contains(communityId)) {
       return;
     }
+    final wasFollowed = community.followedByViewer;
+    final communityBlock = _findCommunityBlock(communityId);
 
     setState(() {
       _updatingCommunityIds = {..._updatingCommunityIds, communityId};
@@ -297,6 +307,9 @@ class _FeedScreenState extends State<FeedScreen>
       setState(() {
         _items = _replaceCommunity(_items, updatedCommunity);
       });
+      if (!wasFollowed && updatedCommunity.followedByViewer) {
+        _trackCommunitySubscribe(updatedCommunity, communityBlock);
+      }
     } catch (_) {
       if (!mounted) {
         return;
@@ -315,6 +328,36 @@ class _FeedScreenState extends State<FeedScreen>
         });
       }
     }
+  }
+
+  void _trackCommunitySubscribe(
+    FeedCommunityVm community,
+    (FeedBlockVm, String, int)? communityBlock,
+  ) {
+    final communityId = community.id.trim();
+    if (communityId.isEmpty || communityBlock == null) {
+      return;
+    }
+    final topic = (community.topic ?? '').trim();
+    _trackFeedEvents([
+      _feedEvent(
+        eventType: FeedEventTypes.subscribe,
+        tab: _tabs[_selectedTabIndex],
+        block: communityBlock.$1,
+        blockType: communityBlock.$2,
+        communityId: communityId,
+        rank: communityBlock.$3,
+        metadata: {
+          'entityType': 'community',
+          'entityId': communityId,
+          if (topic.isNotEmpty) 'topic': topic,
+          if ((community.countryCode ?? '').trim().isNotEmpty)
+            'countryCode': community.countryCode!.trim(),
+          if ((community.cityId ?? '').trim().isNotEmpty)
+            'cityId': community.cityId!.trim(),
+        },
+      ),
+    ]);
   }
 
   void _openCommunityModeration(FeedCommunityVm community) {
@@ -339,13 +382,17 @@ class _FeedScreenState extends State<FeedScreen>
   }
 
   void _openCommunity(FeedCommunityVm community) {
+    final communityId = community.id.trim();
+    if (communityId.isNotEmpty) {
+      _trackCommunityClick(community, communityId);
+    }
+
     final override = widget.onCommunityOpen;
     if (override != null) {
       override(community);
       return;
     }
 
-    final communityId = community.id.trim();
     if (communityId.isEmpty) {
       return;
     }
@@ -357,6 +404,33 @@ class _FeedScreenState extends State<FeedScreen>
       queryParameters: title.isEmpty ? null : {'title': title},
     );
     context.push(uri.toString(), extra: community);
+  }
+
+  void _trackCommunityClick(FeedCommunityVm community, String communityId) {
+    final block = _findCommunityBlock(communityId);
+    if (block == null) {
+      return;
+    }
+    final topic = (community.topic ?? '').trim();
+    _trackFeedEvents([
+      _feedEvent(
+        eventType: FeedEventTypes.click,
+        tab: _tabs[_selectedTabIndex],
+        block: block.$1,
+        blockType: block.$2,
+        communityId: communityId,
+        rank: block.$3,
+        metadata: {
+          'entityType': 'community',
+          'entityId': communityId,
+          if (topic.isNotEmpty) 'topic': topic,
+          if ((community.countryCode ?? '').trim().isNotEmpty)
+            'countryCode': community.countryCode!.trim(),
+          if ((community.cityId ?? '').trim().isNotEmpty)
+            'cityId': community.cityId!.trim(),
+        },
+      ),
+    ]);
   }
 
   Future<void> _openCommunityDiscoverySheet() async {
@@ -497,6 +571,10 @@ class _FeedScreenState extends State<FeedScreen>
                       Navigator.of(sheetContext).maybePop();
                       _openPost(post);
                     },
+                    onLike: _toggleFeedPostLike,
+                    onShare: _shareFeedPost,
+                    onHide: _hideFeedPost,
+                    onNotInterested: _markFeedPostNotInterested,
                   ),
                 ),
               ),
@@ -541,12 +619,138 @@ class _FeedScreenState extends State<FeedScreen>
   }
 
   void _openPost(PostVm post) {
+    unawaited(_openPostAndTrackDwell(post));
+  }
+
+  Future<FeedPostLikeResult?> _toggleFeedPostLike(
+    PostVm post,
+    bool likedByViewer,
+  ) async {
+    final postId = post.id.trim();
+    if (postId.isEmpty) {
+      return null;
+    }
+    final likes = likedByViewer
+        ? await _postApi.unlikePost(postId)
+        : await _postApi.likePost(postId);
+    if (!likedByViewer) {
+      _trackPostAction(
+        post,
+        FeedEventTypes.like,
+        metadata: {'engagementType': FeedEventTypes.like},
+      );
+    }
+    return FeedPostLikeResult(likes: likes, likedByViewer: !likedByViewer);
+  }
+
+  Future<void> _shareFeedPost(PostVm post) async {
+    final postId = post.id.trim();
+    if (postId.isEmpty) {
+      return;
+    }
+    final share = await _postApi.sharePost(postId);
+    _trackPostAction(
+      post,
+      FeedEventTypes.share,
+      metadata: {
+        'engagementType': FeedEventTypes.share,
+        if (share.$1.trim().isNotEmpty) 'shareUrl': share.$1.trim(),
+      },
+    );
+    final launcher = widget.postShareLauncher;
+    if (launcher != null) {
+      await launcher(post, share.$1);
+      return;
+    }
+    await _sharePostViaSystemSheet(post, share.$1);
+  }
+
+  Future<void> _hideFeedPost(PostVm post) async {
+    _trackPostAction(
+      post,
+      FeedEventTypes.hide,
+      metadata: {'feedbackType': FeedEventTypes.hide},
+    );
+    _removePostFromFeed(post);
+  }
+
+  Future<void> _markFeedPostNotInterested(PostVm post) async {
+    _trackPostAction(
+      post,
+      FeedEventTypes.notInterested,
+      metadata: {'feedbackType': FeedEventTypes.notInterested},
+    );
+    _removePostFromFeed(post);
+  }
+
+  void _removePostFromFeed(PostVm post) {
+    final postId = post.id.trim();
+    if (postId.isEmpty || !mounted) {
+      return;
+    }
+    setState(() {
+      _items = _items
+          .map((block) {
+            if (block.type == FeedBlockType.postCard &&
+                block.post?.id.trim() == postId) {
+              return null;
+            }
+            if (block.type != FeedBlockType.systemPosts) {
+              return block;
+            }
+            final remainingPosts = block.posts
+                .where((item) => item.id.trim() != postId)
+                .toList(growable: false);
+            if (remainingPosts.length == block.posts.length) {
+              return block;
+            }
+            return FeedBlockVm(
+              id: block.id,
+              type: block.type,
+              data: block.data,
+              stories: block.stories,
+              communities: block.communities,
+              people: block.people,
+              posts: remainingPosts,
+              post: block.post,
+            );
+          })
+          .whereType<FeedBlockVm>()
+          .toList(growable: false);
+    });
+  }
+
+  Future<void> _sharePostViaSystemSheet(PostVm post, String shareUrl) async {
+    final trimmedShareUrl = shareUrl.trim();
+    if (trimmedShareUrl.isEmpty) {
+      return;
+    }
+    await SharePlus.instance.share(
+      ShareParams(
+        text: trimmedShareUrl,
+        title: post.title,
+        subject: post.title,
+        sharePositionOrigin: _sharePositionOrigin(),
+      ),
+    );
+  }
+
+  Rect? _sharePositionOrigin() {
+    final renderObject = context.findRenderObject();
+    if (renderObject is! RenderBox || !renderObject.hasSize) {
+      return null;
+    }
+    return renderObject.localToGlobal(Offset.zero) & renderObject.size;
+  }
+
+  Future<void> _openPostAndTrackDwell(PostVm post) async {
     _trackPostClick(post);
     final override = widget.onPostOpen;
     if (override != null) {
       override(post);
       return;
     }
+    final openedAt = _analyticsNow();
     if (post.isQuickPost) {
       final communityId = (post.communityId ?? '').trim();
       final postId = post.id.trim();
@@ -557,14 +761,20 @@ class _FeedScreenState extends State<FeedScreen>
         path: '/communities/${Uri.encodeComponent(communityId)}',
         queryParameters: {'postId': postId},
       );
-      context.push(uri.toString());
+      await context.push(uri.toString());
+      if (mounted) {
+        _trackPostDwell(post, openedAt);
+      }
       return;
     }
     final slug = post.slug.trim();
     if (slug.isEmpty) {
       return;
     }
-    context.push('/posts/${Uri.encodeComponent(slug)}', extra: post);
+    await context.push('/posts/${Uri.encodeComponent(slug)}', extra: post);
+    if (mounted) {
+      _trackPostDwell(post, openedAt);
+    }
   }
 
   Future<void> _openCreatePost() async {
@@ -599,7 +809,7 @@ class _FeedScreenState extends State<FeedScreen>
 
     _trackFeedEvents([
       _feedEvent(
-        eventType: 'click',
+        eventType: FeedEventTypes.click,
         tab: _tabs[_selectedTabIndex],
         block: block,
         blockType: blockType,
@@ -690,7 +900,7 @@ class _FeedScreenState extends State<FeedScreen>
             }
             events.add(
               _feedEvent(
-                eventType: 'impression',
+                eventType: FeedEventTypes.impression,
                 tab: tab,
                 block: block,
                 blockType: blockType,
@@ -713,7 +923,7 @@ class _FeedScreenState extends State<FeedScreen>
             }
             events.add(
               _feedEvent(
-                eventType: 'impression',
+                eventType: FeedEventTypes.impression,
                 tab: tab,
                 block: block,
                 blockType: blockType,
@@ -724,7 +934,8 @@ class _FeedScreenState extends State<FeedScreen>
           }
         case FeedBlockType.systemPosts:
           for (var index = 0; index < block.posts.length; index++) {
-            final postId = block.posts[index].id.trim();
+            final post = block.posts[index];
+            final postId = post.id.trim();
             if (postId.isEmpty) {
               continue;
             }
@@ -734,17 +945,18 @@ class _FeedScreenState extends State<FeedScreen>
             }
             events.add(
               _feedEvent(
-                eventType: 'impression',
+                eventType: FeedEventTypes.impression,
                 tab: tab,
                 block: block,
                 blockType: blockType,
-                postId: postId,
+                post: post,
                 rank: blockIndex + index,
               ),
             );
           }
         case FeedBlockType.postCard:
-          final postId = block.post?.id.trim();
+          final post = block.post;
+          final postId = post?.id.trim();
           if (postId == null || postId.isEmpty) {
             continue;
           }
@@ -754,11 +966,11 @@ class _FeedScreenState extends State<FeedScreen>
           }
           events.add(
             _feedEvent(
-              eventType: 'impression',
+              eventType: FeedEventTypes.impression,
               tab: tab,
               block: block,
               blockType: blockType,
-              postId: postId,
+              post: post,
               rank: blockIndex,
             ),
           );
@@ -776,7 +988,7 @@ class _FeedScreenState extends State<FeedScreen>
           }
           events.add(
             _feedEvent(
-              eventType: 'impression',
+              eventType: FeedEventTypes.impression,
               tab: tab,
               block: block,
               blockType: blockType,
@@ -797,13 +1009,13 @@ class _FeedScreenState extends State<FeedScreen>
     if (storyId.isEmpty) {
       return;
     }
-    final block = _findStoryBlock(storyId);
+    final block = _findFeedEntityBlock(storyId);
     if (block == null) {
       return;
     }
     _trackFeedEvents([
       _feedEvent(
-        eventType: 'click',
+        eventType: FeedEventTypes.click,
         tab: _tabs[_selectedTabIndex],
         block: block.$1,
         blockType: block.$2,
@@ -818,23 +1030,82 @@ class _FeedScreenState extends State<FeedScreen>
     if (postId.isEmpty) {
       return;
     }
-    final block = _findStoryBlock(postId);
+    final block = _findFeedEntityBlock(postId);
     if (block == null) {
       return;
     }
     _trackFeedEvents([
       _feedEvent(
-        eventType: 'click',
+        eventType: FeedEventTypes.click,
         tab: _tabs[_selectedTabIndex],
         block: block.$1,
         blockType: block.$2,
-        postId: postId,
+        post: post,
         rank: block.$3,
       ),
     ]);
   }
 
-  (FeedBlockVm, String, int)? _findStoryBlock(String storyId) {
+  void _trackPostAction(
+    PostVm post,
+    String eventType, {
+    Map<String, Object?> metadata = const {},
+  }) {
+    final postId = post.id.trim();
+    final normalizedEventType = eventType.trim();
+    if (postId.isEmpty || normalizedEventType.isEmpty) {
+      return;
+    }
+    final block = _findFeedEntityBlock(postId);
+    if (block == null) {
+      return;
+    }
+    _trackFeedEvents([
+      _feedEvent(
+        eventType: normalizedEventType,
+        tab: _tabs[_selectedTabIndex],
+        block: block.$1,
+        blockType: block.$2,
+        post: post,
+        rank: block.$3,
+        metadata: metadata,
+      ),
+    ]);
+  }
+
+  void _trackPostDwell(PostVm post, DateTime openedAt) {
+    final postId = post.id.trim();
+    if (postId.isEmpty) {
+      return;
+    }
+    final dwellMs = _analyticsNow().difference(openedAt).inMilliseconds;
+    if (dwellMs < 1000) {
+      return;
+    }
+    final block = _findFeedEntityBlock(postId);
+    if (block == null) {
+      return;
+    }
+    _trackFeedEvents([
+      _feedEvent(
+        eventType: FeedEventTypes.dwell,
+        tab: _tabs[_selectedTabIndex],
+        block: block.$1,
+        blockType: block.$2,
+        post: post,
+        rank: block.$3,
+        metadata: {'dwellMs': dwellMs.clamp(1000, 30 * 60 * 1000)},
+      ),
+    ]);
+  }
+
+  DateTime _analyticsNow() => (widget.analyticsNow ?? DateTime.now)().toUtc();
+
+  (FeedBlockVm, String, int)? _findFeedEntityBlock(String entityId) {
+    final normalizedEntityId = entityId.trim();
+    if (normalizedEntityId.isEmpty) {
+      return null;
+    }
     for (var blockIndex = 0; blockIndex < _items.length; blockIndex++) {
       final block = _items[blockIndex];
       final blockType = _feedBlockTypeWire(block.type);
@@ -842,22 +1113,55 @@ class _FeedScreenState extends State<FeedScreen>
         continue;
       }
       if (block.type == FeedBlockType.postCard &&
-          block.post?.id.trim() == storyId) {
+          block.post?.id.trim() == normalizedEntityId) {
         return (block, blockType, blockIndex);
       }
       if (block.type == FeedBlockType.systemPosts) {
         for (var index = 0; index < block.posts.length; index++) {
-          if (block.posts[index].id.trim() == storyId) {
+          if (block.posts[index].id.trim() == normalizedEntityId) {
             return (block, blockType, blockIndex + index);
           }
         }
       }
       if (block.type == FeedBlockType.storiesTray) {
         for (var index = 0; index < block.stories.length; index++) {
-          if (block.stories[index].id.trim() == storyId) {
+          if (block.stories[index].id.trim() == normalizedEntityId) {
             return (block, blockType, blockIndex + index);
           }
         }
+      }
+    }
+    return null;
+  }
+
+  (FeedBlockVm, String, int)? _findCommunityBlock(String communityId) {
+    final normalizedCommunityId = communityId.trim();
+    if (normalizedCommunityId.isEmpty) {
+      return null;
+    }
+    for (var blockIndex = 0; blockIndex < _items.length; blockIndex++) {
+      final block = _items[blockIndex];
+      final blockType = _feedBlockTypeWire(block.type);
+      if (blockType == null) {
+        continue;
+      }
+      switch (block.type) {
+        case FeedBlockType.suggestedCommunities:
+        case FeedBlockType.mySubscriptions:
+          for (var index = 0; index < block.communities.length; index++) {
+            if (block.communities[index].id.trim() == normalizedCommunityId) {
+              return (block, blockType, blockIndex + index);
+            }
+          }
+        case FeedBlockType.storiesTray:
+        case FeedBlockType.systemPosts:
+        case FeedBlockType.postCard:
+        case FeedBlockType.tourCard:
+        case FeedBlockType.guideCard:
+        case FeedBlockType.profileCard:
+        case FeedBlockType.officialNewsCard:
+        case FeedBlockType.unknown:
+          break;
       }
     }
     return null;
@@ -881,21 +1185,33 @@ class _FeedScreenState extends State<FeedScreen>
     required int rank,
     String? postId,
     String? communityId,
+    PostVm? post,
     Map<String, Object?> metadata = const {},
   }) {
     final blockId = block.id.trim().isNotEmpty ? block.id.trim() : blockType;
+    const surface = 'content';
+    final normalizedPostId = _trimmedOrNull(postId) ?? _trimmedOrNull(post?.id);
+    final normalizedCommunityId =
+        _trimmedOrNull(communityId) ?? _trimmedOrNull(post?.communityId);
     return FeedEventRequest(
       eventId: _uuidV4(),
       eventType: eventType,
-      surface: 'content',
+      surface: surface,
       tab: tab,
       blockId: blockId,
       blockType: blockType,
-      postId: postId,
-      communityId: communityId,
+      postId: normalizedPostId,
+      communityId: normalizedCommunityId,
       rank: rank,
       occurredAt: DateTime.now().toUtc(),
-      metadata: metadata,
+      metadata: _postTelemetryMetadata(
+        _feedBlockTelemetryMetadata(block, metadata),
+        post: post,
+        communityId: normalizedCommunityId,
+        surface: surface,
+        tab: tab,
+        action: eventType,
+      ),
     );
   }
 
@@ -1078,6 +1394,10 @@ class _FeedScreenState extends State<FeedScreen>
       onCommunityToggle: _toggleCommunityFollow,
       onStoryOpen: widget.onStoryOpen,
       onPostOpen: _openPost,
+      onPostLike: _toggleFeedPostLike,
+      onPostShare: _shareFeedPost,
+      onPostHide: _hideFeedPost,
+      onPostNotInterested: _markFeedPostNotInterested,
       onStoryTrayOpen: _openStoryTray,
       onCreateStory: _openCreateStory,
       viewerAvatarUrl: _profileAvatarUrl(profile),
@@ -1607,6 +1927,90 @@ List<FeedBlockVm> _replaceCommunity(
 String? _trimmedOrNull(String? value) {
   final trimmed = (value ?? '').trim();
   return trimmed.isEmpty ? null : trimmed;
+}
+
+Map<String, Object?> _feedBlockTelemetryMetadata(
+  FeedBlockVm block,
+  Map<String, Object?> metadata,
+) {
+  final enriched = <String, Object?>{...metadata};
+  final candidateSource = _stringData(block, 'candidateSource');
+  if (candidateSource != null) {
+    enriched.putIfAbsent('candidateSource', () => candidateSource);
+  }
+  return enriched;
+}
+
+Map<String, Object?> _postTelemetryMetadata(
+  Map<String, Object?> metadata, {
+  required PostVm? post,
+  required String? communityId,
+  required String surface,
+  required String tab,
+  required String action,
+}) {
+  if (post == null) {
+    return metadata;
+  }
+
+  final enriched = <String, Object?>{...metadata};
+
+  void putString(String key, String? value) {
+    final normalized = _trimmedOrNull(value);
+    if (normalized != null) {
+      enriched.putIfAbsent(key, () => normalized);
+    }
+  }
+
+  final tags = _postTelemetryTags(post.tags);
+  putString(
+    'postProfileKey',
+    _trimmedOrNull(post.postProfileKey) ?? post.postProfileContract.key,
+  );
+  putString('communityId', communityId);
+  putString('authorUserId', post.author.userId);
+  putString('cityId', post.placeCityId);
+  putString(
+    'countryCode',
+    _trimmedOrNull(post.placeCountryCode)?.toUpperCase(),
+  );
+  putString('category', post.category);
+  putString('categorySlug', _postCategorySlug(post.category));
+  if (tags.isNotEmpty) {
+    enriched.putIfAbsent('tags', () => tags);
+    enriched.putIfAbsent('postTags', () => tags);
+  }
+  putString('surface', surface);
+  putString('tab', tab);
+  putString('action', action);
+
+  return enriched;
+}
+
+List<String> _postTelemetryTags(List<String> tags) {
+  final seen = <String>{};
+  final normalizedTags = <String>[];
+  for (final tag in tags) {
+    final normalized = _trimmedOrNull(tag);
+    if (normalized == null || !seen.add(normalized)) {
+      continue;
+    }
+    normalizedTags.add(normalized);
+  }
+  return normalizedTags;
+}
+
+String? _postCategorySlug(String category) {
+  final trimmed = _trimmedOrNull(category);
+  if (trimmed == null) {
+    return null;
+  }
+  final slug = trimmed
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+      .replaceAll(RegExp(r'-+'), '-')
+      .replaceAll(RegExp(r'^-+|-+$'), '');
+  return _trimmedOrNull(slug);
 }
 
 Map<String, Object?> _conversionMetadata(FeedBlockVm block) {

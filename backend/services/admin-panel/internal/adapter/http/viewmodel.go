@@ -122,18 +122,42 @@ type FeedQualityFilterViewData struct {
 }
 
 type FeedQualityDashboardViewData struct {
-	Page     app.FeedQualityDashboardPage
-	Filters  FeedQualityFilterViewData
-	Items    []FeedQualityMetricView
-	ResetURL string
+	Page                  app.FeedQualityDashboardPage
+	Filters               FeedQualityFilterViewData
+	Items                 []FeedQualityMetricView
+	ExperimentSummaries   []FeedQualityExperimentSummaryView
+	ShowTab               bool
+	ShowCommunity         bool
+	ShowPostProfile       bool
+	ShowRankingExperiment bool
+	ShowCandidateSource   bool
+	ResetURL              string
 }
 
 type FeedQualityMetricView struct {
-	Item                model.FeedQualityMetric
-	NegativeFeedback    int64
-	ConversionRateBasis int64
-	ConversionRateText  string
-	NegativeRateText    string
+	Item               model.FeedQualityMetric
+	NegativeFeedback   int64
+	Engagement         int64
+	ClickRateText      string
+	DwellRateText      string
+	EngagementRateText string
+	SubscribeRateText  string
+	ConversionRateText string
+	NegativeRateText   string
+	ReportRateText     string
+}
+
+type FeedQualityExperimentSummaryView struct {
+	Item                    app.FeedQualityExperimentSummary
+	MetricView              FeedQualityMetricView
+	Baseline                bool
+	ClickRateDeltaText      string
+	DwellRateDeltaText      string
+	EngagementRateDeltaText string
+	SubscribeRateDeltaText  string
+	ConversionRateDeltaText string
+	NegativeRateDeltaText   string
+	ReportRateDeltaText     string
 }
 
 type FraudBlockView struct {
@@ -658,25 +682,79 @@ func NewFeedQualityDashboardViewData(
 ) FeedQualityDashboardViewData {
 	filters = normalizeFeedQualityFilterView(filters)
 	items := make([]FeedQualityMetricView, 0, len(page.Metrics))
+	experimentSummaries := make([]FeedQualityExperimentSummaryView, 0, len(page.ExperimentSummaries))
+	showTab := false
+	showCommunity := false
+	showPostProfile := false
+	showRankingExperiment := false
+	showCandidateSource := false
 	for _, item := range page.Metrics {
 		items = append(items, newFeedQualityMetricView(item))
+		if strings.TrimSpace(item.Tab) != "" {
+			showTab = true
+		}
+		if strings.TrimSpace(item.CommunityID) != "" {
+			showCommunity = true
+		}
+		if strings.TrimSpace(item.PostProfile) != "" {
+			showPostProfile = true
+		}
+		if strings.TrimSpace(item.RankingExperiment) != "" {
+			showRankingExperiment = true
+		}
+		if strings.TrimSpace(item.CandidateSource) != "" {
+			showCandidateSource = true
+		}
+	}
+	for _, item := range page.ExperimentSummaries {
+		experimentSummaries = append(experimentSummaries, newFeedQualityExperimentSummaryView(item))
 	}
 	return FeedQualityDashboardViewData{
-		Page:     page,
-		Filters:  filters,
-		Items:    items,
-		ResetURL: "/admin/feed-quality",
+		Page:                  page,
+		Filters:               filters,
+		Items:                 items,
+		ExperimentSummaries:   experimentSummaries,
+		ShowTab:               showTab,
+		ShowCommunity:         showCommunity,
+		ShowPostProfile:       showPostProfile,
+		ShowRankingExperiment: showRankingExperiment,
+		ShowCandidateSource:   showCandidateSource,
+		ResetURL:              "/admin/feed-quality",
+	}
+}
+
+func newFeedQualityExperimentSummaryView(item app.FeedQualityExperimentSummary) FeedQualityExperimentSummaryView {
+	return FeedQualityExperimentSummaryView{
+		Item:                    item,
+		MetricView:              newFeedQualityMetricView(item.Totals),
+		Baseline:                item.Baseline,
+		ClickRateDeltaText:      signedPercentagePointText(item.ClickRateDeltaBasisPoints, item.Baseline),
+		DwellRateDeltaText:      signedPercentagePointText(item.DwellRateDeltaBasisPoints, item.Baseline),
+		EngagementRateDeltaText: signedPercentagePointText(item.EngagementRateDeltaBasisPoints, item.Baseline),
+		SubscribeRateDeltaText:  signedPercentagePointText(item.SubscribeRateDeltaBasisPoints, item.Baseline),
+		ConversionRateDeltaText: signedPercentagePointText(item.ConversionRateDeltaBasisPoints, item.Baseline),
+		NegativeRateDeltaText:   signedPercentagePointText(item.NegativeRateDeltaBasisPoints, item.Baseline),
+		ReportRateDeltaText:     signedPercentagePointText(item.ReportRateDeltaBasisPoints, item.Baseline),
 	}
 }
 
 func newFeedQualityMetricView(item model.FeedQualityMetric) FeedQualityMetricView {
 	basis := item.EventCount
+	qualityRateBasis := item.ImpressionCount
+	if qualityRateBasis <= 0 {
+		qualityRateBasis = basis
+	}
 	return FeedQualityMetricView{
-		Item:                item,
-		NegativeFeedback:    item.NegativeFeedbackCount(),
-		ConversionRateBasis: basis,
-		ConversionRateText:  percentText(item.ConversionCount, basis),
-		NegativeRateText:    percentText(item.NegativeFeedbackCount(), basis),
+		Item:               item,
+		NegativeFeedback:   item.NegativeFeedbackCount(),
+		Engagement:         item.EngagementCount(),
+		ClickRateText:      percentText(item.ClickCount, qualityRateBasis),
+		DwellRateText:      percentText(item.DwellCount, qualityRateBasis),
+		EngagementRateText: percentText(item.EngagementCount(), qualityRateBasis),
+		SubscribeRateText:  percentText(item.SubscribeCount, qualityRateBasis),
+		ConversionRateText: percentText(item.ConversionCount, qualityRateBasis),
+		NegativeRateText:   percentText(item.NegativeFeedbackCount(), qualityRateBasis),
+		ReportRateText:     percentText(item.ReportCount, qualityRateBasis),
 	}
 }
 
@@ -707,6 +785,18 @@ func percentText(numerator int64, denominator int64) string {
 		return "0.0%"
 	}
 	return fmt.Sprintf("%.1f%%", float64(numerator)*100/float64(denominator))
+}
+
+func signedPercentagePointText(deltaBasisPoints int64, baseline bool) string {
+	if baseline {
+		return "-"
+	}
+	sign := "+"
+	if deltaBasisPoints < 0 {
+		sign = "-"
+		deltaBasisPoints = -deltaBasisPoints
+	}
+	return fmt.Sprintf("%s%.1f pp", sign, float64(deltaBasisPoints)/100)
 }
 
 func NewCaseDetailViewData(detail *app.ModerationCaseDetail, returnQuery string) CaseDetailViewData {

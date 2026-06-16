@@ -10,6 +10,34 @@ import 'package:inflap/features/feed/data/feed_api.dart';
 import 'package:inflap/features/feed/models/feed_block_vm.dart';
 
 void main() {
+  test(
+    'FeedEventTypes exposes backend wire names for required quality signals',
+    () {
+      expect(FeedEventTypes.impression, 'impression');
+      expect(FeedEventTypes.click, 'click');
+      expect(FeedEventTypes.dwell, 'dwell');
+      expect(FeedEventTypes.like, 'like');
+      expect(FeedEventTypes.comment, 'comment');
+      expect(FeedEventTypes.share, 'share');
+      expect(FeedEventTypes.subscribe, 'subscribe');
+      expect(FeedEventTypes.hide, 'hide');
+      expect(FeedEventTypes.notInterested, 'not_interested');
+      expect(FeedEventTypes.report, 'report');
+      expect(FeedEventTypes.requiredQualitySignals, {
+        'impression',
+        'click',
+        'dwell',
+        'like',
+        'comment',
+        'share',
+        'subscribe',
+        'hide',
+        'not_interested',
+        'report',
+      });
+    },
+  );
+
   test('getFeed sends feed query params and parses page blocks', () async {
     final adapter = _JsonAdapter({
       'nextCursor': 'cursor-2',
@@ -370,6 +398,73 @@ void main() {
       });
     },
   );
+
+  test(
+    'trackFeedEvents retries failed batches with original ranking metadata',
+    () async {
+      final adapter = _SequenceAdapter([
+        _SequenceResponse.json({
+          'assignment': {'rankingExperiment': 'rank-v2'},
+          'items': const [],
+        }),
+        _SequenceResponse.failure(statusCode: 503),
+        _SequenceResponse.json({
+          'assignment': {'rankingExperiment': 'rank-v3'},
+          'items': const [],
+        }),
+        _SequenceResponse.json({'accepted': 2}),
+      ]);
+      final api = FeedApi(
+        apiClient: ApiClient(
+          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+            ..httpClientAdapter = adapter,
+          secureStorage: _FakeSecureStorage(),
+        ),
+      );
+
+      await api.getFeed(surface: 'content', tab: 'for_you');
+      await expectLater(
+        api.trackFeedEvents([
+          const FeedEventRequest(
+            eventId: 'event-rank-v2',
+            eventType: 'impression',
+            surface: 'content',
+            tab: 'for_you',
+            blockId: 'post:one',
+            blockType: 'post_card',
+            postId: 'one',
+            rank: 1,
+          ),
+        ]),
+        throwsA(isA<DioException>()),
+      );
+      await api.getFeed(surface: 'content', tab: 'for_you');
+
+      final accepted = await api.trackFeedEvents([
+        const FeedEventRequest(
+          eventId: 'event-rank-v3',
+          eventType: 'click',
+          surface: 'content',
+          tab: 'for_you',
+          blockId: 'post:two',
+          blockType: 'post_card',
+          postId: 'two',
+          rank: 2,
+        ),
+      ]);
+
+      expect(accepted, 2);
+      final body = adapter.jsonBodies.last;
+      final events = body['events'] as List<Object?>;
+      expect(events, hasLength(2));
+      final first = events[0] as Map<String, Object?>;
+      final second = events[1] as Map<String, Object?>;
+      expect(first['eventId'], 'event-rank-v2');
+      expect(first['metadata'], containsPair('rankingExperiment', 'rank-v2'));
+      expect(second['eventId'], 'event-rank-v3');
+      expect(second['metadata'], containsPair('rankingExperiment', 'rank-v3'));
+    },
+  );
 }
 
 Map<String, Object?> _storyJson(String id) {
@@ -441,6 +536,66 @@ class _JsonAdapter implements HttpClientAdapter {
     optionalAuth = options.extra['optionalAuth'] as bool?;
     return ResponseBody.fromString(
       jsonEncode(payload),
+      200,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+class _SequenceResponse {
+  const _SequenceResponse._({this.payload, this.statusCode});
+
+  factory _SequenceResponse.json(Map<String, Object?> payload) {
+    return _SequenceResponse._(payload: payload);
+  }
+
+  factory _SequenceResponse.failure({required int statusCode}) {
+    return _SequenceResponse._(statusCode: statusCode);
+  }
+
+  final Map<String, Object?>? payload;
+  final int? statusCode;
+}
+
+class _SequenceAdapter implements HttpClientAdapter {
+  _SequenceAdapter(this.responses);
+
+  final List<_SequenceResponse> responses;
+  final List<Map<String, Object?>> jsonBodies = [];
+  var _index = 0;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    if (requestStream != null) {
+      final chunks = await requestStream.toList();
+      final bytes = chunks.expand((chunk) => chunk).toList(growable: false);
+      if (bytes.isNotEmpty) {
+        jsonBodies.add(jsonDecode(utf8.decode(bytes)) as Map<String, Object?>);
+      }
+    }
+    final response = responses[_index++];
+    final statusCode = response.statusCode;
+    if (statusCode != null) {
+      throw DioException(
+        requestOptions: options,
+        response: Response<void>(
+          requestOptions: options,
+          statusCode: statusCode,
+        ),
+        type: DioExceptionType.badResponse,
+      );
+    }
+    return ResponseBody.fromString(
+      jsonEncode(response.payload ?? const <String, Object?>{}),
       200,
       headers: {
         Headers.contentTypeHeader: [Headers.jsonContentType],

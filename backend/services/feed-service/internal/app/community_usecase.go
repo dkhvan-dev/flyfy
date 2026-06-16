@@ -193,7 +193,7 @@ func (u *PostUseCase) FollowCommunity(ctx context.Context, subject string, commu
 	if _, _, err = u.repo.FollowCommunity(ctx, communityID, userID); err != nil {
 		return nil, fmt.Errorf("follow community: %w", err)
 	}
-	u.bumpPostFeedCacheScopes(ctx, postFeedCacheFollowingScope(userID))
+	u.bumpPostFeedCacheScopes(ctx, postFeedCacheFollowingScope(userID), postFeedCacheDiscoveryScope(userID))
 	return u.GetCommunity(ctx, subject, communityID)
 }
 
@@ -216,7 +216,7 @@ func (u *PostUseCase) UnfollowCommunity(ctx context.Context, subject string, com
 	if _, _, err = u.repo.UnfollowCommunity(ctx, communityID, userID); err != nil {
 		return nil, fmt.Errorf("unfollow community: %w", err)
 	}
-	u.bumpPostFeedCacheScopes(ctx, postFeedCacheFollowingScope(userID))
+	u.bumpPostFeedCacheScopes(ctx, postFeedCacheFollowingScope(userID), postFeedCacheDiscoveryScope(userID))
 	return u.GetCommunity(ctx, subject, communityID)
 }
 
@@ -256,6 +256,9 @@ func (u *PostUseCase) SubmitCommunityReport(ctx context.Context, subject string,
 	if err != nil {
 		return nil, fmt.Errorf("create community report: %w", err)
 	}
+	if err = u.trackCommunityNegativeFeedSignal(ctx, userID, input.CommunityID, "community_report", string(reason)); err != nil {
+		return nil, err
+	}
 	return result, nil
 }
 
@@ -285,7 +288,12 @@ func (u *PostUseCase) setCommunityMute(ctx context.Context, subject string, comm
 	if _, err = u.repo.SetCommunityMuted(ctx, communityID, userID, muted); err != nil {
 		return nil, fmt.Errorf("set community muted: %w", err)
 	}
-	u.bumpPostFeedCacheScopes(ctx, postFeedCacheFollowingScope(userID))
+	if muted {
+		if err = u.trackCommunityNegativeFeedSignal(ctx, userID, communityID, "community_mute", ""); err != nil {
+			return nil, err
+		}
+	}
+	u.bumpPostFeedCacheScopes(ctx, postFeedCacheFollowingScope(userID), postFeedCacheDiscoveryScope(userID))
 	return u.GetCommunity(ctx, subject, communityID)
 }
 

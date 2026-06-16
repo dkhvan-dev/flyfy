@@ -318,6 +318,44 @@ func (s *Server) FilterFriendUserIds(
 	return resp, nil
 }
 
+func (s *Server) FilterFollowingUserIds(
+	ctx context.Context,
+	req *userv1.FilterFollowingUserIdsRequest,
+) (*userv1.FilterFollowingUserIdsResponse, error) {
+	userID, err := uuid.Parse(strings.TrimSpace(req.GetUserId()))
+	if err != nil {
+		return nil, mapError(app.ErrInvalidUserID)
+	}
+
+	rawIDs := req.GetCandidateUserIds()
+	candidateUserIDs := make([]uuid.UUID, 0, len(rawIDs))
+	for _, raw := range rawIDs {
+		raw = strings.TrimSpace(raw)
+		if raw == "" {
+			continue
+		}
+		parsed, parseErr := uuid.Parse(raw)
+		if parseErr != nil {
+			return nil, mapError(app.ErrInvalidUserID)
+		}
+		candidateUserIDs = append(candidateUserIDs, parsed)
+	}
+
+	followingUserIDs, err := s.useCase.FilterFollowingUserIDs(ctx, userID, candidateUserIDs)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	resp := &userv1.FilterFollowingUserIdsResponse{
+		FollowingUserIds: make([]string, 0, len(followingUserIDs)),
+	}
+	for _, followingUserID := range followingUserIDs {
+		resp.FollowingUserIds = append(resp.FollowingUserIds, followingUserID.String())
+	}
+
+	return resp, nil
+}
+
 func (s *Server) ResolveUserByNickname(
 	ctx context.Context,
 	req *userv1.ResolveUserByNicknameRequest,

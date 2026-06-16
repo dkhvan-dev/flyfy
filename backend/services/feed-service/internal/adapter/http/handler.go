@@ -30,6 +30,7 @@ func NewHandler(useCase *app.PostUseCase) *Handler {
 func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /health", h.Health)
 	mux.HandleFunc("GET /internal/v1/feed/quality-metrics", h.ListAdminFeedQualityMetrics)
+	mux.HandleFunc("POST /internal/v1/feed/social-events", h.ApplyInternalFeedSocialEvent)
 	mux.HandleFunc("POST /internal/v1/communities", h.CreateAdminCommunity)
 	mux.HandleFunc("GET /internal/v1/communities/{communityID}", h.GetAdminCommunity)
 	mux.HandleFunc("PATCH /internal/v1/communities/{communityID}", h.UpdateAdminCommunity)
@@ -64,6 +65,33 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/posts/", h.handlePostActions)
 	mux.HandleFunc("PATCH /v1/posts/", h.handlePostActions)
 	mux.HandleFunc("DELETE /v1/posts/", h.handlePostActions)
+}
+
+func (h *Handler) ApplyInternalFeedSocialEvent(w http.ResponseWriter, r *http.Request) {
+	if !InternalCallFromContext(r.Context()) {
+		writeError(w, r, http.StatusUnauthorized, errorCodeUnauthenticatedWriter)
+		return
+	}
+	if r.Method != http.MethodPost {
+		writeError(w, r, http.StatusMethodNotAllowed, errorCodeInvalidFeedEvent)
+		return
+	}
+
+	var req applyFeedSocialEventRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && !errors.Is(err, io.EOF) {
+		writeError(w, r, http.StatusBadRequest, errorCodeInvalidFeedEvent)
+		return
+	}
+	input, ok := req.toInput()
+	if !ok {
+		writeError(w, r, http.StatusBadRequest, errorCodeInvalidFeedEvent)
+		return
+	}
+	if err := h.useCase.ApplyFeedSocialEvent(r.Context(), input); err != nil {
+		h.writeUseCaseError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusAccepted, map[string]any{"accepted": true})
 }
 
 func (h *Handler) ListAdminFeedQualityMetrics(w http.ResponseWriter, r *http.Request) {
@@ -101,13 +129,27 @@ func (h *Handler) ListAdminFeedQualityMetrics(w http.ResponseWriter, r *http.Req
 	for _, metric := range metrics {
 		items = append(items, feedQualityMetricResponse{
 			Surface:            metric.Surface,
+			Tab:                metric.Tab,
 			BlockType:          metric.BlockType,
+			RankingExperiment:  metric.RankingExperiment,
+			CandidateSource:    metric.CandidateSource,
+			PostProfile:        metric.PostProfile,
+			CommunityID:        metric.CommunityID,
 			Action:             metric.Action,
 			EventCount:         metric.EventCount,
 			UniqueViewers:      metric.UniqueViewers,
+			ImpressionCount:    metric.ImpressionCount,
+			ClickCount:         metric.ClickCount,
+			DwellCount:         metric.DwellCount,
+			AvgDwellMs:         metric.AvgDwellMs,
+			LikeCount:          metric.LikeCount,
+			CommentCount:       metric.CommentCount,
+			ShareCount:         metric.ShareCount,
+			SubscribeCount:     metric.SubscribeCount,
 			ConversionCount:    metric.ConversionCount,
 			HideCount:          metric.HideCount,
 			NotInterestedCount: metric.NotInterestedCount,
+			ReportCount:        metric.ReportCount,
 		})
 	}
 	writeJSON(w, http.StatusOK, feedQualityMetricsResponse{Items: items})
@@ -117,15 +159,70 @@ type feedQualityMetricsResponse struct {
 	Items []feedQualityMetricResponse `json:"items"`
 }
 
+type applyFeedSocialEventRequest struct {
+	EventID         string `json:"eventId"`
+	ViewerUserID    string `json:"viewerUserId"`
+	TargetUserID    string `json:"targetUserId"`
+	EdgeType        string `json:"edgeType"`
+	Active          bool   `json:"active"`
+	SourceUpdatedAt string `json:"sourceUpdatedAt"`
+}
+
+func (r applyFeedSocialEventRequest) toInput() (app.ApplyFeedSocialEventInput, bool) {
+	eventID, err := uuid.Parse(strings.TrimSpace(r.EventID))
+	if err != nil {
+		return app.ApplyFeedSocialEventInput{}, false
+	}
+	viewerUserID, err := uuid.Parse(strings.TrimSpace(r.ViewerUserID))
+	if err != nil {
+		return app.ApplyFeedSocialEventInput{}, false
+	}
+	targetUserID, err := uuid.Parse(strings.TrimSpace(r.TargetUserID))
+	if err != nil {
+		return app.ApplyFeedSocialEventInput{}, false
+	}
+	sourceUpdatedAt := time.Time{}
+	if raw := strings.TrimSpace(r.SourceUpdatedAt); raw != "" {
+		parsed, parseErr := time.Parse(time.RFC3339Nano, raw)
+		if parseErr != nil {
+			return app.ApplyFeedSocialEventInput{}, false
+		}
+		sourceUpdatedAt = parsed
+	}
+
+	return app.ApplyFeedSocialEventInput{
+		EventID:         eventID,
+		ViewerUserID:    viewerUserID,
+		TargetUserID:    targetUserID,
+		EdgeType:        r.EdgeType,
+		Active:          r.Active,
+		SourceUpdatedAt: sourceUpdatedAt,
+	}, true
+}
+
 type feedQualityMetricResponse struct {
 	Surface            string `json:"surface"`
+	Tab                string `json:"tab"`
 	BlockType          string `json:"blockType"`
+	RankingExperiment  string `json:"rankingExperiment"`
+	CandidateSource    string `json:"candidateSource"`
+	PostProfile        string `json:"postProfile"`
+	CommunityID        string `json:"communityId"`
 	Action             string `json:"action"`
 	EventCount         int64  `json:"eventCount"`
 	UniqueViewers      int64  `json:"uniqueViewers"`
+	ImpressionCount    int64  `json:"impressionCount"`
+	ClickCount         int64  `json:"clickCount"`
+	DwellCount         int64  `json:"dwellCount"`
+	AvgDwellMs         int64  `json:"avgDwellMs"`
+	LikeCount          int64  `json:"likeCount"`
+	CommentCount       int64  `json:"commentCount"`
+	ShareCount         int64  `json:"shareCount"`
+	SubscribeCount     int64  `json:"subscribeCount"`
 	ConversionCount    int64  `json:"conversionCount"`
 	HideCount          int64  `json:"hideCount"`
 	NotInterestedCount int64  `json:"notInterestedCount"`
+	ReportCount        int64  `json:"reportCount"`
 }
 
 func (h *Handler) GetFeed(w http.ResponseWriter, r *http.Request) {
@@ -2489,7 +2586,11 @@ func toFeedBlockData(item app.FeedBlock) any {
 		}
 		return map[string]any{"communities": communities}
 	case app.PostCardFeedData:
-		return map[string]any{"post": toPostResponse(data.Post, false)}
+		result := map[string]any{"post": toPostResponse(data.Post, false)}
+		if candidateSource := strings.TrimSpace(data.CandidateSource); candidateSource != "" {
+			result["candidateSource"] = candidateSource
+		}
+		return result
 	case app.ConversionFeedData:
 		return map[string]any{
 			"title":        data.Title,
@@ -2633,12 +2734,13 @@ func toAuthorResponse(author app.PostAuthor) dto.AuthorResponse {
 	}
 
 	return dto.AuthorResponse{
-		UserID:       author.UserID.String(),
-		Nickname:     author.Nickname,
-		AvatarFileID: avatarFileID,
-		CountryCode:  author.CountryCode,
-		Locale:       author.Locale,
-		Timezone:     author.Timezone,
+		UserID:           author.UserID.String(),
+		Nickname:         author.Nickname,
+		AvatarFileID:     avatarFileID,
+		CountryCode:      author.CountryCode,
+		Locale:           author.Locale,
+		Timezone:         author.Timezone,
+		IsFriendOfViewer: author.IsFriendOfViewer,
 	}
 }
 

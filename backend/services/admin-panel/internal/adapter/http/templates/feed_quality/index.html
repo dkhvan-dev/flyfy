@@ -38,8 +38,24 @@
       <strong>{{.Data.Page.Totals.EventCount}}</strong>
     </article>
     <article class="metric card">
+      <span class="muted">{{t .Locale "feedQuality.impressions"}}</span>
+      <strong>{{.Data.Page.Totals.ImpressionCount}}</strong>
+    </article>
+    <article class="metric card">
+      <span class="muted">{{t .Locale "feedQuality.clicks"}}</span>
+      <strong>{{.Data.Page.Totals.ClickCount}}</strong>
+    </article>
+    <article class="metric card">
       <span class="muted">{{t .Locale "feedQuality.uniqueViewers"}}</span>
       <strong>{{.Data.Page.Totals.UniqueViewers}}</strong>
+    </article>
+    <article class="metric card">
+      <span class="muted">{{t .Locale "feedQuality.avgDwell"}}</span>
+      <strong>{{.Data.Page.Totals.AvgDwellMs}} ms</strong>
+    </article>
+    <article class="metric card">
+      <span class="muted">{{t .Locale "feedQuality.engagement"}}</span>
+      <strong>{{.Data.Page.Totals.EngagementCount}}</strong>
     </article>
     <article class="metric card">
       <span class="muted">{{t .Locale "feedQuality.conversions"}}</span>
@@ -49,7 +65,75 @@
       <span class="muted">{{t .Locale "feedQuality.negativeFeedback"}}</span>
       <strong>{{.Data.Page.Totals.NegativeFeedbackCount}}</strong>
     </article>
+    <article class="metric card">
+      <span class="muted">{{t .Locale "feedQuality.reports"}}</span>
+      <strong>{{.Data.Page.Totals.ReportCount}}</strong>
+    </article>
   </div>
+
+  {{if .Data.ExperimentSummaries}}
+    <div class="section-head compact">
+      <div>
+        <h2>{{t .Locale "feedQuality.experimentComparison"}}</h2>
+        <p class="muted">{{t .Locale "feedQuality.experimentComparisonHint"}}</p>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>{{t .Locale "feedQuality.rankingExperiment"}}</th>
+            <th>{{t .Locale "feedQuality.events"}}</th>
+            <th>{{t .Locale "feedQuality.impressions"}}</th>
+            <th>{{t .Locale "feedQuality.clicks"}}</th>
+            <th>{{t .Locale "feedQuality.clickRate"}}</th>
+            <th>{{t .Locale "feedQuality.clickRateDelta"}}</th>
+            <th>{{t .Locale "feedQuality.dwellRate"}}</th>
+            <th>{{t .Locale "feedQuality.dwellRateDelta"}}</th>
+            <th>{{t .Locale "feedQuality.engagementRate"}}</th>
+            <th>{{t .Locale "feedQuality.engagementRateDelta"}}</th>
+            <th>{{t .Locale "feedQuality.subscribeRate"}}</th>
+            <th>{{t .Locale "feedQuality.subscribeRateDelta"}}</th>
+            <th>{{t .Locale "feedQuality.conversionRate"}}</th>
+            <th>{{t .Locale "feedQuality.conversionRateDelta"}}</th>
+            <th>{{t .Locale "feedQuality.negativeRate"}}</th>
+            <th>{{t .Locale "feedQuality.negativeRateDelta"}}</th>
+            <th>{{t .Locale "feedQuality.reportRate"}}</th>
+            <th>{{t .Locale "feedQuality.reportRateDelta"}}</th>
+            <th>{{t .Locale "feedQuality.avgDwell"}}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .Data.ExperimentSummaries}}
+          <tr>
+            <td>
+              <strong>{{feedQualityExperiment $.Locale .Item.Experiment}}</strong>
+              {{if .Baseline}}<span class="badge">{{t $.Locale "feedQuality.baseline"}}</span>{{end}}
+            </td>
+            <td>{{.Item.Totals.EventCount}}</td>
+            <td>{{.Item.Totals.ImpressionCount}}</td>
+            <td>{{.Item.Totals.ClickCount}}</td>
+            <td>{{.MetricView.ClickRateText}}</td>
+            <td>{{.ClickRateDeltaText}}</td>
+            <td>{{.MetricView.DwellRateText}}</td>
+            <td>{{.DwellRateDeltaText}}</td>
+            <td>{{.MetricView.EngagementRateText}}</td>
+            <td>{{.EngagementRateDeltaText}}</td>
+            <td>{{.MetricView.SubscribeRateText}}</td>
+            <td>{{.SubscribeRateDeltaText}}</td>
+            <td>{{.MetricView.ConversionRateText}}</td>
+            <td>{{.ConversionRateDeltaText}}</td>
+            <td>{{.MetricView.NegativeRateText}}</td>
+            <td>{{.NegativeRateDeltaText}}</td>
+            <td>{{.MetricView.ReportRateText}}</td>
+            <td>{{.ReportRateDeltaText}}</td>
+            <td>{{.Item.Totals.AvgDwellMs}} ms</td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  {{end}}
 
   {{if .Data.Items}}
     <div class="table-wrap">
@@ -57,28 +141,58 @@
         <thead>
           <tr>
             <th>{{t .Locale "feedQuality.surface"}}</th>
+            {{if .Data.ShowTab}}<th>{{t .Locale "feedQuality.tab"}}</th>{{end}}
             <th>{{t .Locale "feedQuality.blockType"}}</th>
+            {{if .Data.ShowCommunity}}<th>{{t .Locale "feedQuality.community"}}</th>{{end}}
+            {{if .Data.ShowPostProfile}}<th>{{t .Locale "feedQuality.postProfile"}}</th>{{end}}
+            {{if .Data.ShowRankingExperiment}}<th>{{t .Locale "feedQuality.rankingExperiment"}}</th>{{end}}
+            {{if .Data.ShowCandidateSource}}<th>{{t .Locale "feedQuality.candidateSource"}}</th>{{end}}
             <th>{{t .Locale "feedQuality.action"}}</th>
             <th>{{t .Locale "feedQuality.events"}}</th>
+            <th>{{t .Locale "feedQuality.impressions"}}</th>
+            <th>{{t .Locale "feedQuality.clicks"}}</th>
             <th>{{t .Locale "feedQuality.uniqueViewers"}}</th>
+            <th>{{t .Locale "feedQuality.avgDwell"}}</th>
+            <th>{{t .Locale "feedQuality.engagement"}}</th>
             <th>{{t .Locale "feedQuality.conversions"}}</th>
             <th>{{t .Locale "feedQuality.negativeFeedback"}}</th>
+            <th>{{t .Locale "feedQuality.reports"}}</th>
+            <th>{{t .Locale "feedQuality.clickRate"}}</th>
+            <th>{{t .Locale "feedQuality.dwellRate"}}</th>
+            <th>{{t .Locale "feedQuality.engagementRate"}}</th>
+            <th>{{t .Locale "feedQuality.subscribeRate"}}</th>
             <th>{{t .Locale "feedQuality.conversionRate"}}</th>
             <th>{{t .Locale "feedQuality.negativeRate"}}</th>
+            <th>{{t .Locale "feedQuality.reportRate"}}</th>
           </tr>
         </thead>
         <tbody>
           {{range .Data.Items}}
           <tr>
             <td>{{feedQualitySurface $.Locale .Item.Surface}}</td>
+            {{if $.Data.ShowTab}}<td>{{feedQualityTab $.Locale .Item.Tab}}</td>{{end}}
             <td><strong>{{feedQualityBlockType $.Locale .Item.BlockType}}</strong></td>
+            {{if $.Data.ShowCommunity}}<td>{{if .Item.CommunityID}}<code>{{shortID .Item.CommunityID}}</code>{{else}}-{{end}}</td>{{end}}
+            {{if $.Data.ShowPostProfile}}<td>{{feedQualityPostProfile $.Locale .Item.PostProfile}}</td>{{end}}
+            {{if $.Data.ShowRankingExperiment}}<td>{{feedQualityExperiment $.Locale .Item.RankingExperiment}}</td>{{end}}
+            {{if $.Data.ShowCandidateSource}}<td>{{feedQualityCandidateSource $.Locale .Item.CandidateSource}}</td>{{end}}
             <td>{{feedQualityAction $.Locale .Item.Action}}</td>
             <td>{{.Item.EventCount}}</td>
+            <td>{{.Item.ImpressionCount}}</td>
+            <td>{{.Item.ClickCount}}</td>
             <td>{{.Item.UniqueViewers}}</td>
+            <td>{{.Item.AvgDwellMs}} ms</td>
+            <td>{{.Engagement}}</td>
             <td>{{.Item.ConversionCount}}</td>
             <td>{{.NegativeFeedback}}</td>
+            <td>{{.Item.ReportCount}}</td>
+            <td>{{.ClickRateText}}</td>
+            <td>{{.DwellRateText}}</td>
+            <td>{{.EngagementRateText}}</td>
+            <td>{{.SubscribeRateText}}</td>
             <td>{{.ConversionRateText}}</td>
             <td>{{.NegativeRateText}}</td>
+            <td>{{.ReportRateText}}</td>
           </tr>
           {{end}}
         </tbody>

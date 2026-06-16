@@ -13,6 +13,7 @@ DROP TABLE IF EXISTS post_feed_items CASCADE;
 DROP TABLE IF EXISTS post_feed_projection_outbox CASCADE;
 DROP TABLE IF EXISTS post_activity_intents CASCADE;
 DROP TABLE IF EXISTS post_feed_user_interests CASCADE;
+DROP TABLE IF EXISTS post_feed_social_edges CASCADE;
 DROP TABLE IF EXISTS post_likes CASCADE;
 DROP TABLE IF EXISTS post_media CASCADE;
 DROP TABLE IF EXISTS post_moderation_outbox CASCADE;

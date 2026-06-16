@@ -43,6 +43,7 @@ class PostAuthorVm {
     this.nickname,
     this.avatarFileId,
     this.countryCode,
+    this.isFriendOfViewer = false,
   });
 
   final String userId;
@@ -51,6 +52,7 @@ class PostAuthorVm {
   final String? nickname;
   final String? avatarFileId;
   final String? countryCode;
+  final bool isFriendOfViewer;
 
   factory PostAuthorVm.fromJson(Map<String, dynamic> json) {
     return PostAuthorVm(
@@ -60,6 +62,7 @@ class PostAuthorVm {
       countryCode: json['countryCode']?.toString(),
       locale: json['locale']?.toString() ?? 'ru',
       timezone: json['timezone']?.toString() ?? 'Asia/Almaty',
+      isFriendOfViewer: json['isFriendOfViewer'] == true,
     );
   }
 

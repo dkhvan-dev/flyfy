@@ -19,12 +19,56 @@ var feedQualityBlockTypeLabelKeys = map[string]string{
 	"tour_card":             "feedQuality.blockType.tourCard",
 }
 
+var feedQualityTabLabelKeys = map[string]string{
+	"activities":    "community.tab.activities",
+	"announcements": "community.tab.announcements",
+	"articles":      "community.tab.articles",
+	"discussions":   "community.tab.discussions",
+	"discover":      "feedQuality.tab.discover",
+	"following":     "feedQuality.tab.following",
+	"for_you":       "feedQuality.tab.forYou",
+	"listings":      "community.tab.listings",
+	"nearby":        "feedQuality.tab.nearby",
+	"questions":     "community.tab.questions",
+	"trending":      "feedQuality.tab.trending",
+	"trip_plans":    "community.tab.trip_plans",
+}
+
 var feedQualityActionLabelKeys = map[string]string{
 	"click":          "feedQuality.action.click",
+	"comment":        "feedQuality.action.comment",
 	"conversion":     "feedQuality.action.conversion",
+	"dwell":          "feedQuality.action.dwell",
 	"hide":           "feedQuality.action.hide",
 	"impression":     "feedQuality.action.impression",
+	"like":           "feedQuality.action.like",
 	"not_interested": "feedQuality.action.notInterested",
+	"share":          "feedQuality.action.share",
+	"subscribe":      "feedQuality.action.subscribe",
+}
+
+var feedQualityPostProfileLabelKeys = map[string]string{
+	"article_v1":            "community.postProfile.article_v1",
+	"event_announcement_v1": "community.postProfile.event_announcement_v1",
+	"listing_v1":            "community.postProfile.listing_v1",
+	"question_answer_v1":    "community.postProfile.question_answer_v1",
+	"quick_post_v1":         "community.postProfile.quick_post_v1",
+	"trip_plan_v1":          "community.postProfile.trip_plan_v1",
+}
+
+var feedQualityExperimentLabelKeys = map[string]string{
+	"control": "feedQuality.rankingExperiment.control",
+}
+
+var feedQualityCandidateSourceLabelKeys = map[string]string{
+	"cold_start": "feedQuality.candidateSource.coldStart",
+	"followed":   "feedQuality.candidateSource.followed",
+	"following":  "feedQuality.candidateSource.following",
+	"geo":        "feedQuality.candidateSource.geo",
+	"global":     "feedQuality.candidateSource.global",
+	"interest":   "feedQuality.candidateSource.interest",
+	"popular":    "feedQuality.candidateSource.popular",
+	"social":     "feedQuality.candidateSource.social",
 }
 
 func feedQualitySurfaceText(locale string, value any) string {
@@ -35,8 +79,24 @@ func feedQualityBlockTypeText(locale string, value any) string {
 	return feedQualityCodeText(locale, value, feedQualityBlockTypeLabelKeys)
 }
 
+func feedQualityTabText(locale string, value any) string {
+	return feedQualityCodeText(locale, value, feedQualityTabLabelKeys)
+}
+
 func feedQualityActionText(locale string, value any) string {
 	return feedQualityCodeText(locale, value, feedQualityActionLabelKeys)
+}
+
+func feedQualityPostProfileText(locale string, value any) string {
+	return feedQualityCodeText(locale, value, feedQualityPostProfileLabelKeys)
+}
+
+func feedQualityExperimentText(locale string, value any) string {
+	return feedQualityCodeText(locale, value, feedQualityExperimentLabelKeys)
+}
+
+func feedQualityCandidateSourceText(locale string, value any) string {
+	return feedQualityCodeText(locale, value, feedQualityCandidateSourceLabelKeys)
 }
 
 func feedQualityCodeText(locale string, value any, labelKeys map[string]string) string {

@@ -126,7 +126,7 @@ func TestClientListFeedQualityMetricsCallsInternalReadOnlyEndpoint(t *testing.T)
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Header:     http.Header{"Content-Type": []string{"application/json"}},
-			Body:       io.NopCloser(strings.NewReader(`{"items":[{"surface":"home","blockType":"post_card","action":"conversion","eventCount":12,"uniqueViewers":7,"conversionCount":4,"hideCount":1,"notInterestedCount":2}]}`)),
+			Body:       io.NopCloser(strings.NewReader(`{"items":[{"surface":"home","tab":"for_you","blockType":"post_card","rankingExperiment":"rank-v2","candidateSource":"social","communityId":"00000000-0000-4000-8000-000000000222","action":"conversion","postProfile":"event_announcement_v1","eventCount":12,"uniqueViewers":7,"impressionCount":20,"clickCount":8,"dwellCount":5,"avgDwellMs":4200,"likeCount":3,"commentCount":2,"shareCount":1,"subscribeCount":4,"conversionCount":4,"hideCount":1,"notInterestedCount":2,"reportCount":3}]}`)),
 		}, nil
 	})
 
@@ -140,7 +140,23 @@ func TestClientListFeedQualityMetricsCallsInternalReadOnlyEndpoint(t *testing.T)
 	if err != nil {
 		t.Fatalf("ListFeedQualityMetrics() error = %v", err)
 	}
-	if len(metrics) != 1 || metrics[0].ConversionCount != 4 || metrics[0].NotInterestedCount != 2 {
+	if len(metrics) != 1 ||
+		metrics[0].Tab != "for_you" ||
+		metrics[0].RankingExperiment != "rank-v2" ||
+		metrics[0].CandidateSource != "social" ||
+		metrics[0].CommunityID != "00000000-0000-4000-8000-000000000222" ||
+		metrics[0].PostProfile != "event_announcement_v1" ||
+		metrics[0].ImpressionCount != 20 ||
+		metrics[0].ClickCount != 8 ||
+		metrics[0].DwellCount != 5 ||
+		metrics[0].AvgDwellMs != 4200 ||
+		metrics[0].LikeCount != 3 ||
+		metrics[0].CommentCount != 2 ||
+		metrics[0].ShareCount != 1 ||
+		metrics[0].SubscribeCount != 4 ||
+		metrics[0].ConversionCount != 4 ||
+		metrics[0].NotInterestedCount != 2 ||
+		metrics[0].ReportCount != 3 {
 		t.Fatalf("metrics = %+v, want decoded aggregate", metrics)
 	}
 	for _, expected := range []string{

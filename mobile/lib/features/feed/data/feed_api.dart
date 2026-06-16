@@ -6,8 +6,11 @@ import '../models/feed_block_vm.dart';
 class FeedApi {
   FeedApi({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();
 
+  static const _maxPendingFeedEventPayloads = 200;
+
   final ApiClient _apiClient;
   String? _lastRankingExperiment;
+  final List<Map<String, Object?>> _pendingFeedEventPayloads = [];
 
   Future<FeedPageVm> getFeed({
     String surface = 'home',
@@ -107,21 +110,33 @@ class FeedApi {
   }
 
   Future<int> trackFeedEvents(List<FeedEventRequest> events) async {
-    final payload = [
+    final newPayload = [
       for (final event in events) _eventJsonWithAssignment(event),
     ];
-    if (payload.isEmpty) {
+    if (_pendingFeedEventPayloads.isEmpty && newPayload.isEmpty) {
       return 0;
     }
+    final payload = _boundedFeedEventPayloads([
+      ..._pendingFeedEventPayloads,
+      ...newPayload,
+    ]);
 
-    final response = await _apiClient.dio.post(
-      '/feed/events',
-      data: {'events': payload},
-      options: Options(extra: const {'optionalAuth': true}),
-    );
-    final data = response.data as Map<String, dynamic>? ?? const {};
-    final accepted = data['accepted'];
-    return accepted is num ? accepted.toInt() : 0;
+    try {
+      final response = await _apiClient.dio.post(
+        '/feed/events',
+        data: {'events': payload},
+        options: Options(extra: const {'optionalAuth': true}),
+      );
+      _pendingFeedEventPayloads.clear();
+      final data = response.data as Map<String, dynamic>? ?? const {};
+      final accepted = data['accepted'];
+      return accepted is num ? accepted.toInt() : 0;
+    } catch (_) {
+      _pendingFeedEventPayloads
+        ..clear()
+        ..addAll(payload);
+      rethrow;
+    }
   }
 
   Map<String, Object?> _eventJsonWithAssignment(FeedEventRequest event) {
@@ -171,6 +186,45 @@ class FeedApi {
       response.data as Map<String, dynamic>? ?? const {},
     );
   }
+}
+
+abstract final class FeedEventTypes {
+  static const impression = 'impression';
+  static const click = 'click';
+  static const dwell = 'dwell';
+  static const like = 'like';
+  static const comment = 'comment';
+  static const share = 'share';
+  static const subscribe = 'subscribe';
+  static const hide = 'hide';
+  static const notInterested = 'not_interested';
+  static const report = 'report';
+
+  static const requiredQualitySignals = <String>{
+    impression,
+    click,
+    dwell,
+    like,
+    comment,
+    share,
+    subscribe,
+    hide,
+    notInterested,
+    report,
+  };
+
+  static const backendKnownSignals = <String>{...requiredQualitySignals};
+}
+
+List<Map<String, Object?>> _boundedFeedEventPayloads(
+  List<Map<String, Object?>> payloads,
+) {
+  if (payloads.length <= FeedApi._maxPendingFeedEventPayloads) {
+    return payloads;
+  }
+  return payloads
+      .skip(payloads.length - FeedApi._maxPendingFeedEventPayloads)
+      .toList(growable: false);
 }
 
 class FeedEventRequest {

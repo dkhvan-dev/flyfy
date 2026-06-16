@@ -81,13 +81,32 @@ func TestRendererRendersCoreTemplates(t *testing.T) {
 		"feed_quality/index": NewFeedQualityDashboardViewData(app.FeedQualityDashboardPage{
 			Metrics: []model.FeedQualityMetric{{
 				Surface:            "home",
+				Tab:                "for_you",
 				BlockType:          "post_card",
 				Action:             "conversion",
+				RankingExperiment:  "rank-v2",
+				CandidateSource:    "social",
+				PostProfile:        "event_announcement_v1",
+				CommunityID:        "00000000-0000-4000-8000-000000000222",
 				EventCount:         12,
 				UniqueViewers:      7,
 				ConversionCount:    4,
 				HideCount:          1,
 				NotInterestedCount: 2,
+				ReportCount:        3,
+			}},
+			ExperimentSummaries: []app.FeedQualityExperimentSummary{{
+				Experiment: "rank-v2",
+				Totals: model.FeedQualityMetric{
+					EventCount:      12,
+					ImpressionCount: 20,
+					ClickCount:      8,
+					DwellCount:      5,
+					AvgDwellMs:      4200,
+					ConversionCount: 4,
+					HideCount:       1,
+					ReportCount:     3,
+				},
 			}},
 			Totals: model.FeedQualityMetric{
 				EventCount:         12,
@@ -95,6 +114,7 @@ func TestRendererRendersCoreTemplates(t *testing.T) {
 				ConversionCount:    4,
 				HideCount:          1,
 				NotInterestedCount: 2,
+				ReportCount:        3,
 			},
 		}, FeedQualityFilterViewData{Surface: "home", Window: "7d"}),
 		"communities/index": NewCommunityPlatformViewData(model.CommunityPlatformCatalog{
@@ -224,9 +244,29 @@ func TestRendererRendersCoreTemplates(t *testing.T) {
 					"Feed section",
 					"All feed sections",
 					"Home feed",
+					"For you",
 					"Post card",
+					"Community",
+					"00000000",
 					"Conversion click",
+					"Ranking experiment",
+					"Rank V2",
+					"Candidate source",
+					"Friends and follows",
+					"Event announcement",
+					"Impressions",
+					"Avg. dwell",
+					"Engagement",
 					"Negative feedback",
+					"Reports",
+					"Report rate",
+					"Dwell rate",
+					"Subscribe rate",
+					"Click Δ vs control",
+					"Conversion Δ vs control",
+					"Negative Δ vs control",
+					"Ranking experiment comparison",
+					"Compare ranking variants by conversion and negative feedback before changing weights.",
 				} {
 					if !strings.Contains(body, expected) {
 						t.Fatalf("feed quality dashboard did not render %q: %s", expected, body)
@@ -235,8 +275,11 @@ func TestRendererRendersCoreTemplates(t *testing.T) {
 				for _, forbidden := range []string{
 					">Surface<",
 					">home<",
+					">for_you<",
 					">post_card<",
 					">conversion<",
+					">event_announcement_v1<",
+					">social<",
 				} {
 					if strings.Contains(body, forbidden) {
 						t.Fatalf("feed quality dashboard rendered raw code %q: %s", forbidden, body)

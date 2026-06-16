@@ -101,12 +101,13 @@ type ResolvePostReportRequest struct {
 }
 
 type AuthorResponse struct {
-	UserID       string  `json:"userId"`
-	Nickname     *string `json:"nickname,omitempty"`
-	AvatarFileID *string `json:"avatarFileId,omitempty"`
-	CountryCode  *string `json:"countryCode,omitempty"`
-	Locale       string  `json:"locale"`
-	Timezone     string  `json:"timezone"`
+	UserID           string  `json:"userId"`
+	Nickname         *string `json:"nickname,omitempty"`
+	AvatarFileID     *string `json:"avatarFileId,omitempty"`
+	CountryCode      *string `json:"countryCode,omitempty"`
+	Locale           string  `json:"locale"`
+	Timezone         string  `json:"timezone"`
+	IsFriendOfViewer bool    `json:"isFriendOfViewer"`
 }
 
 type PostStatsResponse struct {

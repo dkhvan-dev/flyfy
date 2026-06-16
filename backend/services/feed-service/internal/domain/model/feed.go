@@ -8,6 +8,7 @@ import (
 
 const (
 	FeedBlockTypeStoriesTray          = "stories_tray"
+	FeedBlockTypeCommunityCard        = "community_card"
 	FeedBlockTypeSuggestedCommunities = "suggested_communities"
 	FeedBlockTypeMySubscriptions      = "my_subscriptions"
 	FeedBlockTypePostCard             = "post_card"
@@ -22,22 +23,46 @@ const (
 const (
 	FeedEventTypeImpression    = "impression"
 	FeedEventTypeClick         = "click"
+	FeedEventTypeDwell         = "dwell"
+	FeedEventTypeLike          = "like"
+	FeedEventTypeComment       = "comment"
+	FeedEventTypeShare         = "share"
+	FeedEventTypeSubscribe     = "subscribe"
 	FeedEventTypeHide          = "hide"
 	FeedEventTypeNotInterested = "not_interested"
+	FeedEventTypeReport        = "report"
 )
 
 const (
-	FeedInterestEntityTypePost       = "post"
-	FeedInterestEntityTypeCommunity  = "community"
-	FeedInterestEntityTypeActivity   = "activity"
-	FeedInterestEntityTypeAttraction = "attraction"
-	FeedInterestEntityTypeTour       = "tour"
-	FeedInterestEntityTypeGuide      = "guide"
-	FeedInterestEntityTypeProfile    = "profile"
-	FeedInterestEntityTypeCity       = "city"
-	FeedInterestEntityTypeCountry    = "country"
-	FeedInterestEntityTypeCategory   = "category"
-	FeedInterestEntityTypeTag        = "tag"
+	FeedInterestEntityTypePost        = "post"
+	FeedInterestEntityTypePostProfile = "post_profile"
+	FeedInterestEntityTypeCommunity   = "community"
+	FeedInterestEntityTypeActivity    = "activity"
+	FeedInterestEntityTypeAttraction  = "attraction"
+	FeedInterestEntityTypeTour        = "tour"
+	FeedInterestEntityTypeGuide       = "guide"
+	FeedInterestEntityTypeProfile     = "profile"
+	FeedInterestEntityTypeCity        = "city"
+	FeedInterestEntityTypeCountry     = "country"
+	FeedInterestEntityTypeCategory    = "category"
+	FeedInterestEntityTypeTag         = "tag"
+)
+
+const (
+	FeedSocialEdgeTypeFriend    = "friend"
+	FeedSocialEdgeTypeFollowing = "following"
+)
+
+const (
+	PostCandidateSourceGlobal    = "global"
+	PostCandidateSourceFollowing = "following"
+	PostCandidateSourceFollowed  = "followed"
+	PostCandidateSourceSocial    = "social"
+	PostCandidateSourceSystem    = "system"
+	PostCandidateSourceGeo       = "geo"
+	PostCandidateSourceInterest  = "interest"
+	PostCandidateSourceColdStart = "cold_start"
+	PostCandidateSourcePopular   = "popular"
 )
 
 type FeedEvent struct {
@@ -89,11 +114,38 @@ type FeedQualityMetricsFilter struct {
 
 type FeedQualityMetric struct {
 	Surface            string
+	Tab                string
 	BlockType          string
+	RankingExperiment  string
+	CandidateSource    string
+	PostProfile        string
+	CommunityID        string
 	Action             string
 	EventCount         int64
 	UniqueViewers      int64
+	ImpressionCount    int64
+	ClickCount         int64
+	DwellCount         int64
+	AvgDwellMs         int64
+	LikeCount          int64
+	CommentCount       int64
+	ShareCount         int64
+	SubscribeCount     int64
 	ConversionCount    int64
 	HideCount          int64
 	NotInterestedCount int64
+	ReportCount        int64
+}
+
+type FeedSocialEdge struct {
+	ViewerUserID    uuid.UUID
+	TargetUserID    uuid.UUID
+	EdgeType        string
+	SourceEventID   *uuid.UUID
+	SourceUpdatedAt time.Time
+}
+
+type FeedSocialEdgeSet struct {
+	Friend    bool
+	Following bool
 }

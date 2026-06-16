@@ -23,6 +23,10 @@ class FeedBlockList extends StatelessWidget {
     this.onPostSortModeChanged,
     this.onStoryOpen,
     this.onPostOpen,
+    this.onPostLike,
+    this.onPostShare,
+    this.onPostHide,
+    this.onPostNotInterested,
     this.onStoryTrayOpen,
     this.onCreateStory,
     this.viewerAvatarUrl,
@@ -49,6 +53,10 @@ class FeedBlockList extends StatelessWidget {
   final ValueChanged<FeedPostSortMode>? onPostSortModeChanged;
   final ValueChanged<StoryVm>? onStoryOpen;
   final ValueChanged<PostVm>? onPostOpen;
+  final FeedPostLikeCallback? onPostLike;
+  final FeedPostActionCallback? onPostShare;
+  final FeedPostActionCallback? onPostHide;
+  final FeedPostActionCallback? onPostNotInterested;
   final StoryTrayOpenCallback? onStoryTrayOpen;
   final VoidCallback? onCreateStory;
   final String? viewerAvatarUrl;
@@ -162,7 +170,14 @@ class FeedBlockList extends StatelessWidget {
       FeedBlockType.postCard =>
         block.post == null
             ? const SizedBox.shrink()
-            : FeedPostCard(post: block.post!, onOpen: onPostOpen),
+            : FeedPostCard(
+                post: block.post!,
+                onOpen: onPostOpen,
+                onLike: onPostLike,
+                onShare: onPostShare,
+                onHide: onPostHide,
+                onNotInterested: onPostNotInterested,
+              ),
       FeedBlockType.profileCard ||
       FeedBlockType.officialNewsCard => const SizedBox.shrink(),
       FeedBlockType.tourCard ||

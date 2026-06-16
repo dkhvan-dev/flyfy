@@ -1862,6 +1862,102 @@ func (x *FilterFriendUserIdsResponse) GetFriendUserIds() []string {
 	return nil
 }
 
+type FilterFollowingUserIdsRequest struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	UserId           string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	CandidateUserIds []string               `protobuf:"bytes,2,rep,name=candidate_user_ids,json=candidateUserIds,proto3" json:"candidate_user_ids,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *FilterFollowingUserIdsRequest) Reset() {
+	*x = FilterFollowingUserIdsRequest{}
+	mi := &file_user_v1_user_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FilterFollowingUserIdsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FilterFollowingUserIdsRequest) ProtoMessage() {}
+
+func (x *FilterFollowingUserIdsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FilterFollowingUserIdsRequest.ProtoReflect.Descriptor instead.
+func (*FilterFollowingUserIdsRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *FilterFollowingUserIdsRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *FilterFollowingUserIdsRequest) GetCandidateUserIds() []string {
+	if x != nil {
+		return x.CandidateUserIds
+	}
+	return nil
+}
+
+type FilterFollowingUserIdsResponse struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	FollowingUserIds []string               `protobuf:"bytes,1,rep,name=following_user_ids,json=followingUserIds,proto3" json:"following_user_ids,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *FilterFollowingUserIdsResponse) Reset() {
+	*x = FilterFollowingUserIdsResponse{}
+	mi := &file_user_v1_user_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FilterFollowingUserIdsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FilterFollowingUserIdsResponse) ProtoMessage() {}
+
+func (x *FilterFollowingUserIdsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FilterFollowingUserIdsResponse.ProtoReflect.Descriptor instead.
+func (*FilterFollowingUserIdsResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *FilterFollowingUserIdsResponse) GetFollowingUserIds() []string {
+	if x != nil {
+		return x.FollowingUserIds
+	}
+	return nil
+}
+
 type ResolveUserByNicknameRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Nickname      string                 `protobuf:"bytes,1,opt,name=nickname,proto3" json:"nickname,omitempty"`
@@ -1871,7 +1967,7 @@ type ResolveUserByNicknameRequest struct {
 
 func (x *ResolveUserByNicknameRequest) Reset() {
 	*x = ResolveUserByNicknameRequest{}
-	mi := &file_user_v1_user_proto_msgTypes[28]
+	mi := &file_user_v1_user_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1883,7 +1979,7 @@ func (x *ResolveUserByNicknameRequest) String() string {
 func (*ResolveUserByNicknameRequest) ProtoMessage() {}
 
 func (x *ResolveUserByNicknameRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_user_proto_msgTypes[28]
+	mi := &file_user_v1_user_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1896,7 +1992,7 @@ func (x *ResolveUserByNicknameRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResolveUserByNicknameRequest.ProtoReflect.Descriptor instead.
 func (*ResolveUserByNicknameRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_user_proto_rawDescGZIP(), []int{28}
+	return file_user_v1_user_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *ResolveUserByNicknameRequest) GetNickname() string {
@@ -1918,7 +2014,7 @@ type ResolveUserByNicknameResponse struct {
 
 func (x *ResolveUserByNicknameResponse) Reset() {
 	*x = ResolveUserByNicknameResponse{}
-	mi := &file_user_v1_user_proto_msgTypes[29]
+	mi := &file_user_v1_user_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1930,7 +2026,7 @@ func (x *ResolveUserByNicknameResponse) String() string {
 func (*ResolveUserByNicknameResponse) ProtoMessage() {}
 
 func (x *ResolveUserByNicknameResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_user_proto_msgTypes[29]
+	mi := &file_user_v1_user_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1943,7 +2039,7 @@ func (x *ResolveUserByNicknameResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResolveUserByNicknameResponse.ProtoReflect.Descriptor instead.
 func (*ResolveUserByNicknameResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_user_proto_rawDescGZIP(), []int{29}
+	return file_user_v1_user_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *ResolveUserByNicknameResponse) GetUserId() string {
@@ -1969,7 +2065,7 @@ type GetUserBySubjectRequest struct {
 
 func (x *GetUserBySubjectRequest) Reset() {
 	*x = GetUserBySubjectRequest{}
-	mi := &file_user_v1_user_proto_msgTypes[30]
+	mi := &file_user_v1_user_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1981,7 +2077,7 @@ func (x *GetUserBySubjectRequest) String() string {
 func (*GetUserBySubjectRequest) ProtoMessage() {}
 
 func (x *GetUserBySubjectRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_user_proto_msgTypes[30]
+	mi := &file_user_v1_user_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1994,7 +2090,7 @@ func (x *GetUserBySubjectRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserBySubjectRequest.ProtoReflect.Descriptor instead.
 func (*GetUserBySubjectRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_user_proto_rawDescGZIP(), []int{30}
+	return file_user_v1_user_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *GetUserBySubjectRequest) GetSubjectId() string {
@@ -2013,7 +2109,7 @@ type GetUserBySubjectResponse struct {
 
 func (x *GetUserBySubjectResponse) Reset() {
 	*x = GetUserBySubjectResponse{}
-	mi := &file_user_v1_user_proto_msgTypes[31]
+	mi := &file_user_v1_user_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2025,7 +2121,7 @@ func (x *GetUserBySubjectResponse) String() string {
 func (*GetUserBySubjectResponse) ProtoMessage() {}
 
 func (x *GetUserBySubjectResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_user_proto_msgTypes[31]
+	mi := &file_user_v1_user_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2038,7 +2134,7 @@ func (x *GetUserBySubjectResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserBySubjectResponse.ProtoReflect.Descriptor instead.
 func (*GetUserBySubjectResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_user_proto_rawDescGZIP(), []int{31}
+	return file_user_v1_user_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *GetUserBySubjectResponse) GetAggregate() *UserAggregate {
@@ -2066,7 +2162,7 @@ type ListAdminUsersRequest struct {
 
 func (x *ListAdminUsersRequest) Reset() {
 	*x = ListAdminUsersRequest{}
-	mi := &file_user_v1_user_proto_msgTypes[32]
+	mi := &file_user_v1_user_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2078,7 +2174,7 @@ func (x *ListAdminUsersRequest) String() string {
 func (*ListAdminUsersRequest) ProtoMessage() {}
 
 func (x *ListAdminUsersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_user_proto_msgTypes[32]
+	mi := &file_user_v1_user_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2091,7 +2187,7 @@ func (x *ListAdminUsersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAdminUsersRequest.ProtoReflect.Descriptor instead.
 func (*ListAdminUsersRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_user_proto_rawDescGZIP(), []int{32}
+	return file_user_v1_user_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *ListAdminUsersRequest) GetPageSize() int32 {
@@ -2182,7 +2278,7 @@ type AdminUserListItem struct {
 
 func (x *AdminUserListItem) Reset() {
 	*x = AdminUserListItem{}
-	mi := &file_user_v1_user_proto_msgTypes[33]
+	mi := &file_user_v1_user_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2194,7 +2290,7 @@ func (x *AdminUserListItem) String() string {
 func (*AdminUserListItem) ProtoMessage() {}
 
 func (x *AdminUserListItem) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_user_proto_msgTypes[33]
+	mi := &file_user_v1_user_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2207,7 +2303,7 @@ func (x *AdminUserListItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AdminUserListItem.ProtoReflect.Descriptor instead.
 func (*AdminUserListItem) Descriptor() ([]byte, []int) {
-	return file_user_v1_user_proto_rawDescGZIP(), []int{33}
+	return file_user_v1_user_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *AdminUserListItem) GetUserId() string {
@@ -2290,7 +2386,7 @@ type ListAdminUsersResponse struct {
 
 func (x *ListAdminUsersResponse) Reset() {
 	*x = ListAdminUsersResponse{}
-	mi := &file_user_v1_user_proto_msgTypes[34]
+	mi := &file_user_v1_user_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2302,7 +2398,7 @@ func (x *ListAdminUsersResponse) String() string {
 func (*ListAdminUsersResponse) ProtoMessage() {}
 
 func (x *ListAdminUsersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_user_proto_msgTypes[34]
+	mi := &file_user_v1_user_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2315,7 +2411,7 @@ func (x *ListAdminUsersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAdminUsersResponse.ProtoReflect.Descriptor instead.
 func (*ListAdminUsersResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_user_proto_rawDescGZIP(), []int{34}
+	return file_user_v1_user_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *ListAdminUsersResponse) GetUsers() []*AdminUserListItem {
@@ -2341,7 +2437,7 @@ type GetAdminUserDetailRequest struct {
 
 func (x *GetAdminUserDetailRequest) Reset() {
 	*x = GetAdminUserDetailRequest{}
-	mi := &file_user_v1_user_proto_msgTypes[35]
+	mi := &file_user_v1_user_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2353,7 +2449,7 @@ func (x *GetAdminUserDetailRequest) String() string {
 func (*GetAdminUserDetailRequest) ProtoMessage() {}
 
 func (x *GetAdminUserDetailRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_user_proto_msgTypes[35]
+	mi := &file_user_v1_user_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2366,7 +2462,7 @@ func (x *GetAdminUserDetailRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAdminUserDetailRequest.ProtoReflect.Descriptor instead.
 func (*GetAdminUserDetailRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_user_proto_rawDescGZIP(), []int{35}
+	return file_user_v1_user_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *GetAdminUserDetailRequest) GetUserId() string {
@@ -2395,7 +2491,7 @@ type AdminUserDetail struct {
 
 func (x *AdminUserDetail) Reset() {
 	*x = AdminUserDetail{}
-	mi := &file_user_v1_user_proto_msgTypes[36]
+	mi := &file_user_v1_user_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2407,7 +2503,7 @@ func (x *AdminUserDetail) String() string {
 func (*AdminUserDetail) ProtoMessage() {}
 
 func (x *AdminUserDetail) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_user_proto_msgTypes[36]
+	mi := &file_user_v1_user_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2420,7 +2516,7 @@ func (x *AdminUserDetail) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AdminUserDetail.ProtoReflect.Descriptor instead.
 func (*AdminUserDetail) Descriptor() ([]byte, []int) {
-	return file_user_v1_user_proto_rawDescGZIP(), []int{36}
+	return file_user_v1_user_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *AdminUserDetail) GetUserId() string {
@@ -2509,7 +2605,7 @@ type GetAdminUserDetailResponse struct {
 
 func (x *GetAdminUserDetailResponse) Reset() {
 	*x = GetAdminUserDetailResponse{}
-	mi := &file_user_v1_user_proto_msgTypes[37]
+	mi := &file_user_v1_user_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2521,7 +2617,7 @@ func (x *GetAdminUserDetailResponse) String() string {
 func (*GetAdminUserDetailResponse) ProtoMessage() {}
 
 func (x *GetAdminUserDetailResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_user_proto_msgTypes[37]
+	mi := &file_user_v1_user_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2534,7 +2630,7 @@ func (x *GetAdminUserDetailResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAdminUserDetailResponse.ProtoReflect.Descriptor instead.
 func (*GetAdminUserDetailResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_user_proto_rawDescGZIP(), []int{37}
+	return file_user_v1_user_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *GetAdminUserDetailResponse) GetUser() *AdminUserDetail {
@@ -2713,7 +2809,12 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12,\n" +
 	"\x12candidate_user_ids\x18\x02 \x03(\tR\x10candidateUserIds\"E\n" +
 	"\x1bFilterFriendUserIdsResponse\x12&\n" +
-	"\x0ffriend_user_ids\x18\x01 \x03(\tR\rfriendUserIds\":\n" +
+	"\x0ffriend_user_ids\x18\x01 \x03(\tR\rfriendUserIds\"f\n" +
+	"\x1dFilterFollowingUserIdsRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12,\n" +
+	"\x12candidate_user_ids\x18\x02 \x03(\tR\x10candidateUserIds\"N\n" +
+	"\x1eFilterFollowingUserIdsResponse\x12,\n" +
+	"\x12following_user_ids\x18\x01 \x03(\tR\x10followingUserIds\":\n" +
 	"\x1cResolveUserByNicknameRequest\x12\x1a\n" +
 	"\bnickname\x18\x01 \x01(\tR\bnickname\"`\n" +
 	"\x1dResolveUserByNicknameResponse\x12\x17\n" +
@@ -2772,7 +2873,7 @@ const file_user_v1_user_proto_rawDesc = "" +
 	" \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12@\n" +
 	"\x0elast_active_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\flastActiveAt\"J\n" +
 	"\x1aGetAdminUserDetailResponse\x12,\n" +
-	"\x04user\x18\x01 \x01(\v2\x18.user.v1.AdminUserDetailR\x04user2\xab\v\n" +
+	"\x04user\x18\x01 \x01(\v2\x18.user.v1.AdminUserDetailR\x04user2\x96\f\n" +
 	"\vUserService\x12o\n" +
 	"\x18GetOrCreateUserBySubject\x12(.user.v1.GetOrCreateUserBySubjectRequest\x1a).user.v1.GetOrCreateUserBySubjectResponse\x12H\n" +
 	"\vGetUserById\x12\x1b.user.v1.GetUserByIdRequest\x1a\x1c.user.v1.GetUserByIdResponse\x12Q\n" +
@@ -2784,7 +2885,8 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\x12ListPublicProfiles\x12\".user.v1.ListPublicProfilesRequest\x1a#.user.v1.ListPublicProfilesResponse\x12u\n" +
 	"\x1aGetPublicProfilesByUserIds\x12*.user.v1.GetPublicProfilesByUserIdsRequest\x1a+.user.v1.GetPublicProfilesByUserIdsResponse\x12\x84\x01\n" +
 	"\x1fListPublicUserIdsByCountryCodes\x12/.user.v1.ListPublicUserIdsByCountryCodesRequest\x1a0.user.v1.ListPublicUserIdsByCountryCodesResponse\x12`\n" +
-	"\x13FilterFriendUserIds\x12#.user.v1.FilterFriendUserIdsRequest\x1a$.user.v1.FilterFriendUserIdsResponse\x12f\n" +
+	"\x13FilterFriendUserIds\x12#.user.v1.FilterFriendUserIdsRequest\x1a$.user.v1.FilterFriendUserIdsResponse\x12i\n" +
+	"\x16FilterFollowingUserIds\x12&.user.v1.FilterFollowingUserIdsRequest\x1a'.user.v1.FilterFollowingUserIdsResponse\x12f\n" +
 	"\x15ResolveUserByNickname\x12%.user.v1.ResolveUserByNicknameRequest\x1a&.user.v1.ResolveUserByNicknameResponse\x12W\n" +
 	"\x10GetUserBySubject\x12 .user.v1.GetUserBySubjectRequest\x1a!.user.v1.GetUserBySubjectResponse\x12Q\n" +
 	"\x0eListAdminUsers\x12\x1e.user.v1.ListAdminUsersRequest\x1a\x1f.user.v1.ListAdminUsersResponse\x12]\n" +
@@ -2802,7 +2904,7 @@ func file_user_v1_user_proto_rawDescGZIP() []byte {
 	return file_user_v1_user_proto_rawDescData
 }
 
-var file_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 38)
+var file_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 40)
 var file_user_v1_user_proto_goTypes = []any{
 	(*GetOrCreateUserBySubjectRequest)(nil),         // 0: user.v1.GetOrCreateUserBySubjectRequest
 	(*GetOrCreateUserBySubjectResponse)(nil),        // 1: user.v1.GetOrCreateUserBySubjectResponse
@@ -2832,17 +2934,19 @@ var file_user_v1_user_proto_goTypes = []any{
 	(*ListPublicUserIdsByCountryCodesResponse)(nil), // 25: user.v1.ListPublicUserIdsByCountryCodesResponse
 	(*FilterFriendUserIdsRequest)(nil),              // 26: user.v1.FilterFriendUserIdsRequest
 	(*FilterFriendUserIdsResponse)(nil),             // 27: user.v1.FilterFriendUserIdsResponse
-	(*ResolveUserByNicknameRequest)(nil),            // 28: user.v1.ResolveUserByNicknameRequest
-	(*ResolveUserByNicknameResponse)(nil),           // 29: user.v1.ResolveUserByNicknameResponse
-	(*GetUserBySubjectRequest)(nil),                 // 30: user.v1.GetUserBySubjectRequest
-	(*GetUserBySubjectResponse)(nil),                // 31: user.v1.GetUserBySubjectResponse
-	(*ListAdminUsersRequest)(nil),                   // 32: user.v1.ListAdminUsersRequest
-	(*AdminUserListItem)(nil),                       // 33: user.v1.AdminUserListItem
-	(*ListAdminUsersResponse)(nil),                  // 34: user.v1.ListAdminUsersResponse
-	(*GetAdminUserDetailRequest)(nil),               // 35: user.v1.GetAdminUserDetailRequest
-	(*AdminUserDetail)(nil),                         // 36: user.v1.AdminUserDetail
-	(*GetAdminUserDetailResponse)(nil),              // 37: user.v1.GetAdminUserDetailResponse
-	(*timestamppb.Timestamp)(nil),                   // 38: google.protobuf.Timestamp
+	(*FilterFollowingUserIdsRequest)(nil),           // 28: user.v1.FilterFollowingUserIdsRequest
+	(*FilterFollowingUserIdsResponse)(nil),          // 29: user.v1.FilterFollowingUserIdsResponse
+	(*ResolveUserByNicknameRequest)(nil),            // 30: user.v1.ResolveUserByNicknameRequest
+	(*ResolveUserByNicknameResponse)(nil),           // 31: user.v1.ResolveUserByNicknameResponse
+	(*GetUserBySubjectRequest)(nil),                 // 32: user.v1.GetUserBySubjectRequest
+	(*GetUserBySubjectResponse)(nil),                // 33: user.v1.GetUserBySubjectResponse
+	(*ListAdminUsersRequest)(nil),                   // 34: user.v1.ListAdminUsersRequest
+	(*AdminUserListItem)(nil),                       // 35: user.v1.AdminUserListItem
+	(*ListAdminUsersResponse)(nil),                  // 36: user.v1.ListAdminUsersResponse
+	(*GetAdminUserDetailRequest)(nil),               // 37: user.v1.GetAdminUserDetailRequest
+	(*AdminUserDetail)(nil),                         // 38: user.v1.AdminUserDetail
+	(*GetAdminUserDetailResponse)(nil),              // 39: user.v1.GetAdminUserDetailResponse
+	(*timestamppb.Timestamp)(nil),                   // 40: google.protobuf.Timestamp
 }
 var file_user_v1_user_proto_depIdxs = []int32{
 	8,  // 0: user.v1.GetOrCreateUserBySubjectResponse.aggregate:type_name -> user.v1.UserAggregate
@@ -2857,17 +2961,17 @@ var file_user_v1_user_proto_depIdxs = []int32{
 	21, // 9: user.v1.ListPublicProfilesResponse.items:type_name -> user.v1.PublicProfile
 	21, // 10: user.v1.GetPublicProfilesByUserIdsResponse.items:type_name -> user.v1.PublicProfile
 	8,  // 11: user.v1.GetUserBySubjectResponse.aggregate:type_name -> user.v1.UserAggregate
-	38, // 12: user.v1.ListAdminUsersRequest.created_from:type_name -> google.protobuf.Timestamp
-	38, // 13: user.v1.ListAdminUsersRequest.created_to:type_name -> google.protobuf.Timestamp
-	38, // 14: user.v1.ListAdminUsersRequest.last_active_from:type_name -> google.protobuf.Timestamp
-	38, // 15: user.v1.ListAdminUsersRequest.last_active_to:type_name -> google.protobuf.Timestamp
-	38, // 16: user.v1.AdminUserListItem.created_at:type_name -> google.protobuf.Timestamp
-	38, // 17: user.v1.AdminUserListItem.last_active_at:type_name -> google.protobuf.Timestamp
-	33, // 18: user.v1.ListAdminUsersResponse.users:type_name -> user.v1.AdminUserListItem
-	38, // 19: user.v1.AdminUserDetail.created_at:type_name -> google.protobuf.Timestamp
-	38, // 20: user.v1.AdminUserDetail.updated_at:type_name -> google.protobuf.Timestamp
-	38, // 21: user.v1.AdminUserDetail.last_active_at:type_name -> google.protobuf.Timestamp
-	36, // 22: user.v1.GetAdminUserDetailResponse.user:type_name -> user.v1.AdminUserDetail
+	40, // 12: user.v1.ListAdminUsersRequest.created_from:type_name -> google.protobuf.Timestamp
+	40, // 13: user.v1.ListAdminUsersRequest.created_to:type_name -> google.protobuf.Timestamp
+	40, // 14: user.v1.ListAdminUsersRequest.last_active_from:type_name -> google.protobuf.Timestamp
+	40, // 15: user.v1.ListAdminUsersRequest.last_active_to:type_name -> google.protobuf.Timestamp
+	40, // 16: user.v1.AdminUserListItem.created_at:type_name -> google.protobuf.Timestamp
+	40, // 17: user.v1.AdminUserListItem.last_active_at:type_name -> google.protobuf.Timestamp
+	35, // 18: user.v1.ListAdminUsersResponse.users:type_name -> user.v1.AdminUserListItem
+	40, // 19: user.v1.AdminUserDetail.created_at:type_name -> google.protobuf.Timestamp
+	40, // 20: user.v1.AdminUserDetail.updated_at:type_name -> google.protobuf.Timestamp
+	40, // 21: user.v1.AdminUserDetail.last_active_at:type_name -> google.protobuf.Timestamp
+	38, // 22: user.v1.GetAdminUserDetailResponse.user:type_name -> user.v1.AdminUserDetail
 	0,  // 23: user.v1.UserService.GetOrCreateUserBySubject:input_type -> user.v1.GetOrCreateUserBySubjectRequest
 	2,  // 24: user.v1.UserService.GetUserById:input_type -> user.v1.GetUserByIdRequest
 	4,  // 25: user.v1.UserService.GetUserProfile:input_type -> user.v1.GetUserProfileRequest
@@ -2879,27 +2983,29 @@ var file_user_v1_user_proto_depIdxs = []int32{
 	22, // 31: user.v1.UserService.GetPublicProfilesByUserIds:input_type -> user.v1.GetPublicProfilesByUserIdsRequest
 	24, // 32: user.v1.UserService.ListPublicUserIdsByCountryCodes:input_type -> user.v1.ListPublicUserIdsByCountryCodesRequest
 	26, // 33: user.v1.UserService.FilterFriendUserIds:input_type -> user.v1.FilterFriendUserIdsRequest
-	28, // 34: user.v1.UserService.ResolveUserByNickname:input_type -> user.v1.ResolveUserByNicknameRequest
-	30, // 35: user.v1.UserService.GetUserBySubject:input_type -> user.v1.GetUserBySubjectRequest
-	32, // 36: user.v1.UserService.ListAdminUsers:input_type -> user.v1.ListAdminUsersRequest
-	35, // 37: user.v1.UserService.GetAdminUserDetail:input_type -> user.v1.GetAdminUserDetailRequest
-	1,  // 38: user.v1.UserService.GetOrCreateUserBySubject:output_type -> user.v1.GetOrCreateUserBySubjectResponse
-	3,  // 39: user.v1.UserService.GetUserById:output_type -> user.v1.GetUserByIdResponse
-	5,  // 40: user.v1.UserService.GetUserProfile:output_type -> user.v1.GetUserProfileResponse
-	7,  // 41: user.v1.UserService.UpdateUserProfile:output_type -> user.v1.UpdateUserProfileResponse
-	14, // 42: user.v1.UserService.UpdateUserSettings:output_type -> user.v1.UpdateUserSettingsResponse
-	16, // 43: user.v1.UserService.GrantUserRole:output_type -> user.v1.GrantUserRoleResponse
-	18, // 44: user.v1.UserService.RevokeUserRole:output_type -> user.v1.RevokeUserRoleResponse
-	20, // 45: user.v1.UserService.ListPublicProfiles:output_type -> user.v1.ListPublicProfilesResponse
-	23, // 46: user.v1.UserService.GetPublicProfilesByUserIds:output_type -> user.v1.GetPublicProfilesByUserIdsResponse
-	25, // 47: user.v1.UserService.ListPublicUserIdsByCountryCodes:output_type -> user.v1.ListPublicUserIdsByCountryCodesResponse
-	27, // 48: user.v1.UserService.FilterFriendUserIds:output_type -> user.v1.FilterFriendUserIdsResponse
-	29, // 49: user.v1.UserService.ResolveUserByNickname:output_type -> user.v1.ResolveUserByNicknameResponse
-	31, // 50: user.v1.UserService.GetUserBySubject:output_type -> user.v1.GetUserBySubjectResponse
-	34, // 51: user.v1.UserService.ListAdminUsers:output_type -> user.v1.ListAdminUsersResponse
-	37, // 52: user.v1.UserService.GetAdminUserDetail:output_type -> user.v1.GetAdminUserDetailResponse
-	38, // [38:53] is the sub-list for method output_type
-	23, // [23:38] is the sub-list for method input_type
+	28, // 34: user.v1.UserService.FilterFollowingUserIds:input_type -> user.v1.FilterFollowingUserIdsRequest
+	30, // 35: user.v1.UserService.ResolveUserByNickname:input_type -> user.v1.ResolveUserByNicknameRequest
+	32, // 36: user.v1.UserService.GetUserBySubject:input_type -> user.v1.GetUserBySubjectRequest
+	34, // 37: user.v1.UserService.ListAdminUsers:input_type -> user.v1.ListAdminUsersRequest
+	37, // 38: user.v1.UserService.GetAdminUserDetail:input_type -> user.v1.GetAdminUserDetailRequest
+	1,  // 39: user.v1.UserService.GetOrCreateUserBySubject:output_type -> user.v1.GetOrCreateUserBySubjectResponse
+	3,  // 40: user.v1.UserService.GetUserById:output_type -> user.v1.GetUserByIdResponse
+	5,  // 41: user.v1.UserService.GetUserProfile:output_type -> user.v1.GetUserProfileResponse
+	7,  // 42: user.v1.UserService.UpdateUserProfile:output_type -> user.v1.UpdateUserProfileResponse
+	14, // 43: user.v1.UserService.UpdateUserSettings:output_type -> user.v1.UpdateUserSettingsResponse
+	16, // 44: user.v1.UserService.GrantUserRole:output_type -> user.v1.GrantUserRoleResponse
+	18, // 45: user.v1.UserService.RevokeUserRole:output_type -> user.v1.RevokeUserRoleResponse
+	20, // 46: user.v1.UserService.ListPublicProfiles:output_type -> user.v1.ListPublicProfilesResponse
+	23, // 47: user.v1.UserService.GetPublicProfilesByUserIds:output_type -> user.v1.GetPublicProfilesByUserIdsResponse
+	25, // 48: user.v1.UserService.ListPublicUserIdsByCountryCodes:output_type -> user.v1.ListPublicUserIdsByCountryCodesResponse
+	27, // 49: user.v1.UserService.FilterFriendUserIds:output_type -> user.v1.FilterFriendUserIdsResponse
+	29, // 50: user.v1.UserService.FilterFollowingUserIds:output_type -> user.v1.FilterFollowingUserIdsResponse
+	31, // 51: user.v1.UserService.ResolveUserByNickname:output_type -> user.v1.ResolveUserByNicknameResponse
+	33, // 52: user.v1.UserService.GetUserBySubject:output_type -> user.v1.GetUserBySubjectResponse
+	36, // 53: user.v1.UserService.ListAdminUsers:output_type -> user.v1.ListAdminUsersResponse
+	39, // 54: user.v1.UserService.GetAdminUserDetail:output_type -> user.v1.GetAdminUserDetailResponse
+	39, // [39:55] is the sub-list for method output_type
+	23, // [23:39] is the sub-list for method input_type
 	23, // [23:23] is the sub-list for extension type_name
 	23, // [23:23] is the sub-list for extension extendee
 	0,  // [0:23] is the sub-list for field type_name
@@ -2917,7 +3023,7 @@ func file_user_v1_user_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_v1_user_proto_rawDesc), len(file_user_v1_user_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   38,
+			NumMessages:   40,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

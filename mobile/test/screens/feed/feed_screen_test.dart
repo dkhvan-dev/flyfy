@@ -62,6 +62,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(api.followedCommunityIds, ['community-1']);
+    expect(
+      api.trackedEvents.any(
+        (event) =>
+            event.eventType == 'subscribe' &&
+            event.communityId == 'community-1',
+      ),
+      isTrue,
+    );
     expect(find.text('Almaty weekend hikes'), findsNothing);
 
     await tester.tap(
@@ -321,6 +329,25 @@ void main() {
         findsOneWidget,
       );
 
+      await tester.tap(communityToggle);
+      await tester.pumpAndSettle();
+
+      expect(api.followedCommunityIds, ['investments']);
+      final subscribeEvent = api.trackedEvents.lastWhere(
+        (event) =>
+            event.eventType == 'subscribe' &&
+            event.communityId == 'investments',
+      );
+      expect(subscribeEvent.surface, 'content');
+      expect(subscribeEvent.tab, 'following');
+      expect(subscribeEvent.blockType, 'my_subscriptions');
+      expect(subscribeEvent.metadata, containsPair('action', 'subscribe'));
+      expect(subscribeEvent.metadata, containsPair('entityType', 'community'));
+      expect(subscribeEvent.metadata, containsPair('entityId', 'investments'));
+      expect(subscribeEvent.metadata, containsPair('topic', 'HOBBIES'));
+      expect(subscribeEvent.metadata, containsPair('countryCode', 'KZ'));
+      expect(subscribeEvent.metadata, containsPair('cityId', 'almaty'));
+
       await tester.tap(
         find.descendant(
           of: subscriptionsSheet,
@@ -366,7 +393,7 @@ void main() {
       expect(
         find.descendant(
           of: communitySheetTile,
-          matching: find.byIcon(Icons.add_rounded),
+          matching: find.byIcon(Icons.remove_rounded),
         ),
         findsOneWidget,
       );
@@ -570,6 +597,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(selectedCommunity?.id, 'community-1');
+    final clickEvent = api.trackedEvents.lastWhere(
+      (event) =>
+          event.eventType == FeedEventTypes.click &&
+          event.communityId == 'community-1',
+    );
+    expect(clickEvent.blockType, 'suggested_communities');
+    expect(clickEvent.metadata, containsPair('entityType', 'community'));
+    expect(clickEvent.metadata, containsPair('entityId', 'community-1'));
   });
 
   testWidgets('opens community discovery sheet with search from suggestions', (
@@ -611,6 +646,7 @@ void main() {
                   FeedCommunityVm(
                     id: 'community-2',
                     title: 'Blockchain&Crypto · da-nang',
+                    topic: 'CRYPTO',
                     countryCode: 'VN',
                     cityId: 'da-nang',
                     cityName: 'Da Nang',
@@ -680,6 +716,19 @@ void main() {
     expect(api.followedCommunityIds, ['community-2']);
     expect(find.text('Blockchain&Crypto'), findsOneWidget);
     expect(find.text('2918 members'), findsOneWidget);
+    final subscribeEvent = api.trackedEvents.lastWhere(
+      (event) =>
+          event.eventType == 'subscribe' && event.communityId == 'community-2',
+    );
+    expect(subscribeEvent.surface, 'content');
+    expect(subscribeEvent.tab, 'for_you');
+    expect(subscribeEvent.blockType, 'suggested_communities');
+    expect(subscribeEvent.metadata, containsPair('action', 'subscribe'));
+    expect(subscribeEvent.metadata, containsPair('entityType', 'community'));
+    expect(subscribeEvent.metadata, containsPair('entityId', 'community-2'));
+    expect(subscribeEvent.metadata, containsPair('topic', 'CRYPTO'));
+    expect(subscribeEvent.metadata, containsPair('countryCode', 'VN'));
+    expect(subscribeEvent.metadata, containsPair('cityId', 'da-nang'));
 
     await tester.tap(
       find.byKey(
@@ -822,6 +871,263 @@ void main() {
     expect(click.eventType, 'click');
     expect(click.blockType, 'post_card');
     expect(click.postId, 'hidden-courtyards-of-turkistan');
+  });
+
+  testWidgets('tracks post dwell after returning from post details', (
+    tester,
+  ) async {
+    var analyticsNow = DateTime.utc(2026, 6, 15, 12);
+    final api = _FakeFeedApi(
+      onGetFeed: ({surface = 'home', tab = 'for_you', cursor, limit = 20}) {
+        return Future.value(_feedPage());
+      },
+    );
+
+    await tester.pumpWidget(
+      _feedRouterApp(api, analyticsNow: () => analyticsNow),
+    );
+    await tester.pumpAndSettle();
+
+    final postCard = find.byKey(
+      const ValueKey('open-feed-post-hidden-courtyards-of-turkistan'),
+    );
+    await tester.scrollUntilVisible(
+      postCard,
+      320,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(postCard);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Post details route hidden-courtyards-of-turkistan'),
+      findsOneWidget,
+    );
+
+    analyticsNow = analyticsNow.add(const Duration(milliseconds: 4200));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('close-post-details-route')));
+    await tester.pumpAndSettle();
+
+    final dwell = api.trackedEvents.lastWhere(
+      (event) => event.eventType == 'dwell',
+    );
+    expect(dwell.blockType, 'post_card');
+    expect(dwell.postId, 'hidden-courtyards-of-turkistan');
+    expect(dwell.metadata, containsPair('action', 'dwell'));
+    expect(dwell.metadata['dwellMs'], greaterThanOrEqualTo(4000));
+  });
+
+  testWidgets('tracks post card events with ranking metadata', (tester) async {
+    final post = _post(
+      title: 'Ranking context guide',
+      postProfileKey: 'listing_v1',
+      communityId: 'community-42',
+      authorUserId: 'author-42',
+      category: 'LOCAL_GUIDE',
+      tags: const ['hidden-gems', ' local-food '],
+      placeCountryCode: ' kz ',
+      placeCityId: ' almaty ',
+    );
+    final api = _FakeFeedApi(
+      onGetFeed: ({surface = 'home', tab = 'for_you', cursor, limit = 20}) {
+        return Future.value(
+          FeedPageVm(
+            items: [
+              FeedBlockVm(
+                id: 'ranked-post',
+                type: FeedBlockType.postCard,
+                data: const {'candidateSource': 'social'},
+                post: post,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    await tester.pumpWidget(_feedApp(api, onPostOpen: (_) {}));
+    await tester.pumpAndSettle();
+
+    final impression = api.trackedEvents.singleWhere(
+      (event) =>
+          event.eventType == 'impression' &&
+          event.postId == 'ranking-context-guide',
+    );
+    expect(impression.communityId, 'community-42');
+    expect(impression.metadata, {
+      'postProfileKey': 'listing_v1',
+      'communityId': 'community-42',
+      'authorUserId': 'author-42',
+      'cityId': 'almaty',
+      'countryCode': 'KZ',
+      'category': 'LOCAL_GUIDE',
+      'categorySlug': 'local-guide',
+      'tags': ['hidden-gems', 'local-food'],
+      'postTags': ['hidden-gems', 'local-food'],
+      'surface': 'content',
+      'tab': 'for_you',
+      'action': 'impression',
+      'candidateSource': 'social',
+    });
+
+    final postCard = find.byKey(
+      const ValueKey('open-feed-post-ranking-context-guide'),
+    );
+    await tester.scrollUntilVisible(
+      postCard,
+      320,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(postCard);
+    await tester.pumpAndSettle();
+
+    final click = api.trackedEvents.last;
+    expect(click.eventType, 'click');
+    expect(click.communityId, 'community-42');
+    expect(click.metadata, containsPair('action', 'click'));
+    expect(click.metadata, containsPair('postProfileKey', 'listing_v1'));
+    expect(click.metadata, containsPair('candidateSource', 'social'));
+    expect(click.metadata, containsPair('authorUserId', 'author-42'));
+    expect(
+      click.metadata,
+      containsPair('postTags', ['hidden-gems', 'local-food']),
+    );
+  });
+
+  testWidgets('tracks post engagement and negative feedback actions', (
+    tester,
+  ) async {
+    final post = _post(
+      title: 'Actionable city guide',
+      postProfileKey: 'listing_v1',
+      communityId: 'community-42',
+      authorUserId: 'author-42',
+      tags: const ['food', 'events'],
+      placeCountryCode: 'KZ',
+      placeCityId: 'almaty',
+    );
+    final notInterestingPost = _post(
+      title: 'Noisy promo pick',
+      postProfileKey: 'quick_post_v1',
+      communityId: 'community-99',
+      authorUserId: 'author-99',
+      tags: const ['promo'],
+      placeCountryCode: 'KZ',
+      placeCityId: 'almaty',
+    );
+    final api = _FakeFeedApi(
+      onGetFeed: ({surface = 'home', tab = 'for_you', cursor, limit = 20}) {
+        return Future.value(
+          FeedPageVm(
+            items: [
+              FeedBlockVm(
+                id: 'action-post',
+                type: FeedBlockType.postCard,
+                post: post,
+              ),
+              FeedBlockVm(
+                id: 'noisy-post',
+                type: FeedBlockType.postCard,
+                post: notInterestingPost,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    final postApi = _FeedPostActionApi();
+
+    await tester.pumpWidget(
+      _feedRouterApp(api, postApi: postApi, postShareLauncher: (_, _) async {}),
+    );
+    await tester.pumpAndSettle();
+
+    final likeButton = find.byKey(
+      const ValueKey('feed-post-like-actionable-city-guide'),
+    );
+    await tester.scrollUntilVisible(
+      likeButton,
+      280,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(likeButton);
+    await tester.pumpAndSettle();
+
+    expect(postApi.likedPostIds, ['actionable-city-guide']);
+    final like = api.trackedEvents.lastWhere(
+      (event) => event.eventType == 'like',
+    );
+    expect(like.postId, 'actionable-city-guide');
+    expect(like.communityId, 'community-42');
+    expect(like.metadata, containsPair('action', 'like'));
+    expect(like.metadata, containsPair('postProfileKey', 'listing_v1'));
+
+    final trackedAfterLike = api.trackedEvents.length;
+    await tester.tap(likeButton);
+    await tester.pumpAndSettle();
+
+    expect(postApi.unlikedPostIds, ['actionable-city-guide']);
+    expect(
+      api.trackedEvents
+          .skip(trackedAfterLike)
+          .any((event) => event.eventType == 'unlike'),
+      isFalse,
+    );
+
+    await tester.tap(
+      find.byKey(const ValueKey('feed-post-share-actionable-city-guide')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(postApi.sharedPostIds, ['actionable-city-guide']);
+    expect(
+      api.trackedEvents.any(
+        (event) =>
+            event.eventType == 'share' &&
+            event.postId == 'actionable-city-guide' &&
+            event.metadata['action'] == 'share',
+      ),
+      isTrue,
+    );
+
+    await tester.tap(
+      find.byKey(const ValueKey('feed-post-more-actionable-city-guide')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('feed-post-hide-actionable-city-guide')),
+    );
+    await tester.pumpAndSettle();
+
+    final hide = api.trackedEvents.lastWhere(
+      (event) => event.eventType == 'hide',
+    );
+    expect(hide.postId, 'actionable-city-guide');
+    expect(hide.metadata, containsPair('feedbackType', 'hide'));
+    expect(find.text('Actionable city guide'), findsNothing);
+
+    await tester.tap(
+      find.byKey(const ValueKey('feed-post-more-noisy-promo-pick')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('feed-post-not-interested-noisy-promo-pick')),
+    );
+    await tester.pumpAndSettle();
+
+    final notInterested = api.trackedEvents.lastWhere(
+      (event) => event.eventType == 'not_interested',
+    );
+    expect(notInterested.postId, 'noisy-promo-pick');
+    expect(
+      notInterested.metadata,
+      containsPair('feedbackType', 'not_interested'),
+    );
+    expect(find.text('Noisy promo pick'), findsNothing);
   });
 
   testWidgets('hides posts authored by the current user from the feed', (
@@ -1696,6 +2002,8 @@ Widget _feedRouterApp(
   ValueChanged<StoryTrayViewerRouteData>? onViewerRoute,
   ValueChanged<Uri>? onCommunityRoute,
   AppLocationLabelResolver? locationLabelResolver,
+  DateTime Function()? analyticsNow,
+  FeedPostShareLauncher? postShareLauncher,
 }) {
   final router = GoRouter(
     routes: [
@@ -1706,6 +2014,8 @@ Widget _feedRouterApp(
           subscriptionsApi: subscriptionsApi,
           postApi: postApi,
           locationLabelResolver: locationLabelResolver,
+          analyticsNow: analyticsNow,
+          postShareLauncher: postShareLauncher,
         ),
       ),
       GoRoute(
@@ -1751,6 +2061,24 @@ Widget _feedRouterApp(
         path: '/posts/create',
         builder: (context, state) =>
             const Scaffold(body: Text('Create post route')),
+      ),
+      GoRoute(
+        path: '/posts/:slug',
+        builder: (context, state) {
+          final slug = state.pathParameters['slug'] ?? '';
+          return Scaffold(
+            body: Column(
+              children: [
+                Text('Post details route $slug'),
+                ElevatedButton(
+                  key: const ValueKey('close-post-details-route'),
+                  onPressed: () => context.pop(),
+                  child: const Text('Close post details'),
+                ),
+              ],
+            ),
+          );
+        },
       ),
       GoRoute(
         path: '/notifications',
@@ -1866,10 +2194,13 @@ PostVm _post({
   bool seenByViewer = false,
   DateTime? expiresAt,
   List<String> tags = const ['travel'],
+  String category = 'JOURNAL',
   String authorUserId = 'user-1',
   String authorNickname = 'Aigerim',
   String? postProfileKey,
   String? communityId,
+  String? placeCountryCode,
+  String? placeCityId,
   PostStatsVm? stats,
   DateTime? publishedAt,
   DateTime? createdAt,
@@ -1880,7 +2211,7 @@ PostVm _post({
     slug: title.toLowerCase().replaceAll(' ', '-'),
     title: title,
     excerpt: 'A compact route for a slow travel day.',
-    category: 'JOURNAL',
+    category: category,
     status: 'PUBLISHED',
     format: 'POST',
     postProfileKey: postProfileKey,
@@ -1897,6 +2228,8 @@ PostVm _post({
     shareUrl:
         'https://inflap.test/posts/${title.toLowerCase().replaceAll(' ', '-')}',
     communityId: communityId,
+    placeCountryCode: placeCountryCode,
+    placeCityId: placeCityId,
     publishedAt: publishedAt,
     expiresAt: expiresAt ?? DateTime.utc(2027),
     createdAt: now,
@@ -2159,6 +2492,30 @@ class _PostCreateAllowedApi extends PostApi {
       window: Duration(hours: 1),
       retryAfter: Duration.zero,
     );
+  }
+}
+
+class _FeedPostActionApi extends _PostCreateAllowedApi {
+  final List<String> likedPostIds = [];
+  final List<String> unlikedPostIds = [];
+  final List<String> sharedPostIds = [];
+
+  @override
+  Future<int> likePost(String postId) async {
+    likedPostIds.add(postId);
+    return 2;
+  }
+
+  @override
+  Future<int> unlikePost(String postId) async {
+    unlikedPostIds.add(postId);
+    return 1;
+  }
+
+  @override
+  Future<(String shareUrl, int shares)> sharePost(String postId) async {
+    sharedPostIds.add(postId);
+    return ('https://inflap.test/posts/$postId', 1);
   }
 }
 

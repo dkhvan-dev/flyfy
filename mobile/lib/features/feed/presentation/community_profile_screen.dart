@@ -33,6 +33,7 @@ class CommunityProfileScreen extends StatefulWidget {
     this.onStoryOpen,
     this.onModerationOpen,
     this.onMembersOpen,
+    this.analyticsNow,
   });
 
   final String communityId;
@@ -45,6 +46,7 @@ class CommunityProfileScreen extends StatefulWidget {
   final ValueChanged<PostVm>? onStoryOpen;
   final ValueChanged<FeedCommunityVm>? onModerationOpen;
   final ValueChanged<FeedCommunityVm>? onMembersOpen;
+  final DateTime Function()? analyticsNow;
 
   @override
   State<CommunityProfileScreen> createState() => _CommunityProfileScreenState();
@@ -293,6 +295,7 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
 
     setState(() => _isUpdatingFollow = true);
     try {
+      final wasFollowed = community.followedByViewer;
       final updated = community.followedByViewer
           ? await _feedApi.unfollowCommunity(communityId)
           : await _feedApi.followCommunity(communityId);
@@ -302,6 +305,9 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
       setState(() {
         _community = updated;
       });
+      if (!wasFollowed && updated.followedByViewer) {
+        _trackCommunitySubscribe(updated);
+      }
     } catch (_) {
       if (!mounted) {
         return;
@@ -352,6 +358,96 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
           ],
         );
       },
+    );
+  }
+
+  void _trackCommunitySubscribe(FeedCommunityVm community) {
+    final communityId = community.id.trim();
+    if (communityId.isEmpty) {
+      return;
+    }
+    final topic = (community.topic ?? '').trim();
+    unawaited(
+      _sendFeedEvents([
+        FeedEventRequest(
+          eventId: _uuidV4(),
+          eventType: FeedEventTypes.subscribe,
+          surface: 'content',
+          tab: 'for_you',
+          blockId: 'community:$communityId:profile',
+          blockType: 'community_card',
+          communityId: communityId,
+          rank: 0,
+          occurredAt: _analyticsNow(),
+          metadata: {
+            'source': 'community_profile',
+            'entityType': 'community',
+            'entityId': communityId,
+            if (topic.isNotEmpty) 'topic': topic,
+            if ((community.countryCode ?? '').trim().isNotEmpty)
+              'countryCode': community.countryCode!.trim(),
+            if ((community.cityId ?? '').trim().isNotEmpty)
+              'cityId': community.cityId!.trim(),
+          },
+        ),
+      ]),
+    );
+  }
+
+  void _trackCommunityFeedback(
+    FeedCommunityVm community, {
+    required String eventType,
+    required String source,
+    required String feedbackType,
+  }) {
+    final communityId = community.id.trim();
+    if (communityId.isEmpty) {
+      return;
+    }
+    final topic = (community.topic ?? '').trim();
+    unawaited(
+      _sendFeedEvents([
+        FeedEventRequest(
+          eventId: _uuidV4(),
+          eventType: eventType,
+          surface: 'content',
+          tab: 'for_you',
+          blockId: 'community:$communityId:profile',
+          blockType: 'community_card',
+          communityId: communityId,
+          rank: 0,
+          occurredAt: _analyticsNow(),
+          metadata: {
+            'source': source,
+            'entityType': 'community',
+            'entityId': communityId,
+            'feedbackType': feedbackType,
+            if (topic.isNotEmpty) 'topic': topic,
+            if ((community.countryCode ?? '').trim().isNotEmpty)
+              'countryCode': community.countryCode!.trim(),
+            if ((community.cityId ?? '').trim().isNotEmpty)
+              'cityId': community.cityId!.trim(),
+          },
+        ),
+      ]),
+    );
+  }
+
+  void _trackCommunityReport(FeedCommunityVm community) {
+    _trackCommunityFeedback(
+      community,
+      eventType: FeedEventTypes.report,
+      source: 'community_profile',
+      feedbackType: FeedEventTypes.report,
+    );
+  }
+
+  void _trackCommunityMute(FeedCommunityVm community) {
+    _trackCommunityFeedback(
+      community,
+      eventType: FeedEventTypes.hide,
+      source: 'community_mute',
+      feedbackType: FeedEventTypes.hide,
     );
   }
 
@@ -422,6 +518,9 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
   }
 
   void _openStory(PostVm story) {
+    final openedAt = _analyticsNow();
+    _trackCommunityPostEvent(story, FeedEventTypes.click);
+
     final override = widget.onStoryOpen;
     if (override != null) {
       override(story);
@@ -432,7 +531,15 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
     if (slug.trim().isEmpty) {
       return;
     }
-    context.push('/posts/${Uri.encodeComponent(slug)}');
+    unawaited(
+      context.push<void>('/posts/${Uri.encodeComponent(slug)}').whenComplete(
+        () {
+          if (mounted) {
+            _trackCommunityPostDwell(story, openedAt);
+          }
+        },
+      ),
+    );
   }
 
   void _trackLoadedPostImpressions(List<PostVm> posts) {
@@ -455,7 +562,7 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
       events.add(
         FeedEventRequest(
           eventId: _uuidV4(),
-          eventType: 'impression',
+          eventType: FeedEventTypes.impression,
           surface: 'content',
           tab: 'for_you',
           blockId: 'community:$communityId:posts',
@@ -463,7 +570,7 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
           postId: postId,
           communityId: communityId,
           rank: index,
-          occurredAt: DateTime.now().toUtc(),
+          occurredAt: _analyticsNow(),
           metadata: {
             'source': 'community_profile',
             if ((post.postProfileKey ?? '').trim().isNotEmpty)
@@ -485,6 +592,68 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
       // Analytics should never block community browsing.
     }
   }
+
+  void _trackQuickPostEngagement(PostVm post, String eventType) {
+    _trackCommunityPostEvent(
+      post,
+      eventType,
+      metadata: {'engagementType': eventType.trim()},
+    );
+  }
+
+  void _trackCommunityPostDwell(PostVm post, DateTime openedAt) {
+    final dwellMs = _analyticsNow().difference(openedAt).inMilliseconds;
+    if (dwellMs < 1000) {
+      return;
+    }
+    _trackCommunityPostEvent(
+      post,
+      FeedEventTypes.dwell,
+      metadata: {'dwellMs': dwellMs.clamp(1000, 30 * 60 * 1000)},
+    );
+  }
+
+  void _trackCommunityPostEvent(
+    PostVm post,
+    String eventType, {
+    Map<String, Object?> metadata = const {},
+  }) {
+    final communityId = widget.communityId.trim();
+    final postId = post.id.trim();
+    final normalizedEventType = eventType.trim();
+    if (communityId.isEmpty || postId.isEmpty || normalizedEventType.isEmpty) {
+      return;
+    }
+    final rank = max(
+      0,
+      _stories.indexWhere((item) => item.id.trim() == postId),
+    );
+    unawaited(
+      _sendFeedEvents([
+        FeedEventRequest(
+          eventId: _uuidV4(),
+          eventType: normalizedEventType,
+          surface: 'content',
+          tab: 'for_you',
+          blockId: 'community:$communityId:posts',
+          blockType: 'post_card',
+          postId: postId,
+          communityId: communityId,
+          rank: rank,
+          occurredAt: _analyticsNow(),
+          metadata: {
+            'source': 'community_profile',
+            'action': normalizedEventType,
+            ...metadata,
+            if ((post.postProfileKey ?? '').trim().isNotEmpty)
+              'postProfileKey': post.postProfileKey!.trim(),
+          },
+        ),
+      ]),
+    );
+  }
+
+  DateTime _analyticsNow() => (widget.analyticsNow ?? DateTime.now)().toUtc();
 
   Future<void> _openEditPost(PostVm post) async {
     final postId = post.id.trim();
@@ -563,6 +732,7 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
           details: 'Community profile report',
         ),
       );
+      _trackCommunityReport(community);
       if (!mounted) {
         return;
       }
@@ -582,6 +752,7 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
       await _trustActionsApi.muteTarget(
         TrustMuteTargetRequest(target: _communityTrustTarget(community)),
       );
+      _trackCommunityMute(community);
       if (!mounted) {
         return;
       }
@@ -791,6 +962,7 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
                   onRetry: () => _loadStories(),
                   onStoryTap: _openStory,
                   onQuickPostEdit: _openEditPost,
+                  onQuickPostEngagement: _trackQuickPostEngagement,
                   postKeyFor: _postKeyFor,
                 ),
               ),
@@ -895,6 +1067,7 @@ class _CommunityPostsSection extends StatelessWidget {
     required this.onRetry,
     required this.onStoryTap,
     required this.onQuickPostEdit,
+    required this.onQuickPostEngagement,
     required this.postKeyFor,
   });
 
@@ -907,6 +1080,7 @@ class _CommunityPostsSection extends StatelessWidget {
   final VoidCallback onRetry;
   final ValueChanged<PostVm> onStoryTap;
   final ValueChanged<PostVm> onQuickPostEdit;
+  final QuickPostEngagementCallback onQuickPostEngagement;
   final GlobalKey Function(PostVm post) postKeyFor;
 
   @override
@@ -966,6 +1140,7 @@ class _CommunityPostsSection extends StatelessWidget {
                       post: story,
                       postApi: postApi,
                       onEdit: onQuickPostEdit,
+                      onEngagement: onQuickPostEngagement,
                     )
                   : FeedPostCard(post: story, onOpen: onStoryTap),
             ),

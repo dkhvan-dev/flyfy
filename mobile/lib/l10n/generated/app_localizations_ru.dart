@@ -2104,7 +2104,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get homeSeeAll => 'Смотреть все';
 
   @override
-  String get homeTopStories => 'Топ постов';
+  String get homeTopStories => 'Сейчас обсуждают';
+
+  @override
+  String get homeSmartPostsTitle => 'Для вас';
+
+  @override
+  String get homeSmartPostsEmpty => 'Подобранные для вас посты появятся здесь.';
 
   @override
   String get homeFeaturedStays => 'Рекомендуемое жилье';
@@ -2535,6 +2541,28 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get feedPostSortDiscussed => 'Обсуждаемые';
+
+  @override
+  String get feedPostLikeAction => 'Нравится пост';
+
+  @override
+  String get feedPostUnlikeAction => 'Убрать лайк';
+
+  @override
+  String get feedPostShareAction => 'Поделиться постом';
+
+  @override
+  String get feedPostMoreActions => 'Действия с постом';
+
+  @override
+  String get feedPostHideAction => 'Скрыть пост';
+
+  @override
+  String get feedPostNotInterestedAction => 'Не интересно';
+
+  @override
+  String get feedPostActionFailed =>
+      'Не удалось обновить пост. Попробуйте еще раз.';
 
   @override
   String get feedMySubscriptionsApplyFilters => 'Применить фильтры';

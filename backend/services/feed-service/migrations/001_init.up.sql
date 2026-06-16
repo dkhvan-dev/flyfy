@@ -872,7 +872,7 @@ CREATE TABLE IF NOT EXISTS post_feed_events (
     request_id text DEFAULT ''::text NOT NULL,
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     CONSTRAINT post_feed_events_block_type_check CHECK ((block_type = ANY (ARRAY['stories_tray'::text, 'suggested_communities'::text, 'my_subscriptions'::text, 'post_card'::text, 'activity_card'::text, 'attraction_card'::text, 'tour_card'::text, 'guide_card'::text, 'profile_card'::text, 'official_news_card'::text]))),
-    CONSTRAINT post_feed_events_event_type_check CHECK ((event_type = ANY (ARRAY['impression'::text, 'click'::text, 'hide'::text, 'not_interested'::text]))),
+    CONSTRAINT post_feed_events_event_type_check CHECK ((event_type = ANY (ARRAY['impression'::text, 'click'::text, 'dwell'::text, 'like'::text, 'comment'::text, 'share'::text, 'subscribe'::text, 'hide'::text, 'not_interested'::text, 'report'::text]))),
     CONSTRAINT post_feed_events_rank_check CHECK ((rank >= 0)),
     CONSTRAINT post_feed_events_surface_check CHECK ((surface = ANY (ARRAY['home'::text, 'content'::text]))),
     CONSTRAINT post_feed_events_tab_check CHECK ((tab = ANY (ARRAY['for_you'::text, 'following'::text])))
@@ -965,8 +965,26 @@ CREATE TABLE IF NOT EXISTS post_feed_user_interests (
     last_event_at timestamp with time zone NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
-    CONSTRAINT post_feed_user_interests_entity_type_check CHECK ((entity_type = ANY (ARRAY['post'::text, 'community'::text, 'activity'::text, 'attraction'::text, 'tour'::text, 'guide'::text, 'profile'::text, 'city'::text, 'country'::text, 'category'::text, 'tag'::text]))),
+    CONSTRAINT post_feed_user_interests_entity_type_check CHECK ((entity_type = ANY (ARRAY['post'::text, 'post_profile'::text, 'community'::text, 'activity'::text, 'attraction'::text, 'tour'::text, 'guide'::text, 'profile'::text, 'author'::text, 'city'::text, 'country'::text, 'category'::text, 'tag'::text]))),
     CONSTRAINT post_feed_user_interests_score_check CHECK (((score >= ('-100'::integer)::numeric) AND (score <= (100)::numeric)))
+);
+
+
+--
+-- Name: post_feed_social_edges; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE IF NOT EXISTS post_feed_social_edges (
+    viewer_user_id uuid NOT NULL,
+    target_user_id uuid NOT NULL,
+    edge_type text NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    source_event_id uuid,
+    source_updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT post_feed_social_edges_edge_type_check CHECK ((edge_type = ANY (ARRAY['friend'::text, 'following'::text]))),
+    CONSTRAINT post_feed_social_edges_self_check CHECK ((viewer_user_id <> target_user_id))
 );
 
 
@@ -1260,6 +1278,14 @@ ALTER TABLE ONLY post_activity_intents
 
 ALTER TABLE ONLY post_feed_user_interests
     ADD CONSTRAINT post_feed_user_interests_pkey PRIMARY KEY (viewer_user_id, entity_type, entity_id);
+
+
+--
+-- Name: post_feed_social_edges post_feed_social_edges_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY post_feed_social_edges
+    ADD CONSTRAINT post_feed_social_edges_pkey PRIMARY KEY (viewer_user_id, target_user_id, edge_type);
 
 
 --
@@ -1657,14 +1683,14 @@ CREATE INDEX idx_post_feed_events_viewer_received ON post_feed_events USING btre
 -- Name: idx_post_feed_events_viewer_post_hide; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_post_feed_events_viewer_post_hide ON post_feed_events USING btree (viewer_user_id, post_id) WHERE ((event_type = 'hide'::text) AND (viewer_user_id IS NOT NULL) AND (post_id IS NOT NULL));
+CREATE INDEX idx_post_feed_events_viewer_post_hide ON post_feed_events USING btree (viewer_user_id, post_id) WHERE ((event_type = ANY (ARRAY['hide'::text, 'report'::text])) AND (viewer_user_id IS NOT NULL) AND (post_id IS NOT NULL));
 
 
 --
 -- Name: idx_post_feed_events_viewer_post_negative; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_post_feed_events_viewer_post_negative ON post_feed_events USING btree (viewer_user_id, post_id, received_at DESC) WHERE ((event_type = 'not_interested'::text) AND (viewer_user_id IS NOT NULL) AND (post_id IS NOT NULL));
+CREATE INDEX idx_post_feed_events_viewer_post_negative ON post_feed_events USING btree (viewer_user_id, post_id, received_at DESC) WHERE ((event_type = ANY (ARRAY['not_interested'::text, 'report'::text])) AND (viewer_user_id IS NOT NULL) AND (post_id IS NOT NULL));
 
 
 --
@@ -1728,6 +1754,20 @@ CREATE INDEX idx_post_feed_user_interests_entity_score ON post_feed_user_interes
 --
 
 CREATE INDEX idx_post_feed_user_interests_viewer_score ON post_feed_user_interests USING btree (viewer_user_id, score DESC, last_event_at DESC);
+
+
+--
+-- Name: idx_post_feed_social_edges_viewer_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_post_feed_social_edges_viewer_type ON post_feed_social_edges USING btree (viewer_user_id, edge_type, active, target_user_id);
+
+
+--
+-- Name: idx_post_feed_social_edges_target; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_post_feed_social_edges_target ON post_feed_social_edges USING btree (target_user_id, edge_type, active, viewer_user_id);
 
 
 --
@@ -1798,6 +1838,13 @@ CREATE INDEX idx_post_reports_reporter_created ON post_reports USING btree (repo
 --
 
 CREATE INDEX idx_post_reports_post_status ON post_reports USING btree (post_id, status);
+
+
+--
+-- Name: idx_post_reports_post_created; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_post_reports_post_created ON post_reports USING btree (post_id, created_at DESC);
 
 
 --

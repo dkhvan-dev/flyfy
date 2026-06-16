@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inflap/core/network/reference_api.dart';
 import 'package:inflap/shared/reference/app_location_label_resolver.dart';
@@ -110,6 +112,48 @@ void main() {
       expect(label, 'Алматы, Казахстан');
     },
   );
+
+  test('shares in-flight country city catalog lookup', () async {
+    var catalogCalls = 0;
+    final catalogCompleter = Completer<List<ReferenceCity>>();
+    final resolver = AppLocationLabelResolver(
+      countryLookup: (_, {required lang}) async =>
+          const ReferenceCountry(code: 'KZ', name: 'Казахстан'),
+      cityLookup: (_, {required lang}) async => null,
+      citySearchLookup:
+          (_, {required lang, String? countryCode, int limit = 10}) async =>
+              const [],
+      citiesByCountryLookup: (_, {required lang}) {
+        catalogCalls += 1;
+        return catalogCompleter.future;
+      },
+    );
+
+    final first = resolver.resolve(
+      countryCode: 'KZ',
+      cityId: 'almaty',
+      cityName: 'Almaty',
+      localeName: 'ru',
+    );
+    final second = resolver.resolve(
+      countryCode: 'KZ',
+      cityId: 'almaty',
+      cityName: 'Almaty',
+      localeName: 'ru',
+    );
+    await Future<void>.delayed(Duration.zero);
+
+    expect(catalogCalls, 1);
+
+    catalogCompleter.complete(const [
+      ReferenceCity(id: 'almaty', countryCode: 'KZ', name: 'Алматы'),
+    ]);
+
+    expect(await Future.wait([first, second]), [
+      'Алматы, Казахстан',
+      'Алматы, Казахстан',
+    ]);
+  });
 
   test(
     'localizes address city and country with country city catalog fallback',

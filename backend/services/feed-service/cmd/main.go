@@ -84,7 +84,9 @@ func main() {
 		WithPostMediaBinder(fileManagerClient).
 		WithPostNotificationGateway(notificationClient).
 		WithFeedCuratedBlockPolicy(feedCuratedBlockPolicy).
-		WithFeedExperimentAssignment(feedRankingPolicy.ExperimentKey)
+		WithFeedExperimentAssignment(feedRankingPolicy.ExperimentKey).
+		WithFeedExperimentVariants(cfg.Feed.RankingExperimentVariants).
+		WithFeedExperimentPolicyOverrides(cfg.Feed.RankingExperimentPolicies)
 	if postFeedCache != nil {
 		useCase.WithPostFeedCache(postFeedCache, cfg.Redis.FeedTTL, cfg.Redis.TrayTTL)
 	}
@@ -176,24 +178,47 @@ func feedCuratedBlockPolicyFromConfig(cfg config.FeedConfig) app.FeedCuratedBloc
 
 func feedRankingPolicyFromConfig(cfg config.FeedConfig) repository.FeedRankingPolicy {
 	return repository.FeedRankingPolicy{
-		ExperimentKey:               cfg.RankingExperimentKey,
-		PostInterestWeight:          cfg.RankingPostInterestWeight,
-		CommunityInterestWeight:     cfg.RankingCommunityInterestWeight,
-		CityAffinityWeight:          cfg.RankingCityAffinityWeight,
-		CountryAffinityWeight:       cfg.RankingCountryAffinityWeight,
-		CategoryAffinityWeight:      cfg.RankingCategoryAffinityWeight,
-		TagAffinityWeight:           cfg.RankingTagAffinityWeight,
-		MaxBoostHours:               cfg.RankingMaxBoostHours,
-		MaxPenaltyHours:             cfg.RankingMaxPenaltyHours,
-		InterestFreshnessDelay:      cfg.RankingInterestFreshnessDelay,
-		NotInterestedPenalty:        cfg.RankingNotInterestedPenalty,
-		RecentCommunityEventWindow:  cfg.RankingRecentCommunityEventWindow,
-		RecentCommunityPenaltyHours: cfg.RankingRecentCommunityPenaltyHours,
-		MaxPostsPerCommunityPerPage: cfg.RankingMaxPostsPerCommunityPerPage,
-		MaxPostsPerCategoryPerPage:  cfg.RankingMaxPostsPerCategoryPerPage,
-		MaxPostsPerAuthorPerPage:    cfg.RankingMaxPostsPerAuthorPerPage,
-		ColdStartMaxBoostHours:      cfg.RankingColdStartMaxBoostHours,
-		ColdStartEngagementWeight:   cfg.RankingColdStartEngagementWeight,
+		ExperimentKey:                     cfg.RankingExperimentKey,
+		PostInterestWeight:                cfg.RankingPostInterestWeight,
+		CommunityInterestWeight:           cfg.RankingCommunityInterestWeight,
+		PostProfileAffinityWeight:         cfg.RankingPostProfileAffinityWeight,
+		CityAffinityWeight:                cfg.RankingCityAffinityWeight,
+		CountryAffinityWeight:             cfg.RankingCountryAffinityWeight,
+		CategoryAffinityWeight:            cfg.RankingCategoryAffinityWeight,
+		TagAffinityWeight:                 cfg.RankingTagAffinityWeight,
+		AuthorAffinityWeight:              cfg.RankingAuthorAffinityWeight,
+		MaxBoostHours:                     cfg.RankingMaxBoostHours,
+		MaxPenaltyHours:                   cfg.RankingMaxPenaltyHours,
+		InterestFreshnessDelay:            cfg.RankingInterestFreshnessDelay,
+		NotInterestedPenalty:              cfg.RankingNotInterestedPenalty,
+		RecentPostImpressionWindow:        cfg.RankingRecentPostImpressionWindow,
+		RecentPostImpressionPenaltyHours:  cfg.RankingRecentPostImpressionPenaltyHours,
+		RecentCommunityEventWindow:        cfg.RankingRecentCommunityEventWindow,
+		RecentCommunityPenaltyHours:       cfg.RankingRecentCommunityPenaltyHours,
+		CommunityMembershipBoostHours:     cfg.RankingCommunityMembershipBoostHours,
+		SocialFriendBoostHours:            cfg.RankingSocialFriendBoostHours,
+		SocialFollowingBoostHours:         cfg.RankingSocialFollowingBoostHours,
+		CurrentCityBoostHours:             cfg.RankingCurrentCityBoostHours,
+		CurrentCountryBoostHours:          cfg.RankingCurrentCountryBoostHours,
+		ExplorationFreshnessWindow:        cfg.RankingExplorationFreshnessWindow,
+		ExplorationLowViewThreshold:       cfg.RankingExplorationLowViewThreshold,
+		ExplorationMaxBoostHours:          cfg.RankingExplorationMaxBoostHours,
+		QualityPenaltyWindow:              cfg.RankingQualityPenaltyWindow,
+		QualityMinNegativeEvents:          cfg.RankingQualityMinNegativeEvents,
+		QualityNegativePenaltyHours:       cfg.RankingQualityNegativePenaltyHours,
+		QualityMaxPenaltyHours:            cfg.RankingQualityMaxPenaltyHours,
+		MaxPostsPerCommunityPerPage:       cfg.RankingMaxPostsPerCommunityPerPage,
+		MaxPostsPerCategoryPerPage:        cfg.RankingMaxPostsPerCategoryPerPage,
+		MaxPostsPerAuthorPerPage:          cfg.RankingMaxPostsPerAuthorPerPage,
+		MaxPostsPerProfilePerPage:         cfg.RankingMaxPostsPerProfilePerPage,
+		ColdStartMaxBoostHours:            cfg.RankingColdStartMaxBoostHours,
+		ColdStartEngagementWeight:         cfg.RankingColdStartEngagementWeight,
+		EngagementMaxBoostHours:           cfg.RankingEngagementMaxBoostHours,
+		EngagementWeight:                  cfg.RankingEngagementWeight,
+		EngagementFreshnessWindow:         cfg.RankingEngagementFreshnessWindow,
+		NegativeInterestDecayWindow:       cfg.RankingNegativeInterestDecayWindow,
+		NegativeInterestMinWeight:         cfg.RankingNegativeInterestMinWeight,
+		DirectNegativeFeedbackDecayWindow: cfg.RankingDirectNegativeFeedbackDecayWindow,
 	}
 }
 

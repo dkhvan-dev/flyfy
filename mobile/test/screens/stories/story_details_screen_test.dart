@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inflap/core/network/file_api.dart';
 import 'package:inflap/core/network/post_api.dart';
 import 'package:inflap/core/storage/secure_storage.dart';
+import 'package:inflap/features/feed/data/feed_api.dart';
 import 'package:inflap/features/profile/data/profile_api.dart';
 import 'package:inflap/features/profile/models/user_profile_vm.dart';
 import 'package:inflap/features/stories/models/post_vm.dart';
@@ -154,12 +155,14 @@ void main() {
           comments: const [],
         ),
       );
+      final feedApi = _FakeFeedApi();
 
       await tester.pumpWidget(
         _app(
           StoryDetailsScreen(
             slug: 'published-story',
             postApi: storyApi,
+            feedApi: feedApi,
             profileApi: _FakeProfileApi(),
             initialStory: _storyVm(
               id: 'published-story',
@@ -187,9 +190,105 @@ void main() {
       expect(storyApi.reportedStoryIds, ['published-story']);
       expect(storyApi.reportedReasons, ['SPAM']);
       expect(storyApi.reportedDetails, ['Copied listing']);
+      final reportEvent = feedApi.trackedEvents.singleWhere(
+        (event) => event.eventType == FeedEventTypes.report,
+      );
+      expect(reportEvent.surface, 'content');
+      expect(reportEvent.tab, 'details');
+      expect(reportEvent.blockType, 'post_card');
+      expect(reportEvent.postId, 'published-story');
+      expect(reportEvent.metadata, containsPair('source', 'post_details'));
+      expect(reportEvent.metadata, containsPair('entityType', 'post'));
+      expect(reportEvent.metadata, containsPair('entityId', 'published-story'));
+      expect(reportEvent.metadata, containsPair('feedbackType', 'report'));
+      expect(reportEvent.metadata, containsPair('reason', 'SPAM'));
+      expect(reportEvent.metadata, containsPair('categorySlug', 'journal'));
+      expect(reportEvent.metadata, containsPair('countryCode', 'KZ'));
+      expect(reportEvent.metadata, containsPair('cityId', 'almaty'));
       expect(
-        find.text('Thanks. We sent this story to moderation.'),
+        find.text('Thanks. We sent this post to moderation.'),
         findsOneWidget,
+      );
+    });
+
+    testWidgets('published story tracks like share and comment events', (
+      tester,
+    ) async {
+      final authProvider = AuthProvider(
+        secureStorage: _AuthenticatedSecureStorage(),
+      );
+      await authProvider.checkAuthStatus();
+      final storyApi = _FakePostApi(
+        detail: PostDetailVm(
+          post: _storyVm(
+            id: 'published-story',
+            title: 'Published story',
+            status: 'PUBLISHED',
+          ),
+          related: const [],
+          comments: const [],
+        ),
+      );
+      final feedApi = _FakeFeedApi();
+
+      await tester.pumpWidget(
+        _app(
+          StoryDetailsScreen(
+            slug: 'published-story',
+            postApi: storyApi,
+            feedApi: feedApi,
+            profileApi: _FakeProfileApi(),
+            initialStory: _storyVm(
+              id: 'published-story',
+              title: 'Published story',
+              status: 'PUBLISHED',
+            ),
+          ),
+          authProvider: authProvider,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.ios_share_rounded));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Likes'));
+      await tester.tap(find.text('Likes'));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.byType(TextField));
+      await tester.enterText(find.byType(TextField), 'Great tip');
+      await tester.tap(find.byIcon(Icons.send_rounded));
+      await tester.pumpAndSettle();
+
+      expect(storyApi.likedStoryIds, ['published-story']);
+      expect(storyApi.createdComments, ['Great tip']);
+      expect(storyApi.sharedStoryIds, ['published-story']);
+
+      final likeEvent = feedApi.trackedEvents.singleWhere(
+        (event) => event.eventType == FeedEventTypes.like,
+      );
+      expect(likeEvent.postId, 'published-story');
+      expect(likeEvent.metadata, containsPair('source', 'post_details'));
+      expect(likeEvent.metadata, containsPair('engagementType', 'like'));
+
+      final commentEvent = feedApi.trackedEvents.singleWhere(
+        (event) => event.eventType == FeedEventTypes.comment,
+      );
+      expect(commentEvent.postId, 'published-story');
+      expect(commentEvent.metadata, containsPair('source', 'post_details'));
+      expect(commentEvent.metadata, containsPair('engagementType', 'comment'));
+      expect(commentEvent.metadata, containsPair('commentId', 'comment-1'));
+
+      final shareEvent = feedApi.trackedEvents.singleWhere(
+        (event) => event.eventType == FeedEventTypes.share,
+      );
+      expect(shareEvent.postId, 'published-story');
+      expect(shareEvent.metadata, containsPair('source', 'post_details'));
+      expect(shareEvent.metadata, containsPair('engagementType', 'share'));
+      expect(
+        shareEvent.metadata,
+        containsPair('shareUrl', 'https://flyfy.test/posts/published-story'),
       );
     });
 
@@ -485,6 +584,10 @@ class _FakePostApi extends PostApi {
   final List<String> reportedReasons = [];
   final List<String> reportedDetails = [];
   final List<String> seenStoryIds = [];
+  final List<String> likedStoryIds = [];
+  final List<String> unlikedStoryIds = [];
+  final List<String> sharedStoryIds = [];
+  final List<String> createdComments = [];
 
   @override
   Future<PostDetailVm> getPublicPostBySlug(String slug) async => detail;
@@ -513,6 +616,53 @@ class _FakePostApi extends PostApi {
       reportId: 'report-1',
       reportStatus: 'OPEN',
     );
+  }
+
+  @override
+  Future<int> likePost(String storyId) async {
+    likedStoryIds.add(storyId);
+    return 1;
+  }
+
+  @override
+  Future<int> unlikePost(String storyId) async {
+    unlikedStoryIds.add(storyId);
+    return 0;
+  }
+
+  @override
+  Future<PostCommentVm> createComment(String storyId, String body) async {
+    createdComments.add(body);
+    return PostCommentVm(
+      id: 'comment-1',
+      postId: storyId,
+      body: body,
+      editable: true,
+      deletable: true,
+      edited: false,
+      likes: 0,
+      likedByMe: false,
+      shareUrl: '',
+      author: detail.post.author,
+      createdAt: DateTime.utc(2026, 6, 12, 13),
+      updatedAt: DateTime.utc(2026, 6, 12, 13),
+    );
+  }
+
+  @override
+  Future<(String shareUrl, int shares)> sharePost(String storyId) async {
+    sharedStoryIds.add(storyId);
+    return ('https://flyfy.test/posts/$storyId', 1);
+  }
+}
+
+class _FakeFeedApi extends FeedApi {
+  final List<FeedEventRequest> trackedEvents = [];
+
+  @override
+  Future<int> trackFeedEvents(List<FeedEventRequest> events) async {
+    trackedEvents.addAll(events);
+    return events.length;
   }
 }
 

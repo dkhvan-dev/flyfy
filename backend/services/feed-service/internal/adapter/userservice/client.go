@@ -17,8 +17,10 @@ import (
 )
 
 const (
-	defaultResolveUserTimeout  = 2 * time.Second
-	defaultListProfilesTimeout = 3 * time.Second
+	defaultResolveUserTimeout     = 2 * time.Second
+	defaultListProfilesTimeout    = 3 * time.Second
+	defaultFilterFriendsTimeout   = 2 * time.Second
+	defaultFilterFollowingTimeout = 2 * time.Second
 )
 
 type Client struct {
@@ -151,6 +153,108 @@ func (c *Client) GetPublicUserProfiles(ctx context.Context, userIDs []uuid.UUID)
 			CountryCode:  countryCode,
 			Locale:       item.GetLocale(),
 			Timezone:     item.GetTimezone(),
+		}
+	}
+
+	return result, nil
+}
+
+func (c *Client) FilterFriendUserIDs(
+	ctx context.Context,
+	viewerUserID uuid.UUID,
+	candidateUserIDs []uuid.UUID,
+) (map[uuid.UUID]bool, error) {
+	if viewerUserID == uuid.Nil || len(candidateUserIDs) == 0 {
+		return map[uuid.UUID]bool{}, nil
+	}
+
+	seen := make(map[uuid.UUID]struct{}, len(candidateUserIDs))
+	rawIDs := make([]string, 0, len(candidateUserIDs))
+	for _, id := range candidateUserIDs {
+		if id == uuid.Nil || id == viewerUserID {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		rawIDs = append(rawIDs, id.String())
+	}
+	if len(rawIDs) == 0 {
+		return map[uuid.UUID]bool{}, nil
+	}
+
+	callCtx, cancel := context.WithTimeout(ctx, defaultFilterFriendsTimeout)
+	defer cancel()
+	callCtx = WithInternalMetadata(callCtx, c.internalToken, c.serviceName, "", "")
+
+	resp, err := c.service.FilterFriendUserIds(callCtx, &userv1.FilterFriendUserIdsRequest{
+		UserId:           viewerUserID.String(),
+		CandidateUserIds: rawIDs,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[uuid.UUID]bool, len(resp.GetFriendUserIds()))
+	for _, raw := range resp.GetFriendUserIds() {
+		id, parseErr := uuid.Parse(strings.TrimSpace(raw))
+		if parseErr != nil {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			result[id] = true
+		}
+	}
+
+	return result, nil
+}
+
+func (c *Client) FilterFollowingUserIDs(
+	ctx context.Context,
+	viewerUserID uuid.UUID,
+	candidateUserIDs []uuid.UUID,
+) (map[uuid.UUID]bool, error) {
+	if viewerUserID == uuid.Nil || len(candidateUserIDs) == 0 {
+		return map[uuid.UUID]bool{}, nil
+	}
+
+	seen := make(map[uuid.UUID]struct{}, len(candidateUserIDs))
+	rawIDs := make([]string, 0, len(candidateUserIDs))
+	for _, id := range candidateUserIDs {
+		if id == uuid.Nil || id == viewerUserID {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		rawIDs = append(rawIDs, id.String())
+	}
+	if len(rawIDs) == 0 {
+		return map[uuid.UUID]bool{}, nil
+	}
+
+	callCtx, cancel := context.WithTimeout(ctx, defaultFilterFollowingTimeout)
+	defer cancel()
+	callCtx = WithInternalMetadata(callCtx, c.internalToken, c.serviceName, "", "")
+
+	resp, err := c.service.FilterFollowingUserIds(callCtx, &userv1.FilterFollowingUserIdsRequest{
+		UserId:           viewerUserID.String(),
+		CandidateUserIds: rawIDs,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[uuid.UUID]bool, len(resp.GetFollowingUserIds()))
+	for _, raw := range resp.GetFollowingUserIds() {
+		id, parseErr := uuid.Parse(strings.TrimSpace(raw))
+		if parseErr != nil {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			result[id] = true
 		}
 	}
 

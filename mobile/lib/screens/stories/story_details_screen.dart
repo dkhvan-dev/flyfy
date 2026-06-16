@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +13,7 @@ import '../../core/network/file_api.dart';
 import '../../core/network/post_api.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
+import '../../features/feed/data/feed_api.dart';
 import '../../features/profile/data/profile_api.dart';
 import '../../features/profile/models/user_profile_vm.dart';
 import '../../features/stories/editor/domain/story_document.dart';
@@ -27,9 +31,11 @@ class StoryDetailsScreen extends StatefulWidget {
     this.initialStory,
     this.initialCommentId,
     PostApi? postApi,
+    FeedApi? feedApi,
     ProfileApi? profileApi,
     FileApi? fileApi,
   }) : _postApiOverride = postApi,
+       _feedApiOverride = feedApi,
        _profileApiOverride = profileApi,
        _fileApiOverride = fileApi;
 
@@ -37,6 +43,7 @@ class StoryDetailsScreen extends StatefulWidget {
   final PostVm? initialStory;
   final String? initialCommentId;
   final PostApi? _postApiOverride;
+  final FeedApi? _feedApiOverride;
   final ProfileApi? _profileApiOverride;
   final FileApi? _fileApiOverride;
 
@@ -46,6 +53,7 @@ class StoryDetailsScreen extends StatefulWidget {
 
 class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
   late final PostApi _postApi;
+  late final FeedApi _feedApi;
   late final ProfileApi _profileApi;
   late final FileApi _fileApi;
   final _scrollController = ScrollController();
@@ -72,6 +80,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
   void initState() {
     super.initState();
     _postApi = widget._postApiOverride ?? PostApi();
+    _feedApi = widget._feedApiOverride ?? FeedApi();
     _profileApi = widget._profileApiOverride ?? ProfileApi();
     _fileApi = widget._fileApiOverride ?? FileApi();
     if (widget.initialStory != null) {
@@ -354,6 +363,15 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
       setState(() {
         _detail = detail.copyWith(post: updatedStory);
       });
+      if (!detail.post.likedByViewer) {
+        unawaited(
+          _trackPostEngagement(
+            updatedStory,
+            FeedEventTypes.like,
+            metadata: {'engagementType': FeedEventTypes.like},
+          ),
+        );
+      }
     } on DioException catch (e) {
       if (!mounted) {
         return;
@@ -390,14 +408,23 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
       if (!mounted) {
         return;
       }
+      final updatedStory = detail.post.copyWith(
+        shareUrl: shareUrl,
+        stats: detail.post.stats.copyWith(shares: shares),
+      );
       setState(() {
-        _detail = detail.copyWith(
-          post: detail.post.copyWith(
-            shareUrl: shareUrl,
-            stats: detail.post.stats.copyWith(shares: shares),
-          ),
-        );
+        _detail = detail.copyWith(post: updatedStory);
       });
+      unawaited(
+        _trackPostEngagement(
+          updatedStory,
+          FeedEventTypes.share,
+          metadata: {
+            'engagementType': FeedEventTypes.share,
+            if (shareUrl.trim().isNotEmpty) 'shareUrl': shareUrl.trim(),
+          },
+        ),
+      );
       if (!mounted) {
         return;
       }
@@ -472,6 +499,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
         reason: report.reason,
         details: report.details,
       );
+      unawaited(_trackPostReport(detail.post, report.reason));
       if (!mounted) {
         return;
       }
@@ -496,6 +524,93 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
           _isSubmittingReport = false;
         });
       }
+    }
+  }
+
+  Future<void> _trackPostEngagement(
+    PostVm post,
+    String eventType, {
+    Map<String, Object?> metadata = const {},
+  }) async {
+    final postId = post.id.trim();
+    if (postId.isEmpty) {
+      return;
+    }
+    try {
+      await _feedApi.trackFeedEvents([
+        FeedEventRequest(
+          eventId: _uuidV4(),
+          eventType: eventType,
+          surface: 'content',
+          tab: 'details',
+          blockId: 'post:$postId:details',
+          blockType: 'post_card',
+          postId: postId,
+          communityId: _trimmedOrNull(post.communityId),
+          occurredAt: DateTime.now().toUtc(),
+          metadata: {
+            'source': 'post_details',
+            'action': eventType,
+            'entityType': 'post',
+            'entityId': postId,
+            'categorySlug': post.category.trim().toLowerCase(),
+            if (_trimmedOrNull(post.postProfileKey) != null)
+              'postProfileKey': post.postProfileKey!.trim(),
+            if (_trimmedOrNull(post.communityId) != null)
+              'communityId': post.communityId!.trim(),
+            if (_trimmedOrNull(post.placeCountryCode) != null)
+              'countryCode': post.placeCountryCode!.trim().toUpperCase(),
+            if (_trimmedOrNull(post.placeCityId) != null)
+              'cityId': post.placeCityId!.trim(),
+            if (post.tags.isNotEmpty) 'tags': post.tags,
+            ...metadata,
+          },
+        ),
+      ]);
+    } catch (_) {
+      // Feed analytics must not block post engagement actions.
+    }
+  }
+
+  Future<void> _trackPostReport(PostVm post, String reason) async {
+    final postId = post.id.trim();
+    if (postId.isEmpty) {
+      return;
+    }
+    try {
+      await _feedApi.trackFeedEvents([
+        FeedEventRequest(
+          eventId: _uuidV4(),
+          eventType: FeedEventTypes.report,
+          surface: 'content',
+          tab: 'details',
+          blockId: 'post:$postId:details',
+          blockType: 'post_card',
+          postId: postId,
+          communityId: _trimmedOrNull(post.communityId),
+          occurredAt: DateTime.now().toUtc(),
+          metadata: {
+            'source': 'post_details',
+            'action': FeedEventTypes.report,
+            'entityType': 'post',
+            'entityId': postId,
+            'feedbackType': FeedEventTypes.report,
+            'reason': reason.trim(),
+            'categorySlug': post.category.trim().toLowerCase(),
+            if (_trimmedOrNull(post.postProfileKey) != null)
+              'postProfileKey': post.postProfileKey!.trim(),
+            if (_trimmedOrNull(post.communityId) != null)
+              'communityId': post.communityId!.trim(),
+            if (_trimmedOrNull(post.placeCountryCode) != null)
+              'countryCode': post.placeCountryCode!.trim().toUpperCase(),
+            if (_trimmedOrNull(post.placeCityId) != null)
+              'cityId': post.placeCityId!.trim(),
+            if (post.tags.isNotEmpty) 'tags': post.tags,
+          },
+        ),
+      ]);
+    } catch (_) {
+      // Feed analytics must not block moderation reports.
     }
   }
 
@@ -608,6 +723,16 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
         _detail = detail.copyWith(post: nextStory, comments: nextComments);
       });
       if (editingCommentId == null) {
+        unawaited(
+          _trackPostEngagement(
+            nextStory,
+            FeedEventTypes.comment,
+            metadata: {
+              'engagementType': FeedEventTypes.comment,
+              'commentId': result.id,
+            },
+          ),
+        );
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _scrollToComment(result.id);
         });
@@ -3164,6 +3289,30 @@ class _RelatedStoriesSection extends StatelessWidget {
       ],
     );
   }
+}
+
+String? _trimmedOrNull(String? value) {
+  final trimmed = value?.trim();
+  if (trimmed == null || trimmed.isEmpty) {
+    return null;
+  }
+  return trimmed;
+}
+
+String _uuidV4() {
+  final random = Random.secure();
+  final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  String hexByte(int value) => value.toRadixString(16).padLeft(2, '0');
+  final hex = bytes.map(hexByte).join();
+  return [
+    hex.substring(0, 8),
+    hex.substring(8, 12),
+    hex.substring(12, 16),
+    hex.substring(16, 20),
+    hex.substring(20),
+  ].join('-');
 }
 
 class _StoryDetailErrorState extends StatelessWidget {

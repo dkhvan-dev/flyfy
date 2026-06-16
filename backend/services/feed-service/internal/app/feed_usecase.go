@@ -5,18 +5,22 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 
+	"kz/inflap/backend/services/feed-service/internal/domain/enum"
 	"kz/inflap/backend/services/feed-service/internal/domain/model"
 )
 
 const (
 	defaultFeedLimit               = 20
 	maxFeedLimit                   = 30
-	feedCursorVersion              = 1
+	feedCursorVersion              = 4
 	postsTrayLimit                 = 12
 	communityLimit                 = 10
 	maxFeedEventBatch              = 50
@@ -25,8 +29,11 @@ const (
 	maxFeedInterestLimit           = 200
 	defaultFeedQualityMetricsLimit = 50
 	maxFeedQualityMetricsLimit     = 200
+	maxFeedSystemPostsPerPage      = 5
+	maxMixedFeedSystemPostsPerPage = 2
 	postFeedCacheGlobalScope       = "post-feed:global"
 	defaultFeedExperimentKey       = "control"
+	feedCandidateMixerPolicy       = "candidate-mixer:v9"
 )
 
 type postFeedExpiryMode string
@@ -56,6 +63,11 @@ type FeedExperimentAssignment struct {
 	RankingExperiment string
 }
 
+type feedExperimentVariant struct {
+	RankingExperiment string
+	Weight            int
+}
+
 type FeedBlock struct {
 	Type string
 	ID   string
@@ -72,7 +84,8 @@ type SuggestedCommunitiesFeedData struct {
 }
 
 type PostCardFeedData struct {
-	Post *PostView
+	Post            *PostView
+	CandidateSource string
 }
 
 type ConversionFeedData struct {
@@ -90,6 +103,12 @@ type FeedCuratedBlockPolicy struct {
 	MaxConversionBlocksPerPage  int
 	MaxOfficialNewsCardsPerPage int
 	MaxProfileCardsPerPage      int
+}
+
+type feedPostCandidateSource struct {
+	Name                    string
+	FollowedByUserID        *uuid.UUID
+	ExcludeFollowedByUserID *uuid.UUID
 }
 
 func DefaultFeedCuratedBlockPolicy() FeedCuratedBlockPolicy {
@@ -140,11 +159,37 @@ type ListFeedQualityMetricsInput struct {
 }
 
 type feedCursor struct {
-	Version     int       `json:"v"`
-	Surface     string    `json:"surface"`
-	Tab         string    `json:"tab"`
+	Version                  int                         `json:"v"`
+	Surface                  string                      `json:"surface"`
+	Tab                      string                      `json:"tab"`
+	CandidatePolicy          string                      `json:"candidatePolicy"`
+	RankingExperiment        string                      `json:"rankingExperiment,omitempty"`
+	PublishedAt              time.Time                   `json:"publishedAt"`
+	PostID                   uuid.UUID                   `json:"postId"`
+	Sources                  map[string]feedSourceCursor `json:"sources,omitempty"`
+	DeliveredPostIDs         []uuid.UUID                 `json:"deliveredPostIds,omitempty"`
+	DeliveredAuthorUserIDs   []uuid.UUID                 `json:"deliveredAuthorUserIds,omitempty"`
+	DeliveredCommunityIDs    []uuid.UUID                 `json:"deliveredCommunityIds,omitempty"`
+	DeliveredPostProfileKeys []enum.PostProfileKey       `json:"deliveredPostProfileKeys,omitempty"`
+	DeliveredCategories      []enum.PostCategory         `json:"deliveredCategories,omitempty"`
+	DeliveredTags            []string                    `json:"deliveredTags,omitempty"`
+}
+
+type feedSourceCursor struct {
 	PublishedAt time.Time `json:"publishedAt"`
 	PostID      uuid.UUID `json:"postId"`
+}
+
+type feedPostPage struct {
+	Posts                   []*PostView
+	CandidateSourceByPostID map[uuid.UUID]string
+	NextCursor              *feedCursor
+}
+
+type feedPostCandidateItem struct {
+	SourceName string
+	Index      int
+	Post       *PostView
 }
 
 func (u *PostUseCase) BuildFeed(ctx context.Context, subject string, input BuildFeedInput) (*FeedPage, error) {
@@ -152,11 +197,13 @@ func (u *PostUseCase) BuildFeed(ctx context.Context, subject string, input Build
 	if err != nil {
 		return nil, err
 	}
+	assignment := u.feedExperimentAssignmentForViewer(viewerUserID)
+	rankingPolicyOverride := u.feedExperimentPolicyOverride(assignment.RankingExperiment)
 
 	surface := normalizeFeedSurface(input.Surface)
 	tab := normalizeFeedTab(input.Tab)
 	limit := normalizeFeedLimit(input.Limit)
-	cursor, err := decodeFeedCursor(input.Cursor, surface, tab)
+	cursor, err := decodeFeedCursor(input.Cursor, surface, tab, assignment.RankingExperiment)
 	if err != nil {
 		return nil, err
 	}
@@ -203,41 +250,44 @@ func (u *PostUseCase) BuildFeed(ctx context.Context, subject string, input Build
 		}
 	}
 
-	var followedByUserID *uuid.UUID
 	if tab == "following" {
 		if viewerUserID == nil || *viewerUserID == uuid.Nil {
-			return &FeedPage{Items: blocks, Assignment: u.feedExperimentAssignment}, nil
+			return &FeedPage{Items: blocks, Assignment: assignment}, nil
 		}
-		followedByUserID = viewerUserID
 	}
 
-	posts, err := u.latestPostViews(ctx, viewerUserID, limit+1, 0, nil, followedByUserID, postCardsCursor, postFeedExpiryPersistent)
+	candidateSources := feedPostCandidateSources(tab, viewerUserID, input.CountryCode, input.CityID)
+	postPage, err := u.latestPostPageFromCandidateSources(ctx, viewerUserID, limit, 0, nil, candidateSources, input.CountryCode, input.CityID, postCardsCursor, postFeedExpiryPersistent, rankingPolicyOverride)
 	if err != nil {
 		return nil, err
 	}
-	hasNextPage := len(posts) > limit
-	if hasNextPage {
-		posts = posts[:limit]
-	}
+	posts := postPage.Posts
 	for _, post := range posts {
 		if post == nil || post.Post == nil {
 			continue
 		}
+		candidateSource := ""
+		if postPage.CandidateSourceByPostID != nil {
+			candidateSource = postPage.CandidateSourceByPostID[post.Post.ID]
+		}
 		blocks = append(blocks, FeedBlock{
 			Type: model.FeedBlockTypePostCard,
 			ID:   "post:" + post.Post.ID.String(),
-			Data: PostCardFeedData{Post: post},
+			Data: PostCardFeedData{
+				Post:            post,
+				CandidateSource: candidateSource,
+			},
 			Rank: rank,
 		})
 		rank++
 	}
 
 	nextCursor := ""
-	if hasNextPage && len(posts) > 0 {
-		nextCursor = encodeFeedCursor(posts[len(posts)-1], surface, tab)
+	if postPage.NextCursor != nil && len(posts) > 0 {
+		nextCursor = encodeFeedCursor(postPage.NextCursor, surface, tab, assignment.RankingExperiment)
 	}
 
-	return &FeedPage{Items: blocks, NextCursor: nextCursor, Assignment: u.feedExperimentAssignment}, nil
+	return &FeedPage{Items: blocks, NextCursor: nextCursor, Assignment: assignment}, nil
 }
 
 func (u *PostUseCase) TrackFeedEvents(ctx context.Context, subject string, input TrackFeedEventsInput) (int, error) {
@@ -273,6 +323,7 @@ func (u *PostUseCase) TrackFeedEvents(ctx context.Context, subject string, input
 			ctx,
 			postFeedCacheViewerScope(*viewerUserID),
 			postFeedCacheFollowingScope(*viewerUserID),
+			postFeedCacheDiscoveryScope(*viewerUserID),
 		)
 	}
 	return len(events), nil
@@ -359,15 +410,557 @@ func (u *PostUseCase) ListFeedQualityMetrics(ctx context.Context, input ListFeed
 	return metrics, nil
 }
 
-func (u *PostUseCase) latestPostViews(ctx context.Context, viewerUserID *uuid.UUID, limit int, offset int, communityIDs []uuid.UUID, followedByUserID *uuid.UUID, cursor *feedCursor, expiryMode postFeedExpiryMode) ([]*PostView, error) {
-	filter := model.PostListFilter{
-		OnlyPublished:    true,
-		Sort:             "latest_desc",
-		Limit:            limit,
-		Offset:           offset,
-		CommunityIDs:     communityIDs,
+func feedPostCandidateSources(tab string, viewerUserID *uuid.UUID, countryCode string, cityID string) []feedPostCandidateSource {
+	if tab == "following" {
+		if viewerUserID == nil || *viewerUserID == uuid.Nil {
+			return nil
+		}
+		return []feedPostCandidateSource{
+			{
+				Name:             model.PostCandidateSourceFollowing,
+				FollowedByUserID: viewerUserID,
+			},
+			{
+				Name: model.PostCandidateSourceSocial,
+			},
+		}
+	}
+	if viewerUserID == nil || *viewerUserID == uuid.Nil {
+		hasGeoContext := normalizeCountryCode(countryCode) != "" || normalizeFeedCityID(cityID) != ""
+		if hasGeoContext {
+			return []feedPostCandidateSource{
+				{Name: model.PostCandidateSourceSystem},
+				{Name: model.PostCandidateSourceGeo},
+				{Name: model.PostCandidateSourceColdStart},
+				{Name: model.PostCandidateSourcePopular},
+			}
+		}
+		return []feedPostCandidateSource{
+			{Name: model.PostCandidateSourceSystem},
+			{Name: model.PostCandidateSourcePopular},
+			{Name: model.PostCandidateSourceGlobal},
+		}
+	}
+	sources := []feedPostCandidateSource{
+		{
+			Name:             model.PostCandidateSourceFollowed,
+			FollowedByUserID: viewerUserID,
+		},
+		{
+			Name: model.PostCandidateSourceSocial,
+		},
+		{
+			Name: model.PostCandidateSourceSystem,
+		},
+	}
+	hasGeoContext := normalizeCountryCode(countryCode) != "" || normalizeFeedCityID(cityID) != ""
+	if hasGeoContext {
+		sources = append(sources, feedPostCandidateSource{Name: model.PostCandidateSourceGeo})
+	}
+	sources = append(
+		sources,
+		feedPostCandidateSource{Name: model.PostCandidateSourceInterest},
+		feedPostCandidateSource{Name: model.PostCandidateSourceColdStart},
+		feedPostCandidateSource{Name: model.PostCandidateSourcePopular},
+	)
+	return sources
+}
+
+func (u *PostUseCase) latestPostPageFromCandidateSources(ctx context.Context, viewerUserID *uuid.UUID, limit int, offset int, communityIDs []uuid.UUID, sources []feedPostCandidateSource, countryCode string, cityID string, cursor *feedCursor, expiryMode postFeedExpiryMode, rankingPolicyOverrides ...*model.FeedRankingPolicyOverride) (feedPostPage, error) {
+	rankingPolicyOverride := firstFeedRankingPolicyOverride(rankingPolicyOverrides)
+	if len(sources) == 0 {
+		return feedPostPage{Posts: []*PostView{}}, nil
+	}
+	if len(sources) == 1 || offset != 0 || len(communityIDs) > 0 {
+		sourceName := normalizePostCandidateSource(sources[0].Name)
+		if sourceName == "" {
+			sourceName = model.PostCandidateSourceGlobal
+		}
+		posts, err := u.latestPostViewsForCandidateSource(ctx, viewerUserID, limit+1, offset, communityIDs, sources[0], countryCode, cityID, cursor, expiryMode, rankingPolicyOverride)
+		if err != nil {
+			return feedPostPage{}, err
+		}
+		return feedPostPageFromSingleSource(posts, limit, sourceName), nil
+	}
+
+	fetchLimit := feedPostCandidateFetchLimit(limit)
+	candidatesBySource := make(map[string][]*PostView, len(sources))
+	sourceOrder := make([]string, 0, len(sources))
+	for _, source := range sources {
+		sourceName := normalizePostCandidateSource(source.Name)
+		if sourceName == "" {
+			sourceName = model.PostCandidateSourceGlobal
+		}
+		sourceCursor := feedCursorForCandidateSource(cursor, sourceName)
+		sourcePosts, err := u.latestPostViewsForCandidateSource(ctx, viewerUserID, fetchLimit, offset, communityIDs, source, countryCode, cityID, sourceCursor, expiryMode, rankingPolicyOverride)
+		if err != nil {
+			return feedPostPage{}, err
+		}
+		if _, exists := candidatesBySource[sourceName]; !exists {
+			sourceOrder = append(sourceOrder, sourceName)
+		}
+		candidatesBySource[sourceName] = sourcePosts
+	}
+	return mixFeedPostCandidateSources(limit, cursor, sources, sourceOrder, candidatesBySource), nil
+}
+
+func feedPostPageFromSingleSource(posts []*PostView, limit int, sourceName string) feedPostPage {
+	if limit <= 0 {
+		return feedPostPage{
+			Posts:                   posts,
+			CandidateSourceByPostID: feedPostCandidateSourceMap(posts, sourceName),
+		}
+	}
+	hasNext := len(posts) > limit
+	if hasNext {
+		posts = posts[:limit]
+	}
+	page := feedPostPage{
+		Posts:                   posts,
+		CandidateSourceByPostID: feedPostCandidateSourceMap(posts, sourceName),
+	}
+	if hasNext && len(posts) > 0 {
+		page.NextCursor = feedCursorFromPostView(posts[len(posts)-1])
+	}
+	return page
+}
+
+func feedPostCandidateSourceMap(posts []*PostView, sourceName string) map[uuid.UUID]string {
+	sourceName = normalizePostCandidateSource(sourceName)
+	if sourceName == "" {
+		sourceName = model.PostCandidateSourceGlobal
+	}
+	result := make(map[uuid.UUID]string, len(posts))
+	for _, post := range posts {
+		postID := feedPostViewPostID(post)
+		if postID == uuid.Nil {
+			continue
+		}
+		result[postID] = sourceName
+	}
+	return result
+}
+
+func mixFeedPostCandidateSources(limit int, cursor *feedCursor, sources []feedPostCandidateSource, sourceOrder []string, candidatesBySource map[string][]*PostView) feedPostPage {
+	if limit <= 0 {
+		limit = defaultFeedLimit
+	}
+	previouslyDeliveredPostIDs := feedCursorDeliveredPostIDSet(cursor)
+	seenPostIDs := make(map[uuid.UUID]struct{}, len(previouslyDeliveredPostIDs)+limit)
+	for postID := range previouslyDeliveredPostIDs {
+		seenPostIDs[postID] = struct{}{}
+	}
+	selectedPostIDs := make(map[uuid.UUID]struct{}, limit)
+	selectedCountBySource := make(map[string]int, len(sourceOrder))
+	sourceCount := len(sourceOrder)
+	if sourceCount <= 0 {
+		sourceCount = len(sources)
+	}
+	diversity := newFeedDiversityTracker(limit)
+	diversity.AddAuthorUserIDs(feedCursorDeliveredAuthorUserIDs(cursor))
+	diversity.AddCommunityIDs(feedCursorDeliveredCommunityIDs(cursor))
+	diversity.AddPostProfileKeys(feedCursorDeliveredPostProfileKeys(cursor))
+	diversity.AddCategories(feedCursorDeliveredCategories(cursor))
+	diversity.AddTags(feedCursorDeliveredTags(cursor))
+	selected := make([]feedPostCandidateItem, 0, limit)
+
+	selectCandidate := func(candidate feedPostCandidateItem, enforceDiversity bool) bool {
+		sourceName := normalizePostCandidateSource(candidate.SourceName)
+		if sourceName == "" {
+			sourceName = model.PostCandidateSourceGlobal
+		}
+		if len(selected) >= limit || !feedPostViewIsSelectable(candidate.Post) {
+			return false
+		}
+		if sourceMax := feedPostCandidateSourceMaxPerPage(sourceName, sourceCount); sourceMax > 0 && selectedCountBySource[sourceName] >= sourceMax {
+			return false
+		}
+		postID := feedPostViewPostID(candidate.Post)
+		if _, exists := seenPostIDs[postID]; exists {
+			return false
+		}
+		if enforceDiversity && !diversity.Allows(candidate.Post) {
+			return false
+		}
+		seenPostIDs[postID] = struct{}{}
+		selectedPostIDs[postID] = struct{}{}
+		selected = append(selected, candidate)
+		selectedCountBySource[sourceName]++
+		diversity.Add(candidate.Post)
+		return true
+	}
+
+	selectFromSource := func(sourceName string, quota int) {
+		if quota <= 0 || len(selected) >= limit {
+			return
+		}
+		added := 0
+		for idx, post := range candidatesBySource[sourceName] {
+			if added >= quota || len(selected) >= limit {
+				return
+			}
+			if selectCandidate(feedPostCandidateItem{SourceName: sourceName, Index: idx, Post: post}, true) {
+				added++
+			}
+		}
+	}
+
+	for _, source := range sources {
+		sourceName := normalizePostCandidateSource(source.Name)
+		if sourceName == "" {
+			sourceName = model.PostCandidateSourceGlobal
+		}
+		selectFromSource(sourceName, feedPostCandidateSourceQuota(limit, sourceName, sourceCount))
+	}
+
+	remaining := make([]feedPostCandidateItem, 0, limit*len(sourceOrder))
+	for _, sourceName := range sourceOrder {
+		for idx, post := range candidatesBySource[sourceName] {
+			if !feedPostViewIsSelectable(post) {
+				continue
+			}
+			remaining = append(remaining, feedPostCandidateItem{SourceName: sourceName, Index: idx, Post: post})
+		}
+	}
+	sort.SliceStable(remaining, func(i, j int) bool {
+		return feedPostViewRanksBefore(remaining[i].Post, remaining[j].Post)
+	})
+	for _, candidate := range remaining {
+		if len(selected) >= limit {
+			break
+		}
+		selectCandidate(candidate, true)
+	}
+	for _, candidate := range remaining {
+		if len(selected) >= limit {
+			break
+		}
+		selectCandidate(candidate, false)
+	}
+
+	posts := make([]*PostView, 0, len(selected))
+	candidateSourceByPostID := make(map[uuid.UUID]string, len(selected))
+	deliveredPostIDs := feedCursorDeliveredPostIDs(cursor)
+	deliveredAuthorUserIDs := feedCursorDeliveredAuthorUserIDs(cursor)
+	deliveredCommunityIDs := feedCursorDeliveredCommunityIDs(cursor)
+	deliveredPostProfileKeys := feedCursorDeliveredPostProfileKeys(cursor)
+	deliveredCategories := feedCursorDeliveredCategories(cursor)
+	deliveredTags := feedCursorDeliveredTags(cursor)
+	for _, item := range selected {
+		posts = append(posts, item.Post)
+		postID := feedPostViewPostID(item.Post)
+		deliveredPostIDs = append(deliveredPostIDs, postID)
+		if item.Post != nil && item.Post.Post != nil {
+			if item.Post.Post.AuthorUserID != uuid.Nil {
+				deliveredAuthorUserIDs = append(deliveredAuthorUserIDs, item.Post.Post.AuthorUserID)
+			}
+			if item.Post.Post.CommunityID != nil && *item.Post.Post.CommunityID != uuid.Nil {
+				deliveredCommunityIDs = append(deliveredCommunityIDs, *item.Post.Post.CommunityID)
+			}
+			if item.Post.Post.PostProfileKey != "" {
+				deliveredPostProfileKeys = append(deliveredPostProfileKeys, item.Post.Post.PostProfileKey)
+			}
+			if item.Post.Post.Category != "" {
+				deliveredCategories = append(deliveredCategories, item.Post.Post.Category)
+			}
+			deliveredTags = append(deliveredTags, feedDiversityTags(item.Post.Post.Tags)...)
+		}
+		if postID != uuid.Nil {
+			sourceName := normalizePostCandidateSource(item.SourceName)
+			if sourceName == "" {
+				sourceName = model.PostCandidateSourceGlobal
+			}
+			candidateSourceByPostID[postID] = sourceName
+		}
+	}
+	sourcePositions, consumedIndexBySource := feedCandidateSourcePositions(candidatesBySource, sourceOrder, previouslyDeliveredPostIDs, selectedPostIDs)
+
+	page := feedPostPage{
+		Posts:                   posts,
+		CandidateSourceByPostID: candidateSourceByPostID,
+	}
+	if feedPostCandidateSourcesHaveNext(candidatesBySource, consumedIndexBySource) && len(posts) > 0 {
+		next := feedCursorFromPostView(posts[len(posts)-1])
+		if next != nil {
+			next.Sources = sourcePositions
+			next.DeliveredPostIDs = trimFeedDeliveredPostIDs(deliveredPostIDs)
+			next.DeliveredAuthorUserIDs = trimFeedDeliveredUUIDs(deliveredAuthorUserIDs)
+			next.DeliveredCommunityIDs = trimFeedDeliveredUUIDs(deliveredCommunityIDs)
+			next.DeliveredPostProfileKeys = trimFeedDeliveredPostProfileKeys(deliveredPostProfileKeys)
+			next.DeliveredCategories = trimFeedDeliveredCategories(deliveredCategories)
+			next.DeliveredTags = trimFeedDeliveredTags(deliveredTags)
+			page.NextCursor = next
+		}
+	}
+	return page
+}
+
+type feedDiversityTracker struct {
+	maxAuthorPosts    int
+	maxCommunityPosts int
+	maxProfilePosts   int
+	maxCategoryPosts  int
+	maxTagPosts       int
+	authorCounts      map[uuid.UUID]int
+	communityCounts   map[uuid.UUID]int
+	profileCounts     map[enum.PostProfileKey]int
+	categoryCounts    map[enum.PostCategory]int
+	tagCounts         map[string]int
+}
+
+func newFeedDiversityTracker(limit int) feedDiversityTracker {
+	if limit <= 0 {
+		limit = defaultFeedLimit
+	}
+	cap := 2
+	if limit < cap {
+		cap = limit
+	}
+	return feedDiversityTracker{
+		maxAuthorPosts:    cap,
+		maxCommunityPosts: cap,
+		maxProfilePosts:   cap,
+		maxCategoryPosts:  cap,
+		maxTagPosts:       cap,
+		authorCounts:      make(map[uuid.UUID]int),
+		communityCounts:   make(map[uuid.UUID]int),
+		profileCounts:     make(map[enum.PostProfileKey]int),
+		categoryCounts:    make(map[enum.PostCategory]int),
+		tagCounts:         make(map[string]int),
+	}
+}
+
+func (t *feedDiversityTracker) Allows(view *PostView) bool {
+	if t == nil || view == nil || view.Post == nil {
+		return false
+	}
+	post := view.Post
+	if post.AuthorUserID != uuid.Nil && t.authorCounts[post.AuthorUserID] >= t.maxAuthorPosts {
+		return false
+	}
+	if post.CommunityID != nil && *post.CommunityID != uuid.Nil && t.communityCounts[*post.CommunityID] >= t.maxCommunityPosts {
+		return false
+	}
+	if post.PostProfileKey != "" && t.profileCounts[post.PostProfileKey] >= t.maxProfilePosts {
+		return false
+	}
+	if post.Category != "" && t.categoryCounts[post.Category] >= t.maxCategoryPosts {
+		return false
+	}
+	for _, tag := range feedDiversityTags(post.Tags) {
+		if t.tagCounts[tag] >= t.maxTagPosts {
+			return false
+		}
+	}
+	return true
+}
+
+func (t *feedDiversityTracker) Add(view *PostView) {
+	if t == nil || view == nil || view.Post == nil {
+		return
+	}
+	post := view.Post
+	if post.AuthorUserID != uuid.Nil {
+		t.authorCounts[post.AuthorUserID]++
+	}
+	if post.CommunityID != nil && *post.CommunityID != uuid.Nil {
+		t.communityCounts[*post.CommunityID]++
+	}
+	if post.PostProfileKey != "" {
+		t.profileCounts[post.PostProfileKey]++
+	}
+	if post.Category != "" {
+		t.categoryCounts[post.Category]++
+	}
+	for _, tag := range feedDiversityTags(post.Tags) {
+		t.tagCounts[tag]++
+	}
+}
+
+func (t *feedDiversityTracker) AddAuthorUserIDs(authorUserIDs []uuid.UUID) {
+	if t == nil {
+		return
+	}
+	for _, authorUserID := range authorUserIDs {
+		if authorUserID == uuid.Nil {
+			continue
+		}
+		t.authorCounts[authorUserID]++
+	}
+}
+
+func (t *feedDiversityTracker) AddCommunityIDs(communityIDs []uuid.UUID) {
+	if t == nil {
+		return
+	}
+	for _, communityID := range communityIDs {
+		if communityID == uuid.Nil {
+			continue
+		}
+		t.communityCounts[communityID]++
+	}
+}
+
+func (t *feedDiversityTracker) AddPostProfileKeys(profileKeys []enum.PostProfileKey) {
+	if t == nil {
+		return
+	}
+	for _, profileKey := range profileKeys {
+		if profileKey == "" {
+			continue
+		}
+		t.profileCounts[profileKey]++
+	}
+}
+
+func (t *feedDiversityTracker) AddCategories(categories []enum.PostCategory) {
+	if t == nil {
+		return
+	}
+	for _, category := range categories {
+		if category == "" {
+			continue
+		}
+		t.categoryCounts[category]++
+	}
+}
+
+func (t *feedDiversityTracker) AddTags(tags []string) {
+	if t == nil {
+		return
+	}
+	for _, tag := range tags {
+		tag = strings.ToLower(strings.TrimSpace(tag))
+		if tag == "" {
+			continue
+		}
+		t.tagCounts[tag]++
+	}
+}
+
+func feedDiversityTags(tags []string) []string {
+	if len(tags) == 0 {
+		return nil
+	}
+	seen := make(map[string]struct{}, len(tags))
+	normalized := make([]string, 0, len(tags))
+	for _, tag := range tags {
+		tag = strings.ToLower(strings.TrimSpace(tag))
+		if tag == "" {
+			continue
+		}
+		if _, exists := seen[tag]; exists {
+			continue
+		}
+		seen[tag] = struct{}{}
+		normalized = append(normalized, tag)
+	}
+	return normalized
+}
+
+func feedCandidateSourcePositions(candidatesBySource map[string][]*PostView, sourceOrder []string, previouslyDeliveredPostIDs map[uuid.UUID]struct{}, selectedPostIDs map[uuid.UUID]struct{}) (map[string]feedSourceCursor, map[string]int) {
+	positions := make(map[string]feedSourceCursor)
+	consumedIndexBySource := make(map[string]int, len(sourceOrder))
+	for _, sourceName := range sourceOrder {
+		consumedIndexBySource[sourceName] = -1
+		for idx, post := range candidatesBySource[sourceName] {
+			if !feedPostViewIsSelectable(post) {
+				continue
+			}
+			postID := feedPostViewPostID(post)
+			_, delivered := previouslyDeliveredPostIDs[postID]
+			_, selected := selectedPostIDs[postID]
+			if !delivered && !selected {
+				break
+			}
+			positions[sourceName] = feedSourceCursorFromPostView(post)
+			consumedIndexBySource[sourceName] = idx
+		}
+	}
+	return positions, consumedIndexBySource
+}
+
+func feedPostCandidateFetchLimit(limit int) int {
+	if limit <= 0 {
+		return defaultFeedLimit + 1
+	}
+	return limit*2 + 1
+}
+
+func feedPostCandidateSourceQuota(limit int, sourceName string, sourceCount int) int {
+	if limit <= 0 {
+		return 0
+	}
+	switch normalizePostCandidateSource(sourceName) {
+	case model.PostCandidateSourceFollowing:
+		return 1
+	case model.PostCandidateSourceFollowed, model.PostCandidateSourceSocial:
+		return 1
+	case model.PostCandidateSourceSystem:
+		if sourceCount > 1 {
+			if limit < maxMixedFeedSystemPostsPerPage {
+				return limit
+			}
+			return maxMixedFeedSystemPostsPerPage
+		}
+		if limit < maxFeedSystemPostsPerPage {
+			return limit
+		}
+		return maxFeedSystemPostsPerPage
+	case model.PostCandidateSourceGeo, model.PostCandidateSourceInterest, model.PostCandidateSourceColdStart:
+		if limit >= 5 {
+			return 1
+		}
+	}
+	return 0
+}
+
+func feedPostCandidateSourceMaxPerPage(sourceName string, sourceCount int) int {
+	if normalizePostCandidateSource(sourceName) == model.PostCandidateSourceSystem {
+		if sourceCount > 1 {
+			return maxMixedFeedSystemPostsPerPage
+		}
+		return maxFeedSystemPostsPerPage
+	}
+	return 0
+}
+
+func feedPostCandidateSourcesHaveNext(candidatesBySource map[string][]*PostView, consumedIndexBySource map[string]int) bool {
+	for sourceName, candidates := range candidatesBySource {
+		consumedIndex := consumedIndexBySource[sourceName]
+		for idx := consumedIndex + 1; idx < len(candidates); idx++ {
+			if feedPostViewIsSelectable(candidates[idx]) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (u *PostUseCase) latestPostViews(ctx context.Context, viewerUserID *uuid.UUID, limit int, offset int, communityIDs []uuid.UUID, followedByUserID *uuid.UUID, countryCode string, cityID string, cursor *feedCursor, expiryMode postFeedExpiryMode) ([]*PostView, error) {
+	return u.latestPostViewsForCandidateSource(ctx, viewerUserID, limit, offset, communityIDs, feedPostCandidateSource{
+		Name:             "legacy",
 		FollowedByUserID: followedByUserID,
-		ViewerUserID:     viewerUserID,
+	}, countryCode, cityID, cursor, expiryMode, nil)
+}
+
+func (u *PostUseCase) latestPostViewsForCandidateSource(ctx context.Context, viewerUserID *uuid.UUID, limit int, offset int, communityIDs []uuid.UUID, source feedPostCandidateSource, countryCode string, cityID string, cursor *feedCursor, expiryMode postFeedExpiryMode, rankingPolicyOverrides ...*model.FeedRankingPolicyOverride) ([]*PostView, error) {
+	rankingPolicyOverride := firstFeedRankingPolicyOverride(rankingPolicyOverrides)
+	currentCountryCode := normalizeCountryCode(countryCode)
+	currentCityID := normalizeFeedCityID(cityID)
+	filter := model.PostListFilter{
+		OnlyPublished:             true,
+		Sort:                      "latest_desc",
+		Limit:                     limit,
+		Offset:                    offset,
+		CommunityIDs:              communityIDs,
+		CandidateSource:           normalizePostCandidateSource(source.Name),
+		FollowedByUserID:          source.FollowedByUserID,
+		ExcludeFollowedByUserID:   source.ExcludeFollowedByUserID,
+		ViewerUserID:              viewerUserID,
+		CurrentCountryCode:        currentCountryCode,
+		CurrentCityID:             currentCityID,
+		FeedRankingPolicyOverride: cloneFeedRankingPolicyOverride(rankingPolicyOverride),
 	}
 	switch expiryMode {
 	case postFeedExpiryExpiring:
@@ -381,7 +974,7 @@ func (u *PostUseCase) latestPostViews(ctx context.Context, viewerUserID *uuid.UU
 		filter.FeedCursorPublishedAt = &publishedAt
 		filter.FeedCursorPostID = &postID
 	}
-	cacheKey, cacheTTL, cacheable := u.postFeedPostListCacheKey(ctx, viewerUserID, limit, offset, communityIDs, followedByUserID, cursor, expiryMode)
+	cacheKey, cacheTTL, cacheable := u.postFeedPostListCacheKey(ctx, viewerUserID, limit, offset, communityIDs, source, currentCountryCode, currentCityID, cursor, expiryMode)
 	if cacheable {
 		if cached, ok, cacheErr := u.postFeedCache.GetPosts(ctx, cacheKey); cacheErr == nil && ok {
 			return u.buildPostViews(ctx, cached, viewerUserID)
@@ -395,6 +988,271 @@ func (u *PostUseCase) latestPostViews(ctx context.Context, viewerUserID *uuid.UU
 		_ = u.postFeedCache.SetPosts(ctx, cacheKey, posts, cacheTTL)
 	}
 	return u.buildPostViews(ctx, posts, viewerUserID)
+}
+
+func feedPostViewRanksBefore(left *PostView, right *PostView) bool {
+	leftTime := feedPostViewRankedAt(left)
+	rightTime := feedPostViewRankedAt(right)
+	if !leftTime.Equal(rightTime) {
+		return leftTime.After(rightTime)
+	}
+	return feedPostViewPostID(left).String() > feedPostViewPostID(right).String()
+}
+
+func feedPostViewRankedAt(view *PostView) time.Time {
+	if view == nil || view.Post == nil {
+		return time.Time{}
+	}
+	if view.Post.FeedRankedAt != nil && !view.Post.FeedRankedAt.IsZero() {
+		return view.Post.FeedRankedAt.UTC()
+	}
+	if view.Post.PublishedAt != nil && !view.Post.PublishedAt.IsZero() {
+		return view.Post.PublishedAt.UTC()
+	}
+	return view.Post.CreatedAt.UTC()
+}
+
+func feedPostViewPostID(view *PostView) uuid.UUID {
+	if view == nil || view.Post == nil {
+		return uuid.Nil
+	}
+	return view.Post.ID
+}
+
+func feedPostViewIsSelectable(view *PostView) bool {
+	return view != nil && view.Post != nil && view.Post.ID != uuid.Nil
+}
+
+func feedCursorForCandidateSource(cursor *feedCursor, sourceName string) *feedCursor {
+	if cursor == nil {
+		return nil
+	}
+	sourceName = normalizePostCandidateSource(sourceName)
+	if sourceName != "" && len(cursor.Sources) > 0 {
+		if sourceCursor, ok := cursor.Sources[sourceName]; ok && sourceCursor.PostID != uuid.Nil && !sourceCursor.PublishedAt.IsZero() {
+			return &feedCursor{
+				Version:     cursor.Version,
+				Surface:     cursor.Surface,
+				Tab:         cursor.Tab,
+				PublishedAt: sourceCursor.PublishedAt.UTC(),
+				PostID:      sourceCursor.PostID,
+			}
+		}
+		return nil
+	}
+	if cursor.PostID == uuid.Nil || cursor.PublishedAt.IsZero() {
+		return nil
+	}
+	return cursor
+}
+
+func feedCursorSourcePositions(cursor *feedCursor) map[string]feedSourceCursor {
+	positions := make(map[string]feedSourceCursor)
+	if cursor == nil {
+		return positions
+	}
+	for sourceName, sourceCursor := range cursor.Sources {
+		normalized := normalizePostCandidateSource(sourceName)
+		if normalized == "" || sourceCursor.PostID == uuid.Nil || sourceCursor.PublishedAt.IsZero() {
+			continue
+		}
+		sourceCursor.PublishedAt = sourceCursor.PublishedAt.UTC()
+		positions[normalized] = sourceCursor
+	}
+	return positions
+}
+
+func feedSourceCursorFromPostView(view *PostView) feedSourceCursor {
+	cursor := feedCursorFromPostView(view)
+	if cursor == nil {
+		return feedSourceCursor{}
+	}
+	return feedSourceCursor{
+		PublishedAt: cursor.PublishedAt,
+		PostID:      cursor.PostID,
+	}
+}
+
+func feedCursorDeliveredPostIDSet(cursor *feedCursor) map[uuid.UUID]struct{} {
+	items := feedCursorDeliveredPostIDs(cursor)
+	seen := make(map[uuid.UUID]struct{}, len(items))
+	for _, postID := range items {
+		if postID == uuid.Nil {
+			continue
+		}
+		seen[postID] = struct{}{}
+	}
+	return seen
+}
+
+func feedCursorDeliveredPostIDs(cursor *feedCursor) []uuid.UUID {
+	if cursor == nil || len(cursor.DeliveredPostIDs) == 0 {
+		return nil
+	}
+	items := make([]uuid.UUID, 0, len(cursor.DeliveredPostIDs))
+	seen := make(map[uuid.UUID]struct{}, len(cursor.DeliveredPostIDs))
+	for _, postID := range cursor.DeliveredPostIDs {
+		if postID == uuid.Nil {
+			continue
+		}
+		if _, exists := seen[postID]; exists {
+			continue
+		}
+		seen[postID] = struct{}{}
+		items = append(items, postID)
+	}
+	return items
+}
+
+func trimFeedDeliveredPostIDs(items []uuid.UUID) []uuid.UUID {
+	const maxDeliveredPostIDs = 120
+	if len(items) == 0 {
+		return nil
+	}
+	seen := make(map[uuid.UUID]struct{}, len(items))
+	unique := make([]uuid.UUID, 0, len(items))
+	for _, postID := range items {
+		if postID == uuid.Nil {
+			continue
+		}
+		if _, exists := seen[postID]; exists {
+			continue
+		}
+		seen[postID] = struct{}{}
+		unique = append(unique, postID)
+	}
+	if len(unique) > maxDeliveredPostIDs {
+		unique = unique[len(unique)-maxDeliveredPostIDs:]
+	}
+	return unique
+}
+
+func feedCursorDeliveredAuthorUserIDs(cursor *feedCursor) []uuid.UUID {
+	if cursor == nil || len(cursor.DeliveredAuthorUserIDs) == 0 {
+		return nil
+	}
+	return normalizeFeedDeliveredUUIDs(cursor.DeliveredAuthorUserIDs)
+}
+
+func feedCursorDeliveredCommunityIDs(cursor *feedCursor) []uuid.UUID {
+	if cursor == nil || len(cursor.DeliveredCommunityIDs) == 0 {
+		return nil
+	}
+	return normalizeFeedDeliveredUUIDs(cursor.DeliveredCommunityIDs)
+}
+
+func trimFeedDeliveredUUIDs(items []uuid.UUID) []uuid.UUID {
+	const maxDeliveredUUIDs = 120
+	normalized := normalizeFeedDeliveredUUIDs(items)
+	if len(normalized) > maxDeliveredUUIDs {
+		normalized = normalized[len(normalized)-maxDeliveredUUIDs:]
+	}
+	return normalized
+}
+
+func normalizeFeedDeliveredUUIDs(items []uuid.UUID) []uuid.UUID {
+	if len(items) == 0 {
+		return nil
+	}
+	normalized := make([]uuid.UUID, 0, len(items))
+	for _, item := range items {
+		if item == uuid.Nil {
+			continue
+		}
+		normalized = append(normalized, item)
+	}
+	return normalized
+}
+
+func feedCursorDeliveredPostProfileKeys(cursor *feedCursor) []enum.PostProfileKey {
+	if cursor == nil || len(cursor.DeliveredPostProfileKeys) == 0 {
+		return nil
+	}
+	return normalizeFeedDeliveredPostProfileKeys(cursor.DeliveredPostProfileKeys)
+}
+
+func trimFeedDeliveredPostProfileKeys(items []enum.PostProfileKey) []enum.PostProfileKey {
+	const maxDeliveredPostProfiles = 120
+	normalized := normalizeFeedDeliveredPostProfileKeys(items)
+	if len(normalized) > maxDeliveredPostProfiles {
+		normalized = normalized[len(normalized)-maxDeliveredPostProfiles:]
+	}
+	return normalized
+}
+
+func normalizeFeedDeliveredPostProfileKeys(items []enum.PostProfileKey) []enum.PostProfileKey {
+	if len(items) == 0 {
+		return nil
+	}
+	normalized := make([]enum.PostProfileKey, 0, len(items))
+	for _, item := range items {
+		if item == "" {
+			continue
+		}
+		normalized = append(normalized, item)
+	}
+	return normalized
+}
+
+func feedCursorDeliveredCategories(cursor *feedCursor) []enum.PostCategory {
+	if cursor == nil || len(cursor.DeliveredCategories) == 0 {
+		return nil
+	}
+	return normalizeFeedDeliveredCategories(cursor.DeliveredCategories)
+}
+
+func trimFeedDeliveredCategories(items []enum.PostCategory) []enum.PostCategory {
+	const maxDeliveredCategories = 120
+	normalized := normalizeFeedDeliveredCategories(items)
+	if len(normalized) > maxDeliveredCategories {
+		normalized = normalized[len(normalized)-maxDeliveredCategories:]
+	}
+	return normalized
+}
+
+func normalizeFeedDeliveredCategories(items []enum.PostCategory) []enum.PostCategory {
+	if len(items) == 0 {
+		return nil
+	}
+	normalized := make([]enum.PostCategory, 0, len(items))
+	for _, item := range items {
+		if item == "" {
+			continue
+		}
+		normalized = append(normalized, item)
+	}
+	return normalized
+}
+
+func feedCursorDeliveredTags(cursor *feedCursor) []string {
+	if cursor == nil || len(cursor.DeliveredTags) == 0 {
+		return nil
+	}
+	return normalizeFeedDeliveredTags(cursor.DeliveredTags)
+}
+
+func trimFeedDeliveredTags(tags []string) []string {
+	const maxDeliveredTags = 120
+	normalized := normalizeFeedDeliveredTags(tags)
+	if len(normalized) > maxDeliveredTags {
+		normalized = normalized[len(normalized)-maxDeliveredTags:]
+	}
+	return normalized
+}
+
+func normalizeFeedDeliveredTags(tags []string) []string {
+	if len(tags) == 0 {
+		return nil
+	}
+	normalized := make([]string, 0, len(tags))
+	for _, tag := range tags {
+		tag = strings.ToLower(strings.TrimSpace(tag))
+		if tag == "" {
+			continue
+		}
+		normalized = append(normalized, tag)
+	}
+	return normalized
 }
 
 func (u *PostUseCase) latestStoryViews(ctx context.Context, viewerUserID *uuid.UUID, limit int, offset int) ([]*StoryView, error) {
@@ -412,7 +1270,7 @@ func (u *PostUseCase) latestStoryViews(ctx context.Context, viewerUserID *uuid.U
 	return u.buildStoryViews(ctx, stories, viewerUserID)
 }
 
-func (u *PostUseCase) postFeedPostListCacheKey(ctx context.Context, viewerUserID *uuid.UUID, limit int, offset int, communityIDs []uuid.UUID, followedByUserID *uuid.UUID, cursor *feedCursor, expiryMode postFeedExpiryMode) (string, time.Duration, bool) {
+func (u *PostUseCase) postFeedPostListCacheKey(ctx context.Context, viewerUserID *uuid.UUID, limit int, offset int, communityIDs []uuid.UUID, source feedPostCandidateSource, countryCode string, cityID string, cursor *feedCursor, expiryMode postFeedExpiryMode) (string, time.Duration, bool) {
 	if u == nil ||
 		u.postFeedCache == nil ||
 		cursor != nil ||
@@ -422,10 +1280,14 @@ func (u *PostUseCase) postFeedPostListCacheKey(ctx context.Context, viewerUserID
 		return "", 0, false
 	}
 
-	kind := "feed"
+	sourceName := normalizePostCandidateSource(source.Name)
+	if sourceName == "" {
+		sourceName = model.PostCandidateSourceGlobal
+	}
+	kind := sourceName
 	ttl := u.postFeedCacheTTL
 	if expiryMode == postFeedExpiryExpiring {
-		kind = "tray"
+		kind = "tray:" + sourceName
 		ttl = u.postsTrayCacheTTL
 	}
 	if ttl <= 0 {
@@ -434,10 +1296,12 @@ func (u *PostUseCase) postFeedPostListCacheKey(ctx context.Context, viewerUserID
 
 	scopes := []string{postFeedCacheGlobalScope}
 	owner := "anonymous"
-	if followedByUserID != nil && *followedByUserID != uuid.Nil {
-		kind = "following"
-		owner = followedByUserID.String()
-		scopes = append(scopes, postFeedCacheFollowingScope(*followedByUserID))
+	if source.FollowedByUserID != nil && *source.FollowedByUserID != uuid.Nil {
+		owner = source.FollowedByUserID.String()
+		scopes = append(scopes, postFeedCacheFollowingScope(*source.FollowedByUserID))
+	} else if source.ExcludeFollowedByUserID != nil && *source.ExcludeFollowedByUserID != uuid.Nil {
+		owner = source.ExcludeFollowedByUserID.String()
+		scopes = append(scopes, postFeedCacheDiscoveryScope(*source.ExcludeFollowedByUserID))
 	} else if viewerUserID != nil && *viewerUserID != uuid.Nil {
 		owner = viewerUserID.String()
 		scopes = append(scopes, postFeedCacheViewerScope(*viewerUserID))
@@ -454,7 +1318,332 @@ func (u *PostUseCase) postFeedPostListCacheKey(ctx context.Context, viewerUserID
 	if expiryMode == "" {
 		expiryMode = postFeedExpiryAny
 	}
-	return fmt.Sprintf("post-feed:v2:%s:%s:%s:%s:limit:%d", kind, owner, expiryMode, strings.Join(versionParts, ","), limit), ttl, true
+	geoSegment := fmt.Sprintf("%s:%s", strings.ToUpper(strings.TrimSpace(countryCode)), strings.ToLower(strings.TrimSpace(cityID)))
+	rankingExperiment := feedCacheRankingExperimentSegment(u.feedExperimentAssignmentForViewer(viewerUserID).RankingExperiment)
+	policySegment := feedRankingPolicyOverrideCacheSegment(u.feedExperimentPolicyOverride(rankingExperiment))
+	return fmt.Sprintf("post-feed:v2:%s:%s:%s:policy:%s:%s:rank:%s:geo:%s:%s:limit:%d", kind, owner, expiryMode, feedCandidateMixerPolicy, policySegment, rankingExperiment, geoSegment, strings.Join(versionParts, ","), limit), ttl, true
+}
+
+func (u *PostUseCase) feedExperimentAssignmentForViewer(viewerUserID *uuid.UUID) FeedExperimentAssignment {
+	defaultAssignment := u.feedExperimentAssignment
+	if strings.TrimSpace(defaultAssignment.RankingExperiment) == "" {
+		defaultAssignment.RankingExperiment = defaultFeedExperimentKey
+	}
+	if viewerUserID == nil || *viewerUserID == uuid.Nil || len(u.feedExperimentVariants) == 0 {
+		return defaultAssignment
+	}
+	totalWeight := 0
+	for _, variant := range u.feedExperimentVariants {
+		if variant.Weight > 0 && strings.TrimSpace(variant.RankingExperiment) != "" {
+			totalWeight += variant.Weight
+		}
+	}
+	if totalWeight <= 0 {
+		return defaultAssignment
+	}
+
+	bucket := feedExperimentViewerBucket(*viewerUserID, totalWeight)
+	cumulative := 0
+	for _, variant := range u.feedExperimentVariants {
+		if variant.Weight <= 0 || strings.TrimSpace(variant.RankingExperiment) == "" {
+			continue
+		}
+		cumulative += variant.Weight
+		if bucket < cumulative {
+			return FeedExperimentAssignment{RankingExperiment: variant.RankingExperiment}
+		}
+	}
+	return defaultAssignment
+}
+
+func parseFeedExperimentVariants(spec string) []feedExperimentVariant {
+	parts := strings.Split(spec, ",")
+	variants := make([]feedExperimentVariant, 0, len(parts))
+	for _, part := range parts {
+		name, weightText, ok := strings.Cut(part, "=")
+		if !ok {
+			continue
+		}
+		name = strings.TrimSpace(name)
+		if name == "" {
+			continue
+		}
+		weight, err := strconv.Atoi(strings.TrimSpace(weightText))
+		if err != nil || weight <= 0 {
+			continue
+		}
+		variants = append(variants, feedExperimentVariant{
+			RankingExperiment: name,
+			Weight:            weight,
+		})
+	}
+	return variants
+}
+
+func parseFeedExperimentPolicyOverrides(spec string) map[string]model.FeedRankingPolicyOverride {
+	groups := strings.Split(spec, ";")
+	overrides := make(map[string]model.FeedRankingPolicyOverride, len(groups))
+	for _, group := range groups {
+		name, fieldsText, ok := strings.Cut(group, ":")
+		if !ok {
+			continue
+		}
+		name = feedCacheRankingExperimentSegment(name)
+		if name == "" {
+			continue
+		}
+		override := model.FeedRankingPolicyOverride{ExperimentKey: name}
+		hasFields := false
+		for _, fieldText := range strings.Split(fieldsText, ",") {
+			fieldName, fieldValue, ok := strings.Cut(fieldText, "=")
+			if !ok {
+				continue
+			}
+			if applyFeedExperimentPolicyOverrideField(&override, fieldName, fieldValue) {
+				hasFields = true
+			}
+		}
+		if hasFields {
+			overrides[name] = override
+		}
+	}
+	if len(overrides) == 0 {
+		return nil
+	}
+	return overrides
+}
+
+func applyFeedExperimentPolicyOverrideField(override *model.FeedRankingPolicyOverride, fieldName string, fieldValue string) bool {
+	if override == nil {
+		return false
+	}
+	key := normalizeFeedExperimentPolicyFieldKey(fieldName)
+	value := strings.TrimSpace(fieldValue)
+	if key == "" || value == "" {
+		return false
+	}
+	switch key {
+	case "postinterestweight":
+		return setFeedRankingFloatOverride(value, &override.PostInterestWeight)
+	case "communityinterestweight":
+		return setFeedRankingFloatOverride(value, &override.CommunityInterestWeight)
+	case "postprofileaffinityweight":
+		return setFeedRankingFloatOverride(value, &override.PostProfileAffinityWeight)
+	case "cityaffinityweight":
+		return setFeedRankingFloatOverride(value, &override.CityAffinityWeight)
+	case "countryaffinityweight":
+		return setFeedRankingFloatOverride(value, &override.CountryAffinityWeight)
+	case "categoryaffinityweight":
+		return setFeedRankingFloatOverride(value, &override.CategoryAffinityWeight)
+	case "tagaffinityweight":
+		return setFeedRankingFloatOverride(value, &override.TagAffinityWeight)
+	case "authoraffinityweight":
+		return setFeedRankingFloatOverride(value, &override.AuthorAffinityWeight)
+	case "maxboosthours":
+		return setFeedRankingIntOverride(value, &override.MaxBoostHours)
+	case "maxpenaltyhours":
+		return setFeedRankingIntOverride(value, &override.MaxPenaltyHours)
+	case "interestfreshnessdelay":
+		return setFeedRankingDurationOverride(value, &override.InterestFreshnessDelay)
+	case "notinterestedpenalty":
+		return setFeedRankingDurationOverride(value, &override.NotInterestedPenalty)
+	case "recentpostimpressionwindow":
+		return setFeedRankingDurationOverride(value, &override.RecentPostImpressionWindow)
+	case "recentpostimpressionpenaltyhours":
+		return setFeedRankingIntOverride(value, &override.RecentPostImpressionPenaltyHours)
+	case "recentcommunityeventwindow":
+		return setFeedRankingDurationOverride(value, &override.RecentCommunityEventWindow)
+	case "recentcommunitypenaltyhours":
+		return setFeedRankingIntOverride(value, &override.RecentCommunityPenaltyHours)
+	case "communitymembershipboosthours":
+		return setFeedRankingIntOverride(value, &override.CommunityMembershipBoostHours)
+	case "socialfriendboosthours":
+		return setFeedRankingIntOverride(value, &override.SocialFriendBoostHours)
+	case "socialfollowingboosthours":
+		return setFeedRankingIntOverride(value, &override.SocialFollowingBoostHours)
+	case "currentcityboosthours":
+		return setFeedRankingIntOverride(value, &override.CurrentCityBoostHours)
+	case "currentcountryboosthours":
+		return setFeedRankingIntOverride(value, &override.CurrentCountryBoostHours)
+	case "explorationfreshnesswindow":
+		return setFeedRankingDurationOverride(value, &override.ExplorationFreshnessWindow)
+	case "explorationlowviewthreshold":
+		return setFeedRankingIntOverride(value, &override.ExplorationLowViewThreshold)
+	case "explorationmaxboosthours":
+		return setFeedRankingIntOverride(value, &override.ExplorationMaxBoostHours)
+	case "qualitypenaltywindow":
+		return setFeedRankingDurationOverride(value, &override.QualityPenaltyWindow)
+	case "qualityminnegativeevents":
+		return setFeedRankingIntOverride(value, &override.QualityMinNegativeEvents)
+	case "qualitynegativepenaltyhours":
+		return setFeedRankingIntOverride(value, &override.QualityNegativePenaltyHours)
+	case "qualitymaxpenaltyhours":
+		return setFeedRankingIntOverride(value, &override.QualityMaxPenaltyHours)
+	case "maxpostspercommunityperpage":
+		return setFeedRankingIntOverride(value, &override.MaxPostsPerCommunityPerPage)
+	case "maxpostspercategoryperpage":
+		return setFeedRankingIntOverride(value, &override.MaxPostsPerCategoryPerPage)
+	case "maxpostsperauthorperpage":
+		return setFeedRankingIntOverride(value, &override.MaxPostsPerAuthorPerPage)
+	case "maxpostsperprofileperpage":
+		return setFeedRankingIntOverride(value, &override.MaxPostsPerProfilePerPage)
+	case "coldstartmaxboosthours":
+		return setFeedRankingIntOverride(value, &override.ColdStartMaxBoostHours)
+	case "coldstartengagementweight":
+		return setFeedRankingFloatOverride(value, &override.ColdStartEngagementWeight)
+	case "engagementmaxboosthours":
+		return setFeedRankingIntOverride(value, &override.EngagementMaxBoostHours)
+	case "engagementweight":
+		return setFeedRankingFloatOverride(value, &override.EngagementWeight)
+	case "engagementfreshnesswindow":
+		return setFeedRankingDurationOverride(value, &override.EngagementFreshnessWindow)
+	case "negativeinterestdecaywindow":
+		return setFeedRankingDurationOverride(value, &override.NegativeInterestDecayWindow)
+	case "negativeinterestminweight":
+		return setFeedRankingFloatOverride(value, &override.NegativeInterestMinWeight)
+	case "directnegativefeedbackdecaywindow":
+		return setFeedRankingDurationOverride(value, &override.DirectNegativeFeedbackDecayWindow)
+	default:
+		return false
+	}
+}
+
+func normalizeFeedExperimentPolicyFieldKey(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	value = strings.TrimPrefix(value, "feed_ranking_")
+	replacer := strings.NewReplacer("_", "", "-", "", ".", "")
+	return replacer.Replace(value)
+}
+
+func setFeedRankingFloatOverride(value string, target **float64) bool {
+	parsed, err := strconv.ParseFloat(strings.TrimSpace(value), 64)
+	if err != nil {
+		return false
+	}
+	*target = &parsed
+	return true
+}
+
+func setFeedRankingIntOverride(value string, target **int) bool {
+	parsed, err := strconv.Atoi(strings.TrimSpace(value))
+	if err != nil {
+		return false
+	}
+	*target = &parsed
+	return true
+}
+
+func setFeedRankingDurationOverride(value string, target **time.Duration) bool {
+	parsed, err := time.ParseDuration(strings.TrimSpace(value))
+	if err != nil {
+		return false
+	}
+	*target = &parsed
+	return true
+}
+
+func feedExperimentViewerBucket(viewerUserID uuid.UUID, modulo int) int {
+	if modulo <= 0 {
+		return 0
+	}
+	hash := fnv.New32a()
+	_, _ = hash.Write([]byte(viewerUserID.String()))
+	return int(hash.Sum32() % uint32(modulo))
+}
+
+func (u *PostUseCase) feedExperimentPolicyOverride(rankingExperiment string) *model.FeedRankingPolicyOverride {
+	if u == nil || len(u.feedExperimentPolicies) == 0 {
+		return nil
+	}
+	key := feedCacheRankingExperimentSegment(rankingExperiment)
+	override, ok := u.feedExperimentPolicies[key]
+	if !ok {
+		return nil
+	}
+	return cloneFeedRankingPolicyOverride(&override)
+}
+
+func firstFeedRankingPolicyOverride(overrides []*model.FeedRankingPolicyOverride) *model.FeedRankingPolicyOverride {
+	if len(overrides) == 0 || overrides[0] == nil {
+		return nil
+	}
+	return overrides[0]
+}
+
+func cloneFeedRankingPolicyOverride(override *model.FeedRankingPolicyOverride) *model.FeedRankingPolicyOverride {
+	if override == nil {
+		return nil
+	}
+	copy := *override
+	return &copy
+}
+
+func feedRankingPolicyOverrideCacheSegment(override *model.FeedRankingPolicyOverride) string {
+	if override == nil {
+		return "baseline"
+	}
+	raw, err := json.Marshal(override)
+	if err != nil || len(raw) == 0 {
+		return "override"
+	}
+	hash := fnv.New32a()
+	_, _ = hash.Write(raw)
+	return fmt.Sprintf("%s-%x", feedCacheRankingExperimentSegment(override.ExperimentKey), hash.Sum32())
+}
+
+func normalizePostCandidateSource(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case model.PostCandidateSourceFollowing:
+		return model.PostCandidateSourceFollowing
+	case model.PostCandidateSourceFollowed:
+		return model.PostCandidateSourceFollowed
+	case model.PostCandidateSourceSocial:
+		return model.PostCandidateSourceSocial
+	case model.PostCandidateSourceSystem:
+		return model.PostCandidateSourceSystem
+	case model.PostCandidateSourceGeo:
+		return model.PostCandidateSourceGeo
+	case model.PostCandidateSourceInterest:
+		return model.PostCandidateSourceInterest
+	case model.PostCandidateSourceColdStart:
+		return model.PostCandidateSourceColdStart
+	case model.PostCandidateSourcePopular:
+		return model.PostCandidateSourcePopular
+	case model.PostCandidateSourceGlobal:
+		return model.PostCandidateSourceGlobal
+	default:
+		return ""
+	}
+}
+
+func normalizeFeedCityID(value string) string {
+	return strings.TrimSpace(value)
+}
+
+func feedCacheRankingExperimentSegment(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	if value == "" {
+		return defaultFeedExperimentKey
+	}
+	var builder strings.Builder
+	builder.Grow(len(value))
+	for _, r := range value {
+		switch {
+		case r >= 'a' && r <= 'z':
+			builder.WriteRune(r)
+		case r >= '0' && r <= '9':
+			builder.WriteRune(r)
+		case r == '-' || r == '_' || r == '.':
+			builder.WriteRune(r)
+		default:
+			builder.WriteByte('-')
+		}
+	}
+	normalized := strings.Trim(builder.String(), "-._")
+	if normalized == "" {
+		return defaultFeedExperimentKey
+	}
+	return normalized
 }
 
 func normalizeFeedSurface(surface string) string {
@@ -534,7 +1723,15 @@ func normalizeOptionalFeedSurface(surface string) string {
 func feedEventsInvalidateViewerFeedCache(events []model.FeedEvent) bool {
 	for _, event := range events {
 		switch event.EventType {
-		case model.FeedEventTypeHide, model.FeedEventTypeNotInterested:
+		case model.FeedEventTypeClick,
+			model.FeedEventTypeDwell,
+			model.FeedEventTypeLike,
+			model.FeedEventTypeComment,
+			model.FeedEventTypeShare,
+			model.FeedEventTypeSubscribe,
+			model.FeedEventTypeHide,
+			model.FeedEventTypeNotInterested,
+			model.FeedEventTypeReport:
 			return true
 		}
 	}
@@ -563,6 +1760,8 @@ func normalizeFeedInterestEntityType(value string) string {
 	switch strings.ToLower(strings.TrimSpace(value)) {
 	case model.FeedInterestEntityTypePost:
 		return model.FeedInterestEntityTypePost
+	case model.FeedInterestEntityTypePostProfile:
+		return model.FeedInterestEntityTypePostProfile
 	case model.FeedInterestEntityTypeCommunity:
 		return model.FeedInterestEntityTypeCommunity
 	case model.FeedInterestEntityTypeActivity:
@@ -588,14 +1787,15 @@ func normalizeFeedInterestEntityType(value string) string {
 	}
 }
 
-func encodeFeedCursor(post *PostView, surface string, tab string) string {
-	cursor := feedCursorFromPostView(post)
+func encodeFeedCursor(cursor *feedCursor, surface string, tab string, rankingExperiment string) string {
 	if cursor == nil {
 		return ""
 	}
 	cursor.Version = feedCursorVersion
 	cursor.Surface = surface
 	cursor.Tab = tab
+	cursor.CandidatePolicy = feedCandidateMixerPolicy
+	cursor.RankingExperiment = feedCacheRankingExperimentSegment(rankingExperiment)
 	payload, err := json.Marshal(cursor)
 	if err != nil {
 		return ""
@@ -623,7 +1823,7 @@ func feedCursorFromPostView(post *PostView) *feedCursor {
 	}
 }
 
-func decodeFeedCursor(cursor string, surface string, tab string) (*feedCursor, error) {
+func decodeFeedCursor(cursor string, surface string, tab string, rankingExperiment string) (*feedCursor, error) {
 	trimmed := strings.TrimSpace(cursor)
 	if trimmed == "" {
 		return nil, nil
@@ -639,10 +1839,35 @@ func decodeFeedCursor(cursor string, surface string, tab string) (*feedCursor, e
 	if decoded.PostID == uuid.Nil || decoded.PublishedAt.IsZero() {
 		return nil, ErrInvalidFeedCursor
 	}
-	if decoded.Version != feedCursorVersion || decoded.Surface != surface || decoded.Tab != tab {
+	if decoded.Version != feedCursorVersion {
+		return nil, ErrInvalidFeedCursor
+	}
+	if decoded.CandidatePolicy != feedCandidateMixerPolicy {
+		return nil, ErrInvalidFeedCursor
+	}
+	cursorRankingExperiment := feedCacheRankingExperimentSegment(decoded.RankingExperiment)
+	expectedRankingExperiment := feedCacheRankingExperimentSegment(rankingExperiment)
+	if cursorRankingExperiment != expectedRankingExperiment {
+		return nil, ErrInvalidFeedCursor
+	}
+	if decoded.Surface != surface || decoded.Tab != tab {
 		return nil, ErrInvalidFeedCursor
 	}
 	decoded.PublishedAt = decoded.PublishedAt.UTC()
+	for sourceName, sourceCursor := range decoded.Sources {
+		if sourceCursor.PostID == uuid.Nil || sourceCursor.PublishedAt.IsZero() {
+			delete(decoded.Sources, sourceName)
+			continue
+		}
+		sourceCursor.PublishedAt = sourceCursor.PublishedAt.UTC()
+		decoded.Sources[sourceName] = sourceCursor
+	}
+	decoded.DeliveredPostIDs = trimFeedDeliveredPostIDs(decoded.DeliveredPostIDs)
+	decoded.DeliveredAuthorUserIDs = trimFeedDeliveredUUIDs(decoded.DeliveredAuthorUserIDs)
+	decoded.DeliveredCommunityIDs = trimFeedDeliveredUUIDs(decoded.DeliveredCommunityIDs)
+	decoded.DeliveredPostProfileKeys = trimFeedDeliveredPostProfileKeys(decoded.DeliveredPostProfileKeys)
+	decoded.DeliveredCategories = trimFeedDeliveredCategories(decoded.DeliveredCategories)
+	decoded.DeliveredTags = trimFeedDeliveredTags(decoded.DeliveredTags)
 	return &decoded, nil
 }
 
@@ -703,10 +1928,22 @@ func normalizeFeedEventType(value string) string {
 		return model.FeedEventTypeImpression
 	case model.FeedEventTypeClick:
 		return model.FeedEventTypeClick
+	case model.FeedEventTypeDwell:
+		return model.FeedEventTypeDwell
+	case model.FeedEventTypeLike:
+		return model.FeedEventTypeLike
+	case model.FeedEventTypeComment:
+		return model.FeedEventTypeComment
+	case model.FeedEventTypeShare:
+		return model.FeedEventTypeShare
+	case model.FeedEventTypeSubscribe:
+		return model.FeedEventTypeSubscribe
 	case model.FeedEventTypeHide:
 		return model.FeedEventTypeHide
 	case model.FeedEventTypeNotInterested:
 		return model.FeedEventTypeNotInterested
+	case model.FeedEventTypeReport:
+		return model.FeedEventTypeReport
 	default:
 		return ""
 	}
@@ -715,6 +1952,7 @@ func normalizeFeedEventType(value string) string {
 func isFeedBlockType(value string) bool {
 	switch strings.TrimSpace(value) {
 	case model.FeedBlockTypeStoriesTray,
+		model.FeedBlockTypeCommunityCard,
 		model.FeedBlockTypeSuggestedCommunities,
 		model.FeedBlockTypeMySubscriptions,
 		model.FeedBlockTypePostCard,

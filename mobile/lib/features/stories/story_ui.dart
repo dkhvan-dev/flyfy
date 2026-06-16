@@ -478,17 +478,34 @@ class StoryCoverImage extends StatelessWidget {
       );
     }
 
-    return Image.network(
-      url!,
-      fit: BoxFit.cover,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) {
-          return child;
-        }
-        return const _StoryImageLoadingPlaceholder();
-      },
-      errorBuilder: (context, error, stackTrace) {
-        return _StoryVideoCover(url: url!);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = MediaQuery.sizeOf(context).width;
+        final logicalWidth = constraints.hasBoundedWidth
+            ? constraints.maxWidth
+            : screenWidth;
+        final cacheWidth =
+            (logicalWidth * MediaQuery.devicePixelRatioOf(context))
+                .round()
+                .clamp(320, 1600)
+                .toInt();
+
+        return Image.network(
+          url!,
+          fit: BoxFit.cover,
+          cacheWidth: cacheWidth,
+          gaplessPlayback: true,
+          filterQuality: FilterQuality.medium,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) {
+              return child;
+            }
+            return const _StoryImageLoadingPlaceholder();
+          },
+          errorBuilder: (context, error, stackTrace) {
+            return _StoryVideoCover(url: url!);
+          },
+        );
       },
     );
   }

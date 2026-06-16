@@ -31,7 +31,7 @@ func (r *PGPostRepository) ListFeedPosts(ctx context.Context, filter model.PostL
 	if filter.ExcludeExpiring {
 		clauses = append(clauses, "s.expires_at IS NULL")
 	}
-	policy := r.feedRankingPolicy.normalized()
+	policy := feedRankingPolicyWithOverride(r.feedRankingPolicy, filter.FeedRankingPolicyOverride)
 	viewerUserIDPos := 0
 	effectiveCommunityIDExpression := "COALESCE(fi.community_id, s.community_id, ci.community_id)"
 	if len(filter.CommunityIDs) > 0 {
@@ -48,14 +48,31 @@ func (r *PGPostRepository) ListFeedPosts(ctx context.Context, filter model.PostL
 				FROM post_feed_events hidden
 				WHERE hidden.viewer_user_id = $%d
 				  AND hidden.post_id = fi.post_id
-				  AND hidden.event_type = 'hide'
+				  AND hidden.event_type IN ('hide', 'report')
 			)
-		`, viewerUserIDPos))
+			AND NOT EXISTS (
+				SELECT 1
+				FROM community_memberships muted_community
+				WHERE muted_community.community_id = %s
+				  AND muted_community.user_id = $%d
+				  AND muted_community.status = 'MUTED'
+			)
+		`, viewerUserIDPos, effectiveCommunityIDExpression, viewerUserIDPos))
 		feedRankJoins = policy.feedRankJoinsExpression(viewerUserIDPos)
 	}
+	currentCityIDPos := 0
+	if currentCityID := strings.TrimSpace(filter.CurrentCityID); currentCityID != "" {
+		args = append(args, currentCityID)
+		currentCityIDPos = len(args)
+	}
+	currentCountryCodePos := 0
+	if currentCountryCode := strings.ToUpper(strings.TrimSpace(filter.CurrentCountryCode)); currentCountryCode != "" {
+		args = append(args, currentCountryCode)
+		currentCountryCodePos = len(args)
+	}
 	feedRankedAtExpression := "fi.rank_published_at"
-	if viewerUserIDPos > 0 {
-		feedRankedAtExpression = policy.viewerRankedAtExpression(viewerUserIDPos)
+	if viewerUserIDPos > 0 || currentCityIDPos > 0 || currentCountryCodePos > 0 {
+		feedRankedAtExpression = policy.viewerRankedAtExpression(viewerUserIDPos, currentCityIDPos, currentCountryCodePos)
 	}
 	if filter.FollowedByUserID != nil && *filter.FollowedByUserID != uuid.Nil {
 		args = append(args, *filter.FollowedByUserID)
@@ -69,6 +86,133 @@ func (r *PGPostRepository) ListFeedPosts(ctx context.Context, filter model.PostL
 				  AND m.status = 'ACTIVE'
 			)
 		`, effectiveCommunityIDExpression, userIDPos))
+	}
+	if filter.ExcludeFollowedByUserID != nil && *filter.ExcludeFollowedByUserID != uuid.Nil {
+		args = append(args, *filter.ExcludeFollowedByUserID)
+		userIDPos := len(args)
+		clauses = append(clauses, fmt.Sprintf(`
+			NOT EXISTS (
+				SELECT 1
+				FROM community_memberships m
+				WHERE m.community_id = %s
+				  AND m.user_id = $%d
+				  AND m.status = 'ACTIVE'
+			)
+		`, effectiveCommunityIDExpression, userIDPos))
+	}
+	switch strings.TrimSpace(filter.CandidateSource) {
+	case model.PostCandidateSourceSocial:
+		if viewerUserIDPos == 0 {
+			clauses = append(clauses, "FALSE")
+			break
+		}
+		clauses = append(clauses, fmt.Sprintf(`
+			EXISTS (
+				SELECT 1
+				FROM post_feed_social_edges source_social
+				WHERE source_social.viewer_user_id = $%d
+				  AND source_social.target_user_id = s.author_user_id
+				  AND source_social.edge_type IN ('friend', 'following')
+				  AND source_social.active = true
+			)
+		`, viewerUserIDPos))
+	case model.PostCandidateSourceSystem:
+		clauses = append(clauses, `
+			s.post_profile_key = 'article_v1'
+			AND EXISTS (
+				SELECT 1
+				FROM unnest(COALESCE(s.tags, ARRAY[]::text[])) AS system_tag(tag)
+				WHERE lower(system_tag.tag) = ANY(ARRAY['official_updates', 'travel_alerts', 'local_news'])
+			)
+		`)
+	case model.PostCandidateSourceGeo:
+		geoClauses := make([]string, 0, 2)
+		if currentCityIDPos > 0 {
+			geoClauses = append(geoClauses, fmt.Sprintf("LOWER(COALESCE(s.place_city_id, ci.city_id, '')) = LOWER($%d)", currentCityIDPos))
+		}
+		if currentCountryCodePos > 0 {
+			geoClauses = append(geoClauses, fmt.Sprintf("UPPER(COALESCE(s.place_country_code, ci.country_code, '')) = UPPER($%d)", currentCountryCodePos))
+		}
+		if len(geoClauses) == 0 {
+			clauses = append(clauses, "FALSE")
+		} else {
+			clauses = append(clauses, "("+strings.Join(geoClauses, " OR ")+")")
+		}
+	case model.PostCandidateSourceInterest:
+		if viewerUserIDPos == 0 {
+			clauses = append(clauses, "FALSE")
+			break
+		}
+		clauses = append(clauses, fmt.Sprintf(`
+			EXISTS (
+				SELECT 1
+				FROM post_feed_user_interests source_interest
+				WHERE source_interest.viewer_user_id = $%d
+				  AND source_interest.score > 0
+				  AND source_interest.updated_at < NOW() - %s
+				  AND (
+					(source_interest.entity_type = 'post' AND source_interest.entity_id = fi.post_id::text)
+					OR (source_interest.entity_type = 'community' AND source_interest.entity_id = %s::text)
+					OR (source_interest.entity_type = 'post_profile' AND source_interest.entity_id = lower(s.post_profile_key))
+					OR (source_interest.entity_type = 'author' AND source_interest.entity_id = s.author_user_id::text)
+					OR (source_interest.entity_type = 'city' AND source_interest.entity_id = lower(COALESCE(s.place_city_id, ci.city_id, '')))
+					OR (source_interest.entity_type = 'country' AND source_interest.entity_id = lower(COALESCE(s.place_country_code, ci.country_code, '')))
+					OR (source_interest.entity_type = 'category' AND source_interest.entity_id = lower(s.category))
+					OR (
+						source_interest.entity_type = 'tag'
+						AND source_interest.entity_id IN (
+							SELECT lower(post_tag.tag)
+							FROM unnest(COALESCE(s.tags, ARRAY[]::text[])) AS post_tag(tag)
+						)
+					)
+				  )
+			)
+			AND NOT EXISTS (
+				SELECT 1
+				FROM post_feed_user_interests negative_source_interest
+				WHERE negative_source_interest.viewer_user_id = $%d
+				  AND negative_source_interest.score < 0
+				  AND negative_source_interest.last_event_at >= NOW() - %s
+				  AND (
+					(negative_source_interest.entity_type = 'post' AND negative_source_interest.entity_id = fi.post_id::text)
+					OR (negative_source_interest.entity_type = 'community' AND negative_source_interest.entity_id = %s::text)
+					OR (negative_source_interest.entity_type = 'post_profile' AND negative_source_interest.entity_id = lower(s.post_profile_key))
+					OR (negative_source_interest.entity_type = 'author' AND negative_source_interest.entity_id = s.author_user_id::text)
+					OR (negative_source_interest.entity_type = 'city' AND negative_source_interest.entity_id = lower(COALESCE(s.place_city_id, ci.city_id, '')))
+					OR (negative_source_interest.entity_type = 'country' AND negative_source_interest.entity_id = lower(COALESCE(s.place_country_code, ci.country_code, '')))
+					OR (negative_source_interest.entity_type = 'category' AND negative_source_interest.entity_id = lower(s.category))
+					OR (
+						negative_source_interest.entity_type = 'tag'
+						AND negative_source_interest.entity_id IN (
+							SELECT lower(post_tag.tag)
+							FROM unnest(COALESCE(s.tags, ARRAY[]::text[])) AS post_tag(tag)
+						)
+					)
+				  )
+			)
+		`, viewerUserIDPos, policy.durationSQL(policy.InterestFreshnessDelay), effectiveCommunityIDExpression, viewerUserIDPos, policy.durationSQL(policy.DirectNegativeFeedbackDecayWindow), effectiveCommunityIDExpression))
+	case model.PostCandidateSourceColdStart:
+		geoClauses := make([]string, 0, 2)
+		if currentCityIDPos > 0 {
+			geoClauses = append(geoClauses, fmt.Sprintf("LOWER(COALESCE(s.place_city_id, ci.city_id, '')) = LOWER($%d)", currentCityIDPos))
+		}
+		if currentCountryCodePos > 0 {
+			geoClauses = append(geoClauses, fmt.Sprintf("UPPER(COALESCE(s.place_country_code, ci.country_code, '')) = UPPER($%d)", currentCountryCodePos))
+		}
+		if viewerUserIDPos > 0 {
+			clauses = append(clauses, fmt.Sprintf(`
+				NOT EXISTS (
+					SELECT 1
+					FROM post_feed_user_interests cold_start_source_interest
+					WHERE cold_start_source_interest.viewer_user_id = $%d
+					  AND cold_start_source_interest.score > 0
+					  AND cold_start_source_interest.updated_at < NOW() - %s
+				)
+			`, viewerUserIDPos, policy.durationSQL(policy.InterestFreshnessDelay)))
+		}
+		if len(geoClauses) > 0 {
+			clauses = append(clauses, "("+strings.Join(geoClauses, " OR ")+")")
+		}
 	}
 	if filter.FeedCursorPublishedAt != nil && filter.FeedCursorPostID != nil {
 		args = append(args, filter.FeedCursorPublishedAt.UTC(), *filter.FeedCursorPostID)
@@ -100,7 +244,8 @@ func (r *PGPostRepository) ListFeedPosts(ctx context.Context, filter model.PostL
 				%s AS feed_ranked_at,
 				ROW_NUMBER() OVER (PARTITION BY %s ORDER BY %s DESC, fi.post_id DESC) AS community_row_number,
 				ROW_NUMBER() OVER (PARTITION BY s.category ORDER BY %s DESC, fi.post_id DESC) AS category_row_number,
-				ROW_NUMBER() OVER (PARTITION BY s.author_user_id ORDER BY %s DESC, fi.post_id DESC) AS author_row_number
+				ROW_NUMBER() OVER (PARTITION BY s.author_user_id ORDER BY %s DESC, fi.post_id DESC) AS author_row_number,
+				ROW_NUMBER() OVER (PARTITION BY s.post_profile_key ORDER BY %s DESC, fi.post_id DESC) AS profile_row_number
 			FROM post_feed_items fi
 			JOIN posts s ON s.id = fi.post_id
 			LEFT JOIN community_instances ci ON ci.id = s.community_instance_id
@@ -121,9 +266,10 @@ func (r *PGPostRepository) ListFeedPosts(ctx context.Context, filter model.PostL
 		WHERE (community_id IS NULL OR community_row_number <= %d)
 		  AND category_row_number <= %d
 		  AND author_row_number <= %d
+		  AND profile_row_number <= %d
 		ORDER BY feed_ranked_at DESC, id DESC
 		LIMIT $%d OFFSET $%d
-	`, effectiveCommunityIDExpression, feedRankedAtExpression, effectiveCommunityIDExpression, feedRankedAtExpression, feedRankedAtExpression, feedRankedAtExpression, feedRankJoins, strings.Join(clauses, " AND "), policy.MaxPostsPerCommunityPerPage, policy.MaxPostsPerCategoryPerPage, policy.MaxPostsPerAuthorPerPage, limitPos, offsetPos)
+	`, effectiveCommunityIDExpression, feedRankedAtExpression, effectiveCommunityIDExpression, feedRankedAtExpression, feedRankedAtExpression, feedRankedAtExpression, feedRankedAtExpression, feedRankJoins, strings.Join(clauses, " AND "), policy.MaxPostsPerCommunityPerPage, policy.MaxPostsPerCategoryPerPage, policy.MaxPostsPerAuthorPerPage, policy.MaxPostsPerProfilePerPage, limitPos, offsetPos)
 
 	rows, err := r.pool.Query(ctx, query, args...)
 	if err != nil {
@@ -181,6 +327,7 @@ func (r *PGPostRepository) CreateFeedEvents(ctx context.Context, events []model.
 			SELECT
 				viewer_user_id,
 				event_type,
+				post_id,
 				COALESCE(
 					NULLIF(metadata->>'entityType', ''),
 					CASE WHEN post_id IS NOT NULL THEN 'post' ELSE NULL END
@@ -191,14 +338,20 @@ func (r *PGPostRepository) CreateFeedEvents(ctx context.Context, events []model.
 					WHEN event_type = 'impression' THEN 0.0500
 					WHEN event_type = 'click' AND metadata->>'action' = 'conversion' THEN 3.0000
 					WHEN event_type = 'click' THEN 1.0000
+					WHEN event_type = 'dwell' THEN 0.7000
+					WHEN event_type = 'like' THEN 1.6000
+					WHEN event_type = 'comment' THEN 2.2000
+					WHEN event_type = 'share' THEN 2.0000
+					WHEN event_type = 'subscribe' THEN 3.0000
 					WHEN event_type = 'hide' THEN -4.0000
 					WHEN event_type = 'not_interested' THEN -3.0000
+					WHEN event_type = 'report' THEN -6.0000
 					ELSE 0.0000
 				END AS score,
 				CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END AS impression_count,
 				CASE WHEN event_type = 'click' THEN 1 ELSE 0 END AS click_count,
-				CASE WHEN event_type = 'click' AND metadata->>'action' = 'conversion' THEN 1 ELSE 0 END AS conversion_count,
-				CASE WHEN event_type = 'hide' THEN 1 ELSE 0 END AS hide_count,
+				CASE WHEN event_type = 'click' AND metadata->>'action' = 'conversion' THEN 1 WHEN event_type = 'subscribe' THEN 1 ELSE 0 END AS conversion_count,
+				CASE WHEN event_type IN ('hide', 'report') THEN 1 ELSE 0 END AS hide_count,
 				CASE WHEN event_type = 'not_interested' THEN 1 ELSE 0 END AS not_interested_count,
 				COALESCE(NULLIF(metadata->>'source', ''), '') AS source,
 				COALESCE(occurred_at, received_at) AS last_event_at,
@@ -252,6 +405,27 @@ func (r *PGPostRepository) CreateFeedEvents(ctx context.Context, events []model.
 			SELECT
 				viewer_user_id,
 				event_type,
+				'community' AS entity_type,
+				NULLIF(metadata->>'communityId', '') AS entity_id,
+				representative_id,
+				score * 0.60 AS score,
+				impression_count,
+				click_count,
+				conversion_count,
+				hide_count,
+				not_interested_count,
+				source,
+				last_event_at,
+				entity_type AS parent_entity_type,
+				entity_id AS parent_entity_id
+			FROM interest_signal
+			WHERE NULLIF(metadata->>'communityId', '') IS NOT NULL
+
+			UNION ALL
+
+			SELECT
+				viewer_user_id,
+				event_type,
 				'category' AS entity_type,
 				lower(COALESCE(NULLIF(metadata->>'categorySlug', ''), NULLIF(metadata->>'category', ''))) AS entity_id,
 				representative_id,
@@ -267,6 +441,28 @@ func (r *PGPostRepository) CreateFeedEvents(ctx context.Context, events []model.
 				entity_id AS parent_entity_id
 			FROM interest_signal
 			WHERE COALESCE(NULLIF(metadata->>'categorySlug', ''), NULLIF(metadata->>'category', '')) IS NOT NULL
+
+			UNION ALL
+
+			SELECT
+				signal.viewer_user_id,
+				signal.event_type,
+				'post_profile' AS entity_type,
+				lower(COALESCE(NULLIF(signal.metadata->>'postProfileKey', ''), NULLIF(profile_post.post_profile_key, ''))) AS entity_id,
+				signal.representative_id,
+				signal.score * 0.30 AS score,
+				signal.impression_count,
+				signal.click_count,
+				signal.conversion_count,
+				signal.hide_count,
+				signal.not_interested_count,
+				signal.source,
+				signal.last_event_at,
+				signal.entity_type AS parent_entity_type,
+				signal.entity_id AS parent_entity_id
+			FROM interest_signal signal
+			JOIN posts profile_post ON profile_post.id = signal.post_id
+			WHERE COALESCE(NULLIF(signal.metadata->>'postProfileKey', ''), NULLIF(profile_post.post_profile_key, '')) IS NOT NULL
 
 			UNION ALL
 
@@ -288,6 +484,29 @@ func (r *PGPostRepository) CreateFeedEvents(ctx context.Context, events []model.
 				entity_id AS parent_entity_id
 			FROM interest_signal
 			WHERE COALESCE(NULLIF(metadata->>'profileUserId', ''), NULLIF(metadata->>'profileId', '')) IS NOT NULL
+
+			UNION ALL
+
+			SELECT
+				signal.viewer_user_id,
+				signal.event_type,
+				'author' AS entity_type,
+				event_post.author_user_id::text AS entity_id,
+				signal.representative_id,
+				signal.score * 0.55 AS score,
+				signal.impression_count,
+				signal.click_count,
+				signal.conversion_count,
+				signal.hide_count,
+				signal.not_interested_count,
+				signal.source,
+				signal.last_event_at,
+				signal.entity_type AS parent_entity_type,
+				signal.entity_id AS parent_entity_id
+			FROM interest_signal signal
+			JOIN posts event_post ON event_post.id = signal.post_id
+			WHERE signal.post_id IS NOT NULL
+			  AND event_post.author_user_id <> signal.viewer_user_id
 
 			UNION ALL
 
@@ -481,7 +700,7 @@ func (r *PGPostRepository) CreateFeedEvents(ctx context.Context, events []model.
 				'' AS parent_entity_type,
 				'' AS parent_entity_id
 			FROM interest_signal
-			WHERE entity_type IN ('post', 'community', 'activity', 'attraction', 'tour', 'guide', 'profile')
+			WHERE entity_type IN ('post', 'post_profile', 'community', 'activity', 'attraction', 'tour', 'guide', 'profile')
 			  AND entity_id IS NOT NULL
 			  AND entity_id <> ''
 
@@ -493,7 +712,7 @@ func (r *PGPostRepository) CreateFeedEvents(ctx context.Context, events []model.
 				not_interested_count, source, last_event_at,
 				parent_entity_type, parent_entity_id
 			FROM derived_interest_signal
-			WHERE entity_type IN ('city', 'country', 'category', 'tag', 'profile')
+			WHERE entity_type IN ('city', 'country', 'community', 'category', 'tag', 'post_profile', 'profile', 'author')
 			  AND entity_id IS NOT NULL
 			  AND entity_id <> ''
 		)
@@ -540,8 +759,9 @@ func (r *PGPostRepository) CreateFeedEvents(ctx context.Context, events []model.
 	`
 
 	var batch pgx.Batch
+	rankingExperiment := r.feedRankingPolicy.normalized().ExperimentKey
 	for _, event := range events {
-		metadata, err := json.Marshal(event.Metadata)
+		metadata, err := json.Marshal(feedEventMetadataWithRankingExperiment(event.Metadata, rankingExperiment))
 		if err != nil {
 			return fmt.Errorf("marshal feed event metadata: %w", err)
 		}
@@ -566,7 +786,7 @@ func (r *PGPostRepository) CreateFeedEvents(ctx context.Context, events []model.
 			event.ReceivedAt,
 			event.RequestID,
 			metadata,
-			r.feedRankingPolicy.normalized().ExperimentKey,
+			rankingExperiment,
 		)
 	}
 
@@ -579,6 +799,29 @@ func (r *PGPostRepository) CreateFeedEvents(ctx context.Context, events []model.
 		}
 	}
 	return nil
+}
+
+func feedEventMetadataWithRankingExperiment(metadata map[string]any, experimentKey string) map[string]any {
+	experimentKey = strings.TrimSpace(experimentKey)
+	if experimentKey == "" {
+		experimentKey = DefaultFeedRankingPolicy().ExperimentKey
+	}
+	enriched := make(map[string]any, len(metadata)+1)
+	for key, value := range metadata {
+		enriched[key] = value
+	}
+	if feedEventMetadataString(enriched["rankingExperiment"]) == "" {
+		enriched["rankingExperiment"] = experimentKey
+	}
+	return enriched
+}
+
+func feedEventMetadataString(value any) string {
+	text, ok := value.(string)
+	if !ok {
+		return ""
+	}
+	return strings.TrimSpace(text)
 }
 
 func (r *PGPostRepository) ListFeedUserInterests(ctx context.Context, filter model.FeedUserInterestListFilter) ([]model.FeedUserInterest, error) {
@@ -635,30 +878,108 @@ func (r *PGPostRepository) ListFeedQualityMetrics(ctx context.Context, filter mo
 	}
 
 	args := []any{filter.Since.UTC(), filter.Until.UTC()}
-	clauses := []string{"received_at >= $1", "received_at < $2"}
+	clauses := []string{"post_feed_events.received_at >= $1", "post_feed_events.received_at < $2"}
 	if strings.TrimSpace(filter.Surface) != "" {
 		args = append(args, strings.TrimSpace(filter.Surface))
-		clauses = append(clauses, fmt.Sprintf("surface = $%d", len(args)))
+		clauses = append(clauses, fmt.Sprintf("post_feed_events.surface = $%d", len(args)))
 	}
 	args = append(args, limit)
 	limitPos := len(args)
 
 	query := fmt.Sprintf(`
+		WITH grouped_events AS (
+			SELECT
+				post_feed_events.surface,
+				post_feed_events.tab,
+				post_feed_events.block_type,
+				COALESCE(NULLIF(post_feed_events.metadata->>'rankingExperiment', ''), 'control') AS ranking_experiment,
+				COALESCE(NULLIF(post_feed_events.metadata->>'candidateSource', ''), '') AS candidate_source,
+				COALESCE(NULLIF(post_feed_events.metadata->>'postProfileKey', ''), NULLIF(quality_post.post_profile_key, ''), '') AS post_profile,
+				COALESCE(COALESCE(post_feed_events.community_id, quality_post.community_id)::text, '') AS community_id,
+				COALESCE(NULLIF(post_feed_events.metadata->>'action', ''), post_feed_events.event_type) AS action,
+				COUNT(*) AS event_count,
+				COUNT(DISTINCT post_feed_events.viewer_user_id) FILTER (WHERE post_feed_events.viewer_user_id IS NOT NULL) AS unique_viewers,
+				COUNT(*) FILTER (WHERE post_feed_events.event_type = 'impression') AS impression_count,
+				COUNT(*) FILTER (WHERE post_feed_events.event_type = 'click') AS click_count,
+				COUNT(*) FILTER (WHERE post_feed_events.event_type = 'dwell') AS dwell_count,
+				COALESCE(ROUND(AVG(
+					CASE
+						WHEN post_feed_events.event_type = 'dwell'
+						 AND post_feed_events.metadata->>'dwellMs' ~ '^[0-9]+$'
+						THEN (post_feed_events.metadata->>'dwellMs')::numeric
+						ELSE NULL
+					END
+				))::bigint, 0) AS avg_dwell_ms,
+				COUNT(*) FILTER (WHERE post_feed_events.event_type = 'like') AS like_count,
+				COUNT(*) FILTER (WHERE post_feed_events.event_type = 'comment') AS comment_count,
+				COUNT(*) FILTER (WHERE post_feed_events.event_type = 'share') AS share_count,
+				COUNT(*) FILTER (WHERE post_feed_events.event_type = 'subscribe') AS subscribe_count,
+				COUNT(*) FILTER (WHERE (post_feed_events.event_type = 'click' AND post_feed_events.metadata->>'action' = 'conversion') OR post_feed_events.event_type = 'subscribe') AS conversion_count,
+				COUNT(*) FILTER (WHERE post_feed_events.event_type = 'hide') AS hide_count,
+				COUNT(*) FILTER (WHERE post_feed_events.event_type = 'not_interested') AS not_interested_count,
+				COUNT(*) FILTER (WHERE post_feed_events.event_type = 'report') AS feed_report_count
+			FROM post_feed_events
+			LEFT JOIN posts quality_post ON quality_post.id = post_feed_events.post_id
+			WHERE %s
+			GROUP BY 1, 2, 3, 4, 5, 6, 7, 8
+		),
+		report_metrics AS (
+			SELECT
+				post_feed_events.surface,
+				post_feed_events.tab,
+				post_feed_events.block_type,
+				COALESCE(NULLIF(post_feed_events.metadata->>'rankingExperiment', ''), 'control') AS ranking_experiment,
+				COALESCE(NULLIF(post_feed_events.metadata->>'candidateSource', ''), '') AS candidate_source,
+				COALESCE(NULLIF(post_feed_events.metadata->>'postProfileKey', ''), NULLIF(quality_post.post_profile_key, ''), '') AS post_profile,
+				COALESCE(COALESCE(post_feed_events.community_id, quality_post.community_id)::text, '') AS community_id,
+				COALESCE(NULLIF(post_feed_events.metadata->>'action', ''), post_feed_events.event_type) AS action,
+				COUNT(DISTINCT quality_report.id) AS report_count
+			FROM post_feed_events
+			LEFT JOIN posts quality_post ON quality_post.id = post_feed_events.post_id
+			JOIN post_reports quality_report
+			  ON quality_report.post_id = post_feed_events.post_id
+			 AND quality_report.created_at >= $1
+			 AND quality_report.created_at < $2
+			WHERE %s
+			  AND post_feed_events.event_type = 'impression'
+			GROUP BY 1, 2, 3, 4, 5, 6, 7, 8
+		)
 		SELECT
-			surface,
-			block_type,
-			COALESCE(NULLIF(metadata->>'action', ''), event_type) AS action,
-			COUNT(*) AS event_count,
-			COUNT(DISTINCT viewer_user_id) FILTER (WHERE viewer_user_id IS NOT NULL) AS unique_viewers,
-			COUNT(*) FILTER (WHERE event_type = 'click' AND metadata->>'action' = 'conversion') AS conversion_count,
-			COUNT(*) FILTER (WHERE event_type = 'hide') AS hide_count,
-			COUNT(*) FILTER (WHERE event_type = 'not_interested') AS not_interested_count
-		FROM post_feed_events
-		WHERE %s
-		GROUP BY surface, block_type, action
-		ORDER BY event_count DESC, conversion_count DESC, hide_count DESC, not_interested_count DESC
+			grouped_events.surface,
+			grouped_events.tab,
+			grouped_events.block_type,
+			grouped_events.ranking_experiment,
+			grouped_events.candidate_source,
+			grouped_events.post_profile,
+			grouped_events.community_id,
+			grouped_events.action,
+			grouped_events.event_count,
+			grouped_events.unique_viewers,
+			grouped_events.impression_count,
+			grouped_events.click_count,
+			grouped_events.dwell_count,
+			grouped_events.avg_dwell_ms,
+			grouped_events.like_count,
+			grouped_events.comment_count,
+			grouped_events.share_count,
+			grouped_events.subscribe_count,
+			grouped_events.conversion_count,
+			grouped_events.hide_count,
+			grouped_events.not_interested_count,
+			grouped_events.feed_report_count + COALESCE(report_metrics.report_count, 0) AS report_count
+		FROM grouped_events
+		LEFT JOIN report_metrics
+		  ON report_metrics.surface = grouped_events.surface
+		 AND report_metrics.tab = grouped_events.tab
+		 AND report_metrics.block_type = grouped_events.block_type
+		 AND report_metrics.ranking_experiment = grouped_events.ranking_experiment
+		 AND report_metrics.candidate_source = grouped_events.candidate_source
+		 AND COALESCE(report_metrics.post_profile, '') = COALESCE(grouped_events.post_profile, '')
+		 AND report_metrics.community_id = grouped_events.community_id
+		 AND report_metrics.action = grouped_events.action
+		ORDER BY event_count DESC, conversion_count DESC, hide_count DESC, not_interested_count DESC, report_count DESC
 		LIMIT $%d
-	`, strings.Join(clauses, " AND "), limitPos)
+	`, strings.Join(clauses, " AND "), strings.Join(clauses, " AND "), limitPos)
 
 	rows, err := r.pool.Query(ctx, query, args...)
 	if err != nil {
@@ -671,13 +992,27 @@ func (r *PGPostRepository) ListFeedQualityMetrics(ctx context.Context, filter mo
 		var metric model.FeedQualityMetric
 		if err := rows.Scan(
 			&metric.Surface,
+			&metric.Tab,
 			&metric.BlockType,
+			&metric.RankingExperiment,
+			&metric.CandidateSource,
+			&metric.PostProfile,
+			&metric.CommunityID,
 			&metric.Action,
 			&metric.EventCount,
 			&metric.UniqueViewers,
+			&metric.ImpressionCount,
+			&metric.ClickCount,
+			&metric.DwellCount,
+			&metric.AvgDwellMs,
+			&metric.LikeCount,
+			&metric.CommentCount,
+			&metric.ShareCount,
+			&metric.SubscribeCount,
 			&metric.ConversionCount,
 			&metric.HideCount,
 			&metric.NotInterestedCount,
+			&metric.ReportCount,
 		); err != nil {
 			return nil, fmt.Errorf("scan feed quality metric: %w", err)
 		}

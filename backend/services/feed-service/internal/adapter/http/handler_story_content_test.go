@@ -491,16 +491,31 @@ func TestMarkPostSeenPersistsViewerScopedState(t *testing.T) {
 
 func TestListAdminFeedQualityMetricsReturnsReadOnlyAggregates(t *testing.T) {
 	h := newPostHTTPTestHarness(t)
+	communityID := uuid.New().String()
 	h.repo.feedQualityMetrics = []model.FeedQualityMetric{
 		{
 			Surface:            "home",
+			Tab:                "for_you",
 			BlockType:          model.FeedBlockTypePostCard,
+			RankingExperiment:  "rank-v2",
+			CandidateSource:    model.PostCandidateSourceSocial,
+			PostProfile:        string(enum.PostProfileQuickPostV1),
+			CommunityID:        communityID,
 			Action:             "conversion",
 			EventCount:         12,
 			UniqueViewers:      7,
+			ImpressionCount:    20,
+			ClickCount:         8,
+			DwellCount:         5,
+			AvgDwellMs:         4200,
+			LikeCount:          3,
+			CommentCount:       2,
+			ShareCount:         1,
+			SubscribeCount:     4,
 			ConversionCount:    4,
 			HideCount:          1,
 			NotInterestedCount: 2,
+			ReportCount:        3,
 		},
 	}
 
@@ -517,13 +532,27 @@ func TestListAdminFeedQualityMetricsReturnsReadOnlyAggregates(t *testing.T) {
 	var body struct {
 		Items []struct {
 			Surface            string `json:"surface"`
+			Tab                string `json:"tab"`
 			BlockType          string `json:"blockType"`
+			RankingExperiment  string `json:"rankingExperiment"`
+			CandidateSource    string `json:"candidateSource"`
+			PostProfile        string `json:"postProfile"`
+			CommunityID        string `json:"communityId"`
 			Action             string `json:"action"`
 			EventCount         int64  `json:"eventCount"`
 			UniqueViewers      int64  `json:"uniqueViewers"`
+			ImpressionCount    int64  `json:"impressionCount"`
+			ClickCount         int64  `json:"clickCount"`
+			DwellCount         int64  `json:"dwellCount"`
+			AvgDwellMs         int64  `json:"avgDwellMs"`
+			LikeCount          int64  `json:"likeCount"`
+			CommentCount       int64  `json:"commentCount"`
+			ShareCount         int64  `json:"shareCount"`
+			SubscribeCount     int64  `json:"subscribeCount"`
 			ConversionCount    int64  `json:"conversionCount"`
 			HideCount          int64  `json:"hideCount"`
 			NotInterestedCount int64  `json:"notInterestedCount"`
+			ReportCount        int64  `json:"reportCount"`
 		} `json:"items"`
 	}
 	decodeJSONResponse(t, rec, &body)
@@ -532,14 +561,55 @@ func TestListAdminFeedQualityMetricsReturnsReadOnlyAggregates(t *testing.T) {
 	}
 	item := body.Items[0]
 	if item.Surface != "home" ||
+		item.Tab != "for_you" ||
 		item.BlockType != model.FeedBlockTypePostCard ||
+		item.RankingExperiment != "rank-v2" ||
+		item.CandidateSource != model.PostCandidateSourceSocial ||
+		item.PostProfile != string(enum.PostProfileQuickPostV1) ||
+		item.CommunityID != communityID ||
 		item.Action != "conversion" ||
 		item.EventCount != 12 ||
 		item.UniqueViewers != 7 ||
+		item.ImpressionCount != 20 ||
+		item.ClickCount != 8 ||
+		item.DwellCount != 5 ||
+		item.AvgDwellMs != 4200 ||
+		item.LikeCount != 3 ||
+		item.CommentCount != 2 ||
+		item.ShareCount != 1 ||
+		item.SubscribeCount != 4 ||
 		item.ConversionCount != 4 ||
 		item.HideCount != 1 ||
-		item.NotInterestedCount != 2 {
+		item.NotInterestedCount != 2 ||
+		item.ReportCount != 3 {
 		t.Fatalf("metric item = %+v, want seeded aggregate", item)
+	}
+}
+
+func TestApplyInternalFeedSocialEventStoresReadModelEdge(t *testing.T) {
+	h := newPostHTTPTestHarness(t)
+	viewerID := uuid.New()
+	targetID := uuid.New()
+	eventID := uuid.New()
+
+	rec := h.doInternalJSON(http.MethodPost, "/internal/v1/feed/social-events", uuid.New(), map[string]any{
+		"eventId":         eventID.String(),
+		"viewerUserId":    viewerID.String(),
+		"targetUserId":    targetID.String(),
+		"edgeType":        model.FeedSocialEdgeTypeFollowing,
+		"active":          true,
+		"sourceUpdatedAt": "2026-06-15T10:30:00Z",
+	})
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d; body: %s", rec.Code, http.StatusAccepted, rec.Body.String())
+	}
+
+	edges, err := h.repo.ListFeedSocialEdges(context.Background(), viewerID, []uuid.UUID{targetID})
+	if err != nil {
+		t.Fatalf("ListFeedSocialEdges returned error: %v", err)
+	}
+	if !edges[targetID].Following {
+		t.Fatalf("following edge missing: %#v", edges)
 	}
 }
 
@@ -2845,6 +2915,22 @@ func (c *postHTTPUserClient) GetPublicUserProfiles(
 	return profiles, nil
 }
 
+func (c *postHTTPUserClient) FilterFriendUserIDs(
+	context.Context,
+	uuid.UUID,
+	[]uuid.UUID,
+) (map[uuid.UUID]bool, error) {
+	return map[uuid.UUID]bool{}, nil
+}
+
+func (c *postHTTPUserClient) FilterFollowingUserIDs(
+	context.Context,
+	uuid.UUID,
+	[]uuid.UUID,
+) (map[uuid.UUID]bool, error) {
+	return map[uuid.UUID]bool{}, nil
+}
+
 type postHTTPMemoryRepository struct {
 	mu                 sync.Mutex
 	posts              map[uuid.UUID]*model.Post
@@ -2858,6 +2944,7 @@ type postHTTPMemoryRepository struct {
 	statusChanges      []*model.CommunityMemberStatusChange
 	feedEvents         []model.FeedEvent
 	feedQualityMetrics []model.FeedQualityMetric
+	feedSocialEdges    map[uuid.UUID]model.FeedSocialEdge
 	follows            map[uuid.UUID]map[uuid.UUID]bool
 	likes              map[uuid.UUID]map[uuid.UUID]bool
 	storyLikes         map[uuid.UUID]map[uuid.UUID]bool
@@ -2878,6 +2965,7 @@ func newPostHTTPMemoryRepository() *postHTTPMemoryRepository {
 		statusChanges:      make([]*model.CommunityMemberStatusChange, 0),
 		feedEvents:         make([]model.FeedEvent, 0),
 		feedQualityMetrics: make([]model.FeedQualityMetric, 0),
+		feedSocialEdges:    make(map[uuid.UUID]model.FeedSocialEdge),
 		follows:            make(map[uuid.UUID]map[uuid.UUID]bool),
 		likes:              make(map[uuid.UUID]map[uuid.UUID]bool),
 		storyLikes:         make(map[uuid.UUID]map[uuid.UUID]bool),
@@ -3886,6 +3974,66 @@ func (r *postHTTPMemoryRepository) ListPostLikesByUser(_ context.Context, postID
 		}
 	}
 	return result, nil
+}
+
+func (r *postHTTPMemoryRepository) ListFeedSocialEdges(
+	_ context.Context,
+	viewerUserID uuid.UUID,
+	targetUserIDs []uuid.UUID,
+) (map[uuid.UUID]model.FeedSocialEdgeSet, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	result := make(map[uuid.UUID]model.FeedSocialEdgeSet, len(targetUserIDs))
+	targets := make(map[uuid.UUID]struct{}, len(targetUserIDs))
+	for _, targetUserID := range targetUserIDs {
+		targets[targetUserID] = struct{}{}
+	}
+	for _, edge := range r.feedSocialEdges {
+		if edge.ViewerUserID != viewerUserID {
+			continue
+		}
+		if _, ok := targets[edge.TargetUserID]; !ok {
+			continue
+		}
+		set := result[edge.TargetUserID]
+		switch edge.EdgeType {
+		case model.FeedSocialEdgeTypeFriend:
+			set.Friend = true
+		case model.FeedSocialEdgeTypeFollowing:
+			set.Following = true
+		}
+		result[edge.TargetUserID] = set
+	}
+	return result, nil
+}
+
+func (r *postHTTPMemoryRepository) UpsertFeedSocialEdge(_ context.Context, edge model.FeedSocialEdge) (bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	r.feedSocialEdges[feedHTTPSocialEdgeKey(edge.ViewerUserID, edge.TargetUserID, edge.EdgeType)] = edge
+	return true, nil
+}
+
+func (r *postHTTPMemoryRepository) DeleteFeedSocialEdge(
+	_ context.Context,
+	viewerUserID uuid.UUID,
+	targetUserID uuid.UUID,
+	edgeType string,
+	_ time.Time,
+) (bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	key := feedHTTPSocialEdgeKey(viewerUserID, targetUserID, edgeType)
+	_, existed := r.feedSocialEdges[key]
+	delete(r.feedSocialEdges, key)
+	return existed, nil
+}
+
+func feedHTTPSocialEdgeKey(viewerUserID uuid.UUID, targetUserID uuid.UUID, edgeType string) uuid.UUID {
+	return uuid.NewSHA1(uuid.NameSpaceOID, []byte(viewerUserID.String()+":"+targetUserID.String()+":"+edgeType))
 }
 
 func (r *postHTTPMemoryRepository) LikePost(_ context.Context, postID uuid.UUID, userID uuid.UUID) (bool, int, error) {

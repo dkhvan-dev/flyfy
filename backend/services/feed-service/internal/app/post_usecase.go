@@ -52,12 +52,13 @@ var (
 )
 
 type PostAuthor struct {
-	UserID       uuid.UUID
-	Nickname     *string
-	AvatarFileID *uuid.UUID
-	CountryCode  *string
-	Locale       string
-	Timezone     string
+	UserID           uuid.UUID
+	Nickname         *string
+	AvatarFileID     *uuid.UUID
+	CountryCode      *string
+	Locale           string
+	Timezone         string
+	IsFriendOfViewer bool
 }
 
 type PostView struct {
@@ -271,6 +272,8 @@ type PostUseCase struct {
 	postsTrayCacheTTL        time.Duration
 	postsBaseURL             string
 	feedExperimentAssignment FeedExperimentAssignment
+	feedExperimentVariants   []feedExperimentVariant
+	feedExperimentPolicies   map[string]model.FeedRankingPolicyOverride
 	feedCuratedBlockPolicy   FeedCuratedBlockPolicy
 }
 
@@ -309,6 +312,16 @@ func (u *PostUseCase) WithFeedExperimentAssignment(rankingExperiment string) *Po
 		assignment = defaultFeedExperimentKey
 	}
 	u.feedExperimentAssignment = FeedExperimentAssignment{RankingExperiment: assignment}
+	return u
+}
+
+func (u *PostUseCase) WithFeedExperimentVariants(spec string) *PostUseCase {
+	u.feedExperimentVariants = parseFeedExperimentVariants(spec)
+	return u
+}
+
+func (u *PostUseCase) WithFeedExperimentPolicyOverrides(spec string) *PostUseCase {
+	u.feedExperimentPolicies = parseFeedExperimentPolicyOverrides(spec)
 	return u
 }
 
@@ -991,6 +1004,9 @@ func (u *PostUseCase) SubmitPostReport(ctx context.Context, subject string, post
 	if result == nil {
 		result = &model.PostReportSubmissionResult{Report: report, Post: post}
 	}
+	if err = u.trackPostReportNegativeFeedSignal(ctx, reporterUserID, post, reason); err != nil {
+		return nil, err
+	}
 
 	return &PostReportView{
 		Report:           result.Report,
@@ -998,6 +1014,138 @@ func (u *PostUseCase) SubmitPostReport(ctx context.Context, subject string, post
 		OpenReportsCount: result.OpenReportsCount,
 		AutoHidden:       result.AutoHidden,
 	}, nil
+}
+
+func (u *PostUseCase) trackPostReportNegativeFeedSignal(ctx context.Context, reporterUserID uuid.UUID, post *model.Post, reason enum.PostReportReason) error {
+	if post == nil || post.ID == uuid.Nil || reporterUserID == uuid.Nil {
+		return nil
+	}
+	now := time.Now().UTC()
+	metadata := postFeedMetadata("post_report", post)
+	if strings.TrimSpace(string(reason)) != "" {
+		metadata["reason"] = string(reason)
+	}
+	event := model.FeedEvent{
+		ID:           uuid.New(),
+		EventID:      uuid.New(),
+		ViewerUserID: &reporterUserID,
+		EventType:    model.FeedEventTypeReport,
+		Surface:      "content",
+		Tab:          "for_you",
+		BlockID:      "post:" + post.ID.String(),
+		BlockType:    model.FeedBlockTypePostCard,
+		PostID:       &post.ID,
+		CommunityID:  copyUUIDPtr(post.CommunityID),
+		Rank:         0,
+		OccurredAt:   now,
+		ReceivedAt:   now,
+		Metadata:     metadata,
+	}
+	if err := u.repo.CreateFeedEvents(ctx, []model.FeedEvent{event}); err != nil {
+		return fmt.Errorf("track post report feed signal: %w", err)
+	}
+	u.bumpPostFeedCacheScopes(
+		ctx,
+		postFeedCacheViewerScope(reporterUserID),
+		postFeedCacheFollowingScope(reporterUserID),
+		postFeedCacheDiscoveryScope(reporterUserID),
+	)
+	return nil
+}
+
+func (u *PostUseCase) trackPostPositiveFeedSignal(ctx context.Context, viewerUserID uuid.UUID, post *model.Post, eventType string) error {
+	if post == nil || post.ID == uuid.Nil || viewerUserID == uuid.Nil {
+		return nil
+	}
+	eventType = strings.TrimSpace(eventType)
+	if eventType != model.FeedEventTypeLike && eventType != model.FeedEventTypeComment {
+		return nil
+	}
+	now := time.Now().UTC()
+	metadata := postFeedMetadata("post_interaction", post)
+	metadata["engagementType"] = eventType
+	event := model.FeedEvent{
+		ID:           uuid.New(),
+		EventID:      uuid.New(),
+		ViewerUserID: &viewerUserID,
+		EventType:    eventType,
+		Surface:      "content",
+		Tab:          "for_you",
+		BlockID:      "post:" + post.ID.String(),
+		BlockType:    model.FeedBlockTypePostCard,
+		PostID:       &post.ID,
+		CommunityID:  copyUUIDPtr(post.CommunityID),
+		Rank:         0,
+		OccurredAt:   now,
+		ReceivedAt:   now,
+		Metadata:     metadata,
+	}
+	if err := u.repo.CreateFeedEvents(ctx, []model.FeedEvent{event}); err != nil {
+		return fmt.Errorf("track post %s feed signal: %w", eventType, err)
+	}
+	return nil
+}
+
+func (u *PostUseCase) trackCommunityNegativeFeedSignal(ctx context.Context, userID uuid.UUID, communityID uuid.UUID, source string, reason string) error {
+	if userID == uuid.Nil || communityID == uuid.Nil {
+		return nil
+	}
+	now := time.Now().UTC()
+	metadata := map[string]any{
+		"entityType": model.FeedInterestEntityTypeCommunity,
+		"entityId":   communityID.String(),
+		"source":     source,
+	}
+	if strings.TrimSpace(reason) != "" {
+		metadata["reason"] = strings.TrimSpace(reason)
+	}
+	event := model.FeedEvent{
+		ID:           uuid.New(),
+		EventID:      uuid.New(),
+		ViewerUserID: &userID,
+		EventType:    model.FeedEventTypeHide,
+		Surface:      "content",
+		Tab:          "for_you",
+		BlockID:      "community:" + communityID.String(),
+		BlockType:    model.FeedBlockTypeSuggestedCommunities,
+		CommunityID:  &communityID,
+		Rank:         0,
+		OccurredAt:   now,
+		ReceivedAt:   now,
+		Metadata:     metadata,
+	}
+	if err := u.repo.CreateFeedEvents(ctx, []model.FeedEvent{event}); err != nil {
+		return fmt.Errorf("track community negative feed signal: %w", err)
+	}
+	return nil
+}
+
+func postFeedMetadata(source string, post *model.Post) map[string]any {
+	metadata := map[string]any{
+		"source": source,
+	}
+	if post == nil {
+		return metadata
+	}
+	if post.CommunityID != nil && *post.CommunityID != uuid.Nil {
+		metadata["communityId"] = post.CommunityID.String()
+	}
+	if post.PostProfileKey != "" {
+		metadata["postProfileKey"] = string(post.PostProfileKey)
+	}
+	if post.Category != "" {
+		metadata["category"] = string(post.Category)
+	}
+	if post.PlaceCityID != nil && strings.TrimSpace(*post.PlaceCityID) != "" {
+		metadata["cityId"] = strings.TrimSpace(*post.PlaceCityID)
+	}
+	if post.PlaceCountryCode != nil && strings.TrimSpace(*post.PlaceCountryCode) != "" {
+		metadata["countryCode"] = strings.TrimSpace(*post.PlaceCountryCode)
+	}
+	if len(post.Tags) > 0 {
+		metadata["tags"] = append([]string(nil), post.Tags...)
+	}
+	return metadata
 }
 
 func (u *PostUseCase) ListCommunityPostReports(ctx context.Context, subject string, input ListCommunityPostReportsInput) ([]*model.PostReport, error) {
@@ -1484,6 +1632,9 @@ func (u *PostUseCase) LikePost(ctx context.Context, subject string, postID uuid.
 		return 0, fmt.Errorf("like post: %w", err)
 	}
 	if changed {
+		if err = u.trackPostPositiveFeedSignal(ctx, viewerUserID, post, model.FeedEventTypeLike); err != nil {
+			return 0, err
+		}
 		u.notifyPostLiked(ctx, post, viewerUserID)
 	}
 
@@ -1591,6 +1742,9 @@ func (u *PostUseCase) CreateComment(ctx context.Context, subject string, postID 
 			return nil, ErrPostCommentRateLimited
 		}
 		return nil, fmt.Errorf("create comment: %w", err)
+	}
+	if err = u.trackPostPositiveFeedSignal(ctx, authorUserID, post, model.FeedEventTypeComment); err != nil {
+		return nil, err
 	}
 
 	views, err := u.buildCommentViews(ctx, post, []*model.PostComment{comment}, &authorUserID)
@@ -3026,9 +3180,17 @@ func (u *PostUseCase) buildPostViews(ctx context.Context, posts []*model.Post, v
 		return nil, fmt.Errorf("get public post author profiles: %w", err)
 	}
 
+	socialEdges := map[uuid.UUID]model.FeedSocialEdgeSet{}
 	likedPosts := map[uuid.UUID]bool{}
 	seenPosts := map[uuid.UUID]time.Time{}
 	if viewerUserID != nil && *viewerUserID != uuid.Nil && len(postIDs) > 0 {
+		if len(authorIDs) > 0 {
+			socialEdges, err = u.repo.ListFeedSocialEdges(ctx, *viewerUserID, authorIDs)
+			if err != nil {
+				return nil, fmt.Errorf("list viewer feed social edges: %w", err)
+			}
+			u.repairUserServiceSocialEdges(ctx, *viewerUserID, authorIDs, socialEdges)
+		}
 		likedPosts, err = u.repo.ListPostLikesByUser(ctx, postIDs, *viewerUserID)
 		if err != nil {
 			return nil, fmt.Errorf("list viewer post likes: %w", err)
@@ -3045,6 +3207,7 @@ func (u *PostUseCase) buildPostViews(ctx context.Context, posts []*model.Post, v
 			continue
 		}
 		author := toPostAuthor(post.AuthorUserID, profiles[post.AuthorUserID])
+		author.IsFriendOfViewer = socialEdges[post.AuthorUserID].Friend
 		likedByViewer := likedPosts[post.ID]
 		seenAt, seenByViewer := seenPosts[post.ID]
 		var seenAtPtr *time.Time
@@ -3065,6 +3228,100 @@ func (u *PostUseCase) buildPostViews(ctx context.Context, posts []*model.Post, v
 	}
 
 	return items, nil
+}
+
+func (u *PostUseCase) repairUserServiceSocialEdges(
+	ctx context.Context,
+	viewerUserID uuid.UUID,
+	authorIDs []uuid.UUID,
+	socialEdges map[uuid.UUID]model.FeedSocialEdgeSet,
+) {
+	if u.users == nil || viewerUserID == uuid.Nil || len(authorIDs) == 0 {
+		return
+	}
+	sourceUpdatedAt := time.Now().UTC()
+	repaired := false
+
+	friendUserIDs, err := u.users.FilterFriendUserIDs(ctx, viewerUserID, authorIDs)
+	if err == nil {
+		repaired = u.repairSocialEdgeSet(ctx, viewerUserID, friendUserIDs, socialEdges, model.FeedSocialEdgeTypeFriend, sourceUpdatedAt) || repaired
+	}
+
+	followingUserIDs, err := u.users.FilterFollowingUserIDs(ctx, viewerUserID, authorIDs)
+	if err == nil {
+		repaired = u.repairSocialEdgeSet(ctx, viewerUserID, followingUserIDs, socialEdges, model.FeedSocialEdgeTypeFollowing, sourceUpdatedAt) || repaired
+	}
+
+	if repaired {
+		u.bumpPostFeedCacheScopes(
+			ctx,
+			postFeedCacheViewerScope(viewerUserID),
+			postFeedCacheFollowingScope(viewerUserID),
+			postFeedCacheDiscoveryScope(viewerUserID),
+		)
+	}
+}
+
+func (u *PostUseCase) repairSocialEdgeSet(
+	ctx context.Context,
+	viewerUserID uuid.UUID,
+	userIDs map[uuid.UUID]bool,
+	socialEdges map[uuid.UUID]model.FeedSocialEdgeSet,
+	edgeType string,
+	sourceUpdatedAt time.Time,
+) bool {
+	repaired := false
+	for targetUserID, edgeSet := range socialEdges {
+		if targetUserID == uuid.Nil || targetUserID == viewerUserID || userIDs[targetUserID] {
+			continue
+		}
+		stale := false
+		switch edgeType {
+		case model.FeedSocialEdgeTypeFriend:
+			stale = edgeSet.Friend
+			edgeSet.Friend = false
+		case model.FeedSocialEdgeTypeFollowing:
+			stale = edgeSet.Following
+			edgeSet.Following = false
+		default:
+			continue
+		}
+		if !stale {
+			continue
+		}
+		socialEdges[targetUserID] = edgeSet
+		changed, _ := u.repo.DeleteFeedSocialEdge(ctx, viewerUserID, targetUserID, edgeType, sourceUpdatedAt)
+		repaired = changed || repaired
+	}
+	for targetUserID, active := range userIDs {
+		if !active || targetUserID == uuid.Nil || targetUserID == viewerUserID {
+			continue
+		}
+		edgeSet := socialEdges[targetUserID]
+		if edgeType == model.FeedSocialEdgeTypeFriend && edgeSet.Friend {
+			continue
+		}
+		if edgeType == model.FeedSocialEdgeTypeFollowing && edgeSet.Following {
+			continue
+		}
+		switch edgeType {
+		case model.FeedSocialEdgeTypeFriend:
+			edgeSet.Friend = true
+		case model.FeedSocialEdgeTypeFollowing:
+			edgeSet.Following = true
+		default:
+			continue
+		}
+		socialEdges[targetUserID] = edgeSet
+		changed, _ := u.repo.UpsertFeedSocialEdge(ctx, model.FeedSocialEdge{
+			ViewerUserID:    viewerUserID,
+			TargetUserID:    targetUserID,
+			EdgeType:        edgeType,
+			SourceUpdatedAt: sourceUpdatedAt,
+		})
+		repaired = changed || repaired
+	}
+	return repaired
 }
 
 func (u *PostUseCase) buildStoryViews(ctx context.Context, stories []*model.Story, viewerUserID *uuid.UUID) ([]*StoryView, error) {

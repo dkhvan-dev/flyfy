@@ -40,8 +40,20 @@ func NewRenderer() (*Renderer, error) {
 		"feedQualityBlockType": func(locale any, value any) string {
 			return feedQualityBlockTypeText(fmt.Sprint(locale), value)
 		},
+		"feedQualityTab": func(locale any, value any) string {
+			return feedQualityTabText(fmt.Sprint(locale), value)
+		},
 		"feedQualityAction": func(locale any, value any) string {
 			return feedQualityActionText(fmt.Sprint(locale), value)
+		},
+		"feedQualityPostProfile": func(locale any, value any) string {
+			return feedQualityPostProfileText(fmt.Sprint(locale), value)
+		},
+		"feedQualityExperiment": func(locale any, value any) string {
+			return feedQualityExperimentText(fmt.Sprint(locale), value)
+		},
+		"feedQualityCandidateSource": func(locale any, value any) string {
+			return feedQualityCandidateSourceText(fmt.Sprint(locale), value)
 		},
 		"localeURL": localeURL,
 		"urlQuerySuffix": func(query string) template.URL {

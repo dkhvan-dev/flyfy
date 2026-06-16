@@ -841,13 +841,24 @@ func (r *PGUserRepository) FollowUser(
 	followedUserID uuid.UUID,
 ) error {
 	const query = `
-		INSERT INTO user_follows (follower_user_id, followed_user_id, created_at)
-		VALUES ($1, $2, NOW())
-		ON CONFLICT (follower_user_id, followed_user_id) DO NOTHING
+		WITH inserted AS (
+			INSERT INTO user_follows (follower_user_id, followed_user_id, created_at)
+			VALUES ($1, $2, NOW())
+			ON CONFLICT (follower_user_id, followed_user_id) DO NOTHING
+			RETURNING follower_user_id, followed_user_id, created_at
+		)
+		INSERT INTO user_social_outbox (
+			id, event_type, viewer_user_id, target_user_id, edge_type, active, source_key,
+			source_updated_at, next_attempt_at, created_at
+		)
+		SELECT gen_random_uuid(), 'user.follow.created', follower_user_id, followed_user_id,
+		       'following', true, gen_random_uuid()::text, created_at, created_at, created_at
+		FROM inserted
+		ON CONFLICT (source_key) DO NOTHING
 	`
 
 	if _, err := r.pool.Exec(ctx, query, followerUserID, followedUserID); err != nil {
-		if isUndefinedRelation(err, "user_follows") {
+		if isUndefinedRelation(err, "user_follows") || isUndefinedRelation(err, "user_social_outbox") {
 			return app.ErrFollowFeatureUnavailable
 		}
 		return fmt.Errorf("insert user follow: %w", err)
@@ -862,12 +873,23 @@ func (r *PGUserRepository) UnfollowUser(
 	followedUserID uuid.UUID,
 ) error {
 	const query = `
-		DELETE FROM user_follows
-		WHERE follower_user_id = $1 AND followed_user_id = $2
+		WITH deleted AS (
+			DELETE FROM user_follows
+			WHERE follower_user_id = $1 AND followed_user_id = $2
+			RETURNING follower_user_id, followed_user_id, NOW() AS deleted_at
+		)
+		INSERT INTO user_social_outbox (
+			id, event_type, viewer_user_id, target_user_id, edge_type, active, source_key,
+			source_updated_at, next_attempt_at, created_at
+		)
+		SELECT gen_random_uuid(), 'user.follow.deleted', follower_user_id, followed_user_id,
+		       'following', false, gen_random_uuid()::text, deleted_at, deleted_at, deleted_at
+		FROM deleted
+		ON CONFLICT (source_key) DO NOTHING
 	`
 
 	if _, err := r.pool.Exec(ctx, query, followerUserID, followedUserID); err != nil {
-		if isUndefinedRelation(err, "user_follows") {
+		if isUndefinedRelation(err, "user_follows") || isUndefinedRelation(err, "user_social_outbox") {
 			return app.ErrFollowFeatureUnavailable
 		}
 		return fmt.Errorf("delete user follow: %w", err)
@@ -912,18 +934,34 @@ func (r *PGUserRepository) AcceptFriendRequest(
 	addresseeUserID uuid.UUID,
 ) error {
 	const query = `
-		UPDATE user_friendships
-		SET status = 'ACCEPTED',
-		    responded_at = NOW(),
-		    updated_at = NOW()
-		WHERE requester_user_id = $1
-		  AND addressee_user_id = $2
-		  AND status = 'PENDING'
+		WITH updated AS (
+			UPDATE user_friendships
+			SET status = 'ACCEPTED',
+			    responded_at = NOW(),
+			    updated_at = NOW()
+			WHERE requester_user_id = $1
+			  AND addressee_user_id = $2
+			  AND status = 'PENDING'
+			RETURNING requester_user_id, addressee_user_id, updated_at
+		),
+		edges AS (
+			SELECT requester_user_id AS viewer_user_id, addressee_user_id AS target_user_id, updated_at FROM updated
+			UNION ALL
+			SELECT addressee_user_id AS viewer_user_id, requester_user_id AS target_user_id, updated_at FROM updated
+		)
+		INSERT INTO user_social_outbox (
+			id, event_type, viewer_user_id, target_user_id, edge_type, active, source_key,
+			source_updated_at, next_attempt_at, created_at
+		)
+		SELECT gen_random_uuid(), 'user.friendship.created', viewer_user_id, target_user_id,
+		       'friend', true, gen_random_uuid()::text, updated_at, updated_at, updated_at
+		FROM edges
+		ON CONFLICT (source_key) DO NOTHING
 	`
 
 	tag, err := r.pool.Exec(ctx, query, requesterUserID, addresseeUserID)
 	if err != nil {
-		if isUndefinedRelation(err, "user_friendships") {
+		if isUndefinedRelation(err, "user_friendships") || isUndefinedRelation(err, "user_social_outbox") {
 			return app.ErrFriendshipFeatureUnavailable
 		}
 		return fmt.Errorf("accept friend request: %w", err)
@@ -941,13 +979,33 @@ func (r *PGUserRepository) DeleteFriendship(
 	userBID uuid.UUID,
 ) error {
 	const query = `
-		DELETE FROM user_friendships
-		WHERE (requester_user_id = $1 AND addressee_user_id = $2)
-		   OR (requester_user_id = $2 AND addressee_user_id = $1)
+		WITH deleted AS (
+			DELETE FROM user_friendships
+			WHERE (requester_user_id = $1 AND addressee_user_id = $2)
+			   OR (requester_user_id = $2 AND addressee_user_id = $1)
+			RETURNING requester_user_id, addressee_user_id, status, NOW() AS deleted_at
+		),
+		edges AS (
+			SELECT requester_user_id AS viewer_user_id, addressee_user_id AS target_user_id, deleted_at
+			FROM deleted
+			WHERE status = 'ACCEPTED'
+			UNION ALL
+			SELECT addressee_user_id AS viewer_user_id, requester_user_id AS target_user_id, deleted_at
+			FROM deleted
+			WHERE status = 'ACCEPTED'
+		)
+		INSERT INTO user_social_outbox (
+			id, event_type, viewer_user_id, target_user_id, edge_type, active, source_key,
+			source_updated_at, next_attempt_at, created_at
+		)
+		SELECT gen_random_uuid(), 'user.friendship.deleted', viewer_user_id, target_user_id,
+		       'friend', false, gen_random_uuid()::text, deleted_at, deleted_at, deleted_at
+		FROM edges
+		ON CONFLICT (source_key) DO NOTHING
 	`
 
 	if _, err := r.pool.Exec(ctx, query, userAID, userBID); err != nil {
-		if isUndefinedRelation(err, "user_friendships") {
+		if isUndefinedRelation(err, "user_friendships") || isUndefinedRelation(err, "user_social_outbox") {
 			return app.ErrFriendshipFeatureUnavailable
 		}
 		return fmt.Errorf("delete friendship: %w", err)

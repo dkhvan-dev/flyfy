@@ -2,7 +2,11 @@ package app
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -215,6 +219,477 @@ func TestBuildFeedReturnsRankingExperimentAssignment(t *testing.T) {
 	}
 }
 
+func TestBuildFeedAssignsStickyRankingExperimentVariantForViewer(t *testing.T) {
+	viewerID := uuid.New()
+	authorID := uuid.New()
+	now := time.Now().UTC()
+	repo := &feedPostRepositoryStub{
+		posts: []*model.Post{newFeedTestPost(authorID, "ranked", now)},
+	}
+	cache := &postFeedCacheFake{
+		version: 3,
+		posts:   make(map[string][]*model.Post),
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: viewerID}, "https://posts.test").
+		WithPostFeedCache(cache, time.Minute, 30*time.Second).
+		WithFeedExperimentAssignment("control").
+		WithFeedExperimentVariants("rank-v2=100")
+
+	firstPage, err := useCase.BuildFeed(context.Background(), viewerID.String(), BuildFeedInput{
+		Surface: "content",
+		Limit:   1,
+	})
+	if err != nil {
+		t.Fatalf("BuildFeed first call returned error: %v", err)
+	}
+	secondPage, err := useCase.BuildFeed(context.Background(), viewerID.String(), BuildFeedInput{
+		Surface: "content",
+		Limit:   1,
+	})
+	if err != nil {
+		t.Fatalf("BuildFeed second call returned error: %v", err)
+	}
+	if firstPage.Assignment.RankingExperiment != "rank-v2" ||
+		secondPage.Assignment.RankingExperiment != "rank-v2" {
+		t.Fatalf("sticky assignment = %q/%q, want rank-v2", firstPage.Assignment.RankingExperiment, secondPage.Assignment.RankingExperiment)
+	}
+
+	guestPage, err := useCase.BuildFeed(context.Background(), "", BuildFeedInput{
+		Surface: "content",
+		Limit:   1,
+	})
+	if err != nil {
+		t.Fatalf("BuildFeed guest call returned error: %v", err)
+	}
+	if guestPage.Assignment.RankingExperiment != "control" {
+		t.Fatalf("guest assignment = %q, want control", guestPage.Assignment.RankingExperiment)
+	}
+
+	key, _, cacheable := useCase.postFeedPostListCacheKey(
+		context.Background(),
+		&viewerID,
+		20,
+		0,
+		nil,
+		feedPostCandidateSource{Name: model.PostCandidateSourceInterest},
+		"KZ",
+		"almaty",
+		nil,
+		postFeedExpiryPersistent,
+	)
+	if !cacheable {
+		t.Fatal("viewer experiment cache key should be cacheable")
+	}
+	if !strings.Contains(key, "rank:rank-v2") {
+		t.Fatalf("cache key = %q, want assigned rank-v2 segment", key)
+	}
+}
+
+func TestBuildFeedAppliesRankingPolicyOverridesForAssignedExperiment(t *testing.T) {
+	viewerID := uuid.New()
+	authorID := uuid.New()
+	now := time.Now().UTC()
+	post := newFeedTestPost(authorID, "experiment-policy-post", now)
+	repo := &feedPostRepositoryStub{
+		posts:             []*model.Post{post},
+		listFeedPostCalls: make([]model.PostListFilter, 0),
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: viewerID}, "https://posts.test").
+		WithFeedExperimentAssignment("control").
+		WithFeedExperimentVariants("rank-social-v2=100").
+		WithFeedExperimentPolicyOverrides("rank-social-v2:socialFriendBoostHours=34,socialFollowingBoostHours=21,postInterestWeight=1.4,maxPostsPerAuthorPerPage=2,directNegativeFeedbackDecayWindow=72h")
+
+	page, err := useCase.BuildFeed(context.Background(), viewerID.String(), BuildFeedInput{
+		Surface: "content",
+		Tab:     "for_you",
+		Limit:   5,
+	})
+	if err != nil {
+		t.Fatalf("BuildFeed returned error: %v", err)
+	}
+	if page.Assignment.RankingExperiment != "rank-social-v2" {
+		t.Fatalf("assignment = %q, want rank-social-v2", page.Assignment.RankingExperiment)
+	}
+	if len(repo.listFeedPostCalls) == 0 {
+		t.Fatal("ListFeedPosts was not called")
+	}
+	override := repo.listFeedPostCalls[0].FeedRankingPolicyOverride
+	if override == nil {
+		t.Fatal("FeedRankingPolicyOverride is nil")
+	}
+	if override.ExperimentKey != "rank-social-v2" {
+		t.Fatalf("override experiment = %q, want rank-social-v2", override.ExperimentKey)
+	}
+	if override.SocialFriendBoostHours == nil || *override.SocialFriendBoostHours != 34 {
+		t.Fatalf("social friend override = %v, want 34", override.SocialFriendBoostHours)
+	}
+	if override.SocialFollowingBoostHours == nil || *override.SocialFollowingBoostHours != 21 {
+		t.Fatalf("social following override = %v, want 21", override.SocialFollowingBoostHours)
+	}
+	if override.PostInterestWeight == nil || *override.PostInterestWeight != 1.4 {
+		t.Fatalf("post interest override = %v, want 1.4", override.PostInterestWeight)
+	}
+	if override.MaxPostsPerAuthorPerPage == nil || *override.MaxPostsPerAuthorPerPage != 2 {
+		t.Fatalf("author diversity cap override = %v, want 2", override.MaxPostsPerAuthorPerPage)
+	}
+	if override.DirectNegativeFeedbackDecayWindow == nil || *override.DirectNegativeFeedbackDecayWindow != 72*time.Hour {
+		t.Fatalf("direct negative decay override = %v, want 72h", override.DirectNegativeFeedbackDecayWindow)
+	}
+}
+
+func TestBuildFeedMarksFriendAuthors(t *testing.T) {
+	viewerID := uuid.New()
+	friendID := uuid.New()
+	strangerID := uuid.New()
+	now := time.Now().UTC()
+	repo := &feedPostRepositoryStub{
+		posts: []*model.Post{
+			newFeedTestPost(friendID, "friend-post", now),
+			newFeedTestPost(strangerID, "stranger-post", now.Add(-time.Minute)),
+		},
+		feedSocialEdges: map[uuid.UUID]model.FeedSocialEdgeSet{
+			friendID: {Friend: true},
+		},
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{
+		userID:     viewerID,
+		friendsErr: errors.New("user social graph unavailable"),
+	}, "https://posts.test")
+
+	page, err := useCase.BuildFeed(context.Background(), viewerID.String(), BuildFeedInput{
+		Surface: "content",
+		Limit:   2,
+	})
+	if err != nil {
+		t.Fatalf("BuildFeed returned error: %v", err)
+	}
+	cards := postCardFeedData(page.Items)
+	if len(cards) != 2 {
+		t.Fatalf("post cards = %d, want 2", len(cards))
+	}
+	if cards[0].Post == nil || !cards[0].Post.Author.IsFriendOfViewer {
+		t.Fatalf("friend author marker = %+v, want friend", cards[0].Post)
+	}
+	if cards[1].Post == nil || cards[1].Post.Author.IsFriendOfViewer {
+		t.Fatalf("stranger author marker = %+v, want not friend", cards[1].Post)
+	}
+}
+
+func TestBuildFeedRepairsMissingFriendEdgesFromUserService(t *testing.T) {
+	viewerID := uuid.New()
+	friendID := uuid.New()
+	strangerID := uuid.New()
+	now := time.Now().UTC()
+	repo := &feedPostRepositoryStub{
+		posts: []*model.Post{
+			newFeedTestPost(friendID, "friend-post", now),
+			newFeedTestPost(strangerID, "stranger-post", now.Add(-time.Minute)),
+		},
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{
+		userID: viewerID,
+		friendUserIDs: map[uuid.UUID]bool{
+			friendID: true,
+		},
+	}, "https://posts.test")
+
+	page, err := useCase.BuildFeed(context.Background(), viewerID.String(), BuildFeedInput{
+		Surface: "content",
+		Limit:   2,
+	})
+	if err != nil {
+		t.Fatalf("BuildFeed returned error: %v", err)
+	}
+	cards := postCardFeedData(page.Items)
+	if len(cards) != 2 {
+		t.Fatalf("post cards = %d, want 2", len(cards))
+	}
+	if cards[0].Post == nil || !cards[0].Post.Author.IsFriendOfViewer {
+		t.Fatalf("friend author marker = %+v, want repaired friend marker", cards[0].Post)
+	}
+	if cards[1].Post == nil || cards[1].Post.Author.IsFriendOfViewer {
+		t.Fatalf("stranger author marker = %+v, want not friend", cards[1].Post)
+	}
+	if len(repo.upsertedSocialEdges) != 1 {
+		t.Fatalf("repaired edges = %d, want 1", len(repo.upsertedSocialEdges))
+	}
+	edge := repo.upsertedSocialEdges[0]
+	if edge.ViewerUserID != viewerID ||
+		edge.TargetUserID != friendID ||
+		edge.EdgeType != model.FeedSocialEdgeTypeFriend ||
+		edge.SourceEventID != nil ||
+		edge.SourceUpdatedAt.IsZero() {
+		t.Fatalf("repaired edge = %+v, want friend edge without event id", edge)
+	}
+}
+
+func TestBuildFeedRemovesStaleFriendEdgesMissingFromUserService(t *testing.T) {
+	viewerID := uuid.New()
+	staleFriendID := uuid.New()
+	now := time.Now().UTC()
+	repo := &feedPostRepositoryStub{
+		posts: []*model.Post{
+			newFeedTestPost(staleFriendID, "stale-friend-post", now),
+		},
+		feedSocialEdges: map[uuid.UUID]model.FeedSocialEdgeSet{
+			staleFriendID: {Friend: true},
+		},
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{
+		userID:        viewerID,
+		friendUserIDs: map[uuid.UUID]bool{},
+	}, "https://posts.test")
+
+	page, err := useCase.BuildFeed(context.Background(), viewerID.String(), BuildFeedInput{
+		Surface: "content",
+		Limit:   1,
+	})
+	if err != nil {
+		t.Fatalf("BuildFeed returned error: %v", err)
+	}
+	cards := postCardFeedData(page.Items)
+	if len(cards) != 1 {
+		t.Fatalf("post cards = %d, want 1", len(cards))
+	}
+	if cards[0].Post == nil || cards[0].Post.Author.IsFriendOfViewer {
+		t.Fatalf("friend author marker = %+v, want stale friend marker removed", cards[0].Post)
+	}
+	if len(repo.deletedSocialEdges) != 1 {
+		t.Fatalf("deleted social edges = %d, want 1", len(repo.deletedSocialEdges))
+	}
+	deleted := repo.deletedSocialEdges[0]
+	if deleted.viewerUserID != viewerID ||
+		deleted.targetUserID != staleFriendID ||
+		deleted.edgeType != model.FeedSocialEdgeTypeFriend ||
+		deleted.sourceUpdatedAt.IsZero() {
+		t.Fatalf("deleted edge = %+v, want stale friend tombstone", deleted)
+	}
+}
+
+func TestBuildFeedRemovesStaleFollowingEdgesMissingFromUserService(t *testing.T) {
+	viewerID := uuid.New()
+	staleFollowedID := uuid.New()
+	now := time.Now().UTC()
+	repo := &feedPostRepositoryStub{
+		posts: []*model.Post{
+			newFeedTestPost(staleFollowedID, "stale-followed-post", now),
+		},
+		feedSocialEdges: map[uuid.UUID]model.FeedSocialEdgeSet{
+			staleFollowedID: {Following: true},
+		},
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{
+		userID:           viewerID,
+		followingUserIDs: map[uuid.UUID]bool{},
+	}, "https://posts.test")
+
+	_, err := useCase.BuildFeed(context.Background(), viewerID.String(), BuildFeedInput{
+		Surface: "content",
+		Limit:   1,
+	})
+	if err != nil {
+		t.Fatalf("BuildFeed returned error: %v", err)
+	}
+	if len(repo.deletedSocialEdges) != 1 {
+		t.Fatalf("deleted social edges = %d, want 1", len(repo.deletedSocialEdges))
+	}
+	deleted := repo.deletedSocialEdges[0]
+	if deleted.viewerUserID != viewerID ||
+		deleted.targetUserID != staleFollowedID ||
+		deleted.edgeType != model.FeedSocialEdgeTypeFollowing ||
+		deleted.sourceUpdatedAt.IsZero() {
+		t.Fatalf("deleted edge = %+v, want stale following tombstone", deleted)
+	}
+	if repo.feedSocialEdges[staleFollowedID].Following {
+		t.Fatalf("following edge remains active after repair")
+	}
+}
+
+func TestBuildFeedRepairingMissingSocialEdgesInvalidatesViewerFeedCache(t *testing.T) {
+	viewerID := uuid.New()
+	friendID := uuid.New()
+	now := time.Now().UTC()
+	repo := &feedPostRepositoryStub{
+		posts: []*model.Post{
+			newFeedTestPost(friendID, "friend-post", now),
+		},
+	}
+	cache := &postFeedCacheFake{posts: make(map[string][]*model.Post)}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{
+		userID: viewerID,
+		friendUserIDs: map[uuid.UUID]bool{
+			friendID: true,
+		},
+	}, "https://posts.test").WithPostFeedCache(cache, time.Minute, time.Minute)
+
+	_, err := useCase.BuildFeed(context.Background(), viewerID.String(), BuildFeedInput{
+		Surface: "content",
+		Limit:   1,
+	})
+	if err != nil {
+		t.Fatalf("BuildFeed returned error: %v", err)
+	}
+
+	wantScopes := []string{
+		postFeedCacheViewerScope(viewerID),
+		postFeedCacheFollowingScope(viewerID),
+		postFeedCacheDiscoveryScope(viewerID),
+	}
+	for _, scope := range wantScopes {
+		if !containsString(cache.bumpedScopes, scope) {
+			t.Fatalf("bumped scopes = %#v, want repaired social edge to invalidate %s", cache.bumpedScopes, scope)
+		}
+	}
+}
+
+func TestBuildFeedRepairsMissingFollowingEdgesFromUserService(t *testing.T) {
+	viewerID := uuid.New()
+	followedAuthorID := uuid.New()
+	strangerID := uuid.New()
+	now := time.Now().UTC()
+	repo := &feedPostRepositoryStub{
+		posts: []*model.Post{
+			newFeedTestPost(followedAuthorID, "followed-author-post", now),
+			newFeedTestPost(strangerID, "stranger-post", now.Add(-time.Minute)),
+		},
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{
+		userID: viewerID,
+		followingUserIDs: map[uuid.UUID]bool{
+			followedAuthorID: true,
+		},
+	}, "https://posts.test")
+
+	page, err := useCase.BuildFeed(context.Background(), viewerID.String(), BuildFeedInput{
+		Surface: "content",
+		Limit:   2,
+	})
+	if err != nil {
+		t.Fatalf("BuildFeed returned error: %v", err)
+	}
+	cards := postCardFeedData(page.Items)
+	if len(cards) != 2 {
+		t.Fatalf("post cards = %d, want 2", len(cards))
+	}
+	if cards[0].Post == nil || cards[0].Post.Author.IsFriendOfViewer {
+		t.Fatalf("following author marker = %+v, want not friend", cards[0].Post)
+	}
+	if len(repo.upsertedSocialEdges) != 1 {
+		t.Fatalf("repaired edges = %d, want 1", len(repo.upsertedSocialEdges))
+	}
+	edge := repo.upsertedSocialEdges[0]
+	if edge.ViewerUserID != viewerID ||
+		edge.TargetUserID != followedAuthorID ||
+		edge.EdgeType != model.FeedSocialEdgeTypeFollowing ||
+		edge.SourceEventID != nil ||
+		edge.SourceUpdatedAt.IsZero() {
+		t.Fatalf("repaired edge = %+v, want following edge without event id", edge)
+	}
+}
+
+func TestApplyFeedSocialEventUpsertsEdgeAndInvalidatesViewerCache(t *testing.T) {
+	viewerID := uuid.New()
+	targetID := uuid.New()
+	eventID := uuid.New()
+	occurredAt := time.Date(2026, 6, 15, 10, 30, 0, 0, time.UTC)
+	repo := &feedPostRepositoryStub{}
+	cache := &postFeedCacheFake{}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{}, "https://posts.test").
+		WithPostFeedCache(cache, time.Minute, time.Minute)
+
+	err := useCase.ApplyFeedSocialEvent(context.Background(), ApplyFeedSocialEventInput{
+		EventID:         eventID,
+		ViewerUserID:    viewerID,
+		TargetUserID:    targetID,
+		EdgeType:        model.FeedSocialEdgeTypeFollowing,
+		Active:          true,
+		SourceUpdatedAt: occurredAt,
+	})
+	if err != nil {
+		t.Fatalf("ApplyFeedSocialEvent returned error: %v", err)
+	}
+
+	if len(repo.upsertedSocialEdges) != 1 {
+		t.Fatalf("upserted social edges = %d, want 1", len(repo.upsertedSocialEdges))
+	}
+	edge := repo.upsertedSocialEdges[0]
+	if edge.ViewerUserID != viewerID ||
+		edge.TargetUserID != targetID ||
+		edge.EdgeType != model.FeedSocialEdgeTypeFollowing ||
+		edge.SourceEventID == nil ||
+		*edge.SourceEventID != eventID ||
+		!edge.SourceUpdatedAt.Equal(occurredAt) {
+		t.Fatalf("unexpected upserted edge: %+v", edge)
+	}
+	if !containsString(cache.bumpedScopes, postFeedCacheViewerScope(viewerID)) ||
+		!containsString(cache.bumpedScopes, postFeedCacheFollowingScope(viewerID)) {
+		t.Fatalf("bumped scopes = %#v, want viewer and following scopes", cache.bumpedScopes)
+	}
+}
+
+func TestApplyFeedSocialEventSkipsCacheInvalidationWhenReadModelIsUnchanged(t *testing.T) {
+	viewerID := uuid.New()
+	targetID := uuid.New()
+	repo := &feedPostRepositoryStub{
+		feedSocialEdges: map[uuid.UUID]model.FeedSocialEdgeSet{
+			targetID: {Following: true},
+		},
+	}
+	cache := &postFeedCacheFake{}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{}, "https://posts.test").
+		WithPostFeedCache(cache, time.Minute, time.Minute)
+
+	err := useCase.ApplyFeedSocialEvent(context.Background(), ApplyFeedSocialEventInput{
+		EventID:         uuid.New(),
+		ViewerUserID:    viewerID,
+		TargetUserID:    targetID,
+		EdgeType:        model.FeedSocialEdgeTypeFollowing,
+		Active:          true,
+		SourceUpdatedAt: time.Date(2026, 6, 15, 10, 30, 0, 0, time.UTC),
+	})
+	if err != nil {
+		t.Fatalf("ApplyFeedSocialEvent returned error: %v", err)
+	}
+
+	if len(repo.upsertedSocialEdges) != 0 {
+		t.Fatalf("upserted social edges = %d, want unchanged read-model", len(repo.upsertedSocialEdges))
+	}
+	if cache.bumps != 0 || len(cache.bumpedScopes) != 0 {
+		t.Fatalf("cache bumps = %d scopes = %#v, want no cache invalidation for unchanged edge", cache.bumps, cache.bumpedScopes)
+	}
+}
+
+func TestApplyFeedSocialEventDeletesEdgeWithTombstoneSemantics(t *testing.T) {
+	viewerID := uuid.New()
+	targetID := uuid.New()
+	occurredAt := time.Date(2026, 6, 15, 11, 0, 0, 0, time.UTC)
+	repo := &feedPostRepositoryStub{}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{}, "https://posts.test")
+
+	err := useCase.ApplyFeedSocialEvent(context.Background(), ApplyFeedSocialEventInput{
+		EventID:         uuid.New(),
+		ViewerUserID:    viewerID,
+		TargetUserID:    targetID,
+		EdgeType:        model.FeedSocialEdgeTypeFriend,
+		Active:          false,
+		SourceUpdatedAt: occurredAt,
+	})
+	if err != nil {
+		t.Fatalf("ApplyFeedSocialEvent returned error: %v", err)
+	}
+
+	if len(repo.deletedSocialEdges) != 1 {
+		t.Fatalf("deleted social edges = %d, want 1", len(repo.deletedSocialEdges))
+	}
+	deleted := repo.deletedSocialEdges[0]
+	if deleted.viewerUserID != viewerID ||
+		deleted.targetUserID != targetID ||
+		deleted.edgeType != model.FeedSocialEdgeTypeFriend ||
+		!deleted.sourceUpdatedAt.Equal(occurredAt) {
+		t.Fatalf("unexpected deleted edge: %+v", deleted)
+	}
+}
+
 func TestBuildFeedDoesNotAddDeprecatedContentConversionBlocks(t *testing.T) {
 	authorID := uuid.New()
 	now := time.Now().UTC()
@@ -360,6 +835,158 @@ func TestBuildFeedRejectsCursorFromDifferentContext(t *testing.T) {
 	}
 }
 
+func TestBuildFeedRejectsCursorFromDifferentRankingExperiment(t *testing.T) {
+	authorID := uuid.New()
+	viewerID := uuid.New()
+	now := time.Now().UTC()
+	repo := &feedPostRepositoryStub{
+		posts: []*model.Post{
+			newFeedTestPost(authorID, "first", now),
+			newFeedTestPost(authorID, "second", now.Add(-time.Minute)),
+		},
+	}
+	rankV2UseCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: viewerID}, "https://posts.test").
+		WithFeedExperimentAssignment("control").
+		WithFeedExperimentVariants("rank-v2=100")
+
+	firstPage, err := rankV2UseCase.BuildFeed(context.Background(), viewerID.String(), BuildFeedInput{
+		Surface: "content",
+		Tab:     "for_you",
+		Limit:   1,
+	})
+	if err != nil {
+		t.Fatalf("BuildFeed first page returned error: %v", err)
+	}
+	if firstPage.NextCursor == "" {
+		t.Fatal("NextCursor is empty, want cursor after first post")
+	}
+	if firstPage.Assignment.RankingExperiment != "rank-v2" {
+		t.Fatalf("first page assignment = %q, want rank-v2", firstPage.Assignment.RankingExperiment)
+	}
+
+	controlUseCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: viewerID}, "https://posts.test").
+		WithFeedExperimentAssignment("control")
+	_, err = controlUseCase.BuildFeed(context.Background(), viewerID.String(), BuildFeedInput{
+		Surface: "content",
+		Tab:     "for_you",
+		Limit:   1,
+		Cursor:  firstPage.NextCursor,
+	})
+	if !errors.Is(err, ErrInvalidFeedCursor) {
+		t.Fatalf("BuildFeed error = %v, want %v for ranking experiment switch", err, ErrInvalidFeedCursor)
+	}
+}
+
+func TestDecodeFeedCursorRejectsStaleCandidateMixerPolicy(t *testing.T) {
+	now := time.Now().UTC()
+	payload, err := json.Marshal(map[string]any{
+		"v":               feedCursorVersion,
+		"surface":         "content",
+		"tab":             "for_you",
+		"publishedAt":     now.Format(time.RFC3339Nano),
+		"postId":          uuid.New().String(),
+		"candidatePolicy": "candidate-mixer:stale",
+	})
+	if err != nil {
+		t.Fatalf("marshal cursor payload: %v", err)
+	}
+	cursor := base64.RawURLEncoding.EncodeToString(payload)
+
+	_, err = decodeFeedCursor(cursor, "content", "for_you", "control")
+
+	if !errors.Is(err, ErrInvalidFeedCursor) {
+		t.Fatalf("decodeFeedCursor error = %v, want %v for stale candidate policy", err, ErrInvalidFeedCursor)
+	}
+}
+
+func TestDecodeFeedCursorRejectsPreviousCandidateMixerV3Policy(t *testing.T) {
+	now := time.Now().UTC()
+	payload, err := json.Marshal(map[string]any{
+		"v":               feedCursorVersion,
+		"surface":         "content",
+		"tab":             "following",
+		"publishedAt":     now.Format(time.RFC3339Nano),
+		"postId":          uuid.New().String(),
+		"candidatePolicy": "candidate-mixer:v3",
+	})
+	if err != nil {
+		t.Fatalf("marshal cursor payload: %v", err)
+	}
+	cursor := base64.RawURLEncoding.EncodeToString(payload)
+
+	_, err = decodeFeedCursor(cursor, "content", "following", "control")
+
+	if !errors.Is(err, ErrInvalidFeedCursor) {
+		t.Fatalf("decodeFeedCursor error = %v, want %v for previous candidate policy", err, ErrInvalidFeedCursor)
+	}
+}
+
+func TestDecodeFeedCursorRejectsPreviousCandidateMixerV4Policy(t *testing.T) {
+	now := time.Now().UTC()
+	payload, err := json.Marshal(map[string]any{
+		"v":               feedCursorVersion,
+		"surface":         "content",
+		"tab":             "for_you",
+		"publishedAt":     now.Format(time.RFC3339Nano),
+		"postId":          uuid.New().String(),
+		"candidatePolicy": "candidate-mixer:v4",
+	})
+	if err != nil {
+		t.Fatalf("marshal cursor payload: %v", err)
+	}
+	cursor := base64.RawURLEncoding.EncodeToString(payload)
+
+	_, err = decodeFeedCursor(cursor, "content", "for_you", "control")
+
+	if !errors.Is(err, ErrInvalidFeedCursor) {
+		t.Fatalf("decodeFeedCursor error = %v, want %v for previous candidate policy", err, ErrInvalidFeedCursor)
+	}
+}
+
+func TestDecodeFeedCursorRejectsPreviousCandidateMixerV6Policy(t *testing.T) {
+	now := time.Now().UTC()
+	payload, err := json.Marshal(map[string]any{
+		"v":               feedCursorVersion,
+		"surface":         "content",
+		"tab":             "for_you",
+		"publishedAt":     now.Format(time.RFC3339Nano),
+		"postId":          uuid.New().String(),
+		"candidatePolicy": "candidate-mixer:v6",
+	})
+	if err != nil {
+		t.Fatalf("marshal cursor payload: %v", err)
+	}
+	cursor := base64.RawURLEncoding.EncodeToString(payload)
+
+	_, err = decodeFeedCursor(cursor, "content", "for_you", "control")
+
+	if !errors.Is(err, ErrInvalidFeedCursor) {
+		t.Fatalf("decodeFeedCursor error = %v, want %v for previous candidate policy", err, ErrInvalidFeedCursor)
+	}
+}
+
+func TestDecodeFeedCursorRejectsPreviousCandidateMixerV7Policy(t *testing.T) {
+	now := time.Now().UTC()
+	payload, err := json.Marshal(map[string]any{
+		"v":               feedCursorVersion,
+		"surface":         "content",
+		"tab":             "for_you",
+		"publishedAt":     now.Format(time.RFC3339Nano),
+		"postId":          uuid.New().String(),
+		"candidatePolicy": "candidate-mixer:v7",
+	})
+	if err != nil {
+		t.Fatalf("marshal cursor payload: %v", err)
+	}
+	cursor := base64.RawURLEncoding.EncodeToString(payload)
+
+	_, err = decodeFeedCursor(cursor, "content", "for_you", "control")
+
+	if !errors.Is(err, ErrInvalidFeedCursor) {
+		t.Fatalf("decodeFeedCursor error = %v, want %v for previous candidate policy", err, ErrInvalidFeedCursor)
+	}
+}
+
 func TestBuildFeedUsesBatchPostLikeLookup(t *testing.T) {
 	authorID := uuid.New()
 	viewerID := uuid.New()
@@ -386,8 +1013,13 @@ func TestBuildFeedUsesBatchPostLikeLookup(t *testing.T) {
 	if repo.hasPostLikeCalls != 0 {
 		t.Fatalf("HasPostLike calls = %d, want 0 batch-only lookup", repo.hasPostLikeCalls)
 	}
-	if len(repo.batchPostLikesCalls) != 1 || len(repo.batchPostLikesCalls[0]) != 2 {
-		t.Fatalf("batch post like calls = %#v, want one call with two post ids", repo.batchPostLikesCalls)
+	if len(repo.batchPostLikesCalls) == 0 {
+		t.Fatal("batch post like calls are empty, want batch lookup")
+	}
+	for _, call := range repo.batchPostLikesCalls {
+		if len(call) != 2 {
+			t.Fatalf("batch post like calls = %#v, want calls with two post ids", repo.batchPostLikesCalls)
+		}
 	}
 	likedByPostID := make(map[uuid.UUID]bool, len(page.Items))
 	for _, item := range page.Items {
@@ -583,6 +1215,956 @@ func TestBuildFollowingFeedUsesRepositoryMembershipFilter(t *testing.T) {
 	}
 }
 
+func TestBuildFollowingFeedIncludesSocialAuthorPosts(t *testing.T) {
+	viewerID := uuid.New()
+	communityAuthorID := uuid.New()
+	followedAuthorID := uuid.New()
+	strangerID := uuid.New()
+	followedCommunityID := uuid.New()
+	unfollowedCommunityID := uuid.New()
+	now := time.Now().UTC()
+
+	communityPost := newFeedTestPost(communityAuthorID, "community-post", now)
+	communityPost.CommunityID = &followedCommunityID
+	socialPost := newFeedTestPost(followedAuthorID, "social-author-post", now.Add(-time.Second))
+	socialPost.CommunityID = &unfollowedCommunityID
+	strangerPost := newFeedTestPost(strangerID, "stranger-post", now.Add(-2*time.Second))
+	strangerPost.CommunityID = &unfollowedCommunityID
+
+	repo := &feedPostRepositoryStub{
+		posts:                []*model.Post{communityPost, socialPost, strangerPost},
+		followedCommunityIDs: map[uuid.UUID]bool{followedCommunityID: true},
+		feedSocialEdges: map[uuid.UUID]model.FeedSocialEdgeSet{
+			followedAuthorID: {Following: true},
+		},
+		listFeedPostCalls: make([]model.PostListFilter, 0),
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: viewerID}, "https://posts.test")
+
+	page, err := useCase.BuildFeed(context.Background(), viewerID.String(), BuildFeedInput{
+		Surface: "content",
+		Tab:     "following",
+		Limit:   10,
+	})
+	if err != nil {
+		t.Fatalf("BuildFeed returned error: %v", err)
+	}
+
+	gotSources := make([]string, 0, len(repo.listFeedPostCalls))
+	for _, filter := range repo.listFeedPostCalls {
+		gotSources = append(gotSources, filter.CandidateSource)
+	}
+	wantSources := []string{
+		model.PostCandidateSourceFollowing,
+		model.PostCandidateSourceSocial,
+	}
+	if strings.Join(gotSources, ",") != strings.Join(wantSources, ",") {
+		t.Fatalf("candidate sources = %v, want %v", gotSources, wantSources)
+	}
+
+	postCards := postCardFeedData(page.Items)
+	if len(postCards) != 2 {
+		t.Fatalf("post cards = %d, want community and social author posts", len(postCards))
+	}
+	gotPostIDs := []uuid.UUID{postCards[0].Post.Post.ID, postCards[1].Post.Post.ID}
+	wantPostIDs := []uuid.UUID{communityPost.ID, socialPost.ID}
+	if !uuidSlicesEqual(gotPostIDs, wantPostIDs) {
+		t.Fatalf("post cards = %v, want %v", gotPostIDs, wantPostIDs)
+	}
+}
+
+func TestBuildFollowingFeedReservesSpaceForSocialAuthorPosts(t *testing.T) {
+	viewerID := uuid.New()
+	firstCommunityAuthorID := uuid.New()
+	secondCommunityAuthorID := uuid.New()
+	followedAuthorID := uuid.New()
+	followedCommunityID := uuid.New()
+	unfollowedCommunityID := uuid.New()
+	now := time.Now().UTC()
+
+	firstCommunityPost := newFeedTestPost(firstCommunityAuthorID, "first-community-post", now)
+	firstCommunityPost.CommunityID = &followedCommunityID
+	secondCommunityPost := newFeedTestPost(secondCommunityAuthorID, "second-community-post", now.Add(-time.Second))
+	secondCommunityPost.CommunityID = &followedCommunityID
+	socialPost := newFeedTestPost(followedAuthorID, "social-author-post", now.Add(-2*time.Second))
+	socialPost.CommunityID = &unfollowedCommunityID
+
+	repo := &feedPostRepositoryStub{
+		posts:                []*model.Post{firstCommunityPost, secondCommunityPost, socialPost},
+		followedCommunityIDs: map[uuid.UUID]bool{followedCommunityID: true},
+		feedSocialEdges: map[uuid.UUID]model.FeedSocialEdgeSet{
+			followedAuthorID: {Following: true},
+		},
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: viewerID}, "https://posts.test")
+
+	page, err := useCase.BuildFeed(context.Background(), viewerID.String(), BuildFeedInput{
+		Surface: "content",
+		Tab:     "following",
+		Limit:   2,
+	})
+	if err != nil {
+		t.Fatalf("BuildFeed returned error: %v", err)
+	}
+
+	postCards := postCardFeedData(page.Items)
+	if len(postCards) != 2 {
+		t.Fatalf("post cards = %d, want reserved community and social author posts", len(postCards))
+	}
+	gotPostIDs := []uuid.UUID{postCards[0].Post.Post.ID, postCards[1].Post.Post.ID}
+	wantPostIDs := []uuid.UUID{firstCommunityPost.ID, socialPost.ID}
+	if !uuidSlicesEqual(gotPostIDs, wantPostIDs) {
+		t.Fatalf("post cards = %v, want %v", gotPostIDs, wantPostIDs)
+	}
+}
+
+func TestBuildForYouFeedPartitionsFollowedAndPersonalizedCandidateSources(t *testing.T) {
+	authorID := uuid.New()
+	viewerID := uuid.New()
+	followedCommunityID := uuid.New()
+	discoveryCommunityID := uuid.New()
+	now := time.Now().UTC()
+	followedPost := newFeedTestPost(authorID, "followed", now)
+	followedPost.CommunityID = &followedCommunityID
+	discoveryPost := newFeedTestPost(authorID, "discovery", now.Add(-time.Minute))
+	discoveryPost.CommunityID = &discoveryCommunityID
+
+	repo := &feedPostRepositoryStub{
+		posts:                []*model.Post{followedPost, discoveryPost},
+		followedCommunityIDs: map[uuid.UUID]bool{followedCommunityID: true},
+		listFeedPostCalls:    make([]model.PostListFilter, 0),
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: viewerID}, "https://posts.test")
+
+	page, err := useCase.BuildFeed(context.Background(), viewerID.String(), BuildFeedInput{
+		Surface: "content",
+		Tab:     "for_you",
+		Limit:   10,
+	})
+	if err != nil {
+		t.Fatalf("BuildFeed returned error: %v", err)
+	}
+	if len(repo.listFeedPostCalls) != 6 {
+		t.Fatalf("ListFeedPosts calls = %d, want followed, social, system, interest, cold-start, and popular candidate sources", len(repo.listFeedPostCalls))
+	}
+	followedFilter := repo.listFeedPostCalls[0]
+	if followedFilter.FollowedByUserID == nil || *followedFilter.FollowedByUserID != viewerID {
+		t.Fatalf("followed source filter = %+v, want viewer FollowedByUserID", followedFilter)
+	}
+	gotSources := make([]string, 0, len(repo.listFeedPostCalls))
+	for _, filter := range repo.listFeedPostCalls {
+		gotSources = append(gotSources, filter.CandidateSource)
+	}
+	wantSources := []string{
+		model.PostCandidateSourceFollowed,
+		model.PostCandidateSourceSocial,
+		model.PostCandidateSourceSystem,
+		model.PostCandidateSourceInterest,
+		model.PostCandidateSourceColdStart,
+		model.PostCandidateSourcePopular,
+	}
+	if strings.Join(gotSources, ",") != strings.Join(wantSources, ",") {
+		t.Fatalf("candidate sources = %v, want %v", gotSources, wantSources)
+	}
+
+	postCards := postCardFeedData(page.Items)
+	if len(postCards) != 2 {
+		t.Fatalf("post cards = %d, want followed and discovery posts", len(postCards))
+	}
+	if postCards[0].Post.Post.ID != followedPost.ID || postCards[1].Post.Post.ID != discoveryPost.ID {
+		t.Fatalf("post cards = %+v, want followed then discovery by ranked time", postCards)
+	}
+	if postCards[0].CandidateSource != model.PostCandidateSourceFollowed {
+		t.Fatalf("followed post candidate source = %q, want %q", postCards[0].CandidateSource, model.PostCandidateSourceFollowed)
+	}
+	if postCards[1].CandidateSource != model.PostCandidateSourceColdStart {
+		t.Fatalf("discovery post candidate source = %q, want %q", postCards[1].CandidateSource, model.PostCandidateSourceColdStart)
+	}
+}
+
+func TestBuildForYouFeedIncludesColdStartCandidateSourceForNewViewer(t *testing.T) {
+	viewerID := uuid.New()
+	authorID := uuid.New()
+	now := time.Now().UTC()
+	geoPost := newFeedTestPost(authorID, "almaty-start", now)
+	geoPost.PlaceCountryCode = stringPtr("KZ")
+	geoPost.PlaceCityID = stringPtr("almaty")
+	popularPost := newFeedTestPost(uuid.New(), "popular-start", now.Add(-time.Minute))
+
+	repo := &feedPostRepositoryStub{
+		posts:             []*model.Post{geoPost, popularPost},
+		listFeedPostCalls: make([]model.PostListFilter, 0),
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: viewerID}, "https://posts.test")
+
+	page, err := useCase.BuildFeed(context.Background(), viewerID.String(), BuildFeedInput{
+		Surface:     "content",
+		Tab:         "for_you",
+		CountryCode: "KZ",
+		CityID:      "almaty",
+		Limit:       10,
+	})
+	if err != nil {
+		t.Fatalf("BuildFeed returned error: %v", err)
+	}
+
+	gotSources := make([]string, 0, len(repo.listFeedPostCalls))
+	for _, filter := range repo.listFeedPostCalls {
+		gotSources = append(gotSources, filter.CandidateSource)
+	}
+	wantSources := []string{
+		model.PostCandidateSourceFollowed,
+		model.PostCandidateSourceSocial,
+		model.PostCandidateSourceSystem,
+		model.PostCandidateSourceGeo,
+		model.PostCandidateSourceInterest,
+		model.PostCandidateSourceColdStart,
+		model.PostCandidateSourcePopular,
+	}
+	if strings.Join(gotSources, ",") != strings.Join(wantSources, ",") {
+		t.Fatalf("candidate sources = %v, want %v", gotSources, wantSources)
+	}
+	if postCards := postCardFeedData(page.Items); len(postCards) == 0 {
+		t.Fatal("post cards are empty, want cold-start fallback content")
+	}
+}
+
+func TestBuildForYouFeedIncludesSystemCandidateSourceForAuthenticatedViewer(t *testing.T) {
+	viewerID := uuid.New()
+	now := time.Now().UTC()
+	systemPost := newFeedTestPost(uuid.New(), "system-update", now)
+	systemPost.PostProfileKey = enum.PostProfileArticleV1
+	systemPost.Tags = []string{"official_updates"}
+
+	repo := &feedPostRepositoryStub{
+		posts:             []*model.Post{systemPost},
+		listFeedPostCalls: make([]model.PostListFilter, 0),
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: viewerID}, "https://posts.test")
+
+	page, err := useCase.BuildFeed(context.Background(), viewerID.String(), BuildFeedInput{
+		Surface: "content",
+		Tab:     "for_you",
+		Limit:   10,
+	})
+	if err != nil {
+		t.Fatalf("BuildFeed returned error: %v", err)
+	}
+
+	gotSources := make([]string, 0, len(repo.listFeedPostCalls))
+	for _, filter := range repo.listFeedPostCalls {
+		gotSources = append(gotSources, filter.CandidateSource)
+	}
+	wantSources := []string{
+		model.PostCandidateSourceFollowed,
+		model.PostCandidateSourceSocial,
+		model.PostCandidateSourceSystem,
+		model.PostCandidateSourceInterest,
+		model.PostCandidateSourceColdStart,
+		model.PostCandidateSourcePopular,
+	}
+	if strings.Join(gotSources, ",") != strings.Join(wantSources, ",") {
+		t.Fatalf("candidate sources = %v, want %v", gotSources, wantSources)
+	}
+	postCards := postCardFeedData(page.Items)
+	if len(postCards) != 1 || postCards[0].CandidateSource != model.PostCandidateSourceSystem {
+		t.Fatalf("post cards = %+v, want system post card", postCards)
+	}
+}
+
+func TestBuildForYouFeedIncludesColdStartCandidateSourceForNewViewerWithoutGeo(t *testing.T) {
+	viewerID := uuid.New()
+	authorID := uuid.New()
+	now := time.Now().UTC()
+	coldStartPost := newFeedTestPost(authorID, "cold-start-without-geo", now)
+
+	repo := &feedPostRepositoryStub{
+		posts:             []*model.Post{coldStartPost},
+		listFeedPostCalls: make([]model.PostListFilter, 0),
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: viewerID}, "https://posts.test")
+
+	page, err := useCase.BuildFeed(context.Background(), viewerID.String(), BuildFeedInput{
+		Surface: "content",
+		Tab:     "for_you",
+		Limit:   10,
+	})
+	if err != nil {
+		t.Fatalf("BuildFeed returned error: %v", err)
+	}
+
+	gotSources := make([]string, 0, len(repo.listFeedPostCalls))
+	for _, filter := range repo.listFeedPostCalls {
+		gotSources = append(gotSources, filter.CandidateSource)
+	}
+	wantSources := []string{
+		model.PostCandidateSourceFollowed,
+		model.PostCandidateSourceSocial,
+		model.PostCandidateSourceSystem,
+		model.PostCandidateSourceInterest,
+		model.PostCandidateSourceColdStart,
+		model.PostCandidateSourcePopular,
+	}
+	if strings.Join(gotSources, ",") != strings.Join(wantSources, ",") {
+		t.Fatalf("candidate sources = %v, want %v", gotSources, wantSources)
+	}
+	if postCards := postCardFeedData(page.Items); len(postCards) == 0 {
+		t.Fatal("post cards are empty, want cold-start fallback content")
+	}
+}
+
+func TestMixFeedPostCandidateSourcesCapsSystemPostsPerPage(t *testing.T) {
+	now := time.Now().UTC()
+	systemPosts := make([]*PostView, 0, 6)
+	for idx := range 6 {
+		post := newFeedTestPost(uuid.New(), fmt.Sprintf("system-%d", idx), now.Add(-time.Duration(idx)*time.Minute))
+		post.PostProfileKey = enum.PostProfileArticleV1
+		post.Tags = []string{"official_updates"}
+		systemPosts = append(systemPosts, &PostView{Post: post})
+	}
+
+	page := mixFeedPostCandidateSources(
+		6,
+		nil,
+		[]feedPostCandidateSource{{Name: model.PostCandidateSourceSystem}},
+		[]string{model.PostCandidateSourceSystem},
+		map[string][]*PostView{model.PostCandidateSourceSystem: systemPosts},
+	)
+
+	if len(page.Posts) != 5 {
+		t.Fatalf("system posts = %d, want cap of 5 per page", len(page.Posts))
+	}
+	for _, post := range page.Posts {
+		if source := page.CandidateSourceByPostID[post.Post.ID]; source != model.PostCandidateSourceSystem {
+			t.Fatalf("candidate source for %s = %q, want system", post.Post.ID, source)
+		}
+	}
+	if page.NextCursor == nil {
+		t.Fatal("next cursor is nil, want remaining system posts to stay pageable")
+	}
+}
+
+func TestBuildForYouFeedUsesExplicitPersonalizedCandidateSources(t *testing.T) {
+	viewerID := uuid.New()
+	followedAuthorID := uuid.New()
+	friendAuthorID := uuid.New()
+	geoAuthorID := uuid.New()
+	interestAuthorID := uuid.New()
+	popularAuthorID := uuid.New()
+	followedCommunityID := uuid.New()
+	geoCommunityID := uuid.New()
+	now := time.Now().UTC()
+
+	followedPost := newFeedTestPost(followedAuthorID, "followed", now)
+	followedPost.CommunityID = &followedCommunityID
+	friendPost := newFeedTestPost(friendAuthorID, "friend", now.Add(-time.Minute))
+	geoPost := newFeedTestPost(geoAuthorID, "geo", now.Add(-2*time.Minute))
+	geoPost.CommunityID = &geoCommunityID
+	geoPost.PlaceCountryCode = stringPtr("KZ")
+	geoPost.PlaceCityID = stringPtr("almaty")
+	interestPost := newFeedTestPost(interestAuthorID, "interest", now.Add(-3*time.Minute))
+	interestPost.PostProfileKey = enum.PostProfileTripPlanV1
+	popularPost := newFeedTestPost(popularAuthorID, "popular", now.Add(-4*time.Minute))
+
+	repo := &feedPostRepositoryStub{
+		posts: []*model.Post{
+			followedPost,
+			friendPost,
+			geoPost,
+			interestPost,
+			popularPost,
+		},
+		followedCommunityIDs: map[uuid.UUID]bool{followedCommunityID: true},
+		feedSocialEdges: map[uuid.UUID]model.FeedSocialEdgeSet{
+			friendAuthorID: {Friend: true},
+		},
+		feedUserInterests: []model.FeedUserInterest{{
+			ViewerUserID: viewerID,
+			EntityType:   model.FeedInterestEntityTypePostProfile,
+			EntityID:     string(enum.PostProfileTripPlanV1),
+			Score:        1,
+			LastEventAt:  now,
+			UpdatedAt:    now,
+		}},
+		listFeedPostCalls: make([]model.PostListFilter, 0),
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: viewerID}, "https://posts.test")
+
+	page, err := useCase.BuildFeed(context.Background(), viewerID.String(), BuildFeedInput{
+		Surface:     "content",
+		Tab:         "for_you",
+		CountryCode: "KZ",
+		CityID:      "almaty",
+		Limit:       10,
+	})
+	if err != nil {
+		t.Fatalf("BuildFeed returned error: %v", err)
+	}
+
+	gotSources := make([]string, 0, len(repo.listFeedPostCalls))
+	for _, filter := range repo.listFeedPostCalls {
+		gotSources = append(gotSources, filter.CandidateSource)
+	}
+	wantSources := []string{
+		model.PostCandidateSourceFollowed,
+		model.PostCandidateSourceSocial,
+		model.PostCandidateSourceSystem,
+		model.PostCandidateSourceGeo,
+		model.PostCandidateSourceInterest,
+		model.PostCandidateSourceColdStart,
+		model.PostCandidateSourcePopular,
+	}
+	if strings.Join(gotSources, ",") != strings.Join(wantSources, ",") {
+		t.Fatalf("candidate sources = %v, want %v", gotSources, wantSources)
+	}
+
+	postCards := postCardFeedData(page.Items)
+	if got := postIDsFromPostCards(postCards); !sameUUIDsInOrder(got, []uuid.UUID{
+		followedPost.ID,
+		friendPost.ID,
+		geoPost.ID,
+		interestPost.ID,
+		popularPost.ID,
+	}) {
+		t.Fatalf("post IDs = %v, want explicit sources merged by rank", got)
+	}
+}
+
+func TestBuildForYouFeedQuotaMixingDoesNotSkipUnselectedPopularPosts(t *testing.T) {
+	viewerID := uuid.New()
+	followedAuthorID := uuid.New()
+	friendAuthorID := uuid.New()
+	popularAuthorID := uuid.New()
+	followedCommunityID := uuid.New()
+	now := time.Now().UTC()
+
+	popularFirst := newFeedTestPost(popularAuthorID, "popular-first", now)
+	popularSecond := newFeedTestPost(popularAuthorID, "popular-second", now.Add(-time.Minute))
+	popularThird := newFeedTestPost(popularAuthorID, "popular-third", now.Add(-2*time.Minute))
+	followedPost := newFeedTestPost(followedAuthorID, "followed", now.Add(-24*time.Hour))
+	followedPost.CommunityID = &followedCommunityID
+	friendPost := newFeedTestPost(friendAuthorID, "friend", now.Add(-25*time.Hour))
+
+	repo := &feedPostRepositoryStub{
+		posts: []*model.Post{
+			popularFirst,
+			popularSecond,
+			popularThird,
+			followedPost,
+			friendPost,
+		},
+		followedCommunityIDs: map[uuid.UUID]bool{followedCommunityID: true},
+		feedSocialEdges: map[uuid.UUID]model.FeedSocialEdgeSet{
+			friendAuthorID: {Friend: true},
+		},
+		listFeedPostCalls: make([]model.PostListFilter, 0),
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: viewerID}, "https://posts.test")
+
+	firstPage, err := useCase.BuildFeed(context.Background(), viewerID.String(), BuildFeedInput{
+		Surface: "content",
+		Tab:     "for_you",
+		Limit:   3,
+	})
+	if err != nil {
+		t.Fatalf("BuildFeed first page returned error: %v", err)
+	}
+	firstPageIDs := postIDsFromPostCards(postCardFeedData(firstPage.Items))
+	if !containsUUID(firstPageIDs, followedPost.ID) || !containsUUID(firstPageIDs, friendPost.ID) {
+		t.Fatalf("first page post IDs = %v, want reserved followed and social candidates", firstPageIDs)
+	}
+	if firstPage.NextCursor == "" {
+		t.Fatal("first page cursor is empty, want source-aware cursor")
+	}
+
+	secondPage, err := useCase.BuildFeed(context.Background(), viewerID.String(), BuildFeedInput{
+		Surface: "content",
+		Tab:     "for_you",
+		Limit:   3,
+		Cursor:  firstPage.NextCursor,
+	})
+	if err != nil {
+		t.Fatalf("BuildFeed second page returned error: %v", err)
+	}
+	secondPageIDs := postIDsFromPostCards(postCardFeedData(secondPage.Items))
+	if !containsUUID(secondPageIDs, popularSecond.ID) || !containsUUID(secondPageIDs, popularThird.ID) {
+		t.Fatalf("second page post IDs = %v, want unselected fresh popular posts", secondPageIDs)
+	}
+	if containsUUID(secondPageIDs, followedPost.ID) || containsUUID(secondPageIDs, friendPost.ID) {
+		t.Fatalf("second page post IDs = %v, want no duplicates from first page", secondPageIDs)
+	}
+}
+
+func TestMixFeedPostCandidateSourcesDoesNotLetSystemPostsStarveDiscoverySources(t *testing.T) {
+	now := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
+	systemPosts := make([]*PostView, 0, 5)
+	for idx := range 5 {
+		post := newFeedTestPost(uuid.New(), fmt.Sprintf("system-%d", idx), now.Add(-time.Duration(idx)*time.Second))
+		post.PostProfileKey = enum.PostProfileArticleV1
+		post.Tags = []string{"official_updates"}
+		systemPosts = append(systemPosts, &PostView{Post: post})
+	}
+	geoPost := newFeedTestPost(uuid.New(), "geo", now.Add(-time.Minute))
+	geoPost.PlaceCountryCode = stringPtr("KZ")
+	geoPost.PlaceCityID = stringPtr("almaty")
+	interestPost := newFeedTestPost(uuid.New(), "interest", now.Add(-2*time.Minute))
+	interestPost.PostProfileKey = enum.PostProfileTripPlanV1
+	coldStartPost := newFeedTestPost(uuid.New(), "cold-start", now.Add(-3*time.Minute))
+	coldStartPost.Category = enum.PostCategoryGuide
+
+	page := mixFeedPostCandidateSources(
+		5,
+		nil,
+		[]feedPostCandidateSource{
+			{Name: model.PostCandidateSourceSystem},
+			{Name: model.PostCandidateSourceGeo},
+			{Name: model.PostCandidateSourceInterest},
+			{Name: model.PostCandidateSourceColdStart},
+		},
+		[]string{
+			model.PostCandidateSourceSystem,
+			model.PostCandidateSourceGeo,
+			model.PostCandidateSourceInterest,
+			model.PostCandidateSourceColdStart,
+		},
+		map[string][]*PostView{
+			model.PostCandidateSourceSystem:    systemPosts,
+			model.PostCandidateSourceGeo:       {{Post: geoPost}},
+			model.PostCandidateSourceInterest:  {{Post: interestPost}},
+			model.PostCandidateSourceColdStart: {{Post: coldStartPost}},
+		},
+	)
+
+	gotIDs := postIDsFromPostViews(page.Posts)
+	for _, wantID := range []uuid.UUID{geoPost.ID, interestPost.ID, coldStartPost.ID} {
+		if !containsUUID(gotIDs, wantID) {
+			t.Fatalf("mixed post IDs = %v, want discovery source post %s", gotIDs, wantID)
+		}
+	}
+	systemCount := 0
+	for _, post := range page.Posts {
+		if post != nil && post.Post != nil {
+			if page.CandidateSourceByPostID[post.Post.ID] == model.PostCandidateSourceSystem {
+				systemCount++
+			}
+		}
+	}
+	if systemCount > 2 {
+		t.Fatalf("system posts = %d, want at most 2 system posts in a mixed page", systemCount)
+	}
+}
+
+func TestMixFeedPostCandidateSourcesDrainsUnselectableSourceCandidates(t *testing.T) {
+	now := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
+	popularPost := newFeedTestPost(uuid.New(), "popular", now)
+
+	page := mixFeedPostCandidateSources(
+		1,
+		nil,
+		[]feedPostCandidateSource{
+			{Name: model.PostCandidateSourceInterest},
+			{Name: model.PostCandidateSourcePopular},
+		},
+		[]string{
+			model.PostCandidateSourceInterest,
+			model.PostCandidateSourcePopular,
+		},
+		map[string][]*PostView{
+			model.PostCandidateSourceInterest: {
+				nil,
+				{},
+				{Post: &model.Post{}},
+			},
+			model.PostCandidateSourcePopular: {{Post: popularPost}},
+		},
+	)
+
+	got := postIDsFromPostViews(page.Posts)
+	if !sameUUIDsInOrder(got, []uuid.UUID{popularPost.ID}) {
+		t.Fatalf("mixed post IDs = %v, want only selectable popular post", got)
+	}
+	if page.NextCursor != nil {
+		t.Fatalf("next cursor = %+v, want nil after all selectable candidates are consumed", page.NextCursor)
+	}
+}
+
+func TestMixFeedPostCandidateSourcesAppliesDiversityCapsBeforeFallback(t *testing.T) {
+	now := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
+	dominantAuthorID := uuid.New()
+	dominantCommunityID := uuid.New()
+	alternativeAuthorID := uuid.New()
+	alternativeCommunityID := uuid.New()
+
+	dominantFirst := newFeedTestPost(dominantAuthorID, "dominant-first", now)
+	dominantFirst.CommunityID = &dominantCommunityID
+	dominantFirst.PostProfileKey = enum.PostProfileQuickPostV1
+	dominantSecond := newFeedTestPost(dominantAuthorID, "dominant-second", now.Add(-time.Minute))
+	dominantSecond.CommunityID = &dominantCommunityID
+	dominantSecond.PostProfileKey = enum.PostProfileQuickPostV1
+	dominantThird := newFeedTestPost(dominantAuthorID, "dominant-third", now.Add(-2*time.Minute))
+	dominantThird.CommunityID = &dominantCommunityID
+	dominantThird.PostProfileKey = enum.PostProfileQuickPostV1
+	dominantFourth := newFeedTestPost(dominantAuthorID, "dominant-fourth", now.Add(-3*time.Minute))
+	dominantFourth.CommunityID = &dominantCommunityID
+	dominantFourth.PostProfileKey = enum.PostProfileQuickPostV1
+	alternativeFirst := newFeedTestPost(alternativeAuthorID, "alternative-first", now.Add(-4*time.Minute))
+	alternativeFirst.CommunityID = &alternativeCommunityID
+	alternativeFirst.PostProfileKey = enum.PostProfileArticleV1
+	alternativeFirst.Category = enum.PostCategoryJournal
+	alternativeSecond := newFeedTestPost(uuid.New(), "alternative-second", now.Add(-5*time.Minute))
+	alternativeSecondCommunityID := uuid.New()
+	alternativeSecond.CommunityID = &alternativeSecondCommunityID
+	alternativeSecond.PostProfileKey = enum.PostProfileListingV1
+	alternativeSecond.Category = enum.PostCategoryCulinary
+
+	page := mixFeedPostCandidateSources(
+		4,
+		nil,
+		[]feedPostCandidateSource{{Name: model.PostCandidateSourcePopular}},
+		[]string{model.PostCandidateSourcePopular},
+		map[string][]*PostView{
+			model.PostCandidateSourcePopular: {
+				{Post: dominantFirst},
+				{Post: dominantSecond},
+				{Post: dominantThird},
+				{Post: dominantFourth},
+				{Post: alternativeFirst},
+				{Post: alternativeSecond},
+			},
+		},
+	)
+
+	if got := postIDsFromPostViews(page.Posts); !sameUUIDsInOrder(got, []uuid.UUID{
+		dominantFirst.ID,
+		dominantSecond.ID,
+		alternativeFirst.ID,
+		alternativeSecond.ID,
+	}) {
+		t.Fatalf("mixed post IDs = %v, want dominant source capped before fallback alternatives", got)
+	}
+}
+
+func TestMixFeedPostCandidateSourcesAppliesCategoryDiversityBeforeFallback(t *testing.T) {
+	now := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
+	firstGuide := newFeedTestPost(uuid.New(), "first-guide", now)
+	firstGuide.CommunityID = uuidPtr(uuid.New())
+	firstGuide.PostProfileKey = enum.PostProfileQuickPostV1
+	firstGuide.Category = enum.PostCategoryGuide
+	secondGuide := newFeedTestPost(uuid.New(), "second-guide", now.Add(-time.Minute))
+	secondGuide.CommunityID = uuidPtr(uuid.New())
+	secondGuide.PostProfileKey = enum.PostProfileArticleV1
+	secondGuide.Category = enum.PostCategoryGuide
+	thirdGuide := newFeedTestPost(uuid.New(), "third-guide", now.Add(-2*time.Minute))
+	thirdGuide.CommunityID = uuidPtr(uuid.New())
+	thirdGuide.PostProfileKey = enum.PostProfileListingV1
+	thirdGuide.Category = enum.PostCategoryGuide
+	journal := newFeedTestPost(uuid.New(), "journal", now.Add(-3*time.Minute))
+	journal.CommunityID = uuidPtr(uuid.New())
+	journal.PostProfileKey = enum.PostProfileEventAnnouncementV1
+	journal.Category = enum.PostCategoryJournal
+	culinary := newFeedTestPost(uuid.New(), "culinary", now.Add(-4*time.Minute))
+	culinary.CommunityID = uuidPtr(uuid.New())
+	culinary.PostProfileKey = enum.PostProfileQuickPostV1
+	culinary.Category = enum.PostCategoryCulinary
+
+	page := mixFeedPostCandidateSources(
+		4,
+		nil,
+		[]feedPostCandidateSource{{Name: model.PostCandidateSourcePopular}},
+		[]string{model.PostCandidateSourcePopular},
+		map[string][]*PostView{
+			model.PostCandidateSourcePopular: {
+				{Post: firstGuide},
+				{Post: secondGuide},
+				{Post: thirdGuide},
+				{Post: journal},
+				{Post: culinary},
+			},
+		},
+	)
+
+	if got := postIDsFromPostViews(page.Posts); !sameUUIDsInOrder(got, []uuid.UUID{
+		firstGuide.ID,
+		secondGuide.ID,
+		journal.ID,
+		culinary.ID,
+	}) {
+		t.Fatalf("mixed post IDs = %v, want category-capped feed before fallback", got)
+	}
+}
+
+func TestMixFeedPostCandidateSourcesAppliesTagDiversityBeforeFallback(t *testing.T) {
+	now := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
+	firstVisa := newFeedTestPost(uuid.New(), "first-visa", now)
+	firstVisa.CommunityID = uuidPtr(uuid.New())
+	firstVisa.PostProfileKey = enum.PostProfileQuickPostV1
+	firstVisa.Category = enum.PostCategoryGuide
+	firstVisa.Tags = []string{"visa", "documents"}
+	secondVisa := newFeedTestPost(uuid.New(), "second-visa", now.Add(-time.Minute))
+	secondVisa.CommunityID = uuidPtr(uuid.New())
+	secondVisa.PostProfileKey = enum.PostProfileArticleV1
+	secondVisa.Category = enum.PostCategoryJournal
+	secondVisa.Tags = []string{" Visa ", "relocation"}
+	thirdVisa := newFeedTestPost(uuid.New(), "third-visa", now.Add(-2*time.Minute))
+	thirdVisa.CommunityID = uuidPtr(uuid.New())
+	thirdVisa.PostProfileKey = enum.PostProfileListingV1
+	thirdVisa.Category = enum.PostCategoryCulinary
+	thirdVisa.Tags = []string{"visa", "bureaucracy"}
+	housing := newFeedTestPost(uuid.New(), "housing", now.Add(-3*time.Minute))
+	housing.CommunityID = uuidPtr(uuid.New())
+	housing.PostProfileKey = enum.PostProfileEventAnnouncementV1
+	housing.Category = enum.PostCategoryPhotoEssay
+	housing.Tags = []string{"housing"}
+	transport := newFeedTestPost(uuid.New(), "transport", now.Add(-4*time.Minute))
+	transport.CommunityID = uuidPtr(uuid.New())
+	transport.PostProfileKey = enum.PostProfileTripPlanV1
+	transport.Category = enum.PostCategoryCulinary
+	transport.Tags = []string{"transport"}
+
+	page := mixFeedPostCandidateSources(
+		4,
+		nil,
+		[]feedPostCandidateSource{{Name: model.PostCandidateSourcePopular}},
+		[]string{model.PostCandidateSourcePopular},
+		map[string][]*PostView{
+			model.PostCandidateSourcePopular: {
+				{Post: firstVisa},
+				{Post: secondVisa},
+				{Post: thirdVisa},
+				{Post: housing},
+				{Post: transport},
+			},
+		},
+	)
+
+	if got := postIDsFromPostViews(page.Posts); !sameUUIDsInOrder(got, []uuid.UUID{
+		firstVisa.ID,
+		secondVisa.ID,
+		housing.ID,
+		transport.ID,
+	}) {
+		t.Fatalf("mixed post IDs = %v, want tag-capped feed before fallback", got)
+	}
+}
+
+func TestMixFeedPostCandidateSourcesUsesDeliveredTagFatigue(t *testing.T) {
+	now := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
+	visa := newFeedTestPost(uuid.New(), "visa-again", now)
+	visa.CommunityID = uuidPtr(uuid.New())
+	visa.PostProfileKey = enum.PostProfileQuickPostV1
+	visa.Tags = []string{"visa"}
+	housing := newFeedTestPost(uuid.New(), "housing-after-visa", now.Add(-time.Minute))
+	housing.CommunityID = uuidPtr(uuid.New())
+	housing.PostProfileKey = enum.PostProfileArticleV1
+	housing.Category = enum.PostCategoryJournal
+	housing.Tags = []string{"housing"}
+	transport := newFeedTestPost(uuid.New(), "transport-after-visa", now.Add(-2*time.Minute))
+	transport.CommunityID = uuidPtr(uuid.New())
+	transport.PostProfileKey = enum.PostProfileListingV1
+	transport.Category = enum.PostCategoryCulinary
+	transport.Tags = []string{"transport"}
+
+	page := mixFeedPostCandidateSources(
+		2,
+		&feedCursor{
+			DeliveredTags: []string{" visa ", "visa"},
+		},
+		[]feedPostCandidateSource{{Name: model.PostCandidateSourcePopular}},
+		[]string{model.PostCandidateSourcePopular},
+		map[string][]*PostView{
+			model.PostCandidateSourcePopular: {
+				{Post: visa},
+				{Post: housing},
+				{Post: transport},
+			},
+		},
+	)
+
+	if got := postIDsFromPostViews(page.Posts); !sameUUIDsInOrder(got, []uuid.UUID{
+		housing.ID,
+		transport.ID,
+	}) {
+		t.Fatalf("mixed post IDs = %v, want delivered-tag fatigue before fallback", got)
+	}
+}
+
+func TestMixFeedPostCandidateSourcesUsesDeliveredAuthorFatigue(t *testing.T) {
+	now := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
+	dominantAuthorID := uuid.New()
+	dominant := newFeedTestPost(dominantAuthorID, "same-author-again", now)
+	dominant.CommunityID = uuidPtr(uuid.New())
+	dominant.PostProfileKey = enum.PostProfileQuickPostV1
+	alternativeFirst := newFeedTestPost(uuid.New(), "alternative-one", now.Add(-time.Minute))
+	alternativeFirst.CommunityID = uuidPtr(uuid.New())
+	alternativeFirst.PostProfileKey = enum.PostProfileArticleV1
+	alternativeSecond := newFeedTestPost(uuid.New(), "alternative-two", now.Add(-2*time.Minute))
+	alternativeSecond.CommunityID = uuidPtr(uuid.New())
+	alternativeSecond.PostProfileKey = enum.PostProfileListingV1
+
+	page := mixFeedPostCandidateSources(
+		2,
+		&feedCursor{
+			DeliveredAuthorUserIDs: []uuid.UUID{dominantAuthorID, dominantAuthorID},
+		},
+		[]feedPostCandidateSource{{Name: model.PostCandidateSourcePopular}},
+		[]string{model.PostCandidateSourcePopular},
+		map[string][]*PostView{
+			model.PostCandidateSourcePopular: {
+				{Post: dominant},
+				{Post: alternativeFirst},
+				{Post: alternativeSecond},
+			},
+		},
+	)
+
+	if got := postIDsFromPostViews(page.Posts); !sameUUIDsInOrder(got, []uuid.UUID{
+		alternativeFirst.ID,
+		alternativeSecond.ID,
+	}) {
+		t.Fatalf("mixed post IDs = %v, want delivered-author fatigue before fallback", got)
+	}
+}
+
+func TestMixFeedPostCandidateSourcesUsesDeliveredEntityFatigue(t *testing.T) {
+	now := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
+
+	tests := map[string]struct {
+		cursor        *feedCursor
+		configurePost func(*model.Post)
+	}{
+		"community": {
+			cursor: &feedCursor{
+				DeliveredCommunityIDs: []uuid.UUID{uuid.MustParse("11111111-1111-4111-8111-111111111111"), uuid.MustParse("11111111-1111-4111-8111-111111111111")},
+			},
+			configurePost: func(post *model.Post) {
+				communityID := uuid.MustParse("11111111-1111-4111-8111-111111111111")
+				post.CommunityID = &communityID
+				post.PostProfileKey = enum.PostProfileQuickPostV1
+				post.Category = enum.PostCategoryGuide
+			},
+		},
+		"post_profile": {
+			cursor: &feedCursor{
+				DeliveredPostProfileKeys: []enum.PostProfileKey{enum.PostProfileQuickPostV1, enum.PostProfileQuickPostV1},
+			},
+			configurePost: func(post *model.Post) {
+				post.CommunityID = uuidPtr(uuid.New())
+				post.PostProfileKey = enum.PostProfileQuickPostV1
+				post.Category = enum.PostCategoryGuide
+			},
+		},
+		"category": {
+			cursor: &feedCursor{
+				DeliveredCategories: []enum.PostCategory{enum.PostCategoryGuide, enum.PostCategoryGuide},
+			},
+			configurePost: func(post *model.Post) {
+				post.CommunityID = uuidPtr(uuid.New())
+				post.PostProfileKey = enum.PostProfileQuickPostV1
+				post.Category = enum.PostCategoryGuide
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			dominant := newFeedTestPost(uuid.New(), "dominant-"+name, now)
+			tc.configurePost(dominant)
+			alternativeFirst := newFeedTestPost(uuid.New(), "alternative-one-"+name, now.Add(-time.Minute))
+			alternativeFirst.CommunityID = uuidPtr(uuid.New())
+			alternativeFirst.PostProfileKey = enum.PostProfileArticleV1
+			alternativeFirst.Category = enum.PostCategoryJournal
+			alternativeSecond := newFeedTestPost(uuid.New(), "alternative-two-"+name, now.Add(-2*time.Minute))
+			alternativeSecond.CommunityID = uuidPtr(uuid.New())
+			alternativeSecond.PostProfileKey = enum.PostProfileListingV1
+			alternativeSecond.Category = enum.PostCategoryCulinary
+
+			page := mixFeedPostCandidateSources(
+				2,
+				tc.cursor,
+				[]feedPostCandidateSource{{Name: model.PostCandidateSourcePopular}},
+				[]string{model.PostCandidateSourcePopular},
+				map[string][]*PostView{
+					model.PostCandidateSourcePopular: {
+						{Post: dominant},
+						{Post: alternativeFirst},
+						{Post: alternativeSecond},
+					},
+				},
+			)
+
+			if got := postIDsFromPostViews(page.Posts); !sameUUIDsInOrder(got, []uuid.UUID{
+				alternativeFirst.ID,
+				alternativeSecond.ID,
+			}) {
+				t.Fatalf("mixed post IDs = %v, want delivered-%s fatigue before fallback", got, name)
+			}
+		})
+	}
+}
+
+func TestBuildForYouFeedMultiSourceCursorContinuesAfterMergedRank(t *testing.T) {
+	authorID := uuid.New()
+	viewerID := uuid.New()
+	followedCommunityID := uuid.New()
+	discoveryCommunityID := uuid.New()
+	publishedAt := time.Date(2026, 6, 15, 8, 0, 0, 0, time.UTC)
+	rankedAt := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
+
+	followedFirst := newFeedTestPost(authorID, "followed-first", publishedAt)
+	followedFirst.CommunityID = &followedCommunityID
+	followedFirst.FeedRankedAt = ptrTime(rankedAt)
+	discoveryFirst := newFeedTestPost(authorID, "discovery-first", publishedAt)
+	discoveryFirst.CommunityID = &discoveryCommunityID
+	discoveryFirst.FeedRankedAt = ptrTime(rankedAt.Add(-time.Minute))
+	followedSecond := newFeedTestPost(authorID, "followed-second", publishedAt)
+	followedSecond.CommunityID = &followedCommunityID
+	followedSecond.FeedRankedAt = ptrTime(rankedAt.Add(-2 * time.Minute))
+	discoverySecond := newFeedTestPost(authorID, "discovery-second", publishedAt)
+	discoverySecond.CommunityID = &discoveryCommunityID
+	discoverySecond.FeedRankedAt = ptrTime(rankedAt.Add(-3 * time.Minute))
+
+	repo := &feedPostRepositoryStub{
+		posts: []*model.Post{
+			followedFirst,
+			discoveryFirst,
+			followedSecond,
+			discoverySecond,
+		},
+		followedCommunityIDs: map[uuid.UUID]bool{followedCommunityID: true},
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: viewerID}, "https://posts.test")
+
+	firstPage, err := useCase.BuildFeed(context.Background(), viewerID.String(), BuildFeedInput{
+		Surface: "content",
+		Tab:     "for_you",
+		Limit:   2,
+	})
+	if err != nil {
+		t.Fatalf("BuildFeed first page returned error: %v", err)
+	}
+	if firstPage.NextCursor == "" {
+		t.Fatal("first page cursor is empty, want cursor for next page")
+	}
+	firstPageCards := postCardFeedData(firstPage.Items)
+	if got := postIDsFromPostCards(firstPageCards); !sameUUIDsInOrder(got, []uuid.UUID{followedFirst.ID, discoveryFirst.ID}) {
+		t.Fatalf("first page post IDs = %v, want followed first then discovery first", got)
+	}
+
+	secondPage, err := useCase.BuildFeed(context.Background(), viewerID.String(), BuildFeedInput{
+		Surface: "content",
+		Tab:     "for_you",
+		Limit:   2,
+		Cursor:  firstPage.NextCursor,
+	})
+	if err != nil {
+		t.Fatalf("BuildFeed second page returned error: %v", err)
+	}
+	secondPageCards := postCardFeedData(secondPage.Items)
+	if got := postIDsFromPostCards(secondPageCards); !sameUUIDsInOrder(got, []uuid.UUID{followedSecond.ID, discoverySecond.ID}) {
+		t.Fatalf("second page post IDs = %v, want remaining posts without first page duplicates", got)
+	}
+}
+
 func TestBuildFeedUsesFeedReadModelRepositoryPath(t *testing.T) {
 	authorID := uuid.New()
 	now := time.Now().UTC()
@@ -597,8 +2179,10 @@ func TestBuildFeedUsesFeedReadModelRepositoryPath(t *testing.T) {
 	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: authorID}, "https://posts.test")
 
 	page, err := useCase.BuildFeed(context.Background(), "", BuildFeedInput{
-		Surface: "content",
-		Limit:   2,
+		Surface:     "content",
+		CountryCode: "KZ",
+		CityID:      "almaty",
+		Limit:       2,
 	})
 	if err != nil {
 		t.Fatalf("BuildFeed returned error: %v", err)
@@ -610,12 +2194,213 @@ func TestBuildFeedUsesFeedReadModelRepositoryPath(t *testing.T) {
 	if postCards[0].Post.Post.ID != posts[0].ID || postCards[1].Post.Post.ID != posts[1].ID {
 		t.Fatalf("post cards = %+v, want read-model post order", postCards)
 	}
-	if len(repo.listFeedPostCalls) != 1 {
-		t.Fatalf("ListFeedPosts calls = %d, want 1", len(repo.listFeedPostCalls))
+	if len(repo.listFeedPostCalls) != 4 {
+		t.Fatalf("ListFeedPosts calls = %d, want anonymous geo candidate sources", len(repo.listFeedPostCalls))
 	}
-	filter := repo.listFeedPostCalls[0]
-	if !filter.OnlyPublished || filter.Sort != "latest_desc" || filter.Limit != 3 {
-		t.Fatalf("feed filter = %+v, want public latest read-model query with limit+1", filter)
+	gotSources := make([]string, 0, len(repo.listFeedPostCalls))
+	for _, filter := range repo.listFeedPostCalls {
+		gotSources = append(gotSources, filter.CandidateSource)
+		if !filter.OnlyPublished || filter.Sort != "latest_desc" || filter.Limit != 5 {
+			t.Fatalf("feed filter = %+v, want public latest read-model candidate query", filter)
+		}
+		if filter.CurrentCountryCode != "KZ" || filter.CurrentCityID != "almaty" {
+			t.Fatalf("feed geo context = %q/%q, want KZ/almaty", filter.CurrentCountryCode, filter.CurrentCityID)
+		}
+	}
+	wantSources := []string{
+		model.PostCandidateSourceSystem,
+		model.PostCandidateSourceGeo,
+		model.PostCandidateSourceColdStart,
+		model.PostCandidateSourcePopular,
+	}
+	if strings.Join(gotSources, ",") != strings.Join(wantSources, ",") {
+		t.Fatalf("candidate sources = %v, want %v", gotSources, wantSources)
+	}
+}
+
+func TestBuildFeedSeparatesPostCacheByGeoContext(t *testing.T) {
+	authorID := uuid.New()
+	now := time.Now().UTC()
+	posts := []*model.Post{
+		newFeedTestPost(authorID, "first", now),
+		newFeedTestPost(authorID, "second", now.Add(-time.Minute)),
+	}
+	repo := &feedPostRepositoryStub{
+		posts:             posts,
+		listFeedPostCalls: make([]model.PostListFilter, 0),
+	}
+	cache := &postFeedCacheFake{
+		version: 7,
+		posts:   make(map[string][]*model.Post),
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: authorID}, "https://posts.test").
+		WithPostFeedCache(cache, time.Minute, 30*time.Second)
+
+	for _, cityID := range []string{"almaty", "da-nang"} {
+		page, err := useCase.BuildFeed(context.Background(), "", BuildFeedInput{
+			Surface:     "content",
+			CountryCode: "KZ",
+			CityID:      cityID,
+			Limit:       2,
+		})
+		if err != nil {
+			t.Fatalf("BuildFeed for %s returned error: %v", cityID, err)
+		}
+		if postCards := postCardFeedData(page.Items); len(postCards) != 2 {
+			t.Fatalf("post cards for %s = %d, want 2", cityID, len(postCards))
+		}
+	}
+	if len(repo.listFeedPostCalls) != 8 {
+		t.Fatalf("ListFeedPosts calls = %d, want one cache miss per geo context", len(repo.listFeedPostCalls))
+	}
+	if cache.sets != 8 || len(cache.posts) != 8 {
+		t.Fatalf("cache sets/map size = %d/%d, want one cache entry per geo candidate source", cache.sets, len(cache.posts))
+	}
+}
+
+func TestPostFeedPostListCacheKeyIncludesCandidateMixerPolicy(t *testing.T) {
+	cache := &postFeedCacheFake{
+		version: 7,
+		posts:   make(map[string][]*model.Post),
+	}
+	useCase := NewPostUseCase(
+		&feedPostRepositoryStub{},
+		postUseCaseUserClientStub{userID: uuid.New()},
+		"https://posts.test",
+	).WithPostFeedCache(cache, time.Minute, 30*time.Second)
+
+	key, ttl, cacheable := useCase.postFeedPostListCacheKey(
+		context.Background(),
+		nil,
+		20,
+		0,
+		nil,
+		feedPostCandidateSource{Name: model.PostCandidateSourceGlobal},
+		"KZ",
+		"almaty",
+		nil,
+		postFeedExpiryPersistent,
+	)
+
+	if !cacheable || ttl <= 0 {
+		t.Fatalf("cacheable/ttl = %v/%v, want cacheable key", cacheable, ttl)
+	}
+	if !strings.Contains(key, feedCandidateMixerPolicy) {
+		t.Fatalf("cache key = %q, want candidate mixer policy segment", key)
+	}
+}
+
+func TestPostFeedPostListCacheKeySeparatesRankingExperiments(t *testing.T) {
+	viewerID := uuid.New()
+	cache := &postFeedCacheFake{
+		version: 7,
+		posts:   make(map[string][]*model.Post),
+	}
+	controlUseCase := NewPostUseCase(
+		&feedPostRepositoryStub{},
+		postUseCaseUserClientStub{userID: viewerID},
+		"https://posts.test",
+	).WithPostFeedCache(cache, time.Minute, 30*time.Second).
+		WithFeedExperimentAssignment("control")
+	rankV2UseCase := NewPostUseCase(
+		&feedPostRepositoryStub{},
+		postUseCaseUserClientStub{userID: viewerID},
+		"https://posts.test",
+	).WithPostFeedCache(cache, time.Minute, 30*time.Second).
+		WithFeedExperimentAssignment("rank-v2")
+
+	source := feedPostCandidateSource{Name: model.PostCandidateSourceInterest}
+	controlKey, _, controlCacheable := controlUseCase.postFeedPostListCacheKey(
+		context.Background(),
+		&viewerID,
+		20,
+		0,
+		nil,
+		source,
+		"KZ",
+		"almaty",
+		nil,
+		postFeedExpiryPersistent,
+	)
+	rankV2Key, _, rankV2Cacheable := rankV2UseCase.postFeedPostListCacheKey(
+		context.Background(),
+		&viewerID,
+		20,
+		0,
+		nil,
+		source,
+		"KZ",
+		"almaty",
+		nil,
+		postFeedExpiryPersistent,
+	)
+
+	if !controlCacheable || !rankV2Cacheable {
+		t.Fatalf("cacheable flags = %v/%v, want both cacheable", controlCacheable, rankV2Cacheable)
+	}
+	if controlKey == rankV2Key {
+		t.Fatalf("cache keys are equal for different ranking experiments: %q", controlKey)
+	}
+	if !strings.Contains(controlKey, "rank:control") {
+		t.Fatalf("control cache key = %q, want rank:control segment", controlKey)
+	}
+	if !strings.Contains(rankV2Key, "rank:rank-v2") {
+		t.Fatalf("rank-v2 cache key = %q, want rank:rank-v2 segment", rankV2Key)
+	}
+}
+
+func TestPostFeedPostListCacheKeySeparatesRankingPolicyOverrides(t *testing.T) {
+	viewerID := uuid.New()
+	cache := &postFeedCacheFake{
+		version: 7,
+		posts:   make(map[string][]*model.Post),
+	}
+	firstUseCase := NewPostUseCase(
+		&feedPostRepositoryStub{},
+		postUseCaseUserClientStub{userID: viewerID},
+		"https://posts.test",
+	).WithPostFeedCache(cache, time.Minute, 30*time.Second).
+		WithFeedExperimentAssignment("rank-v2").
+		WithFeedExperimentPolicyOverrides("rank-v2:socialFriendBoostHours=12")
+	secondUseCase := NewPostUseCase(
+		&feedPostRepositoryStub{},
+		postUseCaseUserClientStub{userID: viewerID},
+		"https://posts.test",
+	).WithPostFeedCache(cache, time.Minute, 30*time.Second).
+		WithFeedExperimentAssignment("rank-v2").
+		WithFeedExperimentPolicyOverrides("rank-v2:socialFriendBoostHours=28")
+
+	source := feedPostCandidateSource{Name: model.PostCandidateSourceInterest}
+	firstKey, _, firstCacheable := firstUseCase.postFeedPostListCacheKey(
+		context.Background(),
+		&viewerID,
+		20,
+		0,
+		nil,
+		source,
+		"KZ",
+		"almaty",
+		nil,
+		postFeedExpiryPersistent,
+	)
+	secondKey, _, secondCacheable := secondUseCase.postFeedPostListCacheKey(
+		context.Background(),
+		&viewerID,
+		20,
+		0,
+		nil,
+		source,
+		"KZ",
+		"almaty",
+		nil,
+		postFeedExpiryPersistent,
+	)
+
+	if !firstCacheable || !secondCacheable {
+		t.Fatalf("cacheable flags = %v/%v, want both cacheable", firstCacheable, secondCacheable)
+	}
+	if firstKey == secondKey {
+		t.Fatalf("cache keys are equal after ranking policy override change: %q", firstKey)
 	}
 }
 
@@ -649,11 +2434,11 @@ func TestBuildFeedUsesAnonymousFirstPagePostCache(t *testing.T) {
 			t.Fatalf("call %d post cards = %d, want 2", i+1, len(postCards))
 		}
 	}
-	if len(repo.listFeedPostCalls) != 1 {
-		t.Fatalf("ListFeedPosts calls = %d, want 1 with cache hit on second call", len(repo.listFeedPostCalls))
+	if len(repo.listFeedPostCalls) != 3 {
+		t.Fatalf("ListFeedPosts calls = %d, want one miss per anonymous candidate source", len(repo.listFeedPostCalls))
 	}
-	if cache.gets != 2 || cache.sets != 1 || cache.versionReads != 2 {
-		t.Fatalf("cache gets/sets/versionReads = %d/%d/%d, want 2/1/2", cache.gets, cache.sets, cache.versionReads)
+	if cache.gets != 6 || cache.sets != 3 || cache.versionReads != 6 {
+		t.Fatalf("cache gets/sets/versionReads = %d/%d/%d, want 6/3/6", cache.gets, cache.sets, cache.versionReads)
 	}
 }
 
@@ -715,14 +2500,14 @@ func TestBuildFeedUsesViewerScopedFollowingPostCache(t *testing.T) {
 	if len(page.Items) != 2 {
 		t.Fatalf("viewer two items = %d, want 2", len(page.Items))
 	}
-	if len(repo.listFeedPostCalls) != 2 {
-		t.Fatalf("ListFeedPosts calls = %d, want one miss per viewer", len(repo.listFeedPostCalls))
+	if len(repo.listFeedPostCalls) != 4 {
+		t.Fatalf("ListFeedPosts calls = %d, want following and social cache miss per viewer", len(repo.listFeedPostCalls))
 	}
-	if cache.gets != 3 || cache.sets != 2 {
-		t.Fatalf("cache gets/sets = %d/%d, want 3/2", cache.gets, cache.sets)
+	if cache.gets != 6 || cache.sets != 4 {
+		t.Fatalf("cache gets/sets = %d/%d, want 6/4", cache.gets, cache.sets)
 	}
-	if cache.versionReads != 6 {
-		t.Fatalf("versionReads = %d, want global+following per request", cache.versionReads)
+	if cache.versionReads != 12 {
+		t.Fatalf("versionReads = %d, want global+following and global+viewer per request", cache.versionReads)
 	}
 }
 
@@ -790,12 +2575,13 @@ func TestBuildFeedExcludesViewerHiddenPosts(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildFeed returned error: %v", err)
 	}
-	if len(repo.listFeedPostCalls) != 1 {
-		t.Fatalf("ListFeedPosts calls = %d, want 1", len(repo.listFeedPostCalls))
+	if len(repo.listFeedPostCalls) != 6 {
+		t.Fatalf("ListFeedPosts calls = %d, want personalized candidate sources", len(repo.listFeedPostCalls))
 	}
-	filter := repo.listFeedPostCalls[0]
-	if filter.ViewerUserID == nil || *filter.ViewerUserID != viewerID {
-		t.Fatalf("viewer filter = %v, want %s", filter.ViewerUserID, viewerID)
+	for _, filter := range repo.listFeedPostCalls {
+		if filter.ViewerUserID == nil || *filter.ViewerUserID != viewerID {
+			t.Fatalf("viewer filter = %v, want %s", filter.ViewerUserID, viewerID)
+		}
 	}
 	postCards := postCardFeedData(page.Items)
 	if len(postCards) != 1 {
@@ -804,6 +2590,28 @@ func TestBuildFeedExcludesViewerHiddenPosts(t *testing.T) {
 	data := postCards[0]
 	if data.Post.Post.ID != visiblePost.ID {
 		t.Fatalf("post = %s, want visible post %s", data.Post.Post.ID, visiblePost.ID)
+	}
+}
+
+func TestFeedPostCandidateSourcesUsesGeoColdStartForAnonymousUsers(t *testing.T) {
+	sources := feedPostCandidateSources("for_you", nil, " KZ ", " almaty ")
+
+	got := make([]string, 0, len(sources))
+	for _, source := range sources {
+		got = append(got, source.Name)
+		if source.FollowedByUserID != nil || source.ExcludeFollowedByUserID != nil {
+			t.Fatalf("anonymous source %+v should not carry viewer-scoped filters", source)
+		}
+	}
+
+	want := []string{
+		model.PostCandidateSourceSystem,
+		model.PostCandidateSourceGeo,
+		model.PostCandidateSourceColdStart,
+		model.PostCandidateSourcePopular,
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("anonymous geo candidate sources = %v, want %v", got, want)
 	}
 }
 
@@ -1027,6 +2835,150 @@ func TestTrackFeedEventsPersistsNotInterestedAsNegativeSignal(t *testing.T) {
 	}
 }
 
+func TestTrackFeedEventsAcceptsCommunityCardReportSignal(t *testing.T) {
+	viewerID := uuid.New()
+	communityID := uuid.New()
+	repo := &feedPostRepositoryStub{
+		trackedFeedEvents: make([]model.FeedEvent, 0),
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: viewerID}, "https://posts.test")
+
+	accepted, err := useCase.TrackFeedEvents(context.Background(), "subject", TrackFeedEventsInput{
+		Events: []FeedEventInput{{
+			EventID:     uuid.New(),
+			EventType:   model.FeedEventTypeReport,
+			Surface:     "content",
+			Tab:         "for_you",
+			BlockID:     "community:" + communityID.String() + ":profile",
+			BlockType:   model.FeedBlockTypeCommunityCard,
+			CommunityID: &communityID,
+			Rank:        0,
+			Metadata: map[string]any{
+				"entityType":   model.FeedInterestEntityTypeCommunity,
+				"entityId":     communityID.String(),
+				"feedbackType": model.FeedEventTypeReport,
+			},
+		}},
+	})
+
+	if err != nil {
+		t.Fatalf("TrackFeedEvents returned error: %v", err)
+	}
+	if accepted != 1 {
+		t.Fatalf("accepted = %d, want 1", accepted)
+	}
+	if len(repo.trackedFeedEvents) != 1 {
+		t.Fatalf("tracked events = %d, want 1", len(repo.trackedFeedEvents))
+	}
+	event := repo.trackedFeedEvents[0]
+	if event.BlockType != model.FeedBlockTypeCommunityCard ||
+		event.CommunityID == nil ||
+		*event.CommunityID != communityID ||
+		event.EventType != model.FeedEventTypeReport {
+		t.Fatalf("community report event = %+v, want community-card report", event)
+	}
+}
+
+func TestTrackFeedEventsAcceptsEngagementEventTypes(t *testing.T) {
+	viewerID := uuid.New()
+	postID := uuid.New()
+	communityID := uuid.New()
+	repo := &feedPostRepositoryStub{
+		trackedFeedEvents: make([]model.FeedEvent, 0),
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: viewerID}, "https://posts.test")
+
+	inputs := []FeedEventInput{
+		{
+			EventID:   uuid.New(),
+			EventType: "LIKE",
+			Surface:   "content",
+			Tab:       "for_you",
+			BlockID:   "post:" + postID.String(),
+			BlockType: model.FeedBlockTypePostCard,
+			PostID:    postID,
+			Rank:      1,
+		},
+		{
+			EventID:   uuid.New(),
+			EventType: "comment",
+			Surface:   "content",
+			Tab:       "for_you",
+			BlockID:   "post:" + postID.String(),
+			BlockType: model.FeedBlockTypePostCard,
+			PostID:    postID,
+			Rank:      1,
+		},
+		{
+			EventID:   uuid.New(),
+			EventType: "share",
+			Surface:   "content",
+			Tab:       "for_you",
+			BlockID:   "post:" + postID.String(),
+			BlockType: model.FeedBlockTypePostCard,
+			PostID:    postID,
+			Rank:      1,
+		},
+		{
+			EventID:   uuid.New(),
+			EventType: "report",
+			Surface:   "content",
+			Tab:       "for_you",
+			BlockID:   "post:" + postID.String(),
+			BlockType: model.FeedBlockTypePostCard,
+			PostID:    postID,
+			Rank:      1,
+		},
+		{
+			EventID:   uuid.New(),
+			EventType: "dwell",
+			Surface:   "content",
+			Tab:       "for_you",
+			BlockID:   "post:" + postID.String(),
+			BlockType: model.FeedBlockTypePostCard,
+			PostID:    postID,
+			Rank:      1,
+			Metadata: map[string]any{
+				"dwellMs": 4200,
+			},
+		},
+		{
+			EventID:     uuid.New(),
+			EventType:   "subscribe",
+			Surface:     "home",
+			Tab:         "for_you",
+			BlockID:     "communities:suggested",
+			BlockType:   model.FeedBlockTypeSuggestedCommunities,
+			CommunityID: &communityID,
+			Rank:        0,
+		},
+	}
+
+	accepted, err := useCase.TrackFeedEvents(context.Background(), "subject", TrackFeedEventsInput{Events: inputs})
+	if err != nil {
+		t.Fatalf("TrackFeedEvents returned error: %v", err)
+	}
+	if accepted != len(inputs) {
+		t.Fatalf("accepted = %d, want %d", accepted, len(inputs))
+	}
+
+	got := make([]string, 0, len(repo.trackedFeedEvents))
+	for _, event := range repo.trackedFeedEvents {
+		got = append(got, event.EventType)
+	}
+	want := []string{
+		model.FeedEventTypeLike,
+		model.FeedEventTypeComment,
+		model.FeedEventTypeShare,
+		model.FeedEventTypeReport,
+		model.FeedEventTypeDwell,
+		model.FeedEventTypeSubscribe,
+	}
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Fatalf("event types = %#v, want %#v", got, want)
+	}
+}
+
 func TestTrackFeedEventsInvalidatesViewerFeedCacheForNegativeSignals(t *testing.T) {
 	viewerID := uuid.New()
 	postID := uuid.New()
@@ -1060,6 +3012,136 @@ func TestTrackFeedEventsInvalidatesViewerFeedCacheForNegativeSignals(t *testing.
 	}
 	if !containsString(cache.bumpedScopes, postFeedCacheFollowingScope(viewerID)) {
 		t.Fatalf("bumped scopes = %#v, want following scope", cache.bumpedScopes)
+	}
+}
+
+func TestTrackFeedEventsInvalidatesViewerFeedCacheForEngagementSignals(t *testing.T) {
+	viewerID := uuid.New()
+	postID := uuid.New()
+	repo := &feedPostRepositoryStub{
+		trackedFeedEvents: make([]model.FeedEvent, 0),
+	}
+	cache := &postFeedCacheFake{}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: viewerID}, "https://posts.test").
+		WithPostFeedCache(cache, time.Minute, 30*time.Second)
+
+	events := []FeedEventInput{{
+		EventID:   uuid.New(),
+		EventType: model.FeedEventTypeImpression,
+		Surface:   "content",
+		Tab:       "for_you",
+		BlockID:   "post:" + postID.String(),
+		BlockType: model.FeedBlockTypePostCard,
+		PostID:    postID,
+		Rank:      1,
+	}, {
+		EventID:   uuid.New(),
+		EventType: model.FeedEventTypeClick,
+		Surface:   "content",
+		Tab:       "for_you",
+		BlockID:   "post:" + postID.String(),
+		BlockType: model.FeedBlockTypePostCard,
+		PostID:    postID,
+		Rank:      1,
+	}, {
+		EventID:   uuid.New(),
+		EventType: model.FeedEventTypeDwell,
+		Surface:   "content",
+		Tab:       "for_you",
+		BlockID:   "post:" + postID.String(),
+		BlockType: model.FeedBlockTypePostCard,
+		PostID:    postID,
+		Rank:      1,
+		Metadata:  map[string]any{"dwellMs": 4200},
+	}, {
+		EventID:   uuid.New(),
+		EventType: model.FeedEventTypeLike,
+		Surface:   "content",
+		Tab:       "for_you",
+		BlockID:   "post:" + postID.String(),
+		BlockType: model.FeedBlockTypePostCard,
+		PostID:    postID,
+		Rank:      1,
+	}, {
+		EventID:   uuid.New(),
+		EventType: model.FeedEventTypeComment,
+		Surface:   "content",
+		Tab:       "for_you",
+		BlockID:   "post:" + postID.String(),
+		BlockType: model.FeedBlockTypePostCard,
+		PostID:    postID,
+		Rank:      1,
+	}, {
+		EventID:   uuid.New(),
+		EventType: model.FeedEventTypeShare,
+		Surface:   "content",
+		Tab:       "for_you",
+		BlockID:   "post:" + postID.String(),
+		BlockType: model.FeedBlockTypePostCard,
+		PostID:    postID,
+		Rank:      1,
+	}, {
+		EventID:   uuid.New(),
+		EventType: model.FeedEventTypeSubscribe,
+		Surface:   "content",
+		Tab:       "for_you",
+		BlockID:   "community:" + postID.String(),
+		BlockType: model.FeedBlockTypeSuggestedCommunities,
+		Rank:      1,
+		Metadata:  map[string]any{"communityId": postID.String()},
+	}}
+
+	accepted, err := useCase.TrackFeedEvents(context.Background(), "subject", TrackFeedEventsInput{Events: events})
+	if err != nil {
+		t.Fatalf("TrackFeedEvents returned error: %v", err)
+	}
+	if accepted != len(events) {
+		t.Fatalf("accepted = %d, want %d", accepted, len(events))
+	}
+	if cache.bumps != 1 {
+		t.Fatalf("cache bumps = %d, want one batch bump", cache.bumps)
+	}
+	for _, scope := range []string{
+		postFeedCacheViewerScope(viewerID),
+		postFeedCacheFollowingScope(viewerID),
+		postFeedCacheDiscoveryScope(viewerID),
+	} {
+		if !containsString(cache.bumpedScopes, scope) {
+			t.Fatalf("bumped scopes = %#v, want %s", cache.bumpedScopes, scope)
+		}
+	}
+}
+
+func TestTrackFeedEventsKeepsViewerFeedCacheForImpressionOnlyBatch(t *testing.T) {
+	viewerID := uuid.New()
+	postID := uuid.New()
+	repo := &feedPostRepositoryStub{
+		trackedFeedEvents: make([]model.FeedEvent, 0),
+	}
+	cache := &postFeedCacheFake{}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: viewerID}, "https://posts.test").
+		WithPostFeedCache(cache, time.Minute, 30*time.Second)
+
+	accepted, err := useCase.TrackFeedEvents(context.Background(), "subject", TrackFeedEventsInput{
+		Events: []FeedEventInput{{
+			EventID:   uuid.New(),
+			EventType: model.FeedEventTypeImpression,
+			Surface:   "content",
+			Tab:       "for_you",
+			BlockID:   "post:" + postID.String(),
+			BlockType: model.FeedBlockTypePostCard,
+			PostID:    postID,
+			Rank:      1,
+		}},
+	})
+	if err != nil {
+		t.Fatalf("TrackFeedEvents returned error: %v", err)
+	}
+	if accepted != 1 {
+		t.Fatalf("accepted = %d, want 1", accepted)
+	}
+	if cache.bumps != 0 || len(cache.bumpedScopes) != 0 {
+		t.Fatalf("cache bumped for impression-only batch: bumps=%d scopes=%#v", cache.bumps, cache.bumpedScopes)
 	}
 }
 
@@ -1130,6 +3212,42 @@ func TestListFeedUserInterestsReturnsViewerScopedReadModel(t *testing.T) {
 	}
 }
 
+func TestListFeedUserInterestsAllowsPostProfileAffinity(t *testing.T) {
+	viewerID := uuid.New()
+	repo := &feedPostRepositoryStub{
+		feedUserInterests: []model.FeedUserInterest{{
+			ViewerUserID: viewerID,
+			EntityType:   model.FeedInterestEntityTypePostProfile,
+			EntityID:     "quick_post",
+			Score:        2.25,
+		}},
+		listFeedUserInterestFilters: make([]model.FeedUserInterestListFilter, 0),
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: viewerID}, "https://posts.test")
+
+	interests, err := useCase.ListFeedUserInterests(context.Background(), "subject", ListFeedUserInterestsInput{
+		EntityTypes: []string{
+			model.FeedInterestEntityTypePostProfile,
+			strings.ToUpper(model.FeedInterestEntityTypePostProfile),
+			"unknown",
+		},
+		Limit: 5,
+	})
+	if err != nil {
+		t.Fatalf("ListFeedUserInterests returned error: %v", err)
+	}
+	if len(interests) != 1 || interests[0].EntityType != model.FeedInterestEntityTypePostProfile {
+		t.Fatalf("interests = %+v, want one post profile interest", interests)
+	}
+	if len(repo.listFeedUserInterestFilters) != 1 {
+		t.Fatalf("ListFeedUserInterests calls = %d, want 1", len(repo.listFeedUserInterestFilters))
+	}
+	filter := repo.listFeedUserInterestFilters[0]
+	if filter.ViewerUserID != viewerID || len(filter.EntityTypes) != 1 || filter.EntityTypes[0] != model.FeedInterestEntityTypePostProfile {
+		t.Fatalf("interest filter = %+v, want normalized post profile only", filter)
+	}
+}
+
 func TestListFeedUserInterestsReturnsEmptyForAnonymousViewer(t *testing.T) {
 	repo := &feedPostRepositoryStub{
 		listFeedUserInterestFilters: make([]model.FeedUserInterestListFilter, 0),
@@ -1155,12 +3273,14 @@ func TestListFeedQualityMetricsReturnsAggregatedCounters(t *testing.T) {
 		feedQualityMetrics: []model.FeedQualityMetric{{
 			Surface:            "home",
 			BlockType:          model.FeedBlockTypeTourCard,
+			CommunityID:        "00000000-0000-4000-8000-000000000222",
 			Action:             "conversion",
 			EventCount:         12,
 			UniqueViewers:      9,
 			ConversionCount:    7,
 			HideCount:          1,
 			NotInterestedCount: 2,
+			ReportCount:        3,
 		}},
 		listFeedQualityMetricFilters: make([]model.FeedQualityMetricsFilter, 0),
 	}
@@ -1179,7 +3299,11 @@ func TestListFeedQualityMetricsReturnsAggregatedCounters(t *testing.T) {
 		t.Fatalf("metrics = %d, want 1", len(metrics))
 	}
 	metric := metrics[0]
-	if metric.Action != "conversion" || metric.ConversionCount != 7 || metric.UniqueViewers != 9 {
+	if metric.Action != "conversion" ||
+		metric.CommunityID != "00000000-0000-4000-8000-000000000222" ||
+		metric.ConversionCount != 7 ||
+		metric.UniqueViewers != 9 ||
+		metric.ReportCount != 3 {
 		t.Fatalf("unexpected metric: %+v", metric)
 	}
 	if len(repo.listFeedQualityMetricFilters) != 1 {
@@ -1234,11 +3358,21 @@ type feedPostRepositoryStub struct {
 	listFeedUserInterestFilters  []model.FeedUserInterestListFilter
 	feedQualityMetrics           []model.FeedQualityMetric
 	listFeedQualityMetricFilters []model.FeedQualityMetricsFilter
+	feedSocialEdges              map[uuid.UUID]model.FeedSocialEdgeSet
+	upsertedSocialEdges          []model.FeedSocialEdge
+	deletedSocialEdges           []feedDeletedSocialEdge
 }
 
 type feedTrackedPostView struct {
 	postID       uuid.UUID
 	viewerUserID uuid.UUID
+}
+
+type feedDeletedSocialEdge struct {
+	viewerUserID    uuid.UUID
+	targetUserID    uuid.UUID
+	edgeType        string
+	sourceUpdatedAt time.Time
 }
 
 func (r *feedPostRepositoryStub) ListPosts(_ context.Context, filter model.PostListFilter) ([]*model.Post, error) {
@@ -1322,15 +3456,20 @@ func (r *feedPostRepositoryStub) listPosts(filter model.PostListFilter) ([]*mode
 				continue
 			}
 		}
+		if filter.ExcludeFollowedByUserID != nil &&
+			post.CommunityID != nil &&
+			r.followedCommunityIDs[*post.CommunityID] {
+			continue
+		}
+		if !r.postMatchesCandidateSource(filter, post) {
+			continue
+		}
 		if filter.FeedCursorPublishedAt != nil && filter.FeedCursorPostID != nil {
-			publishedAt := post.CreatedAt
-			if post.PublishedAt != nil {
-				publishedAt = *post.PublishedAt
-			}
-			if publishedAt.After(*filter.FeedCursorPublishedAt) {
+			rankedAt := feedTestPostRankedAt(post)
+			if rankedAt.After(*filter.FeedCursorPublishedAt) {
 				continue
 			}
-			if publishedAt.Equal(*filter.FeedCursorPublishedAt) && post.ID.String() >= filter.FeedCursorPostID.String() {
+			if rankedAt.Equal(*filter.FeedCursorPublishedAt) && post.ID.String() >= filter.FeedCursorPostID.String() {
 				continue
 			}
 		}
@@ -1344,6 +3483,121 @@ func (r *feedPostRepositoryStub) listPosts(filter model.PostListFilter) ([]*mode
 		end = len(items)
 	}
 	return items[filter.Offset:end], nil
+}
+
+func (r *feedPostRepositoryStub) postMatchesCandidateSource(filter model.PostListFilter, post *model.Post) bool {
+	switch filter.CandidateSource {
+	case "", model.PostCandidateSourceGlobal, model.PostCandidateSourceFollowing, model.PostCandidateSourceFollowed, model.PostCandidateSourcePopular:
+		return true
+	case model.PostCandidateSourceSocial:
+		if filter.ViewerUserID == nil || *filter.ViewerUserID == uuid.Nil {
+			return false
+		}
+		edge := r.feedSocialEdges[post.AuthorUserID]
+		return edge.Friend || edge.Following
+	case model.PostCandidateSourceSystem:
+		return postMatchesFeedSystemSource(post)
+	case model.PostCandidateSourceGeo:
+		return postMatchesFeedGeo(filter, post)
+	case model.PostCandidateSourceInterest:
+		if filter.ViewerUserID == nil || *filter.ViewerUserID == uuid.Nil {
+			return false
+		}
+		return r.postMatchesFeedInterest(*filter.ViewerUserID, post)
+	case model.PostCandidateSourceColdStart:
+		hasViewer := filter.ViewerUserID != nil && *filter.ViewerUserID != uuid.Nil
+		if hasViewer && r.viewerHasPositiveFeedInterest(*filter.ViewerUserID) {
+			return false
+		}
+		if strings.TrimSpace(filter.CurrentCityID) != "" || strings.TrimSpace(filter.CurrentCountryCode) != "" {
+			return postMatchesFeedGeo(filter, post)
+		}
+		return true
+	default:
+		return true
+	}
+}
+
+func postMatchesFeedSystemSource(post *model.Post) bool {
+	if post == nil || post.PostProfileKey != enum.PostProfileArticleV1 {
+		return false
+	}
+	for _, tag := range post.Tags {
+		switch strings.ToLower(strings.TrimSpace(tag)) {
+		case "official_updates", "travel_alerts", "local_news":
+			return true
+		}
+	}
+	return false
+}
+
+func postMatchesFeedGeo(filter model.PostListFilter, post *model.Post) bool {
+	cityID := strings.ToLower(strings.TrimSpace(filter.CurrentCityID))
+	countryCode := strings.ToUpper(strings.TrimSpace(filter.CurrentCountryCode))
+	if cityID == "" && countryCode == "" {
+		return false
+	}
+	if cityID != "" && post.PlaceCityID != nil && strings.EqualFold(strings.TrimSpace(*post.PlaceCityID), cityID) {
+		return true
+	}
+	if countryCode != "" && post.PlaceCountryCode != nil && strings.EqualFold(strings.TrimSpace(*post.PlaceCountryCode), countryCode) {
+		return true
+	}
+	return false
+}
+
+func (r *feedPostRepositoryStub) postMatchesFeedInterest(viewerID uuid.UUID, post *model.Post) bool {
+	for _, interest := range r.feedUserInterests {
+		if interest.ViewerUserID != viewerID || interest.Score <= 0 {
+			continue
+		}
+		entityID := strings.ToLower(strings.TrimSpace(interest.EntityID))
+		if entityID == "" {
+			continue
+		}
+		switch strings.TrimSpace(interest.EntityType) {
+		case model.FeedInterestEntityTypePost:
+			if strings.EqualFold(entityID, post.ID.String()) {
+				return true
+			}
+		case model.FeedInterestEntityTypePostProfile:
+			if entityID == strings.ToLower(strings.TrimSpace(string(post.PostProfileKey))) {
+				return true
+			}
+		case model.FeedInterestEntityTypeCommunity:
+			if post.CommunityID != nil && strings.EqualFold(entityID, post.CommunityID.String()) {
+				return true
+			}
+		case model.FeedInterestEntityTypeCity:
+			if post.PlaceCityID != nil && entityID == strings.ToLower(strings.TrimSpace(*post.PlaceCityID)) {
+				return true
+			}
+		case model.FeedInterestEntityTypeCountry:
+			if post.PlaceCountryCode != nil && entityID == strings.ToLower(strings.TrimSpace(*post.PlaceCountryCode)) {
+				return true
+			}
+		case model.FeedInterestEntityTypeCategory:
+			if entityID == strings.ToLower(strings.TrimSpace(string(post.Category))) {
+				return true
+			}
+		case model.FeedInterestEntityTypeTag:
+			for _, tag := range post.Tags {
+				if entityID == strings.ToLower(strings.TrimSpace(tag)) {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+func (r *feedPostRepositoryStub) viewerHasPositiveFeedInterest(viewerID uuid.UUID) bool {
+	for _, interest := range r.feedUserInterests {
+		if interest.ViewerUserID == viewerID && interest.Score > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func (r *feedPostRepositoryStub) HasPostLike(_ context.Context, _ uuid.UUID, _ uuid.UUID) (bool, error) {
@@ -1510,6 +3764,77 @@ func (r *feedPostRepositoryStub) ListFeedQualityMetrics(_ context.Context, filte
 	return append([]model.FeedQualityMetric(nil), r.feedQualityMetrics...), nil
 }
 
+func (r *feedPostRepositoryStub) ListFeedSocialEdges(
+	_ context.Context,
+	_ uuid.UUID,
+	targetUserIDs []uuid.UUID,
+) (map[uuid.UUID]model.FeedSocialEdgeSet, error) {
+	result := make(map[uuid.UUID]model.FeedSocialEdgeSet, len(targetUserIDs))
+	for _, targetUserID := range targetUserIDs {
+		if r.feedSocialEdges == nil {
+			continue
+		}
+		if set := r.feedSocialEdges[targetUserID]; set.Friend || set.Following {
+			result[targetUserID] = set
+		}
+	}
+	return result, nil
+}
+
+func (r *feedPostRepositoryStub) UpsertFeedSocialEdge(_ context.Context, edge model.FeedSocialEdge) (bool, error) {
+	if r.feedSocialEdges == nil {
+		r.feedSocialEdges = make(map[uuid.UUID]model.FeedSocialEdgeSet)
+	}
+	current := r.feedSocialEdges[edge.TargetUserID]
+	switch edge.EdgeType {
+	case model.FeedSocialEdgeTypeFriend:
+		if current.Friend {
+			return false, nil
+		}
+		current.Friend = true
+	case model.FeedSocialEdgeTypeFollowing:
+		if current.Following {
+			return false, nil
+		}
+		current.Following = true
+	}
+	r.feedSocialEdges[edge.TargetUserID] = current
+	r.upsertedSocialEdges = append(r.upsertedSocialEdges, edge)
+	return true, nil
+}
+
+func (r *feedPostRepositoryStub) DeleteFeedSocialEdge(
+	_ context.Context,
+	viewerUserID uuid.UUID,
+	targetUserID uuid.UUID,
+	edgeType string,
+	sourceUpdatedAt time.Time,
+) (bool, error) {
+	if r.feedSocialEdges != nil {
+		current := r.feedSocialEdges[targetUserID]
+		switch edgeType {
+		case model.FeedSocialEdgeTypeFriend:
+			if !current.Friend {
+				return false, nil
+			}
+			current.Friend = false
+		case model.FeedSocialEdgeTypeFollowing:
+			if !current.Following {
+				return false, nil
+			}
+			current.Following = false
+		}
+		r.feedSocialEdges[targetUserID] = current
+	}
+	r.deletedSocialEdges = append(r.deletedSocialEdges, feedDeletedSocialEdge{
+		viewerUserID:    viewerUserID,
+		targetUserID:    targetUserID,
+		edgeType:        edgeType,
+		sourceUpdatedAt: sourceUpdatedAt,
+	})
+	return true, nil
+}
+
 type postFeedCacheFake struct {
 	version        int64
 	versionByScope map[string]int64
@@ -1579,6 +3904,19 @@ func newFeedTestExpiringPost(authorID uuid.UUID, slug string, publishedAt time.T
 	return post
 }
 
+func feedTestPostRankedAt(post *model.Post) time.Time {
+	if post == nil {
+		return time.Time{}
+	}
+	if post.FeedRankedAt != nil && !post.FeedRankedAt.IsZero() {
+		return post.FeedRankedAt.UTC()
+	}
+	if post.PublishedAt != nil && !post.PublishedAt.IsZero() {
+		return post.PublishedAt.UTC()
+	}
+	return post.CreatedAt.UTC()
+}
+
 func newFeedTestStory(authorID uuid.UUID, caption string, createdAt time.Time) *model.Story {
 	return &model.Story{
 		ID:           uuid.New(),
@@ -1601,6 +3939,10 @@ func stringPtr(value string) *string {
 	return &value
 }
 
+func uuidPtr(value uuid.UUID) *uuid.UUID {
+	return &value
+}
+
 func containsUUID(items []uuid.UUID, target uuid.UUID) bool {
 	for _, item := range items {
 		if item == target {
@@ -1608,6 +3950,18 @@ func containsUUID(items []uuid.UUID, target uuid.UUID) bool {
 		}
 	}
 	return false
+}
+
+func uuidSlicesEqual(left []uuid.UUID, right []uuid.UUID) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for index := range left {
+		if left[index] != right[index] {
+			return false
+		}
+	}
+	return true
 }
 
 func containsString(items []string, target string) bool {
@@ -1629,6 +3983,40 @@ func postCardFeedData(items []FeedBlock) []PostCardFeedData {
 		result = append(result, data)
 	}
 	return result
+}
+
+func postIDsFromPostCards(items []PostCardFeedData) []uuid.UUID {
+	result := make([]uuid.UUID, 0, len(items))
+	for _, item := range items {
+		if item.Post == nil || item.Post.Post == nil {
+			continue
+		}
+		result = append(result, item.Post.Post.ID)
+	}
+	return result
+}
+
+func postIDsFromPostViews(items []*PostView) []uuid.UUID {
+	result := make([]uuid.UUID, 0, len(items))
+	for _, item := range items {
+		if item == nil || item.Post == nil {
+			continue
+		}
+		result = append(result, item.Post.ID)
+	}
+	return result
+}
+
+func sameUUIDsInOrder(left []uuid.UUID, right []uuid.UUID) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for index := range left {
+		if left[index] != right[index] {
+			return false
+		}
+	}
+	return true
 }
 
 func conversionFeedBlocks(items []FeedBlock) []FeedBlock {

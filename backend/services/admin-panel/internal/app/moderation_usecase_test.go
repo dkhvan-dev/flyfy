@@ -133,12 +133,38 @@ func TestFeedQualityDashboardRequiresModerationReadAndUsesStoryClient(t *testing
 			{
 				Surface:            "home",
 				BlockType:          "post_card",
+				RankingExperiment:  "rank-v2",
 				Action:             "conversion",
 				EventCount:         10,
 				UniqueViewers:      8,
+				ImpressionCount:    20,
+				ClickCount:         5,
+				DwellCount:         4,
+				AvgDwellMs:         3000,
+				LikeCount:          2,
+				CommentCount:       1,
+				ShareCount:         1,
+				SubscribeCount:     3,
 				ConversionCount:    3,
 				HideCount:          1,
 				NotInterestedCount: 2,
+				ReportCount:        4,
+			},
+			{
+				Surface:            "home",
+				BlockType:          "post_card",
+				RankingExperiment:  "",
+				Action:             "impression",
+				EventCount:         6,
+				UniqueViewers:      5,
+				ImpressionCount:    12,
+				ClickCount:         2,
+				DwellCount:         2,
+				AvgDwellMs:         1000,
+				ConversionCount:    1,
+				HideCount:          0,
+				NotInterestedCount: 1,
+				ReportCount:        0,
 			},
 		},
 	}
@@ -155,11 +181,42 @@ func TestFeedQualityDashboardRequiresModerationReadAndUsesStoryClient(t *testing
 	if err != nil {
 		t.Fatalf("FeedQualityDashboard() error = %v", err)
 	}
-	if len(page.Metrics) != 1 {
-		t.Fatalf("metrics length = %d, want 1", len(page.Metrics))
+	if len(page.Metrics) != 2 {
+		t.Fatalf("metrics length = %d, want 2", len(page.Metrics))
 	}
-	if page.Metrics[0].ConversionCount != 3 || page.Totals.NotInterestedCount != 2 {
-		t.Fatalf("dashboard page = %+v, want converted and negative feedback totals", page)
+	if page.Metrics[0].ConversionCount != 3 ||
+		page.Totals.NotInterestedCount != 3 ||
+		page.Totals.ImpressionCount != 32 ||
+		page.Totals.ClickCount != 7 ||
+		page.Totals.AvgDwellMs != 2333 ||
+		page.Totals.ReportCount != 4 ||
+		page.Totals.EngagementCount() != 7 {
+		t.Fatalf("dashboard page = %+v, want engagement, dwell and feedback totals", page)
+	}
+	if len(page.ExperimentSummaries) != 2 {
+		t.Fatalf("experiment summaries = %d, want 2: %+v", len(page.ExperimentSummaries), page.ExperimentSummaries)
+	}
+	if page.ExperimentSummaries[0].Experiment != "rank-v2" ||
+		page.ExperimentSummaries[0].Totals.EventCount != 10 ||
+		page.ExperimentSummaries[0].Totals.AvgDwellMs != 3000 ||
+		page.ExperimentSummaries[0].Totals.ConversionCount != 3 ||
+		page.ExperimentSummaries[0].Baseline {
+		t.Fatalf("rank-v2 summary = %+v, want aggregated non-baseline rank-v2 counters", page.ExperimentSummaries[0])
+	}
+	if page.ExperimentSummaries[0].ClickRateDeltaBasisPoints != 833 ||
+		page.ExperimentSummaries[0].DwellRateDeltaBasisPoints != 333 ||
+		page.ExperimentSummaries[0].EngagementRateDeltaBasisPoints != 3500 ||
+		page.ExperimentSummaries[0].ConversionRateDeltaBasisPoints != 667 ||
+		page.ExperimentSummaries[0].NegativeRateDeltaBasisPoints != 2667 ||
+		page.ExperimentSummaries[0].ReportRateDeltaBasisPoints != 2000 {
+		t.Fatalf("rank-v2 deltas = %+v, want deltas versus control", page.ExperimentSummaries[0])
+	}
+	if page.ExperimentSummaries[1].Experiment != "control" ||
+		page.ExperimentSummaries[1].Totals.EventCount != 6 ||
+		page.ExperimentSummaries[1].Totals.AvgDwellMs != 1000 ||
+		page.ExperimentSummaries[1].Totals.NotInterestedCount != 1 ||
+		!page.ExperimentSummaries[1].Baseline {
+		t.Fatalf("control summary = %+v, want normalized baseline control counters", page.ExperimentSummaries[1])
 	}
 	if posts.lastFeedQualityFilter.Surface != "home" {
 		t.Fatalf("surface = %q, want home", posts.lastFeedQualityFilter.Surface)

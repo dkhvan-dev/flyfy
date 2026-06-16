@@ -1970,6 +1970,53 @@ func TestLikePostSkipsNotificationWhenLikeAlreadyExists(t *testing.T) {
 	notifications.expectNone(t)
 }
 
+func TestLikePostTracksPositiveFeedSignalOnFirstLike(t *testing.T) {
+	postID := uuid.New()
+	authorID := uuid.New()
+	viewerID := uuid.New()
+	communityID := uuid.New()
+	publishedAt := postUseCaseNow()
+	repo := &postUseCaseRepositoryStub{
+		existing: &model.Post{
+			ID:               postID,
+			AuthorUserID:     authorID,
+			Title:            "Useful local note",
+			Status:           enum.PostStatusPublished,
+			ModerationStatus: enum.ModerationStatusApproved,
+			CommunityID:      &communityID,
+			PostProfileKey:   enum.PostProfileQuickPostV1,
+			Category:         enum.PostCategoryJournal,
+			Tags:             []string{"local", "tips"},
+			PublishedAt:      &publishedAt,
+		},
+		likePostChangedSet: true,
+		likePostChanged:    true,
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: viewerID}, "https://posts.test")
+
+	if _, err := useCase.LikePost(context.Background(), "subject", postID); err != nil {
+		t.Fatalf("LikePost returned error: %v", err)
+	}
+
+	if len(repo.trackedFeedEvents) != 1 {
+		t.Fatalf("tracked feed events = %d, want like signal", len(repo.trackedFeedEvents))
+	}
+	event := repo.trackedFeedEvents[0]
+	if event.EventType != model.FeedEventTypeLike ||
+		event.ViewerUserID == nil ||
+		*event.ViewerUserID != viewerID ||
+		event.PostID == nil ||
+		*event.PostID != postID ||
+		event.CommunityID == nil ||
+		*event.CommunityID != communityID ||
+		event.BlockType != model.FeedBlockTypePostCard ||
+		event.Metadata["source"] != "post_interaction" ||
+		event.Metadata["engagementType"] != model.FeedEventTypeLike ||
+		event.Metadata["postProfileKey"] != string(enum.PostProfileQuickPostV1) {
+		t.Fatalf("like feed event = %+v, want post interaction metadata", event)
+	}
+}
+
 func TestCreateCommentDelegatesRateLimitToRepository(t *testing.T) {
 	authorID := uuid.New()
 	postID := uuid.New()
@@ -1997,6 +2044,50 @@ func TestCreateCommentDelegatesRateLimitToRepository(t *testing.T) {
 	}
 	if repo.createdComment != nil {
 		t.Fatal("CreateComment should not expose created comment when repository rate-limits")
+	}
+}
+
+func TestCreateCommentTracksPositiveFeedSignal(t *testing.T) {
+	authorID := uuid.New()
+	postID := uuid.New()
+	communityID := uuid.New()
+	publishedAt := postUseCaseNow()
+	repo := &postUseCaseRepositoryStub{
+		existing: &model.Post{
+			ID:               postID,
+			AuthorUserID:     uuid.New(),
+			Title:            "Question for locals",
+			Status:           enum.PostStatusPublished,
+			ModerationStatus: enum.ModerationStatusNotRequired,
+			CommunityID:      &communityID,
+			PostProfileKey:   enum.PostProfileQuickPostV1,
+			Category:         enum.PostCategoryJournal,
+			Tags:             []string{"question"},
+			PublishedAt:      &publishedAt,
+		},
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: authorID}, "https://posts.test")
+
+	if _, err := useCase.CreateComment(context.Background(), "subject", postID, "I can help"); err != nil {
+		t.Fatalf("CreateComment returned error: %v", err)
+	}
+
+	if len(repo.trackedFeedEvents) != 1 {
+		t.Fatalf("tracked feed events = %d, want comment signal", len(repo.trackedFeedEvents))
+	}
+	event := repo.trackedFeedEvents[0]
+	if event.EventType != model.FeedEventTypeComment ||
+		event.ViewerUserID == nil ||
+		*event.ViewerUserID != authorID ||
+		event.PostID == nil ||
+		*event.PostID != postID ||
+		event.CommunityID == nil ||
+		*event.CommunityID != communityID ||
+		event.BlockType != model.FeedBlockTypePostCard ||
+		event.Metadata["source"] != "post_interaction" ||
+		event.Metadata["engagementType"] != model.FeedEventTypeComment ||
+		event.Metadata["postProfileKey"] != string(enum.PostProfileQuickPostV1) {
+		t.Fatalf("comment feed event = %+v, want post interaction metadata", event)
 	}
 }
 
@@ -2335,7 +2426,9 @@ func TestSubmitPostReportCreatesReportAndAutoHidesAtThreshold(t *testing.T) {
 			AutoHidden:       true,
 		},
 	}
-	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: reporterID}, "https://posts.test")
+	cache := &postFeedCacheFake{}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: reporterID}, "https://posts.test").
+		WithPostFeedCache(cache, time.Minute, 30*time.Second)
 
 	result, err := useCase.SubmitPostReport(context.Background(), "subject-1", postID, SubmitPostReportInput{
 		Reason:  string(enum.PostReportReasonSpam),
@@ -2365,6 +2458,144 @@ func TestSubmitPostReportCreatesReportAndAutoHidesAtThreshold(t *testing.T) {
 	}
 	if result.Post == nil || result.Post.ModerationStatus != enum.ModerationStatusHidden || result.Post.Revision != 5 {
 		t.Fatalf("result post = %+v, want hidden revision 5", result.Post)
+	}
+	if len(repo.trackedFeedEvents) != 1 {
+		t.Fatalf("tracked feed events = %d, want post report negative signal", len(repo.trackedFeedEvents))
+	}
+	event := repo.trackedFeedEvents[0]
+	if event.EventType != "report" ||
+		event.ViewerUserID == nil ||
+		*event.ViewerUserID != reporterID ||
+		event.PostID == nil ||
+		*event.PostID != postID ||
+		event.CommunityID == nil ||
+		*event.CommunityID != communityID ||
+		event.BlockType != model.FeedBlockTypePostCard ||
+		event.Metadata["source"] != "post_report" ||
+		event.Metadata["reason"] != string(enum.PostReportReasonSpam) {
+		t.Fatalf("post report feed event = %+v, want report signal with report metadata", event)
+	}
+	if !containsString(cache.bumpedScopes, postFeedCacheViewerScope(reporterID)) {
+		t.Fatalf("bumped scopes = %#v, want viewer scope", cache.bumpedScopes)
+	}
+	if !containsString(cache.bumpedScopes, postFeedCacheFollowingScope(reporterID)) {
+		t.Fatalf("bumped scopes = %#v, want following scope", cache.bumpedScopes)
+	}
+	if !containsString(cache.bumpedScopes, postFeedCacheDiscoveryScope(reporterID)) {
+		t.Fatalf("bumped scopes = %#v, want discovery scope", cache.bumpedScopes)
+	}
+}
+
+func TestSubmitCommunityReportCreatesNegativeFeedSignal(t *testing.T) {
+	reporterID := uuid.New()
+	communityID := uuid.New()
+	now := time.Now().UTC()
+	repo := &postUseCaseRepositoryStub{
+		community: &model.Community{
+			ID:           communityID,
+			Slug:         "almaty-housing",
+			Title:        "Housing",
+			Topic:        "housing",
+			LanguageCode: "ru",
+			Visibility:   enum.CommunityVisibilityPublic,
+			Status:       enum.CommunityStatusActive,
+			CreatedAt:    now,
+			UpdatedAt:    now,
+		},
+		communityReportResult: &model.CommunityReportSubmissionResult{
+			Report: &model.CommunityReport{
+				ID:             uuid.New(),
+				CommunityID:    communityID,
+				ReporterUserID: reporterID,
+				Reason:         enum.PostReportReasonSpam,
+				Status:         enum.PostReportStatusOpen,
+			},
+			OpenReportsCount: 1,
+		},
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: reporterID}, "https://posts.test")
+
+	result, err := useCase.SubmitCommunityReport(context.Background(), "subject-1", SubmitCommunityReportInput{
+		CommunityID: communityID,
+		Reason:      string(enum.PostReportReasonSpam),
+		Details:     "Spam group",
+	})
+
+	if err != nil {
+		t.Fatalf("SubmitCommunityReport returned error: %v", err)
+	}
+	if result == nil || result.OpenReportsCount != 1 {
+		t.Fatalf("community report result = %+v, want one open report", result)
+	}
+	if repo.createdCommunityReport == nil ||
+		repo.createdCommunityReport.CommunityID != communityID ||
+		repo.createdCommunityReport.ReporterUserID != reporterID ||
+		repo.createdCommunityReport.Reason != enum.PostReportReasonSpam {
+		t.Fatalf("created community report = %+v, want reporter/community/reason", repo.createdCommunityReport)
+	}
+	if len(repo.trackedFeedEvents) != 1 {
+		t.Fatalf("tracked feed events = %d, want community report negative signal", len(repo.trackedFeedEvents))
+	}
+	event := repo.trackedFeedEvents[0]
+	if event.EventType != model.FeedEventTypeHide ||
+		event.ViewerUserID == nil ||
+		*event.ViewerUserID != reporterID ||
+		event.PostID != nil ||
+		event.CommunityID == nil ||
+		*event.CommunityID != communityID ||
+		event.BlockType != model.FeedBlockTypeSuggestedCommunities ||
+		event.Metadata["entityType"] != model.FeedInterestEntityTypeCommunity ||
+		event.Metadata["entityId"] != communityID.String() ||
+		event.Metadata["source"] != "community_report" {
+		t.Fatalf("community report feed event = %+v, want community hide signal", event)
+	}
+}
+
+func TestMuteCommunityCreatesNegativeFeedSignal(t *testing.T) {
+	userID := uuid.New()
+	communityID := uuid.New()
+	now := time.Now().UTC()
+	repo := &postUseCaseRepositoryStub{
+		community: &model.Community{
+			ID:           communityID,
+			Slug:         "almaty-housing",
+			Title:        "Housing",
+			Topic:        "housing",
+			LanguageCode: "ru",
+			Visibility:   enum.CommunityVisibilityPublic,
+			Status:       enum.CommunityStatusActive,
+			CreatedAt:    now,
+			UpdatedAt:    now,
+		},
+		communityMembership: &model.CommunityMembership{
+			CommunityID: communityID,
+			UserID:      userID,
+			Status:      enum.CommunityMembershipStatusMuted,
+		},
+	}
+	useCase := NewPostUseCase(repo, postUseCaseUserClientStub{userID: userID}, "https://posts.test")
+
+	if _, err := useCase.MuteCommunity(context.Background(), "subject-1", communityID); err != nil {
+		t.Fatalf("MuteCommunity returned error: %v", err)
+	}
+	if repo.mutedCommunityID != communityID || repo.mutedUserID != userID || !repo.muted {
+		t.Fatalf("mute call = community %s user %s muted %v, want requested mute", repo.mutedCommunityID, repo.mutedUserID, repo.muted)
+	}
+	if len(repo.trackedFeedEvents) != 1 {
+		t.Fatalf("tracked feed events = %d, want community mute negative signal", len(repo.trackedFeedEvents))
+	}
+	event := repo.trackedFeedEvents[0]
+	if event.EventType != model.FeedEventTypeHide ||
+		event.ViewerUserID == nil ||
+		*event.ViewerUserID != userID ||
+		event.PostID != nil ||
+		event.CommunityID == nil ||
+		*event.CommunityID != communityID ||
+		event.BlockType != model.FeedBlockTypeSuggestedCommunities ||
+		event.Metadata["entityType"] != model.FeedInterestEntityTypeCommunity ||
+		event.Metadata["entityId"] != communityID.String() ||
+		event.Metadata["source"] != "community_mute" {
+		t.Fatalf("community mute feed event = %+v, want community hide signal", event)
 	}
 }
 
@@ -2584,6 +2815,8 @@ type postUseCaseRepositoryStub struct {
 	createdReport                 *model.PostReport
 	reportResult                  *model.PostReportSubmissionResult
 	reportAutoHideThreshold       int
+	createdCommunityReport        *model.CommunityReport
+	communityReportResult         *model.CommunityReportSubmissionResult
 	listedReports                 []*model.PostReport
 	reportListFilter              model.PostReportListFilter
 	resolvedReportInput           *model.PostReportResolution
@@ -2620,6 +2853,10 @@ type postUseCaseRepositoryStub struct {
 	oldestPostCreatedAtAfterSince *time.Time
 	softDeletedPostID             uuid.UUID
 	softDeletedAuthorID           uuid.UUID
+	trackedFeedEvents             []model.FeedEvent
+	mutedCommunityID              uuid.UUID
+	mutedUserID                   uuid.UUID
+	muted                         bool
 }
 
 func (r *postUseCaseRepositoryStub) GetPostByID(_ context.Context, postID uuid.UUID) (*model.Post, error) {
@@ -2706,6 +2943,28 @@ func (r *postUseCaseRepositoryStub) CreatePostReport(_ context.Context, report *
 		OpenReportsCount: 1,
 		AutoHidden:       false,
 	}, nil
+}
+
+func (r *postUseCaseRepositoryStub) CreateCommunityReport(_ context.Context, report *model.CommunityReport) (*model.CommunityReportSubmissionResult, error) {
+	copy := *report
+	r.createdCommunityReport = &copy
+	if r.communityReportResult != nil {
+		resultCopy := *r.communityReportResult
+		if r.communityReportResult.Report != nil {
+			reportCopy := *r.communityReportResult.Report
+			resultCopy.Report = &reportCopy
+		}
+		return &resultCopy, nil
+	}
+	return &model.CommunityReportSubmissionResult{
+		Report:           &copy,
+		OpenReportsCount: 1,
+	}, nil
+}
+
+func (r *postUseCaseRepositoryStub) CreateFeedEvents(_ context.Context, events []model.FeedEvent) error {
+	r.trackedFeedEvents = append(r.trackedFeedEvents, events...)
+	return nil
 }
 
 func (r *postUseCaseRepositoryStub) ListCommunityPostReports(_ context.Context, filter model.PostReportListFilter) ([]*model.PostReport, error) {
@@ -2988,6 +3247,24 @@ func (r *postUseCaseRepositoryStub) GetCommunityMembership(_ context.Context, co
 	return &copy, nil
 }
 
+func (r *postUseCaseRepositoryStub) SetCommunityMuted(_ context.Context, communityID uuid.UUID, userID uuid.UUID, muted bool) (*model.CommunityMembership, error) {
+	r.mutedCommunityID = communityID
+	r.mutedUserID = userID
+	r.muted = muted
+	status := enum.CommunityMembershipStatusActive
+	if muted {
+		status = enum.CommunityMembershipStatusMuted
+	}
+	membership := &model.CommunityMembership{
+		CommunityID: communityID,
+		UserID:      userID,
+		Status:      status,
+	}
+	r.communityMembership = membership
+	copy := *membership
+	return &copy, nil
+}
+
 func (r *postUseCaseRepositoryStub) FollowCommunity(_ context.Context, _ uuid.UUID, _ uuid.UUID) (bool, int, error) {
 	r.followCommunityCalled = true
 	return true, 1, nil
@@ -3049,9 +3326,21 @@ func (r *postUseCaseRepositoryStub) HasPostLike(_ context.Context, _ uuid.UUID, 
 	return false, nil
 }
 
+func (r *postUseCaseRepositoryStub) HasCommentLike(_ context.Context, _ uuid.UUID, _ uuid.UUID) (bool, error) {
+	return false, nil
+}
+
 func (r *postUseCaseRepositoryStub) ListPostLikesByUser(_ context.Context, postIDs []uuid.UUID, _ uuid.UUID) (map[uuid.UUID]bool, error) {
 	likes := make(map[uuid.UUID]bool, len(postIDs))
 	return likes, nil
+}
+
+func (r *postUseCaseRepositoryStub) ListFeedSocialEdges(
+	context.Context,
+	uuid.UUID,
+	[]uuid.UUID,
+) (map[uuid.UUID]model.FeedSocialEdgeSet, error) {
+	return map[uuid.UUID]model.FeedSocialEdgeSet{}, nil
 }
 
 func (r *postUseCaseRepositoryStub) MarkPostSeen(_ context.Context, _ uuid.UUID, _ uuid.UUID, seenAt time.Time) (time.Time, error) {
@@ -3099,9 +3388,13 @@ func (r *postUseCaseRepositoryStub) ListStorySeenByUser(_ context.Context, story
 }
 
 type postUseCaseUserClientStub struct {
-	userID      uuid.UUID
-	profiles    map[uuid.UUID]PublicUserProfile
-	profilesErr error
+	userID           uuid.UUID
+	profiles         map[uuid.UUID]PublicUserProfile
+	profilesErr      error
+	friendUserIDs    map[uuid.UUID]bool
+	friendsErr       error
+	followingUserIDs map[uuid.UUID]bool
+	followingErr     error
 }
 
 func (c postUseCaseUserClientStub) ResolveUserIDBySubject(_ context.Context, _ string) (uuid.UUID, error) {
@@ -3126,6 +3419,40 @@ func (c postUseCaseUserClientStub) GetPublicUserProfiles(
 		profiles[userID] = PublicUserProfile{UserID: userID}
 	}
 	return profiles, nil
+}
+
+func (c postUseCaseUserClientStub) FilterFriendUserIDs(
+	_ context.Context,
+	_ uuid.UUID,
+	candidateUserIDs []uuid.UUID,
+) (map[uuid.UUID]bool, error) {
+	if c.friendsErr != nil {
+		return nil, c.friendsErr
+	}
+	result := make(map[uuid.UUID]bool, len(candidateUserIDs))
+	for _, userID := range candidateUserIDs {
+		if c.friendUserIDs != nil && c.friendUserIDs[userID] {
+			result[userID] = true
+		}
+	}
+	return result, nil
+}
+
+func (c postUseCaseUserClientStub) FilterFollowingUserIDs(
+	_ context.Context,
+	_ uuid.UUID,
+	candidateUserIDs []uuid.UUID,
+) (map[uuid.UUID]bool, error) {
+	if c.followingErr != nil {
+		return nil, c.followingErr
+	}
+	result := make(map[uuid.UUID]bool, len(candidateUserIDs))
+	for _, userID := range candidateUserIDs {
+		if c.followingUserIDs != nil && c.followingUserIDs[userID] {
+			result[userID] = true
+		}
+	}
+	return result, nil
 }
 
 type postNotificationGatewayStub struct {

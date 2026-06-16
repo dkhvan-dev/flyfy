@@ -2101,7 +2101,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeSeeAll => 'See All';
 
   @override
-  String get homeTopStories => 'Top Posts';
+  String get homeTopStories => 'Trending now';
+
+  @override
+  String get homeSmartPostsTitle => 'For you';
+
+  @override
+  String get homeSmartPostsEmpty => 'Posts picked for you will appear here.';
 
   @override
   String get homeFeaturedStays => 'Featured Stays';
@@ -2530,6 +2536,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get feedPostSortDiscussed => 'Discussed';
+
+  @override
+  String get feedPostLikeAction => 'Like post';
+
+  @override
+  String get feedPostUnlikeAction => 'Remove like';
+
+  @override
+  String get feedPostShareAction => 'Share post';
+
+  @override
+  String get feedPostMoreActions => 'Post actions';
+
+  @override
+  String get feedPostHideAction => 'Hide post';
+
+  @override
+  String get feedPostNotInterestedAction => 'Not interested';
+
+  @override
+  String get feedPostActionFailed => 'Could not update the post. Try again.';
 
   @override
   String get feedMySubscriptionsApplyFilters => 'Apply filters';

@@ -13,6 +13,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
+	feedserviceadapter "kz/inflap/backend/services/user-service/internal/adapter/feedservice"
 	grpcadapter "kz/inflap/backend/services/user-service/internal/adapter/grpc"
 	httpadapter "kz/inflap/backend/services/user-service/internal/adapter/http"
 	phoneadapter "kz/inflap/backend/services/user-service/internal/adapter/phone"
@@ -57,6 +58,56 @@ func main() {
 
 	userRepo := repository.NewPGUserRepository(pool)
 	userUseCase := app.NewUserUseCase(userRepo, fileManagerClient)
+	var feedServiceClient *feedserviceadapter.Client
+	if cfg.Social.WorkerEnabled || cfg.Social.StartupDrainEnabled {
+		feedServiceClient = feedserviceadapter.New(
+			cfg.FeedService.HTTPURL,
+			cfg.Security.InternalServiceToken,
+			"user-service",
+			cfg.FeedService.RequestTimeout,
+		)
+	}
+	if cfg.Social.StartupBackfillEnabled {
+		stats, reconcileErr := app.ReconcileUserSocialOutbox(
+			ctx,
+			userRepo,
+			feedServiceClient,
+			app.UserSocialOutboxReconcilerConfig{
+				BackfillEnabled: true,
+				DrainEnabled:    cfg.Social.StartupDrainEnabled,
+				MaxDrainBatches: cfg.Social.StartupMaxDrainBatches,
+				WorkerConfig: app.UserSocialOutboxWorkerConfig{
+					PollInterval: cfg.Social.WorkerPollInterval,
+					BatchSize:    cfg.Social.WorkerBatchSize,
+					MaxAttempts:  cfg.Social.WorkerMaxAttempts,
+					BaseBackoff:  cfg.Social.WorkerBaseBackoff,
+				},
+			},
+			time.Now().UTC(),
+		)
+		if reconcileErr != nil {
+			log.Fatal().Err(reconcileErr).Msg("failed to reconcile feed social outbox")
+		}
+		log.Info().
+			Int64("backfilled_events", stats.Backfilled).
+			Int("drained_events", stats.Drained).
+			Int("drain_batches", stats.DrainBatches).
+			Msg("feed social outbox startup reconciliation completed")
+	}
+	if cfg.Social.WorkerEnabled {
+		socialOutboxWorker := app.NewUserSocialOutboxWorker(
+			userRepo,
+			feedServiceClient,
+			app.UserSocialOutboxWorkerConfig{
+				PollInterval: cfg.Social.WorkerPollInterval,
+				BatchSize:    cfg.Social.WorkerBatchSize,
+				MaxAttempts:  cfg.Social.WorkerMaxAttempts,
+				BaseBackoff:  cfg.Social.WorkerBaseBackoff,
+			},
+		)
+		go socialOutboxWorker.Start(ctx)
+		log.Info().Msg("user social outbox worker started")
+	}
 	if cfg.Phone.Provider != "log" {
 		log.Fatal().
 			Str("provider", cfg.Phone.Provider).

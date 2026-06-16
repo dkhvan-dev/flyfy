@@ -424,6 +424,38 @@ func (u *UserUseCase) FilterFriendUserIDs(
 	return result, nil
 }
 
+func (u *UserUseCase) FilterFollowingUserIDs(
+	ctx context.Context,
+	userID uuid.UUID,
+	candidateUserIDs []uuid.UUID,
+) ([]uuid.UUID, error) {
+	if userID == uuid.Nil {
+		return nil, ErrInvalidUserID
+	}
+
+	seen := make(map[uuid.UUID]struct{}, len(candidateUserIDs))
+	result := make([]uuid.UUID, 0, len(candidateUserIDs))
+	for _, candidateUserID := range candidateUserIDs {
+		if candidateUserID == uuid.Nil || candidateUserID == userID {
+			continue
+		}
+		if _, ok := seen[candidateUserID]; ok {
+			continue
+		}
+		seen[candidateUserID] = struct{}{}
+
+		isFollowing, err := u.repo.IsFollowing(ctx, userID, candidateUserID)
+		if err != nil {
+			return nil, fmt.Errorf("check following: %w", err)
+		}
+		if isFollowing {
+			result = append(result, candidateUserID)
+		}
+	}
+
+	return result, nil
+}
+
 func (u *UserUseCase) SendFriendRequest(
 	ctx context.Context,
 	requesterUserID uuid.UUID,
