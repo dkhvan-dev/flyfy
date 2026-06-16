@@ -7965,6 +7965,63 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
+  String get notificationsSomeone => 'Біреу';
+
+  @override
+  String get notificationsPriorityHigh => 'Маңызды';
+
+  @override
+  String notificationsStoryLikeTitle(Object actor) {
+    return '$actor хикаяңызды ұнатты';
+  }
+
+  @override
+  String get notificationsStoryLikeBody =>
+      'Реакцияны көру үшін хикаяны ашыңыз.';
+
+  @override
+  String notificationsStoryReplyTitle(Object actor) {
+    return '$actor хикаяңызға жауап берді';
+  }
+
+  @override
+  String get notificationsStoryReplyBody => 'Жауап чатыңызға жіберілді.';
+
+  @override
+  String notificationsPostLikeTitle(Object actor) {
+    return '$actor постыңызды ұнатты';
+  }
+
+  @override
+  String get notificationsPostLikeBody => 'Реакцияны көру үшін постты ашыңыз.';
+
+  @override
+  String notificationsPostCommentTitle(Object actor) {
+    return '$actor постыңызға пікір қалдырды';
+  }
+
+  @override
+  String get notificationsPostCommentBody =>
+      'Талқылауды жалғастыру үшін постты ашыңыз.';
+
+  @override
+  String notificationsChatMessageTitle(Object actor) {
+    return '$actor жаңа хабарлама жіберді';
+  }
+
+  @override
+  String get notificationsChatMessageBody => 'Жауап беру үшін чаттарды ашыңыз.';
+
+  @override
+  String notificationsActivityJoinedTitle(Object actor) {
+    return '$actor белсенділігіңізге қосылды';
+  }
+
+  @override
+  String get notificationsActivityJoinedBody =>
+      'Қатысушыларды көру үшін белсенділікті ашыңыз.';
+
+  @override
   String get notificationsJustNow => 'жаңа ғана';
 
   @override

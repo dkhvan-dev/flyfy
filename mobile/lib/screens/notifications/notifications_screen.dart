@@ -9,7 +9,9 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../providers/session_provider.dart';
 
 class NotificationsOverviewScreen extends StatefulWidget {
-  const NotificationsOverviewScreen({super.key});
+  const NotificationsOverviewScreen({super.key, this.notificationApi});
+
+  final NotificationInboxClient? notificationApi;
 
   @override
   State<NotificationsOverviewScreen> createState() =>
@@ -18,7 +20,8 @@ class NotificationsOverviewScreen extends StatefulWidget {
 
 class _NotificationsOverviewScreenState
     extends State<NotificationsOverviewScreen> {
-  final NotificationInboxClient _notificationApi = NotificationApi();
+  late final NotificationInboxClient _notificationApi =
+      widget.notificationApi ?? NotificationApi();
   late Future<List<NotificationCategorySummary>> _categoriesFuture;
 
   @override
@@ -135,10 +138,12 @@ class NotificationCategoryScreen extends StatefulWidget {
     super.key,
     required this.category,
     this.initialSummary,
+    this.notificationApi,
   });
 
   final String category;
   final NotificationCategorySummary? initialSummary;
+  final NotificationInboxClient? notificationApi;
 
   @override
   State<NotificationCategoryScreen> createState() =>
@@ -147,7 +152,8 @@ class NotificationCategoryScreen extends StatefulWidget {
 
 class _NotificationCategoryScreenState
     extends State<NotificationCategoryScreen> {
-  final NotificationInboxClient _notificationApi = NotificationApi();
+  late final NotificationInboxClient _notificationApi =
+      widget.notificationApi ?? NotificationApi();
   late Future<List<UserNotification>> _notificationsFuture;
   bool _markingRead = false;
 
@@ -461,10 +467,13 @@ class _NotificationCategoryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final latest = summary.latest;
+    final latestText = _localizedNotificationText(context, latest, meta);
     final eventTimeLabel = _notificationEventTimeLabel(context, latest);
 
     return _InteractivePanel(
+      key: ValueKey('notification-category-${summary.category}'),
       onTap: onTap,
+      isHighlighted: summary.hasUnread,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -498,7 +507,7 @@ class _NotificationCategoryTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  latest.title.isEmpty ? latest.body : latest.title,
+                  latestText.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -507,10 +516,10 @@ class _NotificationCategoryTile extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                if (latest.body.isNotEmpty) ...[
+                if (latestText.body.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
-                    latest.body,
+                    latestText.body,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -571,118 +580,437 @@ class _NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = notification.title.isEmpty ? meta.label : notification.title;
+    final l10n = AppLocalizations.of(context)!;
+    final localized = _localizedNotificationText(context, notification, meta);
     final eventTimeLabel = _notificationEventTimeLabel(context, notification);
+    final isUnread = !notification.isRead;
 
     return _InteractivePanel(
+      key: ValueKey('notification-card-${notification.id}'),
       onTap: onTap,
-      child: Row(
+      isHighlighted: isUnread,
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _CategoryIcon(meta: meta, hasUnread: !notification.isRead),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _CategoryIcon(meta: meta, hasUnread: isUnread),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: TextStyle(
-                          color: notification.isRead
-                              ? AppColors.textSecondary
-                              : AppColors.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          height: 1.2,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            localized.title,
+                            style: TextStyle(
+                              color: notification.isRead
+                                  ? AppColors.textSecondary
+                                  : AppColors.textPrimary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              height: 1.18,
+                            ),
+                          ),
                         ),
-                      ),
+                        if (isUnread) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            width: 9,
+                            height: 9,
+                            margin: const EdgeInsets.only(top: 6),
+                            decoration: BoxDecoration(
+                              color: AppColors.accent,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.accent.withValues(
+                                    alpha: 0.36,
+                                  ),
+                                  blurRadius: 10,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                    if (!notification.isRead) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        width: 8,
-                        height: 8,
-                        margin: const EdgeInsets.only(top: 6),
-                        decoration: const BoxDecoration(
-                          color: AppColors.accent,
-                          shape: BoxShape.circle,
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _NotificationInfoChip(
+                          icon: notification.priority == 'high'
+                              ? Icons.bolt_rounded
+                              : Icons.schedule_rounded,
+                          label: _formatRelativeTime(
+                            context,
+                            notification.createdAt,
+                          ),
+                          isAccent: notification.priority == 'high',
                         ),
-                      ),
-                    ],
-                  ],
-                ),
-                if (notification.body.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    notification.body,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 14,
-                      height: 1.38,
-                    ),
-                  ),
-                ],
-                if (eventTimeLabel != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    eventTimeLabel,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      height: 1.3,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(
-                      notification.priority == 'high'
-                          ? Icons.bolt_rounded
-                          : Icons.schedule_rounded,
-                      color: notification.priority == 'high'
-                          ? AppColors.accent
-                          : AppColors.textCaption,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        _formatRelativeTime(context, notification.createdAt),
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.textCaption,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                        if (notification.priority == 'high')
+                          _NotificationInfoChip(
+                            icon: Icons.priority_high_rounded,
+                            label: l10n.notificationsPriorityHigh,
+                            isAccent: true,
+                          ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+          if (localized.body.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: AppColors.surface.withValues(alpha: 0.48),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: AppColors.accent.withValues(alpha: 0.10),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                child: Text(
+                  localized.body,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 14,
+                    height: 1.42,
+                  ),
+                ),
+              ),
+            ),
+          ],
+          if (eventTimeLabel != null) ...[
+            const SizedBox(height: 10),
+            _NotificationEventTimeBlock(label: eventTimeLabel),
+          ],
         ],
       ),
     );
   }
 }
 
-class _InteractivePanel extends StatelessWidget {
-  const _InteractivePanel({required this.child, required this.onTap});
+class _LocalizedNotificationText {
+  const _LocalizedNotificationText({required this.title, required this.body});
 
-  final Widget child;
-  final VoidCallback onTap;
+  final String title;
+  final String body;
+}
+
+_LocalizedNotificationText _localizedNotificationText(
+  BuildContext context,
+  UserNotification notification,
+  _NotificationCategoryMeta meta,
+) {
+  final l10n = AppLocalizations.of(context)!;
+  final localizedTitle = _localizedPayloadValue(
+    context,
+    notification.data,
+    'title',
+  );
+  final localizedBody = _localizedPayloadValue(
+    context,
+    notification.data,
+    'body',
+  );
+  if (localizedTitle != null || localizedBody != null) {
+    return _LocalizedNotificationText(
+      title: localizedTitle ?? _fallbackNotificationTitle(notification, meta),
+      body: localizedBody ?? notification.body.trim(),
+    );
+  }
+
+  final type = _notificationTemplateKey(notification).replaceAll('-', '_');
+  final actor = _notificationActorName(l10n, notification);
+  switch (type) {
+    case 'story_like':
+    case 'story_liked':
+    case 'story_reaction':
+      return _LocalizedNotificationText(
+        title: l10n.notificationsStoryLikeTitle(actor),
+        body: l10n.notificationsStoryLikeBody,
+      );
+    case 'story_reply':
+    case 'story_response':
+    case 'story_message':
+      return _LocalizedNotificationText(
+        title: l10n.notificationsStoryReplyTitle(actor),
+        body: l10n.notificationsStoryReplyBody,
+      );
+    case 'post_like':
+    case 'post_liked':
+    case 'post_reaction':
+      return _LocalizedNotificationText(
+        title: l10n.notificationsPostLikeTitle(actor),
+        body:
+            _notificationContentTitle(notification) ??
+            l10n.notificationsPostLikeBody,
+      );
+    case 'post_comment':
+    case 'post_commented':
+    case 'comment':
+      return _LocalizedNotificationText(
+        title: l10n.notificationsPostCommentTitle(actor),
+        body:
+            _notificationContentTitle(notification) ??
+            l10n.notificationsPostCommentBody,
+      );
+    case 'chat_message':
+    case 'message':
+      return _LocalizedNotificationText(
+        title: l10n.notificationsChatMessageTitle(actor),
+        body: notification.body.trim().isEmpty
+            ? l10n.notificationsChatMessageBody
+            : notification.body.trim(),
+      );
+    case 'activity_joined':
+    case 'activity_join':
+    case 'participant_joined':
+      return _LocalizedNotificationText(
+        title: l10n.notificationsActivityJoinedTitle(actor),
+        body:
+            _notificationActivityTitle(notification) ??
+            l10n.notificationsActivityJoinedBody,
+      );
+    default:
+      return _LocalizedNotificationText(
+        title: _fallbackNotificationTitle(notification, meta),
+        body: notification.body.trim(),
+      );
+  }
+}
+
+String? _localizedPayloadValue(
+  BuildContext context,
+  Map<String, String> data,
+  String baseKey,
+) {
+  final locale = Localizations.localeOf(context);
+  final languageCode = locale.languageCode.toLowerCase();
+  final languageTag = locale.toLanguageTag().toLowerCase();
+  final normalizedTag = languageTag.replaceAll('-', '_');
+  final candidates = [
+    '$baseKey.$languageTag',
+    '$baseKey.$languageCode',
+    '${baseKey}_$normalizedTag',
+    '${baseKey}_$languageCode',
+    '$baseKey${_capitalizeAscii(languageCode)}',
+    'localized${_capitalizeAscii(baseKey)}${_capitalizeAscii(languageCode)}',
+  ];
+  for (final key in candidates) {
+    final value = data[key]?.trim();
+    if (value != null && value.isNotEmpty) return value;
+  }
+  return null;
+}
+
+String _notificationTemplateKey(UserNotification notification) {
+  for (final key in const [
+    'templateKey',
+    'template',
+    'eventType',
+    'notificationType',
+    'type',
+    'action',
+  ]) {
+    final raw = notification.data[key]?.trim().toLowerCase();
+    if (raw != null && raw.isNotEmpty) {
+      return raw.replaceAll('.', '_').replaceAll(':', '_');
+    }
+  }
+  return '';
+}
+
+String _notificationActorName(
+  AppLocalizations l10n,
+  UserNotification notification,
+) {
+  for (final key in const [
+    'actorDisplayName',
+    'actorNickname',
+    'actorName',
+    'senderDisplayName',
+    'senderName',
+    'userDisplayName',
+    'userNickname',
+    'username',
+    'fromUserName',
+  ]) {
+    final raw = notification.data[key]?.trim();
+    if (raw != null && raw.isNotEmpty) return raw;
+  }
+  final parsed = _actorNameFromLegacyBody(notification.body);
+  if (parsed != null) return parsed;
+  return l10n.notificationsSomeone;
+}
+
+String? _actorNameFromLegacyBody(String body) {
+  final value = body.trim();
+  if (value.isEmpty) return null;
+  const suffixes = [
+    ' нравится ваша история',
+    ' liked your story',
+    ' liked your post',
+    ' прокомментировал ваш пост',
+    ' commented on your post',
+  ];
+  for (final suffix in suffixes) {
+    if (value.endsWith(suffix) && value.length > suffix.length) {
+      return value.substring(0, value.length - suffix.length).trim();
+    }
+  }
+  return null;
+}
+
+String? _notificationContentTitle(UserNotification notification) {
+  for (final key in const ['postTitle', 'storyCaption', 'contentTitle']) {
+    final raw = notification.data[key]?.trim();
+    if (raw != null && raw.isNotEmpty) return raw;
+  }
+  return null;
+}
+
+String? _notificationActivityTitle(UserNotification notification) {
+  for (final key in const ['activityTitle', 'eventTitle', 'title']) {
+    final raw = notification.data[key]?.trim();
+    if (raw != null && raw.isNotEmpty) return raw;
+  }
+  return null;
+}
+
+String _fallbackNotificationTitle(
+  UserNotification notification,
+  _NotificationCategoryMeta meta,
+) {
+  final title = notification.title.trim();
+  if (title.isNotEmpty) return title;
+  final body = notification.body.trim();
+  if (body.isNotEmpty) return body;
+  return meta.label;
+}
+
+String _capitalizeAscii(String value) {
+  if (value.isEmpty) return value;
+  return value[0].toUpperCase() + value.substring(1);
+}
+
+class _NotificationInfoChip extends StatelessWidget {
+  const _NotificationInfoChip({
+    required this.icon,
+    required this.label,
+    this.isAccent = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool isAccent;
 
   @override
   Widget build(BuildContext context) {
+    final color = isAccent ? AppColors.accent : AppColors.textCaption;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isAccent ? 0.14 : 0.08),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 15),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NotificationEventTimeBlock extends StatelessWidget {
+  const _NotificationEventTimeBlock({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.accent.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.16)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(
+              Icons.event_available_rounded,
+              color: AppColors.accent,
+              size: 17,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  height: 1.35,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InteractivePanel extends StatelessWidget {
+  const _InteractivePanel({
+    super.key,
+    required this.child,
+    required this.onTap,
+    this.isHighlighted = false,
+  });
+
+  final Widget child;
+  final VoidCallback onTap;
+  final bool isHighlighted;
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor = isHighlighted
+        ? AppColors.accent.withValues(alpha: 0.34)
+        : Colors.white.withValues(alpha: 0.08);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -692,15 +1020,27 @@ class _InteractivePanel extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.055),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isHighlighted
+                  ? const [Color(0xFF3A220D), Color(0xFF25160D)]
+                  : const [Color(0xFF261A12), Color(0xFF1B130E)],
+            ),
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            border: Border.all(color: borderColor),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.20),
-                blurRadius: 24,
-                offset: const Offset(0, 14),
+                color: Colors.black.withValues(alpha: 0.26),
+                blurRadius: 28,
+                offset: const Offset(0, 16),
               ),
+              if (isHighlighted)
+                BoxShadow(
+                  color: AppColors.accent.withValues(alpha: 0.10),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
             ],
           ),
           child: child,

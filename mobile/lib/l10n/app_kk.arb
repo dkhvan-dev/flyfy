@@ -2989,6 +2989,50 @@
       "category": {}
     }
   },
+  "notificationsSomeone": "Біреу",
+  "notificationsPriorityHigh": "Маңызды",
+  "notificationsStoryLikeTitle": "{actor} хикаяңызды ұнатты",
+  "@notificationsStoryLikeTitle": {
+    "placeholders": {
+      "actor": {}
+    }
+  },
+  "notificationsStoryLikeBody": "Реакцияны көру үшін хикаяны ашыңыз.",
+  "notificationsStoryReplyTitle": "{actor} хикаяңызға жауап берді",
+  "@notificationsStoryReplyTitle": {
+    "placeholders": {
+      "actor": {}
+    }
+  },
+  "notificationsStoryReplyBody": "Жауап чатыңызға жіберілді.",
+  "notificationsPostLikeTitle": "{actor} постыңызды ұнатты",
+  "@notificationsPostLikeTitle": {
+    "placeholders": {
+      "actor": {}
+    }
+  },
+  "notificationsPostLikeBody": "Реакцияны көру үшін постты ашыңыз.",
+  "notificationsPostCommentTitle": "{actor} постыңызға пікір қалдырды",
+  "@notificationsPostCommentTitle": {
+    "placeholders": {
+      "actor": {}
+    }
+  },
+  "notificationsPostCommentBody": "Талқылауды жалғастыру үшін постты ашыңыз.",
+  "notificationsChatMessageTitle": "{actor} жаңа хабарлама жіберді",
+  "@notificationsChatMessageTitle": {
+    "placeholders": {
+      "actor": {}
+    }
+  },
+  "notificationsChatMessageBody": "Жауап беру үшін чаттарды ашыңыз.",
+  "notificationsActivityJoinedTitle": "{actor} белсенділігіңізге қосылды",
+  "@notificationsActivityJoinedTitle": {
+    "placeholders": {
+      "actor": {}
+    }
+  },
+  "notificationsActivityJoinedBody": "Қатысушыларды көру үшін белсенділікті ашыңыз.",
   "notificationsJustNow": "жаңа ғана",
   "notificationsMinutesAgo": "{minutes} мин бұрын",
   "@notificationsMinutesAgo": {

@@ -7971,6 +7971,64 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String get notificationsSomeone => 'Кому-то';
+
+  @override
+  String get notificationsPriorityHigh => 'Важное';
+
+  @override
+  String notificationsStoryLikeTitle(Object actor) {
+    return '$actor нравится ваша история';
+  }
+
+  @override
+  String get notificationsStoryLikeBody =>
+      'Откройте историю, чтобы посмотреть реакцию.';
+
+  @override
+  String notificationsStoryReplyTitle(Object actor) {
+    return '$actor ответил на вашу историю';
+  }
+
+  @override
+  String get notificationsStoryReplyBody => 'Ответ отправлен в ваш чат.';
+
+  @override
+  String notificationsPostLikeTitle(Object actor) {
+    return '$actor нравится ваш пост';
+  }
+
+  @override
+  String get notificationsPostLikeBody =>
+      'Откройте пост, чтобы посмотреть реакцию.';
+
+  @override
+  String notificationsPostCommentTitle(Object actor) {
+    return '$actor прокомментировал ваш пост';
+  }
+
+  @override
+  String get notificationsPostCommentBody =>
+      'Откройте пост, чтобы продолжить обсуждение.';
+
+  @override
+  String notificationsChatMessageTitle(Object actor) {
+    return 'Новое сообщение от $actor';
+  }
+
+  @override
+  String get notificationsChatMessageBody => 'Откройте чаты, чтобы ответить.';
+
+  @override
+  String notificationsActivityJoinedTitle(Object actor) {
+    return '$actor присоединился к вашей активности';
+  }
+
+  @override
+  String get notificationsActivityJoinedBody =>
+      'Откройте активность, чтобы посмотреть участников.';
+
+  @override
   String get notificationsJustNow => 'только что';
 
   @override

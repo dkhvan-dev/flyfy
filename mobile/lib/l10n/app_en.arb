@@ -2989,6 +2989,50 @@
       "category": {}
     }
   },
+  "notificationsSomeone": "Someone",
+  "notificationsPriorityHigh": "Important",
+  "notificationsStoryLikeTitle": "{actor} liked your story",
+  "@notificationsStoryLikeTitle": {
+    "placeholders": {
+      "actor": {}
+    }
+  },
+  "notificationsStoryLikeBody": "Open the story to see the reaction.",
+  "notificationsStoryReplyTitle": "{actor} replied to your story",
+  "@notificationsStoryReplyTitle": {
+    "placeholders": {
+      "actor": {}
+    }
+  },
+  "notificationsStoryReplyBody": "The reply was sent to your chat.",
+  "notificationsPostLikeTitle": "{actor} liked your post",
+  "@notificationsPostLikeTitle": {
+    "placeholders": {
+      "actor": {}
+    }
+  },
+  "notificationsPostLikeBody": "Open the post to see the reaction.",
+  "notificationsPostCommentTitle": "{actor} commented on your post",
+  "@notificationsPostCommentTitle": {
+    "placeholders": {
+      "actor": {}
+    }
+  },
+  "notificationsPostCommentBody": "Open the post to continue the discussion.",
+  "notificationsChatMessageTitle": "New message from {actor}",
+  "@notificationsChatMessageTitle": {
+    "placeholders": {
+      "actor": {}
+    }
+  },
+  "notificationsChatMessageBody": "Open chats to reply.",
+  "notificationsActivityJoinedTitle": "{actor} joined your activity",
+  "@notificationsActivityJoinedTitle": {
+    "placeholders": {
+      "actor": {}
+    }
+  },
+  "notificationsActivityJoinedBody": "Open the activity to see participants.",
   "notificationsJustNow": "just now",
   "notificationsMinutesAgo": "{minutes} min ago",
   "@notificationsMinutesAgo": {

@@ -2989,6 +2989,50 @@
       "category": {}
     }
   },
+  "notificationsSomeone": "Кому-то",
+  "notificationsPriorityHigh": "Важное",
+  "notificationsStoryLikeTitle": "{actor} нравится ваша история",
+  "@notificationsStoryLikeTitle": {
+    "placeholders": {
+      "actor": {}
+    }
+  },
+  "notificationsStoryLikeBody": "Откройте историю, чтобы посмотреть реакцию.",
+  "notificationsStoryReplyTitle": "{actor} ответил на вашу историю",
+  "@notificationsStoryReplyTitle": {
+    "placeholders": {
+      "actor": {}
+    }
+  },
+  "notificationsStoryReplyBody": "Ответ отправлен в ваш чат.",
+  "notificationsPostLikeTitle": "{actor} нравится ваш пост",
+  "@notificationsPostLikeTitle": {
+    "placeholders": {
+      "actor": {}
+    }
+  },
+  "notificationsPostLikeBody": "Откройте пост, чтобы посмотреть реакцию.",
+  "notificationsPostCommentTitle": "{actor} прокомментировал ваш пост",
+  "@notificationsPostCommentTitle": {
+    "placeholders": {
+      "actor": {}
+    }
+  },
+  "notificationsPostCommentBody": "Откройте пост, чтобы продолжить обсуждение.",
+  "notificationsChatMessageTitle": "Новое сообщение от {actor}",
+  "@notificationsChatMessageTitle": {
+    "placeholders": {
+      "actor": {}
+    }
+  },
+  "notificationsChatMessageBody": "Откройте чаты, чтобы ответить.",
+  "notificationsActivityJoinedTitle": "{actor} присоединился к вашей активности",
+  "@notificationsActivityJoinedTitle": {
+    "placeholders": {
+      "actor": {}
+    }
+  },
+  "notificationsActivityJoinedBody": "Откройте активность, чтобы посмотреть участников.",
   "notificationsJustNow": "только что",
   "notificationsMinutesAgo": "{minutes} мин назад",
   "@notificationsMinutesAgo": {

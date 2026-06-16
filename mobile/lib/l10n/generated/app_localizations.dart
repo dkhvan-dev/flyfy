@@ -14282,6 +14282,90 @@ abstract class AppLocalizations {
   /// **'Category {category}'**
   String notificationsCategoryFallback(Object category);
 
+  /// No description provided for @notificationsSomeone.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone'**
+  String get notificationsSomeone;
+
+  /// No description provided for @notificationsPriorityHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'Important'**
+  String get notificationsPriorityHigh;
+
+  /// No description provided for @notificationsStoryLikeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{actor} liked your story'**
+  String notificationsStoryLikeTitle(Object actor);
+
+  /// No description provided for @notificationsStoryLikeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the story to see the reaction.'**
+  String get notificationsStoryLikeBody;
+
+  /// No description provided for @notificationsStoryReplyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{actor} replied to your story'**
+  String notificationsStoryReplyTitle(Object actor);
+
+  /// No description provided for @notificationsStoryReplyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The reply was sent to your chat.'**
+  String get notificationsStoryReplyBody;
+
+  /// No description provided for @notificationsPostLikeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{actor} liked your post'**
+  String notificationsPostLikeTitle(Object actor);
+
+  /// No description provided for @notificationsPostLikeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the post to see the reaction.'**
+  String get notificationsPostLikeBody;
+
+  /// No description provided for @notificationsPostCommentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{actor} commented on your post'**
+  String notificationsPostCommentTitle(Object actor);
+
+  /// No description provided for @notificationsPostCommentBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the post to continue the discussion.'**
+  String get notificationsPostCommentBody;
+
+  /// No description provided for @notificationsChatMessageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New message from {actor}'**
+  String notificationsChatMessageTitle(Object actor);
+
+  /// No description provided for @notificationsChatMessageBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open chats to reply.'**
+  String get notificationsChatMessageBody;
+
+  /// No description provided for @notificationsActivityJoinedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{actor} joined your activity'**
+  String notificationsActivityJoinedTitle(Object actor);
+
+  /// No description provided for @notificationsActivityJoinedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the activity to see participants.'**
+  String get notificationsActivityJoinedBody;
+
   /// No description provided for @notificationsJustNow.
   ///
   /// In en, this message translates to:

@@ -7899,6 +7899,63 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get notificationsSomeone => 'Someone';
+
+  @override
+  String get notificationsPriorityHigh => 'Important';
+
+  @override
+  String notificationsStoryLikeTitle(Object actor) {
+    return '$actor liked your story';
+  }
+
+  @override
+  String get notificationsStoryLikeBody =>
+      'Open the story to see the reaction.';
+
+  @override
+  String notificationsStoryReplyTitle(Object actor) {
+    return '$actor replied to your story';
+  }
+
+  @override
+  String get notificationsStoryReplyBody => 'The reply was sent to your chat.';
+
+  @override
+  String notificationsPostLikeTitle(Object actor) {
+    return '$actor liked your post';
+  }
+
+  @override
+  String get notificationsPostLikeBody => 'Open the post to see the reaction.';
+
+  @override
+  String notificationsPostCommentTitle(Object actor) {
+    return '$actor commented on your post';
+  }
+
+  @override
+  String get notificationsPostCommentBody =>
+      'Open the post to continue the discussion.';
+
+  @override
+  String notificationsChatMessageTitle(Object actor) {
+    return 'New message from $actor';
+  }
+
+  @override
+  String get notificationsChatMessageBody => 'Open chats to reply.';
+
+  @override
+  String notificationsActivityJoinedTitle(Object actor) {
+    return '$actor joined your activity';
+  }
+
+  @override
+  String get notificationsActivityJoinedBody =>
+      'Open the activity to see participants.';
+
+  @override
   String get notificationsJustNow => 'just now';
 
   @override
