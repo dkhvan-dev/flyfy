@@ -176,6 +176,99 @@ void main() {
     expect(adapter.queryParameters['offset'], '16');
     expect(adapter.requiresAuth, isTrue);
   });
+
+  test('listMyActiveStories maps editor content block preview', () async {
+    final adapter = _JsonAdapter({
+      'items': [
+        {
+          'id': 'editor-story-one',
+          'title': 'Editor story',
+          'excerpt': 'Preview from inline media',
+          'format': 'STORY',
+          'status': 'PUBLISHED',
+          'contentBlocks': [
+            {
+              'type': 'image',
+              'image': {'fileId': 'inline-preview-file'},
+            },
+          ],
+          'stats': const {'views': 2, 'likes': 1, 'replies': 0},
+          'author': {
+            'userId': 'author-one',
+            'locale': 'ru',
+            'timezone': 'Asia/Almaty',
+          },
+          'publishedAt': '2026-05-10T08:00:00Z',
+          'expiresAt': '2026-05-11T00:00:00Z',
+          'createdAt': '2026-05-10T00:00:00Z',
+          'updatedAt': '2026-05-10T00:00:00Z',
+        },
+      ],
+      'limit': 8,
+      'offset': 0,
+      'hasMore': false,
+    });
+    final api = StoryApi(
+      apiClient: ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+          ..httpClientAdapter = adapter,
+        secureStorage: _FakeSecureStorage(),
+      ),
+    );
+
+    final page = await api.listMyActiveStories(limit: 8, offset: 0);
+    final story = page.items.single;
+
+    expect(story.title, 'Editor story');
+    expect(story.publishedAt, DateTime.parse('2026-05-10T08:00:00Z'));
+    expect(story.coverUrl, contains('inline-preview-file'));
+  });
+
+  test(
+    'story coverUrl falls back to media when cover file id is empty',
+    () async {
+      const emptyFileId = '00000000-0000-0000-0000-000000000000';
+      final adapter = _JsonAdapter({
+        'items': [
+          {
+            'id': 'archived-circle-one',
+            'caption': 'Archived moment',
+            'mediaFileId': 'media-file-one',
+            'mediaUrl': '/api/v1/public/files/media-file-one/content',
+            'coverFileId': emptyFileId,
+            'coverImageUrl': '/api/v1/public/files/$emptyFileId/content',
+            'mediaType': 'IMAGE',
+            'stats': const {'views': 2, 'likes': 1, 'replies': 0},
+            'author': {
+              'userId': 'author-one',
+              'locale': 'ru',
+              'timezone': 'Asia/Almaty',
+            },
+            'seenByViewer': true,
+            'shareUrl': '',
+            'expiresAt': '2026-05-11T00:00:00Z',
+            'createdAt': '2026-05-10T00:00:00Z',
+            'updatedAt': '2026-05-10T00:00:00Z',
+          },
+        ],
+        'limit': 12,
+        'offset': 0,
+        'hasMore': false,
+      });
+      final api = StoryApi(
+        apiClient: ApiClient(
+          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+            ..httpClientAdapter = adapter,
+          secureStorage: _FakeSecureStorage(),
+        ),
+      );
+
+      final page = await api.listMyArchivedStories(limit: 12, offset: 0);
+
+      expect(page.items.single.coverUrl, contains('media-file-one'));
+      expect(page.items.single.coverUrl, isNot(contains(emptyFileId)));
+    },
+  );
 }
 
 class _JsonAdapter implements HttpClientAdapter {

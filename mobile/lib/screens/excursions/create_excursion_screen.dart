@@ -283,6 +283,47 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     await prefs.remove(_autosaveKey);
   }
 
+  bool get _hasUnsavedChanges {
+    if (_isSubmitting || _isEditMode) {
+      return false;
+    }
+
+    return _hasNewDraftInput;
+  }
+
+  bool get _hasNewDraftInput {
+    return _currentStep > 0 ||
+        _creationMode != _ExcursionCreationMode.singleAttraction ||
+        _selectedCategorySlug != 'adventure' ||
+        _visibility != 'PUBLIC' ||
+        _selectedDurationUnit != _ExcursionDurationUnit.hours ||
+        _selectedCurrencyCode != 'KZT' ||
+        _landmarkNameCtrl.text.trim().isNotEmpty ||
+        (_selectedLandmarkId ?? '').trim().isNotEmpty ||
+        (_selectedAttractionCoverFileId ?? '').trim().isNotEmpty ||
+        (_selectedAttractionCoverImageUrl ?? '').trim().isNotEmpty ||
+        _durationValueCtrl.text.trim() != '4' ||
+        _maxGroupSizeCtrl.text.trim() != '8' ||
+        !_hasDefaultLanguageSelection ||
+        _meetingPointCtrl.text.trim().isNotEmpty ||
+        _mapUrlCtrl.text.trim().isNotEmpty ||
+        _priceAmountCtrl.text.trim().isNotEmpty ||
+        (_coverFileId ?? '').trim().isNotEmpty ||
+        _coverPreviewBytes != null ||
+        _coverChanged ||
+        _selectedLatitude != null ||
+        _selectedLongitude != null ||
+        _productTranslations.isNotEmpty ||
+        _includedItems.isNotEmpty ||
+        _itinerary.isNotEmpty;
+  }
+
+  bool get _hasDefaultLanguageSelection {
+    return _selectedLanguageCodes.length == 2 &&
+        _selectedLanguageCodes.contains('en') &&
+        _selectedLanguageCodes.contains('ru');
+  }
+
   Map<String, dynamic> _autosaveDraftPayload() {
     return {
       'version': _autosaveVersion,
@@ -1140,13 +1181,80 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
 
   void _selectCreationMode(_ExcursionCreationMode mode) {
     if (mode == _creationMode) return;
+    unawaited(_selectCreationModeWithConfirmation(mode));
+  }
+
+  Future<void> _selectCreationModeWithConfirmation(
+    _ExcursionCreationMode mode,
+  ) async {
+    if (mode == _creationMode) return;
+
+    final previousMode = _creationMode;
+    final hasModeSpecificDraft = _hasCreationModeSpecificDraft(previousMode);
+    if (hasModeSpecificDraft) {
+      final canSwitch = await _confirmCreationModeChangeIfNeeded();
+      if (!mounted || !canSwitch) return;
+    }
+
     setState(() {
+      if (hasModeSpecificDraft) {
+        _clearModeSpecificDraft(previousMode);
+      }
       _creationMode = mode;
       _landmarkErrorText = null;
       _itineraryErrorText = null;
       _stepErrorText = null;
     });
     _scheduleAutosave();
+  }
+
+  Future<bool> _confirmCreationModeChangeIfNeeded() {
+    final l10n = AppLocalizations.of(context)!;
+    return _showExcursionAmberConfirmDialog(
+      title: l10n.createExcursionModeSwitchTitle,
+      description: l10n.createExcursionModeSwitchDescription,
+      cancelLabel: l10n.createExcursionModeSwitchCancel,
+      confirmLabel: l10n.createExcursionModeSwitchConfirm,
+    );
+  }
+
+  bool _hasCreationModeSpecificDraft(_ExcursionCreationMode mode) {
+    return switch (mode) {
+      _ExcursionCreationMode.singleAttraction =>
+        _hasSelectedAttraction ||
+            _landmarkNameCtrl.text.trim().isNotEmpty ||
+            (_selectedAttractionCoverFileId ?? '').trim().isNotEmpty ||
+            (_selectedAttractionCoverImageUrl ?? '').trim().isNotEmpty ||
+            _productTranslations.isNotEmpty ||
+            _selectedCategorySlug != 'adventure',
+      _ExcursionCreationMode.combinedRoute => _itinerary.isNotEmpty,
+    };
+  }
+
+  void _clearModeSpecificDraft(_ExcursionCreationMode mode) {
+    switch (mode) {
+      case _ExcursionCreationMode.singleAttraction:
+        _clearSingleAttractionModeDraft();
+      case _ExcursionCreationMode.combinedRoute:
+        _clearCombinedRouteModeDraft();
+    }
+  }
+
+  void _clearSingleAttractionModeDraft() {
+    _selectedLandmarkId = null;
+    _landmarkNameCtrl.clear();
+    _departureCityId = null;
+    _cityNameCtrl.clear();
+    _selectedAttractionCoverFileId = null;
+    _selectedAttractionCoverImageUrl = null;
+    _productTranslations = const {};
+    _selectedCategorySlug = 'adventure';
+    _landmarkErrorText = null;
+  }
+
+  void _clearCombinedRouteModeDraft() {
+    _itinerary.clear();
+    _itineraryErrorText = null;
   }
 
   void _replaceCustomCoverWithAttractionCover() {
@@ -1629,11 +1737,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           ? result.cityId!.trim()
           : null;
       final selectedCityName = (result.cityName ?? '').trim();
-      final selectedCityId = (result.cityId ?? '').trim();
       if (selectedCityName.isNotEmpty) {
         _cityNameCtrl.text = selectedCityName;
-      } else if (selectedCityId.isNotEmpty) {
-        _cityNameCtrl.text = selectedCityId;
       } else {
         _cityNameCtrl.clear();
       }
@@ -1751,6 +1856,67 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     _goToStep(_currentStep - 1);
   }
 
+  Future<void> _handleRouteBack() async {
+    if (_currentStep > 0) {
+      FocusScope.of(context).unfocus();
+      _goToStep(_currentStep - 1);
+      return;
+    }
+
+    final canDiscard = await _confirmDiscardIfNeeded();
+    if (!mounted || !canDiscard) return;
+
+    await _clearAutosaveDraft();
+    if (!mounted) return;
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/profile/guide-dashboard');
+    }
+  }
+
+  void _handleRoutePopInvoked(bool didPop) {
+    if (didPop) return;
+    unawaited(_handleRouteBack());
+  }
+
+  Future<bool> _confirmDiscardIfNeeded() async {
+    if (!_hasUnsavedChanges) {
+      return true;
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    return _showExcursionAmberConfirmDialog(
+      title: l10n.createExcursionDiscardTitle,
+      description: l10n.createExcursionDiscardDescription,
+      cancelLabel: l10n.cancelButton,
+      confirmLabel: l10n.createExcursionDiscardConfirm,
+    );
+  }
+
+  Future<bool> _showExcursionAmberConfirmDialog({
+    required String title,
+    required String description,
+    required String cancelLabel,
+    required String confirmLabel,
+  }) async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return _ExcursionAmberConfirmDialog(
+          title: title,
+          description: description,
+          cancelLabel: cancelLabel,
+          confirmLabel: confirmLabel,
+          onCancel: () => Navigator.of(dialogContext).pop(false),
+          onConfirm: () => Navigator.of(dialogContext).pop(true),
+        );
+      },
+    );
+    return result ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -1758,12 +1924,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     final stepBackSwipeEdgeWidth = _stepBackSwipeEdgeWidth(context);
 
     return PopScope(
-      canPop: _currentStep == 0,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && _currentStep > 0) {
-          _goToStep(_currentStep - 1);
-        }
-      },
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) => _handleRoutePopInvoked(didPop),
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: Stack(
@@ -1784,9 +1946,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
                         title: _isEditMode
                             ? l10n.createExcursionEditTitle
                             : l10n.createExcursionTitle,
-                        onBack: _currentStep == 0
-                            ? () => context.pop()
-                            : () => _goToStep(_currentStep - 1),
+                        onBack: () => unawaited(_handleRouteBack()),
                       ),
                       _ExcursionStepIndicator(
                         currentStep: _currentStep,
@@ -3208,6 +3368,158 @@ class _ExcursionIncludedTypeOption extends StatelessWidget {
                 size: 22,
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ExcursionAmberConfirmDialog extends StatelessWidget {
+  const _ExcursionAmberConfirmDialog({
+    required this.title,
+    required this.description,
+    required this.cancelLabel,
+    required this.confirmLabel,
+    required this.onCancel,
+    required this.onConfirm,
+  });
+
+  final String title;
+  final String description;
+  final String cancelLabel;
+  final String confirmLabel;
+  final VoidCallback onCancel;
+  final VoidCallback onConfirm;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      elevation: 0,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
+      backgroundColor: Colors.transparent,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(30),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF4A2B10), Color(0xFF241407)],
+            ),
+            border: Border.all(
+              color: AppColors.accent.withValues(alpha: 0.58),
+              width: 1.4,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.42),
+                blurRadius: 30,
+                offset: const Offset(0, 18),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 54,
+                      height: 54,
+                      decoration: BoxDecoration(
+                        color: AppColors.accent.withValues(alpha: 0.18),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.accent.withValues(alpha: 0.72),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.warning_amber_rounded,
+                        color: AppColors.accent,
+                        size: 30,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              color: Color(0xFFFFF5E8),
+                              fontSize: 21,
+                              fontWeight: FontWeight.w900,
+                              height: 1.1,
+                            ),
+                          ),
+                          const SizedBox(height: 9),
+                          Text(
+                            description,
+                            style: const TextStyle(
+                              color: Color(0xFFD8C3AA),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              height: 1.38,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 22),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: onConfirm,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.accent,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    child: Text(
+                      confirmLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: onCancel,
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFFEBD6BE),
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: Text(
+                      cancelLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

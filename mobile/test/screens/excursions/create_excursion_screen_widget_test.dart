@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:inflap/core/network/excursion_api.dart';
+import 'package:inflap/core/network/reference_api.dart';
+import 'package:inflap/features/attractions/data/attraction_api.dart';
+import 'package:inflap/features/attractions/models/attraction_vm.dart';
 import 'package:inflap/features/excursions/models/create_excursion_request.dart';
 import 'package:inflap/features/excursions/models/excursion_vm.dart';
 import 'package:inflap/l10n/generated/app_localizations.dart';
 import 'package:inflap/providers/excursion_provider.dart';
 import 'package:inflap/providers/home_location_provider.dart';
+import 'package:inflap/shared/reference/app_location_label_resolver.dart';
 import 'package:inflap/screens/excursions/create_excursion_screen.dart';
+import 'package:inflap/screens/excursions/excursion_select_location_screen.dart';
 
 void main() {
   testWidgets('renders the create excursion landmark step', (tester) async {
@@ -72,6 +78,188 @@ void main() {
       expect(find.text('Edit Offer'), findsOneWidget);
     },
   );
+
+  testWidgets('attraction selector cards do not overflow on compact width', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 844);
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('ru'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ExcursionSelectLocationScreen(
+          countryCode: 'KZ',
+          api: _FakeAttractionApi([
+            _attraction(
+              id: 'attraction-short',
+              title: 'Чарынский каньон',
+              category: 'NATURE',
+            ),
+            _attraction(
+              id: 'attraction-long',
+              title: 'Национальный парк\nАлтын-Эмель',
+              category: 'TEMPLE',
+            ),
+          ]),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.textContaining('Национальный парк'), findsOneWidget);
+    expect(find.text('ПРИРОДА'), findsOneWidget);
+    expect(find.text('ХРАМЫ'), findsOneWidget);
+    expect(find.text('NATURE'), findsNothing);
+    expect(find.text('TEMPLE'), findsNothing);
+    expect(find.text('Выбрать'), findsNWidgets(2));
+
+    final cardFinder = find.byWidgetPredicate(
+      (widget) => widget is Material && widget.color == const Color(0xFF2C2014),
+    );
+    expect(cardFinder, findsNWidgets(2));
+
+    final selectButtons = find.text('Выбрать');
+    final firstButton = find.ancestor(
+      of: selectButtons.at(0),
+      matching: find.byType(AnimatedContainer),
+    );
+    final secondButton = find.ancestor(
+      of: selectButtons.at(1),
+      matching: find.byType(AnimatedContainer),
+    );
+    expect(firstButton, findsOneWidget);
+    expect(secondButton, findsOneWidget);
+
+    final firstButtonTop = tester.getTopLeft(firstButton).dy;
+    final secondButtonTop = tester.getTopLeft(secondButton).dy;
+    expect((firstButtonTop - secondButtonTop).abs(), lessThanOrEqualTo(1));
+
+    final firstTitleTop = tester.getTopLeft(find.text('Чарынский каньон')).dy;
+    final secondTitleTop = tester
+        .getTopLeft(find.textContaining('Национальный парк'))
+        .dy;
+    expect((firstTitleTop - secondTitleTop).abs(), lessThanOrEqualTo(1));
+    expect(
+      find.byWidgetPredicate(
+        (widget) => widget is Align && widget.alignment == Alignment.bottomLeft,
+      ),
+      findsNothing,
+    );
+
+    final firstTitleBottom = tester
+        .getBottomLeft(find.text('Чарынский каньон'))
+        .dy;
+    final secondTitleBottom = tester
+        .getBottomLeft(find.textContaining('Национальный парк'))
+        .dy;
+    expect(firstButtonTop - firstTitleBottom, lessThanOrEqualTo(14));
+    expect(secondButtonTop - secondTitleBottom, lessThanOrEqualTo(14));
+
+    final firstBottomGap =
+        tester.getBottomLeft(cardFinder.at(0)).dy -
+        tester.getBottomLeft(firstButton).dy;
+    final secondBottomGap =
+        tester.getBottomLeft(cardFinder.at(1)).dy -
+        tester.getBottomLeft(secondButton).dy;
+    expect(firstBottomGap, lessThanOrEqualTo(14));
+    expect(secondBottomGap, lessThanOrEqualTo(14));
+
+    final firstCardTop = tester.getTopLeft(cardFinder.at(0)).dy;
+    final firstCardHeight = tester.getSize(cardFinder.at(0)).height;
+    final secondCardTop = tester.getTopLeft(cardFinder.at(1)).dy;
+    final secondCardHeight = tester.getSize(cardFinder.at(1)).height;
+    final firstCategoryTop = tester.getTopLeft(find.text('ПРИРОДА')).dy;
+    final secondCategoryTop = tester.getTopLeft(find.text('ХРАМЫ')).dy;
+
+    expect(firstCategoryTop, lessThan(firstTitleTop));
+    expect(secondCategoryTop, lessThan(secondTitleTop));
+    expect(firstCategoryTop, lessThan(firstCardTop + firstCardHeight * 0.5));
+    expect(secondCategoryTop, lessThan(secondCardTop + secondCardHeight * 0.5));
+  });
+
+  testWidgets('location selector returns localized city name for attraction', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 844);
+    addTearDown(tester.view.reset);
+
+    ExcursionLocationSelection? selectedLocation;
+    final router = GoRouter(
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) {
+            return Material(
+              child: Center(
+                child: FilledButton(
+                  onPressed: () async {
+                    selectedLocation = await context
+                        .push<ExcursionLocationSelection>('/select');
+                  },
+                  child: const Text('Open selector'),
+                ),
+              ),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/select',
+          builder: (context, state) {
+            return ExcursionSelectLocationScreen(
+              countryCode: 'KZ',
+              api: _FakeAttractionApi([
+                _attraction(
+                  id: 'attraction-short',
+                  title: 'Чарынский каньон',
+                  category: 'NATURE',
+                ),
+              ]),
+              locationLabelResolver: AppLocationLabelResolver(
+                api: _FakeReferenceApi(),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp.router(
+        locale: const Locale('ru'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        routerConfig: router,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Open selector'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Выбрать'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('ПОДТВЕРДИТЬ'));
+    await tester.pumpAndSettle();
+
+    expect(selectedLocation?.cityId, 'almaty');
+    expect(selectedLocation?.cityName, 'Алматы');
+  });
 }
 
 class _FakeExcursionApi extends ExcursionApi {
@@ -90,6 +278,46 @@ class _FakeExcursionApi extends ExcursionApi {
     CreateExcursionRequest request,
   ) async {
     return excursion;
+  }
+}
+
+class _FakeAttractionApi extends AttractionApi {
+  _FakeAttractionApi(this.items);
+
+  final List<AttractionVm> items;
+
+  @override
+  Future<({List<AttractionVm> items, int total})> getAttractions({
+    String? search,
+    String? category,
+    String? countryCode,
+    String? cityId,
+    String? accessCityId,
+    double? priceMin,
+    double? priceMax,
+    int? durationMin,
+    int? durationMax,
+    String? durationUnit,
+    int? spotsMin,
+    double? minRating,
+    String? sort,
+    String? locale,
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    return (items: items, total: items.length);
+  }
+}
+
+class _FakeReferenceApi extends ReferenceApi {
+  @override
+  Future<ReferenceCity?> getCity(String id, {String lang = 'en'}) async {
+    if (id.trim() != 'almaty') return null;
+    return ReferenceCity(
+      id: 'almaty',
+      countryCode: 'KZ',
+      name: lang == 'ru' ? 'Алматы' : 'Almaty',
+    );
   }
 }
 
@@ -121,3 +349,34 @@ const _editableExcursion = ExcursionVm(
     ),
   ],
 );
+
+AttractionVm _attraction({
+  String id = 'attraction-compact',
+  required String title,
+  String category = 'nature',
+}) {
+  return AttractionVm(
+    id: id,
+    locale: 'en',
+    defaultLocale: 'en',
+    title: title,
+    description: 'A compact selector test attraction.',
+    countryCode: 'KZ',
+    cityId: 'almaty',
+    latitude: 43.238,
+    longitude: 76.945,
+    locationSourceUrl: 'https://maps.example.test/attraction-compact',
+    category: category,
+    rating: 4.8,
+    reviewCount: 12,
+    source: 'manual',
+    status: 'published',
+    tags: const [],
+    visitInfo: AttractionVisitInfoVm.empty,
+    translations: const {},
+    media: const [],
+    author: const AttractionAuthorVm(userId: 'author-1'),
+    createdAt: '2026-06-17T00:00:00Z',
+    updatedAt: '2026-06-17T00:00:00Z',
+  );
+}

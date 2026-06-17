@@ -121,10 +121,6 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
       _hasAppliedDefaultLocationFilter = true;
       return;
     }
-    if (provider.effectiveLocation.source == HomeLocationSource.fallback) {
-      return;
-    }
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _applyDefaultLocationFilter(provider);
@@ -322,10 +318,6 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     await action();
   }
 
-  Future<void> _showLanguageSheet() {
-    return showAppLanguageSheet(context);
-  }
-
   Future<void> _refreshActivities(String? currentUserId) async {
     final provider = context.read<ActivityProvider>();
 
@@ -461,12 +453,8 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
         showGuideBadge: _showGuideBadge,
         profile: profile,
         location: location,
-        languageLabel: resolveDrawerLanguageLabel(
-          Localizations.localeOf(context).languageCode,
-        ),
         activeItem: AppDrawerActiveItem.none,
         onProfileTap: () => _runDrawerAction(() async => _openProfile()),
-        onLanguageTap: () => _runDrawerAction(_showLanguageSheet),
         onHomeTap: () => _runDrawerAction(() async => context.go('/')),
         onMyActivitiesTap: () => _runDrawerAction(_openMyActivities),
         onMyExcursionsTap: () =>

@@ -169,10 +169,6 @@ class _GuidesScreenState extends State<GuidesScreen> {
       _hasAppliedDefaultCityFilter = true;
       return;
     }
-    if (provider.effectiveLocation.source == HomeLocationSource.fallback) {
-      return;
-    }
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final wasApplied = _hasAppliedDefaultCityFilter;

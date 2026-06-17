@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -1257,6 +1258,8 @@ class _CurrencyPickerEmptyState extends StatelessWidget {
   }
 }
 
+const _compactCurrencyFlagScale = 0.72;
+
 class _CurrencyFlagIcon extends StatelessWidget {
   const _CurrencyFlagIcon({required this.code, required this.size});
 
@@ -1265,34 +1268,1268 @@ class _CurrencyFlagIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final flag = _currencyFlagEmoji(code);
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: _avatarColor(code),
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.24)),
-      ),
-      alignment: Alignment.center,
-      child: Semantics(
-        label: code,
-        child: Text(
-          flag,
-          maxLines: 1,
-          overflow: TextOverflow.clip,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: size <= 30 ? 16 : 22,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0,
-            fontFamilyFallback: const [
-              'Apple Color Emoji',
-              'Noto Color Emoji',
-              'Segoe UI Emoji',
-            ],
+    final regionCode = _currencyFlagRegion(code);
+    final badgeColor = _avatarColor(code);
+    final innerSize = size * _compactCurrencyFlagScale;
+
+    return SizedBox.square(
+      dimension: size,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: badgeColor.withValues(alpha: 0.24),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+        ),
+        child: Center(
+          child: Semantics(
+            label: code,
+            child: regionCode == null
+                ? _CurrencyFallbackGlyph(size: innerSize)
+                : Container(
+                    width: innerSize,
+                    height: innerSize,
+                    clipBehavior: Clip.antiAlias,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.42),
+                        width: math.max(1, size * 0.035),
+                      ),
+                    ),
+                    child: CustomPaint(
+                      painter: _CurrencyFlagPainter(
+                        regionCode: regionCode,
+                        fallbackColor: badgeColor,
+                      ),
+                      child: SizedBox.square(dimension: innerSize),
+                    ),
+                  ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _CurrencyFlagPainter extends CustomPainter {
+  const _CurrencyFlagPainter({
+    required this.regionCode,
+    required this.fallbackColor,
+  });
+
+  final String regionCode;
+  final Color fallbackColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    switch (regionCode) {
+      case 'AE':
+        _drawUnitedArabEmirates(canvas, size);
+      case 'AM':
+        _drawArmenia(canvas, size);
+      case 'AR':
+        _drawArgentina(canvas, size);
+      case 'AU':
+        _drawAustralia(canvas, size);
+      case 'AZ':
+        _drawAzerbaijan(canvas, size);
+      case 'BR':
+        _drawBrazil(canvas, size);
+      case 'BY':
+        _drawBelarus(canvas, size);
+      case 'CA':
+        _drawCanada(canvas, size);
+      case 'CH':
+        _drawSwitzerland(canvas, size);
+      case 'CN':
+        _drawChina(canvas, size);
+      case 'CU':
+        _drawCuba(canvas, size);
+      case 'CZ':
+        _drawCzechia(canvas, size);
+      case 'DK':
+        _drawDenmark(canvas, size);
+      case 'EG':
+        _drawEgypt(canvas, size);
+      case 'EU':
+        _drawEuropeanUnion(canvas, size);
+      case 'GB':
+        _drawUnitedKingdom(canvas, size);
+      case 'GE':
+        _drawGeorgia(canvas, size);
+      case 'ID':
+        _drawIndonesia(canvas, size);
+      case 'IN':
+        _drawIndia(canvas, size);
+      case 'IS':
+        _drawIceland(canvas, size);
+      case 'JP':
+        _drawJapan(canvas, size);
+      case 'KE':
+        _drawKenya(canvas, size);
+      case 'KG':
+        _drawKyrgyzstan(canvas, size);
+      case 'KR':
+        _drawSouthKorea(canvas, size);
+      case 'KZ':
+        _drawKazakhstan(canvas, size);
+      case 'LK':
+        _drawSriLanka(canvas, size);
+      case 'MA':
+        _drawMorocco(canvas, size);
+      case 'MD':
+        _drawMoldova(canvas, size);
+      case 'MN':
+        _drawMongolia(canvas, size);
+      case 'MV':
+        _drawMaldives(canvas, size);
+      case 'MX':
+        _drawMexico(canvas, size);
+      case 'MY':
+        _drawMalaysia(canvas, size);
+      case 'NZ':
+        _drawNewZealand(canvas, size);
+      case 'PH':
+        _drawPhilippines(canvas, size);
+      case 'PL':
+        _drawPoland(canvas, size);
+      case 'RS':
+        _drawSerbia(canvas, size);
+      case 'RU':
+        _drawRussia(canvas, size);
+      case 'SC':
+        _drawSeychelles(canvas, size);
+      case 'SE':
+        _drawSweden(canvas, size);
+      case 'SG':
+        _drawSingapore(canvas, size);
+      case 'TH':
+        _drawThailand(canvas, size);
+      case 'TJ':
+        _drawTajikistan(canvas, size);
+      case 'TM':
+        _drawTurkmenistan(canvas, size);
+      case 'TR':
+        _drawTurkey(canvas, size);
+      case 'TZ':
+        _drawTanzania(canvas, size);
+      case 'UA':
+        _drawUkraine(canvas, size);
+      case 'US':
+        _drawUnitedStates(canvas, size);
+      case 'UZ':
+        _drawUzbekistan(canvas, size);
+      case 'VN':
+        _drawVietnam(canvas, size);
+      default:
+        _drawFallbackFlag(canvas, size, regionCode, fallbackColor);
+    }
+  }
+
+  void _drawUnitedArabEmirates(Canvas canvas, Size size) {
+    final redWidth = size.width * 0.3;
+    _fill(canvas, size, const Color(0xFF00732F));
+    _drawHorizontalStripes(
+      canvas,
+      Rect.fromLTWH(redWidth, 0, size.width - redWidth, size.height),
+      const [Color(0xFF009A49), Colors.white, Color(0xFF000000)],
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, redWidth, size.height),
+      _paint(const Color(0xFFFF0000)),
+    );
+  }
+
+  void _drawArmenia(Canvas canvas, Size size) {
+    _drawHorizontalStripes(canvas, Offset.zero & size, const [
+      Color(0xFFD90012),
+      Color(0xFF0033A0),
+      Color(0xFFF2A800),
+    ]);
+  }
+
+  void _drawArgentina(Canvas canvas, Size size) {
+    _drawHorizontalStripes(canvas, Offset.zero & size, const [
+      Color(0xFF74ACDF),
+      Colors.white,
+      Color(0xFF74ACDF),
+    ]);
+    canvas.drawCircle(
+      Offset(size.width * 0.5, size.height * 0.5),
+      size.shortestSide * 0.08,
+      _paint(const Color(0xFFF6B40E)),
+    );
+  }
+
+  void _drawAustralia(Canvas canvas, Size size) {
+    _drawBlueEnsign(canvas, size, starColor: Colors.white);
+  }
+
+  void _drawAzerbaijan(Canvas canvas, Size size) {
+    _drawHorizontalStripes(canvas, Offset.zero & size, const [
+      Color(0xFF00B5E2),
+      Color(0xFFEF3340),
+      Color(0xFF509E2F),
+    ]);
+    _drawCrescent(
+      canvas,
+      Offset(size.width * 0.45, size.height * 0.5),
+      size.shortestSide * 0.12,
+      Colors.white,
+      const Color(0xFFEF3340),
+    );
+    _drawStar(
+      canvas,
+      Offset(size.width * 0.63, size.height * 0.5),
+      size.shortestSide * 0.055,
+      Colors.white,
+    );
+  }
+
+  void _drawBrazil(Canvas canvas, Size size) {
+    _fill(canvas, size, const Color(0xFF009B3A));
+    _drawDiamond(
+      canvas,
+      Rect.fromCenter(
+        center: Offset(size.width * 0.5, size.height * 0.5),
+        width: size.width * 0.72,
+        height: size.height * 0.5,
+      ),
+      const Color(0xFFFFDF00),
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.5, size.height * 0.5),
+      size.shortestSide * 0.17,
+      _paint(const Color(0xFF002776)),
+    );
+  }
+
+  void _drawBelarus(Canvas canvas, Size size) {
+    _drawWeightedHorizontalStripes(canvas, Offset.zero & size, const [
+      (Color(0xFFC8313E), 2.0),
+      (Color(0xFF4AA657), 1.0),
+    ]);
+    final ornamentWidth = size.width * 0.18;
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, ornamentWidth, size.height),
+      _paint(Colors.white),
+    );
+    for (var i = 0; i < 4; i += 1) {
+      _drawDiamond(
+        canvas,
+        Rect.fromCenter(
+          center: Offset(ornamentWidth * 0.5, size.height * (0.16 + i * 0.22)),
+          width: ornamentWidth * 0.45,
+          height: ornamentWidth * 0.45,
+        ),
+        const Color(0xFFC8313E),
+      );
+    }
+  }
+
+  void _drawCanada(Canvas canvas, Size size) {
+    _drawVerticalStripes(canvas, Offset.zero & size, const [
+      Color(0xFFD80621),
+      Colors.white,
+      Color(0xFFD80621),
+    ]);
+    _drawStar(
+      canvas,
+      Offset(size.width * 0.5, size.height * 0.52),
+      size.shortestSide * 0.14,
+      const Color(0xFFD80621),
+    );
+  }
+
+  void _drawSwitzerland(Canvas canvas, Size size) {
+    _fill(canvas, size, const Color(0xFFFF0000));
+    _drawCenteredCross(canvas, size, Colors.white, size.shortestSide * 0.18);
+  }
+
+  void _drawChina(Canvas canvas, Size size) {
+    _fill(canvas, size, const Color(0xFFDE2910));
+    _drawStar(
+      canvas,
+      Offset(size.width * 0.32, size.height * 0.34),
+      size.shortestSide * 0.16,
+      const Color(0xFFFFDE00),
+    );
+    for (final center in [
+      Offset(size.width * 0.58, size.height * 0.22),
+      Offset(size.width * 0.68, size.height * 0.36),
+      Offset(size.width * 0.68, size.height * 0.54),
+      Offset(size.width * 0.56, size.height * 0.68),
+    ]) {
+      _drawStar(
+        canvas,
+        center,
+        size.shortestSide * 0.05,
+        const Color(0xFFFFDE00),
+      );
+    }
+  }
+
+  void _drawEuropeanUnion(Canvas canvas, Size size) {
+    _fill(canvas, size, const Color(0xFF244AA5));
+    final center = Offset(size.width * 0.5, size.height * 0.5);
+    final orbit = size.shortestSide * 0.24;
+    final dotRadius = size.shortestSide * 0.025;
+    for (var i = 0; i < 12; i += 1) {
+      final angle = -math.pi / 2 + (math.pi * 2 * i / 12);
+      canvas.drawCircle(
+        center + Offset(math.cos(angle) * orbit, math.sin(angle) * orbit),
+        dotRadius,
+        _paint(const Color(0xFFFFCC00)),
+      );
+    }
+  }
+
+  void _drawUnitedKingdom(Canvas canvas, Size size) {
+    _fill(canvas, size, const Color(0xFF012169));
+    _drawDiagonal(canvas, size, Colors.white, size.shortestSide * 0.17);
+    _drawDiagonal(
+      canvas,
+      size,
+      const Color(0xFFC8102E),
+      size.shortestSide * 0.08,
+    );
+    _drawCenteredCross(canvas, size, Colors.white, size.shortestSide * 0.2);
+    _drawCenteredCross(
+      canvas,
+      size,
+      const Color(0xFFC8102E),
+      size.shortestSide * 0.11,
+    );
+  }
+
+  void _drawCuba(Canvas canvas, Size size) {
+    _drawHorizontalStripes(canvas, Offset.zero & size, const [
+      Color(0xFF002A8F),
+      Colors.white,
+      Color(0xFF002A8F),
+      Colors.white,
+      Color(0xFF002A8F),
+    ]);
+    _drawTriangle(canvas, [
+      Offset.zero,
+      Offset(0, size.height),
+      Offset(size.width * 0.45, size.height * 0.5),
+    ], const Color(0xFFCF142B));
+    _drawStar(
+      canvas,
+      Offset(size.width * 0.16, size.height * 0.5),
+      size.shortestSide * 0.065,
+      Colors.white,
+    );
+  }
+
+  void _drawCzechia(Canvas canvas, Size size) {
+    _drawHorizontalStripes(canvas, Offset.zero & size, const [
+      Colors.white,
+      Color(0xFFD7141A),
+    ]);
+    _drawTriangle(canvas, [
+      Offset.zero,
+      Offset(0, size.height),
+      Offset(size.width * 0.54, size.height * 0.5),
+    ], const Color(0xFF11457E));
+  }
+
+  void _drawDenmark(Canvas canvas, Size size) {
+    _drawNordicCross(
+      canvas,
+      size,
+      background: const Color(0xFFC60C30),
+      cross: Colors.white,
+    );
+  }
+
+  void _drawEgypt(Canvas canvas, Size size) {
+    _drawHorizontalStripes(canvas, Offset.zero & size, const [
+      Color(0xFFCE1126),
+      Colors.white,
+      Color(0xFF000000),
+    ]);
+    canvas.drawCircle(
+      Offset(size.width * 0.5, size.height * 0.5),
+      size.shortestSide * 0.055,
+      _paint(const Color(0xFFC09300)),
+    );
+  }
+
+  void _drawGeorgia(Canvas canvas, Size size) {
+    _fill(canvas, size, Colors.white);
+    _drawCenteredCross(
+      canvas,
+      size,
+      const Color(0xFFFF0000),
+      size.width * 0.13,
+    );
+    for (final center in [
+      Offset(size.width * 0.25, size.height * 0.25),
+      Offset(size.width * 0.75, size.height * 0.25),
+      Offset(size.width * 0.25, size.height * 0.75),
+      Offset(size.width * 0.75, size.height * 0.75),
+    ]) {
+      _drawTinyCross(canvas, center, size.shortestSide * 0.12);
+    }
+  }
+
+  void _drawIndonesia(Canvas canvas, Size size) {
+    _drawHorizontalStripes(canvas, Offset.zero & size, const [
+      Color(0xFFFF0000),
+      Colors.white,
+    ]);
+  }
+
+  void _drawIndia(Canvas canvas, Size size) {
+    _drawHorizontalStripes(canvas, Offset.zero & size, const [
+      Color(0xFFFF9933),
+      Colors.white,
+      Color(0xFF138808),
+    ]);
+    canvas.drawCircle(
+      Offset(size.width * 0.5, size.height * 0.5),
+      size.shortestSide * 0.08,
+      Paint()
+        ..color = const Color(0xFF000080)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = size.shortestSide * 0.018,
+    );
+  }
+
+  void _drawIceland(Canvas canvas, Size size) {
+    _drawNordicCross(
+      canvas,
+      size,
+      background: const Color(0xFF02529C),
+      border: Colors.white,
+      cross: const Color(0xFFDC1E35),
+    );
+  }
+
+  void _drawJapan(Canvas canvas, Size size) {
+    _fill(canvas, size, Colors.white);
+    canvas.drawCircle(
+      Offset(size.width * 0.5, size.height * 0.5),
+      size.shortestSide * 0.24,
+      _paint(const Color(0xFFBC002D)),
+    );
+  }
+
+  void _drawKyrgyzstan(Canvas canvas, Size size) {
+    _fill(canvas, size, const Color(0xFFE8112D));
+    canvas.drawCircle(
+      Offset(size.width * 0.5, size.height * 0.5),
+      size.shortestSide * 0.2,
+      _paint(const Color(0xFFFFD700)),
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.5, size.height * 0.5),
+      size.shortestSide * 0.07,
+      _paint(const Color(0xFFE8112D)),
+    );
+  }
+
+  void _drawSouthKorea(Canvas canvas, Size size) {
+    _fill(canvas, size, Colors.white);
+    final taegeuk = Rect.fromCircle(
+      center: Offset(size.width * 0.5, size.height * 0.5),
+      radius: size.shortestSide * 0.18,
+    );
+    canvas.drawArc(
+      taegeuk,
+      math.pi,
+      math.pi,
+      true,
+      _paint(const Color(0xFFCD2E3A)),
+    );
+    canvas.drawArc(taegeuk, 0, math.pi, true, _paint(const Color(0xFF0047A0)));
+    _drawMiniBars(canvas, size, const Color(0xFF111111));
+  }
+
+  void _drawKazakhstan(Canvas canvas, Size size) {
+    _fill(canvas, size, const Color(0xFF00AFCA));
+    final gold = _paint(const Color(0xFFFFD100));
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width * 0.16, size.height), gold);
+    canvas.drawCircle(
+      Offset(size.width * 0.55, size.height * 0.42),
+      size.shortestSide * 0.15,
+      gold,
+    );
+    canvas.drawArc(
+      Rect.fromLTWH(
+        size.width * 0.34,
+        size.height * 0.52,
+        size.width * 0.42,
+        size.height * 0.22,
+      ),
+      0,
+      math.pi,
+      false,
+      Paint()
+        ..color = const Color(0xFFFFD100)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = size.shortestSide * 0.05
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  void _drawKenya(Canvas canvas, Size size) {
+    _drawWeightedHorizontalStripes(canvas, Offset.zero & size, const [
+      (Color(0xFF000000), 1.0),
+      (Colors.white, 0.16),
+      (Color(0xFFBB0000), 1.0),
+      (Colors.white, 0.16),
+      (Color(0xFF006600), 1.0),
+    ]);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(size.width * 0.5, size.height * 0.5),
+        width: size.width * 0.18,
+        height: size.height * 0.38,
+      ),
+      _paint(const Color(0xFF8B3A2B)),
+    );
+  }
+
+  void _drawSriLanka(Canvas canvas, Size size) {
+    _fill(canvas, size, const Color(0xFFFFB700));
+    canvas.drawRect(
+      Rect.fromLTWH(
+        size.width * 0.1,
+        size.height * 0.14,
+        size.width * 0.16,
+        size.height * 0.72,
+      ),
+      _paint(const Color(0xFF00534E)),
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(
+        size.width * 0.26,
+        size.height * 0.14,
+        size.width * 0.16,
+        size.height * 0.72,
+      ),
+      _paint(const Color(0xFFFF7F00)),
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(
+        size.width * 0.48,
+        size.height * 0.14,
+        size.width * 0.42,
+        size.height * 0.72,
+      ),
+      _paint(const Color(0xFF8D153A)),
+    );
+  }
+
+  void _drawMorocco(Canvas canvas, Size size) {
+    _fill(canvas, size, const Color(0xFFC1272D));
+    _drawStar(
+      canvas,
+      Offset(size.width * 0.5, size.height * 0.52),
+      size.shortestSide * 0.17,
+      const Color(0xFF006233),
+    );
+  }
+
+  void _drawMoldova(Canvas canvas, Size size) {
+    _drawVerticalStripes(canvas, Offset.zero & size, const [
+      Color(0xFF0032A0),
+      Color(0xFFFFD100),
+      Color(0xFFCE1126),
+    ]);
+    canvas.drawCircle(
+      Offset(size.width * 0.5, size.height * 0.5),
+      size.shortestSide * 0.06,
+      _paint(const Color(0xFF8C4A24)),
+    );
+  }
+
+  void _drawMongolia(Canvas canvas, Size size) {
+    _drawVerticalStripes(canvas, Offset.zero & size, const [
+      Color(0xFFDA2032),
+      Color(0xFF0066B3),
+      Color(0xFFDA2032),
+    ]);
+    final gold = _paint(const Color(0xFFFFD900));
+    canvas
+      ..drawCircle(
+        Offset(size.width * 0.23, size.height * 0.34),
+        size.shortestSide * 0.055,
+        gold,
+      )
+      ..drawRect(
+        Rect.fromCenter(
+          center: Offset(size.width * 0.23, size.height * 0.58),
+          width: size.width * 0.07,
+          height: size.height * 0.22,
+        ),
+        gold,
+      );
+  }
+
+  void _drawMaldives(Canvas canvas, Size size) {
+    _fill(canvas, size, const Color(0xFFD21034));
+    final greenRect = Rect.fromLTWH(
+      size.width * 0.18,
+      size.height * 0.22,
+      size.width * 0.64,
+      size.height * 0.56,
+    );
+    canvas.drawRect(greenRect, _paint(const Color(0xFF007E3A)));
+    _drawCrescent(
+      canvas,
+      Offset(size.width * 0.52, size.height * 0.5),
+      size.shortestSide * 0.13,
+      Colors.white,
+      const Color(0xFF007E3A),
+      cutoutShift: Offset(size.width * 0.045, 0),
+    );
+  }
+
+  void _drawMexico(Canvas canvas, Size size) {
+    _drawVerticalStripes(canvas, Offset.zero & size, const [
+      Color(0xFF006847),
+      Colors.white,
+      Color(0xFFCE1126),
+    ]);
+    canvas.drawCircle(
+      Offset(size.width * 0.5, size.height * 0.5),
+      size.shortestSide * 0.055,
+      _paint(const Color(0xFF8C6239)),
+    );
+  }
+
+  void _drawMalaysia(Canvas canvas, Size size) {
+    _drawHorizontalStripes(canvas, Offset.zero & size, const [
+      Color(0xFFCC0001),
+      Colors.white,
+      Color(0xFFCC0001),
+      Colors.white,
+      Color(0xFFCC0001),
+      Colors.white,
+      Color(0xFFCC0001),
+      Colors.white,
+    ]);
+    final canton = Rect.fromLTWH(0, 0, size.width * 0.52, size.height * 0.56);
+    canvas.drawRect(canton, _paint(const Color(0xFF010066)));
+    _drawCrescent(
+      canvas,
+      Offset(canton.width * 0.42, canton.height * 0.5),
+      size.shortestSide * 0.11,
+      const Color(0xFFFFCC00),
+      const Color(0xFF010066),
+    );
+  }
+
+  void _drawNewZealand(Canvas canvas, Size size) {
+    _drawBlueEnsign(canvas, size, starColor: const Color(0xFFCC142B));
+  }
+
+  void _drawPhilippines(Canvas canvas, Size size) {
+    _drawHorizontalStripes(canvas, Offset.zero & size, const [
+      Color(0xFF0038A8),
+      Color(0xFFCE1126),
+    ]);
+    _drawTriangle(canvas, [
+      Offset.zero,
+      Offset(0, size.height),
+      Offset(size.width * 0.48, size.height * 0.5),
+    ], Colors.white);
+    canvas.drawCircle(
+      Offset(size.width * 0.18, size.height * 0.5),
+      size.shortestSide * 0.06,
+      _paint(const Color(0xFFFCD116)),
+    );
+  }
+
+  void _drawPoland(Canvas canvas, Size size) {
+    _drawHorizontalStripes(canvas, Offset.zero & size, const [
+      Colors.white,
+      Color(0xFFDC143C),
+    ]);
+  }
+
+  void _drawSerbia(Canvas canvas, Size size) {
+    _drawHorizontalStripes(canvas, Offset.zero & size, const [
+      Color(0xFFC6363C),
+      Color(0xFF0C4076),
+      Colors.white,
+    ]);
+    canvas.drawCircle(
+      Offset(size.width * 0.34, size.height * 0.48),
+      size.shortestSide * 0.07,
+      _paint(const Color(0xFFFFD700)),
+    );
+  }
+
+  void _drawRussia(Canvas canvas, Size size) {
+    _drawHorizontalStripes(canvas, Offset.zero & size, const [
+      Colors.white,
+      Color(0xFF0039A6),
+      Color(0xFFD52B1E),
+    ]);
+  }
+
+  void _drawSeychelles(Canvas canvas, Size size) {
+    final points = [
+      (const Color(0xFF003F87), Offset.zero),
+      (const Color(0xFFFCD856), Offset(size.width * 0.2, 0)),
+      (const Color(0xFFD62828), Offset(size.width * 0.48, 0)),
+      (Colors.white, Offset(size.width * 0.74, 0)),
+      (const Color(0xFF007A3D), Offset(size.width, 0)),
+    ];
+    for (var i = 0; i < points.length; i += 1) {
+      final nextX = i == points.length - 1 ? size.width : points[i + 1].$2.dx;
+      final path = Path()
+        ..moveTo(0, size.height)
+        ..lineTo(points[i].$2.dx, 0)
+        ..lineTo(nextX, 0)
+        ..lineTo(0, size.height)
+        ..close();
+      canvas.drawPath(path, _paint(points[i].$1));
+    }
+  }
+
+  void _drawSweden(Canvas canvas, Size size) {
+    _drawNordicCross(
+      canvas,
+      size,
+      background: const Color(0xFF006AA7),
+      cross: const Color(0xFFFECC00),
+    );
+  }
+
+  void _drawSingapore(Canvas canvas, Size size) {
+    _drawHorizontalStripes(canvas, Offset.zero & size, const [
+      Color(0xFFEF3340),
+      Colors.white,
+    ]);
+    _drawCrescent(
+      canvas,
+      Offset(size.width * 0.27, size.height * 0.28),
+      size.shortestSide * 0.095,
+      Colors.white,
+      const Color(0xFFEF3340),
+    );
+    for (final center in [
+      Offset(size.width * 0.42, size.height * 0.18),
+      Offset(size.width * 0.48, size.height * 0.27),
+      Offset(size.width * 0.38, size.height * 0.36),
+    ]) {
+      canvas.drawCircle(
+        center,
+        size.shortestSide * 0.018,
+        _paint(Colors.white),
+      );
+    }
+  }
+
+  void _drawThailand(Canvas canvas, Size size) {
+    _drawWeightedHorizontalStripes(canvas, Offset.zero & size, const [
+      (Color(0xFFA51931), 1.0),
+      (Colors.white, 1.0),
+      (Color(0xFF2D2A4A), 2.0),
+      (Colors.white, 1.0),
+      (Color(0xFFA51931), 1.0),
+    ]);
+  }
+
+  void _drawTajikistan(Canvas canvas, Size size) {
+    _drawWeightedHorizontalStripes(canvas, Offset.zero & size, const [
+      (Color(0xFFCC0000), 1.0),
+      (Colors.white, 1.5),
+      (Color(0xFF006600), 1.0),
+    ]);
+    final gold = _paint(const Color(0xFFF8C300));
+    canvas.drawArc(
+      Rect.fromCircle(
+        center: Offset(size.width * 0.5, size.height * 0.5),
+        radius: size.shortestSide * 0.095,
+      ),
+      math.pi * 0.08,
+      math.pi * 0.84,
+      false,
+      Paint()
+        ..color = const Color(0xFFF8C300)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = size.shortestSide * 0.025,
+    );
+    for (final dx in [0.42, 0.5, 0.58]) {
+      canvas.drawCircle(
+        Offset(size.width * dx, size.height * 0.42),
+        size.shortestSide * 0.018,
+        gold,
+      );
+    }
+  }
+
+  void _drawTurkmenistan(Canvas canvas, Size size) {
+    _fill(canvas, size, const Color(0xFF00843D));
+    canvas.drawRect(
+      Rect.fromLTWH(size.width * 0.14, 0, size.width * 0.16, size.height),
+      _paint(const Color(0xFFB00020)),
+    );
+    for (var i = 0; i < 4; i += 1) {
+      canvas.drawRect(
+        Rect.fromLTWH(
+          size.width * 0.17,
+          size.height * (0.12 + i * 0.2),
+          size.width * 0.1,
+          size.height * 0.06,
+        ),
+        _paint(const Color(0xFFF7C800)),
+      );
+    }
+    _drawCrescent(
+      canvas,
+      Offset(size.width * 0.6, size.height * 0.33),
+      size.shortestSide * 0.11,
+      Colors.white,
+      const Color(0xFF00843D),
+    );
+  }
+
+  void _drawTurkey(Canvas canvas, Size size) {
+    _fill(canvas, size, const Color(0xFFE30A17));
+    final center = Offset(size.width * 0.43, size.height * 0.5);
+    canvas.drawCircle(center, size.shortestSide * 0.2, _paint(Colors.white));
+    canvas.drawCircle(
+      center + Offset(size.width * 0.07, 0),
+      size.shortestSide * 0.16,
+      _paint(const Color(0xFFE30A17)),
+    );
+    _drawStar(
+      canvas,
+      Offset(size.width * 0.63, size.height * 0.5),
+      size.shortestSide * 0.09,
+      Colors.white,
+    );
+  }
+
+  void _drawTanzania(Canvas canvas, Size size) {
+    _fill(canvas, size, const Color(0xFF1EB53A));
+    _drawTriangle(canvas, [
+      Offset(size.width, 0),
+      Offset(size.width, size.height),
+      Offset(0, size.height),
+    ], const Color(0xFF00A3DD));
+    _drawDiagonalBand(
+      canvas,
+      size,
+      const Color(0xFFFCD116),
+      size.shortestSide * 0.24,
+    );
+    _drawDiagonalBand(
+      canvas,
+      size,
+      const Color(0xFF000000),
+      size.shortestSide * 0.14,
+    );
+  }
+
+  void _drawUkraine(Canvas canvas, Size size) {
+    _drawHorizontalStripes(canvas, Offset.zero & size, const [
+      Color(0xFF0057B7),
+      Color(0xFFFFD700),
+    ]);
+  }
+
+  void _drawUnitedStates(Canvas canvas, Size size) {
+    const red = Color(0xFFB22234);
+    const blue = Color(0xFF3C3B6E);
+    final stripeHeight = size.height / 13;
+    for (var i = 0; i < 13; i += 1) {
+      canvas.drawRect(
+        Rect.fromLTWH(0, i * stripeHeight, size.width, stripeHeight + 0.5),
+        _paint(i.isEven ? red : Colors.white),
+      );
+    }
+    final canton = Rect.fromLTWH(0, 0, size.width * 0.56, stripeHeight * 7);
+    canvas.drawRect(canton, _paint(blue));
+    final dot = _paint(Colors.white);
+    for (var row = 0; row < 4; row += 1) {
+      for (var col = 0; col < 5; col += 1) {
+        canvas.drawCircle(
+          Offset(
+            canton.left + canton.width * (0.14 + col * 0.18),
+            canton.top + canton.height * (0.18 + row * 0.22),
+          ),
+          size.shortestSide * 0.012,
+          dot,
+        );
+      }
+    }
+  }
+
+  void _drawUzbekistan(Canvas canvas, Size size) {
+    _fill(canvas, size, Colors.white);
+    final blueHeight = size.height * 0.34;
+    final greenHeight = size.height * 0.3;
+    final redLine = size.height * 0.04;
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width, blueHeight),
+      _paint(const Color(0xFF1EB2E8)),
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(0, blueHeight, size.width, redLine),
+      _paint(const Color(0xFFCE1126)),
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(
+        0,
+        size.height - greenHeight - redLine,
+        size.width,
+        redLine,
+      ),
+      _paint(const Color(0xFFCE1126)),
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(0, size.height - greenHeight, size.width, greenHeight),
+      _paint(const Color(0xFF009639)),
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.26, size.height * 0.17),
+      size.shortestSide * 0.08,
+      _paint(Colors.white),
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.3, size.height * 0.17),
+      size.shortestSide * 0.07,
+      _paint(const Color(0xFF1EB2E8)),
+    );
+  }
+
+  void _drawVietnam(Canvas canvas, Size size) {
+    _fill(canvas, size, const Color(0xFFDA251D));
+    _drawStar(
+      canvas,
+      Offset(size.width * 0.5, size.height * 0.5),
+      size.shortestSide * 0.2,
+      const Color(0xFFFFD700),
+    );
+  }
+
+  void _drawVerticalStripes(Canvas canvas, Rect rect, List<Color> colors) {
+    final stripeWidth = rect.width / colors.length;
+    for (var i = 0; i < colors.length; i += 1) {
+      canvas.drawRect(
+        Rect.fromLTWH(
+          rect.left + i * stripeWidth,
+          rect.top,
+          stripeWidth + 0.5,
+          rect.height,
+        ),
+        _paint(colors[i]),
+      );
+    }
+  }
+
+  void _drawWeightedHorizontalStripes(
+    Canvas canvas,
+    Rect rect,
+    List<(Color, double)> stripes,
+  ) {
+    final totalWeight = stripes.fold<double>(
+      0,
+      (sum, stripe) => sum + stripe.$2,
+    );
+    var top = rect.top;
+    for (final stripe in stripes) {
+      final stripeHeight = rect.height * stripe.$2 / totalWeight;
+      canvas.drawRect(
+        Rect.fromLTWH(rect.left, top, rect.width, stripeHeight + 0.5),
+        _paint(stripe.$1),
+      );
+      top += stripeHeight;
+    }
+  }
+
+  void _drawHorizontalStripes(Canvas canvas, Rect rect, List<Color> colors) {
+    final stripeHeight = rect.height / colors.length;
+    for (var i = 0; i < colors.length; i += 1) {
+      canvas.drawRect(
+        Rect.fromLTWH(
+          rect.left,
+          rect.top + i * stripeHeight,
+          rect.width,
+          stripeHeight + 0.5,
+        ),
+        _paint(colors[i]),
+      );
+    }
+  }
+
+  void _drawNordicCross(
+    Canvas canvas,
+    Size size, {
+    required Color background,
+    required Color cross,
+    Color? border,
+  }) {
+    _fill(canvas, size, background);
+    final verticalCenter = size.width * 0.38;
+    final horizontalCenter = size.height * 0.5;
+    if (border != null) {
+      final borderWidth = size.shortestSide * 0.2;
+      canvas
+        ..drawRect(
+          Rect.fromLTWH(
+            verticalCenter - borderWidth / 2,
+            0,
+            borderWidth,
+            size.height,
+          ),
+          _paint(border),
+        )
+        ..drawRect(
+          Rect.fromLTWH(
+            0,
+            horizontalCenter - borderWidth / 2,
+            size.width,
+            borderWidth,
+          ),
+          _paint(border),
+        );
+    }
+
+    final crossWidth = size.shortestSide * 0.12;
+    canvas
+      ..drawRect(
+        Rect.fromLTWH(
+          verticalCenter - crossWidth / 2,
+          0,
+          crossWidth,
+          size.height,
+        ),
+        _paint(cross),
+      )
+      ..drawRect(
+        Rect.fromLTWH(
+          0,
+          horizontalCenter - crossWidth / 2,
+          size.width,
+          crossWidth,
+        ),
+        _paint(cross),
+      );
+  }
+
+  void _drawTriangle(Canvas canvas, List<Offset> points, Color color) {
+    if (points.length < 3) return;
+    final path = Path()..moveTo(points.first.dx, points.first.dy);
+    for (final point in points.skip(1)) {
+      path.lineTo(point.dx, point.dy);
+    }
+    path.close();
+    canvas.drawPath(path, _paint(color));
+  }
+
+  void _drawDiamond(Canvas canvas, Rect rect, Color color) {
+    final path = Path()
+      ..moveTo(rect.center.dx, rect.top)
+      ..lineTo(rect.right, rect.center.dy)
+      ..lineTo(rect.center.dx, rect.bottom)
+      ..lineTo(rect.left, rect.center.dy)
+      ..close();
+    canvas.drawPath(path, _paint(color));
+  }
+
+  void _drawCrescent(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    Color color,
+    Color cutoutColor, {
+    Offset? cutoutShift,
+  }) {
+    canvas.drawCircle(center, radius, _paint(color));
+    canvas.drawCircle(
+      center + (cutoutShift ?? Offset(radius * 0.36, 0)),
+      radius * 0.82,
+      _paint(cutoutColor),
+    );
+  }
+
+  void _drawDiagonal(Canvas canvas, Size size, Color color, double width) {
+    final paint = _paint(color)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = width
+      ..strokeCap = StrokeCap.square;
+    canvas
+      ..drawLine(Offset.zero, Offset(size.width, size.height), paint)
+      ..drawLine(Offset(size.width, 0), Offset(0, size.height), paint);
+  }
+
+  void _drawDiagonalBand(Canvas canvas, Size size, Color color, double width) {
+    final paint = _paint(color)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = width
+      ..strokeCap = StrokeCap.square;
+    canvas.drawLine(Offset(0, size.height), Offset(size.width, 0), paint);
+  }
+
+  void _drawCenteredCross(Canvas canvas, Size size, Color color, double width) {
+    final paint = _paint(color);
+    canvas
+      ..drawRect(
+        Rect.fromLTWH((size.width - width) / 2, 0, width, size.height),
+        paint,
+      )
+      ..drawRect(
+        Rect.fromLTWH(0, (size.height - width) / 2, size.width, width),
+        paint,
+      );
+  }
+
+  void _drawTinyCross(Canvas canvas, Offset center, double size) {
+    final paint = _paint(const Color(0xFFFF0000));
+    final width = size * 0.34;
+    canvas
+      ..drawRect(
+        Rect.fromCenter(center: center, width: width, height: size),
+        paint,
+      )
+      ..drawRect(
+        Rect.fromCenter(center: center, width: size, height: width),
+        paint,
+      );
+  }
+
+  void _drawBlueEnsign(Canvas canvas, Size size, {required Color starColor}) {
+    _fill(canvas, size, const Color(0xFF012169));
+    _drawMiniUnionJack(
+      canvas,
+      Rect.fromLTWH(0, 0, size.width * 0.52, size.height * 0.48),
+    );
+    final outline = starColor == Colors.white ? null : Colors.white;
+    for (final center in [
+      Offset(size.width * 0.7, size.height * 0.28),
+      Offset(size.width * 0.82, size.height * 0.48),
+      Offset(size.width * 0.68, size.height * 0.68),
+      Offset(size.width * 0.9, size.height * 0.7),
+    ]) {
+      if (outline != null) {
+        _drawStar(canvas, center, size.shortestSide * 0.06, outline);
+      }
+      _drawStar(canvas, center, size.shortestSide * 0.045, starColor);
+    }
+  }
+
+  void _drawMiniUnionJack(Canvas canvas, Rect rect) {
+    canvas
+      ..save()
+      ..clipRect(rect)
+      ..translate(rect.left, rect.top);
+    _drawUnitedKingdom(canvas, rect.size);
+    canvas.restore();
+  }
+
+  void _drawMiniBars(Canvas canvas, Size size, Color color) {
+    final paint = _paint(color);
+    final barWidth = size.width * 0.18;
+    final barHeight = size.height * 0.025;
+    for (final base in [
+      Offset(size.width * 0.2, size.height * 0.25),
+      Offset(size.width * 0.62, size.height * 0.25),
+      Offset(size.width * 0.2, size.height * 0.72),
+      Offset(size.width * 0.62, size.height * 0.72),
+    ]) {
+      for (var i = 0; i < 3; i += 1) {
+        canvas.drawRect(
+          Rect.fromLTWH(
+            base.dx,
+            base.dy + i * barHeight * 2,
+            barWidth,
+            barHeight,
+          ),
+          paint,
+        );
+      }
+    }
+  }
+
+  void _drawStar(Canvas canvas, Offset center, double radius, Color color) {
+    final path = Path();
+    final innerRadius = radius * 0.42;
+    for (var i = 0; i < 10; i += 1) {
+      final currentRadius = i.isEven ? radius : innerRadius;
+      final angle = -math.pi / 2 + i * math.pi / 5;
+      final point =
+          center +
+          Offset(
+            math.cos(angle) * currentRadius,
+            math.sin(angle) * currentRadius,
+          );
+      if (i == 0) {
+        path.moveTo(point.dx, point.dy);
+      } else {
+        path.lineTo(point.dx, point.dy);
+      }
+    }
+    path.close();
+    canvas.drawPath(path, _paint(color));
+  }
+
+  void _drawFallbackFlag(
+    Canvas canvas,
+    Size size,
+    String regionCode,
+    Color fallbackColor,
+  ) {
+    final seed = regionCode.codeUnits.fold<int>(
+      0,
+      (value, codeUnit) => value + codeUnit,
+    );
+    final first = HSLColor.fromColor(
+      fallbackColor,
+    ).withLightness(0.42 + (seed % 3) * 0.08).withSaturation(0.62).toColor();
+    final second = HSLColor.fromColor(fallbackColor)
+        .withHue((HSLColor.fromColor(fallbackColor).hue + 72) % 360)
+        .withLightness(0.78)
+        .withSaturation(0.46)
+        .toColor();
+    _drawHorizontalStripes(canvas, Offset.zero & size, [
+      first,
+      second,
+      first.withValues(alpha: 0.88),
+    ]);
+  }
+
+  void _fill(Canvas canvas, Size size, Color color) {
+    canvas.drawRect(Offset.zero & size, _paint(color));
+  }
+
+  Paint _paint(Color color) => Paint()
+    ..color = color
+    ..style = PaintingStyle.fill;
+
+  @override
+  bool shouldRepaint(covariant _CurrencyFlagPainter oldDelegate) {
+    return oldDelegate.regionCode != regionCode ||
+        oldDelegate.fallbackColor != fallbackColor;
+  }
+}
+
+class _CurrencyFallbackGlyph extends StatelessWidget {
+  const _CurrencyFallbackGlyph({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      '¤',
+      maxLines: 1,
+      overflow: TextOverflow.clip,
+      style: TextStyle(
+        color: _primaryTextColor,
+        fontSize: size <= 30 ? 16 : 22,
+        fontWeight: FontWeight.w800,
+        height: 1,
+        letterSpacing: 0,
       ),
     );
   }
@@ -1368,12 +2605,10 @@ String _languageCode(AppLocalizations l10n) {
   return l10n.localeName.toLowerCase().split(RegExp('[-_]')).first;
 }
 
-String _currencyFlagEmoji(String code) {
+String? _currencyFlagRegion(String code) {
   final regionCode = _currencyFlagRegions[code.toUpperCase()];
-  if (regionCode == null || regionCode.length != 2) return '¤';
-  return String.fromCharCodes(
-    regionCode.codeUnits.map((unit) => 0x1F1E6 + unit - 0x41),
-  );
+  if (regionCode == null || regionCode.length != 2) return null;
+  return regionCode;
 }
 
 String _quickRatePreview(
@@ -1404,16 +2639,64 @@ String _updatedText(
 Color _avatarColor(String code) {
   return switch (code) {
     'AED' => const Color(0xFF187B5F),
+    'AMD' => const Color(0xFFB65C38),
+    'ARS' => const Color(0xFF5A9BC8),
+    'AUD' => const Color(0xFF2F4D8F),
+    'AZN' => const Color(0xFF338E7B),
+    'BRL' => const Color(0xFF23864C),
+    'BYN' => const Color(0xFFB95A55),
+    'CAD' => const Color(0xFFC8404F),
+    'CHF' => const Color(0xFFC53D42),
     'CNY' => const Color(0xFFD64C3C),
+    'CUP' => const Color(0xFF2E5B9A),
+    'CZK' => const Color(0xFF496DA0),
+    'DKK' => const Color(0xFFC44456),
+    'EGP' => const Color(0xFF9A5E39),
     'EUR' => const Color(0xFF3157A4),
     'GBP' => const Color(0xFF7342A4),
+    'GEL' => const Color(0xFFC95353),
+    'IDR' => const Color(0xFFC94C4C),
+    'INR' => const Color(0xFFB9763D),
+    'ISK' => const Color(0xFF3F6EA8),
+    'JPY' => const Color(0xFFC96B70),
+    'KES' => const Color(0xFF477B4B),
     'KGS' => const Color(0xFFC45D24),
+    'KRW' => const Color(0xFF6E6FB3),
     'KZT' => const Color(0xFF168D95),
+    'LKR' => const Color(0xFF9A6A38),
+    'MAD' => const Color(0xFFAF4C4F),
+    'MDL' => const Color(0xFF8B65A6),
+    'MNT' => const Color(0xFF496FB0),
+    'MVR' => const Color(0xFF407D57),
+    'MXN' => const Color(0xFF3F8C62),
+    'MYR' => const Color(0xFF40538F),
+    'NZD' => const Color(0xFF394F90),
+    'PHP' => const Color(0xFF426AA0),
+    'PLN' => const Color(0xFFB65C73),
+    'RSD' => const Color(0xFF4F5C9C),
     'RUB' => const Color(0xFF3C6CA8),
+    'SCR' => const Color(0xFF5A88A5),
+    'SEK' => const Color(0xFF3474A8),
+    'SGD' => const Color(0xFFC85A65),
+    'THB' => const Color(0xFF5F578D),
+    'TJS' => const Color(0xFF6B8B4A),
+    'TMT' => const Color(0xFF257B54),
     'TRY' => const Color(0xFFB94A48),
+    'TZS' => const Color(0xFF3D8B7D),
+    'UAH' => const Color(0xFF4F7FAE),
     'USD' => const Color(0xFF2D8B63),
-    _ => AppColors.accent,
+    'UZS' => const Color(0xFF2396A8),
+    'VND' => const Color(0xFFC84E44),
+    _ => _generatedAvatarColor(code),
   };
+}
+
+Color _generatedAvatarColor(String code) {
+  final seed = code.codeUnits.fold<int>(
+    0,
+    (value, codeUnit) => value * 31 + codeUnit,
+  );
+  return HSLColor.fromAHSL(1, (seed % 360).toDouble(), 0.54, 0.42).toColor();
 }
 
 const _fallbackCurrencySymbols = {

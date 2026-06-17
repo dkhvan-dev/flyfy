@@ -412,7 +412,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileTimezone => 'Time zone';
 
   @override
-  String get profileTimezoneSearchHint => 'Search time zone, city, or UTC';
+  String get profileTimezoneSearchHint => 'Time zone, city, or UTC';
 
   @override
   String get profileTimezoneNoResults => 'No time zones found';
@@ -434,7 +434,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileCurrency => 'Currency';
 
   @override
-  String get profileCurrencySearchHint => 'Search currency, code, or symbol';
+  String get profileCurrencySearchHint => 'Currency, code, or symbol';
 
   @override
   String get profileCurrencyNoResults => 'No currencies found';
@@ -905,7 +905,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileFollowersTitle => 'Followers';
 
   @override
-  String get profileFollowersSearchHint => 'Search followers';
+  String get profileFollowersSearchHint => 'Followers';
 
   @override
   String get profileFollowersEmptyTitle => 'No followers yet';
@@ -932,7 +932,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Manage your friends and the people you follow.';
 
   @override
-  String get profileConnectionsSearchHint => 'Search people';
+  String get profileConnectionsSearchHint => 'People';
 
   @override
   String get profileConnectionsFriendsTab => 'Friends';
@@ -1816,7 +1816,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityInviteFriendsTitle => 'Invite friends';
 
   @override
-  String get activityInviteFriendsSearchHint => 'Search friends';
+  String get activityInviteFriendsSearchHint => 'Friends';
 
   @override
   String get activityInviteFriendsEmptyTitle => 'No friends to invite';
@@ -2055,7 +2055,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeLocationDetecting => 'Detecting location...';
 
   @override
-  String get homeLocationSearchHint => 'Search city';
+  String get homeLocationSearchHint => 'City';
 
   @override
   String get homeLocationNoResults => 'No cities found';
@@ -2078,7 +2078,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get locationFilterAllCities => 'All cities';
 
   @override
-  String get locationFilterCitySearchHint => 'Search city';
+  String get locationFilterCitySearchHint => 'City';
 
   @override
   String get locationFilterCityNoResults => 'City not found';
@@ -2092,7 +2092,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get homeSearchHint => 'Search activities, attractions, excursions...';
+  String get homeSearchHint => 'Activities, attractions, excursions...';
 
   @override
   String get homeTopDestinations => 'Top Destinations';
@@ -2197,7 +2197,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get currencyConverterSelectCurrencyTitle => 'Select Currency';
 
   @override
-  String get currencyConverterSearchCurrencyHint => 'Search currency';
+  String get currencyConverterSearchCurrencyHint => 'Currency';
 
   @override
   String get currencyConverterRecentSection => 'Recent';
@@ -2456,7 +2456,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get feedMySubscriptionsPeopleTab => 'People';
 
   @override
-  String get feedMySubscriptionsSearchHint => 'Search subscriptions';
+  String get feedMySubscriptionsSearchHint => 'Subscriptions';
 
   @override
   String get feedMySubscriptionsSheetSubtitle =>
@@ -2626,7 +2626,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Check your connection and try again.';
 
   @override
-  String get communityDiscoverySearchHint => 'Search communities';
+  String get communityDiscoverySearchHint => 'Communities';
 
   @override
   String get communityDiscoveryFiltersTitle => 'Filters';
@@ -3155,8 +3155,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get attractionFilterCountryAll => 'All countries';
 
   @override
-  String get attractionFilterCountrySearchHint =>
-      'Search country, code, or phone';
+  String get attractionFilterCountrySearchHint => 'Country, code, or phone';
 
   @override
   String get attractionFilterCountryNoResults => 'Country not found';
@@ -3592,7 +3591,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get excursionsDiscoverTitle => 'Discover Excursions';
 
   @override
-  String get excursionsSearchHint => 'Search excursions and experiences';
+  String get excursionsSearchHint => 'Excursions and experiences';
 
   @override
   String get excursionsSortLabel => 'Sort by';
@@ -3643,8 +3642,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get excursionsFilterCountryAll => 'All countries';
 
   @override
-  String get excursionsFilterCountrySearchHint =>
-      'Search country, code, or phone';
+  String get excursionsFilterCountrySearchHint => 'Country, code, or phone';
 
   @override
   String get excursionsFilterCountryNoResults => 'Country not found';
@@ -3689,7 +3687,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get excursionsFilterLanguageAll => 'All languages';
 
   @override
-  String get excursionsFilterLanguageSearchHint => 'Search language or code';
+  String get excursionsFilterLanguageSearchHint => 'Language or code';
 
   @override
   String get excursionsFilterLanguageNoResults => 'Language not found';
@@ -3720,7 +3718,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guidesTitle => 'Travel Guides';
 
   @override
-  String get guidesSearchHint => 'Search guides';
+  String get guidesSearchHint => 'Guides';
 
   @override
   String get guidesSortLabel => 'Sort by';
@@ -3750,7 +3748,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guidesFilterCountryAll => 'All countries';
 
   @override
-  String get guidesFilterCountrySearchHint => 'Search country, code, or phone';
+  String get guidesFilterCountrySearchHint => 'Country, code, or phone';
 
   @override
   String get guidesFilterCountryNoResults => 'Country not found';
@@ -3765,7 +3763,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guidesFilterLanguageAll => 'All languages';
 
   @override
-  String get guidesFilterLanguageSearchHint => 'Search language or code';
+  String get guidesFilterLanguageSearchHint => 'Language or code';
 
   @override
   String get guidesFilterLanguageNoResults => 'Language not found';
@@ -3977,7 +3975,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get excursionDetailsOfferCurrentUser => 'This is you';
 
   @override
-  String get excursionDetailsOffersSearchHint => 'Search guides or offers';
+  String get excursionDetailsOffersSearchHint => 'Guides or offers';
 
   @override
   String get excursionDetailsOffersLoadMore => 'Show more guides';
@@ -4023,8 +4021,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get excursionDetailsOffersLanguageAny => 'Any language';
 
   @override
-  String get excursionDetailsOffersLanguageSearchHint =>
-      'Search language or code';
+  String get excursionDetailsOffersLanguageSearchHint => 'Language or code';
 
   @override
   String get excursionDetailsOffersLanguageNoResults => 'Language not found';
@@ -4283,7 +4280,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get excursionSelectLocationCountrySection => 'Select Country';
 
   @override
-  String get excursionSelectLocationCountrySearchHint => 'Search countries...';
+  String get excursionSelectLocationCountrySearchHint => 'Countries';
 
   @override
   String get excursionCountryKazakhstan => 'Kazakhstan';
@@ -4301,8 +4298,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get excursionSelectLocationAttractionSection => 'Select Attraction';
 
   @override
-  String get excursionSelectLocationAttractionSearchHint =>
-      'Search attractions...';
+  String get excursionSelectLocationAttractionSearchHint => 'Attractions';
 
   @override
   String get excursionSelectLocationSelected => 'Selected';
@@ -4346,6 +4342,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createExcursionAutosaveRestored => 'Local draft restored';
+
+  @override
+  String get createExcursionDiscardTitle => 'Leave without saving?';
+
+  @override
+  String get createExcursionDiscardDescription =>
+      'Your excursion draft data will be lost. The form will open empty next time.';
+
+  @override
+  String get createExcursionDiscardConfirm => 'Leave and discard';
+
+  @override
+  String get createExcursionModeSwitchTitle => 'Switch route type?';
+
+  @override
+  String get createExcursionModeSwitchDescription =>
+      'Data from the current route type will be cleared. Other excursion details will stay in place.';
+
+  @override
+  String get createExcursionModeSwitchCancel => 'Stay here';
+
+  @override
+  String get createExcursionModeSwitchConfirm => 'Switch and clear';
 
   @override
   String get createExcursionItineraryValidation =>
@@ -4432,7 +4451,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get createExcursionLanguagesSearchHint => 'Search language or code';
+  String get createExcursionLanguagesSearchHint => 'Language or code';
 
   @override
   String get createExcursionLanguagesNoResults => 'Language not found';
@@ -5152,7 +5171,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myExcursionsTitle => 'My Excursions';
 
   @override
-  String get myExcursionsSearchHint => 'Search excursions, guides, and cities';
+  String get myExcursionsSearchHint => 'Excursions, guides, and cities';
 
   @override
   String get myExcursionsFilterTitle => 'Excursion filters';
@@ -5460,8 +5479,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guideDashboardRatingStat => 'Rating';
 
   @override
-  String get guideDashboardSearchHint =>
-      'Search offers, guests, cities, and dates';
+  String get guideDashboardSearchHint => 'Offers, guests, cities, and dates';
 
   @override
   String get guideDashboardOffersTab => 'Offers';
@@ -5827,7 +5845,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityJoinActivity => 'Join Activity';
 
   @override
-  String get activitiesSearchHint => 'Search activities, hosts, or cities';
+  String get activitiesSearchHint => 'Activities, hosts, or cities';
 
   @override
   String get activitiesFiltersTitle => 'Filters';
@@ -5839,8 +5857,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activitiesFilterCountryAll => 'All countries';
 
   @override
-  String get activitiesFilterCountrySearchHint =>
-      'Search country, code, or phone';
+  String get activitiesFilterCountrySearchHint => 'Country, code, or phone';
 
   @override
   String get activitiesFilterCountryNoResults => 'Country not found';
@@ -6076,10 +6093,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storiesActivitiesNavLabel => 'Activities';
 
   @override
-  String get storySearchHint => 'Search posts, authors, or places';
+  String get storySearchHint => 'Posts, authors, or places';
 
   @override
-  String get storySearchCompactHint => 'Search posts';
+  String get storySearchCompactHint => 'Posts';
 
   @override
   String get storyFiltersTitle => 'Filters';
@@ -6100,7 +6117,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storyFilterCountryAll => 'All countries';
 
   @override
-  String get storyFilterCountrySearchHint => 'Search country, code, or phone';
+  String get storyFilterCountrySearchHint => 'Country, code, or phone';
 
   @override
   String get storyFilterCountryNoResults => 'Country not found';
@@ -6512,13 +6529,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storyPlacePrompt => 'Where did this story take place?';
 
   @override
-  String get storyPlaceHint => 'Search city or country';
+  String get storyPlaceHint => 'City or country';
 
   @override
-  String get storyCountryHint => 'Search country';
+  String get storyCountryHint => 'Country';
 
   @override
-  String get storyCityHint => 'Search city';
+  String get storyCityHint => 'City';
 
   @override
   String get storyTagsFieldLabel => 'Tags';
@@ -6586,7 +6603,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Try starting with a sensory detail. Instead of “I arrived in Tokyo,” describe the neon glow reflecting off the damp pavement in Shibuya.';
 
   @override
-  String get storyEditorTitle => 'Story editor';
+  String get storyEditorTitle => 'Post editor';
 
   @override
   String get storyEditorQuickPostTitle => 'Quick post';
@@ -6624,7 +6641,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storyEditorRecoveryRestore => 'Restore';
 
   @override
-  String get storyEditorDiscardChangesTitle => 'Discard story changes?';
+  String get storyEditorDiscardChangesTitle => 'Discard post changes?';
 
   @override
   String get storyEditorDiscardChangesMessage => 'Unsaved edits may be lost.';
@@ -7116,7 +7133,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatListExcursionsTab => 'Tours';
 
   @override
-  String get chatListSearchHint => 'Search chats';
+  String get chatListSearchHint => 'Chats';
 
   @override
   String get chatListSearchEmpty => 'No chats found';
@@ -7364,7 +7381,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stickersTabRecent => 'Recent';
 
   @override
-  String get stickersSearchHint => 'Search stickers';
+  String get stickersSearchHint => 'Stickers';
 
   @override
   String get stickersEmptyRecent => 'No recent stickers yet';
@@ -7954,6 +7971,120 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get notificationsActivityJoinedBody =>
       'Open the activity to see participants.';
+
+  @override
+  String get notificationsActivityParticipantWaitlistedTitle =>
+      'Participant joined the waitlist';
+
+  @override
+  String get notificationsActivityParticipantWaitlistedBody =>
+      'Open the activity to manage the waitlist.';
+
+  @override
+  String get notificationsActivityParticipantLeftTitle =>
+      'Participant left the activity';
+
+  @override
+  String get notificationsActivityParticipantLeftBody =>
+      'Open the activity to check the current participant list.';
+
+  @override
+  String get notificationsActivityLateCancellationTitle => 'Late cancellation';
+
+  @override
+  String get notificationsActivityLateCancellationBody =>
+      'A participant cancelled close to the start time.';
+
+  @override
+  String get notificationsActivityCancelledTitle => 'Activity cancelled';
+
+  @override
+  String notificationsActivityCancelledBody(Object activity) {
+    return 'Activity \"$activity\" was cancelled.';
+  }
+
+  @override
+  String get notificationsActivityCancelledBodyGeneric =>
+      'This activity was cancelled.';
+
+  @override
+  String get notificationsActivityConfirmedTitle => 'Activity confirmed';
+
+  @override
+  String get notificationsActivityConfirmedBody =>
+      'Open the activity to see the latest details.';
+
+  @override
+  String get notificationsActivityCompletedTitle => 'Activity completed';
+
+  @override
+  String get notificationsActivityCompletedBody =>
+      'You can now review your experience.';
+
+  @override
+  String get notificationsExcursionBookingCreatedTitle =>
+      'New excursion booking';
+
+  @override
+  String get notificationsExcursionBookingCreatedBody =>
+      'Open the guide dashboard to see booking details.';
+
+  @override
+  String get notificationsExcursionBookingCancelledTitle =>
+      'Excursion booking cancelled';
+
+  @override
+  String get notificationsExcursionBookingCancelledBody =>
+      'A traveler cancelled this excursion.';
+
+  @override
+  String get notificationsExcursionGuestsUpdatedTitle => 'Guest count updated';
+
+  @override
+  String get notificationsExcursionGuestsUpdatedBody =>
+      'Open the guide dashboard to check the updated booking.';
+
+  @override
+  String get notificationsExcursionAttendanceTitle => 'Traveler checked in';
+
+  @override
+  String get notificationsExcursionAttendanceBody =>
+      'A traveler checked in for this excursion.';
+
+  @override
+  String get notificationsExcursionCancelledTitle => 'Excursion cancelled';
+
+  @override
+  String get notificationsExcursionCancelledBody =>
+      'The guide cancelled this excursion.';
+
+  @override
+  String get notificationsExcursionStartsSoonTitle => 'Excursion starts soon';
+
+  @override
+  String get notificationsExcursionStartsSoonBody =>
+      'The booking window is closed. Open the excursion to check guests.';
+
+  @override
+  String get notificationsExcursionCompletedTitle => 'How was your excursion?';
+
+  @override
+  String get notificationsExcursionCompletedBody =>
+      'The excursion is complete. You can leave a review.';
+
+  @override
+  String get notificationsExcursionPublishedTitle => 'Excursion published';
+
+  @override
+  String get notificationsExcursionPublishedBody =>
+      'Your excursion is now visible to travelers.';
+
+  @override
+  String get notificationsExcursionRejectedTitle => 'Excursion needs changes';
+
+  @override
+  String get notificationsExcursionRejectedBody =>
+      'Open the guide dashboard to check the review notes.';
 
   @override
   String get notificationsJustNow => 'just now';

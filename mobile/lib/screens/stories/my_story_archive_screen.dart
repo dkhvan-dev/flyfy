@@ -116,16 +116,15 @@ class _MyStoryArchiveScreenState extends State<MyStoryArchiveScreen> {
     return _loadStories(_selectedTab);
   }
 
-  void _openStory(int index) {
-    final state = _currentState;
-    if (index < 0 || index >= state.stories.length) {
+  void _openStory(List<StoryVm> stories, int index) {
+    if (index < 0 || index >= stories.length) {
       return;
     }
     final isArchive = _selectedTab == _StoryArchiveTab.archive;
     context.push(
       '/stories/viewer',
       extra: StoryTrayViewerRouteData(
-        stories: List<StoryVm>.unmodifiable(state.stories),
+        stories: List<StoryVm>.unmodifiable(stories),
         initialIndex: index,
         source: isArchive ? 'story_archive' : 'story_active',
         allowExpired: isArchive,
@@ -201,8 +200,6 @@ class _MyStoryArchiveScreenState extends State<MyStoryArchiveScreen> {
         icon: Icons.cloud_off_rounded,
         title: l10n.storyArchiveLoadFailedTitle,
         subtitle: l10n.storyArchiveLoadFailedMessage,
-        actionLabel: l10n.storyArchiveRetryAction,
-        onAction: _refreshCurrentTab,
       );
     }
 
@@ -215,9 +212,54 @@ class _MyStoryArchiveScreenState extends State<MyStoryArchiveScreen> {
         subtitle: isArchive
             ? l10n.storyArchiveEmptySubtitle
             : l10n.storyArchiveActiveEmptySubtitle,
-        actionLabel: l10n.storyArchiveRetryAction,
-        onAction: _refreshCurrentTab,
       );
+    }
+
+    final groupedStories = _groupStoriesByPublicationDate(state.stories);
+    final visibleStories = groupedStories
+        .expand((group) => group.stories)
+        .toList(growable: false);
+    final storySlivers = <Widget>[];
+    var visibleIndexOffset = 0;
+    for (final group in groupedStories) {
+      final groupStartIndex = visibleIndexOffset;
+      storySlivers.add(
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(20, 6, 20, 10),
+          sliver: SliverToBoxAdapter(
+            child: Text(
+              formatStoryDate(context, group.date),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ),
+      );
+      storySlivers.add(
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+          sliver: SliverGrid.builder(
+            itemCount: group.stories.length,
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 170,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 9 / 14,
+            ),
+            itemBuilder: (context, index) {
+              return _ArchivedStoryTile(
+                story: group.stories[index],
+                isArchive: isArchive,
+                onTap: () =>
+                    _openStory(visibleStories, groupStartIndex + index),
+              );
+            },
+          ),
+        ),
+      );
+      visibleIndexOffset += group.stories.length;
     }
 
     return CustomScrollView(
@@ -239,25 +281,7 @@ class _MyStoryArchiveScreenState extends State<MyStoryArchiveScreen> {
             ),
           ),
         ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
-          sliver: SliverGrid.builder(
-            itemCount: state.stories.length,
-            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 170,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 9 / 14,
-            ),
-            itemBuilder: (context, index) {
-              return _ArchivedStoryTile(
-                story: state.stories[index],
-                isArchive: isArchive,
-                onTap: () => _openStory(index),
-              );
-            },
-          ),
-        ),
+        ...storySlivers,
         if (state.hasMore || state.isLoadingMore)
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
@@ -297,6 +321,35 @@ class _StoryTabState {
   bool hasMore = false;
   String? error;
 }
+
+class _StoryDateGroup {
+  const _StoryDateGroup({required this.date, required this.stories});
+
+  final DateTime date;
+  final List<StoryVm> stories;
+}
+
+List<_StoryDateGroup> _groupStoriesByPublicationDate(List<StoryVm> stories) {
+  final orderedStories = List<StoryVm>.of(stories)
+    ..sort(
+      (left, right) => _storyPublicationInstant(
+        right,
+      ).compareTo(_storyPublicationInstant(left)),
+    );
+  final grouped = <DateTime, List<StoryVm>>{};
+  for (final story in orderedStories) {
+    final publishedAt = _storyPublicationInstant(story).toLocal();
+    final date = DateTime(publishedAt.year, publishedAt.month, publishedAt.day);
+    grouped.putIfAbsent(date, () => <StoryVm>[]).add(story);
+  }
+
+  return grouped.entries
+      .map((entry) => _StoryDateGroup(date: entry.key, stories: entry.value))
+      .toList(growable: false);
+}
+
+DateTime _storyPublicationInstant(StoryVm story) =>
+    story.publishedAt ?? story.createdAt;
 
 class _StoryArchiveTabs extends StatelessWidget {
   const _StoryArchiveTabs({
@@ -386,7 +439,7 @@ class _StoryArchiveTabButton extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: textTheme.titleSmall?.copyWith(
-                color: selected ? const Color(0xFF241405) : StoryPalette.text,
+                color: AppColors.textPrimary,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -496,15 +549,11 @@ class _ArchiveMessage extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
-    required this.actionLabel,
-    required this.onAction,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
-  final String actionLabel;
-  final VoidCallback onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -561,23 +610,6 @@ class _ArchiveMessage extends StatelessWidget {
                         style: textTheme.bodyMedium?.copyWith(
                           color: StoryPalette.textSoft,
                           height: 1.38,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      OutlinedButton.icon(
-                        onPressed: onAction,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.accent,
-                          side: BorderSide(
-                            color: AppColors.accent.withValues(alpha: 0.54),
-                          ),
-                        ),
-                        icon: const Icon(Icons.refresh_rounded),
-                        label: Text(
-                          actionLabel,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
                         ),
                       ),
                     ],

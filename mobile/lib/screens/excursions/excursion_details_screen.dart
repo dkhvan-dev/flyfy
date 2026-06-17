@@ -160,12 +160,8 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
   void _scheduleResolveGuideProfiles(
     Iterable<String> guideUserIds,
     UserProfileVm? currentProfile,
-    bool canFetch,
   ) {
     final currentUserId = (currentProfile?.userId ?? '').trim();
-    if (!canFetch) {
-      return;
-    }
 
     for (final rawGuideUserId in guideUserIds) {
       final guideUserId = rawGuideUserId.trim();
@@ -185,7 +181,7 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
 
   Future<void> _resolveGuideProfile(String guideUserId) async {
     try {
-      final profile = await _profileApi.getUserById(guideUserId);
+      final profile = await _profileApi.getPublicUserById(guideUserId);
       if (!mounted) return;
       setState(() {
         _resolvedProfiles = {..._resolvedProfiles, guideUserId: profile};
@@ -583,7 +579,6 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
           _scheduleResolveGuideProfiles(
             offers.map((offer) => offer.guideUserId),
             session.profile,
-            session.isAuthenticated,
           );
           final offerProfiles = <String, UserProfileVm>{..._resolvedProfiles};
           if (session.profile != null && currentUserId.isNotEmpty) {

@@ -175,7 +175,7 @@ void main() {
   );
 
   test(
-    'attended completed activities expose activity and organizer review action',
+    'attended completed activities expose reviews only after checked-in eligibility',
     () async {
       final source = await File(
         'lib/screens/activities/my_activities_screen.dart',
@@ -204,6 +204,14 @@ void main() {
       );
       expect(
         source,
+        contains('final Set<String> _reviewEligibleActivityIds = {};'),
+      );
+      expect(
+        source,
+        contains('final Set<String> _reviewEligibilityLoadedActivityIds = {};'),
+      );
+      expect(
+        source,
         contains(
           'Future<void> _openReviewSheet(ActivityListItemVm item) async',
         ),
@@ -225,6 +233,14 @@ void main() {
       expect(source, isNot(contains("case 'ATTENDED':")));
       expect(source, contains('_isReviewableParticipant(currentParticipant)'));
       expect(
+        source,
+        contains('bool _canShowReviewAction(ActivityListItemVm item)'),
+      );
+      expect(
+        source,
+        contains('_reviewEligibleActivityIds.contains(activityId)'),
+      );
+      expect(
         RegExp(
           r'_activityApi\.getActivityOrganizerReviews\(\s*activityId:\s*item\.id,\s*limit:\s*1000,?\s*\)',
         ).hasMatch(source),
@@ -243,7 +259,7 @@ void main() {
       );
       expect(
         RegExp(
-          r'_activeTab == _MyActivitiesTab\.attended\s*&&\s*_canReviewActivity\(item\)',
+          r'_activeTab == _MyActivitiesTab\.attended\s*&&\s*_canShowReviewAction\(item\)',
         ).hasMatch(source),
         isTrue,
       );
@@ -299,7 +315,7 @@ void main() {
   });
 
   test(
-    'review edit opens from cached reviews before network prefetch',
+    'review edit still validates checked-in participant before cached reviews',
     () async {
       final source = await File(
         'lib/screens/activities/my_activities_screen.dart',
@@ -324,9 +340,10 @@ void main() {
         '_activityApi.getActivityParticipants(',
       );
 
-      expect(cacheBranchStart, isNonNegative);
+      expect(participantsFetchStart, isNonNegative);
+      expect(cacheBranchStart, greaterThan(participantsFetchStart));
       expect(editorStart, greaterThan(cacheBranchStart));
-      expect(participantsFetchStart, greaterThan(editorStart));
+      expect(methodSource, contains('_setReviewEligibility('));
       expect(methodSource, contains('return;'));
     },
   );

@@ -770,6 +770,31 @@ void main() {
   );
 
   test(
+    'create excursion confirms mode switch and clears only mode-specific draft',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
+      final enSource = await File('lib/l10n/app_en.arb').readAsString();
+      final ruSource = await File('lib/l10n/app_ru.arb').readAsString();
+      final kkSource = await File('lib/l10n/app_kk.arb').readAsString();
+
+      expect(source, contains('_selectCreationModeWithConfirmation'));
+      expect(source, contains('_confirmCreationModeChangeIfNeeded'));
+      expect(source, contains('_hasCreationModeSpecificDraft'));
+      expect(source, contains('_clearModeSpecificDraft'));
+      expect(source, contains('_clearSingleAttractionModeDraft'));
+      expect(source, contains('_clearCombinedRouteModeDraft'));
+      expect(source, contains('l10n.createExcursionModeSwitchTitle'));
+      expect(source, contains('l10n.createExcursionModeSwitchConfirm'));
+      expect(source, contains('_ExcursionAmberConfirmDialog'));
+      expect(enSource, contains('"createExcursionModeSwitchTitle"'));
+      expect(ruSource, contains('"createExcursionModeSwitchTitle"'));
+      expect(kkSource, contains('"createExcursionModeSwitchTitle"'));
+    },
+  );
+
+  test(
     'create excursion validates combined routes by attraction stop count',
     () async {
       final source = await File(
@@ -939,4 +964,32 @@ void main() {
     expect(ruSource, contains('"createExcursionAutosaveRestored"'));
     expect(kkSource, contains('"createExcursionAutosaveRestored"'));
   });
+
+  test(
+    'create excursion confirms discard and clears autosave on route exit',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
+      final enSource = await File('lib/l10n/app_en.arb').readAsString();
+      final ruSource = await File('lib/l10n/app_ru.arb').readAsString();
+      final kkSource = await File('lib/l10n/app_kk.arb').readAsString();
+
+      expect(source, contains('Future<void> _handleRouteBack()'));
+      expect(source, contains('void _handleRoutePopInvoked(bool didPop)'));
+      expect(source, contains('bool get _hasUnsavedChanges'));
+      expect(source, contains('Future<bool> _confirmDiscardIfNeeded()'));
+      expect(source, contains('await _clearAutosaveDraft();'));
+      expect(source, contains('canPop: false'));
+      expect(source, contains('onBack: () => unawaited(_handleRouteBack())'));
+      expect(source, contains('_ExcursionAmberConfirmDialog'));
+      expect(source, contains('Icons.warning_amber_rounded'));
+      expect(source, contains('l10n.createExcursionDiscardTitle'));
+      expect(source, contains('l10n.createExcursionDiscardConfirm'));
+      expect(source, contains('AppColors.accent'));
+      expect(enSource, contains('"createExcursionDiscardTitle"'));
+      expect(ruSource, contains('"createExcursionDiscardTitle"'));
+      expect(kkSource, contains('"createExcursionDiscardTitle"'));
+    },
+  );
 }

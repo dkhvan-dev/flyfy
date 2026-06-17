@@ -467,10 +467,6 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
       _hasAppliedDefaultCityFilter = true;
       return;
     }
-    if (provider.effectiveLocation.source == HomeLocationSource.fallback) {
-      return;
-    }
-
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       final location = await provider.resolveCityReference(

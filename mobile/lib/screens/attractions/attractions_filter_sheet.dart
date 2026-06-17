@@ -382,7 +382,6 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
           final size = MediaQuery.sizeOf(context);
           final viewInsets = MediaQuery.viewInsetsOf(context).bottom;
           final padX = adaptive.scale(22, minFactor: 0.82, maxFactor: 1.05);
-          final sideInset = adaptive.scale(16, minFactor: 0.62, maxFactor: 1.0);
           final availableHeight = size.height - viewInsets;
           final reservedTopGap = adaptive.scale(70, minFactor: 0.7);
           final minSheetHeight = adaptive.scale(260, minFactor: 0.75);
@@ -401,65 +400,62 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
               duration: const Duration(milliseconds: 180),
               curve: Curves.easeOut,
               padding: EdgeInsets.only(bottom: viewInsets),
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: sideInset),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 393),
-                  child: SizedBox(
-                    height: sheetHeight,
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF211508),
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(16),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(0xBF000000),
-                            blurRadius: 70,
-                            offset: Offset(0, 42),
-                          ),
-                        ],
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 520),
+                child: SizedBox(
+                  height: sheetHeight,
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF211508),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(16),
                       ),
-                      child: SafeArea(
-                        top: false,
-                        child: Column(
-                          children: [
-                            _buildHeader(l10n, adaptive, padX),
-                            Expanded(
-                              child: SingleChildScrollView(
-                                physics: const BouncingScrollPhysics(),
-                                padding: EdgeInsets.fromLTRB(
-                                  padX,
-                                  adaptive.scale(32),
-                                  padX,
-                                  adaptive.scale(20),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildCountrySection(l10n, adaptive),
-                                    if (_country != null) ...[
-                                      SizedBox(height: adaptive.scale(38)),
-                                      _buildCitySection(l10n, adaptive),
-                                    ],
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color(0xBF000000),
+                          blurRadius: 70,
+                          offset: Offset(0, 42),
+                        ),
+                      ],
+                    ),
+                    child: SafeArea(
+                      top: false,
+                      child: Column(
+                        children: [
+                          _buildHeader(l10n, adaptive, padX),
+                          Expanded(
+                            child: SingleChildScrollView(
+                              physics: const BouncingScrollPhysics(),
+                              padding: EdgeInsets.fromLTRB(
+                                padX,
+                                adaptive.scale(32),
+                                padX,
+                                adaptive.scale(20),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildCountrySection(l10n, adaptive),
+                                  if (_country != null) ...[
                                     SizedBox(height: adaptive.scale(38)),
-                                    _buildCategoriesSection(l10n, adaptive),
-                                    SizedBox(height: adaptive.scale(38)),
-                                    _buildRatingSection(l10n, adaptive),
-                                    SizedBox(height: adaptive.scale(38)),
-                                    _buildDurationSection(l10n, adaptive),
-                                    SizedBox(height: adaptive.scale(38)),
-                                    _buildRangeSection(l10n, adaptive),
-                                    SizedBox(height: adaptive.scale(38)),
-                                    _buildPriceSection(l10n, adaptive),
+                                    _buildCitySection(l10n, adaptive),
                                   ],
-                                ),
+                                  SizedBox(height: adaptive.scale(38)),
+                                  _buildCategoriesSection(l10n, adaptive),
+                                  SizedBox(height: adaptive.scale(38)),
+                                  _buildRatingSection(l10n, adaptive),
+                                  SizedBox(height: adaptive.scale(38)),
+                                  _buildDurationSection(l10n, adaptive),
+                                  SizedBox(height: adaptive.scale(38)),
+                                  _buildRangeSection(l10n, adaptive),
+                                  SizedBox(height: adaptive.scale(38)),
+                                  _buildPriceSection(l10n, adaptive),
+                                ],
                               ),
                             ),
-                            _buildFooter(l10n, adaptive, padX),
-                          ],
-                        ),
+                          ),
+                          _buildFooter(l10n, adaptive, padX),
+                        ],
                       ),
                     ),
                   ),

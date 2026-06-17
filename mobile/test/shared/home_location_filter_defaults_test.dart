@@ -21,14 +21,15 @@ void main() {
     expect(filters.city?.countryCode, 'KG');
   });
 
-  test('does not apply neutral fallback as a default filter', () {
+  test('uses the visible app fallback as a default filter', () {
     final filters = HomeLocationFilterDefaults.fromPreference(
       HomeLocationPreference.fallback(),
     );
 
-    expect(filters.hasValue, isFalse);
-    expect(filters.country, isNull);
-    expect(filters.city, isNull);
+    expect(filters.hasValue, isTrue);
+    expect(filters.country?.countryCode, 'KZ');
+    expect(filters.city?.cityName, 'Almaty');
+    expect(filters.city?.countryCode, 'KZ');
   });
 
   test('keeps city-only location when country reference is unavailable', () {

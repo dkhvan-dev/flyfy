@@ -7,6 +7,9 @@ import 'package:inflap/features/attractions/data/attraction_api.dart';
 import 'package:inflap/features/attractions/models/attraction_vm.dart';
 import 'package:inflap/features/feed/data/feed_api.dart';
 import 'package:inflap/features/feed/models/feed_block_vm.dart';
+import 'package:inflap/features/profile/data/guide_api.dart';
+import 'package:inflap/features/profile/models/guide_profile_vm.dart';
+import 'package:inflap/features/profile/models/user_profile_vm.dart';
 import 'package:inflap/features/stories/models/post_vm.dart';
 import 'package:inflap/l10n/generated/app_localizations.dart';
 import 'package:inflap/providers/activity_provider.dart';
@@ -15,53 +18,89 @@ import 'package:inflap/providers/home_location_provider.dart';
 import 'package:inflap/providers/locale_provider.dart';
 import 'package:inflap/providers/session_provider.dart';
 import 'package:inflap/screens/home/home_screen.dart';
+import 'package:inflap/shared/widgets/app_localized_location_text.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('loads home trending posts and smart stream from feed surface', (
-    tester,
-  ) async {
-    SharedPreferences.setMockInitialValues({});
-    final feedApi = _FakeFeedApi(
-      page: FeedPageVm(
-        items: [
-          FeedBlockVm(
-            id: 'home-stories-tray',
-            type: FeedBlockType.storiesTray,
-            stories: const [],
-          ),
-          FeedBlockVm(
-            id: 'home-post-card',
-            type: FeedBlockType.postCard,
-            post: _post('hidden-courtyards-of-turkistan'),
-          ),
-          FeedBlockVm(
-            id: 'home-post-card-2',
-            type: FeedBlockType.postCard,
-            post: _post(
-              'danang-weekend-markets',
-              title: 'Da Nang weekend markets',
+  testWidgets(
+    'loads guest home trending posts from feed surface with location',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final feedApi = _FakeFeedApi(
+        page: FeedPageVm(
+          items: [
+            FeedBlockVm(
+              id: 'home-stories-tray',
+              type: FeedBlockType.storiesTray,
+              stories: const [],
             ),
+            FeedBlockVm(
+              id: 'home-post-card',
+              type: FeedBlockType.postCard,
+              post: _post('hidden-courtyards-of-turkistan'),
+            ),
+            FeedBlockVm(
+              id: 'home-post-card-2',
+              type: FeedBlockType.postCard,
+              post: _post(
+                'danang-weekend-markets',
+                title: 'Da Nang weekend markets',
+              ),
+            ),
+            FeedBlockVm(
+              id: 'home-post-card-3',
+              type: FeedBlockType.postCard,
+              post: _post('almaty-photo-walk', title: 'Almaty photo walk'),
+            ),
+            FeedBlockVm(
+              id: 'home-post-card-4',
+              type: FeedBlockType.postCard,
+              post: _post('local-cafe-notes', title: 'Local cafe notes'),
+            ),
+          ],
+        ),
+      );
+
+      await tester.pumpWidget(
+        _homeApp(
+          HomeScreen(
+            feedApi: feedApi,
+            attractionApi: _FakeAttractionApi(),
+            initialDataLoadDelay: Duration.zero,
+            initialDataLoadStagger: Duration.zero,
+            waitForFirstFrameRasterized: false,
           ),
-          FeedBlockVm(
-            id: 'home-post-card-3',
-            type: FeedBlockType.postCard,
-            post: _post('almaty-photo-walk', title: 'Almaty photo walk'),
-          ),
-          FeedBlockVm(
-            id: 'home-post-card-4',
-            type: FeedBlockType.postCard,
-            post: _post('local-cafe-notes', title: 'Local cafe notes'),
-          ),
-        ],
-      ),
-    );
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(feedApi.calls, [
+        const _FeedCall(
+          surface: 'home',
+          tab: 'for_you',
+          countryCode: 'KZ',
+          cityId: 'almaty',
+          limit: 20,
+        ),
+      ]);
+      expect(find.text('Trending now'), findsOneWidget);
+      expect(find.text('For you'), findsNothing);
+      expect(find.text('Hidden courtyards of Turkistan'), findsOneWidget);
+      expect(find.text('Almaty photo walk'), findsOneWidget);
+      expect(find.text('Local cafe notes'), findsNothing);
+      expect(find.text('Silk Road notes'), findsNothing);
+    },
+  );
+
+  testWidgets('home header displays only the current city', (tester) async {
+    SharedPreferences.setMockInitialValues({});
 
     await tester.pumpWidget(
       _homeApp(
         HomeScreen(
-          feedApi: feedApi,
+          feedApi: _FakeFeedApi(page: FeedPageVm(items: const [])),
           attractionApi: _FakeAttractionApi(),
           initialDataLoadDelay: Duration.zero,
           initialDataLoadStagger: Duration.zero,
@@ -72,14 +111,12 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(feedApi.calls, [
-      const _FeedCall(surface: 'home', tab: 'for_you', limit: 20),
-    ]);
-    expect(find.text('Trending now'), findsOneWidget);
-    expect(find.text('For you'), findsOneWidget);
-    expect(find.text('Hidden courtyards of Turkistan'), findsOneWidget);
-    expect(find.text('Local cafe notes'), findsOneWidget);
-    expect(find.text('Silk Road notes'), findsNothing);
+    final headerLocation = tester.widget<AppLocalizedLocationText>(
+      find.byType(AppLocalizedLocationText),
+    );
+    expect(headerLocation.cityName, 'Almaty');
+    expect(headerLocation.countryCode, 'KZ');
+    expect(headerLocation.includeCountry, isFalse);
   });
 
   testWidgets('loads the next home smart post page from feed cursor', (
@@ -123,10 +160,12 @@ void main() {
         HomeScreen(
           feedApi: feedApi,
           attractionApi: _FakeAttractionApi(),
+          guideApi: _FakeGuideApi(),
           initialDataLoadDelay: Duration.zero,
           initialDataLoadStagger: Duration.zero,
           waitForFirstFrameRasterized: false,
         ),
+        authenticated: true,
       ),
     );
 
@@ -141,11 +180,19 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(feedApi.calls, [
-      const _FeedCall(surface: 'home', tab: 'for_you', limit: 20),
+      const _FeedCall(
+        surface: 'home',
+        tab: 'for_you',
+        countryCode: 'KZ',
+        cityId: 'almaty',
+        limit: 20,
+      ),
       const _FeedCall(
         surface: 'home',
         tab: 'for_you',
         cursor: 'page-2',
+        countryCode: 'KZ',
+        cityId: 'almaty',
         limit: 20,
       ),
     ]);
@@ -173,6 +220,7 @@ void main() {
         HomeScreen(
           feedApi: feedApi,
           attractionApi: _FakeAttractionApi(),
+          guideApi: _FakeGuideApi(),
           initialDataLoadDelay: Duration.zero,
           initialDataLoadStagger: Duration.zero,
           waitForFirstFrameRasterized: false,
@@ -224,6 +272,7 @@ void main() {
         HomeScreen(
           feedApi: feedApi,
           attractionApi: _FakeAttractionApi(),
+          guideApi: _FakeGuideApi(),
           initialDataLoadDelay: Duration.zero,
           initialDataLoadStagger: Duration.zero,
           waitForFirstFrameRasterized: false,
@@ -277,6 +326,7 @@ void main() {
         HomeScreen(
           feedApi: feedApi,
           attractionApi: _FakeAttractionApi(),
+          guideApi: _FakeGuideApi(),
           initialDataLoadDelay: Duration.zero,
           initialDataLoadStagger: Duration.zero,
           waitForFirstFrameRasterized: false,
@@ -356,11 +406,13 @@ void main() {
         HomeScreen(
           feedApi: feedApi,
           attractionApi: _FakeAttractionApi(),
+          guideApi: _FakeGuideApi(),
           initialDataLoadDelay: Duration.zero,
           initialDataLoadStagger: Duration.zero,
           waitForFirstFrameRasterized: false,
         ),
         activityProvider: _FakeActivityProvider(items: [_activity()]),
+        authenticated: true,
       ),
     );
 
@@ -460,7 +512,12 @@ Future<_FakeFeedApi> _tapHomeService(
   return feedApi;
 }
 
-Widget _homeApp(Widget home, {ActivityProvider? activityProvider}) {
+Widget _homeApp(
+  Widget home, {
+  ActivityProvider? activityProvider,
+  bool authenticated = false,
+  HomeLocationPreference? location,
+}) {
   final router = GoRouter(
     routes: [
       GoRoute(path: '/', builder: (context, state) => home),
@@ -494,11 +551,31 @@ Widget _homeApp(Widget home, {ActivityProvider? activityProvider}) {
 
   return MultiProvider(
     providers: [
-      ChangeNotifierProvider<AuthProvider>(create: (_) => AuthProvider()),
-      ChangeNotifierProvider<SessionProvider>(create: (_) => SessionProvider()),
+      ChangeNotifierProvider<AuthProvider>(
+        create: (_) => _FakeAuthProvider(
+          authenticated ? AuthState.authenticated : AuthState.unauthenticated,
+        ),
+      ),
+      ChangeNotifierProvider<SessionProvider>(
+        create: (_) => _FakeSessionProvider(
+          authenticated ? _profile() : null,
+          authenticated
+              ? SessionStatus.authenticated
+              : SessionStatus.unauthenticated,
+        ),
+      ),
       ChangeNotifierProvider<LocaleProvider>(create: (_) => LocaleProvider()),
       ChangeNotifierProvider<HomeLocationProvider>(
-        create: (_) => _NoopHomeLocationProvider(),
+        create: (_) => _FakeHomeLocationProvider(
+          location ??
+              HomeLocationPreference(
+                source: HomeLocationSource.detected,
+                countryCode: 'KZ',
+                cityId: 'almaty',
+                cityName: 'Almaty',
+                updatedAt: DateTime.utc(2026, 6, 17),
+              ),
+        ),
       ),
       ChangeNotifierProvider<ActivityProvider>(
         create: (_) => activityProvider ?? _NoopActivityProvider(),
@@ -512,7 +589,42 @@ Widget _homeApp(Widget home, {ActivityProvider? activityProvider}) {
   );
 }
 
-class _NoopHomeLocationProvider extends HomeLocationProvider {
+class _FakeAuthProvider extends AuthProvider {
+  _FakeAuthProvider(this._state);
+
+  final AuthState _state;
+
+  @override
+  AuthState get state => _state;
+}
+
+class _FakeSessionProvider extends SessionProvider {
+  _FakeSessionProvider(this._profile, this._status);
+
+  final UserProfileVm? _profile;
+  final SessionStatus _status;
+
+  @override
+  UserProfileVm? get profile => _profile;
+
+  @override
+  SessionStatus get status => _status;
+
+  @override
+  bool get isAuthenticated => _status == SessionStatus.authenticated;
+}
+
+class _FakeHomeLocationProvider extends HomeLocationProvider {
+  _FakeHomeLocationProvider(this._location);
+
+  final HomeLocationPreference _location;
+
+  @override
+  HomeLocationPreference get effectiveLocation => _location;
+
+  @override
+  bool get isLoaded => true;
+
   @override
   Future<void> load({
     String languageCode = 'en',
@@ -529,6 +641,9 @@ class _NoopActivityProvider extends ActivityProvider {
 
   @override
   Future<void> loadJoinedActivities() async {}
+
+  @override
+  Future<void> loadMyActivities() async {}
 
   @override
   Future<void> refreshActivities() async {}
@@ -561,7 +676,15 @@ class _FakeActivityProvider extends ActivityProvider {
   Future<void> loadJoinedActivities() async {}
 
   @override
+  Future<void> loadMyActivities() async {}
+
+  @override
   Future<void> refreshActivities() async {}
+}
+
+class _FakeGuideApi extends GuideApi {
+  @override
+  Future<GuideProfileVm?> getMyGuideProfileOrNull() async => null;
 }
 
 class _FakeAttractionApi extends AttractionApi {
@@ -775,6 +898,22 @@ ActivityListItemVm _activity() {
     requiresAttendanceConfirmation: false,
     cityName: 'Almaty',
     cityId: 'almaty',
+    countryCode: 'KZ',
+  );
+}
+
+UserProfileVm _profile() {
+  return UserProfileVm(
+    userId: 'viewer-1',
+    status: 'ACTIVE',
+    locale: 'en',
+    timezone: 'Asia/Almaty',
+    isProfileCompleted: true,
+    roles: const [],
+    followersCount: 0,
+    isFollowedByMe: false,
+    friendshipStatus: UserFriendshipStatus.none,
+    nickname: 'Viewer',
     countryCode: 'KZ',
   );
 }

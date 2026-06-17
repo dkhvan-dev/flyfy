@@ -57,6 +57,30 @@ void main() {
     },
   );
 
+  test('my excursions screen does not duplicate guide offer drafts', () async {
+    final source = await File(
+      'lib/screens/excursions/my_excursions_screen.dart',
+    ).readAsString();
+
+    expect(
+      source,
+      isNot(
+        contains("import '../../features/excursions/guide_offer_status.dart';"),
+      ),
+    );
+    expect(source, isNot(contains('_hasRequestedGuideOffersPreview')));
+    expect(source, isNot(contains('session.profile?.isGuide == true')));
+    expect(source, isNot(contains('loadGuideDashboardData')));
+    expect(source, isNot(contains('draftGuideOffers(')));
+    expect(source, isNot(contains('reviewGuideOffers(')));
+    expect(source, isNot(contains('class _MyExcursionsGuideOfferOverview')));
+    expect(source, isNot(contains('myExcursionsGuideOffersTitle')));
+    expect(source, isNot(contains('myExcursionsGuideOffersSubtitle')));
+    expect(source, isNot(contains('myExcursionsGuideOffersOpenDashboard')));
+    expect(source, isNot(contains('editableGuideExcursionId(excursion)')));
+    expect(source, isNot(contains("context.push('/profile/guide-dashboard')")));
+  });
+
   test(
     'my excursions screen exposes review action for unrated visits',
     () async {

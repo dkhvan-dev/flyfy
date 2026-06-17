@@ -16,6 +16,7 @@ import '../../core/ui/pagination_bar.dart';
 import '../../core/utils/pagination.dart';
 import '../../features/excursions/excursion_cover_url.dart';
 import '../../features/excursions/excursion_currency.dart';
+import '../../features/excursions/guide_offer_status.dart';
 import '../../features/excursions/guide_dashboard_formatters.dart';
 import '../../features/excursions/models/excursion_booking_vm.dart';
 import '../../features/excursions/models/excursion_vm.dart';
@@ -877,33 +878,23 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
 }
 
 List<ExcursionVm> _activeOffers(List<ExcursionVm> items) {
-  final result = items.where(_isPublishedPublicOffer).toList(growable: false);
-  result.sort((a, b) => b.createdAtOrEpoch.compareTo(a.createdAtOrEpoch));
-  return result;
+  return activeGuideOffers(items);
 }
 
 List<ExcursionVm> _archivedOffers(List<ExcursionVm> items) {
-  final result = items.where(_isArchivedOffer).toList(growable: false);
-  result.sort((a, b) => b.createdAtOrEpoch.compareTo(a.createdAtOrEpoch));
-  return result;
+  return archivedGuideOffers(items);
 }
 
 List<ExcursionVm> _draftOffers(List<ExcursionVm> items) {
-  final result = items.where(_isDraftOffer).toList(growable: false);
-  result.sort((a, b) => b.createdAtOrEpoch.compareTo(a.createdAtOrEpoch));
-  return result;
+  return draftGuideOffers(items);
 }
 
 List<ExcursionVm> _reviewOffers(List<ExcursionVm> items) {
-  final result = items.where(_isReviewOffer).toList(growable: false);
-  result.sort((a, b) => b.createdAtOrEpoch.compareTo(a.createdAtOrEpoch));
-  return result;
+  return reviewGuideOffers(items);
 }
 
 List<ExcursionVm> _rejectedOffers(List<ExcursionVm> items) {
-  final result = items.where(_isRejectedOffer).toList(growable: false);
-  result.sort((a, b) => b.createdAtOrEpoch.compareTo(a.createdAtOrEpoch));
-  return result;
+  return rejectedGuideOffers(items);
 }
 
 List<ExcursionBookingVm> _upcomingBookings(
@@ -1060,42 +1051,27 @@ List<ExcursionBookingVm> _filterBookingsBySearch(
 }
 
 bool _isPublishedPublicOffer(ExcursionVm excursion) {
-  return excursion.status.trim().toUpperCase() == 'PUBLISHED' &&
-      excursion.visibility.trim().toUpperCase() == 'PUBLIC';
+  return isPublishedPublicGuideOffer(excursion);
 }
 
 bool _isArchivedOffer(ExcursionVm excursion) {
-  return excursion.status.trim().toUpperCase() == 'ARCHIVED';
+  return isArchivedGuideOffer(excursion);
 }
 
 bool _isDraftOffer(ExcursionVm excursion) {
-  return excursion.status.trim().toUpperCase() == 'DRAFT';
+  return isDraftGuideOffer(excursion);
 }
 
 bool _isReviewOffer(ExcursionVm excursion) {
-  final status = excursion.status.trim().toUpperCase();
-  if (status.isEmpty) return false;
-  if (_isPublishedPublicOffer(excursion) ||
-      _isDraftOffer(excursion) ||
-      _isArchivedOffer(excursion) ||
-      _isRejectedOffer(excursion) ||
-      _isCancelledOffer(excursion)) {
-    return false;
-  }
-  return status.contains('REVIEW') ||
-      status.contains('MODERAT') ||
-      status == 'PENDING';
+  return isReviewGuideOffer(excursion);
 }
 
 bool _isRejectedOffer(ExcursionVm excursion) {
-  final status = excursion.status.trim().toUpperCase();
-  return status.contains('REJECT') || status.contains('DECLIN');
+  return isRejectedGuideOffer(excursion);
 }
 
 String _editableExcursionId(ExcursionVm excursion) {
-  final legacyId = excursion.primaryOffer?.legacyExcursionId?.trim() ?? '';
-  if (legacyId.isNotEmpty) return legacyId;
-  return excursion.id.trim();
+  return editableGuideExcursionId(excursion);
 }
 
 ExcursionVm _dashboardOfferAfterMutation(
@@ -1122,10 +1098,6 @@ GuideOfferDashboardTab _offerTabForStatus(
   if (_isRejectedOffer(excursion)) return GuideOfferDashboardTab.rejected;
   if (_isReviewOffer(excursion)) return GuideOfferDashboardTab.review;
   return fallback;
-}
-
-bool _isCancelledOffer(ExcursionVm excursion) {
-  return excursion.status.trim().toUpperCase().contains('CANCEL');
 }
 
 int _bookingCountForOffer(
@@ -1259,11 +1231,6 @@ String _emptyMessageFor(
         l10n.guideDashboardCompletedEmptyHint,
     },
   };
-}
-
-extension on ExcursionVm {
-  DateTime get createdAtOrEpoch =>
-      createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
 }
 
 class _GuideDashboardStats extends StatelessWidget {

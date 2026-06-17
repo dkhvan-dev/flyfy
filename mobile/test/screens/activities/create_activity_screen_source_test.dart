@@ -439,6 +439,25 @@ void main() {
     },
   );
 
+  test(
+    'create activity cover upload action label is width constrained',
+    () async {
+      final source = await File(
+        'lib/screens/activities/create_activity_screen.dart',
+      ).readAsString();
+
+      final copyStart = source.indexOf('class _CoverCardCopy');
+      final borderStart = source.indexOf('class _DashedCoverBorderPainter');
+      expect(copyStart, isNonNegative);
+      expect(borderStart, greaterThan(copyStart));
+
+      final copySource = source.substring(copyStart, borderStart);
+      expect(copySource, contains('Flexible('));
+      expect(copySource, contains('maxLines: 1'));
+      expect(copySource, contains('overflow: TextOverflow.ellipsis'));
+    },
+  );
+
   test('create activity picker list height follows screen height', () async {
     final source = await File(
       'lib/screens/activities/create_activity_screen.dart',

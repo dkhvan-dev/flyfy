@@ -462,6 +462,41 @@ void main() {
     expect(clickEvent.metadata, containsPair('postProfileKey', 'article_v1'));
   });
 
+  testWidgets('shows community posts to guests without action controls', (
+    tester,
+  ) async {
+    final feedApi = _FakeFeedApi(community: _community(title: 'Travel club'));
+    final postApi = _FakePostApi(
+      stories: [
+        _story('quick-guest', postProfileKey: PostProfileKeys.quickPost),
+      ],
+    );
+
+    await tester.pumpWidget(
+      _profileApp(feedApi, postApi: postApi, authenticated: false),
+    );
+    await tester.pumpAndSettle();
+
+    await _scrollUntilVisible(
+      tester,
+      find.byKey(const ValueKey('quick-post-thread-quick-guest')),
+    );
+
+    expect(
+      find.byKey(const ValueKey('quick-post-thread-quick-guest')),
+      findsOneWidget,
+    );
+    expect(find.byIcon(Icons.more_horiz_rounded), findsNothing);
+    expect(
+      find.byKey(const ValueKey('quick-post-like-quick-guest')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('quick-post-comment-field-quick-guest')),
+      findsNothing,
+    );
+  });
+
   testWidgets('tracks community post dwell after returning from details', (
     tester,
   ) async {
@@ -940,9 +975,12 @@ Widget _profileApp(
   ValueChanged<FeedCommunityVm>? onCreatePost,
   ValueChanged<PostVm>? onStoryOpen,
   DateTime Function()? analyticsNow,
+  bool authenticated = true,
 }) {
   return ChangeNotifierProvider<AuthProvider>(
-    create: (_) => _AuthenticatedAuthProvider(),
+    create: (_) => authenticated
+        ? _AuthenticatedAuthProvider()
+        : _UnauthenticatedAuthProvider(),
     child: MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -1382,6 +1420,13 @@ class _AuthenticatedAuthProvider extends AuthProvider {
 
   @override
   AuthState get state => AuthState.authenticated;
+}
+
+class _UnauthenticatedAuthProvider extends AuthProvider {
+  _UnauthenticatedAuthProvider() : super(secureStorage: _TestSecureStorage());
+
+  @override
+  AuthState get state => AuthState.unauthenticated;
 }
 
 class _TestSecureStorage extends SecureStorage {

@@ -14,10 +14,6 @@ class HomeLocationFilterDefaults {
   factory HomeLocationFilterDefaults.fromPreference(
     HomeLocationPreference location,
   ) {
-    if (location.source == HomeLocationSource.fallback) {
-      return empty;
-    }
-
     final country = AppCountryFilterValue.fromParts(
       countryCode: location.countryCode,
     );

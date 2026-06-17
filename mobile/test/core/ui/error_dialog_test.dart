@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inflap/core/ui/app_colors.dart';
 import 'package:inflap/core/ui/error_dialog.dart';
 
 void main() {
@@ -24,6 +25,14 @@ void main() {
         matching: find.byType(Material),
       ),
       findsWidgets,
+    );
+
+    final okButton = tester.widget<ElevatedButton>(
+      find.widgetWithText(ElevatedButton, 'OK'),
+    );
+    expect(
+      okButton.style?.foregroundColor?.resolve(<WidgetState>{}),
+      AppColors.textPrimary,
     );
   });
 }

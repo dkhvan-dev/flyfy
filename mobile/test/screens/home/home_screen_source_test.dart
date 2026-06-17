@@ -103,14 +103,13 @@ void main() {
     final source = await File(
       'lib/screens/home/home_screen.dart',
     ).readAsString();
-    final sheetStart = source.indexOf('Future<void> _showLanguageSheet()');
-    final sheetEnd = source.indexOf('void _ensureGuideBadgeState');
+    final sheetSource = await File(
+      'lib/core/ui/app_language_sheet.dart',
+    ).readAsString();
 
-    expect(sheetStart, isNonNegative);
-    expect(sheetEnd, greaterThan(sheetStart));
-
-    final sheetSource = source.substring(sheetStart, sheetEnd);
-
+    expect(source, isNot(contains('Future<void> _showLanguageSheet()')));
+    expect(source, isNot(contains('showAppLanguageSheet(context)')));
+    expect(source, isNot(contains('class _LanguageOptionTile')));
     expect(sheetSource, contains('maxSheetHeight'));
     expect(sheetSource, contains('ConstrainedBox'));
     expect(sheetSource, contains('SingleChildScrollView'));
@@ -237,7 +236,7 @@ void main() {
 
       final previewSource = sheetSource.substring(previewStart, previewEnd);
 
-      expect(ruArb, contains('"homeLocationSearchHint": "Поиск города"'));
+      expect(ruArb, contains('"homeLocationSearchHint": "Город"'));
       expect(previewSource, contains('AppLocalizedLocationText'));
       expect(previewSource, contains('countryCode: location.countryCode'));
       expect(previewSource, contains('cityId: location.cityId'));
@@ -352,7 +351,7 @@ void main() {
       final cardStart = carouselEnd;
       final cardEnd = source.indexOf('class _TopDestinationsRow');
       final dataStart = source.indexOf('class _PromoCardData');
-      final dataEnd = source.indexOf('const List<_LanguageOption>', dataStart);
+      final dataEnd = source.indexOf('double _homeTextScaleFactor', dataStart);
 
       expect(carouselStart, isNonNegative);
       expect(carouselEnd, greaterThan(carouselStart));
@@ -616,6 +615,22 @@ void main() {
       expect(runSource, contains('unawaited(categoryLoad);'));
       expect(runSource, contains('unawaited(_loadTopAttractions());'));
       expect(runSource, contains('unawaited(_loadHomeFeed());'));
+    },
+  );
+
+  test(
+    'home startup does not block public content on slow location load',
+    () async {
+      final source = await File(
+        'lib/screens/home/home_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('_homeLocationStartupTimeout'));
+      expect(source, contains('.timeout(_homeLocationStartupTimeout)'));
+      expect(
+        source,
+        contains('must not block public home content from loading'),
+      );
     },
   );
 }

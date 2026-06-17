@@ -127,7 +127,7 @@ void main() {
   );
 
   test(
-    'discover filters retry default location after provider updates',
+    'discover filters retry default location after provider updates including fallback',
     () async {
       final files = {
         'activities': await File(
@@ -157,7 +157,9 @@ void main() {
         );
         expect(
           entry.value,
-          contains('effectiveLocation.source == HomeLocationSource.fallback'),
+          isNot(
+            contains('effectiveLocation.source == HomeLocationSource.fallback'),
+          ),
           reason: entry.key,
         );
       }
@@ -200,13 +202,13 @@ void main() {
       final enArb = await File('lib/l10n/app_en.arb').readAsString();
 
       expect(ruArb, contains('"locationFilterCitySection": "Город"'));
-      expect(ruArb, contains('"locationFilterCitySearchHint": "Поиск города"'));
+      expect(ruArb, contains('"locationFilterCitySearchHint": "Город"'));
       expect(
         ruArb,
         contains('"locationFilterCityNoResults": "Город не найден"'),
       );
       expect(enArb, contains('"locationFilterCitySection": "City"'));
-      expect(enArb, contains('"locationFilterCitySearchHint": "Search city"'));
+      expect(enArb, contains('"locationFilterCitySearchHint": "City"'));
     },
   );
 }

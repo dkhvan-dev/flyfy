@@ -1,13 +1,9 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../../core/network/file_api.dart';
 import '../../core/ui/app_colors.dart';
 import '../../features/profile/models/user_profile_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
-import '../../providers/locale_provider.dart';
 
 enum AppDrawerActiveItem {
   none,
@@ -44,10 +40,6 @@ String resolveDrawerLocation(UserProfileVm? profile, Locale locale) {
   return _localizedCityNames['Almaty']?[languageCode] ?? 'Almaty';
 }
 
-String resolveDrawerLanguageLabel(String code) {
-  return code.toUpperCase();
-}
-
 String resolveDrawerIdentityStatus({
   required AppLocalizations l10n,
   required bool isLoggedIn,
@@ -67,222 +59,6 @@ String resolveDrawerIdentityStatus({
   return l10n.drawerStatusCompleteProfile;
 }
 
-Future<void> showAppLanguageSheet(BuildContext context) async {
-  final l10n = AppLocalizations.of(context)!;
-  final localeProvider = context.read<LocaleProvider>();
-  final currentCode = localeProvider.locale.languageCode;
-  final selectedCode = await showModalBottomSheet<String>(
-    context: context,
-    isDismissible: true,
-    backgroundColor: Colors.transparent,
-    barrierColor: Colors.black.withValues(alpha: 0.58),
-    isScrollControlled: true,
-    builder: (sheetContext) {
-      final screenWidth = MediaQuery.sizeOf(sheetContext).width;
-      final isCompact = screenWidth < 375;
-      final bottomInset = MediaQuery.viewInsetsOf(sheetContext).bottom;
-      final horizontalPadding = isCompact ? 22.0 : 26.0;
-      final sheetRadius = isCompact ? 30.0 : 34.0;
-      final iconWrapSize = isCompact ? 136.0 : 148.0;
-      final glowSize = isCompact ? 156.0 : 170.0;
-      final iconSize = isCompact ? 56.0 : 60.0;
-
-      return SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.only(bottom: bottomInset),
-          child: ClipRRect(
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(sheetRadius),
-            ),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xFF211207), Color(0xFF170D06)],
-                  ),
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(sheetRadius),
-                  ),
-                  border: Border(
-                    top: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.08),
-                    ),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.24),
-                      blurRadius: 40,
-                      offset: const Offset(0, -12),
-                    ),
-                  ],
-                ),
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.white.withValues(alpha: 0.02),
-                                Colors.transparent,
-                              ],
-                              stops: const [0, 0.16],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: -24,
-                      left: 0,
-                      right: 0,
-                      child: IgnorePointer(
-                        child: Container(
-                          height: 110,
-                          decoration: BoxDecoration(
-                            gradient: RadialGradient(
-                              center: const Alignment(0, 0.7),
-                              radius: 0.95,
-                              colors: [
-                                AppColors.accent.withValues(alpha: 0.08),
-                                Colors.transparent,
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        horizontalPadding,
-                        isCompact ? 24 : 28,
-                        horizontalPadding,
-                        isCompact ? 24 : 30,
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Center(
-                            child: Container(
-                              width: 76,
-                              height: 7,
-                              decoration: BoxDecoration(
-                                color: AppColors.accent.withValues(alpha: 0.45),
-                                borderRadius: BorderRadius.circular(999),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.accent.withValues(
-                                      alpha: 0.18,
-                                    ),
-                                    blurRadius: 18,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: isCompact ? 26 : 34),
-                          Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              Container(
-                                width: glowSize,
-                                height: glowSize,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: RadialGradient(
-                                    colors: [
-                                      AppColors.accent.withValues(alpha: 0.26),
-                                      AppColors.accent.withValues(alpha: 0.12),
-                                      AppColors.accent.withValues(alpha: 0.04),
-                                      Colors.transparent,
-                                    ],
-                                    stops: const [0, 0.3, 0.52, 0.78],
-                                  ),
-                                ),
-                              ),
-                              Container(
-                                width: iconWrapSize,
-                                height: iconWrapSize,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: RadialGradient(
-                                    center: const Alignment(0, -0.25),
-                                    colors: [
-                                      AppColors.accent.withValues(alpha: 0.05),
-                                      AppColors.accent.withValues(alpha: 0.01),
-                                    ],
-                                  ),
-                                  border: Border.all(
-                                    color: AppColors.accent.withValues(
-                                      alpha: 0.36,
-                                    ),
-                                    width: 2,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.accent.withValues(
-                                        alpha: 0.18,
-                                      ),
-                                      blurRadius: 28,
-                                    ),
-                                  ],
-                                ),
-                                child: Icon(
-                                  Icons.language_rounded,
-                                  size: iconSize,
-                                  color: AppColors.accent,
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: isCompact ? 22 : 26),
-                          Text(
-                            l10n.appLanguageTitle,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: isCompact ? 14 : 18,
-                              height: 0.98,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -1.1,
-                            ),
-                          ),
-                          SizedBox(height: isCompact ? 28 : 34),
-                          for (final option in _languageOptions) ...[
-                            _LanguageOptionTile(
-                              label: option.label,
-                              code: option.code.toUpperCase(),
-                              isSelected: currentCode == option.code,
-                              onTap: () =>
-                                  Navigator.of(sheetContext).pop(option.code),
-                            ),
-                            if (option != _languageOptions.last)
-                              SizedBox(height: isCompact ? 14 : 16),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-    },
-  );
-
-  if (selectedCode == null || !context.mounted) return;
-  await localeProvider.setLocale(selectedCode);
-}
-
 class AppSideDrawer extends StatelessWidget {
   const AppSideDrawer({
     super.key,
@@ -293,10 +69,8 @@ class AppSideDrawer extends StatelessWidget {
     this.suppressGuideFallback = false,
     required this.profile,
     required this.location,
-    required this.languageLabel,
     required this.activeItem,
     required this.onProfileTap,
-    required this.onLanguageTap,
     required this.onHomeTap,
     required this.onMyActivitiesTap,
     required this.onMyExcursionsTap,
@@ -314,10 +88,8 @@ class AppSideDrawer extends StatelessWidget {
   final bool suppressGuideFallback;
   final UserProfileVm? profile;
   final String location;
-  final String languageLabel;
   final AppDrawerActiveItem activeItem;
   final VoidCallback onProfileTap;
-  final VoidCallback onLanguageTap;
   final VoidCallback onHomeTap;
   final VoidCallback onMyActivitiesTap;
   final VoidCallback onMyExcursionsTap;
@@ -646,26 +418,6 @@ class AppSideDrawer extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _DrawerMenuItem(
-                              layout: layout,
-                              icon: Icons.language_rounded,
-                              iconWidget: Center(
-                                child: Text(
-                                  languageLabel,
-                                  style: TextStyle(
-                                    color: AppColors.accent,
-                                    fontSize: layout.iconBoxSize * 0.36,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ),
-                              label: l10n.appLanguageTitle,
-                              labelFontSize: layout.menuLabelSize - 3,
-                              usePreferencePalette: true,
-                              onTap: onLanguageTap,
-                            ),
-                            SizedBox(height: layout.sectionGap),
                             _DrawerSectionTitle(
                               title: l10n.homeExploreServices,
                               layout: layout,
@@ -961,8 +713,6 @@ class _DrawerMenuItem extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.onTap,
-    this.iconWidget,
-    this.labelFontSize,
     this.isActive = false,
     this.usePreferencePalette = false,
   });
@@ -971,8 +721,6 @@ class _DrawerMenuItem extends StatelessWidget {
   final String label;
   final IconData icon;
   final VoidCallback onTap;
-  final Widget? iconWidget;
-  final double? labelFontSize;
   final bool isActive;
   final bool usePreferencePalette;
 
@@ -1055,17 +803,15 @@ class _DrawerMenuItem extends StatelessWidget {
                             ? AppColors.accent.withValues(alpha: 0.12)
                             : Colors.white.withValues(alpha: 0.04),
                       ),
-                      child:
-                          iconWidget ??
-                          Icon(
-                            icon,
-                            color: isActive
-                                ? Colors.white
-                                : matchesPreferencePalette
-                                ? AppColors.accent
-                                : foregroundColor,
-                            size: layout.iconBoxSize * 0.48,
-                          ),
+                      child: Icon(
+                        icon,
+                        color: isActive
+                            ? Colors.white
+                            : matchesPreferencePalette
+                            ? AppColors.accent
+                            : foregroundColor,
+                        size: layout.iconBoxSize * 0.48,
+                      ),
                     ),
                     SizedBox(width: layout.profileGap),
                     Expanded(
@@ -1075,7 +821,7 @@ class _DrawerMenuItem extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: foregroundColor,
-                          fontSize: labelFontSize ?? layout.menuLabelSize,
+                          fontSize: layout.menuLabelSize,
                           fontWeight: isActive
                               ? FontWeight.w700
                               : matchesPreferencePalette
@@ -1158,133 +904,3 @@ class _DrawerFooterAction extends StatelessWidget {
     );
   }
 }
-
-class _LanguageOptionTile extends StatelessWidget {
-  const _LanguageOptionTile({
-    required this.label,
-    required this.code,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String label;
-  final String code;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      enabled: true,
-      selected: isSelected,
-      label: label,
-      child: ExcludeSemantics(
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(999),
-            child: Ink(
-              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(999),
-                gradient: isSelected
-                    ? const LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Color(0xFFFFA726), Color(0xFFF98C06)],
-                      )
-                    : null,
-                color: isSelected ? null : Colors.transparent,
-                border: Border.all(
-                  color: isSelected
-                      ? Colors.transparent
-                      : AppColors.accent.withValues(alpha: 0.42),
-                  width: 1.5,
-                ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: AppColors.accent.withValues(alpha: 0.18),
-                          blurRadius: 28,
-                          offset: const Offset(0, 12),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          label,
-                          style: TextStyle(
-                            color: isSelected
-                                ? Colors.white
-                                : Colors.white.withValues(alpha: 0.96),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          code,
-                          style: TextStyle(
-                            color: isSelected
-                                ? Colors.white.withValues(alpha: 0.86)
-                                : AppColors.accent.withValues(alpha: 0.92),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.8,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isSelected
-                          ? Colors.white.withValues(alpha: 0.18)
-                          : AppColors.accent.withValues(alpha: 0.08),
-                      border: Border.all(
-                        color: isSelected
-                            ? Colors.white.withValues(alpha: 0.22)
-                            : AppColors.accent.withValues(alpha: 0.18),
-                      ),
-                    ),
-                    child: Icon(
-                      isSelected
-                          ? Icons.check_rounded
-                          : Icons.arrow_forward_rounded,
-                      color: isSelected ? Colors.white : AppColors.accent,
-                      size: 18,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _LanguageOption {
-  const _LanguageOption({required this.code, required this.label});
-
-  final String code;
-  final String label;
-}
-
-const List<_LanguageOption> _languageOptions = [
-  _LanguageOption(code: 'ru', label: 'Русский'),
-  _LanguageOption(code: 'en', label: 'English'),
-  _LanguageOption(code: 'kk', label: 'Қазақша'),
-];

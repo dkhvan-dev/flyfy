@@ -215,10 +215,12 @@ class StoryVm {
 
   factory StoryVm.fromJson(Map<String, dynamic> json) {
     final statsJson = _stringKeyedMap(json['stats']);
+    final contentBlocks = _parseContentBlocks(json['contentBlocks']);
     return StoryVm(
       id: json['id']?.toString() ?? '',
       caption:
           _trimmedStringOrNull(json['caption']) ??
+          _trimmedStringOrNull(json['excerpt']) ??
           _trimmedStringOrNull(json['title']) ??
           '',
       mediaFileId:
@@ -238,6 +240,29 @@ class StoryVm {
       seenByViewer: json['seenByViewer'] == true,
       seenAt: DateTime.tryParse(json['seenAt']?.toString() ?? ''),
       shareUrl: json['shareUrl']?.toString() ?? '',
+      slug: _trimmedStringOrNull(json['slug']),
+      title: _trimmedStringOrNull(json['title']),
+      excerpt: _trimmedStringOrNull(json['excerpt']),
+      content: _trimmedStringOrNull(json['content']),
+      format: _trimmedStringOrNull(json['format']),
+      category: _trimmedStringOrNull(json['category']),
+      status: _trimmedStringOrNull(json['status']),
+      moderationStatus: _trimmedStringOrNull(json['moderationStatus']),
+      tags: _stringListFromJson(json['tags']),
+      likedByViewer: json['likedByViewer'] == true,
+      publishedAt: DateTime.tryParse(json['publishedAt']?.toString() ?? ''),
+      lastAutosavedAt: DateTime.tryParse(
+        json['lastAutosavedAt']?.toString() ?? '',
+      ),
+      archivedAt: DateTime.tryParse(json['archivedAt']?.toString() ?? ''),
+      revision: int.tryParse(json['revision']?.toString() ?? '') ?? 1,
+      contentSchemaVersion:
+          int.tryParse(json['contentSchemaVersion']?.toString() ?? '') ?? 1,
+      contentBlocks: contentBlocks,
+      communityId: _trimmedStringOrNull(json['communityId']),
+      placeName: _trimmedStringOrNull(json['placeName']),
+      placeCountryCode: _trimmedStringOrNull(json['placeCountryCode']),
+      placeCityId: _trimmedStringOrNull(json['placeCityId']),
       expiresAt:
           DateTime.tryParse(json['expiresAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
@@ -300,10 +325,22 @@ class StoryVm {
   String? get placeCityId => _placeCityId;
 
   String? get coverUrl {
-    return resolvePublicFileContentUrlFromResponse(
-      fileId: coverFileId ?? mediaFileId,
-      contentUrl: coverImageUrl ?? mediaUrl,
+    final coverUrl = resolvePublicFileContentUrlFromResponse(
+      fileId: _nonEmptyFileId(coverFileId),
+      contentUrl: _validPublicFileContentUrl(coverImageUrl),
     );
+    if (coverUrl != null) {
+      return coverUrl;
+    }
+
+    final mediaContentUrl = resolvePublicFileContentUrlFromResponse(
+      fileId: _nonEmptyFileId(mediaFileId),
+      contentUrl: _validPublicFileContentUrl(mediaUrl),
+    );
+    if (mediaContentUrl != null) {
+      return mediaContentUrl;
+    }
+    return _resolveContentBlockPreviewUrl(_contentBlocks);
   }
 
   bool get isSeenByViewer => seenByViewer || seenAt != null;
@@ -384,4 +421,120 @@ Map<String, dynamic> _stringKeyedMap(Object? rawMap) {
 String? _trimmedStringOrNull(Object? value) {
   final trimmed = (value?.toString() ?? '').trim();
   return trimmed.isEmpty ? null : trimmed;
+}
+
+String? _nonEmptyFileId(Object? value) {
+  final trimmed = _trimmedStringOrNull(value);
+  if (trimmed == null || _isEmptyFileId(trimmed)) {
+    return null;
+  }
+  return trimmed;
+}
+
+String? _validPublicFileContentUrl(Object? value) {
+  final trimmed = _trimmedStringOrNull(value);
+  if (trimmed == null || _containsEmptyFileId(trimmed)) {
+    return null;
+  }
+  return trimmed;
+}
+
+bool _isEmptyFileId(String value) {
+  return value.trim() == '00000000-0000-0000-0000-000000000000';
+}
+
+bool _containsEmptyFileId(String value) {
+  return value.contains('00000000-0000-0000-0000-000000000000');
+}
+
+List<String>? _stringListFromJson(Object? value) {
+  if (value is! List) {
+    return null;
+  }
+
+  return value
+      .map((item) => item.toString().trim())
+      .where((item) => item.isNotEmpty)
+      .toList(growable: false);
+}
+
+List<Map<String, dynamic>> _parseContentBlocks(Object? rawContentBlocks) {
+  final rawBlocks = switch (rawContentBlocks) {
+    final List<dynamic> blocks => blocks,
+    final Map<dynamic, dynamic> document when document['blocks'] is List =>
+      document['blocks'] as List<dynamic>,
+    _ => const <dynamic>[],
+  };
+
+  return rawBlocks
+      .whereType<Map<dynamic, dynamic>>()
+      .map(_stringKeyedMap)
+      .toList(growable: false);
+}
+
+String? _resolveContentBlockPreviewUrl(
+  List<Map<String, dynamic>> contentBlocks,
+) {
+  for (final block in contentBlocks) {
+    final previewUrl = _resolveContentBlockPreviewFromMap(block);
+    if (previewUrl != null) {
+      return previewUrl;
+    }
+  }
+  return null;
+}
+
+String? _resolveContentBlockPreviewFromMap(Map<String, dynamic> block) {
+  final type = (block['type']?.toString() ?? '').trim().toLowerCase();
+
+  if (type == 'image' || block['image'] != null) {
+    final imageUrl =
+        _resolvePreviewPayloadUrl(_stringKeyedMap(block['image'])) ??
+        _resolvePreviewPayloadUrl(block);
+    if (imageUrl != null) {
+      return imageUrl;
+    }
+  }
+
+  if (type == 'gallery' ||
+      block['gallery'] != null ||
+      block['images'] != null) {
+    final gallery = _stringKeyedMap(block['gallery']);
+    final galleryUrl =
+        _resolvePreviewPayloadListUrl(gallery['images']) ??
+        _resolvePreviewPayloadListUrl(block['images']);
+    if (galleryUrl != null) {
+      return galleryUrl;
+    }
+  }
+
+  return _resolvePreviewPayloadUrl(block);
+}
+
+String? _resolvePreviewPayloadListUrl(Object? rawItems) {
+  if (rawItems is! List) {
+    return null;
+  }
+
+  for (final item in rawItems) {
+    final previewUrl = _resolvePreviewPayloadUrl(_stringKeyedMap(item));
+    if (previewUrl != null) {
+      return previewUrl;
+    }
+  }
+  return null;
+}
+
+String? _resolvePreviewPayloadUrl(Map<String, dynamic> payload) {
+  return resolvePublicFileContentUrlFromResponse(
+    fileId:
+        _nonEmptyFileId(payload['fileId']) ??
+        _nonEmptyFileId(payload['mediaFileId']) ??
+        _nonEmptyFileId(payload['coverFileId']),
+    contentUrl:
+        _validPublicFileContentUrl(payload['contentUrl']) ??
+        _validPublicFileContentUrl(payload['url']) ??
+        _validPublicFileContentUrl(payload['imageUrl']) ??
+        _validPublicFileContentUrl(payload['coverImageUrl']),
+  );
 }

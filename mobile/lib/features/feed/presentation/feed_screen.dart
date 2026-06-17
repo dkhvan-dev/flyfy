@@ -12,6 +12,7 @@ import '../../../core/ui/app_bottom_navigation_bars.dart';
 import '../../../core/ui/app_colors.dart';
 import '../../../core/ui/error_dialog.dart';
 import '../../../l10n/generated/app_localizations.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../providers/home_location_provider.dart';
 import '../../../providers/session_provider.dart';
 import '../../../shared/reference/app_location_label_resolver.dart';
@@ -20,6 +21,7 @@ import '../../profile/models/user_profile_vm.dart';
 import '../../stories/models/post_vm.dart';
 import '../../stories/models/story_vm.dart';
 import '../../../screens/stories/story_tray_viewer_screen.dart';
+import '../../../shared/location/home_location_filter_defaults.dart';
 import '../data/feed_api.dart';
 import '../data/feed_subscriptions_api.dart';
 import '../models/feed_block_vm.dart';
@@ -111,6 +113,9 @@ class _FeedScreenState extends State<FeedScreen>
     final tab = _tabs[_selectedTabIndex];
     final cursor = append ? _nextCursor : null;
     final location = _feedLocationContext();
+    final locationFilters = location == null
+        ? HomeLocationFilterDefaults.empty
+        : HomeLocationFilterDefaults.fromPreference(location);
 
     if (!append) {
       _sentImpressionKeys.clear();
@@ -143,8 +148,8 @@ class _FeedScreenState extends State<FeedScreen>
         surface: 'home',
         tab: tab,
         cursor: cursor,
-        countryCode: location?.countryCode,
-        cityId: location?.cityId,
+        countryCode: locationFilters.country?.countryCode,
+        cityId: locationFilters.city?.queryCityId,
       );
       if (!mounted || generation != _requestGeneration) {
         return;
@@ -522,6 +527,7 @@ class _FeedScreenState extends State<FeedScreen>
     }
 
     final l10n = AppLocalizations.of(context)!;
+    final canUsePostActions = _canUsePostActionsForRead(context);
     await showModalBottomSheet<void>(
       context: context,
       isDismissible: true,
@@ -577,10 +583,12 @@ class _FeedScreenState extends State<FeedScreen>
                       Navigator.of(sheetContext).maybePop();
                       _openPost(post);
                     },
-                    onLike: _toggleFeedPostLike,
-                    onShare: _shareFeedPost,
-                    onHide: _hideFeedPost,
-                    onNotInterested: _markFeedPostNotInterested,
+                    onLike: canUsePostActions ? _toggleFeedPostLike : null,
+                    onShare: canUsePostActions ? _shareFeedPost : null,
+                    onHide: canUsePostActions ? _hideFeedPost : null,
+                    onNotInterested: canUsePostActions
+                        ? _markFeedPostNotInterested
+                        : null,
                   ),
                 ),
               ),
@@ -1362,6 +1370,7 @@ class _FeedScreenState extends State<FeedScreen>
 
   Widget _buildBody(BuildContext context) {
     final profile = _maybeSessionProfile(context);
+    final canUsePostActions = _canUsePostActions(context);
     final tab = _tabs[_selectedTabIndex];
     final visibleItems = _shouldHideViewerOwnedPosts(tab)
         ? _withoutViewerOwnedPosts(_items, profile?.userId)
@@ -1400,10 +1409,12 @@ class _FeedScreenState extends State<FeedScreen>
       onCommunityToggle: _toggleCommunityFollow,
       onStoryOpen: widget.onStoryOpen,
       onPostOpen: _openPost,
-      onPostLike: _toggleFeedPostLike,
-      onPostShare: _shareFeedPost,
-      onPostHide: _hideFeedPost,
-      onPostNotInterested: _markFeedPostNotInterested,
+      onPostLike: canUsePostActions ? _toggleFeedPostLike : null,
+      onPostShare: canUsePostActions ? _shareFeedPost : null,
+      onPostHide: canUsePostActions ? _hideFeedPost : null,
+      onPostNotInterested: canUsePostActions
+          ? _markFeedPostNotInterested
+          : null,
       onStoryTrayOpen: _openStoryTray,
       onCreateStory: _openCreateStory,
       viewerAvatarUrl: _profileAvatarUrl(profile),
@@ -1426,6 +1437,22 @@ class _FeedScreenState extends State<FeedScreen>
       1 => l10n.feedTabFollowing,
       _ => '',
     };
+  }
+}
+
+bool _canUsePostActions(BuildContext context) {
+  try {
+    return context.watch<AuthProvider>().state == AuthState.authenticated;
+  } on ProviderNotFoundException {
+    return _maybeSessionProfile(context) != null;
+  }
+}
+
+bool _canUsePostActionsForRead(BuildContext context) {
+  try {
+    return context.read<AuthProvider>().state == AuthState.authenticated;
+  } on ProviderNotFoundException {
+    return _maybeSessionProfileForRead(context) != null;
   }
 }
 

@@ -3,12 +3,14 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/network/file_api.dart';
 import '../../../core/ui/app_colors.dart';
 import '../../../core/network/post_api.dart';
 import '../../../core/ui/error_dialog.dart';
 import '../../../l10n/generated/app_localizations.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../shared/widgets/app_localized_location_text.dart';
 import '../../stories/editor/presentation/post_create_preflight.dart';
 import '../../stories/models/post_vm.dart';
@@ -865,6 +867,7 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
   Widget _buildBody(BuildContext context) {
     final community = _community;
     final l10n = AppLocalizations.of(context)!;
+    final isAuthenticatedViewer = _isAuthenticatedViewer(context);
 
     if (_isLoading && community == null) {
       return const _CommunityProfileStateList(
@@ -926,6 +929,7 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
                   : null,
               onMembersOpen: community.viewerCanModerate ? _openMembers : null,
               actionsTooltip: l10n.communityProfileActionsTooltip,
+              canUseViewerActions: isAuthenticatedViewer,
               onReport: _reportCommunity,
               onMute: _muteCommunity,
               onUnmute: _unmuteCommunity,
@@ -968,6 +972,7 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
                   onStoryTap: _openStory,
                   onQuickPostEdit: _openEditPost,
                   onQuickPostEngagement: _trackQuickPostEngagement,
+                  canUsePostActions: isAuthenticatedViewer,
                   postKeyFor: _postKeyFor,
                 ),
               ),
@@ -1073,6 +1078,7 @@ class _CommunityPostsSection extends StatelessWidget {
     required this.onStoryTap,
     required this.onQuickPostEdit,
     required this.onQuickPostEngagement,
+    required this.canUsePostActions,
     required this.postKeyFor,
   });
 
@@ -1086,6 +1092,7 @@ class _CommunityPostsSection extends StatelessWidget {
   final ValueChanged<PostVm> onStoryTap;
   final ValueChanged<PostVm> onQuickPostEdit;
   final QuickPostEngagementCallback onQuickPostEngagement;
+  final bool canUsePostActions;
   final GlobalKey Function(PostVm post) postKeyFor;
 
   @override
@@ -1144,8 +1151,11 @@ class _CommunityPostsSection extends StatelessWidget {
                   ? QuickPostThreadCard(
                       post: story,
                       postApi: postApi,
-                      onEdit: onQuickPostEdit,
-                      onEngagement: onQuickPostEngagement,
+                      canInteract: canUsePostActions,
+                      onEdit: canUsePostActions ? onQuickPostEdit : null,
+                      onEngagement: canUsePostActions
+                          ? onQuickPostEngagement
+                          : null,
                     )
                   : FeedPostCard(post: story, onOpen: onStoryTap),
             ),
@@ -1171,6 +1181,7 @@ class _CommunityProfileHeader extends StatelessWidget {
     required this.onToggleFollow,
     required this.onCreatePost,
     required this.actionsTooltip,
+    required this.canUseViewerActions,
     required this.onReport,
     required this.onMute,
     required this.onUnmute,
@@ -1185,6 +1196,7 @@ class _CommunityProfileHeader extends StatelessWidget {
   final VoidCallback onToggleFollow;
   final VoidCallback onCreatePost;
   final String actionsTooltip;
+  final bool canUseViewerActions;
   final VoidCallback onReport;
   final VoidCallback onMute;
   final VoidCallback onUnmute;
@@ -1220,6 +1232,7 @@ class _CommunityProfileHeader extends StatelessWidget {
               community: community,
               tooltip: actionsTooltip,
               onBack: onBack,
+              showActions: canUseViewerActions,
               onReport: onReport,
               onMute: onMute,
               onUnmute: onUnmute,
@@ -1467,6 +1480,7 @@ class _CommunityHeaderControls extends StatelessWidget {
     required this.community,
     required this.tooltip,
     required this.onBack,
+    required this.showActions,
     required this.onReport,
     required this.onMute,
     required this.onUnmute,
@@ -1475,6 +1489,7 @@ class _CommunityHeaderControls extends StatelessWidget {
   final FeedCommunityVm community;
   final String tooltip;
   final VoidCallback onBack;
+  final bool showActions;
   final VoidCallback onReport;
   final VoidCallback onMute;
   final VoidCallback onUnmute;
@@ -1489,15 +1504,24 @@ class _CommunityHeaderControls extends StatelessWidget {
           onPressed: onBack,
         ),
         const Spacer(),
-        _CommunityHeaderActionsMenu(
-          community: community,
-          tooltip: tooltip,
-          onReport: onReport,
-          onMute: onMute,
-          onUnmute: onUnmute,
-        ),
+        if (showActions)
+          _CommunityHeaderActionsMenu(
+            community: community,
+            tooltip: tooltip,
+            onReport: onReport,
+            onMute: onMute,
+            onUnmute: onUnmute,
+          ),
       ],
     );
+  }
+}
+
+bool _isAuthenticatedViewer(BuildContext context) {
+  try {
+    return context.watch<AuthProvider>().state == AuthState.authenticated;
+  } on ProviderNotFoundException {
+    return false;
   }
 }
 

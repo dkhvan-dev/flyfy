@@ -59,6 +59,14 @@ class _CommunityDiscoverySheetState extends State<CommunityDiscoverySheet> {
   String? _selectedCityName;
   int _requestGeneration = 0;
 
+  AppCityFilterValue? get _selectedCityFilter => AppCityFilterValue.fromParts(
+    countryCode: _selectedCountryCode,
+    cityId: _selectedCityId,
+    cityName: _selectedCityName,
+  );
+
+  String? get _selectedCityQueryId => _selectedCityFilter?.queryCityId;
+
   @override
   void initState() {
     super.initState();
@@ -101,7 +109,7 @@ class _CommunityDiscoverySheetState extends State<CommunityDiscoverySheet> {
       final page = await widget.feedApi.listCommunities(
         topic: _selectedTopic.isEmpty ? null : _selectedTopic,
         countryCode: _selectedCountryCode,
-        cityId: _selectedCityId,
+        cityId: _selectedCityQueryId,
         search: _search.isEmpty ? null : _search,
         excludeFollowed: true,
         limit: _pageLimit,
@@ -224,7 +232,7 @@ class _CommunityDiscoverySheetState extends State<CommunityDiscoverySheet> {
 
   int get _activeFilterCount =>
       (_selectedCountryCode == null ? 0 : 1) +
-      (_selectedCityId == null ? 0 : 1) +
+      (_selectedCityQueryId == null ? 0 : 1) +
       (_selectedTopic.isEmpty ? 0 : 1);
 
   Future<int> _loadPreviewCount(_CommunityDiscoveryFilters filters) async {
@@ -235,7 +243,7 @@ class _CommunityDiscoverySheetState extends State<CommunityDiscoverySheet> {
     final page = await widget.feedApi.listCommunities(
       topic: filters.topic.isEmpty ? null : filters.topic,
       countryCode: filters.country?.countryCode,
-      cityId: filters.city?.cityId,
+      cityId: filters.city?.queryCityId,
       search: _search.isEmpty ? null : _search,
       excludeFollowed: true,
       limit: _pageLimit,
@@ -278,7 +286,7 @@ class _CommunityDiscoverySheetState extends State<CommunityDiscoverySheet> {
     }
     setState(() {
       _selectedCountryCode = result.country?.countryCode;
-      _selectedCityId = result.city?.cityId;
+      _selectedCityId = result.city?.queryCityId;
       _selectedCityName = result.city?.cityName;
       _selectedTopic = result.topic;
     });
@@ -467,7 +475,7 @@ class _CommunityDiscoveryFilters {
   final String topic;
 
   bool get hasRequiredLocation =>
-      country?.countryCode != null && city?.hasValue == true;
+      country?.countryCode != null && city?.queryCityId != null;
 }
 
 typedef _CommunityDiscoveryPreviewCountLoader =

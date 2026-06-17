@@ -17,6 +17,8 @@ class AppCityFilterValue {
   bool get hasValue =>
       _normalize(cityId) != null || _normalize(cityName) != null;
 
+  String? get queryCityId => _normalize(cityId) ?? _normalizeCitySlug(cityName);
+
   String get fallbackLabel {
     final city = _normalize(cityName);
     if (city != null) return city;

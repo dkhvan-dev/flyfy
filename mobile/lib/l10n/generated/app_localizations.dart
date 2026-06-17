@@ -835,7 +835,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileTimezoneSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search time zone, city, or UTC'**
+  /// **'Time zone, city, or UTC'**
   String get profileTimezoneSearchHint;
 
   /// No description provided for @profileTimezoneNoResults.
@@ -871,7 +871,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileCurrencySearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search currency, code, or symbol'**
+  /// **'Currency, code, or symbol'**
   String get profileCurrencySearchHint;
 
   /// No description provided for @profileCurrencyNoResults.
@@ -1705,7 +1705,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileFollowersSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search followers'**
+  /// **'Followers'**
   String get profileFollowersSearchHint;
 
   /// No description provided for @profileFollowersEmptyTitle.
@@ -1753,7 +1753,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileConnectionsSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search people'**
+  /// **'People'**
   String get profileConnectionsSearchHint;
 
   /// No description provided for @profileConnectionsFriendsTab.
@@ -3343,7 +3343,7 @@ abstract class AppLocalizations {
   /// No description provided for @activityInviteFriendsSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search friends'**
+  /// **'Friends'**
   String get activityInviteFriendsSearchHint;
 
   /// No description provided for @activityInviteFriendsEmptyTitle.
@@ -3787,7 +3787,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeLocationSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search city'**
+  /// **'City'**
   String get homeLocationSearchHint;
 
   /// No description provided for @homeLocationNoResults.
@@ -3829,7 +3829,7 @@ abstract class AppLocalizations {
   /// No description provided for @locationFilterCitySearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search city'**
+  /// **'City'**
   String get locationFilterCitySearchHint;
 
   /// No description provided for @locationFilterCityNoResults.
@@ -3853,7 +3853,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search activities, attractions, excursions...'**
+  /// **'Activities, attractions, excursions...'**
   String get homeSearchHint;
 
   /// No description provided for @homeTopDestinations.
@@ -4057,7 +4057,7 @@ abstract class AppLocalizations {
   /// No description provided for @currencyConverterSearchCurrencyHint.
   ///
   /// In en, this message translates to:
-  /// **'Search currency'**
+  /// **'Currency'**
   String get currencyConverterSearchCurrencyHint;
 
   /// No description provided for @currencyConverterRecentSection.
@@ -4537,7 +4537,7 @@ abstract class AppLocalizations {
   /// No description provided for @feedMySubscriptionsSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search subscriptions'**
+  /// **'Subscriptions'**
   String get feedMySubscriptionsSearchHint;
 
   /// No description provided for @feedMySubscriptionsSheetSubtitle.
@@ -4837,7 +4837,7 @@ abstract class AppLocalizations {
   /// No description provided for @communityDiscoverySearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search communities'**
+  /// **'Communities'**
   String get communityDiscoverySearchHint;
 
   /// No description provided for @communityDiscoveryFiltersTitle.
@@ -5803,7 +5803,7 @@ abstract class AppLocalizations {
   /// No description provided for @attractionFilterCountrySearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search country, code, or phone'**
+  /// **'Country, code, or phone'**
   String get attractionFilterCountrySearchHint;
 
   /// No description provided for @attractionFilterCountryNoResults.
@@ -6625,7 +6625,7 @@ abstract class AppLocalizations {
   /// No description provided for @excursionsSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search excursions and experiences'**
+  /// **'Excursions and experiences'**
   String get excursionsSearchHint;
 
   /// No description provided for @excursionsSortLabel.
@@ -6709,7 +6709,7 @@ abstract class AppLocalizations {
   /// No description provided for @excursionsFilterCountrySearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search country, code, or phone'**
+  /// **'Country, code, or phone'**
   String get excursionsFilterCountrySearchHint;
 
   /// No description provided for @excursionsFilterCountryNoResults.
@@ -6799,7 +6799,7 @@ abstract class AppLocalizations {
   /// No description provided for @excursionsFilterLanguageSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search language or code'**
+  /// **'Language or code'**
   String get excursionsFilterLanguageSearchHint;
 
   /// No description provided for @excursionsFilterLanguageNoResults.
@@ -6853,7 +6853,7 @@ abstract class AppLocalizations {
   /// No description provided for @guidesSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search guides'**
+  /// **'Guides'**
   String get guidesSearchHint;
 
   /// No description provided for @guidesSortLabel.
@@ -6913,7 +6913,7 @@ abstract class AppLocalizations {
   /// No description provided for @guidesFilterCountrySearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search country, code, or phone'**
+  /// **'Country, code, or phone'**
   String get guidesFilterCountrySearchHint;
 
   /// No description provided for @guidesFilterCountryNoResults.
@@ -6943,7 +6943,7 @@ abstract class AppLocalizations {
   /// No description provided for @guidesFilterLanguageSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search language or code'**
+  /// **'Language or code'**
   String get guidesFilterLanguageSearchHint;
 
   /// No description provided for @guidesFilterLanguageNoResults.
@@ -7279,7 +7279,7 @@ abstract class AppLocalizations {
   /// No description provided for @excursionDetailsOffersSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search guides or offers'**
+  /// **'Guides or offers'**
   String get excursionDetailsOffersSearchHint;
 
   /// No description provided for @excursionDetailsOffersLoadMore.
@@ -7369,7 +7369,7 @@ abstract class AppLocalizations {
   /// No description provided for @excursionDetailsOffersLanguageSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search language or code'**
+  /// **'Language or code'**
   String get excursionDetailsOffersLanguageSearchHint;
 
   /// No description provided for @excursionDetailsOffersLanguageNoResults.
@@ -7819,7 +7819,7 @@ abstract class AppLocalizations {
   /// No description provided for @excursionSelectLocationCountrySearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search countries...'**
+  /// **'Countries'**
   String get excursionSelectLocationCountrySearchHint;
 
   /// No description provided for @excursionCountryKazakhstan.
@@ -7855,7 +7855,7 @@ abstract class AppLocalizations {
   /// No description provided for @excursionSelectLocationAttractionSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search attractions...'**
+  /// **'Attractions'**
   String get excursionSelectLocationAttractionSearchHint;
 
   /// No description provided for @excursionSelectLocationSelected.
@@ -7935,6 +7935,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Local draft restored'**
   String get createExcursionAutosaveRestored;
+
+  /// No description provided for @createExcursionDiscardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave without saving?'**
+  String get createExcursionDiscardTitle;
+
+  /// No description provided for @createExcursionDiscardDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Your excursion draft data will be lost. The form will open empty next time.'**
+  String get createExcursionDiscardDescription;
+
+  /// No description provided for @createExcursionDiscardConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave and discard'**
+  String get createExcursionDiscardConfirm;
+
+  /// No description provided for @createExcursionModeSwitchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch route type?'**
+  String get createExcursionModeSwitchTitle;
+
+  /// No description provided for @createExcursionModeSwitchDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Data from the current route type will be cleared. Other excursion details will stay in place.'**
+  String get createExcursionModeSwitchDescription;
+
+  /// No description provided for @createExcursionModeSwitchCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay here'**
+  String get createExcursionModeSwitchCancel;
+
+  /// No description provided for @createExcursionModeSwitchConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch and clear'**
+  String get createExcursionModeSwitchConfirm;
 
   /// No description provided for @createExcursionItineraryValidation.
   ///
@@ -8071,7 +8113,7 @@ abstract class AppLocalizations {
   /// No description provided for @createExcursionLanguagesSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search language or code'**
+  /// **'Language or code'**
   String get createExcursionLanguagesSearchHint;
 
   /// No description provided for @createExcursionLanguagesNoResults.
@@ -9391,7 +9433,7 @@ abstract class AppLocalizations {
   /// No description provided for @myExcursionsSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search excursions, guides, and cities'**
+  /// **'Excursions, guides, and cities'**
   String get myExcursionsSearchHint;
 
   /// No description provided for @myExcursionsFilterTitle.
@@ -9943,7 +9985,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideDashboardSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search offers, guests, cities, and dates'**
+  /// **'Offers, guests, cities, and dates'**
   String get guideDashboardSearchHint;
 
   /// No description provided for @guideDashboardOffersTab.
@@ -10601,7 +10643,7 @@ abstract class AppLocalizations {
   /// No description provided for @activitiesSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search activities, hosts, or cities'**
+  /// **'Activities, hosts, or cities'**
   String get activitiesSearchHint;
 
   /// No description provided for @activitiesFiltersTitle.
@@ -10625,7 +10667,7 @@ abstract class AppLocalizations {
   /// No description provided for @activitiesFilterCountrySearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search country, code, or phone'**
+  /// **'Country, code, or phone'**
   String get activitiesFilterCountrySearchHint;
 
   /// No description provided for @activitiesFilterCountryNoResults.
@@ -11021,13 +11063,13 @@ abstract class AppLocalizations {
   /// No description provided for @storySearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search posts, authors, or places'**
+  /// **'Posts, authors, or places'**
   String get storySearchHint;
 
   /// No description provided for @storySearchCompactHint.
   ///
   /// In en, this message translates to:
-  /// **'Search posts'**
+  /// **'Posts'**
   String get storySearchCompactHint;
 
   /// No description provided for @storyFiltersTitle.
@@ -11069,7 +11111,7 @@ abstract class AppLocalizations {
   /// No description provided for @storyFilterCountrySearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search country, code, or phone'**
+  /// **'Country, code, or phone'**
   String get storyFilterCountrySearchHint;
 
   /// No description provided for @storyFilterCountryNoResults.
@@ -11825,19 +11867,19 @@ abstract class AppLocalizations {
   /// No description provided for @storyPlaceHint.
   ///
   /// In en, this message translates to:
-  /// **'Search city or country'**
+  /// **'City or country'**
   String get storyPlaceHint;
 
   /// No description provided for @storyCountryHint.
   ///
   /// In en, this message translates to:
-  /// **'Search country'**
+  /// **'Country'**
   String get storyCountryHint;
 
   /// No description provided for @storyCityHint.
   ///
   /// In en, this message translates to:
-  /// **'Search city'**
+  /// **'City'**
   String get storyCityHint;
 
   /// No description provided for @storyTagsFieldLabel.
@@ -11957,7 +11999,7 @@ abstract class AppLocalizations {
   /// No description provided for @storyEditorTitle.
   ///
   /// In en, this message translates to:
-  /// **'Story editor'**
+  /// **'Post editor'**
   String get storyEditorTitle;
 
   /// No description provided for @storyEditorQuickPostTitle.
@@ -12029,7 +12071,7 @@ abstract class AppLocalizations {
   /// No description provided for @storyEditorDiscardChangesTitle.
   ///
   /// In en, this message translates to:
-  /// **'Discard story changes?'**
+  /// **'Discard post changes?'**
   String get storyEditorDiscardChangesTitle;
 
   /// No description provided for @storyEditorDiscardChangesMessage.
@@ -12935,7 +12977,7 @@ abstract class AppLocalizations {
   /// No description provided for @chatListSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search chats'**
+  /// **'Chats'**
   String get chatListSearchHint;
 
   /// No description provided for @chatListSearchEmpty.
@@ -13343,7 +13385,7 @@ abstract class AppLocalizations {
   /// No description provided for @stickersSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search stickers'**
+  /// **'Stickers'**
   String get stickersSearchHint;
 
   /// No description provided for @stickersEmptyRecent.
@@ -14365,6 +14407,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open the activity to see participants.'**
   String get notificationsActivityJoinedBody;
+
+  /// No description provided for @notificationsActivityParticipantWaitlistedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Participant joined the waitlist'**
+  String get notificationsActivityParticipantWaitlistedTitle;
+
+  /// No description provided for @notificationsActivityParticipantWaitlistedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the activity to manage the waitlist.'**
+  String get notificationsActivityParticipantWaitlistedBody;
+
+  /// No description provided for @notificationsActivityParticipantLeftTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Participant left the activity'**
+  String get notificationsActivityParticipantLeftTitle;
+
+  /// No description provided for @notificationsActivityParticipantLeftBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the activity to check the current participant list.'**
+  String get notificationsActivityParticipantLeftBody;
+
+  /// No description provided for @notificationsActivityLateCancellationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Late cancellation'**
+  String get notificationsActivityLateCancellationTitle;
+
+  /// No description provided for @notificationsActivityLateCancellationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A participant cancelled close to the start time.'**
+  String get notificationsActivityLateCancellationBody;
+
+  /// No description provided for @notificationsActivityCancelledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity cancelled'**
+  String get notificationsActivityCancelledTitle;
+
+  /// No description provided for @notificationsActivityCancelledBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity \"{activity}\" was cancelled.'**
+  String notificationsActivityCancelledBody(Object activity);
+
+  /// No description provided for @notificationsActivityCancelledBodyGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'This activity was cancelled.'**
+  String get notificationsActivityCancelledBodyGeneric;
+
+  /// No description provided for @notificationsActivityConfirmedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity confirmed'**
+  String get notificationsActivityConfirmedTitle;
+
+  /// No description provided for @notificationsActivityConfirmedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the activity to see the latest details.'**
+  String get notificationsActivityConfirmedBody;
+
+  /// No description provided for @notificationsActivityCompletedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity completed'**
+  String get notificationsActivityCompletedTitle;
+
+  /// No description provided for @notificationsActivityCompletedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You can now review your experience.'**
+  String get notificationsActivityCompletedBody;
+
+  /// No description provided for @notificationsExcursionBookingCreatedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New excursion booking'**
+  String get notificationsExcursionBookingCreatedTitle;
+
+  /// No description provided for @notificationsExcursionBookingCreatedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the guide dashboard to see booking details.'**
+  String get notificationsExcursionBookingCreatedBody;
+
+  /// No description provided for @notificationsExcursionBookingCancelledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Excursion booking cancelled'**
+  String get notificationsExcursionBookingCancelledTitle;
+
+  /// No description provided for @notificationsExcursionBookingCancelledBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A traveler cancelled this excursion.'**
+  String get notificationsExcursionBookingCancelledBody;
+
+  /// No description provided for @notificationsExcursionGuestsUpdatedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Guest count updated'**
+  String get notificationsExcursionGuestsUpdatedTitle;
+
+  /// No description provided for @notificationsExcursionGuestsUpdatedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the guide dashboard to check the updated booking.'**
+  String get notificationsExcursionGuestsUpdatedBody;
+
+  /// No description provided for @notificationsExcursionAttendanceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Traveler checked in'**
+  String get notificationsExcursionAttendanceTitle;
+
+  /// No description provided for @notificationsExcursionAttendanceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A traveler checked in for this excursion.'**
+  String get notificationsExcursionAttendanceBody;
+
+  /// No description provided for @notificationsExcursionCancelledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Excursion cancelled'**
+  String get notificationsExcursionCancelledTitle;
+
+  /// No description provided for @notificationsExcursionCancelledBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The guide cancelled this excursion.'**
+  String get notificationsExcursionCancelledBody;
+
+  /// No description provided for @notificationsExcursionStartsSoonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Excursion starts soon'**
+  String get notificationsExcursionStartsSoonTitle;
+
+  /// No description provided for @notificationsExcursionStartsSoonBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The booking window is closed. Open the excursion to check guests.'**
+  String get notificationsExcursionStartsSoonBody;
+
+  /// No description provided for @notificationsExcursionCompletedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How was your excursion?'**
+  String get notificationsExcursionCompletedTitle;
+
+  /// No description provided for @notificationsExcursionCompletedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The excursion is complete. You can leave a review.'**
+  String get notificationsExcursionCompletedBody;
+
+  /// No description provided for @notificationsExcursionPublishedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Excursion published'**
+  String get notificationsExcursionPublishedTitle;
+
+  /// No description provided for @notificationsExcursionPublishedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your excursion is now visible to travelers.'**
+  String get notificationsExcursionPublishedBody;
+
+  /// No description provided for @notificationsExcursionRejectedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Excursion needs changes'**
+  String get notificationsExcursionRejectedTitle;
+
+  /// No description provided for @notificationsExcursionRejectedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the guide dashboard to check the review notes.'**
+  String get notificationsExcursionRejectedBody;
 
   /// No description provided for @notificationsJustNow.
   ///

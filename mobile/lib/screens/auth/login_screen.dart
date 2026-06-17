@@ -373,28 +373,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                     SizedBox(
                                       height: authScaled(
                                         context,
-                                        8,
-                                        min: 6,
-                                        max: 8,
-                                      ),
-                                    ),
-                                    Text(
-                                      l10n.welcomeDescription,
-                                      style: TextStyle(
-                                        fontSize: authScaled(
-                                          context,
-                                          15,
-                                          min: 13,
-                                          max: 15,
-                                        ),
-                                        fontWeight: FontWeight.w500,
-                                        color: AppColors.textSecondary,
-                                        height: 1.4,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      height: authScaled(
-                                        context,
                                         20,
                                         min: 16,
                                         max: 22,

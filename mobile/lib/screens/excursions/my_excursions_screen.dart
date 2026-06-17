@@ -70,10 +70,11 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
     super.didChangeDependencies();
 
     final lang = Localizations.localeOf(context).languageCode;
-    if (_localizedLandmarksLocale == lang) return;
-    _localizedLandmarksLocale = lang;
-    _localizedLandmarks = const {};
-    _loadingLocalizedLandmarkIds.clear();
+    if (_localizedLandmarksLocale != lang) {
+      _localizedLandmarksLocale = lang;
+      _localizedLandmarks = const {};
+      _loadingLocalizedLandmarkIds.clear();
+    }
   }
 
   @override

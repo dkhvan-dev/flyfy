@@ -11,7 +11,7 @@ void main() {
           jsonDecode(await File('lib/l10n/app_ru.arb').readAsString())
               as Map<String, dynamic>;
 
-      expect(ruArb['storyEditorTitle'], 'Редактор истории');
+      expect(ruArb['storyEditorTitle'], 'Редактор поста');
       expect(ruArb['storyEditorPublishReadiness'], 'Готовность к публикации');
       expect(ruArb['storyEditorAutosaveSaving'], 'Сохранение');
       expect(

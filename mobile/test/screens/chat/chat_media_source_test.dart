@@ -160,17 +160,17 @@ void main() {
     expect(en, contains('"chatListPersonalTab": "Personal"'));
     expect(en, contains('"chatListActivitiesTab": "Activities"'));
     expect(en, contains('"chatListExcursionsTab": "Tours"'));
-    expect(en, contains('"chatListSearchHint": "Search chats"'));
+    expect(en, contains('"chatListSearchHint": "Chats"'));
     expect(en, contains('"chatListSearchEmpty": "No chats found"'));
     expect(ru, contains('"chatListPersonalTab": "Личные"'));
     expect(ru, contains('"chatListActivitiesTab": "Активности"'));
     expect(ru, contains('"chatListExcursionsTab": "Экскурсии"'));
-    expect(ru, contains('"chatListSearchHint": "Поиск чатов"'));
+    expect(ru, contains('"chatListSearchHint": "Чаты"'));
     expect(ru, contains('"chatListSearchEmpty": "Чаты не найдены"'));
     expect(kk, contains('"chatListPersonalTab": "Жеке"'));
     expect(kk, contains('"chatListActivitiesTab": "Белсенділіктер"'));
     expect(kk, contains('"chatListExcursionsTab": "Экскурсиялар"'));
-    expect(kk, contains('"chatListSearchHint": "Чаттарды іздеу"'));
+    expect(kk, contains('"chatListSearchHint": "Чаттар"'));
     expect(kk, contains('"chatListSearchEmpty": "Чаттар табылмады"'));
   });
 
@@ -793,4 +793,17 @@ void main() {
       expect(source, contains('return [currentParticipant, ...others]'));
     },
   );
+
+  test('chat attachment sheet uses custom amber bottom sheet', () async {
+    final source = await File(
+      'lib/screens/chat/chat_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('class _AmberAttachmentSheet'));
+    expect(source, contains('class _AmberAttachmentActionTile'));
+    expect(source, contains('AppColors.accent'));
+    expect(source, contains('barrierColor: Colors.black.withValues'));
+    expect(source, contains('chatAttachmentCancel'));
+    expect(source, isNot(contains('CupertinoActionSheet')));
+  });
 }

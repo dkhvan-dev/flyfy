@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -29,7 +28,6 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/home_location_provider.dart';
-import '../../providers/locale_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
 import '../../shared/widgets/app_localized_location_text.dart';
@@ -64,6 +62,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   static const _homeTrendingPostLimit = 3;
   static const _homeFeedPageLimit = 20;
+  static const _homeLocationStartupTimeout = Duration(seconds: 2);
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
@@ -85,6 +84,8 @@ class _HomeScreenState extends State<HomeScreen> {
   List<_HomePostFeedItem> _homePostFeedItems = const [];
   Map<String, _HomePostFeedEventTarget> _topPostFeedTargets = const {};
   String? _homePostFeedNextCursor;
+  String? _requestedHomeFeedCountryCode;
+  String? _requestedHomeFeedCityId;
   bool _topAttractionsLoading = true;
   bool _topAttractionsLoadFailed = false;
   bool _topPostsLoading = true;
@@ -147,10 +148,12 @@ class _HomeScreenState extends State<HomeScreen> {
     final languageCode = Localizations.localeOf(context).languageCode;
 
     try {
-      await homeLocationProvider.load(languageCode: languageCode);
+      await homeLocationProvider
+          .load(languageCode: languageCode)
+          .timeout(_homeLocationStartupTimeout);
     } catch (_) {
-      // Discovery location is a startup convenience; failed storage reads
-      // should not block the main feed from loading.
+      // Discovery location is a startup convenience; slow device geolocation
+      // must not block public home content from loading.
     }
 
     if (!mounted) return;
@@ -560,12 +563,26 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadHomeFeed({bool force = false, bool append = false}) async {
     if (!mounted) return;
 
+    final location = context.read<HomeLocationProvider>().effectiveLocation;
+    final currentCountryCode = _trimmedHomeStringOrNull(location.countryCode);
+    final currentCityId = _trimmedHomeStringOrNull(location.cityId);
+    final requestCountryCode = append
+        ? (_requestedHomeFeedCountryCode ?? currentCountryCode)
+        : currentCountryCode;
+    final requestCityId = append
+        ? (_requestedHomeFeedCityId ?? currentCityId)
+        : currentCityId;
+    final locationChanged =
+        !append &&
+        (_requestedHomeFeedCountryCode != requestCountryCode ||
+            _requestedHomeFeedCityId != requestCityId);
+    final shouldForce = force || locationChanged;
     final cursor = append ? _homePostFeedNextCursor : null;
     if (append && (cursor == null || _homePostFeedLoadingMore)) {
       return;
     }
     if (!append &&
-        !force &&
+        !shouldForce &&
         _topPostsRequestStarted &&
         (_topPosts.isNotEmpty || _topPostsLoading)) {
       return;
@@ -577,10 +594,12 @@ class _HomeScreenState extends State<HomeScreen> {
         _homePostFeedLoadingMore = true;
         _homePostFeedLoadMoreFailed = false;
       } else {
-        _topPostsLoading = _topPosts.isEmpty || force;
+        _topPostsLoading = _topPosts.isEmpty || shouldForce;
         _topPostsLoadFailed = false;
         _homePostFeedLoadMoreFailed = false;
-        if (force) {
+        _requestedHomeFeedCountryCode = requestCountryCode;
+        _requestedHomeFeedCityId = requestCityId;
+        if (shouldForce) {
           _homePostFeedNextCursor = null;
         }
       }
@@ -591,6 +610,8 @@ class _HomeScreenState extends State<HomeScreen> {
         surface: 'home',
         tab: 'for_you',
         cursor: cursor,
+        countryCode: requestCountryCode,
+        cityId: requestCityId,
         limit: _homeFeedPageLimit,
       );
       final storyTrayStories = _homeStoryTrayStoriesFromFeedBlocks(page.items);
@@ -647,264 +668,6 @@ class _HomeScreenState extends State<HomeScreen> {
     await _closeDrawerIfNeeded();
     if (!mounted) return;
     await action();
-  }
-
-  Future<void> _showLanguageSheet() async {
-    final l10n = AppLocalizations.of(context)!;
-    final localeProvider = context.read<LocaleProvider>();
-    final currentCode = localeProvider.locale.languageCode;
-    final selectedCode = await showModalBottomSheet<String>(
-      context: context,
-      isDismissible: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.58),
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        final mediaQuery = MediaQuery.of(sheetContext);
-        final screenSize = mediaQuery.size;
-        final screenWidth = screenSize.width;
-        final screenHeight = screenSize.height;
-        final textScale = _homeTextScaleFactor(sheetContext);
-        final isCompact = screenWidth < 375;
-        final isShortLayout = screenHeight < 700 || textScale > 1.2;
-        final bottomInset = mediaQuery.viewInsets.bottom;
-        final maxSheetHeight = (screenHeight - mediaQuery.viewPadding.top - 12)
-            .clamp(320.0, screenHeight)
-            .toDouble();
-        final horizontalPadding = isCompact ? 22.0 : 26.0;
-        final sheetRadius = isCompact ? 30.0 : 34.0;
-        final visualScale = isShortLayout ? 0.82 : 1.0;
-        final iconWrapSize = (isCompact ? 124.0 : 140.0) * visualScale;
-        final glowSize = iconWrapSize + (isCompact ? 20.0 : 22.0);
-        final iconSize = (isCompact ? 50.0 : 58.0) * visualScale;
-        final topPadding = isShortLayout ? 20.0 : (isCompact ? 24.0 : 28.0);
-        final bottomPadding = isShortLayout ? 20.0 : (isCompact ? 24.0 : 30.0);
-        final handleToIconGap = isShortLayout
-            ? 20.0
-            : (isCompact ? 26.0 : 34.0);
-        final iconToTitleGap = isShortLayout ? 18.0 : (isCompact ? 22.0 : 26.0);
-        final titleToOptionsGap = isShortLayout
-            ? 22.0
-            : (isCompact ? 28.0 : 34.0);
-        final optionGap = isShortLayout ? 12.0 : (isCompact ? 14.0 : 16.0);
-
-        return SafeArea(
-          top: false,
-          child: Padding(
-            padding: EdgeInsets.only(bottom: bottomInset),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: maxSheetHeight),
-              child: ClipRRect(
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(sheetRadius),
-                ),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Color(0xFF211207), Color(0xFF170D06)],
-                      ),
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(sheetRadius),
-                      ),
-                      border: Border(
-                        top: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.08),
-                        ),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.24),
-                          blurRadius: 40,
-                          offset: const Offset(0, -12),
-                        ),
-                      ],
-                    ),
-                    child: Stack(
-                      children: [
-                        Positioned.fill(
-                          child: IgnorePointer(
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.white.withValues(alpha: 0.02),
-                                    Colors.transparent,
-                                  ],
-                                  stops: const [0, 0.16],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          top: -24,
-                          left: 0,
-                          right: 0,
-                          child: IgnorePointer(
-                            child: Container(
-                              height: 110,
-                              decoration: BoxDecoration(
-                                gradient: RadialGradient(
-                                  center: const Alignment(0, 0.7),
-                                  radius: 0.95,
-                                  colors: [
-                                    AppColors.accent.withValues(alpha: 0.08),
-                                    Colors.transparent,
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        SingleChildScrollView(
-                          physics: const BouncingScrollPhysics(),
-                          keyboardDismissBehavior:
-                              ScrollViewKeyboardDismissBehavior.onDrag,
-                          child: Padding(
-                            padding: EdgeInsets.fromLTRB(
-                              horizontalPadding,
-                              topPadding,
-                              horizontalPadding,
-                              bottomPadding,
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Center(
-                                  child: Container(
-                                    width: 76,
-                                    height: 7,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.accent.withValues(
-                                        alpha: 0.45,
-                                      ),
-                                      borderRadius: BorderRadius.circular(999),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: AppColors.accent.withValues(
-                                            alpha: 0.18,
-                                          ),
-                                          blurRadius: 18,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(height: handleToIconGap),
-                                Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    Container(
-                                      width: glowSize,
-                                      height: glowSize,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        gradient: RadialGradient(
-                                          colors: [
-                                            AppColors.accent.withValues(
-                                              alpha: 0.26,
-                                            ),
-                                            AppColors.accent.withValues(
-                                              alpha: 0.12,
-                                            ),
-                                            AppColors.accent.withValues(
-                                              alpha: 0.04,
-                                            ),
-                                            Colors.transparent,
-                                          ],
-                                          stops: const [0, 0.3, 0.52, 0.78],
-                                        ),
-                                      ),
-                                    ),
-                                    Container(
-                                      width: iconWrapSize,
-                                      height: iconWrapSize,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        gradient: RadialGradient(
-                                          center: const Alignment(0, -0.25),
-                                          colors: [
-                                            AppColors.accent.withValues(
-                                              alpha: 0.05,
-                                            ),
-                                            AppColors.accent.withValues(
-                                              alpha: 0.01,
-                                            ),
-                                          ],
-                                        ),
-                                        border: Border.all(
-                                          color: AppColors.accent.withValues(
-                                            alpha: 0.36,
-                                          ),
-                                          width: 2,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: AppColors.accent.withValues(
-                                              alpha: 0.18,
-                                            ),
-                                            blurRadius: 28,
-                                          ),
-                                        ],
-                                      ),
-                                      child: Icon(
-                                        Icons.language_rounded,
-                                        size: iconSize,
-                                        color: AppColors.accent,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                SizedBox(height: iconToTitleGap),
-                                Text(
-                                  l10n.appLanguageTitle,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: AppColors.textPrimary,
-                                    fontSize: isCompact ? 16 : 18,
-                                    height: 1.15,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0,
-                                  ),
-                                ),
-                                SizedBox(height: titleToOptionsGap),
-                                for (final option in _languageOptions) ...[
-                                  _LanguageOptionTile(
-                                    label: option.label,
-                                    code: option.code.toUpperCase(),
-                                    isSelected: currentCode == option.code,
-                                    onTap: () => Navigator.of(
-                                      sheetContext,
-                                    ).pop(option.code),
-                                  ),
-                                  if (option != _languageOptions.last)
-                                    SizedBox(height: optionGap),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-
-    if (selectedCode == null || !mounted) return;
-    await localeProvider.setLocale(selectedCode);
   }
 
   void _ensureGuideBadgeState(String? currentUserId, {bool force = false}) {
@@ -964,10 +727,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  String _resolveLanguageLabel(String code) {
-    return code.toUpperCase();
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -996,6 +755,20 @@ class _HomeScreenState extends State<HomeScreen> {
     final homePostStreamItems = _homePostFeedItems
         .skip(_homeTrendingPostLimit)
         .toList(growable: false);
+    final feedCountryCode = _trimmedHomeStringOrNull(homeLocation.countryCode);
+    final feedCityId = _trimmedHomeStringOrNull(homeLocation.cityId);
+    final homeFeedLocationChanged =
+        _topPostsRequestStarted &&
+        !_topPostsLoading &&
+        !_homePostFeedLoadingMore &&
+        (_requestedHomeFeedCountryCode != feedCountryCode ||
+            _requestedHomeFeedCityId != feedCityId);
+    if (homeFeedLocationChanged) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(_loadHomeFeed(force: true));
+      });
+    }
 
     if (currentUserId.isEmpty) {
       _requestedHostedActivitiesForUserId = null;
@@ -1046,12 +819,8 @@ class _HomeScreenState extends State<HomeScreen> {
         suppressGuideFallback: _suppressGuideFallback,
         profile: profile,
         location: location,
-        languageLabel: _resolveLanguageLabel(
-          context.watch<LocaleProvider>().locale.languageCode,
-        ),
         activeItem: AppDrawerActiveItem.none,
         onProfileTap: () => _runDrawerAction(_openProfile),
-        onLanguageTap: () => _runDrawerAction(_showLanguageSheet),
         onHomeTap: () => _runDrawerAction(() => context.go('/')),
         onMyActivitiesTap: () => _runDrawerAction(_openMyActivities),
         onMyExcursionsTap: () =>
@@ -1229,31 +998,34 @@ class _HomeScreenState extends State<HomeScreen> {
                                             _openRecommendedActivityDetails,
                                         location: homeLocation,
                                       ),
-                                      SizedBox(height: isCompact ? 30 : 34),
-                                      _SectionHeader(
-                                        title: l10n.homeSmartPostsTitle,
-                                        actionLabel: l10n.homeSeeAll,
-                                        onActionTap: _openFeed,
-                                      ),
-                                      const SizedBox(height: 16),
-                                      _HomeSmartPostsSection(
-                                        items: homePostStreamItems,
-                                        isLoading:
-                                            _topPostsLoading &&
-                                            _homePostFeedItems.isEmpty,
-                                        hasError:
-                                            _topPostsLoadFailed &&
-                                            _homePostFeedItems.isEmpty,
-                                        isLoadingMore: _homePostFeedLoadingMore,
-                                        hasLoadMoreError:
-                                            _homePostFeedLoadMoreFailed,
-                                        onPostTap: _openTopPost,
-                                        onRetry: () =>
-                                            _loadHomeFeed(force: true),
-                                        onLoadMoreRetry: () =>
-                                            _loadHomeFeed(append: true),
-                                        onEmptyTap: _openFeed,
-                                      ),
+                                      if (isLoggedIn) ...[
+                                        SizedBox(height: isCompact ? 30 : 34),
+                                        _SectionHeader(
+                                          title: l10n.homeSmartPostsTitle,
+                                          actionLabel: l10n.homeSeeAll,
+                                          onActionTap: _openFeed,
+                                        ),
+                                        const SizedBox(height: 16),
+                                        _HomeSmartPostsSection(
+                                          items: homePostStreamItems,
+                                          isLoading:
+                                              _topPostsLoading &&
+                                              _homePostFeedItems.isEmpty,
+                                          hasError:
+                                              _topPostsLoadFailed &&
+                                              _homePostFeedItems.isEmpty,
+                                          isLoadingMore:
+                                              _homePostFeedLoadingMore,
+                                          hasLoadMoreError:
+                                              _homePostFeedLoadMoreFailed,
+                                          onPostTap: _openTopPost,
+                                          onRetry: () =>
+                                              _loadHomeFeed(force: true),
+                                          onLoadMoreRetry: () =>
+                                              _loadHomeFeed(append: true),
+                                          onEmptyTap: _openFeed,
+                                        ),
+                                      ],
                                     ],
                                   ),
                                 ),
@@ -1663,6 +1435,7 @@ class _HomeHeader extends StatelessWidget {
                                       cityId: location.cityId,
                                       cityName: location.cityName,
                                       fallbackText: location.fallbackLabel,
+                                      includeCountry: false,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
@@ -3757,119 +3530,6 @@ class _SkeletonChip extends StatelessWidget {
   }
 }
 
-class _LanguageOptionTile extends StatelessWidget {
-  const _LanguageOptionTile({
-    required this.label,
-    required this.code,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String label;
-  final String code;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            gradient: isSelected
-                ? const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xFFFFA726), Color(0xFFF98C06)],
-                  )
-                : null,
-            color: isSelected ? null : Colors.transparent,
-            border: Border.all(
-              color: isSelected
-                  ? Colors.transparent
-                  : AppColors.accent.withValues(alpha: 0.42),
-              width: 1.5,
-            ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: AppColors.accent.withValues(alpha: 0.18),
-                      blurRadius: 28,
-                      offset: const Offset(0, 12),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: isSelected
-                            ? Colors.white
-                            : Colors.white.withValues(alpha: 0.96),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      code,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: isSelected
-                            ? Colors.white.withValues(alpha: 0.86)
-                            : AppColors.accent.withValues(alpha: 0.92),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isSelected
-                      ? Colors.white.withValues(alpha: 0.18)
-                      : AppColors.accent.withValues(alpha: 0.08),
-                  border: Border.all(
-                    color: isSelected
-                        ? Colors.white.withValues(alpha: 0.22)
-                        : AppColors.accent.withValues(alpha: 0.18),
-                  ),
-                ),
-                child: Icon(
-                  isSelected
-                      ? Icons.check_rounded
-                      : Icons.arrow_forward_rounded,
-                  color: isSelected ? Colors.white : AppColors.accent,
-                  size: 18,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _PromoCardData {
   const _PromoCardData({
     required this.eyebrow,
@@ -3883,19 +3543,6 @@ class _PromoCardData {
   final String description;
   final String imageUrl;
 }
-
-class _LanguageOption {
-  const _LanguageOption({required this.code, required this.label});
-
-  final String code;
-  final String label;
-}
-
-const List<_LanguageOption> _languageOptions = [
-  _LanguageOption(code: 'ru', label: 'Русский'),
-  _LanguageOption(code: 'en', label: 'English'),
-  _LanguageOption(code: 'kk', label: 'Қазақша'),
-];
 
 double _homeTextScaleFactor(BuildContext context) {
   final bodySize = Theme.of(context).textTheme.bodyMedium?.fontSize ?? 14.0;

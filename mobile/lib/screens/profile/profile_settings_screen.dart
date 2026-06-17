@@ -8,6 +8,7 @@ import '../../core/reference/country_filter_utils.dart';
 import '../../core/reference/currency_filter_utils.dart';
 import '../../core/reference/timezone_filter_utils.dart';
 import '../../core/ui/app_colors.dart';
+import '../../core/ui/app_language_sheet.dart';
 import '../../features/profile/models/user_profile_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/auth_provider.dart';
@@ -167,6 +168,10 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     }
   }
 
+  Future<void> _openAppLanguageSettings() {
+    return showAppLanguageSheet(context);
+  }
+
   Future<void> _confirmLogout() async {
     final l10n = AppLocalizations.of(context)!;
     final authProvider = context.read<AuthProvider>();
@@ -279,6 +284,12 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                     title: l10n.editProfileButton,
                     subtitle: l10n.profileSettingsEditSubtitle,
                     onTap: _openEditProfile,
+                  ),
+                  _SettingsActionTile(
+                    icon: Icons.language_rounded,
+                    title: l10n.appLanguageTitle,
+                    subtitle: l10n.profileLocale,
+                    onTap: _openAppLanguageSettings,
                   ),
                   _SettingsActionTile(
                     icon: Icons.notifications_none_rounded,

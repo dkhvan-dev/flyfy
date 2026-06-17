@@ -135,6 +135,7 @@ void main() {
       expect(source, contains('ProfileApi'));
       expect(source, contains('UserProfileVm'));
       expect(source, contains('_resolveGuideProfile'));
+      expect(source, contains('getPublicUserById(guideUserId)'));
       expect(source, contains('excursion.guideUserId'));
       expect(source, contains('context.push('));
       expect(source, contains("'/users/\$guideUserId/profile'"));
@@ -144,6 +145,9 @@ void main() {
       expect(source, contains('showMessageGuide: !isAuthor'));
       expect(source, contains('showMessageGuide'));
       expect(source, isNot(contains('l10n.excursionDetailsGuideName,')));
+      expect(source, isNot(contains('bool canFetch')));
+      expect(source, isNot(contains('if (!canFetch)')));
+      expect(source, isNot(contains('session.isAuthenticated')));
     },
   );
 

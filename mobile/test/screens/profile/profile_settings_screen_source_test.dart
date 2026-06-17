@@ -78,6 +78,46 @@ void main() {
     expect(profileSource, isNot(contains('profileSecurityRowTitle')));
     expect(profileSource, isNot(contains('profileSupportTitle')));
   });
+
+  test(
+    'profile settings opens app language sheet below edit profile action',
+    () async {
+      final source = await File(
+        'lib/screens/profile/profile_settings_screen.dart',
+      ).readAsString();
+
+      expect(
+        source,
+        contains("import '../../core/ui/app_language_sheet.dart';"),
+      );
+      expect(source, contains('Future<void> _openAppLanguageSettings()'));
+      expect(source, contains('showAppLanguageSheet(context)'));
+
+      final editAction = source.indexOf('title: l10n.editProfileButton');
+      final languageIcon = source.indexOf(
+        'icon: Icons.language_rounded',
+        editAction,
+      );
+      final languageAction = source.indexOf('title: l10n.appLanguageTitle');
+      final notificationsAction = source.indexOf(
+        'title: l10n.profileNotificationsRowTitle',
+      );
+
+      expect(editAction, isNonNegative);
+      expect(languageIcon, greaterThan(editAction));
+      expect(languageAction, greaterThan(editAction));
+      expect(languageAction, greaterThan(languageIcon));
+      expect(notificationsAction, greaterThan(languageAction));
+
+      final languageTileSource = source.substring(
+        languageIcon,
+        notificationsAction,
+      );
+      expect(languageTileSource, contains('Icons.language_rounded'));
+      expect(languageTileSource, contains('l10n.profileLocale'));
+      expect(languageTileSource, contains('onTap: _openAppLanguageSettings'));
+    },
+  );
 }
 
 int _headingIndex(String source, String titleExpression) {

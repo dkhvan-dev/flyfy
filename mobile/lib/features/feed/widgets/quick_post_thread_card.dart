@@ -17,6 +17,7 @@ class QuickPostThreadCard extends StatefulWidget {
     super.key,
     required this.post,
     required this.postApi,
+    this.canInteract = true,
     this.previewCommentLimit = 3,
     this.onEdit,
     this.onEngagement,
@@ -24,6 +25,7 @@ class QuickPostThreadCard extends StatefulWidget {
 
   final PostVm post;
   final PostApi postApi;
+  final bool canInteract;
   final int previewCommentLimit;
   final ValueChanged<PostVm>? onEdit;
   final QuickPostEngagementCallback? onEngagement;
@@ -137,7 +139,10 @@ class _QuickPostThreadCardState extends State<QuickPostThreadCard> {
   Future<void> _submitComment() async {
     final body = _controller.text.trim();
     final postId = widget.post.id.trim();
-    if (body.isEmpty || postId.isEmpty || _isSubmitting) {
+    if (!widget.canInteract ||
+        body.isEmpty ||
+        postId.isEmpty ||
+        _isSubmitting) {
       return;
     }
 
@@ -178,7 +183,7 @@ class _QuickPostThreadCardState extends State<QuickPostThreadCard> {
 
   Future<void> _toggleLike() async {
     final postId = widget.post.id.trim();
-    if (postId.isEmpty || _isTogglingLike) {
+    if (!widget.canInteract || postId.isEmpty || _isTogglingLike) {
       return;
     }
 
@@ -306,7 +311,9 @@ class _QuickPostThreadCardState extends State<QuickPostThreadCard> {
                   ),
                 ),
                 const SizedBox(width: 10),
-                if (widget.post.editable && widget.onEdit != null) ...[
+                if (widget.canInteract &&
+                    widget.post.editable &&
+                    widget.onEdit != null) ...[
                   _QuickPostActionsMenu(
                     post: widget.post,
                     onEdit: widget.onEdit!,
@@ -361,91 +368,102 @@ class _QuickPostThreadCardState extends State<QuickPostThreadCard> {
                   icon: Icons.visibility_outlined,
                   label: formatStoryCountCompact(_viewCount),
                 ),
-                _QuickPostLikeButton(
-                  key: ValueKey('quick-post-like-${widget.post.id}'),
-                  likes: _likeCount,
-                  likedByViewer: _likedByViewer,
-                  isLoading: _isTogglingLike,
-                  onPressed: _toggleLike,
-                ),
+                if (widget.canInteract)
+                  _QuickPostLikeButton(
+                    key: ValueKey('quick-post-like-${widget.post.id}'),
+                    likes: _likeCount,
+                    likedByViewer: _likedByViewer,
+                    isLoading: _isTogglingLike,
+                    onPressed: _toggleLike,
+                  )
+                else
+                  _QuickPostMetric(
+                    key: ValueKey('quick-post-likes-count-${widget.post.id}'),
+                    icon: Icons.favorite_border_rounded,
+                    label: formatStoryCountCompact(_likeCount),
+                  ),
                 _QuickPostMetric(
                   icon: Icons.chat_bubble_outline_rounded,
                   label: formatStoryCountCompact(_commentCount),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: TextField(
-                    key: ValueKey('quick-post-comment-field-${widget.post.id}'),
-                    controller: _controller,
-                    minLines: 1,
-                    maxLines: 4,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _submitComment(),
-                    style: const TextStyle(color: Color(0xFFFFF7ED)),
-                    decoration: InputDecoration(
-                      hintText: l10n.storyCommentHint,
-                      hintStyle: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.42),
+            if (widget.canInteract) ...[
+              const SizedBox(height: 10),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: TextField(
+                      key: ValueKey(
+                        'quick-post-comment-field-${widget.post.id}',
                       ),
-                      isDense: true,
-                      filled: true,
-                      fillColor: Colors.black.withValues(alpha: 0.20),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 13,
-                        vertical: 12,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.08),
+                      controller: _controller,
+                      minLines: 1,
+                      maxLines: 4,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => _submitComment(),
+                      style: const TextStyle(color: Color(0xFFFFF7ED)),
+                      decoration: InputDecoration(
+                        hintText: l10n.storyCommentHint,
+                        hintStyle: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.42),
                         ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: AppColors.accent.withValues(alpha: 0.12),
+                        isDense: true,
+                        filled: true,
+                        fillColor: Colors.black.withValues(alpha: 0.20),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 13,
+                          vertical: 12,
                         ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppColors.accent),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton.filled(
-                  key: ValueKey('quick-post-comment-send-${widget.post.id}'),
-                  onPressed: canSubmit ? _submitComment : null,
-                  style: IconButton.styleFrom(
-                    backgroundColor: AppColors.accent,
-                    disabledBackgroundColor: AppColors.accent.withValues(
-                      alpha: 0.20,
-                    ),
-                    foregroundColor: Colors.black,
-                    disabledForegroundColor: Colors.white.withValues(
-                      alpha: 0.42,
-                    ),
-                  ),
-                  tooltip: l10n.storyReplySendAction,
-                  icon: _isSubmitting
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.black,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(
+                            color: Colors.white.withValues(alpha: 0.08),
                           ),
-                        )
-                      : const Icon(Icons.arrow_upward_rounded),
-                ),
-              ],
-            ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(
+                            color: AppColors.accent.withValues(alpha: 0.12),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: AppColors.accent),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filled(
+                    key: ValueKey('quick-post-comment-send-${widget.post.id}'),
+                    onPressed: canSubmit ? _submitComment : null,
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppColors.accent,
+                      disabledBackgroundColor: AppColors.accent.withValues(
+                        alpha: 0.20,
+                      ),
+                      foregroundColor: Colors.black,
+                      disabledForegroundColor: Colors.white.withValues(
+                        alpha: 0.42,
+                      ),
+                    ),
+                    tooltip: l10n.storyReplySendAction,
+                    icon: _isSubmitting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.black,
+                            ),
+                          )
+                        : const Icon(Icons.arrow_upward_rounded),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),

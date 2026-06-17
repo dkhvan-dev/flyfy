@@ -82,7 +82,7 @@ Future<void> showErrorDialog(
                             onPressed: () => Navigator.of(context).pop(),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.accent,
-                              foregroundColor: AppColors.background,
+                              foregroundColor: AppColors.textPrimary,
                               minimumSize: const Size.fromHeight(54),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(18),

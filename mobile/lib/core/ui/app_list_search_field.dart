@@ -107,6 +107,9 @@ class AppListSearchField extends StatelessWidget {
                     top: 2,
                     end: 2,
                     child: Container(
+                      key: const ValueKey(
+                        'app-list-search-active-filter-count',
+                      ),
                       constraints: const BoxConstraints(
                         minWidth: 16,
                         minHeight: 16,

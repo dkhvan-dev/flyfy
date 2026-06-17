@@ -69,6 +69,8 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
   final ActivityApi _activityApi = ActivityApi();
   final Set<String> _reviewedActivityIds = {};
   final Set<String> _reviewStateLoadedActivityIds = {};
+  final Set<String> _reviewEligibleActivityIds = {};
+  final Set<String> _reviewEligibilityLoadedActivityIds = {};
   final Map<String, ActivityReviewVm> _activityReviewCache = {};
   final Map<String, ActivityOrganizerReviewVm> _organizerReviewCache = {};
   String? _lastReviewStateSyncKey;
@@ -171,6 +173,13 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
     return item.status.trim().toUpperCase() == 'COMPLETED';
   }
 
+  bool _canShowReviewAction(ActivityListItemVm item) {
+    final activityId = item.id.trim();
+    if (activityId.isEmpty) return false;
+    return _canReviewActivity(item) &&
+        _reviewEligibleActivityIds.contains(activityId);
+  }
+
   ActivityReviewVm? _myActivityReview(
     List<ActivityReviewVm> reviews,
     String currentUserId,
@@ -229,6 +238,26 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
       default:
         return false;
     }
+  }
+
+  void _storeReviewEligibility(String activityId, {required bool canReview}) {
+    final normalizedActivityId = activityId.trim();
+    if (normalizedActivityId.isEmpty) return;
+
+    _reviewEligibilityLoadedActivityIds.add(normalizedActivityId);
+    if (canReview) {
+      _reviewEligibleActivityIds.add(normalizedActivityId);
+    } else {
+      _reviewEligibleActivityIds.remove(normalizedActivityId);
+    }
+  }
+
+  void _setReviewEligibility(String activityId, {required bool canReview}) {
+    if (!mounted) return;
+
+    setState(() {
+      _storeReviewEligibility(activityId, canReview: canReview);
+    });
   }
 
   void _storeActivityReviewState(
@@ -304,7 +333,11 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
     String syncKey,
   ) async {
     final pendingActivityIds = activityIds
-        .where((id) => !_reviewStateLoadedActivityIds.contains(id))
+        .where(
+          (id) =>
+              !_reviewStateLoadedActivityIds.contains(id) ||
+              !_reviewEligibilityLoadedActivityIds.contains(id),
+        )
         .toList(growable: false);
     if (pendingActivityIds.isEmpty) return;
 
@@ -323,11 +356,18 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
               activityId: activityId,
               limit: 1000,
             ),
+            _activityApi.getActivityParticipants(activityId, limit: 1000),
           ]);
           final activityReviewsPage = results[0] as ActivityReviewsPage;
           final organizerReviewsPage =
               results[1] as ActivityOrganizerReviewsPage;
+          final participants = results[2] as List<ActivityParticipantVm>;
+          final currentParticipant = _currentReviewParticipant(
+            participants,
+            currentUserId,
+          );
           updates[activityId] = _CachedActivityReviewState(
+            canReview: _isReviewableParticipant(currentParticipant),
             activityReview: _myActivityReview(
               activityReviewsPage.items,
               currentUserId,
@@ -358,6 +398,7 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
           activityReview: entry.value.activityReview,
           organizerReview: entry.value.organizerReview,
         );
+        _storeReviewEligibility(entry.key, canReview: entry.value.canReview);
       }
       if (hasFailures && _lastReviewStateSyncKey == syncKey) {
         _lastReviewStateSyncKey = null;
@@ -388,18 +429,6 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
       return;
     }
 
-    if (_reviewedActivityIds.contains(item.id) &&
-        _reviewStateLoadedActivityIds.contains(item.id)) {
-      await _showReviewEditor(
-        item: item,
-        currentUserId: currentUserId,
-        existingActivityReview: _activityReviewCache[item.id],
-        existingOrganizerReview: _organizerReviewCache[item.id],
-        l10n: l10n,
-      );
-      return;
-    }
-
     late final List<ActivityParticipantVm> participants;
     try {
       participants = await _activityApi.getActivityParticipants(
@@ -421,11 +450,25 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
       participants,
       currentUserId,
     );
-    if (!_isReviewableParticipant(currentParticipant)) {
+    final canReview = _isReviewableParticipant(currentParticipant);
+    _setReviewEligibility(item.id, canReview: canReview);
+    if (!canReview) {
       await showErrorDialog(
         context,
         title: l10n.error,
         message: l10n.activityReviewUnavailable,
+      );
+      return;
+    }
+
+    if (_reviewedActivityIds.contains(item.id) &&
+        _reviewStateLoadedActivityIds.contains(item.id)) {
+      await _showReviewEditor(
+        item: item,
+        currentUserId: currentUserId,
+        existingActivityReview: _activityReviewCache[item.id],
+        existingOrganizerReview: _organizerReviewCache[item.id],
+        l10n: l10n,
       );
       return;
     }
@@ -1035,7 +1078,7 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                                       : null,
                                   onReviewTap:
                                       _activeTab == _MyActivitiesTab.attended &&
-                                          _canReviewActivity(item)
+                                          _canShowReviewAction(item)
                                       ? () => _openReviewSheet(item)
                                       : null,
                                   hasReview: _reviewedActivityIds.contains(
@@ -1139,10 +1182,12 @@ class _FilterStatusOption {
 
 class _CachedActivityReviewState {
   const _CachedActivityReviewState({
+    required this.canReview,
     required this.activityReview,
     required this.organizerReview,
   });
 
+  final bool canReview;
   final ActivityReviewVm? activityReview;
   final ActivityOrganizerReviewVm? organizerReview;
 }

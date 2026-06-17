@@ -695,8 +695,6 @@ class _StoriesScreenState extends State<StoriesScreen> {
     await action();
   }
 
-  Future<void> _showLanguageSheet() => showAppLanguageSheet(context);
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -723,13 +721,9 @@ class _StoriesScreenState extends State<StoriesScreen> {
         showGuideBadge: profile?.isGuide ?? false,
         profile: profile,
         location: location,
-        languageLabel: resolveDrawerLanguageLabel(
-          Localizations.localeOf(context).languageCode,
-        ),
         activeItem: AppDrawerActiveItem.none,
         onProfileTap: () =>
             _runDrawerAction(() async => context.push('/profile')),
-        onLanguageTap: () => _runDrawerAction(_showLanguageSheet),
         onHomeTap: () => _runDrawerAction(() async => context.go('/')),
         onMyActivitiesTap: () =>
             _runDrawerAction(() async => context.push('/me/activities')),

@@ -9,10 +9,7 @@ void main() {
     ).readAsString();
 
     final drawerStart = source.indexOf('class AppSideDrawer');
-    final helpersStart = source.indexOf(
-      'String _resolveLocalizedCountry',
-      drawerStart,
-    );
+    final helpersStart = source.indexOf('class _DrawerPinnedFooter');
 
     expect(drawerStart, isNonNegative);
     expect(helpersStart, greaterThan(drawerStart));
@@ -130,12 +127,10 @@ void main() {
       'lib/screens/common/app_side_drawer.dart',
     ).readAsString();
     final actionStart = source.indexOf('class _DrawerFooterAction');
-    final actionEnd = source.indexOf('class _LanguageOptionTile', actionStart);
 
     expect(actionStart, isNonNegative);
-    expect(actionEnd, greaterThan(actionStart));
 
-    final actionSource = source.substring(actionStart, actionEnd);
+    final actionSource = source.substring(actionStart);
 
     expect(actionSource, contains('Color(0xFF2C2118)'));
     expect(actionSource, contains('Color(0xFF3B260D)'));
@@ -173,12 +168,10 @@ void main() {
       'lib/screens/common/app_side_drawer.dart',
     ).readAsString();
     final actionStart = source.indexOf('class _DrawerFooterAction');
-    final actionEnd = source.indexOf('class _LanguageOptionTile', actionStart);
 
     expect(actionStart, isNonNegative);
-    expect(actionEnd, greaterThan(actionStart));
 
-    final actionSource = source.substring(actionStart, actionEnd);
+    final actionSource = source.substring(actionStart);
 
     expect(source, contains('semanticLabel: isLoggedIn'));
     expect(source, contains('l10n.logoutButton'));
@@ -192,21 +185,22 @@ void main() {
     expect(actionSource, contains('ExcludeSemantics('));
   });
 
-  test('drawer language options expose selected semantic buttons', () async {
+  test('drawer no longer exposes app language switcher in menu', () async {
     final source = await File(
       'lib/screens/common/app_side_drawer.dart',
     ).readAsString();
-    final optionStart = source.indexOf('class _LanguageOptionTile');
+    final drawerStart = source.indexOf('class AppSideDrawer');
+    final helpersStart = source.indexOf('class _DrawerPinnedFooter');
 
-    expect(optionStart, isNonNegative);
+    expect(drawerStart, isNonNegative);
+    expect(helpersStart, greaterThan(drawerStart));
 
-    final optionSource = source.substring(optionStart);
+    final drawerSource = source.substring(drawerStart, helpersStart);
 
-    expect(optionSource, contains('Semantics('));
-    expect(optionSource, contains('button: true'));
-    expect(optionSource, contains('enabled: true'));
-    expect(optionSource, contains('selected: isSelected'));
-    expect(optionSource, contains('label: label'));
-    expect(optionSource, contains('ExcludeSemantics('));
+    expect(drawerSource, isNot(contains('languageLabel')));
+    expect(drawerSource, isNot(contains('onLanguageTap')));
+    expect(drawerSource, isNot(contains('l10n.appLanguageTitle')));
+    expect(drawerSource, isNot(contains('Icons.language_rounded')));
+    expect(drawerSource, isNot(contains('_LanguageOptionTile')));
   });
 }

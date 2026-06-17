@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inflap/core/network/story_api.dart';
+import 'package:inflap/core/ui/app_colors.dart';
 import 'package:inflap/features/stories/models/story_vm.dart';
+import 'package:inflap/features/stories/story_ui.dart';
 import 'package:inflap/l10n/generated/app_localizations.dart';
 import 'package:inflap/screens/stories/my_story_archive_screen.dart';
 
@@ -40,6 +42,79 @@ void main() {
     expect(find.text('Вчерашний закат'), findsOneWidget);
     expect(api.activeRequests, 1);
     expect(api.archiveRequests, 1);
+  });
+
+  testWidgets('my stories are grouped by publish date and render previews', (
+    tester,
+  ) async {
+    final api = _FakeStoryApi(
+      activeStories: [
+        _story(
+          id: 'published-one',
+          caption: 'First day',
+          createdAt: DateTime.utc(2026, 6, 14, 8),
+          previewFileId: 'inline-preview-one',
+        ),
+        _story(
+          id: 'published-two',
+          caption: 'Second day',
+          createdAt: DateTime.utc(2026, 6, 13, 8),
+          coverImageUrl: '/api/v1/public/files/cover-two/content',
+        ),
+      ],
+      archivedStories: const [],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: MyStoryArchiveScreen(storyApi: api),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+
+    expect(find.text('14 Jun 2026'), findsOneWidget);
+    expect(find.text('13 Jun 2026'), findsOneWidget);
+    final previewWidgets = tester.widgetList<StoryCoverImage>(
+      find.byType(StoryCoverImage),
+    );
+    expect(
+      previewWidgets.map((widget) => widget.url),
+      contains(contains('inline-preview-one')),
+    );
+    expect(
+      previewWidgets.map((widget) => widget.url),
+      contains(contains('/api/v1/public/files/cover-two/content')),
+    );
+  });
+
+  testWidgets('my stories tabs use primary text and empty state has no retry', (
+    tester,
+  ) async {
+    final api = _FakeStoryApi(
+      activeStories: const [],
+      archivedStories: const [],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('ru'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: MyStoryArchiveScreen(storyApi: api),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+
+    final activeTab = tester.widget<Text>(find.text('Активные'));
+    final archiveTab = tester.widget<Text>(find.text('Архив'));
+    expect(activeTab.style?.color, AppColors.textPrimary);
+    expect(archiveTab.style?.color, AppColors.textPrimary);
+    expect(find.text('Попробовать снова'), findsNothing);
   });
 }
 
@@ -80,22 +155,40 @@ class _FakeStoryApi extends StoryApi {
   }
 }
 
-StoryVm _story({required String id, required String caption}) {
-  final createdAt = DateTime.utc(2026, 6, 14, 8);
+StoryVm _story({
+  required String id,
+  required String caption,
+  DateTime? createdAt,
+  String? coverImageUrl,
+  String? previewFileId,
+}) {
+  final created = createdAt ?? DateTime.utc(2026, 6, 14, 8);
   return StoryVm(
     id: id,
     caption: caption,
-    mediaFileId: 'file-$id',
-    coverFileId: 'file-$id',
-    coverImageUrl: '',
+    mediaFileId: coverImageUrl == null && previewFileId == null
+        ? 'file-$id'
+        : '',
+    coverFileId: coverImageUrl == null && previewFileId == null
+        ? 'file-$id'
+        : null,
+    coverImageUrl: coverImageUrl,
     mediaType: 'IMAGE',
+    contentBlocks: previewFileId == null
+        ? const []
+        : [
+            {
+              'type': 'image',
+              'image': {'fileId': previewFileId},
+            },
+          ],
     author: const StoryAuthorVm(
       userId: 'author-one',
       locale: 'ru',
       timezone: 'Asia/Almaty',
     ),
-    expiresAt: createdAt.add(const Duration(hours: 24)),
-    createdAt: createdAt,
-    updatedAt: createdAt,
+    expiresAt: created.add(const Duration(hours: 24)),
+    createdAt: created,
+    updatedAt: created,
   );
 }

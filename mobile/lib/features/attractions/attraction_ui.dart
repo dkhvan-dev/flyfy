@@ -9,6 +9,53 @@ import 'models/attraction_vm.dart';
 
 const double attractionTypographyScaleFactor = 0.8;
 
+String localizedAttractionCategoryLabel(
+  AppLocalizations l10n,
+  String? category,
+) {
+  final normalized = category?.trim().toUpperCase() ?? '';
+  switch (normalized) {
+    case 'PARK':
+    case 'PARKS':
+      return l10n.attractionFilterCategoryParks;
+    case 'MUSEUM':
+    case 'MUSEUMS':
+      return l10n.attractionFilterCategoryMuseums;
+    case 'NATURE':
+      return l10n.attractionFilterCategoryNature;
+    case 'ARCHITECTURE':
+      return l10n.attractionFilterCategoryArchitecture;
+    case 'BEACH':
+      return l10n.attractionFilterCategoryBeach;
+    case 'TEMPLE':
+      return l10n.attractionFilterCategoryTemple;
+    case 'ENTERTAINMENT':
+      return l10n.attractionFilterCategoryEntertainment;
+    case 'FOOD':
+      return l10n.attractionFilterCategoryFood;
+    case 'MARKET':
+      return l10n.attractionFilterCategoryMarket;
+    case 'SHOPPING':
+      return l10n.attractionFilterCategoryShopping;
+    case 'OTHER':
+      return l10n.attractionFilterCategoryOther;
+    case 'HISTORY':
+      return l10n.attractionFilterCategoryHistory;
+    case 'ADVENTURE':
+      return l10n.attractionFilterCategoryAdventure;
+  }
+  if (normalized.isEmpty) return l10n.attractionFilterCategoryOther;
+  return normalized
+      .split(RegExp(r'[_\s-]+'))
+      .where((part) => part.isNotEmpty)
+      .map(
+        (part) => part.length == 1
+            ? part
+            : '${part.substring(0, 1)}${part.substring(1).toLowerCase()}',
+      )
+      .join(' ');
+}
+
 class AttractionTextScale extends StatelessWidget {
   const AttractionTextScale({super.key, required this.child});
 

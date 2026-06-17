@@ -418,8 +418,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get profileTimezone => 'Уақыт белдеуі';
 
   @override
-  String get profileTimezoneSearchHint =>
-      'Уақыт белдеуін, қаланы немесе UTC іздеу';
+  String get profileTimezoneSearchHint => 'Уақыт белдеуі, қала немесе UTC';
 
   @override
   String get profileTimezoneNoResults => 'Уақыт белдеулері табылмады';
@@ -441,8 +440,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get profileCurrency => 'Валюта';
 
   @override
-  String get profileCurrencySearchHint =>
-      'Валютаны, кодты немесе таңбаны іздеу';
+  String get profileCurrencySearchHint => 'Валюта, код немесе таңба';
 
   @override
   String get profileCurrencyNoResults => 'Валюталар табылмады';
@@ -912,7 +910,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get profileFollowersTitle => 'Фолловерлер';
 
   @override
-  String get profileFollowersSearchHint => 'Фолловерлерді іздеу';
+  String get profileFollowersSearchHint => 'Фолловерлер';
 
   @override
   String get profileFollowersEmptyTitle => 'Әзірге фолловерлер жоқ';
@@ -940,7 +938,7 @@ class AppLocalizationsKk extends AppLocalizations {
       'Достарыңызды және бақылап жүрген пайдаланушыларды басқарыңыз.';
 
   @override
-  String get profileConnectionsSearchHint => 'Адамдарды іздеу';
+  String get profileConnectionsSearchHint => 'Адамдар';
 
   @override
   String get profileConnectionsFriendsTab => 'Достар';
@@ -1832,7 +1830,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get activityInviteFriendsTitle => 'Достарды шақыру';
 
   @override
-  String get activityInviteFriendsSearchHint => 'Достарды іздеу';
+  String get activityInviteFriendsSearchHint => 'Достар';
 
   @override
   String get activityInviteFriendsEmptyTitle => 'Шақыратын дос жоқ';
@@ -2074,7 +2072,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get homeLocationDetecting => 'Локация анықталуда...';
 
   @override
-  String get homeLocationSearchHint => 'Қаланы іздеу';
+  String get homeLocationSearchHint => 'Қала';
 
   @override
   String get homeLocationNoResults => 'Қалалар табылмады';
@@ -2097,7 +2095,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get locationFilterAllCities => 'Барлық қалалар';
 
   @override
-  String get locationFilterCitySearchHint => 'Қаланы іздеу';
+  String get locationFilterCitySearchHint => 'Қала';
 
   @override
   String get locationFilterCityNoResults => 'Қала табылмады';
@@ -2111,8 +2109,7 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
-  String get homeSearchHint =>
-      'Белсенділіктерді, орындарды, экскурсияларды іздеу...';
+  String get homeSearchHint => 'Белсенділіктер, орындар, экскурсиялар...';
 
   @override
   String get homeTopDestinations => 'Үздік бағыттар';
@@ -2218,7 +2215,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get currencyConverterSelectCurrencyTitle => 'Валютаны таңдау';
 
   @override
-  String get currencyConverterSearchCurrencyHint => 'Валютаны іздеу';
+  String get currencyConverterSearchCurrencyHint => 'Валюта';
 
   @override
   String get currencyConverterRecentSection => 'Соңғылар';
@@ -2478,7 +2475,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get feedMySubscriptionsPeopleTab => 'Адамдар';
 
   @override
-  String get feedMySubscriptionsSearchHint => 'Жазылымдарды іздеу';
+  String get feedMySubscriptionsSearchHint => 'Жазылымдар';
 
   @override
   String get feedMySubscriptionsSheetSubtitle =>
@@ -2648,7 +2645,7 @@ class AppLocalizationsKk extends AppLocalizations {
       'Байланысты тексеріп, қайта көріңіз.';
 
   @override
-  String get communityDiscoverySearchHint => 'Қауымдастық іздеу';
+  String get communityDiscoverySearchHint => 'Қауымдастықтар';
 
   @override
   String get communityDiscoveryFiltersTitle => 'Сүзгілер';
@@ -3184,8 +3181,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get attractionFilterCountryAll => 'Барлық елдер';
 
   @override
-  String get attractionFilterCountrySearchHint =>
-      'Ел, код немесе телефон бойынша іздеу';
+  String get attractionFilterCountrySearchHint => 'Ел, код немесе телефон';
 
   @override
   String get attractionFilterCountryNoResults => 'Ел табылмады';
@@ -3625,7 +3621,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get excursionsDiscoverTitle => 'Экскурсиялар';
 
   @override
-  String get excursionsSearchHint => 'Экскурсиялар мен әсерлерді іздеу';
+  String get excursionsSearchHint => 'Экскурсиялар мен әсерлер';
 
   @override
   String get excursionsSortLabel => 'Сұрыптау';
@@ -3676,8 +3672,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get excursionsFilterCountryAll => 'Барлық елдер';
 
   @override
-  String get excursionsFilterCountrySearchHint =>
-      'Ел, код немесе телефон бойынша іздеу';
+  String get excursionsFilterCountrySearchHint => 'Ел, код немесе телефон';
 
   @override
   String get excursionsFilterCountryNoResults => 'Ел табылмады';
@@ -3722,8 +3717,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get excursionsFilterLanguageAll => 'Барлық тілдер';
 
   @override
-  String get excursionsFilterLanguageSearchHint =>
-      'Тіл немесе код бойынша іздеу';
+  String get excursionsFilterLanguageSearchHint => 'Тіл немесе код';
 
   @override
   String get excursionsFilterLanguageNoResults => 'Тіл табылмады';
@@ -3754,7 +3748,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get guidesTitle => 'Гидтер';
 
   @override
-  String get guidesSearchHint => 'Гидтерді іздеу';
+  String get guidesSearchHint => 'Гидтер';
 
   @override
   String get guidesSortLabel => 'Сұрыптау';
@@ -3784,8 +3778,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get guidesFilterCountryAll => 'Барлық елдер';
 
   @override
-  String get guidesFilterCountrySearchHint =>
-      'Ел, код немесе телефон бойынша іздеу';
+  String get guidesFilterCountrySearchHint => 'Ел, код немесе телефон';
 
   @override
   String get guidesFilterCountryNoResults => 'Ел табылмады';
@@ -3800,7 +3793,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get guidesFilterLanguageAll => 'Барлық тілдер';
 
   @override
-  String get guidesFilterLanguageSearchHint => 'Тілді немесе кодты іздеу';
+  String get guidesFilterLanguageSearchHint => 'Тіл немесе код';
 
   @override
   String get guidesFilterLanguageNoResults => 'Тіл табылмады';
@@ -4012,7 +4005,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get excursionDetailsOfferCurrentUser => 'Бұл сіз';
 
   @override
-  String get excursionDetailsOffersSearchHint => 'Гидтер мен ұсыныстарды іздеу';
+  String get excursionDetailsOffersSearchHint => 'Гидтер мен ұсыныстар';
 
   @override
   String get excursionDetailsOffersLoadMore => 'Тағы гидтерді көрсету';
@@ -4059,8 +4052,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get excursionDetailsOffersLanguageAny => 'Кез келген тіл';
 
   @override
-  String get excursionDetailsOffersLanguageSearchHint =>
-      'Тілді немесе кодты іздеу';
+  String get excursionDetailsOffersLanguageSearchHint => 'Тіл немесе код';
 
   @override
   String get excursionDetailsOffersLanguageNoResults => 'Тіл табылмады';
@@ -4320,7 +4312,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get excursionSelectLocationCountrySection => 'Елді таңдаңыз';
 
   @override
-  String get excursionSelectLocationCountrySearchHint => 'Елдерді іздеу...';
+  String get excursionSelectLocationCountrySearchHint => 'Елдер';
 
   @override
   String get excursionCountryKazakhstan => 'Қазақстан';
@@ -4339,8 +4331,7 @@ class AppLocalizationsKk extends AppLocalizations {
       'Көрікті жерді таңдаңыз';
 
   @override
-  String get excursionSelectLocationAttractionSearchHint =>
-      'Көрікті жерлерді іздеу...';
+  String get excursionSelectLocationAttractionSearchHint => 'Көрікті жерлер';
 
   @override
   String get excursionSelectLocationSelected => 'Таңдалды';
@@ -4385,6 +4376,29 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get createExcursionAutosaveRestored =>
       'Жергілікті черновик қалпына келтірілді';
+
+  @override
+  String get createExcursionDiscardTitle => 'Сақтамай шығасыз ба?';
+
+  @override
+  String get createExcursionDiscardDescription =>
+      'Экскурсия черновигіндегі деректер жоғалады. Келесі кіргенде форма бос ашылады.';
+
+  @override
+  String get createExcursionDiscardConfirm => 'Шығу және тазарту';
+
+  @override
+  String get createExcursionModeSwitchTitle => 'Маршрут түрін өзгертесіз бе?';
+
+  @override
+  String get createExcursionModeSwitchDescription =>
+      'Қазіргі нұсқаның деректері тазаланады. Экскурсияның қалған мәліметтері сақталады.';
+
+  @override
+  String get createExcursionModeSwitchCancel => 'Осы жерде қалу';
+
+  @override
+  String get createExcursionModeSwitchConfirm => 'Өзгерту және тазарту';
 
   @override
   String get createExcursionItineraryValidation =>
@@ -4471,8 +4485,7 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
-  String get createExcursionLanguagesSearchHint =>
-      'Тіл немесе код бойынша іздеу';
+  String get createExcursionLanguagesSearchHint => 'Тіл немесе код';
 
   @override
   String get createExcursionLanguagesNoResults => 'Тіл табылмады';
@@ -5197,7 +5210,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get myExcursionsTitle => 'Менің экскурсияларым';
 
   @override
-  String get myExcursionsSearchHint => 'Экскурсия, гид және қала бойынша іздеу';
+  String get myExcursionsSearchHint => 'Экскурсиялар, гидтер және қалалар';
 
   @override
   String get myExcursionsFilterTitle => 'Экскурсия сүзгілері';
@@ -5511,7 +5524,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get guideDashboardSearchHint =>
-      'Ұсыныс, қонақ, қала және күн бойынша іздеу';
+      'Ұсыныстар, қонақтар, қалалар және күндер';
 
   @override
   String get guideDashboardOffersTab => 'Ұсыныстар';
@@ -5880,7 +5893,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get activitiesSearchHint =>
-      'Белсенділіктер, ұйымдастырушылар, қалалар іздеу';
+      'Белсенділіктер, ұйымдастырушылар, қалалар';
 
   @override
   String get activitiesFiltersTitle => 'Сүзгілер';
@@ -5892,8 +5905,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get activitiesFilterCountryAll => 'Барлық елдер';
 
   @override
-  String get activitiesFilterCountrySearchHint =>
-      'Ел, код немесе телефон бойынша іздеу';
+  String get activitiesFilterCountrySearchHint => 'Ел, код немесе телефон';
 
   @override
   String get activitiesFilterCountryNoResults => 'Ел табылмады';
@@ -6130,10 +6142,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get storiesActivitiesNavLabel => 'Белсенділіктер';
 
   @override
-  String get storySearchHint => 'Посттарды, авторларды немесе орындарды іздеу';
+  String get storySearchHint => 'Посттар, авторлар немесе орындар';
 
   @override
-  String get storySearchCompactHint => 'Посттарды іздеу';
+  String get storySearchCompactHint => 'Посттар';
 
   @override
   String get storyFiltersTitle => 'Сүзгілер';
@@ -6154,8 +6166,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get storyFilterCountryAll => 'Барлық елдер';
 
   @override
-  String get storyFilterCountrySearchHint =>
-      'Ел, код немесе телефон бойынша іздеу';
+  String get storyFilterCountrySearchHint => 'Ел, код немесе телефон';
 
   @override
   String get storyFilterCountryNoResults => 'Ел табылмады';
@@ -6570,10 +6581,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get storyPlaceHint => 'Қала немесе елді енгізіңіз';
 
   @override
-  String get storyCountryHint => 'Елді іздеу';
+  String get storyCountryHint => 'Ел';
 
   @override
-  String get storyCityHint => 'Қаланы іздеу';
+  String get storyCityHint => 'Қала';
 
   @override
   String get storyTagsFieldLabel => 'Тегтер';
@@ -6641,7 +6652,7 @@ class AppLocalizationsKk extends AppLocalizations {
       'Әңгімеңізді сезімдік детальдан бастаңыз. «Мен Токиоға келдім» деудің орнына, Сибуяның дымқыл асфальтында шағылысқан неон жарығын суреттеңіз.';
 
   @override
-  String get storyEditorTitle => 'Хикая редакторы';
+  String get storyEditorTitle => 'Пост редакторы';
 
   @override
   String get storyEditorQuickPostTitle => 'Жылдам пост';
@@ -6682,7 +6693,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get storyEditorDiscardChangesTitle =>
-      'Хикая өзгерістерінен бас тарту керек пе?';
+      'Пост өзгерістерінен бас тарту керек пе?';
 
   @override
   String get storyEditorDiscardChangesMessage =>
@@ -7178,7 +7189,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get chatListExcursionsTab => 'Экскурсиялар';
 
   @override
-  String get chatListSearchHint => 'Чаттарды іздеу';
+  String get chatListSearchHint => 'Чаттар';
 
   @override
   String get chatListSearchEmpty => 'Чаттар табылмады';
@@ -7426,7 +7437,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get stickersTabRecent => 'Жуырдағы';
 
   @override
-  String get stickersSearchHint => 'Стикерлерді іздеу';
+  String get stickersSearchHint => 'Стикерлер';
 
   @override
   String get stickersEmptyRecent => 'Жуырдағы стикерлер әлі жоқ';
@@ -8020,6 +8031,121 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get notificationsActivityJoinedBody =>
       'Қатысушыларды көру үшін белсенділікті ашыңыз.';
+
+  @override
+  String get notificationsActivityParticipantWaitlistedTitle =>
+      'Қатысушы күту тізіміне қосылды';
+
+  @override
+  String get notificationsActivityParticipantWaitlistedBody =>
+      'Күту тізімін басқару үшін белсенділікті ашыңыз.';
+
+  @override
+  String get notificationsActivityParticipantLeftTitle =>
+      'Қатысушы белсенділіктен шықты';
+
+  @override
+  String get notificationsActivityParticipantLeftBody =>
+      'Ағымдағы қатысушылар тізімін тексеру үшін белсенділікті ашыңыз.';
+
+  @override
+  String get notificationsActivityLateCancellationTitle => 'Кеш бас тарту';
+
+  @override
+  String get notificationsActivityLateCancellationBody =>
+      'Қатысушы басталу уақытына жақын кезде бас тартты.';
+
+  @override
+  String get notificationsActivityCancelledTitle => 'Белсенділік тоқтатылды';
+
+  @override
+  String notificationsActivityCancelledBody(Object activity) {
+    return '«$activity» белсенділігі тоқтатылды.';
+  }
+
+  @override
+  String get notificationsActivityCancelledBodyGeneric =>
+      'Бұл белсенділік тоқтатылды.';
+
+  @override
+  String get notificationsActivityConfirmedTitle => 'Белсенділік расталды';
+
+  @override
+  String get notificationsActivityConfirmedBody =>
+      'Соңғы мәліметтерді көру үшін белсенділікті ашыңыз.';
+
+  @override
+  String get notificationsActivityCompletedTitle => 'Белсенділік аяқталды';
+
+  @override
+  String get notificationsActivityCompletedBody =>
+      'Енді әсеріңіз туралы пікір қалдыра аласыз.';
+
+  @override
+  String get notificationsExcursionBookingCreatedTitle =>
+      'Жаңа экскурсия броні';
+
+  @override
+  String get notificationsExcursionBookingCreatedBody =>
+      'Брон мәліметтерін көру үшін гид кабинетін ашыңыз.';
+
+  @override
+  String get notificationsExcursionBookingCancelledTitle =>
+      'Экскурсия броні тоқтатылды';
+
+  @override
+  String get notificationsExcursionBookingCancelledBody =>
+      'Саяхатшы бұл экскурсиядан бас тартты.';
+
+  @override
+  String get notificationsExcursionGuestsUpdatedTitle => 'Қонақ саны өзгерді';
+
+  @override
+  String get notificationsExcursionGuestsUpdatedBody =>
+      'Жаңартылған бронды тексеру үшін гид кабинетін ашыңыз.';
+
+  @override
+  String get notificationsExcursionAttendanceTitle => 'Қонақ белгіленді';
+
+  @override
+  String get notificationsExcursionAttendanceBody =>
+      'Саяхатшы осы экскурсияға келгенін белгіледі.';
+
+  @override
+  String get notificationsExcursionCancelledTitle => 'Экскурсия тоқтатылды';
+
+  @override
+  String get notificationsExcursionCancelledBody =>
+      'Гид бұл экскурсияны тоқтатты.';
+
+  @override
+  String get notificationsExcursionStartsSoonTitle =>
+      'Экскурсия жақында басталады';
+
+  @override
+  String get notificationsExcursionStartsSoonBody =>
+      'Брондау терезесі жабылды. Қонақтарды тексеру үшін экскурсияны ашыңыз.';
+
+  @override
+  String get notificationsExcursionCompletedTitle => 'Экскурсия қалай өтті?';
+
+  @override
+  String get notificationsExcursionCompletedBody =>
+      'Экскурсия аяқталды. Енді пікір қалдыра аласыз.';
+
+  @override
+  String get notificationsExcursionPublishedTitle => 'Экскурсия жарияланды';
+
+  @override
+  String get notificationsExcursionPublishedBody =>
+      'Экскурсияңыз енді саяхатшыларға көрінеді.';
+
+  @override
+  String get notificationsExcursionRejectedTitle => 'Экскурсияны түзету керек';
+
+  @override
+  String get notificationsExcursionRejectedBody =>
+      'Модерация ескертулерін көру үшін гид кабинетін ашыңыз.';
 
   @override
   String get notificationsJustNow => 'жаңа ғана';

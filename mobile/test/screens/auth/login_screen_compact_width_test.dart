@@ -47,4 +47,20 @@ void main() {
       findsNothing,
     );
   });
+
+  testWidgets('auth form titles do not show subtitle text', (tester) async {
+    await tester.pumpWidget(buildTestApp());
+    await tester.pump();
+
+    final l10n = AppLocalizations.of(tester.element(find.byType(LoginScreen)))!;
+
+    expect(find.text(l10n.authLoginTitle), findsOneWidget);
+    expect(find.text(l10n.welcomeDescription), findsNothing);
+
+    await tester.tap(find.text(l10n.authRegisterTab));
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.authRegisterTitle), findsOneWidget);
+    expect(find.text(l10n.welcomeDescription), findsNothing);
+  });
 }

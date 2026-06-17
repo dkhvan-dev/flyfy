@@ -10,6 +10,7 @@ import '../../features/attractions/attraction_ui.dart';
 import '../../features/attractions/data/attraction_api.dart';
 import '../../features/attractions/models/attraction_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../shared/reference/app_location_label_resolver.dart';
 import '../../shared/map/app_map_links.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
 import '../attractions/attractions_filter_sheet.dart';
@@ -42,6 +43,23 @@ class ExcursionLocationSelection {
   final String? coverImageUrl;
   final Map<String, ExcursionLocationLocalizedCopy> translations;
   final String categorySlug;
+
+  ExcursionLocationSelection copyWith({String? cityName}) {
+    return ExcursionLocationSelection(
+      id: id,
+      name: name,
+      countryCode: countryCode,
+      cityId: cityId,
+      cityName: cityName ?? this.cityName,
+      latitude: latitude,
+      longitude: longitude,
+      mapUrl: mapUrl,
+      coverFileId: coverFileId,
+      coverImageUrl: coverImageUrl,
+      translations: translations,
+      categorySlug: categorySlug,
+    );
+  }
 
   factory ExcursionLocationSelection.fromAttraction(
     AttractionVm attraction, {
@@ -109,8 +127,7 @@ String? _selectionCityName({required String cityId, String? fallbackCityName}) {
   if (cityName != null && cityName.isNotEmpty) {
     return cityName;
   }
-  final normalizedCityId = cityId.trim();
-  return normalizedCityId.isEmpty ? null : normalizedCityId;
+  return null;
 }
 
 class ExcursionLocationLocalizedCopy {
@@ -141,11 +158,13 @@ class ExcursionSelectLocationScreen extends StatefulWidget {
     required this.countryCode,
     this.initialSelection,
     this.api,
+    this.locationLabelResolver,
   });
 
   final String countryCode;
   final ExcursionLocationSelection? initialSelection;
   final AttractionApi? api;
+  final AppLocationLabelResolver? locationLabelResolver;
 
   @override
   State<ExcursionSelectLocationScreen> createState() =>
@@ -159,6 +178,7 @@ class _ExcursionSelectLocationScreenState
   static const double _swipeCloseMinVelocity = 700;
 
   late final AttractionApi _api;
+  late final AppLocationLabelResolver _locationLabelResolver;
   final _attractionSearchCtrl = TextEditingController();
   final _scrollController = ScrollController();
 
@@ -184,6 +204,8 @@ class _ExcursionSelectLocationScreenState
   void initState() {
     super.initState();
     _api = widget.api ?? AttractionApi();
+    _locationLabelResolver =
+        widget.locationLabelResolver ?? AppLocationLabelResolver();
     _selectedCountryCode = widget.countryCode.trim().toUpperCase();
     if (_selectedCountryCode.isEmpty) {
       _selectedCountryCode = 'KZ';
@@ -322,12 +344,53 @@ class _ExcursionSelectLocationScreenState
   }
 
   void _selectAttraction(AttractionVm attraction) {
-    setState(() {
-      _selectedLocation = ExcursionLocationSelection.fromAttraction(
-        attraction,
-        fallbackCityName: _filters.cityName,
+    unawaited(_selectAttractionWithLocalizedCity(attraction));
+  }
+
+  Future<void> _selectAttractionWithLocalizedCity(
+    AttractionVm attraction,
+  ) async {
+    final selection = ExcursionLocationSelection.fromAttraction(
+      attraction,
+      fallbackCityName: _filters.cityName,
+    );
+    if (!mounted) return;
+    setState(() => _selectedLocation = selection);
+
+    final cityName = await _resolveSelectionCityName(selection);
+    if (!mounted || cityName == null) return;
+    final current = _selectedLocation;
+    if (current == null ||
+        current.id != selection.id ||
+        current.cityId != selection.cityId) {
+      return;
+    }
+    if ((current.cityName ?? '').trim() == cityName) return;
+    setState(() => _selectedLocation = current.copyWith(cityName: cityName));
+  }
+
+  Future<String?> _resolveSelectionCityName(
+    ExcursionLocationSelection selection,
+  ) async {
+    final cityId = selection.cityId?.trim();
+    final fallbackCityName = selection.cityName?.trim();
+    if ((cityId == null || cityId.isEmpty) &&
+        (fallbackCityName == null || fallbackCityName.isEmpty)) {
+      return null;
+    }
+
+    try {
+      final resolved = await _locationLabelResolver.resolveCity(
+        countryCode: selection.countryCode,
+        cityId: cityId,
+        cityName: fallbackCityName,
+        localeName: Localizations.localeOf(context).toString(),
       );
-    });
+      final cityName = resolved.trim();
+      return cityName.isEmpty ? null : cityName;
+    } catch (_) {
+      return null;
+    }
   }
 
   void _confirm() {
@@ -624,6 +687,7 @@ class _AttractionSelectionCard extends StatelessWidget {
       minWidth: _locationCardMinWidth(context).round(),
       maxWidth: 760,
     );
+    final categoryLabel = _attractionSubtitle(context, attraction);
 
     return Material(
       color: const Color(0xFF2C2014),
@@ -635,7 +699,7 @@ class _AttractionSelectionCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              flex: 6,
+              flex: 7,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -661,10 +725,17 @@ class _AttractionSelectionCard extends StatelessWidget {
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          Colors.black.withValues(alpha: 0.14),
+                          Colors.black.withValues(alpha: 0.42),
                         ],
+                        stops: const [0.52, 1.0],
                       ),
                     ),
+                  ),
+                  Positioned(
+                    left: 12,
+                    right: 12,
+                    bottom: 12,
+                    child: _AttractionCategoryTag(label: categoryLabel),
                   ),
                 ],
               ),
@@ -672,31 +743,22 @@ class _AttractionSelectionCard extends StatelessWidget {
             Expanded(
               flex: 5,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      attraction.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFFFFF8EF),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                        height: 1.1,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _attractionSubtitle(attraction),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFFD2BBAD),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 2,
+                    SizedBox(
+                      height: 44,
+                      child: Text(
+                        attraction.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFFFFF8EF),
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          height: 1.1,
+                        ),
                       ),
                     ),
                     const Spacer(),
@@ -712,6 +774,52 @@ class _AttractionSelectionCard extends StatelessWidget {
   }
 }
 
+class _AttractionCategoryTag extends StatelessWidget {
+  const _AttractionCategoryTag({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+        return Align(
+          alignment: Alignment.centerLeft,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: const Color(0xB8554C24),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                child: Text(
+                  label.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.accent,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _SelectButton extends StatelessWidget {
   const _SelectButton({required this.selected});
 
@@ -723,7 +831,7 @@ class _SelectButton extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       width: double.infinity,
-      constraints: const BoxConstraints(minHeight: 48),
+      constraints: const BoxConstraints(minHeight: 44),
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: selected ? AppColors.accent : Colors.transparent,
@@ -847,7 +955,7 @@ double _locationGridAspectRatio(
   if (crossAxisCount == 1) {
     return (width / 390).clamp(0.82, 0.92).toDouble();
   }
-  return ((width - 320) / 520).clamp(0.0, 1.0).toDouble() * 0.12 + 0.64;
+  return ((width - 320) / 520).clamp(0.0, 1.0).toDouble() * 0.08 + 0.58;
 }
 
 double _locationCardMinWidth(BuildContext context) {
@@ -1114,10 +1222,11 @@ String? _resolveAttractionCoverUrl(AttractionVm attraction) {
   return null;
 }
 
-String _attractionSubtitle(AttractionVm attraction) {
+String _attractionSubtitle(BuildContext context, AttractionVm attraction) {
   final category = attraction.category.trim();
   if (category.isNotEmpty) {
-    return category.replaceAll('_', ' ').toUpperCase();
+    final l10n = AppLocalizations.of(context)!;
+    return localizedAttractionCategoryLabel(l10n, category);
   }
   final country = attraction.countryCode.trim();
   return country.isEmpty ? 'ATTRACTION' : country.toUpperCase();

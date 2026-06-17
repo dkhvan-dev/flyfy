@@ -333,7 +333,7 @@ void main() {
 
       await tester.pumpWidget(_app(_screen()));
 
-      expect(find.text('Story editor'), findsOneWidget);
+      expect(find.text('Post editor'), findsOneWidget);
       expect(find.bySemanticsLabel('Add block'), findsWidgets);
       expect(find.bySemanticsLabel('Undo'), findsOneWidget);
       expect(find.bySemanticsLabel('Bold'), findsNothing);
@@ -2165,7 +2165,7 @@ void main() {
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
 
-      expect(find.text('Discard story changes?'), findsNothing);
+      expect(find.text('Discard post changes?'), findsNothing);
     });
 
     testWidgets('dirty unsaved guard offers save draft action', (tester) async {
@@ -2178,7 +2178,7 @@ void main() {
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
 
-      expect(find.text('Discard story changes?'), findsOneWidget);
+      expect(find.text('Discard post changes?'), findsOneWidget);
       final dialogSaveDraft = find.descendant(
         of: find.byType(AlertDialog),
         matching: find.text('Save draft'),

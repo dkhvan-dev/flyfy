@@ -60,6 +60,22 @@ class AppLocationLabelResolver {
     return formatLocationLabel(city: labels.city, country: labels.country);
   }
 
+  Future<String> resolveCity({
+    String? countryCode,
+    String? cityId,
+    String? cityName,
+    required String localeName,
+  }) async {
+    final labels = await _resolveLabels(
+      countryCode: countryCode,
+      cityId: cityId,
+      cityName: cityName,
+      localeName: localeName,
+    );
+
+    return labels.city ?? '';
+  }
+
   Future<String> resolveAddress({
     String? countryCode,
     String? cityId,

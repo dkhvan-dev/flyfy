@@ -4,7 +4,6 @@ import 'dart:math' as math;
 
 import 'package:dio/dio.dart';
 import 'package:file_selector/file_selector.dart' as file_selector;
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7427,96 +7426,232 @@ class _ComposerSheetAction {
   final VoidCallback onSelected;
 }
 
-// _showAdaptiveAttachmentSheet picks the platform-native presentation:
-// Cupertino action sheet on iOS/macOS, custom Material bottom sheet (matching
-// the chat dark theme) on Android and other platforms.
 void _showAdaptiveAttachmentSheet({
   required BuildContext context,
   required String title,
   required String cancelLabel,
   required List<_ComposerSheetAction> actions,
 }) {
-  final platform = Theme.of(context).platform;
-  if (platform == TargetPlatform.iOS || platform == TargetPlatform.macOS) {
-    showCupertinoModalPopup<void>(
-      context: context,
-      builder: (sheetContext) => CupertinoActionSheet(
-        title: Text(title),
-        actions: [
-          for (final a in actions)
-            CupertinoActionSheetAction(
-              onPressed: () {
-                Navigator.pop(sheetContext);
-                a.onSelected();
-              },
-              child: Text(a.label),
-            ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          isDefaultAction: true,
-          onPressed: () => Navigator.pop(sheetContext),
-          child: Text(cancelLabel),
-        ),
-      ),
-    );
-    return;
-  }
-
   showModalBottomSheet<void>(
     context: context,
     isDismissible: true,
-    backgroundColor: const Color(0xFF1d120b),
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (sheetContext) => SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Drag handle
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.4,
-                  ),
-                ),
-              ),
-            ),
-            for (final a in actions)
-              ListTile(
-                leading: Icon(a.icon, color: const Color(0xFFff9800)),
-                title: Text(
-                  a.label,
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
-                ),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  a.onSelected();
-                },
-              ),
-          ],
-        ),
-      ),
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: Colors.transparent,
+    barrierColor: Colors.black.withValues(alpha: 0.58),
+    builder: (sheetContext) => _AmberAttachmentSheet(
+      title: title,
+      cancelLabel: cancelLabel,
+      actions: actions,
     ),
   );
+}
+
+class _AmberAttachmentSheet extends StatelessWidget {
+  const _AmberAttachmentSheet({
+    required this.title,
+    required this.cancelLabel,
+    required this.actions,
+  });
+
+  final String title;
+  final String cancelLabel;
+  final List<_ComposerSheetAction> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          _scale(context, 16),
+          0,
+          _scale(context, 16),
+          math.max(_scale(context, 10), bottomInset),
+        ),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(_scale(context, 28)),
+            border: Border.all(color: AppColors.accent.withValues(alpha: 0.26)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.44),
+                blurRadius: _scale(context, 34),
+                offset: Offset(0, _scale(context, 18)),
+              ),
+            ],
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF2A1709), Color(0xFF150A03)],
+            ),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(_scale(context, 28)),
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                _scale(context, 16),
+                _scale(context, 10),
+                _scale(context, 16),
+                _scale(context, 16),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: _scale(context, 44),
+                    height: _scale(context, 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.accent.withValues(alpha: 0.36),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  SizedBox(height: _scale(context, 16)),
+                  Row(
+                    children: [
+                      Container(
+                        width: _scale(context, 42),
+                        height: _scale(context, 42),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.accent.withValues(alpha: 0.18),
+                          border: Border.all(
+                            color: AppColors.accent.withValues(alpha: 0.28),
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.attach_file_rounded,
+                          color: AppColors.accent,
+                          size: _scale(context, 22),
+                        ),
+                      ),
+                      SizedBox(width: _scale(context, 12)),
+                      Expanded(
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: _scale(context, 21),
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: _scale(context, 14)),
+                  for (final action in actions) ...[
+                    _AmberAttachmentActionTile(action: action),
+                    SizedBox(height: _scale(context, 9)),
+                  ],
+                  SizedBox(height: _scale(context, 2)),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.textPrimary,
+                        side: BorderSide(
+                          color: AppColors.accent.withValues(alpha: 0.44),
+                        ),
+                        backgroundColor: Colors.white.withValues(alpha: 0.04),
+                        padding: EdgeInsets.symmetric(
+                          vertical: _scale(context, 15),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            _scale(context, 18),
+                          ),
+                        ),
+                      ),
+                      child: Text(
+                        cancelLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: _scale(context, 15),
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AmberAttachmentActionTile extends StatelessWidget {
+  const _AmberAttachmentActionTile({required this.action});
+
+  final _ComposerSheetAction action;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: action.label,
+      child: Material(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(_scale(context, 18)),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(_scale(context, 18)),
+          onTap: () {
+            Navigator.pop(context);
+            action.onSelected();
+          },
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: _scale(context, 14),
+              vertical: _scale(context, 12),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: _scale(context, 46),
+                  height: _scale(context, 46),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.accent.withValues(alpha: 0.17),
+                  ),
+                  child: Icon(
+                    action.icon,
+                    color: AppColors.accent,
+                    size: _scale(context, 23),
+                  ),
+                ),
+                SizedBox(width: _scale(context, 13)),
+                Expanded(
+                  child: Text(
+                    action.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: _scale(context, 16),
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.accent.withValues(alpha: 0.78),
+                  size: _scale(context, 25),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _ComposerCircleButton extends StatelessWidget {

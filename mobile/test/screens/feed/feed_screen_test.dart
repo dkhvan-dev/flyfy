@@ -152,6 +152,42 @@ void main() {
     );
   });
 
+  testWidgets('passes city-name-only home location to feed recommendations', (
+    tester,
+  ) async {
+    final locationProvider = _StaticHomeLocationProvider(
+      HomeLocationPreference(
+        source: HomeLocationSource.detected,
+        countryCode: 'KZ',
+        cityName: 'Алматы',
+        updatedAt: DateTime.utc(2026, 6, 17),
+      ),
+    );
+    final api = _FakeFeedApi(
+      onGetFeed: ({surface = 'home', tab = 'for_you', cursor, limit = 20}) {
+        return Future.value(_feedPage());
+      },
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<HomeLocationProvider>.value(
+        value: locationProvider,
+        child: _feedApp(api),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      api.calls.single,
+      const _FeedCall(
+        surface: 'home',
+        tab: 'for_you',
+        countryCode: 'KZ',
+        cityId: 'almaty',
+      ),
+    );
+  });
+
   testWidgets(
     'shows my subscriptions on following tab and opens tabbed sheet',
     (tester) async {
@@ -700,7 +736,7 @@ void main() {
 
     expect(find.text('FILTERS'), findsOneWidget);
     expect(find.text('Country'), findsOneWidget);
-    expect(find.text('City'), findsOneWidget);
+    expect(find.text('City'), findsWidgets);
     expect(find.text('Da Nang'), findsWidgets);
     expect(find.text('Show 1 community').last, findsOneWidget);
     await tester.tap(find.text('Show 1 community').last);
@@ -749,6 +785,64 @@ void main() {
 
     expect(api.communityListCalls.last.search, 'crypto');
   });
+
+  testWidgets(
+    'community discovery sends city filter when location has only city name',
+    (tester) async {
+      final locationProvider = _StaticHomeLocationProvider(
+        HomeLocationPreference(
+          source: HomeLocationSource.detected,
+          countryCode: 'KZ',
+          cityName: 'Алматы',
+          updatedAt: DateTime.utc(2026, 6, 17),
+        ),
+      );
+      final api = _FakeFeedApi(
+        onGetFeed: ({surface = 'home', tab = 'for_you', cursor, limit = 20}) {
+          return Future.value(_feedPage());
+        },
+        onListCommunities:
+            ({
+              topic,
+              countryCode,
+              cityId,
+              search,
+              excludeFollowed = false,
+              onlyFollowed = false,
+              limit = 20,
+              offset = 0,
+            }) {
+              return Future.value(
+                CommunityListPageVm(items: const [], limit: limit, offset: 0),
+              );
+            },
+      );
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<HomeLocationProvider>.value(
+          value: locationProvider,
+          child: _feedApp(api),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const ValueKey('open-community-discovery-sheet')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('app-list-search-active-filter-count')),
+          matching: find.text('2'),
+        ),
+        findsOneWidget,
+      );
+      expect(api.communityListCalls, hasLength(1));
+      expect(api.communityListCalls.single.countryCode, 'KZ');
+      expect(api.communityListCalls.single.cityId, 'almaty');
+    },
+  );
 
   testWidgets(
     'does not flash raw community location before discovery labels resolve',
@@ -1041,7 +1135,14 @@ void main() {
     final postApi = _FeedPostActionApi();
 
     await tester.pumpWidget(
-      _feedRouterApp(api, postApi: postApi, postShareLauncher: (_, _) async {}),
+      ChangeNotifierProvider<AuthProvider>.value(
+        value: _AuthenticatedAuthProvider(),
+        child: _feedRouterApp(
+          api,
+          postApi: postApi,
+          postShareLauncher: (_, _) async {},
+        ),
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -1128,6 +1229,59 @@ void main() {
       containsPair('feedbackType', 'not_interested'),
     );
     expect(find.text('Noisy promo pick'), findsNothing);
+  });
+
+  testWidgets('hides post card actions for unauthenticated viewers', (
+    tester,
+  ) async {
+    final api = _FakeFeedApi(
+      onGetFeed: ({surface = 'home', tab = 'for_you', cursor, limit = 20}) {
+        return Future.value(
+          FeedPageVm(
+            items: [
+              FeedBlockVm(
+                id: 'guest-post',
+                type: FeedBlockType.postCard,
+                post: _post(title: 'Guest readable post'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AuthProvider>.value(
+        value: _UnauthenticatedAuthProvider(),
+        child: _feedRouterApp(
+          api,
+          postApi: _FeedPostActionApi(),
+          postShareLauncher: (_, _) async {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Guest readable post'),
+      280,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Guest readable post'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('feed-post-like-guest-readable-post')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('feed-post-share-guest-readable-post')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('feed-post-more-guest-readable-post')),
+      findsNothing,
+    );
   });
 
   testWidgets('hides posts authored by the current user from the feed', (
@@ -2475,11 +2629,27 @@ class _FakeSessionProvider extends SessionProvider {
   UserProfileVm? get profile => _profile;
 }
 
+class _StaticHomeLocationProvider extends HomeLocationProvider {
+  _StaticHomeLocationProvider(this._location);
+
+  final HomeLocationPreference _location;
+
+  @override
+  HomeLocationPreference get effectiveLocation => _location;
+}
+
 class _AuthenticatedAuthProvider extends AuthProvider {
   _AuthenticatedAuthProvider();
 
   @override
   AuthState get state => AuthState.authenticated;
+}
+
+class _UnauthenticatedAuthProvider extends AuthProvider {
+  _UnauthenticatedAuthProvider();
+
+  @override
+  AuthState get state => AuthState.unauthenticated;
 }
 
 class _PostCreateAllowedApi extends PostApi {

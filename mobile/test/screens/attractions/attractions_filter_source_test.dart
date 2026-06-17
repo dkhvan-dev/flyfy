@@ -124,6 +124,17 @@ void main() {
     expect(sheetSource, isNot(contains('RangeValues(2.0, 8.0)')));
   });
 
+  test('attractions filter sheet uses full-width mobile chrome', () async {
+    final sheetSource = await File(
+      'lib/screens/attractions/attractions_filter_sheet.dart',
+    ).readAsString();
+
+    expect(sheetSource, contains('AppDismissibleModalSheet('));
+    expect(sheetSource, contains('BoxConstraints(maxWidth: 520)'));
+    expect(sheetSource, isNot(contains('BoxConstraints(maxWidth: 393)')));
+    expect(sheetSource, isNot(contains('horizontal: sideInset')));
+  });
+
   test(
     'filtered city results are not mixed with duplicated must visit cards',
     () async {

@@ -41,6 +41,49 @@ void main() {
     );
   });
 
+  testWidgets('localizes activity and excursion cancellation previews', (
+    tester,
+  ) async {
+    final api = _FakeNotificationInboxClient(
+      categories: [
+        NotificationCategorySummary(
+          category: 'activity',
+          unreadCount: 20,
+          totalCount: 20,
+          latest: _activityCancelledNotification(),
+        ),
+        NotificationCategorySummary(
+          category: 'excursion',
+          unreadCount: 7,
+          totalCount: 7,
+          latest: _excursionBookingCancelledNotification(),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<SessionProvider>(
+        create: (_) => SessionProvider(),
+        child: MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: NotificationsOverviewScreen(notificationApi: api),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Активность отменена'), findsOneWidget);
+    expect(find.text('Активность «test» отменена.'), findsOneWidget);
+    expect(find.text('Бронь экскурсии отменена'), findsOneWidget);
+    expect(find.text('Путешественник отменил эту экскурсию.'), findsOneWidget);
+    expect(find.text('Activity cancelled'), findsNothing);
+    expect(find.text('test was cancelled.'), findsNothing);
+    expect(find.text('Excursion booking cancelled'), findsNothing);
+    expect(find.text('A traveler cancelled this excursion.'), findsNothing);
+  });
+
   testWidgets('localizes templated notification text', (tester) async {
     final api = _FakeNotificationInboxClient(
       notifications: [_storyLikeNotification()],
@@ -69,6 +112,36 @@ void main() {
       findsOneWidget,
     );
   });
+}
+
+UserNotification _activityCancelledNotification() {
+  return UserNotification(
+    id: 'activity-cancelled',
+    category: 'activity',
+    priority: 'high',
+    title: 'Activity cancelled',
+    body: 'test was cancelled.',
+    imageUrl: '',
+    deepLink: '/activities/activity-1',
+    data: const {'activityEvent': 'activity_cancelled'},
+    createdAt: DateTime.now().toUtc(),
+    readAt: null,
+  );
+}
+
+UserNotification _excursionBookingCancelledNotification() {
+  return UserNotification(
+    id: 'excursion-booking-cancelled',
+    category: 'excursion',
+    priority: 'high',
+    title: 'Excursion booking cancelled',
+    body: 'A traveler cancelled this excursion.',
+    imageUrl: '',
+    deepLink: '/me/excursions',
+    data: const {'excursionEvent': 'booking_cancelled_by_tourist'},
+    createdAt: DateTime.now().toUtc(),
+    readAt: null,
+  );
 }
 
 UserNotification _storyLikeNotification() {

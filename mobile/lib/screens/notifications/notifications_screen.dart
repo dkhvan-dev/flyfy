@@ -262,7 +262,7 @@ class _NotificationCategoryScreenState
                             disabledBackgroundColor: Colors.white.withValues(
                               alpha: 0.08,
                             ),
-                            foregroundColor: AppColors.background,
+                            foregroundColor: AppColors.textPrimary,
                             disabledForegroundColor: AppColors.textCaption,
                             minimumSize: const Size(0, 44),
                             padding: const EdgeInsets.symmetric(
@@ -785,6 +785,86 @@ _LocalizedNotificationText _localizedNotificationText(
             _notificationActivityTitle(notification) ??
             l10n.notificationsActivityJoinedBody,
       );
+    case 'participant_waitlisted':
+      return _LocalizedNotificationText(
+        title: l10n.notificationsActivityParticipantWaitlistedTitle,
+        body: l10n.notificationsActivityParticipantWaitlistedBody,
+      );
+    case 'participant_left':
+      return _LocalizedNotificationText(
+        title: l10n.notificationsActivityParticipantLeftTitle,
+        body: l10n.notificationsActivityParticipantLeftBody,
+      );
+    case 'participant_late_cancelled':
+      return _LocalizedNotificationText(
+        title: l10n.notificationsActivityLateCancellationTitle,
+        body: l10n.notificationsActivityLateCancellationBody,
+      );
+    case 'activity_cancelled':
+      final activityTitle = _notificationActivityTitle(notification);
+      return _LocalizedNotificationText(
+        title: l10n.notificationsActivityCancelledTitle,
+        body: activityTitle == null
+            ? l10n.notificationsActivityCancelledBodyGeneric
+            : l10n.notificationsActivityCancelledBody(activityTitle),
+      );
+    case 'activity_confirmed':
+      return _LocalizedNotificationText(
+        title: l10n.notificationsActivityConfirmedTitle,
+        body: l10n.notificationsActivityConfirmedBody,
+      );
+    case 'activity_completed':
+      return _LocalizedNotificationText(
+        title: l10n.notificationsActivityCompletedTitle,
+        body: l10n.notificationsActivityCompletedBody,
+      );
+    case 'booking_created':
+    case 'excursion_booking_created':
+      return _LocalizedNotificationText(
+        title: l10n.notificationsExcursionBookingCreatedTitle,
+        body: l10n.notificationsExcursionBookingCreatedBody,
+      );
+    case 'booking_cancelled_by_tourist':
+    case 'excursion_booking_cancelled':
+      return _LocalizedNotificationText(
+        title: l10n.notificationsExcursionBookingCancelledTitle,
+        body: l10n.notificationsExcursionBookingCancelledBody,
+      );
+    case 'booking_guests_updated':
+      return _LocalizedNotificationText(
+        title: l10n.notificationsExcursionGuestsUpdatedTitle,
+        body: l10n.notificationsExcursionGuestsUpdatedBody,
+      );
+    case 'attendance_checked_in':
+      return _LocalizedNotificationText(
+        title: l10n.notificationsExcursionAttendanceTitle,
+        body: l10n.notificationsExcursionAttendanceBody,
+      );
+    case 'schedule_slot_cancelled':
+      return _LocalizedNotificationText(
+        title: l10n.notificationsExcursionCancelledTitle,
+        body: l10n.notificationsExcursionCancelledBody,
+      );
+    case 'schedule_slot_closed':
+      return _LocalizedNotificationText(
+        title: l10n.notificationsExcursionStartsSoonTitle,
+        body: l10n.notificationsExcursionStartsSoonBody,
+      );
+    case 'schedule_slot_completed':
+      return _LocalizedNotificationText(
+        title: l10n.notificationsExcursionCompletedTitle,
+        body: l10n.notificationsExcursionCompletedBody,
+      );
+    case 'moderation_approved':
+      return _LocalizedNotificationText(
+        title: l10n.notificationsExcursionPublishedTitle,
+        body: l10n.notificationsExcursionPublishedBody,
+      );
+    case 'moderation_rejected':
+      return _LocalizedNotificationText(
+        title: l10n.notificationsExcursionRejectedTitle,
+        body: l10n.notificationsExcursionRejectedBody,
+      );
     default:
       return _LocalizedNotificationText(
         title: _fallbackNotificationTitle(notification, meta),
@@ -821,6 +901,10 @@ String _notificationTemplateKey(UserNotification notification) {
   for (final key in const [
     'templateKey',
     'template',
+    'activityEvent',
+    'excursionEvent',
+    'chatEvent',
+    'feedEvent',
     'eventType',
     'notificationType',
     'type',
@@ -831,7 +915,30 @@ String _notificationTemplateKey(UserNotification notification) {
       return raw.replaceAll('.', '_').replaceAll(':', '_');
     }
   }
-  return '';
+  return _legacyNotificationTemplateKey(notification);
+}
+
+String _legacyNotificationTemplateKey(UserNotification notification) {
+  final title = notification.title.trim().toLowerCase();
+  return switch (title) {
+    'activity cancelled' => 'activity_cancelled',
+    'activity confirmed' => 'activity_confirmed',
+    'activity completed' => 'activity_completed',
+    'new participant joined' => 'participant_joined',
+    'participant joined the waitlist' => 'participant_waitlisted',
+    'participant left activity' => 'participant_left',
+    'late cancellation' => 'participant_late_cancelled',
+    'new excursion booking' => 'booking_created',
+    'excursion booking cancelled' => 'booking_cancelled_by_tourist',
+    'booking guests updated' => 'booking_guests_updated',
+    'traveler checked in' => 'attendance_checked_in',
+    'excursion cancelled' => 'schedule_slot_cancelled',
+    'excursion starts soon' => 'schedule_slot_closed',
+    'how was your excursion?' => 'schedule_slot_completed',
+    'excursion published' => 'moderation_approved',
+    'excursion needs changes' => 'moderation_rejected',
+    _ => '',
+  };
 }
 
 String _notificationActorName(
@@ -887,6 +994,25 @@ String? _notificationActivityTitle(UserNotification notification) {
   for (final key in const ['activityTitle', 'eventTitle', 'title']) {
     final raw = notification.data[key]?.trim();
     if (raw != null && raw.isNotEmpty) return raw;
+  }
+  return _activityTitleFromLegacyBody(notification.body);
+}
+
+String? _activityTitleFromLegacyBody(String body) {
+  final value = body.trim();
+  if (value.isEmpty) return null;
+  const suffixes = [
+    ' was cancelled.',
+    ' is confirmed.',
+    ' is complete. You can review your experience.',
+    ' has a new participant.',
+    ' has a new waitlisted participant.',
+    ' has one fewer participant.',
+  ];
+  for (final suffix in suffixes) {
+    if (value.endsWith(suffix) && value.length > suffix.length) {
+      return value.substring(0, value.length - suffix.length).trim();
+    }
   }
   return null;
 }
