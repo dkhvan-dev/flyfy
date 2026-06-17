@@ -477,6 +477,17 @@ class _FakePostApi extends PostApi {
   }
 
   @override
+  Future<PostCreateEligibilityVm> checkCreateEligibility() async {
+    return const PostCreateEligibilityVm(
+      canCreate: true,
+      limit: 10,
+      remaining: 10,
+      window: Duration(minutes: 1),
+      retryAfter: Duration.zero,
+    );
+  }
+
+  @override
   Future<PostListPage> listPostsPage({
     String? search,
     List<String>? formats,

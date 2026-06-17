@@ -9,6 +9,7 @@ import '../../core/config/app_config.dart';
 import '../../core/files/chat_file_cache.dart';
 import '../../core/network/file_api.dart';
 import '../../core/ui/app_colors.dart';
+import '../../core/ui/error_dialog.dart';
 import '../../features/chat/models/conversation_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/chat_provider.dart';
@@ -388,9 +389,11 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
       muted: !isMuted,
     );
     if (!ok && mounted) {
-      ScaffoldMessenger.of(
+      await showErrorDialog(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.chatMuteUpdateFailed)));
+        title: l10n.error,
+        message: l10n.chatMuteUpdateFailed,
+      );
     }
   }
 }

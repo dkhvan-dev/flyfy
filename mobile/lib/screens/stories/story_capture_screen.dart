@@ -396,6 +396,7 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
     final l10n = AppLocalizations.of(context)!;
     final selected = await showModalBottomSheet<_StoryCaptureMediaKind>(
       context: context,
+      isDismissible: true,
       backgroundColor: const Color(0xFF1B1008),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),

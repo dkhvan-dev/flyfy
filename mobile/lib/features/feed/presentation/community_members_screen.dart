@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/ui/app_colors.dart';
+import '../../../core/ui/error_dialog.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../data/community_moderation_api.dart';
 import '../models/community_moderation_vm.dart';
@@ -330,12 +331,11 @@ class _CommunityMembersScreenState extends State<CommunityMembersScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.communityMembersRoleUpdateFailed,
-          ),
-        ),
+      final l10n = AppLocalizations.of(context)!;
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.communityMembersRoleUpdateFailed,
       );
     } finally {
       if (mounted) {
@@ -382,12 +382,11 @@ class _CommunityMembersScreenState extends State<CommunityMembersScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.communityMembersStatusUpdateFailed,
-          ),
-        ),
+      final l10n = AppLocalizations.of(context)!;
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.communityMembersStatusUpdateFailed,
       );
     } finally {
       if (mounted) {

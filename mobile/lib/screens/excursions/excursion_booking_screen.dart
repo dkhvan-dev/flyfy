@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/time/app_time.dart';
 import '../../core/ui/app_colors.dart';
+import '../../core/ui/error_dialog.dart';
 import '../../core/ui/error_view.dart';
 import '../../features/excursions/models/create_excursion_booking_request.dart';
 import '../../features/excursions/models/excursion_booking_vm.dart';
@@ -257,19 +258,14 @@ class _ExcursionBookingScreenState extends State<ExcursionBookingScreen> {
     final offerId = _selectedOfferId;
     final selectedSlot = _selectedSlot;
     if (productId.isEmpty || offerId.isEmpty || selectedSlot == null) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(
-              selectedSlot == null
-                  ? AppLocalizations.of(context)!.excursionBookingSelectSlot
-                  : AppLocalizations.of(context)!.excursionBookingLoadFailed,
-            ),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: const Color(0xFF3A2B1D),
-          ),
-        );
+      final l10n = AppLocalizations.of(context)!;
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: selectedSlot == null
+            ? l10n.excursionBookingSelectSlot
+            : l10n.excursionBookingLoadFailed,
+      );
       return;
     }
 
@@ -293,18 +289,12 @@ class _ExcursionBookingScreenState extends State<ExcursionBookingScreen> {
     if (!mounted) return;
     setState(() => _isSubmitting = false);
     if (!success) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(
-              provider.actionErrorMessage ??
-                  AppLocalizations.of(context)!.excursionBookingLoadFailed,
-            ),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: const Color(0xFF3A2B1D),
-          ),
-        );
+      final l10n = AppLocalizations.of(context)!;
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: provider.actionErrorMessage ?? l10n.excursionBookingLoadFailed,
+      );
       return;
     }
     await provider.loadMyExcursionBookings(force: true);

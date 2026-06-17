@@ -204,9 +204,13 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
       return;
     }
     if (guideUserId.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.profileNotAvailable)));
+      unawaited(
+        showErrorDialog(
+          context,
+          title: l10n.error,
+          message: l10n.profileNotAvailable,
+        ),
+      );
       return;
     }
     context.push(

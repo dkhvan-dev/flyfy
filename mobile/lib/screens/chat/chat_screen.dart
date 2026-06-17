@@ -788,9 +788,11 @@ class _ChatScreenState extends State<ChatScreen> {
         ? await provider.blockUser(peerUserId)
         : await provider.unblockUser(peerUserId);
     if (status == null && mounted) {
-      ScaffoldMessenger.of(
+      await showErrorDialog(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.chatUserBlockUpdateFailed)));
+        title: l10n.error,
+        message: l10n.chatUserBlockUpdateFailed,
+      );
     }
   }
 
@@ -1398,11 +1400,17 @@ class _ChatScreenState extends State<ChatScreen> {
           targetConversationId: selected.id,
         );
     if (!mounted) return;
+    if (!forwarded) {
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.chatForwardFailed,
+      );
+      return;
+    }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          forwarded ? l10n.chatForwardSuccess : l10n.chatForwardFailed,
-        ),
+        content: Text(l10n.chatForwardSuccess),
         backgroundColor: const Color(0xFF3a2415),
       ),
     );

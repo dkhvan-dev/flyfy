@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/ui/app_colors.dart';
+import '../../../core/ui/error_dialog.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../stories/models/post_vm.dart';
 import '../data/community_moderation_api.dart';
@@ -180,8 +181,10 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
         return;
       }
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.communityModerationActionFailed)),
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.communityModerationActionFailed,
       );
     } finally {
       if (mounted) {

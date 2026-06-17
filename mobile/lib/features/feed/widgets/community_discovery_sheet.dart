@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/ui/app_list_search_field.dart';
 import '../../../core/ui/app_colors.dart';
+import '../../../core/ui/error_dialog.dart';
 import '../../../core/ui/filter_sheet_chrome.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../shared/reference/app_location_label_resolver.dart';
@@ -169,12 +170,11 @@ class _CommunityDiscoverySheetState extends State<CommunityDiscoverySheet> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.feedCommunityActionFailed,
-          ),
-        ),
+      final l10n = AppLocalizations.of(context)!;
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.feedCommunityActionFailed,
       );
     } finally {
       if (mounted) {
@@ -247,6 +247,7 @@ class _CommunityDiscoverySheetState extends State<CommunityDiscoverySheet> {
     final l10n = AppLocalizations.of(context)!;
     final result = await showModalBottomSheet<_CommunityDiscoveryFilters>(
       context: context,
+      isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,

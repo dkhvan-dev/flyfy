@@ -247,9 +247,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _isFollowedByMeOverride = currentProfile.isFollowedByMe;
         _followersCountOverride = currentProfile.followersCount;
       });
-      ScaffoldMessenger.of(
+      await showErrorDialog(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.profileFollowUpdateFailed)));
+        title: l10n.error,
+        message: l10n.profileFollowUpdateFailed,
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -306,8 +308,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _relationshipOverrideUserId = userId;
         _friendshipStatusOverride = currentStatus;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.profileFriendshipUpdateFailed)),
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.profileFriendshipUpdateFailed,
       );
     } finally {
       if (mounted) {
@@ -350,8 +354,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _relationshipOverrideUserId = userId;
         _friendshipStatusOverride = currentProfile.friendshipStatus;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.profileFriendshipUpdateFailed)),
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.profileFriendshipUpdateFailed,
       );
     } finally {
       if (mounted) {
@@ -478,9 +484,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _blockStatusOverrideUserId = userId;
         _isBlockedByMeOverride = isBlockedByMe;
       });
-      ScaffoldMessenger.of(
+      await showErrorDialog(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.chatUserBlockUpdateFailed)));
+        title: l10n.error,
+        message: l10n.chatUserBlockUpdateFailed,
+      );
     } finally {
       if (mounted) {
         setState(() => _isBlockActionLoading = false);

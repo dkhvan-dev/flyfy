@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../core/network/chat_api.dart';
 import '../../core/network/story_api.dart';
 import '../../core/ui/app_colors.dart';
+import '../../core/ui/error_dialog.dart';
 import '../../features/chat/models/message_vm.dart';
 import '../../features/stories/models/story_vm.dart';
 import '../../features/stories/story_ui.dart';
@@ -268,9 +269,11 @@ class _StoryTrayViewerScreenState extends State<StoryTrayViewerScreen>
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
+      await showErrorDialog(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.storyReplySendFailed)));
+        title: l10n.error,
+        message: l10n.storyReplySendFailed,
+      );
     } finally {
       if (mounted) {
         setState(() => _isSendingReply = false);
@@ -309,9 +312,11 @@ class _StoryTrayViewerScreenState extends State<StoryTrayViewerScreen>
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
+      await showErrorDialog(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.storyLikeSendFailed)));
+        title: l10n.error,
+        message: l10n.storyLikeSendFailed,
+      );
     } finally {
       if (mounted) {
         setState(() {

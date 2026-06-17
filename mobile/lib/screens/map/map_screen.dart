@@ -12,6 +12,7 @@ import 'package:maplibre/maplibre.dart' hide LengthUnit;
 import '../../core/config/app_config.dart';
 import '../../core/device/device_context_service.dart';
 import '../../core/ui/app_colors.dart';
+import '../../core/ui/error_dialog.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../shared/map/app_map_gesture_recognizers.dart';
 import '../../shared/map/app_map_links.dart';
@@ -310,7 +311,9 @@ class _MapScreenState extends State<MapScreen> {
       setState(() {
         _locationIssueCode = error.toString();
       });
-      _showSnack(_resolveLocationIssueMessage(AppLocalizations.of(context)!));
+      await _showError(
+        _resolveLocationIssueMessage(AppLocalizations.of(context)!),
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -360,7 +363,9 @@ class _MapScreenState extends State<MapScreen> {
         _locationIssueCode = error.toString();
       });
       if (requestPermission) {
-        _showSnack(_resolveLocationIssueMessage(AppLocalizations.of(context)!));
+        await _showError(
+          _resolveLocationIssueMessage(AppLocalizations.of(context)!),
+        );
       }
     } finally {
       if (mounted) {
@@ -744,6 +749,11 @@ class _MapScreenState extends State<MapScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _showError(String message) {
+    final l10n = AppLocalizations.of(context)!;
+    return showErrorDialog(context, title: l10n.error, message: message);
   }
 
   String? _buildLocationLabel(DeviceLocationSuggestion suggestion) {

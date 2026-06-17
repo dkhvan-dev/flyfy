@@ -683,9 +683,11 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
       return;
     }
     if (editingCommentId == null && _commentLockEndsAt(currentUserId) != null) {
-      ScaffoldMessenger.of(
+      await showErrorDialog(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.storyCommentRateLimit)));
+        title: l10n.error,
+        message: l10n.storyCommentRateLimit,
+      );
       return;
     }
 

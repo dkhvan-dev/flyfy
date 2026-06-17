@@ -9,6 +9,8 @@ import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
 import '../../core/network/reference_api.dart';
 import '../../core/ui/app_colors.dart';
+import '../../core/ui/app_inline_field_error.dart';
+import '../../core/ui/error_dialog.dart';
 import '../../features/attractions/attraction_ui.dart';
 import '../../features/attractions/data/attraction_api.dart';
 import '../../features/attractions/models/attraction_review_vm.dart';
@@ -239,7 +241,8 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
     setState(() => _isOpeningExcursions = false);
 
     if (didFail) {
-      _showSnack(l10n.excursionsLoadFailed);
+      await _showErrorMessage(l10n.excursionsLoadFailed);
+      if (!mounted) return;
       context.push('/excursions');
       return;
     }
@@ -306,7 +309,9 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
     );
     if (!mounted) return;
     if (savedReview == null) {
-      _showSnack(provider.actionErrorMessage ?? l10n.myExcursionsReviewFailed);
+      await _showErrorMessage(
+        provider.actionErrorMessage ?? l10n.myExcursionsReviewFailed,
+      );
       return;
     }
     await _refreshExcursionReviewSources(savedReview);
@@ -323,7 +328,7 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
     );
     if (!mounted) return;
     if (!success) {
-      _showSnack(
+      await _showErrorMessage(
         provider.actionErrorMessage ?? l10n.myExcursionsReviewDeleteFailed,
       );
       return;
@@ -430,12 +435,12 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
       return true;
     } on DioException catch (e) {
       if (mounted) {
-        _showSnack(DioErrorMapper.toMessage(e));
+        await _showErrorMessage(DioErrorMapper.toMessage(e));
       }
       return false;
     } catch (_) {
       if (mounted) {
-        _showSnack(l10n.attractionReviewSubmitFailed);
+        await _showErrorMessage(l10n.attractionReviewSubmitFailed);
       }
       return false;
     } finally {
@@ -449,6 +454,11 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
+  }
+
+  Future<void> _showErrorMessage(String message) {
+    final l10n = AppLocalizations.of(context)!;
+    return showErrorDialog(context, title: l10n.error, message: message);
   }
 
   String _resolvedLocationLabel(AttractionVm attraction) {
@@ -2549,6 +2559,7 @@ class _CreateReviewSheetState extends State<_CreateReviewSheet> {
   double _rating = 5;
   bool _submitting = false;
   String? _errorText;
+  String? _mediaErrorText;
 
   @override
   void initState() {
@@ -2678,6 +2689,9 @@ class _CreateReviewSheetState extends State<_CreateReviewSheet> {
                 ),
                 const SizedBox(height: 10),
                 _buildMediaActions(),
+                if (_mediaErrorText != null) ...[
+                  AppInlineFieldError(message: _mediaErrorText!),
+                ],
                 if (_media.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   _buildDraftMediaStrip(),
@@ -2924,6 +2938,7 @@ class _CreateReviewSheetState extends State<_CreateReviewSheet> {
       }
 
       setState(() {
+        _mediaErrorText = null;
         _media.add(
           _ReviewDraftMedia(
             bytes: bytes,
@@ -2968,6 +2983,7 @@ class _CreateReviewSheetState extends State<_CreateReviewSheet> {
       }
 
       setState(() {
+        _mediaErrorText = null;
         _media.add(
           _ReviewDraftMedia(
             bytes: bytes,
@@ -3013,9 +3029,7 @@ class _CreateReviewSheetState extends State<_CreateReviewSheet> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
-    );
+    setState(() => _mediaErrorText = message);
   }
 
   String? _detectImageContentType(Uint8List bytes) {

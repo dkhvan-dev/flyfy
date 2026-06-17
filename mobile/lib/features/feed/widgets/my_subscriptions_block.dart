@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/network/file_api.dart';
 import '../../../core/ui/app_colors.dart';
+import '../../../core/ui/error_dialog.dart';
 import '../../../core/ui/app_inline_sort_row.dart';
 import '../../../core/ui/app_list_search_field.dart';
 import '../../../core/ui/filter_sheet_chrome.dart';
@@ -248,6 +249,7 @@ class _MySubscriptionsSheetState extends State<MySubscriptionsSheet> {
     final query = _searchController.text.trim().toLowerCase();
     final result = await showModalBottomSheet<_MySubscriptionsFiltersResult>(
       context: context,
+      isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
@@ -313,12 +315,11 @@ class _MySubscriptionsSheetState extends State<MySubscriptionsSheet> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.feedCommunityActionFailed,
-          ),
-        ),
+      final l10n = AppLocalizations.of(context)!;
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.feedCommunityActionFailed,
       );
     } finally {
       if (mounted) {

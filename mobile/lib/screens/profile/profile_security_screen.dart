@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/ui/app_colors.dart';
+import '../../core/ui/error_dialog.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import 'profile_style.dart';
@@ -411,19 +412,17 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
       return;
     }
 
-    _showError(auth.errorMessage);
+    await _showError(auth.errorMessage);
   }
 
-  void _showError(String? message) {
+  Future<void> _showError(String? message) {
     final l10n = AppLocalizations.of(context)!;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          (message ?? '').trim().isEmpty
-              ? l10n.profileSecurityPasswordChangeFailed
-              : message!.trim(),
-        ),
-      ),
+    return showErrorDialog(
+      context,
+      title: l10n.error,
+      message: (message ?? '').trim().isEmpty
+          ? l10n.profileSecurityPasswordChangeFailed
+          : message!.trim(),
     );
   }
 

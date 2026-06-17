@@ -12,6 +12,7 @@ import '../../core/ui/app_colors.dart';
 import '../../core/ui/app_inline_sort_row.dart';
 import '../../core/ui/app_list_search_field.dart';
 import '../../core/ui/app_list_screen_header.dart';
+import '../../core/ui/error_dialog.dart';
 import '../../core/ui/error_view.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
 import '../../core/ui/pagination_bar.dart';
@@ -244,14 +245,10 @@ class _GuidesScreenState extends State<GuidesScreen> {
         _isRefreshingList = false;
       });
       if (_guides.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.guidesLoadFailed),
-            action: SnackBarAction(
-              label: l10n.retryButton,
-              onPressed: () => _loadGuides(page: _currentPage),
-            ),
-          ),
+        await showErrorDialog(
+          context,
+          title: l10n.error,
+          message: l10n.guidesLoadFailed,
         );
       }
     }

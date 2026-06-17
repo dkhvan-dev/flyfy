@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/network/file_api.dart';
 import '../../../../core/ui/app_colors.dart';
+import '../../../../core/ui/error_dialog.dart';
 import '../../../../core/ui/filter_sheet_chrome.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../trust/widgets/trust_status_banner.dart';
@@ -1153,8 +1154,11 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
       return await _imagePicker.pickImage(purpose);
     } on StoryEditorImagePickException catch (error) {
       if (!mounted) return null;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_imagePickErrorMessage(error.reason))),
+      final l10n = AppLocalizations.of(context)!;
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: _imagePickErrorMessage(error.reason),
       );
       return null;
     }
@@ -1168,8 +1172,11 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
       return await _imagePicker.pickImages(purpose);
     } on StoryEditorImagePickException catch (error) {
       if (!mounted) return const [];
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_imagePickErrorMessage(error.reason))),
+      final l10n = AppLocalizations.of(context)!;
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: _imagePickErrorMessage(error.reason),
       );
       return const [];
     }

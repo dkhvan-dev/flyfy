@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/network/file_api.dart';
 import '../../../core/ui/app_colors.dart';
 import '../../../core/network/post_api.dart';
+import '../../../core/ui/error_dialog.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../shared/widgets/app_localized_location_text.dart';
 import '../../stories/editor/presentation/post_create_preflight.dart';
@@ -312,12 +313,11 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.feedCommunityActionFailed,
-          ),
-        ),
+      final l10n = AppLocalizations.of(context)!;
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.feedCommunityActionFailed,
       );
     } finally {
       if (mounted) {
@@ -738,7 +738,7 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
       }
       _showTrustSnackBar(submittedMessage);
     } catch (error) {
-      _showTrustActionError(error);
+      await _showTrustActionError(error);
     }
   }
 
@@ -761,7 +761,7 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
         AppLocalizations.of(context)!.communityTrustMutedSubmitted,
       );
     } catch (error) {
-      _showTrustActionError(error);
+      await _showTrustActionError(error);
     }
   }
 
@@ -783,7 +783,7 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
         AppLocalizations.of(context)!.communityTrustUnmutedSubmitted,
       );
     } catch (error) {
-      _showTrustActionError(error);
+      await _showTrustActionError(error);
     }
   }
 
@@ -814,14 +814,19 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
         AppLocalizations.of(context)!.communityTrustAppealSubmitted,
       );
     } catch (error) {
-      _showTrustActionError(error);
+      await _showTrustActionError(error);
     }
   }
 
-  void _showTrustActionError(Object error) {
+  Future<void> _showTrustActionError(Object error) {
     final l10n = AppLocalizations.of(context)!;
-    _showTrustSnackBar(
-      error is UnsupportedError
+    if (!mounted) {
+      return Future<void>.value();
+    }
+    return showErrorDialog(
+      context,
+      title: l10n.error,
+      message: error is UnsupportedError
           ? l10n.communityTrustActionUnavailable
           : l10n.communityTrustActionFailed,
     );

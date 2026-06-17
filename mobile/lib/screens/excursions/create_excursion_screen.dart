@@ -15,6 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
 import '../../core/ui/app_colors.dart';
+import '../../core/ui/app_inline_field_error.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/excursions/excursion_cover_url.dart';
 import '../../features/excursions/models/create_excursion_request.dart';
@@ -1932,7 +1933,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
         ),
       ),
       if (_itinerary.isNotEmpty && _itineraryErrorText != null) ...[
-        _InlineFieldError(message: _itineraryErrorText!),
+        AppInlineFieldError(message: _itineraryErrorText!),
         const SizedBox(height: 12),
       ],
       const SizedBox(height: 6),
@@ -2770,7 +2771,7 @@ class _ExcursionLanguagePickerFieldState
             ),
           ),
           if (widget.errorText != null)
-            _InlineFieldError(message: widget.errorText!),
+            AppInlineFieldError(message: widget.errorText!),
         ],
       ),
     );
@@ -3395,41 +3396,6 @@ class _InlineError extends StatelessWidget {
   }
 }
 
-class _InlineFieldError extends StatelessWidget {
-  const _InlineFieldError({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(
-            Icons.error_outline_rounded,
-            color: Color(0xFFFFB199),
-            size: 16,
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(
-                color: Color(0xFFFFB199),
-                fontSize: 12,
-                height: 1.3,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({
     required this.title,
@@ -3715,7 +3681,7 @@ class _LandmarkSelectionCard extends StatelessWidget {
             ),
           ),
         ),
-        if (errorText != null) _InlineFieldError(message: errorText!),
+        if (errorText != null) AppInlineFieldError(message: errorText!),
       ],
     );
   }
@@ -4075,7 +4041,7 @@ class _ItineraryEmptyState extends StatelessWidget {
             ),
           ),
         ),
-        if (errorText != null) _InlineFieldError(message: errorText!),
+        if (errorText != null) AppInlineFieldError(message: errorText!),
       ],
     );
   }

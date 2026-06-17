@@ -380,9 +380,11 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
     }
 
     if (!_canReviewActivity(item)) {
-      ScaffoldMessenger.of(
+      await showErrorDialog(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.activityReviewUnavailable)));
+        title: l10n.error,
+        message: l10n.activityReviewUnavailable,
+      );
       return;
     }
 
@@ -420,9 +422,11 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
       currentUserId,
     );
     if (!_isReviewableParticipant(currentParticipant)) {
-      ScaffoldMessenger.of(
+      await showErrorDialog(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.activityReviewUnavailable)));
+        title: l10n.error,
+        message: l10n.activityReviewUnavailable,
+      );
       return;
     }
 
@@ -507,9 +511,11 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
     } catch (error) {
       if (!mounted) return;
       if (_isActivityReviewConflict(error)) {
-        ScaffoldMessenger.of(
+        await showErrorDialog(
           context,
-        ).showSnackBar(SnackBar(content: Text(l10n.activityReviewUnavailable)));
+          title: l10n.error,
+          message: l10n.activityReviewUnavailable,
+        );
         return;
       }
       await showErrorDialog(

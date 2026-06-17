@@ -1120,8 +1120,10 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
 
   Future<void> _showInviteFriendsSheet(AppLocalizations l10n) async {
     if (context.read<AuthProvider>().state != AuthState.authenticated) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.activityInviteFriendsAuthRequired)),
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.activityInviteFriendsAuthRequired,
       );
       return;
     }
@@ -1217,9 +1219,11 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       return;
     }
     if (!canWriteReview) {
-      ScaffoldMessenger.of(
+      await showErrorDialog(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.activityReviewUnavailable)));
+        title: l10n.error,
+        message: l10n.activityReviewUnavailable,
+      );
       return;
     }
 
@@ -1533,9 +1537,11 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                             }
                             final hostUserId = activity.hostUserId.trim();
                             if (hostUserId.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(l10n.profileNotAvailable),
+                              unawaited(
+                                showErrorDialog(
+                                  context,
+                                  title: l10n.error,
+                                  message: l10n.profileNotAvailable,
                                 ),
                               );
                               return;
@@ -1623,8 +1629,12 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                               activity,
                             );
                             if (copyValue == null || copyValue.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(l10n.notSpecified)),
+                              unawaited(
+                                showErrorDialog(
+                                  context,
+                                  title: l10n.error,
+                                  message: l10n.notSpecified,
+                                ),
                               );
                               return;
                             }
@@ -4844,9 +4854,11 @@ class _InviteFriendsSheetState extends State<_InviteFriendsSheet> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _submitting = false);
-      ScaffoldMessenger.of(
+      await showErrorDialog(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.activityInviteFriendsFailed)));
+        title: l10n.error,
+        message: l10n.activityInviteFriendsFailed,
+      );
     }
   }
 

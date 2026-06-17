@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/network/file_api.dart';
 import '../../../core/network/post_api.dart';
 import '../../../core/ui/app_colors.dart';
+import '../../../core/ui/error_dialog.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../data/feed_api.dart';
 import '../../stories/models/post_vm.dart';
@@ -166,10 +167,11 @@ class _QuickPostThreadCardState extends State<QuickPostThreadCard> {
       setState(() {
         _isSubmitting = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)!.storyReplySendFailed),
-        ),
+      final l10n = AppLocalizations.of(context)!;
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.storyReplySendFailed,
       );
     }
   }
@@ -207,10 +209,11 @@ class _QuickPostThreadCardState extends State<QuickPostThreadCard> {
       setState(() {
         _isTogglingLike = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)!.storyLikeActionFailed),
-        ),
+      final l10n = AppLocalizations.of(context)!;
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.storyLikeActionFailed,
       );
     }
   }

@@ -259,7 +259,8 @@ void main() {
 
     expect(source, contains('_loadGuidesRequestId'));
     expect(source, contains('requestId != _loadGuidesRequestId'));
-    expect(source, contains('ScaffoldMessenger.of(context).showSnackBar'));
+    expect(source, contains('showErrorDialog('));
+    expect(source, contains('message: l10n.guidesLoadFailed'));
     expect(source, contains('showClearButton: true'));
     expect(source, contains('onClear: _clearSearch'));
     expect(source, contains('onClearFilters: _clearFilters'));

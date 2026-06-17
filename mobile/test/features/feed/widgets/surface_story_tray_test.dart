@@ -50,7 +50,7 @@ void main() {
 }
 
 StoryVm _story({required String id, required String nickname}) {
-  final now = DateTime.utc(2026, 6, 14, 10);
+  final now = DateTime.now().toUtc();
   return StoryVm(
     id: id,
     caption: 'Story',

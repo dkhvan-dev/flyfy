@@ -61,6 +61,7 @@ Future<void> _showPostRateLimitSheet(
   final retryMinutes = retrySeconds <= 0 ? 1 : ((retrySeconds + 59) ~/ 60);
   return showModalBottomSheet<void>(
     context: context,
+    isDismissible: true,
     showDragHandle: true,
     backgroundColor: AppColors.surface,
     shape: const RoundedRectangleBorder(
@@ -125,10 +126,38 @@ Future<void> _showPostRateLimitSheet(
 
 void _showPreflightWarning(BuildContext context) {
   final l10n = AppLocalizations.of(context)!;
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(l10n.postCreatePreflightFailed),
-      behavior: SnackBarBehavior.floating,
-    ),
-  );
+  final messenger = ScaffoldMessenger.of(context);
+  messenger
+    ..hideCurrentMaterialBanner()
+    ..showMaterialBanner(
+      MaterialBanner(
+        backgroundColor: AppColors.surface,
+        elevation: 1,
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: AppColors.accent.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: const Icon(
+            Icons.info_outline_rounded,
+            color: AppColors.accent,
+          ),
+        ),
+        content: Text(
+          l10n.postCreatePreflightFailed,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: AppColors.textPrimary,
+            height: 1.35,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: messenger.hideCurrentMaterialBanner,
+            child: Text(l10n.ok),
+          ),
+        ],
+      ),
+    );
 }

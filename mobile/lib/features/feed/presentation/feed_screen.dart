@@ -10,6 +10,7 @@ import '../../../core/network/file_api.dart';
 import '../../../core/network/post_api.dart';
 import '../../../core/ui/app_bottom_navigation_bars.dart';
 import '../../../core/ui/app_colors.dart';
+import '../../../core/ui/error_dialog.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../providers/home_location_provider.dart';
 import '../../../providers/session_provider.dart';
@@ -315,9 +316,11 @@ class _FeedScreenState extends State<FeedScreen>
         return;
       }
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(
+      await showErrorDialog(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.feedCommunityActionFailed)));
+        title: l10n.error,
+        message: l10n.feedCommunityActionFailed,
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -437,6 +440,7 @@ class _FeedScreenState extends State<FeedScreen>
     final location = _feedLocationContext();
     await showModalBottomSheet<void>(
       context: context,
+      isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: AppColors.background,
@@ -480,6 +484,7 @@ class _FeedScreenState extends State<FeedScreen>
 
     await showModalBottomSheet<void>(
       context: context,
+      isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: AppColors.background,
@@ -519,6 +524,7 @@ class _FeedScreenState extends State<FeedScreen>
     final l10n = AppLocalizations.of(context)!;
     await showModalBottomSheet<void>(
       context: context,
+      isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: const Color(0xFF1B1208),

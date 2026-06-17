@@ -9,6 +9,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../../core/network/attendance_api.dart';
 import '../../core/time/app_time.dart';
 import '../../core/ui/app_colors.dart';
+import '../../core/ui/error_dialog.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
 import '../../core/ui/app_list_screen_header.dart';
 import '../../core/ui/pagination_bar.dart';
@@ -189,9 +190,11 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
     final l10n = AppLocalizations.of(context)!;
     final slotId = (booking.scheduleSlotId ?? '').trim();
     if (slotId.isEmpty) {
-      ScaffoldMessenger.of(
+      await showErrorDialog(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.guideDashboardCancelNoSlot)));
+        title: l10n.error,
+        message: l10n.guideDashboardCancelNoSlot,
+      );
       return;
     }
 
@@ -227,12 +230,10 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
     }
 
     final provider = context.read<ExcursionProvider>();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          provider.actionErrorMessage ?? l10n.guideDashboardCancelFailed,
-        ),
-      ),
+    await showErrorDialog(
+      context,
+      title: l10n.error,
+      message: provider.actionErrorMessage ?? l10n.guideDashboardCancelFailed,
     );
   }
 
@@ -253,9 +254,11 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
       });
       return;
     }
-    ScaffoldMessenger.of(
+    await showErrorDialog(
       context,
-    ).showSnackBar(SnackBar(content: Text(l10n.guideDashboardArchiveFailed)));
+      title: l10n.error,
+      message: l10n.guideDashboardArchiveFailed,
+    );
   }
 
   Future<void> _deleteDraftOffer(ExcursionVm excursion) async {
@@ -367,12 +370,11 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
+    await showErrorDialog(
+      context,
+      title: l10n.error,
+      message:
           provider.actionErrorMessage ?? l10n.guideDashboardDeleteDraftFailed,
-        ),
-      ),
     );
   }
 
@@ -399,9 +401,11 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
       });
       return;
     }
-    ScaffoldMessenger.of(
+    await showErrorDialog(
       context,
-    ).showSnackBar(SnackBar(content: Text(l10n.guideDashboardPublishFailed)));
+      title: l10n.error,
+      message: l10n.guideDashboardPublishFailed,
+    );
   }
 
   Future<void> _submitOfferForReview(ExcursionVm excursion) async {
@@ -427,9 +431,11 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
       });
       return;
     }
-    ScaffoldMessenger.of(
+    await showErrorDialog(
       context,
-    ).showSnackBar(SnackBar(content: Text(l10n.guideDashboardSubmitFailed)));
+      title: l10n.error,
+      message: l10n.guideDashboardSubmitFailed,
+    );
   }
 
   @override

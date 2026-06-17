@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/ui/app_colors.dart';
+import '../../../core/ui/error_dialog.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../data/feed_api.dart';
 import '../models/feed_block_vm.dart';
@@ -147,12 +148,11 @@ class _CommunityDiscoveryScreenState extends State<CommunityDiscoveryScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.feedCommunityActionFailed,
-          ),
-        ),
+      final l10n = AppLocalizations.of(context)!;
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.feedCommunityActionFailed,
       );
     } finally {
       if (mounted) {

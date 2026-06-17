@@ -17,6 +17,7 @@ import '../../core/network/file_api.dart';
 import '../../core/network/reference_api.dart';
 import '../../core/time/app_time.dart';
 import '../../core/ui/app_colors.dart';
+import '../../core/ui/app_inline_field_error.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/activity_edit_policy.dart';
@@ -3562,7 +3563,11 @@ class _Step2PillTextField extends StatelessWidget {
             ),
           ),
         ),
-        if (errorText != null) _InlineFieldError(text: errorText!),
+        if (errorText != null)
+          AppInlineFieldError(
+            message: errorText!,
+            padding: const EdgeInsets.only(top: 8, left: 6, right: 6),
+          ),
       ],
     );
   }
@@ -3646,30 +3651,12 @@ class _Step2PickerField extends StatelessWidget {
             ),
           ),
         ),
-        if (errorText != null) _InlineFieldError(text: errorText!),
+        if (errorText != null)
+          AppInlineFieldError(
+            message: errorText!,
+            padding: const EdgeInsets.only(top: 8, left: 6, right: 6),
+          ),
       ],
-    );
-  }
-}
-
-class _InlineFieldError extends StatelessWidget {
-  const _InlineFieldError({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8, left: 6, right: 6),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: _inlineValidationColor,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          height: 1.3,
-        ),
-      ),
     );
   }
 }
@@ -3958,7 +3945,11 @@ class _Step3PriceField extends StatelessWidget {
             },
           ),
         ),
-        if (errorText != null) _InlineFieldError(text: errorText!),
+        if (errorText != null)
+          AppInlineFieldError(
+            message: errorText!,
+            padding: const EdgeInsets.only(top: 8, left: 6, right: 6),
+          ),
       ],
     );
   }
@@ -4035,7 +4026,11 @@ class _Step3TextField extends StatelessWidget {
             ),
           ),
         ),
-        if (errorText != null) _InlineFieldError(text: errorText!),
+        if (errorText != null)
+          AppInlineFieldError(
+            message: errorText!,
+            padding: const EdgeInsets.only(top: 8, left: 6, right: 6),
+          ),
       ],
     );
   }
@@ -4190,7 +4185,11 @@ class _Step3LimitField extends StatelessWidget {
                   ),
                 ),
         ),
-        if (errorText != null) _InlineFieldError(text: errorText!),
+        if (errorText != null)
+          AppInlineFieldError(
+            message: errorText!,
+            padding: const EdgeInsets.only(top: 8, left: 6, right: 6),
+          ),
       ],
     );
   }
@@ -4418,7 +4417,10 @@ class _Step1TextFieldState extends State<_Step1TextField> {
           ),
         ),
         if (widget.errorText != null)
-          _InlineFieldError(text: widget.errorText!),
+          AppInlineFieldError(
+            message: widget.errorText!,
+            padding: const EdgeInsets.only(top: 8, left: 6, right: 6),
+          ),
       ],
     );
   }
@@ -4503,7 +4505,11 @@ class _CategorySelectorField extends StatelessWidget {
             ),
           ),
         ),
-        if (errorText != null) _InlineFieldError(text: errorText!),
+        if (errorText != null)
+          AppInlineFieldError(
+            message: errorText!,
+            padding: const EdgeInsets.only(top: 8, left: 6, right: 6),
+          ),
       ],
     );
   }

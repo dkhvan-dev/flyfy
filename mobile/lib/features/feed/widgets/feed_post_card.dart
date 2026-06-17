@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/ui/app_colors.dart';
+import '../../../core/ui/error_dialog.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../stories/models/post_vm.dart';
 import '../../stories/story_ui.dart';
@@ -104,10 +105,11 @@ class _FeedPostCardState extends State<FeedPostCard> {
       setState(() {
         _isTogglingLike = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)!.feedPostActionFailed),
-        ),
+      final l10n = AppLocalizations.of(context)!;
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.feedPostActionFailed,
       );
     }
   }
@@ -124,10 +126,11 @@ class _FeedPostCardState extends State<FeedPostCard> {
       await onShare(widget.post);
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)!.feedPostActionFailed),
-          ),
+        final l10n = AppLocalizations.of(context)!;
+        await showErrorDialog(
+          context,
+          title: l10n.error,
+          message: l10n.feedPostActionFailed,
         );
       }
     } finally {
@@ -153,10 +156,11 @@ class _FeedPostCardState extends State<FeedPostCard> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)!.feedPostActionFailed),
-        ),
+      final l10n = AppLocalizations.of(context)!;
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.feedPostActionFailed,
       );
     }
   }
