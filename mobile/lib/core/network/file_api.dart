@@ -288,6 +288,33 @@ class FileApi {
     );
   }
 
+  Future<FileContentVm> downloadPublicContent(String fileId) async {
+    final trimmed = fileId.trim();
+    if (trimmed.isEmpty) {
+      throw ArgumentError.value(fileId, 'fileId', 'File id is required');
+    }
+
+    final response = await _apiClient.dio.get<List<int>>(
+      '/public/files/$trimmed/content',
+      options: Options(
+        responseType: ResponseType.bytes,
+        extra: {'requiresAuth': false},
+      ),
+    );
+    return FileContentVm(
+      bytes: Uint8List.fromList(response.data ?? const <int>[]),
+      contentType: response.headers.value('content-type') ?? '',
+    );
+  }
+
+  Future<FileContentVm> downloadStickerContent(String fileId) async {
+    try {
+      return await downloadContent(fileId);
+    } on DioException {
+      return downloadPublicContent(fileId);
+    }
+  }
+
   Future<FileMetadataVm> getFileMetadata(String fileId) async {
     final trimmed = fileId.trim();
     if (trimmed.isEmpty) {

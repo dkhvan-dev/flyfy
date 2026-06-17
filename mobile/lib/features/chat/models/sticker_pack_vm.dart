@@ -103,6 +103,16 @@ class StickerVm {
   final List<String> keywords;
   final String status;
 
+  String get displayFileId {
+    final preview = previewFileId?.trim() ?? '';
+    if (preview.isNotEmpty) return preview;
+
+    final fallback = fallbackFileId.trim();
+    if (fallback.isNotEmpty) return fallback;
+
+    return fileId.trim();
+  }
+
   factory StickerVm.fromJson(Map<String, dynamic> json) {
     return StickerVm(
       id: json['id']?.toString() ?? '',

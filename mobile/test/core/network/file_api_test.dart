@@ -45,6 +45,56 @@ void main() {
     expect(adapter.captured.single.path, '/api/v1/files/file-1/release');
   });
 
+  test(
+    'downloadPublicContent uses unauthenticated public file route',
+    () async {
+      final adapter = _FileApiAdapter();
+      final api = _api(adapter);
+
+      final content = await api.downloadPublicContent(' public-file-1 ');
+
+      expect(adapter.captured.single.method, 'GET');
+      expect(
+        adapter.captured.single.path,
+        '/api/v1/public/files/public-file-1/content',
+      );
+      expect(adapter.captured.single.requiresAuth, isFalse);
+      expect(content.bytes, Uint8List.fromList([1, 2, 3]));
+      expect(content.contentType, 'application/x-tgsticker');
+    },
+  );
+
+  test('downloadStickerContent uses authenticated file route first', () async {
+    final adapter = _FileApiAdapter();
+    final api = _api(adapter);
+
+    final content = await api.downloadStickerContent(' sticker-file-1 ');
+
+    expect(
+      adapter.captured.single.path,
+      '/api/v1/files/sticker-file-1/content',
+    );
+    expect(adapter.captured.single.requiresAuth, isNull);
+    expect(content.bytes, Uint8List.fromList([1, 2, 3]));
+    expect(content.contentType, 'application/x-tgsticker');
+  });
+
+  test('downloadStickerContent falls back to public file route', () async {
+    final adapter = _FileApiAdapter(failAuthenticatedContent: true);
+    final api = _api(adapter);
+
+    final content = await api.downloadStickerContent(' sticker-file-1 ');
+
+    expect(adapter.captured.map((request) => request.path), [
+      '/api/v1/files/sticker-file-1/content',
+      '/api/v1/public/files/sticker-file-1/content',
+    ]);
+    expect(adapter.captured.first.requiresAuth, isNull);
+    expect(adapter.captured.last.requiresAuth, isFalse);
+    expect(content.bytes, Uint8List.fromList([1, 2, 3]));
+    expect(content.contentType, 'application/x-tgsticker');
+  });
+
   test('resolves public file content urls from backend story responses', () {
     expect(
       resolvePublicFileContentUrlFromResponse(
@@ -88,14 +138,19 @@ class _CapturedFileRequest {
     required this.method,
     required this.path,
     required this.body,
+    this.requiresAuth,
   });
 
   final String method;
   final String path;
   final Map<String, dynamic> body;
+  final bool? requiresAuth;
 }
 
 class _FileApiAdapter implements HttpClientAdapter {
+  _FileApiAdapter({this.failAuthenticatedContent = false});
+
+  final bool failAuthenticatedContent;
   final captured = <_CapturedFileRequest>[];
 
   @override
@@ -109,11 +164,25 @@ class _FileApiAdapter implements HttpClientAdapter {
         method: options.method,
         path: options.uri.path,
         body: await _decodeBody(requestStream),
+        requiresAuth: options.extra['requiresAuth'] as bool?,
       ),
     );
 
     if (options.uri.path.endsWith('/release')) {
       return ResponseBody.fromString('', 204);
+    }
+    if (options.uri.path.endsWith('/content')) {
+      if (failAuthenticatedContent &&
+          !options.uri.path.contains('/public/files/')) {
+        return ResponseBody.fromString('', 403);
+      }
+      return ResponseBody.fromBytes(
+        [1, 2, 3],
+        200,
+        headers: {
+          Headers.contentTypeHeader: ['application/x-tgsticker'],
+        },
+      );
     }
 
     return ResponseBody.fromString(

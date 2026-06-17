@@ -30,6 +30,7 @@ import '../../features/chat/models/conversation_vm.dart';
 import '../../features/chat/models/message_vm.dart';
 import '../../features/chat/models/sticker_pack_vm.dart';
 import '../../features/chat/utils/chat_link_utils.dart';
+import '../../features/chat/utils/chat_message_display_text.dart';
 import '../../features/chat/utils/chat_presence_status.dart';
 import '../../features/chat/utils/sticker_asset_format.dart';
 import '../../features/chat/utils/sticker_pack_ordering.dart';
@@ -104,7 +105,6 @@ class _ChatScreenState extends State<ChatScreen> {
   List<StickerPackVm> _stickerPacks = const [];
   bool _stickersLoading = false;
   bool _stickersLoadFailed = false;
-  int _activeStickerPackIndex = 0;
   String? _stickerWarmLocale;
   bool _initialMessageScrollHandled = false;
 
@@ -880,7 +880,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }) async {
     if (stickers.isEmpty) return;
     await _StickerImageCache.preload(
-      stickers.map((sticker) => sticker.fileId),
+      stickers.map((sticker) => sticker.displayFileId),
       limit: limit,
       concurrency: _stickerImageWarmupConcurrency,
     );
@@ -889,35 +889,10 @@ class _ChatScreenState extends State<ChatScreen> {
   List<StickerVm> _prioritizedStickerWarmupList(List<StickerPackVm> packs) {
     if (packs.isEmpty) return const [];
 
-    final safeIndex = _activeStickerPackIndex
-        .clamp(0, packs.length - 1)
-        .toInt();
-    final orderedPacks = [
-      packs[safeIndex],
-      for (var index = 0; index < packs.length; index += 1)
-        if (index != safeIndex) packs[index],
-    ];
-
-    return orderedPacks
+    return packs
         .expand((pack) => pack.stickers)
-        .where((sticker) => sticker.fileId.trim().isNotEmpty)
+        .where((sticker) => sticker.displayFileId.isNotEmpty)
         .toList(growable: false);
-  }
-
-  void _handleStickerPackSelected(int index) {
-    if (index < 0 || index >= _stickerPacks.length) return;
-    setState(() => _activeStickerPackIndex = index);
-
-    final selected = _stickerPacks[index];
-    final next = index + 1 < _stickerPacks.length
-        ? _stickerPacks[index + 1]
-        : null;
-    unawaited(
-      _precacheStickerImages([
-        ...selected.stickers,
-        if (next != null) ...next.stickers,
-      ], limit: 80),
-    );
   }
 
   Future<void> _loadStickerPacks({
@@ -961,9 +936,6 @@ class _ChatScreenState extends State<ChatScreen> {
       if (!mounted) return;
       setState(() {
         _stickerPacks = packs;
-        if (_activeStickerPackIndex >= _stickerPacks.length) {
-          _activeStickerPackIndex = 0;
-        }
         _stickersLoadFailed = false;
       });
       unawaited(_precacheStickerImages(_prioritizedStickerWarmupList(packs)));
@@ -1829,7 +1801,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   onVoiceStop: _stopVoiceRecordingForPreview,
                   activePanel: _activeComposerPanel,
                   stickerPacks: _stickerPacks,
-                  activeStickerPackIndex: _activeStickerPackIndex,
                   stickersLoading: _stickersLoading,
                   stickersLoadFailed: _stickersLoadFailed,
                   onPanelChanged: _setComposerPanel,
@@ -1837,7 +1808,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   onPasteRequested: () => unawaited(_handlePasteRequested()),
                   onPasteImageRequested: () =>
                       unawaited(_handlePasteImageRequested()),
-                  onStickerPackSelected: _handleStickerPackSelected,
                   onStickerSelected: (sticker) =>
                       unawaited(_sendSticker(sticker)),
                   onRetryStickers: () =>
@@ -4502,43 +4472,11 @@ class _MessageBubble extends StatelessWidget {
   }
 
   String _systemMessageText(String senderName, AppLocalizations l10n) {
-    final text = message.content.trim();
-
-    if (text == 'User joined' || text == 'User joined the chat') {
-      final name = _isConcreteSenderName(senderName)
-          ? senderName
-          : l10n.chatUserFallbackName;
-      return l10n.chatSystemUserJoined(name);
-    }
-    if (text == 'User left' || text == 'User left the chat') {
-      final name = _isConcreteSenderName(senderName)
-          ? senderName
-          : l10n.chatUserFallbackName;
-      return l10n.chatSystemUserLeft(name);
-    }
-
-    if (text.endsWith(' joined')) {
-      final name = text.substring(0, text.length - ' joined'.length).trim();
-      if (name.isNotEmpty) {
-        return l10n.chatSystemUserJoined(name);
-      }
-    }
-    if (text.endsWith(' left')) {
-      final name = text.substring(0, text.length - ' left'.length).trim();
-      if (name.isNotEmpty) {
-        return l10n.chatSystemUserLeft(name);
-      }
-    }
-
-    return text;
-  }
-
-  bool _isConcreteSenderName(String senderName) {
-    final normalized = senderName.trim().toLowerCase();
-    return normalized.isNotEmpty &&
-        normalized != 'user' &&
-        normalized != 'system' &&
-        message.senderUserId != '00000000-0000-0000-0000-000000000000';
+    return localizedChatSystemMessageText(
+      content: message.content,
+      senderName: senderName,
+      l10n: l10n,
+    );
   }
 }
 
@@ -4723,11 +4661,13 @@ class _StickerImage extends StatelessWidget {
     required this.fileId,
     required this.fit,
     this.declaredContentType = '',
+    this.fallbackEmoji = '',
   });
 
   final String fileId;
   final BoxFit fit;
   final String declaredContentType;
+  final String fallbackEmoji;
 
   @override
   Widget build(BuildContext context) {
@@ -4740,6 +4680,7 @@ class _StickerImage extends StatelessWidget {
         if (asset == null || asset.bytes.isEmpty) {
           return _StickerPlaceholder(
             loading: snapshot.connectionState == ConnectionState.waiting,
+            emoji: fallbackEmoji,
           );
         }
 
@@ -4748,7 +4689,7 @@ class _StickerImage extends StatelessWidget {
             asset.bytes,
             decoder: asset.lottieDecoder,
             errorBuilder: (context, error, stackTrace) =>
-                const _StickerPlaceholder(),
+                _StickerPlaceholder(emoji: fallbackEmoji),
             fit: fit,
             frameRate: const FrameRate(60),
             repeat: true,
@@ -4760,19 +4701,21 @@ class _StickerImage extends StatelessWidget {
           return Image.memory(asset.bytes, fit: fit, gaplessPlayback: true);
         }
 
-        return const _StickerPlaceholder();
+        return _StickerPlaceholder(emoji: fallbackEmoji);
       },
     );
   }
 }
 
 class _StickerPlaceholder extends StatelessWidget {
-  const _StickerPlaceholder({this.loading = false});
+  const _StickerPlaceholder({this.loading = false, this.emoji = ''});
 
   final bool loading;
+  final String emoji;
 
   @override
   Widget build(BuildContext context) {
+    final normalizedEmoji = emoji.trim();
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(_scale(context, 18)),
@@ -4787,6 +4730,12 @@ class _StickerPlaceholder extends StatelessWidget {
                   strokeWidth: 2,
                   color: AppColors.accent,
                 ),
+              )
+            : normalizedEmoji.isNotEmpty
+            ? Text(
+                normalizedEmoji,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: _scale(context, 28), height: 1),
               )
             : Icon(
                 Icons.image_not_supported_outlined,
@@ -4813,7 +4762,7 @@ class _StickerImageCache {
 
     final load = () async {
       try {
-        final content = await _fileApi.downloadContent(normalizedFileId);
+        final content = await _fileApi.downloadStickerContent(normalizedFileId);
         if (content.bytes.isEmpty) {
           _assetFutures.remove(normalizedFileId);
           return null;
@@ -6710,14 +6659,12 @@ class _ChatComposer extends StatelessWidget {
     required this.onVoiceStop,
     required this.activePanel,
     required this.stickerPacks,
-    required this.activeStickerPackIndex,
     required this.stickersLoading,
     required this.stickersLoadFailed,
     required this.onPanelChanged,
     required this.onEmojiSelected,
     required this.onPasteRequested,
     required this.onPasteImageRequested,
-    required this.onStickerPackSelected,
     required this.onStickerSelected,
     required this.onRetryStickers,
     required this.sending,
@@ -6750,14 +6697,12 @@ class _ChatComposer extends StatelessWidget {
   final VoidCallback onVoiceStop;
   final _ComposerPanel activePanel;
   final List<StickerPackVm> stickerPacks;
-  final int activeStickerPackIndex;
   final bool stickersLoading;
   final bool stickersLoadFailed;
   final ValueChanged<_ComposerPanel> onPanelChanged;
   final ValueChanged<String> onEmojiSelected;
   final VoidCallback onPasteRequested;
   final VoidCallback onPasteImageRequested;
-  final ValueChanged<int> onStickerPackSelected;
   final ValueChanged<StickerVm> onStickerSelected;
   final VoidCallback onRetryStickers;
   final bool sending;
@@ -7021,12 +6966,10 @@ class _ChatComposer extends StatelessWidget {
             _InlineEmojiStickerPanel(
               activePanel: activePanel,
               stickerPacks: stickerPacks,
-              activeStickerPackIndex: activeStickerPackIndex,
               stickersLoading: stickersLoading,
               stickersLoadFailed: stickersLoadFailed,
               onPanelChanged: onPanelChanged,
               onEmojiSelected: onEmojiSelected,
-              onStickerPackSelected: onStickerPackSelected,
               onStickerSelected: onStickerSelected,
               onRetryStickers: onRetryStickers,
             ),
@@ -7127,24 +7070,20 @@ class _InlineEmojiStickerPanel extends StatelessWidget {
   const _InlineEmojiStickerPanel({
     required this.activePanel,
     required this.stickerPacks,
-    required this.activeStickerPackIndex,
     required this.stickersLoading,
     required this.stickersLoadFailed,
     required this.onPanelChanged,
     required this.onEmojiSelected,
-    required this.onStickerPackSelected,
     required this.onStickerSelected,
     required this.onRetryStickers,
   });
 
   final _ComposerPanel activePanel;
   final List<StickerPackVm> stickerPacks;
-  final int activeStickerPackIndex;
   final bool stickersLoading;
   final bool stickersLoadFailed;
   final ValueChanged<_ComposerPanel> onPanelChanged;
   final ValueChanged<String> onEmojiSelected;
-  final ValueChanged<int> onStickerPackSelected;
   final ValueChanged<StickerVm> onStickerSelected;
   final VoidCallback onRetryStickers;
 
@@ -7192,11 +7131,9 @@ class _InlineEmojiStickerPanel extends StatelessWidget {
                 ? _EmojiGrid(onSelected: onEmojiSelected)
                 : _StickerGrid(
                     packs: stickerPacks,
-                    activePackIndex: activeStickerPackIndex,
                     loading: stickersLoading,
                     loadFailed: stickersLoadFailed,
                     onRetry: onRetryStickers,
-                    onPackSelected: onStickerPackSelected,
                     onStickerSelected: onStickerSelected,
                   ),
           ),
@@ -7308,20 +7245,16 @@ class _EmojiGrid extends StatelessWidget {
 class _StickerGrid extends StatelessWidget {
   const _StickerGrid({
     required this.packs,
-    required this.activePackIndex,
     required this.loading,
     required this.loadFailed,
     required this.onRetry,
-    required this.onPackSelected,
     required this.onStickerSelected,
   });
 
   final List<StickerPackVm> packs;
-  final int activePackIndex;
   final bool loading;
   final bool loadFailed;
   final VoidCallback onRetry;
-  final ValueChanged<int> onPackSelected;
   final ValueChanged<StickerVm> onStickerSelected;
 
   @override
@@ -7343,137 +7276,55 @@ class _StickerGrid extends StatelessWidget {
       );
     }
 
-    final safeIndex = packs.isEmpty
-        ? 0
-        : activePackIndex.clamp(0, packs.length - 1).toInt();
-    final activePack = packs.isEmpty ? null : packs[safeIndex];
-    final stickers = activePack?.stickers ?? const <StickerVm>[];
+    final stickers = packs
+        .expand((pack) => pack.stickers)
+        .toList(growable: false);
 
-    return Column(
-      children: [
-        if (packs.isNotEmpty)
-          SizedBox(
-            height: _scale(context, 42),
-            child: ListView.separated(
-              padding: EdgeInsets.symmetric(horizontal: _scale(context, 12)),
-              scrollDirection: Axis.horizontal,
-              itemCount: packs.length,
-              separatorBuilder: (_, _) => SizedBox(width: _scale(context, 8)),
-              itemBuilder: (context, index) {
-                final pack = packs[index];
-                final selected = index == safeIndex;
-                return _StickerPackChip(
-                  title: pack.titleFor(
-                    Localizations.localeOf(context).languageCode,
-                  ),
-                  selected: selected,
-                  onTap: () => onPackSelected(index),
-                );
-              },
-            ),
-          ),
-        Expanded(
-          child: stickers.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: _scale(context, 24),
-                    ),
-                    child: Text(
-                      l10n.stickersEmptySearch,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: _scale(context, 13),
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white.withValues(alpha: 0.68),
-                      ),
-                    ),
-                  ),
-                )
-              : LayoutBuilder(
-                  builder: (context, constraints) {
-                    final rawColumns = (constraints.maxWidth / 82).floor();
-                    final columns = rawColumns.clamp(4, 6).toInt();
-
-                    return GridView.builder(
-                      padding: EdgeInsets.fromLTRB(
-                        _scale(context, 12),
-                        _scale(context, 8),
-                        _scale(context, 12),
-                        _scale(context, 16),
-                      ),
-                      physics: const BouncingScrollPhysics(),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: columns,
-                        mainAxisSpacing: _scale(context, 10),
-                        crossAxisSpacing: _scale(context, 10),
-                      ),
-                      itemCount: stickers.length,
-                      itemBuilder: (context, index) {
-                        final sticker = stickers[index];
-                        return _StickerPickerButton(
-                          sticker: sticker,
-                          onTap: () => onStickerSelected(sticker),
-                        );
-                      },
-                    );
-                  },
-                ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StickerPackChip extends StatelessWidget {
-  const _StickerPackChip({
-    required this.title,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String title;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: title,
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          alignment: Alignment.center,
-          padding: EdgeInsets.symmetric(horizontal: _scale(context, 12)),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            color: selected
-                ? AppColors.accent.withValues(alpha: 0.18)
-                : Colors.white.withValues(alpha: 0.06),
-            border: Border.all(
-              color: selected
-                  ? AppColors.accent.withValues(alpha: 0.42)
-                  : Colors.white.withValues(alpha: 0.06),
-            ),
-          ),
+    if (stickers.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: _scale(context, 24)),
           child: Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            l10n.stickersEmptySearch,
+            textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: _scale(context, 12),
-              fontWeight: FontWeight.w800,
-              color: selected
-                  ? const Color(0xFFffd08a)
-                  : Colors.white.withValues(alpha: 0.68),
+              fontSize: _scale(context, 13),
+              fontWeight: FontWeight.w700,
+              color: Colors.white.withValues(alpha: 0.68),
             ),
           ),
         ),
-      ),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final rawColumns = (constraints.maxWidth / 82).floor();
+        final columns = rawColumns.clamp(4, 6).toInt();
+
+        return GridView.builder(
+          padding: EdgeInsets.fromLTRB(
+            _scale(context, 12),
+            _scale(context, 8),
+            _scale(context, 12),
+            _scale(context, 16),
+          ),
+          physics: const BouncingScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            mainAxisSpacing: _scale(context, 10),
+            crossAxisSpacing: _scale(context, 10),
+          ),
+          itemCount: stickers.length,
+          itemBuilder: (context, index) {
+            final sticker = stickers[index];
+            return _StickerPickerButton(
+              sticker: sticker,
+              onTap: () => onStickerSelected(sticker),
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -7501,9 +7352,10 @@ class _StickerPickerButton extends StatelessWidget {
           child: Padding(
             padding: EdgeInsets.all(_scale(context, 8)),
             child: _StickerImage(
-              fileId: sticker.fileId,
+              fileId: sticker.displayFileId,
               fit: BoxFit.contain,
               declaredContentType: sticker.contentType,
+              fallbackEmoji: sticker.emoji ?? '',
             ),
           ),
         ),

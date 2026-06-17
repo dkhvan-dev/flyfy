@@ -17,6 +17,7 @@ void main() {
     ).readAsString();
 
     expect(source, contains('_StickerImageCache.preload'));
+    expect(source, contains('displayFileId'));
     expect(source, isNot(contains('precacheImage(NetworkImage')));
   });
 
@@ -31,6 +32,7 @@ void main() {
     expect(source, contains('LottieComposition.decodeGZip'));
     expect(source, contains('RenderCache.drawingCommands'));
     expect(source, contains('FrameRate(60)'));
+    expect(source, contains('downloadStickerContent'));
     expect(source, isNot(contains('FrameRate.max')));
   });
 
@@ -63,4 +65,17 @@ void main() {
     expect(source, isNot(contains('_PastedImageAction.sendSticker')));
     expect(source, isNot(contains('chatPasteSendSticker')));
   });
+
+  test(
+    'inline sticker panel shows one combined grid without pack tabs',
+    () async {
+      final source = await File(
+        'lib/screens/chat/chat_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('.expand((pack) => pack.stickers)'));
+      expect(source, isNot(contains('class _StickerPackChip')));
+      expect(source, isNot(contains('onPackSelected')));
+    },
+  );
 }

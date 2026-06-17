@@ -665,6 +665,23 @@ func defaultStickerDefinitions() []stickerDefinition {
 		officialLottieSticker(groupTitle, packTitle, packDescription, "like-button", "assets/like-button.tgs", "👍", []string{"like", "thumbs", "yes", "approve"}, 50, 480, 608, 2000),
 		officialLottieSticker(groupTitle, packTitle, packDescription, "sea-walk", "assets/sea-walk.tgs", "🌊", []string{"sea", "walk", "beach", "travel"}, 60, 2000, 2000, 2000),
 		officialLottieSticker(groupTitle, packTitle, packDescription, "travel-character", "assets/travel-character.tgs", "✨", []string{"travel", "character", "animated", "fun"}, 70, 800, 800, 3000),
+		officialLottieSticker(groupTitle, packTitle, packDescription, "hundred-percent", "assets/hundred-percent.tgs", "💯", []string{"100", "percent", "perfect", "score"}, 80, 1024, 1024, 2250),
+		officialLottieSticker(groupTitle, packTitle, packDescription, "doge-drift", "assets/doge-drift.tgs", "🐕", []string{"doge", "drift", "chill", "fun"}, 90, 512, 512, 3000),
+		officialLottieSticker(groupTitle, packTitle, packDescription, "ambulance", "assets/ambulance.tgs", "🚑", []string{"ambulance", "help", "safety", "emergency"}, 100, 897, 551, 3000),
+		officialLottieSticker(groupTitle, packTitle, packDescription, "angry-emoji", "assets/angry-emoji.tgs", "😡", []string{"angry", "mad", "emotion", "reaction"}, 110, 1024, 1024, 3000),
+		officialLottieSticker(groupTitle, packTitle, packDescription, "cat-laugh", "assets/cat-laugh.tgs", "😹", []string{"cat", "laugh", "funny", "reaction"}, 120, 500, 500, 3000),
+		officialLottieSticker(groupTitle, packTitle, packDescription, "sparkle-burst", "assets/sparkle-burst.tgs", "✨", []string{"sparkle", "shine", "magic", "wow"}, 130, 1080, 1080, 1991),
+		officialLottieSticker(groupTitle, packTitle, packDescription, "confetti", "assets/confetti.tgs", "🎉", []string{"confetti", "party", "celebrate", "win"}, 140, 1024, 1024, 1533),
+		officialLottieSticker(groupTitle, packTitle, packDescription, "happy-girl", "assets/happy-girl.tgs", "😊", []string{"happy", "girl", "joy", "walk"}, 150, 1500, 1500, 1333),
+		officialLottieSticker(groupTitle, packTitle, packDescription, "heart", "assets/heart.tgs", "❤️", []string{"heart", "love", "care", "emotion"}, 160, 500, 500, 2997),
+		officialLottieSticker(groupTitle, packTitle, packDescription, "jellyfish-like", "assets/jellyfish-like.tgs", "👍", []string{"jellyfish", "like", "approve", "yes"}, 170, 512, 512, 1700),
+		officialLottieSticker(groupTitle, packTitle, packDescription, "jellyfish-love", "assets/jellyfish-love.tgs", "💙", []string{"jellyfish", "love", "heart", "sea"}, 180, 512, 512, 2133),
+		officialLottieSticker(groupTitle, packTitle, packDescription, "laugh-emoji", "assets/laugh-emoji.tgs", "😂", []string{"laugh", "emoji", "funny", "reaction"}, 190, 512, 512, 3000),
+		officialLottieSticker(groupTitle, packTitle, packDescription, "mind-blown-emoji", "assets/mind-blown-emoji.tgs", "🤯", []string{"mind", "blown", "wow", "surprise"}, 200, 1024, 1024, 2900),
+		officialLottieSticker(groupTitle, packTitle, packDescription, "party-emoji", "assets/party-emoji.tgs", "🥳", []string{"party", "celebrate", "emoji", "fun"}, 210, 1024, 1024, 1800),
+		officialLottieSticker(groupTitle, packTitle, packDescription, "pigeon", "assets/pigeon.tgs", "🕊️", []string{"pigeon", "bird", "fly", "city"}, 220, 512, 512, 2367),
+		officialLottieSticker(groupTitle, packTitle, packDescription, "robot", "assets/robot.tgs", "🤖", []string{"robot", "tech", "bot", "hello"}, 230, 1080, 1080, 2700),
+		officialLottieSticker(groupTitle, packTitle, packDescription, "smoothymon-clap", "assets/smoothymon-clap.tgs", "👏", []string{"clap", "applause", "smoothymon", "bravo"}, 240, 408, 408, 1600),
 	}
 }
 

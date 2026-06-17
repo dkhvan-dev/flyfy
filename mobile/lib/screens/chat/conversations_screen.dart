@@ -11,6 +11,7 @@ import '../../core/network/file_api.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/chat/models/conversation_vm.dart';
+import '../../features/chat/utils/chat_message_display_text.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/session_provider.dart';
@@ -699,7 +700,12 @@ class _LastMessagePreviewLineState extends State<_LastMessagePreviewLine> {
       builder: (context, snapshot) {
         final attachment = snapshot.data;
         return _buildPreviewRow(
-          text: _previewText(l10n, attachment),
+          text: chatLastMessagePreviewText(
+            message: widget.message,
+            l10n: l10n,
+            attachmentMetadata: attachment?.metadata,
+            attachmentFileId: attachment?.fileId,
+          ),
           attachment: attachment,
         );
       },
@@ -726,49 +732,6 @@ class _LastMessagePreviewLineState extends State<_LastMessagePreviewLine> {
         ),
       ],
     );
-  }
-
-  String _previewText(
-    AppLocalizations l10n,
-    _LastAttachmentPreviewData? attachment,
-  ) {
-    final message = widget.message;
-    if (message.isDeleted) {
-      return message.isHiddenByModerator
-          ? l10n.chatMessageRemovedByModerator
-          : l10n.chatMessageDeleted;
-    }
-    if (message.senderDisplayName.trim().toLowerCase() == 'system') {
-      return message.contentPreview;
-    }
-
-    final preview = _previewBody(l10n, attachment);
-    final sender = message.senderDisplayName.trim();
-    if (sender.isEmpty) return preview;
-    return '$sender: $preview';
-  }
-
-  String _previewBody(
-    AppLocalizations l10n,
-    _LastAttachmentPreviewData? attachment,
-  ) {
-    final message = widget.message;
-    if (message.isSticker) return l10n.chatStickerMessage;
-
-    final metadata = attachment?.metadata;
-    if (metadata?.isImage ?? false) return l10n.chatLastMessagePhoto;
-    if (metadata?.isVideo ?? false) return l10n.chatLastMessageVideo;
-    if (metadata != null && message.hasFiles) {
-      final name = _displayFileName(metadata);
-      return name.isEmpty
-          ? l10n.chatSharedFileFallback(_shortId(attachment!.fileId))
-          : name;
-    }
-
-    final contentPreview = message.contentPreview.trim();
-    if (contentPreview.isNotEmpty) return contentPreview;
-    if (message.hasFiles) return l10n.chatAttachmentFile;
-    return message.contentPreview;
   }
 }
 
@@ -821,26 +784,4 @@ class _LastAttachmentPreviewData {
   bool get hasThumbnail =>
       (metadata?.isImage ?? false) && imageBytes != null ||
       (metadata?.isVideo ?? false);
-}
-
-String _shortId(String id) {
-  final value = id.trim();
-  if (value.length <= 8) return value;
-  return value.substring(0, 8);
-}
-
-String _displayFileName(FileMetadataVm metadata) {
-  final name = metadata.originalName.trim();
-  if (name.isEmpty) return '';
-
-  final extension = metadata.extensionLabel.trim().toLowerCase();
-  if (extension.isEmpty || extension == 'file') return name;
-
-  final lowerName = name.toLowerCase();
-  if (lowerName.endsWith('.$extension')) return name;
-
-  final lastSegment = name.split(RegExp(r'[/\\]')).last;
-  if (lastSegment.contains('.')) return name;
-
-  return '$name.$extension';
 }

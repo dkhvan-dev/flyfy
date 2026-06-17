@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"io"
+	"strings"
 	"testing"
 )
 
@@ -164,6 +165,39 @@ func TestDefaultStickerAssetsAreVectorOnlyTelegramTGS(t *testing.T) {
 	}
 }
 
+func TestHeartStickerDoesNotContainWhiteSolidBackground(t *testing.T) {
+	t.Parallel()
+
+	def := findDefaultStickerDefinition(t, "lottie-heart")
+	body, err := renderStickerAnimation(def)
+	if err != nil {
+		t.Fatalf("render %q: %v", def.Key, err)
+	}
+
+	animation, err := decodeTGS(body)
+	if err != nil {
+		t.Fatalf("decode %q: %v", def.Key, err)
+	}
+	for _, layer := range animation.Layers {
+		layerType, _ := layer["ty"].(float64)
+		color, _ := layer["sc"].(string)
+		name, _ := layer["nm"].(string)
+		if int(layerType) == 1 && strings.EqualFold(color, "#ffffff") {
+			t.Fatalf("heart sticker contains white solid background layer %q", name)
+		}
+	}
+}
+
+func TestOfficialStickerSetDoesNotIncludeRetiredBear(t *testing.T) {
+	t.Parallel()
+
+	for _, def := range defaultStickerDefinitions() {
+		if def.Key == "lottie-bear" {
+			t.Fatalf("retired sticker %q must not be included in the official catalog", def.Key)
+		}
+	}
+}
+
 func TestExpandedOfficialStickerSetIncludesTravelChatMoments(t *testing.T) {
 	t.Parallel()
 
@@ -273,6 +307,23 @@ func expectedOfficialLottieStickerKeys() []string {
 		"lottie-like-button",
 		"lottie-sea-walk",
 		"lottie-travel-character",
+		"lottie-hundred-percent",
+		"lottie-doge-drift",
+		"lottie-ambulance",
+		"lottie-angry-emoji",
+		"lottie-cat-laugh",
+		"lottie-sparkle-burst",
+		"lottie-confetti",
+		"lottie-happy-girl",
+		"lottie-heart",
+		"lottie-jellyfish-like",
+		"lottie-jellyfish-love",
+		"lottie-laugh-emoji",
+		"lottie-mind-blown-emoji",
+		"lottie-party-emoji",
+		"lottie-pigeon",
+		"lottie-robot",
+		"lottie-smoothymon-clap",
 	}
 }
 

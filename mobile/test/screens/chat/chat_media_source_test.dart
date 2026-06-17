@@ -102,14 +102,19 @@ void main() {
     final previewSource = await File(
       'lib/screens/chat/widgets/chat_video_preview.dart',
     ).readAsString();
+    final formatterSource = await File(
+      'lib/features/chat/utils/chat_message_display_text.dart',
+    ).readAsString();
 
     expect(source, contains('class _LastMessagePreviewLine'));
-    expect(source, contains('chatLastMessagePhoto'));
-    expect(source, contains('chatLastMessageVideo'));
+    expect(source, contains('chatLastMessagePreviewText'));
+    expect(formatterSource, contains('chatLastMessagePhoto'));
+    expect(formatterSource, contains('chatLastMessageVideo'));
+    expect(formatterSource, contains('chatVoiceMessage'));
     expect(source, contains('_AttachmentPreviewThumb'));
     expect(source, contains('ChatVideoPreview'));
     expect(previewSource, contains('VideoPlayerController.networkUrl'));
-    expect(source, contains('metadata.originalName.trim()'));
+    expect(formatterSource, contains('metadata.originalName.trim()'));
   });
 
   test('conversation list has no E2EE legacy decrypt path', () async {

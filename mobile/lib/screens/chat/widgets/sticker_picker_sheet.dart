@@ -426,7 +426,7 @@ class _StickerPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fileId = _previewFileId(sticker);
+    final fileId = sticker.displayFileId;
     final emoji = sticker.emoji?.trim() ?? '';
 
     if (fileId.isEmpty) {
@@ -439,14 +439,6 @@ class _StickerPreview extends StatelessWidget {
       declaredContentType: sticker.contentType,
       previewContentLoader: previewContentLoader,
     );
-  }
-
-  String _previewFileId(StickerVm sticker) {
-    final preview = sticker.previewFileId?.trim() ?? '';
-    if (preview.isNotEmpty) return preview;
-    final fallback = sticker.fallbackFileId.trim();
-    if (fallback.isNotEmpty) return fallback;
-    return sticker.fileId.trim();
   }
 }
 
@@ -567,7 +559,7 @@ class _StickerPreviewAssetCache {
     final cached = _assetFutures[normalizedFileId];
     if (cached != null) return cached;
 
-    final load = _load(normalizedFileId, _fileApi.downloadContent);
+    final load = _load(normalizedFileId, _fileApi.downloadStickerContent);
     _assetFutures[normalizedFileId] = load;
     return load;
   }
