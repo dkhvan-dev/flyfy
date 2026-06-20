@@ -236,6 +236,27 @@ void main() {
       await sub.cancel();
     },
   );
+
+  test('attaches current app locale headers to every request', () async {
+    final adapter = _AuthAdapter();
+    final client = ApiClient(
+      dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+        ..httpClientAdapter = adapter,
+      secureStorage: _MemorySecureStorage(),
+      authSessionEvents: AuthSessionEvents(),
+    );
+
+    ApiClient.setAppLocale('kk');
+    addTearDown(() => ApiClient.setAppLocale('ru'));
+
+    await client.dio.get(
+      '/feed',
+      options: Options(extra: const {'optionalAuth': true}),
+    );
+
+    expect(adapter.requests.single.headers['Accept-Language'], 'kk');
+    expect(adapter.requests.single.headers['X-Language'], 'kk');
+  });
 }
 
 class _MemorySecureStorage extends SecureStorage {

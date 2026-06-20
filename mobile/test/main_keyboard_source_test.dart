@@ -16,4 +16,13 @@ void main() {
       lessThan(source.indexOf('AppKeyboardDismissOnScroll(')),
     );
   });
+
+  test('app forwards selected locale to backend API clients', () {
+    final source = File('lib/main.dart').readAsStringSync();
+
+    expect(
+      source,
+      contains('ApiClient.setAppLocale(localeProvider.locale.languageCode);'),
+    );
+  });
 }

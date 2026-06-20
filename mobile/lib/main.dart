@@ -142,6 +142,8 @@ class _SuperAppState extends State<SuperApp> {
       ],
       child: Consumer<LocaleProvider>(
         builder: (context, localeProvider, _) {
+          ApiClient.setAppLocale(localeProvider.locale.languageCode);
+
           return MaterialApp.router(
             title: 'Inflap',
             debugShowCheckedModeBanner: false,

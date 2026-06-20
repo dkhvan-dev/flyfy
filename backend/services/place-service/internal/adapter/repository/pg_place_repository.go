@@ -451,9 +451,6 @@ func (r *PGPlaceRepository) ListPlaces(ctx context.Context, filter model.PlaceLi
 		return nil, 0, fmt.Errorf("count places: %w", err)
 	}
 
-	// Order
-	orderBy := placeListOrderBy(filter.Sort)
-
 	// Pagination
 	if filter.Limit <= 0 {
 		filter.Limit = 20
@@ -465,6 +462,14 @@ func (r *PGPlaceRepository) ListPlaces(ctx context.Context, filter model.PlaceLi
 	selectArgs := append([]any{}, args...)
 	selectArgs = append(selectArgs, normalizeDBLocale(filter.Locale))
 	localePos := len(selectArgs)
+	latitudePos := 0
+	longitudePos := 0
+	if filter.Latitude != nil && filter.Longitude != nil {
+		selectArgs = append(selectArgs, *filter.Latitude, *filter.Longitude)
+		latitudePos = len(selectArgs) - 1
+		longitudePos = len(selectArgs)
+	}
+	orderBy := placeListOrderBy(filter, latitudePos, longitudePos)
 	selectArgs = append(selectArgs, filter.Limit, filter.Offset)
 	limitPos := len(selectArgs) - 1
 	offsetPos := len(selectArgs)
@@ -529,10 +534,10 @@ func (r *PGPlaceRepository) ListPlaces(ctx context.Context, filter model.PlaceLi
 	return items, total, nil
 }
 
-func placeListOrderBy(sort string) string {
+func placeListOrderBy(filter model.PlaceListFilter, latitudePos int, longitudePos int) string {
 	const durationInHours = "CASE WHEN a.duration_unit = 'DAYS' THEN a.duration_value * 24 ELSE a.duration_value END"
 
-	switch sort {
+	switch strings.TrimSpace(filter.Sort) {
 	case "price_asc":
 		return "a.price_amount ASC NULLS LAST, a.created_at DESC"
 	case "price_desc":
@@ -545,6 +550,19 @@ func placeListOrderBy(sort string) string {
 		return "a.rating DESC, a.review_count DESC, a.created_at DESC"
 	case "rating_asc":
 		return "a.rating ASC, a.review_count DESC, a.created_at DESC"
+	case "distance":
+		if filter.Latitude == nil || filter.Longitude == nil || latitudePos <= 0 || longitudePos <= 0 {
+			return "a.created_at DESC"
+		}
+		return fmt.Sprintf(
+			"CASE WHEN a.latitude IS NULL OR a.longitude IS NULL THEN NULL ELSE ((a.latitude - $%d) * (a.latitude - $%d)) + ((a.longitude - $%d) * (a.longitude - $%d) * COS(RADIANS($%d)) * COS(RADIANS($%d))) END ASC NULLS LAST, a.rating DESC, a.review_count DESC, a.created_at DESC",
+			latitudePos,
+			latitudePos,
+			longitudePos,
+			longitudePos,
+			latitudePos,
+			latitudePos,
+		)
 	case "latest":
 		return "a.created_at DESC"
 	default:

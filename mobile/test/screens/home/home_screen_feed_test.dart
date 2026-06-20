@@ -119,6 +119,83 @@ void main() {
     expect(headerLocation.includeCountry, isFalse);
   });
 
+  testWidgets('loads top destinations around current device coordinates', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final placeApi = _FakePlaceApi();
+
+    await tester.pumpWidget(
+      _homeApp(
+        HomeScreen(
+          feedApi: _FakeFeedApi(page: FeedPageVm(items: const [])),
+          placeApi: placeApi,
+          initialDataLoadDelay: Duration.zero,
+          initialDataLoadStagger: Duration.zero,
+          waitForFirstFrameRasterized: false,
+        ),
+        location: HomeLocationPreference(
+          source: HomeLocationSource.detected,
+          countryCode: 'KZ',
+          cityId: 'almaty',
+          cityName: 'Almaty',
+          latitude: 43.238949,
+          longitude: 76.889709,
+          updatedAt: DateTime.utc(2026, 6, 17),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(placeApi.calls.single, {
+      'countryCode': 'KZ',
+      'cityId': 'almaty',
+      'latitude': 43.238949,
+      'longitude': 76.889709,
+      'sort': 'distance',
+      'locale': 'en',
+      'limit': 10,
+    });
+  });
+
+  testWidgets(
+    'loads top destinations within selected city when GPS is absent',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final placeApi = _FakePlaceApi();
+
+      await tester.pumpWidget(
+        _homeApp(
+          HomeScreen(
+            feedApi: _FakeFeedApi(page: FeedPageVm(items: const [])),
+            placeApi: placeApi,
+            initialDataLoadDelay: Duration.zero,
+            initialDataLoadStagger: Duration.zero,
+            waitForFirstFrameRasterized: false,
+          ),
+          location: HomeLocationPreference(
+            source: HomeLocationSource.detected,
+            countryCode: 'KZ',
+            cityId: 'almaty',
+            cityName: 'Almaty',
+            updatedAt: DateTime.utc(2026, 6, 17),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(placeApi.calls.single, {
+        'countryCode': 'KZ',
+        'cityId': 'almaty',
+        'sort': 'rating',
+        'locale': 'en',
+        'limit': 10,
+      });
+    },
+  );
+
   testWidgets('loads the next home smart post page from feed cursor', (
     tester,
   ) async {
@@ -691,6 +768,7 @@ class _FakePlaceApi extends PlaceApi {
   _FakePlaceApi({this.items = const []});
 
   final List<PlaceVm> items;
+  final List<Map<String, Object?>> calls = [];
 
   @override
   Future<({List<PlaceVm> items, int total})> getPlaces({
@@ -708,9 +786,33 @@ class _FakePlaceApi extends PlaceApi {
     double? minRating,
     String? sort,
     String? locale,
+    double? latitude,
+    double? longitude,
     int limit = 20,
     int offset = 0,
   }) async {
+    calls.add(
+      {
+        'search': search,
+        'category': category,
+        'countryCode': countryCode,
+        'cityId': cityId,
+        'accessCityId': accessCityId,
+        'priceMin': priceMin,
+        'priceMax': priceMax,
+        'durationMin': durationMin,
+        'durationMax': durationMax,
+        'durationUnit': durationUnit,
+        'spotsMin': spotsMin,
+        'minRating': minRating,
+        'sort': sort,
+        'locale': locale,
+        'latitude': latitude,
+        'longitude': longitude,
+        'limit': limit,
+        'offset': offset,
+      }..removeWhere((_, value) => value == null || value == 0),
+    );
     return (items: items, total: items.length);
   }
 }

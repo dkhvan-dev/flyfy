@@ -292,6 +292,8 @@ func (h *Handler) ListPlaces(w http.ResponseWriter, r *http.Request) {
 	durationMax := parseOptionalInt(query.Get("durationMax"))
 	spotsMin := parseOptionalInt(query.Get("spotsMin"))
 	minRating := parseOptionalFloat(query.Get("minRating"))
+	latitude := parseOptionalFloat(query.Get("latitude"))
+	longitude := parseOptionalFloat(query.Get("longitude"))
 
 	var durationUnit *string
 	if raw := strings.TrimSpace(query.Get("durationUnit")); raw != "" {
@@ -316,6 +318,8 @@ func (h *Handler) ListPlaces(w http.ResponseWriter, r *http.Request) {
 		DurationUnit:    durationUnit,
 		SpotsMin:        spotsMin,
 		MinRating:       minRating,
+		Latitude:        latitude,
+		Longitude:       longitude,
 		AuthorID:        authorID,
 		Sort:            query.Get("sort"),
 		Limit:           limit,

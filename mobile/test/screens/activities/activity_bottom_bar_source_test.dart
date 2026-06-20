@@ -27,6 +27,8 @@ void main() {
       expect(sharedBottomBarSource, contains('l10n.servicesSectionTitle'));
       expect(sharedBottomBarSource, contains('l10n.homeNavChats'));
       expect(sharedBottomBarSource, contains('l10n.createActivityFab'));
+      expect(sharedBottomBarSource, contains('_BottomNavPaintedSafeArea'));
+      expect(sharedBottomBarSource, contains('safeBottom: safeBottom'));
     },
   );
 }

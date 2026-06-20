@@ -111,6 +111,8 @@ type PlaceListFilter struct {
 	DurationUnit    *enum.DurationUnit
 	SpotsMin        *int
 	MinRating       *float64
+	Latitude        *float64
+	Longitude       *float64
 	AuthorUserID    *uuid.UUID
 	IncludeDeleted  bool
 	Sort            string

@@ -361,7 +361,35 @@ func newSingleHostProxy(upstreamName string, rawTarget string, internalServiceTo
 		}
 	}
 	proxy.ModifyResponse = func(resp *http.Response) error {
+		if resp.StatusCode < http.StatusBadRequest {
+			return nil
+		}
+
 		if resp.StatusCode < http.StatusInternalServerError {
+			rewritten, err := rewriteDownstreamErrorResponse(resp, false)
+			if err != nil {
+				return err
+			}
+			if rewritten {
+				log.Info().
+					Str("upstream", upstreamName).
+					Int("status", resp.StatusCode).
+					Str("request_id", RequestIDFromContext(resp.Request.Context())).
+					Msg("localized downstream business error response")
+			}
+			return nil
+		}
+
+		rewritten, err := rewriteDownstreamErrorResponse(resp, true)
+		if err != nil {
+			return err
+		}
+		if rewritten {
+			log.Info().
+				Str("upstream", upstreamName).
+				Int("status", resp.StatusCode).
+				Str("request_id", RequestIDFromContext(resp.Request.Context())).
+				Msg("preserving localized downstream maintenance response")
 			return nil
 		}
 
@@ -377,13 +405,7 @@ func newSingleHostProxy(upstreamName string, rawTarget string, internalServiceTo
 		}
 		payload = append(payload, '\n')
 
-		if resp.Body != nil {
-			_ = resp.Body.Close()
-		}
-		resp.Body = io.NopCloser(bytes.NewReader(payload))
-		resp.ContentLength = int64(len(payload))
-		resp.Header.Set("Content-Type", "application/json")
-		resp.Header.Set("Content-Length", strconv.Itoa(len(payload)))
+		replaceResponseBody(resp, payload)
 		return nil
 	}
 	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
@@ -397,4 +419,61 @@ func newSingleHostProxy(upstreamName string, rawTarget string, internalServiceTo
 	}
 
 	return proxy, nil
+}
+
+func rewriteDownstreamErrorResponse(resp *http.Response, maintenanceOnly bool) (bool, error) {
+	payload, ok, err := downstreamJSONPayload(resp)
+	if err != nil || !ok {
+		return false, err
+	}
+
+	rewritten, ok := buildDownstreamErrorResponse(resp.Request, resp.StatusCode, payload)
+	if !ok {
+		return false, nil
+	}
+	if maintenanceOnly && rewritten.Kind != errorKindMaintenance {
+		return false, nil
+	}
+
+	body, err := json.Marshal(rewritten)
+	if err != nil {
+		return false, err
+	}
+	body = append(body, '\n')
+	replaceResponseBody(resp, body)
+	return true, nil
+}
+
+func downstreamJSONPayload(resp *http.Response) (map[string]any, bool, error) {
+	if resp == nil || resp.Body == nil {
+		return nil, false, nil
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, false, err
+	}
+	_ = resp.Body.Close()
+	resp.Body = io.NopCloser(bytes.NewReader(body))
+	resp.ContentLength = int64(len(body))
+
+	if len(bytes.TrimSpace(body)) == 0 {
+		return nil, false, nil
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return nil, false, nil
+	}
+	return payload, true, nil
+}
+
+func replaceResponseBody(resp *http.Response, payload []byte) {
+	if resp.Body != nil {
+		_ = resp.Body.Close()
+	}
+	resp.Body = io.NopCloser(bytes.NewReader(payload))
+	resp.ContentLength = int64(len(payload))
+	resp.Header.Set("Content-Type", "application/json")
+	resp.Header.Set("Content-Length", strconv.Itoa(len(payload)))
 }

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"testing"
 )
@@ -41,5 +42,55 @@ func TestBuildErrorResponseMasksTechnicalError(t *testing.T) {
 	}
 	if resp.Message != "На сервере возникла проблема. Попробуйте позже." {
 		t.Fatalf("Message = %q, want generic server problem message", resp.Message)
+	}
+}
+
+func TestBuildDownstreamErrorResponseLocalizesTechnicalCode(t *testing.T) {
+	req := httptest.NewRequest("GET", "/api/v1/feed", nil)
+	req.Header.Set("Accept-Language", "kk,en;q=0.8")
+
+	payload := map[string]any{
+		"error": "invalid request body",
+	}
+
+	rewritten, ok := buildDownstreamErrorResponse(req, http.StatusBadRequest, payload)
+	if !ok {
+		t.Fatal("buildDownstreamErrorResponse ok = false, want true")
+	}
+
+	if rewritten.Code != "invalid_request_body" {
+		t.Fatalf("Code = %q, want invalid_request_body", rewritten.Code)
+	}
+	if rewritten.Message != "Сұрауды тексеріп, қайталап көріңіз." {
+		t.Fatalf("Message = %q, want Kazakh localized message", rewritten.Message)
+	}
+	if rewritten.Error != "Сұрау қате" {
+		t.Fatalf("Error = %q, want Kazakh localized title", rewritten.Error)
+	}
+}
+
+func TestBuildDownstreamErrorResponsePreservesMaintenanceKind(t *testing.T) {
+	req := httptest.NewRequest("GET", "/api/v1/activities/join?lang=ru", nil)
+
+	payload := map[string]any{
+		"error":   "Технические работы",
+		"message": "temporary downstream English text",
+		"code":    "activity.technical_maintenance",
+		"kind":    "maintenance",
+	}
+
+	rewritten, ok := buildDownstreamErrorResponse(req, http.StatusServiceUnavailable, payload)
+	if !ok {
+		t.Fatal("buildDownstreamErrorResponse ok = false, want true")
+	}
+
+	if rewritten.Kind != "maintenance" {
+		t.Fatalf("Kind = %q, want maintenance", rewritten.Kind)
+	}
+	if rewritten.Code != "activity.technical_maintenance" {
+		t.Fatalf("Code = %q, want activity.technical_maintenance", rewritten.Code)
+	}
+	if rewritten.Message != "Сейчас проводятся технические работы. Попробуйте позже." {
+		t.Fatalf("Message = %q, want localized maintenance message", rewritten.Message)
 	}
 }

@@ -75,8 +75,13 @@ class ApiClient {
 
   // SecureStorage is shared app-wide, so refresh must be serialized app-wide too.
   static Future<void>? _sharedRefreshFuture;
+  static String _appLocaleCode = 'ru';
 
   Dio get dio => _dio;
+
+  static void setAppLocale(String code) {
+    _appLocaleCode = _normalizeLocaleCode(code);
+  }
 
   void _configureInterceptors() {
     if (kDebugMode) {
@@ -86,6 +91,8 @@ class ApiClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
+          _attachLocaleHeaders(options);
+
           final requiresAuth = _requiresAuth(options);
 
           if (requiresAuth) {
@@ -170,6 +177,19 @@ class ApiClient {
     return options.extra['optionalAuth'] == true;
   }
 
+  void _attachLocaleHeaders(RequestOptions options) {
+    final locale = _appLocaleCode;
+    options.headers.putIfAbsent('Accept-Language', () => locale);
+    options.headers.putIfAbsent('X-Language', () => locale);
+  }
+
+  static String _normalizeLocaleCode(String code) {
+    final normalized = code.trim().toLowerCase();
+    if (normalized.startsWith('en')) return 'en';
+    if (normalized.startsWith('kk')) return 'kk';
+    return 'ru';
+  }
+
   bool _isAuthRoute(String path) => path.startsWith('/auth/');
 
   Future<void> _refreshAccessToken() async {
@@ -241,7 +261,10 @@ class ApiClient {
       response: Response<Map<String, dynamic>>(
         requestOptions: options,
         statusCode: 401,
-        data: const {'error': 'authentication_required'},
+        data: const {
+          'error': 'authentication_required',
+          'message': 'Войдите в аккаунт, чтобы продолжить.',
+        },
       ),
       type: DioExceptionType.badResponse,
     );

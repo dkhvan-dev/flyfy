@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -106,6 +107,72 @@ func TestSingleHostProxyOverwritesInternalServiceToken(t *testing.T) {
 
 	if got := req.Header.Get("X-Internal-Service-Token"); got != "gateway-secret" {
 		t.Fatalf("X-Internal-Service-Token = %q, want gateway-secret", got)
+	}
+}
+
+func TestSingleHostProxyLocalizesDownstreamBusinessError(t *testing.T) {
+	proxy, err := newSingleHostProxy("test", "http://downstream.local", "gateway-secret")
+	if err != nil {
+		t.Fatalf("newSingleHostProxy returned error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/posts", nil)
+	req.Header.Set("Accept-Language", "kk,en;q=0.8")
+	resp := &http.Response{
+		StatusCode: http.StatusBadRequest,
+		Header:     make(http.Header),
+		Body:       io.NopCloser(strings.NewReader(`{"error":"invalid request body"}`)),
+		Request:    req,
+	}
+
+	if err := proxy.ModifyResponse(resp); err != nil {
+		t.Fatalf("ModifyResponse returned error: %v", err)
+	}
+
+	var payload errorResponse
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		t.Fatalf("decode rewritten body: %v", err)
+	}
+	if payload.Message != "Сұрауды тексеріп, қайталап көріңіз." {
+		t.Fatalf("Message = %q, want localized Kazakh message", payload.Message)
+	}
+	if resp.Header.Get("Content-Length") == "" {
+		t.Fatal("Content-Length was not refreshed")
+	}
+}
+
+func TestSingleHostProxyPreservesDownstreamMaintenanceError(t *testing.T) {
+	proxy, err := newSingleHostProxy("test", "http://downstream.local", "gateway-secret")
+	if err != nil {
+		t.Fatalf("newSingleHostProxy returned error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/activities/join?lang=ru", nil)
+	resp := &http.Response{
+		StatusCode: http.StatusServiceUnavailable,
+		Header:     make(http.Header),
+		Body: io.NopCloser(strings.NewReader(
+			`{"error":"Technical maintenance","message":"temporary","code":"activity.technical_maintenance","kind":"maintenance"}`,
+		)),
+		Request: req,
+	}
+
+	if err := proxy.ModifyResponse(resp); err != nil {
+		t.Fatalf("ModifyResponse returned error: %v", err)
+	}
+
+	var payload errorResponse
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		t.Fatalf("decode rewritten body: %v", err)
+	}
+	if payload.Kind != errorKindMaintenance {
+		t.Fatalf("Kind = %q, want %q", payload.Kind, errorKindMaintenance)
+	}
+	if payload.Code != "activity.technical_maintenance" {
+		t.Fatalf("Code = %q, want activity.technical_maintenance", payload.Code)
+	}
+	if payload.Message != "Сейчас проводятся технические работы. Попробуйте позже." {
+		t.Fatalf("Message = %q, want localized maintenance message", payload.Message)
 	}
 }
 

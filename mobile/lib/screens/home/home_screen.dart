@@ -73,7 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
   late final FeedApi _feedApi = widget.feedApi ?? FeedApi();
   String? _requestedHostedActivitiesForUserId;
   String? _requestedJoinedActivitiesForUserId;
-  String? _requestedTopPlacesLocale;
+  String? _requestedTopPlacesRequestKey;
   String? _guideBadgeUserId;
   bool _isGuideBadgeLoading = false;
   int _guideBadgeRequestVersion = 0;
@@ -525,13 +525,26 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
 
     final locale = Localizations.localeOf(context).languageCode;
+    final location = context.read<HomeLocationProvider>().effectiveLocation;
+    final latitude = _validHomeLatitude(location.latitude);
+    final longitude = _validHomeLongitude(location.longitude);
+    final hasCoordinates = latitude != null && longitude != null;
+    final countryCode = _trimmedHomeStringOrNull(location.countryCode);
+    final cityId = _trimmedHomeStringOrNull(location.cityId);
+    final requestKey = _topPlacesRequestKey(
+      locale: locale,
+      countryCode: countryCode,
+      cityId: cityId,
+      latitude: latitude,
+      longitude: longitude,
+    );
     if (!force &&
-        _requestedTopPlacesLocale == locale &&
+        _requestedTopPlacesRequestKey == requestKey &&
         (_topPlaces.isNotEmpty || _topPlacesLoading)) {
       return;
     }
 
-    _requestedTopPlacesLocale = locale;
+    _requestedTopPlacesRequestKey = requestKey;
     setState(() {
       _topPlacesLoading = _topPlaces.isEmpty;
       _topPlacesLoadFailed = false;
@@ -539,17 +552,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       final result = await _placeApi.getPlaces(
-        sort: 'rating',
+        countryCode: countryCode,
+        cityId: cityId,
+        sort: hasCoordinates ? 'distance' : 'rating',
         locale: locale,
+        latitude: hasCoordinates ? latitude : null,
+        longitude: hasCoordinates ? longitude : null,
         limit: 10,
       );
-      if (!mounted || _requestedTopPlacesLocale != locale) return;
+      if (!mounted || _requestedTopPlacesRequestKey != requestKey) return;
       setState(() {
         _topPlaces = result.items.take(10).toList(growable: false);
         _topPlacesLoading = false;
       });
     } catch (_) {
-      if (!mounted || _requestedTopPlacesLocale != locale) return;
+      if (!mounted || _requestedTopPlacesRequestKey != requestKey) return;
       setState(() {
         _topPlacesLoading = false;
         _topPlacesLoadFailed = true;
@@ -790,7 +807,17 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     _ensureGuideBadgeState(currentUserId);
-    if (_requestedTopPlacesLocale != languageCode && !_topPlacesLoading) {
+    final topPlacesLatitude = _validHomeLatitude(homeLocation.latitude);
+    final topPlacesLongitude = _validHomeLongitude(homeLocation.longitude);
+    final topPlacesRequestKey = _topPlacesRequestKey(
+      locale: languageCode,
+      countryCode: feedCountryCode,
+      cityId: feedCityId,
+      latitude: topPlacesLatitude,
+      longitude: topPlacesLongitude,
+    );
+    if (_requestedTopPlacesRequestKey != topPlacesRequestKey &&
+        !_topPlacesLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _loadTopPlaces(force: true);
@@ -3929,6 +3956,40 @@ String _truncateHomePostExcerpt(String value) {
   if (normalized.length <= maxLength) return normalized;
 
   return '${normalized.substring(0, maxLength).trimRight()}...';
+}
+
+String _topPlacesRequestKey({
+  required String locale,
+  required String? countryCode,
+  required String? cityId,
+  required double? latitude,
+  required double? longitude,
+}) {
+  final normalizedLocale = locale.trim().toLowerCase();
+  final normalizedCountryCode = (countryCode ?? '').trim().toUpperCase();
+  final normalizedCityId = (cityId ?? '').trim().toLowerCase();
+  final locationKey = [
+    normalizedCountryCode,
+    normalizedCityId,
+  ].where((value) => value.isNotEmpty).join(':');
+  if (latitude == null || longitude == null) {
+    return '$normalizedLocale:rating:$locationKey';
+  }
+  return '$normalizedLocale:distance:$locationKey:${latitude.toStringAsFixed(6)}:${longitude.toStringAsFixed(6)}';
+}
+
+double? _validHomeLatitude(double? value) {
+  if (value == null || !value.isFinite || value < -90 || value > 90) {
+    return null;
+  }
+  return value;
+}
+
+double? _validHomeLongitude(double? value) {
+  if (value == null || !value.isFinite || value < -180 || value > 180) {
+    return null;
+  }
+  return value;
 }
 
 List<ActivityListItemVm> _filterHomeRecommendedItems({

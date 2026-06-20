@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inflap/core/network/dio_error_mapper.dart';
 
 void main() {
-  test('maps authentication backend codes to human-readable copy', () {
+  test('passes backend error text through without mobile localization', () {
     final error = DioException(
       requestOptions: RequestOptions(path: '/stories'),
       response: Response<Map<String, dynamic>>(
@@ -16,8 +16,26 @@ void main() {
 
     final message = DioErrorMapper.toMessage(error);
 
-    expect(message, isNot(contains('authentication_required')));
-    expect(message, contains('Войдите'));
+    expect(message, 'authentication_required');
+  });
+
+  test('prefers localized backend message over technical error code', () {
+    final error = DioException(
+      requestOptions: RequestOptions(path: '/stories'),
+      response: Response<Map<String, dynamic>>(
+        requestOptions: RequestOptions(path: '/stories'),
+        statusCode: 401,
+        data: const {
+          'error': 'authentication_required',
+          'message': 'Войдите в аккаунт, чтобы продолжить.',
+        },
+      ),
+      type: DioExceptionType.badResponse,
+    );
+
+    final message = DioErrorMapper.toMessage(error);
+
+    expect(message, 'Войдите в аккаунт, чтобы продолжить.');
   });
 
   test('uses maintenance response message instead of title', () {

@@ -15,17 +15,9 @@ class DioErrorMapper {
         final statusCode = e.response?.statusCode;
         final data = e.response?.data;
 
-        if (data is Map<String, dynamic>) {
-          final isMaintenance =
-              data['kind']?.toString() == 'maintenance' ||
-              data['code']?.toString().endsWith('.technical_maintenance') ==
-                  true;
-          final message = isMaintenance
-              ? data['message'] ?? data['error'] ?? data['detail']
-              : data['error'] ?? data['message'] ?? data['detail'];
-          if (message is String && message.trim().isNotEmpty) {
-            return _localizedBackendMessage(message.trim());
-          }
+        final backendMessage = _backendMessage(data);
+        if (backendMessage != null) {
+          return backendMessage;
         }
 
         if (statusCode == 400) {
@@ -61,23 +53,41 @@ class DioErrorMapper {
     }
   }
 
-  static String _localizedBackendMessage(String message) {
-    return switch (message) {
-      'authentication_required' ||
-      'missing_authenticated_subject' ||
-      'invalid_access_token' ||
-      'unauthorized' => 'Войдите в аккаунт, чтобы продолжить.',
-      'invalid excursion itinerary description' =>
-        'Описание каждого этапа маршрута должно быть не короче 5 символов.',
-      'excursion already exists for this guide and place' =>
-        'У вас уже есть экскурсия по этой достопримечательности.',
-      'excursion schedule slot must start at least 3 hours from now' =>
-        'Выберите дату и время минимум за 3 часа до начала.',
-      'excursion booking cannot be edited' =>
-        'Эту бронь уже нельзя изменить или отменить.',
-      'excursion schedule slot is unavailable' =>
-        'В этом слоте уже нет доступных мест.',
-      _ => message,
-    };
+  static String? _backendMessage(Object? data) {
+    if (data is! Map) {
+      return null;
+    }
+
+    for (final key in const ['message', 'detail', 'error', 'title']) {
+      final message = _extractMessage(data[key]);
+      if (message != null) {
+        return message;
+      }
+    }
+    return null;
+  }
+
+  static String? _extractMessage(Object? value) {
+    if (value is String) {
+      final message = value.trim();
+      return message.isEmpty ? null : message;
+    }
+    if (value is List) {
+      final messages = value
+          .map(_extractMessage)
+          .whereType<String>()
+          .where((message) => message.isNotEmpty)
+          .toList(growable: false);
+      return messages.isEmpty ? null : messages.join('\n');
+    }
+    if (value is Map) {
+      for (final key in const ['message', 'detail', 'error', 'title']) {
+        final message = _extractMessage(value[key]);
+        if (message != null) {
+          return message;
+        }
+      }
+    }
+    return null;
   }
 }

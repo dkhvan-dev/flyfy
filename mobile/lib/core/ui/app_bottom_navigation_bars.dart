@@ -7,6 +7,14 @@ enum AppBottomNavItem { home, feed, qr, map, services, chats }
 
 enum AppBottomNavCreateBackgroundStyle { elevated, flat }
 
+const _commonBottomNavBackground = Color(0xFF3B2818);
+const _createBottomNavFlatBackground = Color(0xFF3A2818);
+const _createBottomNavGradient = LinearGradient(
+  begin: Alignment.topCenter,
+  end: Alignment.bottomCenter,
+  colors: [Color(0xFF422D1B), _createBottomNavFlatBackground],
+);
+
 class CommonBottomNavigationBar extends StatelessWidget {
   const CommonBottomNavigationBar({
     super.key,
@@ -43,88 +51,84 @@ class CommonBottomNavigationBar extends StatelessWidget {
     final safeBottom = MediaQuery.paddingOf(context).bottom;
     final renderFeedItem = showFeedItem || activeItem == AppBottomNavItem.feed;
 
-    return SizedBox(
-      height: layout.barHeight + safeBottom,
+    return _BottomNavPaintedSafeArea(
+      barHeight: layout.barHeight,
+      safeBottom: safeBottom,
+      decoration: BoxDecoration(
+        color: _commonBottomNavBackground,
+        border: Border(
+          top: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+        ),
+      ),
       child: Padding(
-        padding: EdgeInsets.only(bottom: safeBottom),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: const Color(0xFF3B2818),
-            border: Border(
-              top: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+        padding: EdgeInsets.fromLTRB(
+          layout.horizontalPadding,
+          layout.topPadding,
+          layout.horizontalPadding,
+          layout.bottomPadding,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: _BottomNavButton(
+                layout: layout,
+                label: l10n.homeNavHome,
+                icon: Icons.home_filled,
+                active: activeItem == AppBottomNavItem.home,
+                onTap: onHomeTap,
+              ),
             ),
-          ),
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              layout.horizontalPadding,
-              layout.topPadding,
-              layout.horizontalPadding,
-              layout.bottomPadding,
+            Expanded(
+              child: _BottomNavButton(
+                layout: layout,
+                label: renderFeedItem ? l10n.feedNavLabel : l10n.homeNavQr,
+                icon: renderFeedItem
+                    ? Icons.dynamic_feed_rounded
+                    : Icons.qr_code_2_rounded,
+                active:
+                    activeItem ==
+                    (renderFeedItem
+                        ? AppBottomNavItem.feed
+                        : AppBottomNavItem.qr),
+                onTap: renderFeedItem ? (onFeedTap ?? onQrTap) : onQrTap,
+              ),
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _BottomNavButton(
-                    layout: layout,
-                    label: l10n.homeNavHome,
-                    icon: Icons.home_filled,
-                    active: activeItem == AppBottomNavItem.home,
-                    onTap: onHomeTap,
-                  ),
-                ),
-                Expanded(
-                  child: _BottomNavButton(
-                    layout: layout,
-                    label: renderFeedItem ? l10n.feedNavLabel : l10n.homeNavQr,
-                    icon: renderFeedItem
-                        ? Icons.dynamic_feed_rounded
-                        : Icons.qr_code_2_rounded,
-                    active:
-                        activeItem ==
-                        (renderFeedItem
-                            ? AppBottomNavItem.feed
-                            : AppBottomNavItem.qr),
-                    onTap: renderFeedItem ? (onFeedTap ?? onQrTap) : onQrTap,
-                  ),
-                ),
-                Expanded(
-                  child: useCenterCreate
-                      ? _CreateBottomNavFab(
-                          layout: layout,
-                          semanticsLabel:
-                              centerCreateSemanticsLabel ??
-                              l10n.communityProfileCreatePostAction,
-                          onTap: onCenterCreateTap!,
-                        )
-                      : _BottomNavButton(
-                          layout: layout,
-                          label: l10n.homeNavMap,
-                          icon: Icons.map_outlined,
-                          active: activeItem == AppBottomNavItem.map,
-                          onTap: onMapTap,
-                        ),
-                ),
-                Expanded(
-                  child: _BottomNavButton(
-                    layout: layout,
-                    label: l10n.servicesSectionTitle,
-                    icon: Icons.grid_view_rounded,
-                    active: activeItem == AppBottomNavItem.services,
-                    onTap: onServicesTap,
-                  ),
-                ),
-                Expanded(
-                  child: _BottomNavButton(
-                    layout: layout,
-                    label: l10n.homeNavChats,
-                    icon: Icons.chat_bubble_outline_rounded,
-                    active: activeItem == AppBottomNavItem.chats,
-                    onTap: onChatsTap,
-                  ),
-                ),
-              ],
+            Expanded(
+              child: useCenterCreate
+                  ? _CreateBottomNavFab(
+                      layout: layout,
+                      semanticsLabel:
+                          centerCreateSemanticsLabel ??
+                          l10n.communityProfileCreatePostAction,
+                      onTap: onCenterCreateTap!,
+                    )
+                  : _BottomNavButton(
+                      layout: layout,
+                      label: l10n.homeNavMap,
+                      icon: Icons.map_outlined,
+                      active: activeItem == AppBottomNavItem.map,
+                      onTap: onMapTap,
+                    ),
             ),
-          ),
+            Expanded(
+              child: _BottomNavButton(
+                layout: layout,
+                label: l10n.servicesSectionTitle,
+                icon: Icons.grid_view_rounded,
+                active: activeItem == AppBottomNavItem.services,
+                onTap: onServicesTap,
+              ),
+            ),
+            Expanded(
+              child: _BottomNavButton(
+                layout: layout,
+                label: l10n.homeNavChats,
+                icon: Icons.chat_bubble_outline_rounded,
+                active: activeItem == AppBottomNavItem.chats,
+                onTap: onChatsTap,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -161,89 +165,106 @@ class CreateActionBottomNavigationBar extends StatelessWidget {
     final useFlatBackground =
         backgroundStyle == AppBottomNavCreateBackgroundStyle.flat;
 
-    return SizedBox(
-      height: layout.barHeight + safeBottom,
-      child: Padding(
-        padding: EdgeInsets.only(bottom: safeBottom),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: useFlatBackground ? const Color(0xFF3A2818) : null,
-            gradient: useFlatBackground
-                ? null
-                : const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xFF422D1B), Color(0xFF3A2818)],
-                  ),
-            border: Border(
-              top: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
-            ),
-            boxShadow: useFlatBackground
-                ? null
-                : [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.28),
-                      blurRadius: 20,
-                      offset: const Offset(0, -4),
-                    ),
-                  ],
-          ),
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              layout.horizontalPadding,
-              layout.topPadding,
-              layout.horizontalPadding,
-              layout.bottomPadding,
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _BottomNavButton(
-                    layout: layout,
-                    label: l10n.homeNavHome,
-                    icon: Icons.home_filled,
-                    active: activeItem == AppBottomNavItem.home,
-                    onTap: onHomeTap,
-                  ),
-                ),
-                Expanded(
-                  child: _BottomNavButton(
-                    layout: layout,
-                    label: l10n.homeNavQr,
-                    icon: Icons.qr_code_2_rounded,
-                    active: activeItem == AppBottomNavItem.qr,
-                    onTap: onQrTap,
-                  ),
-                ),
-                Expanded(
-                  child: _CreateBottomNavFab(
-                    layout: layout,
-                    semanticsLabel:
-                        createSemanticsLabel ?? l10n.createActivityFab,
-                    onTap: onCreateTap,
-                  ),
-                ),
-                Expanded(
-                  child: _BottomNavButton(
-                    layout: layout,
-                    label: l10n.servicesSectionTitle,
-                    icon: Icons.grid_view_rounded,
-                    active: activeItem == AppBottomNavItem.services,
-                    onTap: onServicesTap,
-                  ),
-                ),
-                Expanded(
-                  child: _BottomNavButton(
-                    layout: layout,
-                    label: l10n.homeNavChats,
-                    icon: Icons.chat_bubble_outline_rounded,
-                    active: activeItem == AppBottomNavItem.chats,
-                    onTap: onChatsTap,
-                  ),
+    return _BottomNavPaintedSafeArea(
+      barHeight: layout.barHeight,
+      safeBottom: safeBottom,
+      decoration: BoxDecoration(
+        color: useFlatBackground ? _createBottomNavFlatBackground : null,
+        gradient: useFlatBackground ? null : _createBottomNavGradient,
+        border: Border(
+          top: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+        ),
+        boxShadow: useFlatBackground
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.28),
+                  blurRadius: 20,
+                  offset: const Offset(0, -4),
                 ),
               ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          layout.horizontalPadding,
+          layout.topPadding,
+          layout.horizontalPadding,
+          layout.bottomPadding,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: _BottomNavButton(
+                layout: layout,
+                label: l10n.homeNavHome,
+                icon: Icons.home_filled,
+                active: activeItem == AppBottomNavItem.home,
+                onTap: onHomeTap,
+              ),
             ),
-          ),
+            Expanded(
+              child: _BottomNavButton(
+                layout: layout,
+                label: l10n.homeNavQr,
+                icon: Icons.qr_code_2_rounded,
+                active: activeItem == AppBottomNavItem.qr,
+                onTap: onQrTap,
+              ),
+            ),
+            Expanded(
+              child: _CreateBottomNavFab(
+                layout: layout,
+                semanticsLabel: createSemanticsLabel ?? l10n.createActivityFab,
+                onTap: onCreateTap,
+              ),
+            ),
+            Expanded(
+              child: _BottomNavButton(
+                layout: layout,
+                label: l10n.servicesSectionTitle,
+                icon: Icons.grid_view_rounded,
+                active: activeItem == AppBottomNavItem.services,
+                onTap: onServicesTap,
+              ),
+            ),
+            Expanded(
+              child: _BottomNavButton(
+                layout: layout,
+                label: l10n.homeNavChats,
+                icon: Icons.chat_bubble_outline_rounded,
+                active: activeItem == AppBottomNavItem.chats,
+                onTap: onChatsTap,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BottomNavPaintedSafeArea extends StatelessWidget {
+  const _BottomNavPaintedSafeArea({
+    required this.barHeight,
+    required this.safeBottom,
+    required this.decoration,
+    required this.child,
+  });
+
+  final double barHeight;
+  final double safeBottom;
+  final Decoration decoration;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: decoration,
+      child: SizedBox(
+        height: barHeight + safeBottom,
+        child: Padding(
+          padding: EdgeInsets.only(bottom: safeBottom),
+          child: child,
         ),
       ),
     );

@@ -4,9 +4,13 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"kz/inflap/backend/services/place-service/internal/domain/model"
 )
 
 func TestPlaceListOrderBySupportsSortDirections(t *testing.T) {
+	lat := 43.238949
+	lon := 76.889709
 	tests := map[string]string{
 		"rating":        "a.rating DESC, a.review_count DESC, a.created_at DESC",
 		"rating_desc":   "a.rating DESC, a.review_count DESC, a.created_at DESC",
@@ -15,13 +19,36 @@ func TestPlaceListOrderBySupportsSortDirections(t *testing.T) {
 		"price_desc":    "a.price_amount DESC NULLS LAST, a.created_at DESC",
 		"duration_asc":  "CASE WHEN a.duration_unit = 'DAYS' THEN a.duration_value * 24 ELSE a.duration_value END ASC NULLS LAST, a.created_at DESC",
 		"duration_desc": "CASE WHEN a.duration_unit = 'DAYS' THEN a.duration_value * 24 ELSE a.duration_value END DESC NULLS LAST, a.created_at DESC",
+		"distance":      "CASE WHEN a.latitude IS NULL OR a.longitude IS NULL THEN NULL ELSE ((a.latitude - $7) * (a.latitude - $7)) + ((a.longitude - $8) * (a.longitude - $8) * COS(RADIANS($7)) * COS(RADIANS($7))) END ASC NULLS LAST, a.rating DESC, a.review_count DESC, a.created_at DESC",
 		"unknown":       "a.created_at DESC",
 	}
 
 	for sort, expected := range tests {
 		t.Run(sort, func(t *testing.T) {
-			if got := placeListOrderBy(sort); got != expected {
+			filter := model.PlaceListFilter{Sort: sort}
+			if sort == "distance" {
+				filter.Latitude = &lat
+				filter.Longitude = &lon
+			}
+			if got := placeListOrderBy(filter, 7, 8); got != expected {
 				t.Fatalf("order by mismatch\nexpected: %s\nactual:   %s", expected, got)
+			}
+		})
+	}
+}
+
+func TestPlaceListOrderByIgnoresDistanceWithoutCoordinates(t *testing.T) {
+	lat := 43.238949
+
+	tests := map[string]model.PlaceListFilter{
+		"missing_both":      {Sort: "distance"},
+		"missing_longitude": {Sort: "distance", Latitude: &lat},
+	}
+
+	for name, filter := range tests {
+		t.Run(name, func(t *testing.T) {
+			if got := placeListOrderBy(filter, 7, 8); got != "a.created_at DESC" {
+				t.Fatalf("order by = %q, want latest fallback", got)
 			}
 		})
 	}

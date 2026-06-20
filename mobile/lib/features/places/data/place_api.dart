@@ -24,6 +24,8 @@ class PlaceApi {
     double? minRating,
     String? sort,
     String? locale,
+    double? latitude,
+    double? longitude,
     int limit = 20,
     int offset = 0,
   }) async {
@@ -52,6 +54,8 @@ class PlaceApi {
     if (minRating != null) params['minRating'] = minRating;
     if (sort != null && sort.isNotEmpty) params['sort'] = sort;
     if (locale != null && locale.isNotEmpty) params['locale'] = locale;
+    if (latitude != null) params['latitude'] = latitude;
+    if (longitude != null) params['longitude'] = longitude;
 
     final response = await _apiClient.dio.get(
       '/places',

@@ -302,6 +302,8 @@ class _FakePlaceApi extends PlaceApi {
     double? minRating,
     String? sort,
     String? locale,
+    double? latitude,
+    double? longitude,
     int limit = 20,
     int offset = 0,
   }) async {

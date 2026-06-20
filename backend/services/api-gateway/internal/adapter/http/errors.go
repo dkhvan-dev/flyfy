@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	errorKindBusiness  = "business"
-	errorKindTechnical = "technical"
+	errorKindBusiness    = "business"
+	errorKindTechnical   = "technical"
+	errorKindMaintenance = "maintenance"
 
 	errorCodeRouteNotFound       = "gateway.route_not_found"
 	errorCodeRateLimitExceeded   = "gateway.rate_limit_exceeded"
@@ -20,6 +21,14 @@ const (
 	errorCodeUpstreamUnavailable = "gateway.downstream_unavailable"
 	errorCodeUserResolution      = "gateway.user_resolution_failed"
 	errorCodeTechnical           = "gateway.technical"
+
+	downstreamCodeAuthRequired   = "auth_required"
+	downstreamCodeInvalidRequest = "invalid_request_body"
+	downstreamCodeForbidden      = "forbidden"
+	downstreamCodeNotFound       = "not_found"
+	downstreamCodeRateLimited    = "rate_limited"
+	downstreamCodeConflict       = "conflict"
+	downstreamCodeMaintenance    = "technical_maintenance"
 )
 
 type errorResponse struct {
@@ -163,6 +172,141 @@ var localizedErrors = map[string]map[string]localizedError{
 	},
 }
 
+var localizedDownstreamErrors = map[string]map[string]localizedError{
+	"ru": {
+		downstreamCodeAuthRequired: {
+			title:   "Требуется авторизация",
+			message: "Войдите в аккаунт и повторите запрос.",
+		},
+		downstreamCodeInvalidRequest: {
+			title:   "Некорректный запрос",
+			message: "Проверьте данные и повторите запрос.",
+		},
+		downstreamCodeForbidden: {
+			title:   "Доступ запрещён",
+			message: "У вас нет доступа к этому действию.",
+		},
+		downstreamCodeNotFound: {
+			title:   "Данные не найдены",
+			message: "Запрошенный объект не найден.",
+		},
+		downstreamCodeRateLimited: {
+			title:   "Слишком много запросов",
+			message: "Попробуйте повторить запрос чуть позже.",
+		},
+		downstreamCodeConflict: {
+			title:   "Конфликт данных",
+			message: "Данные уже изменились. Обновите экран и попробуйте снова.",
+		},
+		downstreamCodeMaintenance: {
+			title:   "Технические работы",
+			message: "Сейчас проводятся технические работы. Попробуйте позже.",
+		},
+	},
+	"en": {
+		downstreamCodeAuthRequired: {
+			title:   "Authentication required",
+			message: "Sign in and try again.",
+		},
+		downstreamCodeInvalidRequest: {
+			title:   "Invalid request",
+			message: "Check the request data and try again.",
+		},
+		downstreamCodeForbidden: {
+			title:   "Access denied",
+			message: "You do not have access to this action.",
+		},
+		downstreamCodeNotFound: {
+			title:   "Not found",
+			message: "The requested resource was not found.",
+		},
+		downstreamCodeRateLimited: {
+			title:   "Too many requests",
+			message: "Please try again a little later.",
+		},
+		downstreamCodeConflict: {
+			title:   "Data conflict",
+			message: "The data has changed. Refresh the screen and try again.",
+		},
+		downstreamCodeMaintenance: {
+			title:   "Maintenance",
+			message: "Maintenance is in progress. Please try again later.",
+		},
+	},
+	"kk": {
+		downstreamCodeAuthRequired: {
+			title:   "Авторизация қажет",
+			message: "Аккаунтқа кіріп, сұрауды қайталаңыз.",
+		},
+		downstreamCodeInvalidRequest: {
+			title:   "Сұрау қате",
+			message: "Сұрауды тексеріп, қайталап көріңіз.",
+		},
+		downstreamCodeForbidden: {
+			title:   "Қолжетімділікке тыйым салынды",
+			message: "Бұл әрекетке қол жеткізу құқығыңыз жоқ.",
+		},
+		downstreamCodeNotFound: {
+			title:   "Деректер табылмады",
+			message: "Сұралған объект табылмады.",
+		},
+		downstreamCodeRateLimited: {
+			title:   "Сұраулар тым көп",
+			message: "Сәл кейінірек қайталап көріңіз.",
+		},
+		downstreamCodeConflict: {
+			title:   "Деректер қақтығысы",
+			message: "Деректер өзгерді. Экранды жаңартып, қайта көріңіз.",
+		},
+		downstreamCodeMaintenance: {
+			title:   "Техникалық жұмыстар",
+			message: "Қазір техникалық жұмыстар жүріп жатыр. Кейінірек қайталап көріңіз.",
+		},
+	},
+}
+
+var downstreamErrorAliases = map[string]string{
+	"authentication_required":                   downstreamCodeAuthRequired,
+	"auth_required":                             downstreamCodeAuthRequired,
+	"gateway.auth_required":                     downstreamCodeAuthRequired,
+	"invalid_access_token":                      downstreamCodeAuthRequired,
+	"gateway.invalid_access_token":              downstreamCodeAuthRequired,
+	"missing_authenticated_subject":             downstreamCodeAuthRequired,
+	"missing authenticated subject":             downstreamCodeAuthRequired,
+	"missing authenticated user":                downstreamCodeAuthRequired,
+	"missing authenticated user context":        downstreamCodeAuthRequired,
+	"request must come through trusted gateway": downstreamCodeAuthRequired,
+	"unauthorized":                              downstreamCodeAuthRequired,
+
+	"invalid_request":      downstreamCodeInvalidRequest,
+	"invalid_request_body": downstreamCodeInvalidRequest,
+	"invalid request":      downstreamCodeInvalidRequest,
+	"invalid request body": downstreamCodeInvalidRequest,
+	"invalid json body":    downstreamCodeInvalidRequest,
+
+	"access_denied":           downstreamCodeForbidden,
+	"forbidden":               downstreamCodeForbidden,
+	"payment access denied":   downstreamCodeForbidden,
+	"admin role is required":  downstreamCodeForbidden,
+	"admin role required":     downstreamCodeForbidden,
+	"moderator role required": downstreamCodeForbidden,
+
+	"not_found":       downstreamCodeNotFound,
+	"not found":       downstreamCodeNotFound,
+	"route_not_found": downstreamCodeNotFound,
+
+	"rate_limited":        downstreamCodeRateLimited,
+	"rate_limit_exceeded": downstreamCodeRateLimited,
+	"too many requests":   downstreamCodeRateLimited,
+
+	"conflict":       downstreamCodeConflict,
+	"data_conflict":  downstreamCodeConflict,
+	"already_exists": downstreamCodeConflict,
+
+	"technical_maintenance":          downstreamCodeMaintenance,
+	"activity.technical_maintenance": downstreamCodeMaintenance,
+}
+
 func writeBusinessError(w http.ResponseWriter, r *http.Request, status int, code string) {
 	writeErrorResponse(w, r, status, code, errorKindBusiness)
 }
@@ -190,6 +334,50 @@ func buildErrorResponse(r *http.Request, code string, kind string) errorResponse
 	}
 }
 
+func buildDownstreamErrorResponse(r *http.Request, status int, payload map[string]any) (errorResponse, bool) {
+	if status < http.StatusBadRequest || payload == nil {
+		return errorResponse{}, false
+	}
+
+	code := stringPayloadField(payload, "code")
+	kind := stringPayloadField(payload, "kind")
+	canonical, ok := canonicalDownstreamError(code)
+	if !ok {
+		canonical, ok = canonicalDownstreamError(stringPayloadField(payload, "error"))
+	}
+	if !ok {
+		canonical, ok = canonicalDownstreamError(stringPayloadField(payload, "message"))
+	}
+
+	if kind == errorKindMaintenance || strings.HasSuffix(strings.ToLower(strings.TrimSpace(code)), ".technical_maintenance") {
+		canonical = downstreamCodeMaintenance
+		ok = true
+		kind = errorKindMaintenance
+	}
+	if !ok {
+		return errorResponse{}, false
+	}
+
+	entry, ok := lookupLocalizedDownstreamError(localeFromRequest(r), canonical)
+	if !ok {
+		return errorResponse{}, false
+	}
+
+	if strings.TrimSpace(code) == "" {
+		code = canonical
+	}
+	if strings.TrimSpace(kind) == "" {
+		kind = errorKindBusiness
+	}
+
+	return errorResponse{
+		Error:   entry.title,
+		Message: entry.message,
+		Code:    code,
+		Kind:    kind,
+	}, true
+}
+
 func lookupLocalizedError(locale string, code string) localizedError {
 	if messages, ok := localizedErrors[locale]; ok {
 		if entry, ok := messages[code]; ok {
@@ -200,6 +388,41 @@ func lookupLocalizedError(locale string, code string) localizedError {
 		}
 	}
 	return localizedErrors["ru"][errorCodeTechnical]
+}
+
+func lookupLocalizedDownstreamError(locale string, code string) (localizedError, bool) {
+	if messages, ok := localizedDownstreamErrors[locale]; ok {
+		if entry, ok := messages[code]; ok {
+			return entry, true
+		}
+	}
+	if entry, ok := localizedDownstreamErrors["ru"][code]; ok {
+		return entry, true
+	}
+	return localizedError{}, false
+}
+
+func canonicalDownstreamError(value string) (string, bool) {
+	key := strings.ToLower(strings.TrimSpace(value))
+	if key == "" {
+		return "", false
+	}
+	if strings.HasSuffix(key, ".technical_maintenance") {
+		return downstreamCodeMaintenance, true
+	}
+	canonical, ok := downstreamErrorAliases[key]
+	return canonical, ok
+}
+
+func stringPayloadField(payload map[string]any, key string) string {
+	value, ok := payload[key]
+	if !ok {
+		return ""
+	}
+	if text, ok := value.(string); ok {
+		return strings.TrimSpace(text)
+	}
+	return ""
 }
 
 func localeFromRequest(r *http.Request) string {

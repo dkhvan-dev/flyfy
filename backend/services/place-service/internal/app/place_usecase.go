@@ -126,6 +126,8 @@ type ListPlacesInput struct {
 	DurationUnit    *string
 	SpotsMin        *int
 	MinRating       *float64
+	Latitude        *float64
+	Longitude       *float64
 	AuthorID        *uuid.UUID
 	Sort            string
 	Limit           int
@@ -592,6 +594,7 @@ func (u *PlaceUseCase) ListPlaces(ctx context.Context, input ListPlacesInput) ([
 	if err != nil {
 		return nil, 0, err
 	}
+	latitude, longitude := normalizeListCoordinates(input.Latitude, input.Longitude)
 
 	var durationUnit *enum.DurationUnit
 	if input.DurationUnit != nil {
@@ -615,6 +618,8 @@ func (u *PlaceUseCase) ListPlaces(ctx context.Context, input ListPlacesInput) ([
 		DurationUnit:    durationUnit,
 		SpotsMin:        input.SpotsMin,
 		MinRating:       input.MinRating,
+		Latitude:        latitude,
+		Longitude:       longitude,
 		AuthorUserID:    input.AuthorID,
 		IncludeDeleted:  input.IncludeDeleted,
 		Sort:            input.Sort,
@@ -939,6 +944,8 @@ type placeListCacheKeyPayload struct {
 	DurationUnit    *string  `json:"durationUnit,omitempty"`
 	SpotsMin        *int     `json:"spotsMin,omitempty"`
 	MinRating       *float64 `json:"minRating,omitempty"`
+	Latitude        *float64 `json:"latitude,omitempty"`
+	Longitude       *float64 `json:"longitude,omitempty"`
 	AuthorUserID    string   `json:"authorUserId,omitempty"`
 	IncludeDeleted  bool     `json:"includeDeleted,omitempty"`
 	Sort            string   `json:"sort,omitempty"`
@@ -987,6 +994,8 @@ func (u *PlaceUseCase) placeListCacheKey(ctx context.Context, filter model.Place
 		DurationMax:     filter.DurationMax,
 		SpotsMin:        filter.SpotsMin,
 		MinRating:       filter.MinRating,
+		Latitude:        filter.Latitude,
+		Longitude:       filter.Longitude,
 		IncludeDeleted:  filter.IncludeDeleted,
 		Sort:            strings.TrimSpace(filter.Sort),
 		Limit:           filter.Limit,
@@ -1133,6 +1142,19 @@ func normalizeLocation(latitude *float64, longitude *float64, sourceURL string) 
 		return "", ErrInvalidLocation
 	}
 	return sourceURL, nil
+}
+
+func normalizeListCoordinates(latitude *float64, longitude *float64) (*float64, *float64) {
+	if latitude == nil || longitude == nil {
+		return nil, nil
+	}
+	if math.IsNaN(*latitude) || math.IsInf(*latitude, 0) || *latitude < -90 || *latitude > 90 {
+		return nil, nil
+	}
+	if math.IsNaN(*longitude) || math.IsInf(*longitude, 0) || *longitude < -180 || *longitude > 180 {
+		return nil, nil
+	}
+	return latitude, longitude
 }
 
 func normalizePlaceTranslations(
