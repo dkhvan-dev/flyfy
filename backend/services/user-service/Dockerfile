@@ -3,6 +3,7 @@ FROM golang:1.26 AS builder
 WORKDIR /app
 
 COPY ./proto /app/proto
+COPY ./backend/pkg/switches /app/backend/pkg/switches
 COPY ./backend/services/user-service /app/backend/services/user-service
 
 WORKDIR /app/backend/services/user-service

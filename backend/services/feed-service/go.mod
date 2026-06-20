@@ -9,6 +9,7 @@ require (
 	github.com/rs/zerolog v1.34.0
 	github.com/sethvargo/go-envconfig v1.3.0
 	google.golang.org/grpc v1.79.2
+	kz/inflap/backend/pkg/switches v0.0.0
 	kz/inflap/proto v0.0.0-00010101000000-000000000000
 )
 
@@ -30,3 +31,5 @@ require (
 )
 
 replace kz/inflap/proto => ../../../proto
+
+replace kz/inflap/backend/pkg/switches => ../../pkg/switches

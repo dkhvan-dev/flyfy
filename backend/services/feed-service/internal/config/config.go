@@ -20,6 +20,7 @@ type Config struct {
 	FileManager  FileManagerConfig
 	Notification NotificationServiceConfig
 	Activity     ActivityServiceConfig
+	Switches     SwitchesServiceConfig
 	Public       PublicConfig
 	Feed         FeedConfig
 }
@@ -123,6 +124,12 @@ type NotificationServiceConfig struct {
 type ActivityServiceConfig struct {
 	HTTPURL        string        `env:"ACTIVITY_SERVICE_HTTP_URL, default=http://activity-service:8086"`
 	RequestTimeout time.Duration `env:"ACTIVITY_SERVICE_REQUEST_TIMEOUT, default=5s"`
+}
+
+type SwitchesServiceConfig struct {
+	HTTPURL              string        `env:"SWITCHES_SERVICE_URL, default=http://switches-service:8096"`
+	InternalServiceToken string        `env:"SWITCHES_INTERNAL_SERVICE_TOKEN"`
+	RequestTimeout       time.Duration `env:"SWITCHES_SERVICE_TIMEOUT, default=800ms"`
 }
 
 type PublicConfig struct {

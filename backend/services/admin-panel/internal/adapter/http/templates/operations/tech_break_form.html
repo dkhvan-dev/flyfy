@@ -1,0 +1,68 @@
+{{define "operations/tech_break_form"}}
+{{template "pageStart" .}}
+<section class="section operations-page">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "operations.tab.techBreaks"}}</p>
+      <h1>{{if .Data.IsNew}}{{t .Locale "operations.techBreakNewTitle"}}{{else}}{{t .Locale "operations.techBreakTitle"}}: {{.Data.Break.Name}}{{end}}</h1>
+    </div>
+    <a class="button" href="{{.Data.BackURL}}">{{t .Locale "operations.backToDomain"}}</a>
+  </div>
+
+  {{if not .Data.IsNew}}
+    <article class="card detail">
+      <dl class="facts">
+        <div><dt>ID</dt><dd>{{.Data.Break.ID}}</dd></div>
+        <div><dt>{{t .Locale "table.createdBy"}}</dt><dd>{{if .Data.Break.CreatedBy}}{{.Data.Break.CreatedBy}}{{else}}-{{end}}</dd></div>
+        <div><dt>{{t .Locale "table.created"}}</dt><dd>{{formatTime .Data.Break.CreatedAt (staffTimezone .Staff)}}</dd></div>
+        <div><dt>{{t .Locale "table.updated"}}</dt><dd>{{formatTime .Data.Break.UpdatedAt (staffTimezone .Staff)}}</dd></div>
+        <div><dt>{{t .Locale "operations.active"}}</dt><dd><span class="{{operationBoolBadgeClass .Data.Break.Enabled}}">{{operationBoolText .Locale .Data.Break.Enabled}}</span></dd></div>
+      </dl>
+    </article>
+  {{end}}
+
+  <form class="form card" method="post" action="{{.Data.SubmitURL}}">
+    {{csrfField .CSRFToken}}
+    <div class="grid two">
+      <label class="span-two">
+        <span>{{t .Locale "operations.name"}} *</span>
+        <input name="name" value="{{.Data.Break.Name}}" required>
+      </label>
+      <label>
+        <span>{{t .Locale "operations.startDate"}} *</span>
+        <input type="datetime-local" name="action_start_date" value="{{operationDateTimeInput .Data.Break.ActionStartDate}}" required>
+      </label>
+      <label>
+        <span>{{t .Locale "operations.endDate"}}</span>
+        <input type="datetime-local" name="action_end_date" value="{{operationOptionalDateTimeInput .Data.Break.ActionEndDate}}">
+      </label>
+      <label class="span-two">
+        <span>{{t .Locale "operations.scopes"}}</span>
+        <select name="scope_codes">
+          <option value="">{{t .Locale "operations.noScopeSelected"}}</option>
+          {{range .Data.Scopes}}
+            <option value="{{.Code}}" {{if operationTechBreakScopeSelected $.Data.Break .Code}}selected{{end}}>{{.Code}} · {{.Name}}</option>
+          {{end}}
+        </select>
+      </label>
+      <label>
+        <span>{{t .Locale "operations.excludeEmails"}}</span>
+        <textarea name="exclude_emails" rows="4">{{.Data.EmailsText}}</textarea>
+      </label>
+      <label>
+        <span>{{t .Locale "operations.excludeNicknames"}}</span>
+        <textarea name="exclude_nicknames" rows="4">{{.Data.NicknamesText}}</textarea>
+      </label>
+    </div>
+    <div class="form-actions split-actions">
+      <div>
+        {{if not .Data.IsNew}}
+          <button class="danger" type="submit" formaction="{{.Data.DeleteURL}}">{{t .Locale "action.delete"}}</button>
+        {{end}}
+      </div>
+      <button type="submit" class="primary">{{if .Data.IsNew}}{{t .Locale "action.create"}}{{else}}{{t .Locale "action.saveChanges"}}{{end}}</button>
+    </div>
+  </form>
+</section>
+{{template "pageEnd" .}}
+{{end}}

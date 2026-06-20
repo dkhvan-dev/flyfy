@@ -14,6 +14,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"kz/inflap/backend/pkg/switches"
 	"kz/inflap/backend/pkg/trustpolicy/grpcclient"
 	attractionadapter "kz/inflap/backend/services/excursion-service/internal/adapter/attraction"
 	chatadapter "kz/inflap/backend/services/excursion-service/internal/adapter/chat"
@@ -153,7 +154,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:         cfg.HTTP.Address(),
-		Handler:      httpadapter.Chain(cfg, mux),
+		Handler:      httpadapter.Chain(cfg, withTechBreakMaintenance(mux, cfg.Switches, cfg.Security.InternalServiceToken, "EXCURSION")),
 		ReadTimeout:  cfg.HTTP.ReadTimeout,
 		WriteTimeout: cfg.HTTP.WriteTimeout,
 		IdleTimeout:  cfg.HTTP.IdleTimeout,
@@ -191,6 +192,28 @@ func main() {
 		log.Error().Err(err).Msg("http shutdown failed")
 	}
 	log.Info().Str("service", cfg.App.Name).Msg("service stopped")
+}
+
+func withTechBreakMaintenance(next http.Handler, cfg config.SwitchesServiceConfig, fallbackToken string, domainCode string) http.Handler {
+	token := switches.EffectiveInternalServiceToken(cfg.InternalServiceToken, fallbackToken)
+	middleware, err := switches.NewMaintenanceMiddleware(
+		switches.HTTPClientConfig{
+			BaseURL:              cfg.HTTPURL,
+			InternalServiceToken: token,
+			Timeout:              cfg.RequestTimeout,
+		},
+		switches.MaintenanceMiddlewareConfig{
+			DomainCode: domainCode,
+			OnCheckError: func(ctx context.Context, err error, check switches.TechBreakCheck) {
+				log.Warn().Err(err).Str("domain_code", check.DomainCode).Msg("tech break check failed; allowing request")
+			},
+		},
+	)
+	if err != nil {
+		log.Warn().Err(err).Str("domain_code", domainCode).Msg("tech break middleware disabled")
+		return next
+	}
+	return middleware(next)
 }
 
 func newFraudEvaluator(cfg *config.Config) (port.FraudEvaluator, error) {

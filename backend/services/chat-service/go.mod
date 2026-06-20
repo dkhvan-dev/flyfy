@@ -10,6 +10,7 @@ require (
 	github.com/rs/zerolog v1.35.0
 	github.com/sethvargo/go-envconfig v1.3.0
 	google.golang.org/grpc v1.80.0
+	kz/inflap/backend/pkg/switches v0.0.0
 	kz/inflap/backend/pkg/trustpolicy v0.0.0
 	kz/inflap/proto v0.0.0
 )
@@ -35,3 +36,5 @@ require (
 replace kz/inflap/proto => ../../../proto
 
 replace kz/inflap/backend/pkg/trustpolicy => ../../pkg/trustpolicy
+
+replace kz/inflap/backend/pkg/switches => ../../pkg/switches

@@ -31,6 +31,7 @@ type Server struct {
 	attractions  *app.AttractionContentUseCase
 	communities  *app.CommunityAdminUseCase
 	fraud        *app.FraudUseCase
+	operations   *app.OperationsUseCase
 	readiness    func(context.Context) error
 }
 
@@ -68,6 +69,10 @@ func (s *Server) SetTrustAppealUseCase(useCase *app.TrustAppealUseCase) {
 
 func (s *Server) SetCommunityAdminUseCase(useCase *app.CommunityAdminUseCase) {
 	s.communities = useCase
+}
+
+func (s *Server) SetOperationsUseCase(useCase *app.OperationsUseCase) {
+	s.operations = useCase
 }
 
 func (s *Server) Handler() http.Handler {
@@ -153,6 +158,26 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /admin/communities/{communityID}/edit", s.EditCommunityPage)
 	mux.HandleFunc("POST /admin/communities/{communityID}", s.UpdateCommunity)
 	mux.HandleFunc("POST /admin/communities/materialize", s.MaterializeCommunityInstances)
+	mux.HandleFunc("GET /admin/operations", s.OperationsDashboard)
+	mux.HandleFunc("GET /admin/operations/domains/{domainCode}", s.OperationDomainDetail)
+	mux.HandleFunc("POST /admin/operations/domains/{domainCode}", s.UpdateOperationDomain)
+	mux.HandleFunc("GET /admin/operations/domains/{domainCode}/feature-flags/new", s.NewOperationFeatureFlagPage)
+	mux.HandleFunc("POST /admin/operations/domains/{domainCode}/feature-flags", s.CreateOperationFeatureFlag)
+	mux.HandleFunc("GET /admin/operations/domains/{domainCode}/feature-flags/{flagCode}/history", s.OperationFeatureFlagHistory)
+	mux.HandleFunc("GET /admin/operations/domains/{domainCode}/feature-flags/{flagCode}", s.OperationFeatureFlagDetail)
+	mux.HandleFunc("POST /admin/operations/domains/{domainCode}/feature-flags/{flagCode}", s.UpdateOperationFeatureFlag)
+	mux.HandleFunc("POST /admin/operations/domains/{domainCode}/feature-flags/{flagCode}/archive", s.ArchiveOperationFeatureFlag)
+	mux.HandleFunc("POST /admin/operations/domains/{domainCode}/feature-flags/{flagCode}/recover", s.RecoverOperationFeatureFlag)
+	mux.HandleFunc("GET /admin/operations/domains/{domainCode}/tech-breaks/new", s.NewOperationTechBreakPage)
+	mux.HandleFunc("POST /admin/operations/domains/{domainCode}/tech-breaks", s.CreateOperationTechBreak)
+	mux.HandleFunc("GET /admin/operations/domains/{domainCode}/tech-breaks/{techBreakID}", s.OperationTechBreakDetail)
+	mux.HandleFunc("POST /admin/operations/domains/{domainCode}/tech-breaks/{techBreakID}", s.UpdateOperationTechBreak)
+	mux.HandleFunc("POST /admin/operations/domains/{domainCode}/tech-breaks/{techBreakID}/archive", s.ArchiveOperationTechBreak)
+	mux.HandleFunc("GET /admin/operations/domains/{domainCode}/scopes/new", s.NewOperationScopePage)
+	mux.HandleFunc("POST /admin/operations/domains/{domainCode}/scopes", s.CreateOperationScope)
+	mux.HandleFunc("GET /admin/operations/domains/{domainCode}/scopes/{scopeID}", s.OperationScopeDetail)
+	mux.HandleFunc("POST /admin/operations/domains/{domainCode}/scopes/{scopeID}", s.UpdateOperationScope)
+	mux.HandleFunc("POST /admin/operations/domains/{domainCode}/scopes/{scopeID}/archive", s.ArchiveOperationScope)
 	mux.HandleFunc("GET /admin/staff", s.StaffList)
 	mux.HandleFunc("POST /admin/staff", s.CreateStaff)
 	mux.HandleFunc("GET /admin/staff/{staffID}/edit", s.EditStaffPage)
@@ -1438,15 +1463,16 @@ func (s *Server) renderPageWithFlash(w http.ResponseWriter, status int, r *http.
 		flash = flashMessageFromRequest(locale, r)
 	}
 	s.render(w, status, templateName, PageData{
-		Title:     translate(locale, titleKey),
-		Locale:    locale,
-		Path:      r.URL.Path,
-		Staff:     staffFromContext(r.Context()),
-		CSRFToken: csrfTokenFromContext(r.Context()),
-		Error:     message,
-		Flash:     flash,
-		ActiveNav: activeNav,
-		Data:      data,
+		Title:            translate(locale, titleKey),
+		Locale:           locale,
+		Path:             r.URL.Path,
+		Staff:            staffFromContext(r.Context()),
+		CSRFToken:        csrfTokenFromContext(r.Context()),
+		Error:            message,
+		MaintenanceError: isMaintenanceErrorMessage(message),
+		Flash:            flash,
+		ActiveNav:        activeNav,
+		Data:             data,
 	})
 }
 
@@ -1836,8 +1862,14 @@ func publicError(locale string, err error) string {
 	if errors.Is(err, app.ErrAttractionNotFound) {
 		return translate(locale, "error.attractionNotFound")
 	}
+	if errors.Is(err, app.ErrOperationDomainNotFound) || errors.Is(err, app.ErrOperationResourceNotFound) {
+		return translate(locale, "error.notFound")
+	}
 	if errors.Is(err, app.ErrIntegrationNotReady) {
 		return translate(locale, "error.integrationNotReady")
+	}
+	if errors.Is(err, app.ErrTechnicalMaintenance) {
+		return translate(locale, "error.maintenance")
 	}
 	if errors.Is(err, app.ErrDuplicateDecision) {
 		return translate(locale, "error.duplicateDecision")
@@ -1863,7 +1895,13 @@ func errorStatus(err error) int {
 		return http.StatusNotFound
 	case errors.Is(err, app.ErrAttractionNotFound):
 		return http.StatusNotFound
+	case errors.Is(err, app.ErrOperationDomainNotFound):
+		return http.StatusNotFound
+	case errors.Is(err, app.ErrOperationResourceNotFound):
+		return http.StatusNotFound
 	case errors.Is(err, app.ErrIntegrationNotReady):
+		return http.StatusServiceUnavailable
+	case errors.Is(err, app.ErrTechnicalMaintenance):
 		return http.StatusServiceUnavailable
 	case errors.Is(err, app.ErrDuplicateDecision):
 		return http.StatusConflict
@@ -1874,6 +1912,12 @@ func errorStatus(err error) int {
 	default:
 		return http.StatusInternalServerError
 	}
+}
+
+func isMaintenanceErrorMessage(message string) bool {
+	message = strings.ToLower(strings.TrimSpace(message))
+	return strings.Contains(message, "технические работы") ||
+		strings.Contains(message, "maintenance")
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload any) {

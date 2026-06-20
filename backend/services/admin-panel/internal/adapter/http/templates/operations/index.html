@@ -1,0 +1,65 @@
+{{define "operations/index"}}
+{{template "pageStart" .}}
+<section class="section operations-page">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "operations.eyebrow"}}</p>
+      <h1>{{t .Locale "operations.title"}}</h1>
+    </div>
+  </div>
+
+  <form class="filter-bar" method="get" action="/admin/operations">
+    <div class="filter-grid compact">
+      <label>
+        <span>{{t .Locale "field.search"}}</span>
+        <input type="search" name="q" value="{{.Data.Filters.Search}}" placeholder="{{t .Locale "operations.searchDomains"}}">
+      </label>
+      <label>
+        <span>{{t .Locale "field.pageSize"}}</span>
+        <select name="size">
+          <option value="20" {{if eq .Data.Filters.Size 20}}selected{{end}}>20</option>
+          <option value="50" {{if eq .Data.Filters.Size 50}}selected{{end}}>50</option>
+          <option value="100" {{if eq .Data.Filters.Size 100}}selected{{end}}>100</option>
+        </select>
+      </label>
+    </div>
+    <div class="filter-actions">
+      <button type="submit">{{t .Locale "action.applyFilters"}}</button>
+      <a class="button" href="{{.Data.ResetURL}}">{{t .Locale "action.resetFilters"}}</a>
+    </div>
+  </form>
+
+  {{if .Data.Domains}}
+    <div class="section-head compact">
+      <div><h2>{{t .Locale "operations.domains"}}</h2></div>
+    </div>
+    <div class="table-wrap operations-table">
+      <table>
+        <thead>
+          <tr>
+            <th>{{t .Locale "operations.domain.code"}}</th>
+            <th>{{t .Locale "field.description"}}</th>
+            <th>{{t .Locale "table.createdBy"}}</th>
+            <th>{{t .Locale "table.created"}}</th>
+            <th>{{t .Locale "table.updated"}}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .Data.Domains}}
+            <tr>
+              <td><a class="table-link" href="{{operationDomainURL .Code}}">{{.Code}}</a></td>
+              <td>{{if .Description}}{{.Description}}{{else}}-{{end}}</td>
+              <td>{{if .CreatedBy}}{{.CreatedBy}}{{else}}-{{end}}</td>
+              <td>{{formatTime .CreatedAt (staffTimezone $.Staff)}}</td>
+              <td>{{formatTime .UpdatedAt (staffTimezone $.Staff)}}</td>
+            </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  {{else}}
+    <div class="empty card">{{t .Locale "operations.noDomains"}}</div>
+  {{end}}
+</section>
+{{template "pageEnd" .}}
+{{end}}

@@ -518,6 +518,50 @@ services:
       - inflap-network
 
   # ============================================
+  # Switches Service PostgreSQL
+  # ============================================
+  switches-postgres:
+    image: postgres:17-alpine
+    container_name: switches-postgres
+    environment:
+      POSTGRES_DB: switches_service_db
+      POSTGRES_USER: switches_service
+      POSTGRES_PASSWORD: switches_secret_dev
+    ports:
+      - "5451:5432"
+    volumes:
+      - switches_postgres_data:/var/lib/postgresql/data
+      - ../backend/services/switches-service/migrations:/migrations/switches-service:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U switches_service -d switches_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - inflap-network
+
+  switches-postgres-migrator:
+    image: postgres:17-alpine
+    container_name: switches-postgres-migrator
+    environment:
+      PGHOST: switches-postgres
+      PGPORT: 5432
+      POSTGRES_DB: switches_service_db
+      POSTGRES_USER: switches_service
+      POSTGRES_PASSWORD: switches_secret_dev
+    volumes:
+      - ./init-scripts/019_switches_service_migrate.sh:/usr/local/bin/019_switches_service_migrate.sh:ro
+      - ../backend/services/switches-service/migrations:/migrations/switches-service:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/019_switches_service_migrate.sh"]
+    depends_on:
+      switches-postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - inflap-network
+
+  # ============================================
   # NATS
   # ============================================
   nats:
@@ -696,6 +740,10 @@ services:
       USER_SERVICE_GRPC_TARGET: dns:///user-service:9094
       USER_SERVICE_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       USER_SERVICE_CALLER_NAME: auth-service
+
+      SWITCHES_SERVICE_URL: http://switches-service:8096
+      SWITCHES_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      SWITCHES_SERVICE_TIMEOUT: 800ms
     depends_on:
       auth-postgres:
         condition: service_healthy
@@ -709,6 +757,8 @@ services:
         condition: service_started
       anti-fraud-service:
         condition: service_started
+      switches-service:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - inflap-network
@@ -730,6 +780,8 @@ services:
         condition: service_started
       trust-service:
         condition: service_started
+      switches-service:
+        condition: service_healthy
     ports:
       - "8083:8083"
       - "9093:9093"
@@ -782,6 +834,10 @@ services:
       TRUST_POLICY_ENABLED: "true"
       TRUST_SERVICE_GRPC_TARGET: dns:///trust-service:9096
       TRUST_SERVICE_TIMEOUT: 250ms
+
+      SWITCHES_SERVICE_URL: http://switches-service:8096
+      SWITCHES_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      SWITCHES_SERVICE_TIMEOUT: 800ms
     restart: unless-stopped
     networks:
       - inflap-network
@@ -801,6 +857,8 @@ services:
         condition: service_completed_successfully
       file-manager-service:
         condition: service_started
+      switches-service:
+        condition: service_healthy
     ports:
       - "8084:8084"
       - "9094:9094"
@@ -842,6 +900,9 @@ services:
 
       FILE_MANAGER_GRPC_TARGET: dns:///file-manager-service:9093
       FEED_SERVICE_HTTP_URL: http://feed-service:8087
+      SWITCHES_SERVICE_URL: http://switches-service:8096
+      SWITCHES_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      SWITCHES_SERVICE_TIMEOUT: 800ms
       USER_SOCIAL_OUTBOX_WORKER_ENABLED: "true"
       USER_SOCIAL_OUTBOX_WORKER_POLL_INTERVAL: 5s
       USER_SOCIAL_OUTBOX_WORKER_BATCH_SIZE: 50
@@ -938,6 +999,8 @@ services:
         condition: service_started
       notification-service:
         condition: service_started
+      switches-service:
+        condition: service_healthy
     ports:
       - "8086:8086"
       - "9096:9096"
@@ -973,6 +1036,10 @@ services:
       CHAT_SERVICE_REQUEST_TIMEOUT: 5s
       NOTIFICATION_SERVICE_HTTP_URL: http://notification-service:8097
       NOTIFICATION_SERVICE_REQUEST_TIMEOUT: 3s
+
+      SWITCHES_SERVICE_URL: http://switches-service:8096
+      SWITCHES_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      SWITCHES_SERVICE_TIMEOUT: 800ms
       PAYMENT_SERVICE_HTTP_URL: http://payment-service:8091
       PAYMENT_SERVICE_REQUEST_TIMEOUT: 5s
 
@@ -1043,6 +1110,8 @@ services:
         condition: service_started
       notification-service:
         condition: service_started
+      switches-service:
+        condition: service_healthy
     ports:
       - "8093:8093"
     environment:
@@ -1088,6 +1157,10 @@ services:
 
       NOTIFICATION_SERVICE_HTTP_URL: http://notification-service:8097
       NOTIFICATION_SERVICE_REQUEST_TIMEOUT: 3s
+
+      SWITCHES_SERVICE_URL: http://switches-service:8096
+      SWITCHES_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      SWITCHES_SERVICE_TIMEOUT: 800ms
     restart: unless-stopped
     networks:
       - inflap-network
@@ -1119,6 +1192,8 @@ services:
         condition: service_started
       notification-service:
         condition: service_started
+      switches-service:
+        condition: service_healthy
     ports:
       - "8095:8095"
     environment:
@@ -1149,6 +1224,13 @@ services:
       ANTI_FRAUD_SERVICE_TIMEOUT: 5s
       NOTIFICATION_SERVICE_HTTP_URL: http://notification-service:8097
       NOTIFICATION_SERVICE_REQUEST_TIMEOUT: 3s
+      FEATURE_FLAG_SERVICE_URL: http://switches-service:8096
+      FEATURE_FLAG_SERVICE_TIMEOUT: 5s
+      TECH_BREAK_SERVICE_URL: http://switches-service:8096
+      TECH_BREAK_SERVICE_TIMEOUT: 5s
+      SWITCHES_SERVICE_URL: http://switches-service:8096
+      SWITCHES_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      SWITCHES_SERVICE_TIMEOUT: 800ms
       BOOTSTRAP_SUPERADMIN_EMAIL: admin@inflap.local
       BOOTSTRAP_SUPERADMIN_DISPLAY_NAME: Inflap Super Admin
       BOOTSTRAP_SUPERADMIN_PASSWORD: AdminPanelDevPass123!
@@ -1173,6 +1255,8 @@ services:
         condition: service_started
       activity-service:
         condition: service_started
+      switches-service:
+        condition: service_healthy
     ports:
       - "8087:8087"
     environment:
@@ -1205,6 +1289,9 @@ services:
       USER_SERVICE_GRPC_TARGET: dns:///user-service:9094
       ACTIVITY_SERVICE_HTTP_URL: http://activity-service:8086
       ACTIVITY_SERVICE_REQUEST_TIMEOUT: 5s
+      SWITCHES_SERVICE_URL: http://switches-service:8096
+      SWITCHES_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      SWITCHES_SERVICE_TIMEOUT: 800ms
       FEED_ACTIVITY_INTENT_WORKER_ENABLED: "true"
       FEED_ACTIVITY_INTENT_WORKER_POLL_INTERVAL: 5s
       FEED_ACTIVITY_INTENT_WORKER_BATCH_SIZE: 50
@@ -1242,6 +1329,8 @@ services:
         condition: service_started
       trust-service:
         condition: service_started
+      switches-service:
+        condition: service_healthy
     ports:
       - "8088:8088"
       - "9097:9097"
@@ -1289,6 +1378,10 @@ services:
       TRUST_POLICY_ENABLED: "true"
       TRUST_SERVICE_GRPC_TARGET: dns:///trust-service:9096
       TRUST_SERVICE_TIMEOUT: 250ms
+
+      SWITCHES_SERVICE_URL: http://switches-service:8096
+      SWITCHES_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      SWITCHES_SERVICE_TIMEOUT: 800ms
     restart: unless-stopped
     networks:
       - inflap-network
@@ -1382,6 +1475,64 @@ services:
       - ../backend/services/notification-service/run/secrets/firebase-service-account.json:/run/secrets/firebase-service-account.json:ro
       - ../backend/services/notification-service/run/secrets/notification-token-encryption-key-base64:/run/secrets/notification-token-encryption-key-base64:ro
       - ../backend/services/notification-service/run/secrets/notification-token-hash-key-base64:/run/secrets/notification-token-hash-key-base64:ro
+    restart: unless-stopped
+    networks:
+      - inflap-network
+
+  # ============================================
+  # Switches Service
+  # ============================================
+  switches-service:
+    build:
+      context: ../backend/services/switches-service
+      dockerfile: Dockerfile
+    container_name: switches-service
+    depends_on:
+      switches-postgres:
+        condition: service_healthy
+      switches-postgres-migrator:
+        condition: service_completed_successfully
+    expose:
+      - "8096"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8096/health >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      APP_NAME: switches-service
+      APP_ENV: development
+
+      HTTP_PORT: 8096
+      HTTP_READ_TIMEOUT: 15s
+      HTTP_WRITE_TIMEOUT: 30s
+      HTTP_IDLE_TIMEOUT: 120s
+
+      DB_HOST: switches-postgres
+      DB_PORT: 5432
+      DB_NAME: switches_service_db
+      DB_USER: switches_service
+      DB_PASSWORD: switches_secret_dev
+      DB_SSLMODE: disable
+      DB_MAX_CONNS: 12
+      DB_MIN_CONNS: 2
+      DB_MAX_CONN_IDLE: 5m
+      DB_MAX_CONN_LIFETIME: 1h
+
+      CACHE_TTL: 10s
+      CACHE_MISS_TTL: 2s
+      CACHE_INVALIDATION_LISTENER_ENABLED: "true"
+
+      LOG_LEVEL: debug
+
+      INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      TRUSTED_GATEWAY_HEADER_USER_ID: X-User-Id
+      TRUSTED_GATEWAY_HEADER_ROLES: X-User-Roles
+      TRUSTED_GATEWAY_HEADER_SUB: X-Auth-Subject
+      REQUEST_ID_HEADER: X-Request-Id
+
+      SCHEDULER_ENABLED: "true"
+      SCHEDULER_INTERVAL: 1m
     restart: unless-stopped
     networks:
       - inflap-network
@@ -1583,6 +1734,8 @@ services:
         condition: service_started
       redis:
         condition: service_healthy
+      switches-service:
+        condition: service_healthy
     ports:
       - "8090:8090"
     environment:
@@ -1619,6 +1772,9 @@ services:
       REQUEST_ID_HEADER: X-Request-Id
 
       USER_SERVICE_GRPC_TARGET: dns:///user-service:9094
+      SWITCHES_SERVICE_URL: http://switches-service:8096
+      SWITCHES_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      SWITCHES_SERVICE_TIMEOUT: 800ms
     restart: unless-stopped
     networks:
       - inflap-network
@@ -1886,6 +2042,9 @@ services:
       context: ..
       dockerfile: ./backend/services/currency-service/Dockerfile
     container_name: currency-service
+    depends_on:
+      switches-service:
+        condition: service_healthy
     ports:
       - "8098:8098"
     environment:
@@ -1902,6 +2061,9 @@ services:
       CURRENCY_RATE_CACHE_TTL: 1h
 
       LOG_LEVEL: info
+      SWITCHES_SERVICE_URL: http://switches-service:8096
+      SWITCHES_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      SWITCHES_SERVICE_TIMEOUT: 800ms
     restart: unless-stopped
     networks:
       - inflap-network
@@ -2024,6 +2186,7 @@ volumes:
   feed_postgres_data:
   chat_postgres_data:
   notification_postgres_data:
+  switches_postgres_data:
   nats_data:
   attraction_postgres_data:
   payment_postgres_data:

@@ -1,0 +1,228 @@
+{{define "operations/domain"}}
+{{template "pageStart" .}}
+<section class="section operations-page">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "operations.title"}}</p>
+      <h1>{{t .Locale "operations.domainTitle"}}: {{if .Data.Domain.Description}}{{.Data.Domain.Description}}{{else}}{{.Data.Domain.Code}}{{end}}</h1>
+    </div>
+    <a class="button" href="{{.Data.BackURL}}">{{t .Locale "operations.backToDomains"}}</a>
+  </div>
+
+  <nav class="tabs" aria-label="{{t .Locale "operations.domainTabs"}}">
+    {{range .Data.Tabs}}
+      <a class="{{if .Active}}active{{end}}" href="{{.URL}}">{{t $.Locale .Label}}</a>
+    {{end}}
+  </nav>
+
+  {{if eq .Data.ActiveTab "domain"}}
+    <article class="card detail">
+      <dl class="facts">
+        <div><dt>ID</dt><dd>{{if .Data.Domain.FeatureFlagServiceID}}{{.Data.Domain.FeatureFlagServiceID}}{{else}}-{{end}}</dd></div>
+        <div><dt>{{t .Locale "table.createdBy"}}</dt><dd>{{if .Data.Domain.CreatedBy}}{{.Data.Domain.CreatedBy}}{{else}}-{{end}}</dd></div>
+        <div><dt>{{t .Locale "table.created"}}</dt><dd>{{formatTime .Data.Domain.CreatedAt (staffTimezone .Staff)}}</dd></div>
+        <div><dt>{{t .Locale "table.updated"}}</dt><dd>{{formatTime .Data.Domain.UpdatedAt (staffTimezone .Staff)}}</dd></div>
+        <div><dt>{{t .Locale "operations.featureFlagGroups"}}</dt><dd>{{if .Data.Domain.FeatureFlagGroups}}{{range .Data.Domain.FeatureFlagGroups}}<span class="chip">{{.}}</span>{{end}}{{else}}-{{end}}</dd></div>
+      </dl>
+    </article>
+
+    <form class="form card" method="post" action="{{.Data.DomainActionURL}}">
+      {{csrfField .CSRFToken}}
+      <div class="grid two">
+        <label>
+          <span>{{t .Locale "operations.domain.code"}} *</span>
+          <input name="code" value="{{.Data.Domain.Code}}" required>
+        </label>
+        <label>
+          <span>{{t .Locale "field.description"}} *</span>
+          <input name="description" value="{{.Data.Domain.Description}}" required>
+        </label>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="primary">{{t .Locale "action.saveChanges"}}</button>
+      </div>
+    </form>
+  {{else if eq .Data.ActiveTab "feature-flags"}}
+    <div class="section-head compact">
+      <div>
+        <h2>{{t .Locale "operations.tab.featureFlags"}}</h2>
+      </div>
+      <a class="button" href="{{.Data.FeatureFlagNewURL}}">{{t .Locale "operations.createFeatureFlag"}}</a>
+    </div>
+    <form class="filter-bar" method="get" action="{{operationDomainURL .Data.Domain.Code}}">
+      <input type="hidden" name="tab" value="feature-flags">
+      <div class="filter-grid compact">
+        <label>
+          <span>{{t .Locale "field.search"}}</span>
+          <input type="search" name="q" value="{{.Data.Filters.Search}}" placeholder="{{t .Locale "operations.searchFeatureFlags"}}">
+        </label>
+        <label>
+          <span>{{t .Locale "operations.group"}}</span>
+          <select name="group">
+            <option value="">{{t .Locale "operations.allGroups"}}</option>
+            {{range .Data.Domain.FeatureFlagGroups}}
+              <option value="{{.}}"{{if eq $.Data.Filters.Group .}} selected{{end}}>{{.}}</option>
+            {{end}}
+            {{if operationGroupFilterMissing .Data.Domain.FeatureFlagGroups .Data.Filters.Group}}
+              <option value="{{.Data.Filters.Group}}" selected>{{.Data.Filters.Group}}</option>
+            {{end}}
+          </select>
+        </label>
+        <label>
+          <span>{{t .Locale "operations.startDate"}}</span>
+          <input type="date" name="action_start_date" value="{{operationDateInput .Data.Filters.ActionStartDate}}">
+        </label>
+        <label>
+          <span>{{t .Locale "operations.endDate"}}</span>
+          <input type="date" name="action_end_date" value="{{operationDateInput .Data.Filters.ActionEndDate}}">
+        </label>
+        <label class="check-inline">
+          <input type="checkbox" name="in_archive" value="true" {{if .Data.Filters.InArchive}}checked{{end}}>
+          <span>{{t .Locale "operations.inArchive"}}</span>
+        </label>
+      </div>
+      <div class="filter-actions">
+        <button type="submit">{{t .Locale "action.applyFilters"}}</button>
+        <a class="button" href="{{operationDomainURL .Data.Domain.Code}}?tab=feature-flags">{{t .Locale "action.resetFilters"}}</a>
+      </div>
+    </form>
+    <div class="table-wrap operations-table">
+      <table>
+        <thead>
+          <tr>
+            <th>{{t .Locale "operations.code"}}</th>
+            <th>{{t .Locale "operations.name"}}</th>
+            <th>{{t .Locale "operations.group"}}</th>
+            <th>{{t .Locale "operations.type"}}</th>
+            <th>{{t .Locale "operations.enabled"}}</th>
+            <th>{{t .Locale "operations.startDate"}}</th>
+            <th>{{t .Locale "operations.endDate"}}</th>
+            <th>{{t .Locale "table.createdBy"}}</th>
+            <th>{{t .Locale "table.created"}}</th>
+            <th>{{t .Locale "table.updated"}}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .Data.FeatureFlags.Content}}
+            <tr>
+              <td><a class="table-link" href="{{operationFeatureFlagURL $.Data.Domain.Code .Code}}">{{.Code}}</a></td>
+              <td>{{.Name}}</td>
+              <td>{{if .Group}}<span class="chip">{{.Group}}</span>{{else}}-{{end}}</td>
+              <td>{{.Type}}</td>
+              <td><span class="{{operationBoolBadgeClass .Enabled}}">{{operationBoolText $.Locale .Enabled}}</span></td>
+              <td>{{formatTime .ActionStartDate (staffTimezone $.Staff)}}</td>
+              <td>{{formatTime .ActionEndDate (staffTimezone $.Staff)}}</td>
+              <td>{{if .CreatedBy}}{{.CreatedBy}}{{else}}-{{end}}</td>
+              <td>{{formatTime .CreatedAt (staffTimezone $.Staff)}}</td>
+              <td>{{formatTime .UpdatedAt (staffTimezone $.Staff)}}</td>
+            </tr>
+          {{else}}
+            <tr><td colspan="10">{{t $.Locale "operations.noFeatureFlags"}}</td></tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  {{else if eq .Data.ActiveTab "tech-breaks"}}
+    <div class="section-head compact">
+      <div><h2>{{t .Locale "operations.tab.techBreaks"}}</h2></div>
+      <a class="button" href="{{.Data.TechBreakNewURL}}">{{t .Locale "operations.createTechBreak"}}</a>
+    </div>
+    <form class="filter-bar" method="get" action="{{operationDomainURL .Data.Domain.Code}}">
+      <input type="hidden" name="tab" value="tech-breaks">
+      <div class="filter-grid compact">
+        <label>
+          <span>{{t .Locale "field.search"}}</span>
+          <input type="search" name="q" value="{{.Data.Filters.Search}}" placeholder="{{t .Locale "operations.searchTechBreaks"}}">
+        </label>
+        <label>
+          <span>{{t .Locale "operations.startDate"}}</span>
+          <input type="date" name="action_start_date" value="{{operationDateInput .Data.Filters.ActionStartDate}}">
+        </label>
+        <label>
+          <span>{{t .Locale "operations.endDate"}}</span>
+          <input type="date" name="action_end_date" value="{{operationDateInput .Data.Filters.ActionEndDate}}">
+        </label>
+      </div>
+      <div class="filter-actions">
+        <button type="submit">{{t .Locale "action.applyFilters"}}</button>
+        <a class="button" href="{{operationDomainURL .Data.Domain.Code}}?tab=tech-breaks">{{t .Locale "action.resetFilters"}}</a>
+      </div>
+    </form>
+    <div class="table-wrap operations-table">
+      <table>
+        <thead>
+          <tr>
+            <th>{{t .Locale "operations.name"}}</th>
+            <th>{{t .Locale "operations.active"}}</th>
+            <th>{{t .Locale "operations.startDate"}}</th>
+            <th>{{t .Locale "operations.endDate"}}</th>
+            <th>{{t .Locale "table.createdBy"}}</th>
+            <th>{{t .Locale "table.created"}}</th>
+            <th>{{t .Locale "table.updated"}}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .Data.TechBreaks.Content}}
+            <tr>
+              <td><a class="table-link" href="{{operationTechBreakURL $.Data.Domain.Code .ID}}">{{.Name}}</a></td>
+              <td><span class="{{operationBoolBadgeClass .Enabled}}">{{operationBoolText $.Locale .Enabled}}</span></td>
+              <td>{{formatTime .ActionStartDate (staffTimezone $.Staff)}}</td>
+              <td>{{formatTime .ActionEndDate (staffTimezone $.Staff)}}</td>
+              <td>{{if .CreatedBy}}{{.CreatedBy}}{{else}}-{{end}}</td>
+              <td>{{formatTime .CreatedAt (staffTimezone $.Staff)}}</td>
+              <td>{{formatTime .UpdatedAt (staffTimezone $.Staff)}}</td>
+            </tr>
+          {{else}}
+            <tr><td colspan="7">{{t $.Locale "operations.noTechBreaks"}}</td></tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  {{else if eq .Data.ActiveTab "scopes"}}
+    <div class="section-head compact">
+      <div><h2>{{t .Locale "operations.tab.scopes"}}</h2></div>
+      <a class="button" href="{{.Data.ScopeNewURL}}">{{t .Locale "operations.createScope"}}</a>
+    </div>
+    <form class="filter-bar" method="get" action="{{operationDomainURL .Data.Domain.Code}}">
+      <input type="hidden" name="tab" value="scopes">
+      <div class="filter-grid compact">
+        <label>
+          <span>{{t .Locale "field.search"}}</span>
+          <input type="search" name="q" value="{{.Data.Filters.Search}}" placeholder="{{t .Locale "operations.searchScopes"}}">
+        </label>
+      </div>
+      <div class="filter-actions">
+        <button type="submit">{{t .Locale "action.applyFilters"}}</button>
+        <a class="button" href="{{operationDomainURL .Data.Domain.Code}}?tab=scopes">{{t .Locale "action.resetFilters"}}</a>
+      </div>
+    </form>
+    <div class="table-wrap operations-table">
+      <table>
+        <thead>
+          <tr>
+            <th>{{t .Locale "operations.code"}}</th>
+            <th>{{t .Locale "operations.name"}}</th>
+            <th>{{t .Locale "table.createdBy"}}</th>
+            <th>{{t .Locale "table.created"}}</th>
+            <th>{{t .Locale "table.updated"}}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .Data.Scopes}}
+            <tr>
+              <td><a class="table-link" href="{{operationScopeURL $.Data.Domain.Code .ID}}">{{.Code}}</a></td>
+              <td>{{.Name}}</td>
+              <td>{{if .CreatedBy}}{{.CreatedBy}}{{else}}-{{end}}</td>
+              <td>{{formatTime .CreatedAt (staffTimezone $.Staff)}}</td>
+              <td>{{formatTime .UpdatedAt (staffTimezone $.Staff)}}</td>
+            </tr>
+          {{else}}
+            <tr><td colspan="5">{{t $.Locale "operations.noScopes"}}</td></tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  {{end}}
+</section>
+{{template "pageEnd" .}}
+{{end}}

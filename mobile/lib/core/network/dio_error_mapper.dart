@@ -16,7 +16,13 @@ class DioErrorMapper {
         final data = e.response?.data;
 
         if (data is Map<String, dynamic>) {
-          final message = data['error'] ?? data['message'] ?? data['detail'];
+          final isMaintenance =
+              data['kind']?.toString() == 'maintenance' ||
+              data['code']?.toString().endsWith('.technical_maintenance') ==
+                  true;
+          final message = isMaintenance
+              ? data['message'] ?? data['error'] ?? data['detail']
+              : data['error'] ?? data['message'] ?? data['detail'];
           if (message is String && message.trim().isNotEmpty) {
             return _localizedBackendMessage(message.trim());
           }

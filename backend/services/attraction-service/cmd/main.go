@@ -13,6 +13,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"kz/inflap/backend/pkg/switches"
 	cacheadapter "kz/inflap/backend/services/attraction-service/internal/adapter/cache"
 	httpadapter "kz/inflap/backend/services/attraction-service/internal/adapter/http"
 	"kz/inflap/backend/services/attraction-service/internal/adapter/repository"
@@ -78,7 +79,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:         cfg.HTTP.Address(),
-		Handler:      httpadapter.Chain(cfg, mux),
+		Handler:      httpadapter.Chain(cfg, withTechBreakMaintenance(mux, cfg.Switches, cfg.Security.InternalServiceToken, "ATTRACTION")),
 		ReadTimeout:  readTimeout,
 		WriteTimeout: writeTimeout,
 		IdleTimeout:  idleTimeout,
@@ -102,6 +103,28 @@ func main() {
 	} else {
 		log.Info().Msg("http server stopped")
 	}
+}
+
+func withTechBreakMaintenance(next http.Handler, cfg config.SwitchesServiceConfig, fallbackToken string, domainCode string) http.Handler {
+	token := switches.EffectiveInternalServiceToken(cfg.InternalServiceToken, fallbackToken)
+	middleware, err := switches.NewMaintenanceMiddleware(
+		switches.HTTPClientConfig{
+			BaseURL:              cfg.HTTPURL,
+			InternalServiceToken: token,
+			Timeout:              cfg.RequestTimeout,
+		},
+		switches.MaintenanceMiddlewareConfig{
+			DomainCode: domainCode,
+			OnCheckError: func(ctx context.Context, err error, check switches.TechBreakCheck) {
+				log.Warn().Err(err).Str("domain_code", check.DomainCode).Msg("tech break check failed; allowing request")
+			},
+		},
+	)
+	if err != nil {
+		log.Warn().Err(err).Str("domain_code", domainCode).Msg("tech break middleware disabled")
+		return next
+	}
+	return middleware(next)
 }
 
 func newPostgresPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, error) {

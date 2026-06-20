@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+	"kz/inflap/backend/pkg/switches"
 	httpadapter "kz/inflap/backend/services/currency-service/internal/adapter/http"
 	"kz/inflap/backend/services/currency-service/internal/adapter/provider"
 	"kz/inflap/backend/services/currency-service/internal/app"
@@ -37,7 +38,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:         cfg.HTTP.Address(),
-		Handler:      mux,
+		Handler:      withTechBreakMaintenance(mux, cfg.Switches, "", "CURRENCY"),
 		ReadTimeout:  cfg.HTTP.ReadTimeout,
 		WriteTimeout: cfg.HTTP.WriteTimeout,
 		IdleTimeout:  cfg.HTTP.IdleTimeout,
@@ -73,4 +74,26 @@ func main() {
 		log.Error().Err(err).Msg("http shutdown failed")
 	}
 	log.Info().Str("service", cfg.App.Name).Msg("service stopped")
+}
+
+func withTechBreakMaintenance(next http.Handler, cfg config.SwitchesServiceConfig, fallbackToken string, domainCode string) http.Handler {
+	token := switches.EffectiveInternalServiceToken(cfg.InternalServiceToken, fallbackToken)
+	middleware, err := switches.NewMaintenanceMiddleware(
+		switches.HTTPClientConfig{
+			BaseURL:              cfg.HTTPURL,
+			InternalServiceToken: token,
+			Timeout:              cfg.RequestTimeout,
+		},
+		switches.MaintenanceMiddlewareConfig{
+			DomainCode: domainCode,
+			OnCheckError: func(ctx context.Context, err error, check switches.TechBreakCheck) {
+				log.Warn().Err(err).Str("domain_code", check.DomainCode).Msg("tech break check failed; allowing request")
+			},
+		},
+	)
+	if err != nil {
+		log.Warn().Err(err).Str("domain_code", domainCode).Msg("tech break middleware disabled")
+		return next
+	}
+	return middleware(next)
 }

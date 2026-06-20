@@ -55,7 +55,24 @@ func NewRenderer() (*Renderer, error) {
 		"feedQualityCandidateSource": func(locale any, value any) string {
 			return feedQualityCandidateSourceText(fmt.Sprint(locale), value)
 		},
-		"localeURL": localeURL,
+		"operationDomainURL":             operationsDomainURL,
+		"operationFeatureFlagURL":        operationFeatureFlagURL,
+		"operationFeatureFlagHistoryURL": operationFeatureFlagHistoryURL,
+		"operationTechBreakURL":          operationTechBreakURL,
+		"operationScopeURL":              operationScopeURL,
+		"operationValueText":             operationValueText,
+		"operationStringListText":        operationStringListText,
+		"operationDateTimeInput":         operationDateTimeInput,
+		"operationOptionalDateTimeInput": operationOptionalDateTimeInput,
+		"operationDateInput":             operationDateInput,
+		"operationBoolText": func(locale any, value bool) string {
+			return operationBoolText(locale, value)
+		},
+		"operationBoolBadgeClass":         operationBoolBadgeClass,
+		"operationScopeSelected":          operationScopeSelected,
+		"operationTechBreakScopeSelected": operationTechBreakScopeSelected,
+		"operationGroupFilterMissing":     operationGroupFilterMissing,
+		"localeURL":                       localeURL,
 		"urlQuerySuffix": func(query string) template.URL {
 			query = strings.TrimSpace(query)
 			if query == "" {
@@ -74,6 +91,9 @@ func NewRenderer() (*Renderer, error) {
 		},
 		"hasStaffRole": func(staff *model.StaffUser, role enum.StaffRole) bool {
 			return staff != nil && staff.HasRole(role)
+		},
+		"hasRole": func(staff *model.StaffUser, role any) bool {
+			return staff != nil && staff.HasRole(enum.StaffRole(fmt.Sprint(role)))
 		},
 		"hasPermission": func(staff *model.StaffUser, permission any) bool {
 			return staff != nil && staff.HasPermission(enum.Permission(fmt.Sprint(permission)))

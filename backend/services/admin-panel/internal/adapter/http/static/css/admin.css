@@ -277,6 +277,10 @@ h3 {
   gap: 16px;
 }
 
+.grid.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .grid.three {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -575,6 +579,10 @@ h3 {
   font-weight: 600;
 }
 
+.span-two {
+  grid-column: 1 / -1;
+}
+
 input,
 select,
 textarea {
@@ -641,6 +649,10 @@ textarea:focus {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(164px, 1fr));
   gap: 12px;
+}
+
+.filter-grid.compact {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
 .filters {
@@ -730,6 +742,51 @@ textarea:focus {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tabs a {
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  padding: 10px 12px;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.tabs a.active,
+.tabs a:hover {
+  border-bottom-color: var(--text);
+  color: var(--text);
+}
+
+.table-link {
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.check-inline {
+  display: inline-flex !important;
+  width: fit-content;
+  align-items: center;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+}
+
+.check-inline input {
+  width: auto;
+}
+
+.split-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .feed-quality-filters {
@@ -1231,6 +1288,29 @@ tr:last-child td {
   color: var(--muted);
 }
 
+.operation-array-values {
+  display: grid;
+  gap: 10px;
+}
+
+.array-values {
+  display: grid;
+  gap: 8px;
+}
+
+.array-value-row {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.button.small {
+  width: fit-content;
+  min-height: 32px;
+  padding: 7px 10px;
+}
+
 @media (max-width: 860px) {
   .topbar {
     position: static;
@@ -1299,12 +1379,17 @@ tr:last-child td {
     width: fit-content;
   }
 
+  .grid.two,
   .grid.three,
   .facts {
     grid-template-columns: 1fr;
   }
 
   .timeline-step {
+    grid-template-columns: 1fr;
+  }
+
+  .array-value-row {
     grid-template-columns: 1fr;
   }
 

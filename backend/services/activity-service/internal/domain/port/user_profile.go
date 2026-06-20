@@ -17,3 +17,7 @@ type UserProfileResolver interface {
 	FilterFriendUserIDs(ctx context.Context, userID uuid.UUID, candidateUserIDs []uuid.UUID) ([]uuid.UUID, error)
 	GetUserProfileProjections(ctx context.Context, userIDs []uuid.UUID) (map[uuid.UUID]UserProfileProjection, error)
 }
+
+type UserEmailResolver interface {
+	EmailForUserID(ctx context.Context, userID uuid.UUID) (string, error)
+}

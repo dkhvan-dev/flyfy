@@ -34,5 +34,6 @@ var (
 	ErrInvalidRefreshToken     = errors.New("invalid or expired refresh token")
 
 	// General
-	ErrRateLimited = errors.New("rate limit exceeded")
+	ErrRateLimited          = errors.New("rate limit exceeded")
+	ErrTechnicalMaintenance = errors.New("technical maintenance in progress")
 )

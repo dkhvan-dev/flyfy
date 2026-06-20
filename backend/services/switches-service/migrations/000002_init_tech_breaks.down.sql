@@ -1,0 +1,14 @@
+drop table if exists guide_tech_breaks;
+drop table if exists notification_tech_breaks;
+drop table if exists feed_tech_breaks;
+drop table if exists exchange_rate_tech_breaks;
+drop table if exists attraction_tech_breaks;
+drop table if exists payment_tech_breaks;
+drop table if exists map_tech_breaks;
+drop table if exists chat_tech_breaks;
+drop table if exists excursion_tech_breaks;
+drop table if exists activity_tech_breaks;
+drop table if exists onboarding_tech_breaks;
+drop table if exists core_tech_breaks;
+drop procedure if exists create_tech_breaks_table(text);
+drop table if exists dict_tech_break_scopes;

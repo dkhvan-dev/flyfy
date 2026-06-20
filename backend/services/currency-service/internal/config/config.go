@@ -13,6 +13,7 @@ type Config struct {
 	HTTP     HTTPConfig
 	Log      LogConfig
 	Provider ProviderConfig
+	Switches SwitchesServiceConfig
 }
 
 type AppConfig struct {
@@ -39,6 +40,12 @@ type ProviderConfig struct {
 	BaseURL  string        `env:"CURRENCY_PROVIDER_BASE_URL, default=https://open.er-api.com/v6/latest"`
 	Timeout  time.Duration `env:"CURRENCY_PROVIDER_TIMEOUT, default=5s"`
 	CacheTTL time.Duration `env:"CURRENCY_RATE_CACHE_TTL, default=1h"`
+}
+
+type SwitchesServiceConfig struct {
+	HTTPURL              string        `env:"SWITCHES_SERVICE_URL, default=http://switches-service:8096"`
+	InternalServiceToken string        `env:"SWITCHES_INTERNAL_SERVICE_TOKEN"`
+	RequestTimeout       time.Duration `env:"SWITCHES_SERVICE_TIMEOUT, default=800ms"`
 }
 
 func Load(ctx context.Context) (*Config, error) {

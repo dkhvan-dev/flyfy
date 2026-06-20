@@ -24,6 +24,7 @@ type Config struct {
 	Notification       NotificationServiceConfig
 	NotificationOutbox ChatNotificationOutboxConfig
 	Trust              TrustServiceConfig
+	Switches           SwitchesServiceConfig
 }
 
 type AppConfig struct {
@@ -140,6 +141,12 @@ type TrustServiceConfig struct {
 	Enabled bool          `env:"TRUST_POLICY_ENABLED, default=true"`
 	Target  string        `env:"TRUST_SERVICE_GRPC_TARGET, default=trust-service:9096"`
 	Timeout time.Duration `env:"TRUST_SERVICE_TIMEOUT, default=250ms"`
+}
+
+type SwitchesServiceConfig struct {
+	HTTPURL              string        `env:"SWITCHES_SERVICE_URL, default=http://switches-service:8096"`
+	InternalServiceToken string        `env:"SWITCHES_INTERNAL_SERVICE_TOKEN"`
+	RequestTimeout       time.Duration `env:"SWITCHES_SERVICE_TIMEOUT, default=800ms"`
 }
 
 func (s StickerServiceConfig) EffectiveInternalServiceToken(fallback string) string {

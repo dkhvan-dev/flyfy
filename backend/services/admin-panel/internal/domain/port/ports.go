@@ -260,6 +260,32 @@ type FeedQualityClient interface {
 	ListFeedQualityMetrics(ctx context.Context, filter model.FeedQualityMetricFilter) ([]model.FeedQualityMetric, error)
 }
 
+type FeatureFlagAdminClient interface {
+	ListDomains(ctx context.Context, filter model.OperationDomainFilter) (model.OperationDomainPage, error)
+	FindDomain(ctx context.Context, code string) (*model.OperationDomain, error)
+	UpsertDomain(ctx context.Context, input model.OperationDomainInput) (model.OperationDomain, error)
+	ListFeatureFlags(ctx context.Context, filter model.OperationFeatureFlagFilter) (model.OperationPage[model.OperationFeatureFlag], error)
+	GetFeatureFlag(ctx context.Context, domainCode string, code string) (model.OperationFeatureFlag, error)
+	UpsertFeatureFlag(ctx context.Context, input model.OperationFeatureFlagInput) (model.OperationFeatureFlag, error)
+	ArchiveFeatureFlag(ctx context.Context, domainCode string, code string) error
+	RecoverFeatureFlag(ctx context.Context, domainCode string, code string) (model.OperationFeatureFlag, error)
+	ListFeatureFlagHistory(ctx context.Context, filter model.OperationFeatureFlagHistoryFilter) (model.OperationPage[model.OperationFeatureFlagHistory], error)
+}
+
+type TechBreakAdminClient interface {
+	ListDomains(ctx context.Context, filter model.OperationDomainFilter) (model.OperationDomainPage, error)
+	FindDomain(ctx context.Context, code string) (*model.OperationDomain, error)
+	UpsertDomain(ctx context.Context, input model.OperationDomainInput) (model.OperationDomain, error)
+	ListTechBreaks(ctx context.Context, filter model.OperationTechBreakFilter) (model.OperationPage[model.OperationTechBreak], error)
+	GetTechBreak(ctx context.Context, id int64, domainCode string) (model.OperationTechBreak, error)
+	UpsertTechBreak(ctx context.Context, input model.OperationTechBreakInput) (model.OperationTechBreak, error)
+	ArchiveTechBreak(ctx context.Context, id int64, domainCode string) error
+	ListScopes(ctx context.Context, domainCode string) ([]model.OperationTechBreakScope, error)
+	GetScope(ctx context.Context, id int64, domainCode string) (model.OperationTechBreakScope, error)
+	UpsertScope(ctx context.Context, input model.OperationTechBreakScopeInput) (model.OperationTechBreakScope, error)
+	ArchiveScope(ctx context.Context, id int64, domainCode string) error
+}
+
 type AntiFraudClient interface {
 	ListFraudBlocks(ctx context.Context, target model.FraudBlockTarget, limit int, offset int) ([]model.FraudBlock, error)
 	ReviewFraudBlock(ctx context.Context, input model.FraudBlockReviewInput) (*model.FraudBlock, error)

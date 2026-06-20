@@ -21,6 +21,7 @@ type Config struct {
 	// Token Service (S2S)
 	TokenService TokenServiceConfig
 	UserService  UserServiceConfig
+	Switches     SwitchesConfig
 
 	// OTP
 	OTP      OTPConfig
@@ -69,6 +70,16 @@ type UserServiceConfig struct {
 	GRPCTarget           string `env:"USER_SERVICE_GRPC_TARGET, default=dns:///user-service:9094"`
 	InternalServiceToken string `env:"USER_SERVICE_INTERNAL_SERVICE_TOKEN"`
 	ServiceName          string `env:"USER_SERVICE_CALLER_NAME, default=auth-service"`
+}
+
+type SwitchesConfig struct {
+	BaseURL              string        `env:"SWITCHES_SERVICE_URL, default=http://switches-service:8096"`
+	InternalServiceToken string        `env:"SWITCHES_INTERNAL_SERVICE_TOKEN"`
+	Timeout              time.Duration `env:"SWITCHES_SERVICE_TIMEOUT, default=800ms"`
+}
+
+func (s SwitchesConfig) Enabled() bool {
+	return s.BaseURL != "" && s.InternalServiceToken != ""
 }
 
 type OTPConfig struct {

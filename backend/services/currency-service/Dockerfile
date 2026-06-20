@@ -5,10 +5,12 @@ RUN apk add --no-cache git ca-certificates tzdata
 WORKDIR /app
 
 COPY backend/services/currency-service/go.mod backend/services/currency-service/go.sum* ./backend/services/currency-service/
+COPY backend/pkg/switches/go.mod ./backend/pkg/switches/
 
 WORKDIR /app/backend/services/currency-service
 RUN go mod download
 
+COPY backend/pkg/switches /app/backend/pkg/switches
 COPY backend/services/currency-service ./
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \

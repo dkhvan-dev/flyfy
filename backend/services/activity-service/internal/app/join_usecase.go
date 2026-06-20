@@ -19,9 +19,18 @@ type JoinUseCase struct {
 	chatGateway         port.ActivityChatGateway
 	notificationGateway port.ActivityNotificationGateway
 	userProfileResolver port.UserProfileResolver
+	userEmailResolver   port.UserEmailResolver
 	payment             port.ActivityPaymentGateway
 	fraud               port.FraudEvaluator
+	featureFlags        port.FeatureFlagReader
+	techBreaks          port.TechBreakChecker
 }
+
+const (
+	activityDomainCode = "ACTIVITY"
+	paymentDomainCode  = "PAYMENT"
+	skipPaymentFlag    = "SKIP_PAYMENT"
+)
 
 func NewJoinUseCase(
 	repo port.ActivityRepository,
@@ -32,15 +41,34 @@ func NewJoinUseCase(
 	if len(userProfileResolver) > 0 {
 		resolver = userProfileResolver[0]
 	}
+	var emailResolver port.UserEmailResolver
+	if resolver != nil {
+		if candidate, ok := resolver.(port.UserEmailResolver); ok {
+			emailResolver = candidate
+		}
+	}
 	return &JoinUseCase{
 		repo:                repo,
 		chatGateway:         chatGateway,
 		userProfileResolver: resolver,
+		userEmailResolver:   emailResolver,
 	}
 }
 
 func (u *JoinUseCase) SetPaymentGateway(paymentGateway port.ActivityPaymentGateway) {
 	u.payment = paymentGateway
+}
+
+func (u *JoinUseCase) SetUserEmailResolver(resolver port.UserEmailResolver) {
+	u.userEmailResolver = resolver
+}
+
+func (u *JoinUseCase) SetFeatureFlagReader(reader port.FeatureFlagReader) {
+	u.featureFlags = reader
+}
+
+func (u *JoinUseCase) SetTechBreakChecker(checker port.TechBreakChecker) {
+	u.techBreaks = checker
 }
 
 type JoinActivityInput struct {
@@ -74,8 +102,12 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 	if input.UserID == uuid.Nil {
 		return nil, ErrInvalidParticipantUserID
 	}
+	if err := u.ensureNoActivityTechBreak(ctx); err != nil {
+		return nil, err
+	}
 
 	var err error
+	var activityForPrecheck *model.Activity
 	var fraudAssessment *port.FraudAssessmentResult
 	fraudAssessmentUnavailable := false
 	if u.fraud != nil {
@@ -86,6 +118,7 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 		if activityForFraud == nil {
 			return nil, ErrActivityNotFound
 		}
+		activityForPrecheck = activityForFraud
 		idempotencyKey := ""
 		if input.IdempotencyKey != nil {
 			idempotencyKey = *input.IdempotencyKey
@@ -112,10 +145,24 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 			return nil, err
 		}
 	}
+	if activityForPrecheck == nil && u.canResolvePaymentBypass() {
+		activityForPrecheck, err = u.repo.GetActivityByID(ctx, input.ActivityID)
+		if err != nil {
+			return nil, fmt.Errorf("get activity for payment feature flag: %w", err)
+		}
+		if activityForPrecheck == nil {
+			return nil, ErrActivityNotFound
+		}
+	}
+	paymentBypassAllowed := false
+	if isPaidActivity(activityForPrecheck) {
+		paymentBypassAllowed = u.shouldSkipPayment(ctx, input.UserID)
+	}
 
 	var created *model.ActivityParticipant
 	var activityForPostCommit *model.Activity
 	requiresPaymentAuthorization := false
+	paymentSkippedByFeatureFlag := false
 	var chatInput *port.EnsureActivityParticipantInput
 
 	err = u.repo.WithTx(ctx, func(txRepo port.ActivityTxRepository) error {
@@ -176,16 +223,22 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 
 		status := enum.ParticipantStatusApproved
 		if status == enum.ParticipantStatusApproved && isPaidActivity(activity) {
-			if err = ensurePaymentGateway(u.payment); err != nil {
-				return err
+			if paymentBypassAllowed {
+				status = enum.ParticipantStatusConfirmed
+				paymentSkippedByFeatureFlag = true
+			} else {
+				if err = ensurePaymentGateway(u.payment); err != nil {
+					return err
+				}
+				status = enum.ParticipantStatusPendingPayment
+				requiresPaymentAuthorization = true
 			}
-			status = enum.ParticipantStatusPendingPayment
-			requiresPaymentAuthorization = true
 		}
 
 		if activity.CapacityType == enum.ActivityCapacityTypeLimited && activity.MaxParticipants != nil {
 			if occupied >= *activity.MaxParticipants {
 				status = enum.ParticipantStatusWaitlisted
+				paymentSkippedByFeatureFlag = false
 			}
 		}
 
@@ -211,6 +264,10 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 			if status == enum.ParticipantStatusApproved || status == enum.ParticipantStatusConfirmed {
 				nowCopy := now
 				participant.ApprovedAt = &nowCopy
+			}
+			if paymentSkippedByFeatureFlag && status == enum.ParticipantStatusConfirmed {
+				nowCopy := now
+				participant.PaidAt = &nowCopy
 			}
 			if status == enum.ParticipantStatusWaitlisted {
 				nowCopy := now
@@ -238,6 +295,7 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 			map[string]any{
 				"status":             string(status),
 				"paymentMode":        paymentModeForParticipant(activity, status),
+				"paymentSkipped":     paymentSkippedByFeatureFlag,
 				"acceptedInvitation": acceptedInvitation,
 			},
 			fraudAssessment,
@@ -346,6 +404,56 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 	u.notifyParticipantJoined(ctx, activityForPostCommit, created)
 
 	return created, nil
+}
+
+func (u *JoinUseCase) ensureNoActivityTechBreak(ctx context.Context) error {
+	if u.techBreaks == nil {
+		return nil
+	}
+	active, err := u.techBreaks.HasActiveTechBreak(ctx, port.TechBreakCheckInput{
+		DomainCode: activityDomainCode,
+	})
+	if err != nil {
+		log.Warn().Err(err).Str("domain_code", activityDomainCode).Msg("activity tech break check failed")
+		return nil
+	}
+	if active {
+		return ErrTechnicalMaintenance
+	}
+	return nil
+}
+
+func (u *JoinUseCase) shouldSkipPayment(ctx context.Context, userID uuid.UUID) bool {
+	if !u.canResolvePaymentBypass() || userID == uuid.Nil {
+		return false
+	}
+	email, err := u.userEmailResolver.EmailForUserID(ctx, userID)
+	if err != nil {
+		log.Warn().Err(err).Str("user_id", userID.String()).Msg("failed to resolve user email for payment feature flag")
+		return false
+	}
+	email = strings.ToLower(strings.TrimSpace(email))
+	if email == "" {
+		return false
+	}
+	flag, err := u.featureFlags.GetFeatureFlag(ctx, paymentDomainCode, skipPaymentFlag)
+	if err != nil {
+		log.Warn().Err(err).Str("feature_flag", skipPaymentFlag).Msg("failed to resolve payment feature flag")
+		return false
+	}
+	if !flag.Enabled || flag.Type != port.FeatureFlagTypeArrayString {
+		return false
+	}
+	for _, value := range flag.Values {
+		if strings.ToLower(strings.TrimSpace(value)) == email {
+			return true
+		}
+	}
+	return false
+}
+
+func (u *JoinUseCase) canResolvePaymentBypass() bool {
+	return u.featureFlags != nil && u.userEmailResolver != nil
 }
 
 func (u *JoinUseCase) InviteFriends(ctx context.Context, input InviteFriendsInput) (*InviteFriendsResult, error) {

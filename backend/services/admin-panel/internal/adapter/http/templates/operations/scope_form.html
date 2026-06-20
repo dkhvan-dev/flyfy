@@ -1,0 +1,46 @@
+{{define "operations/scope_form"}}
+{{template "pageStart" .}}
+<section class="section operations-page">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "operations.tab.scopes"}}</p>
+      <h1>{{if .Data.IsNew}}{{t .Locale "operations.scopeNewTitle"}}{{else}}{{t .Locale "operations.scopeTitle"}}: {{.Data.Scope.Code}}{{end}}</h1>
+    </div>
+    <a class="button" href="{{.Data.BackURL}}">{{t .Locale "operations.backToDomain"}}</a>
+  </div>
+
+  {{if not .Data.IsNew}}
+    <article class="card detail">
+      <dl class="facts">
+        <div><dt>{{t .Locale "operations.code"}}</dt><dd>{{.Data.Scope.Code}}</dd></div>
+        <div><dt>{{t .Locale "table.createdBy"}}</dt><dd>{{if .Data.Scope.CreatedBy}}{{.Data.Scope.CreatedBy}}{{else}}-{{end}}</dd></div>
+        <div><dt>{{t .Locale "table.created"}}</dt><dd>{{formatTime .Data.Scope.CreatedAt (staffTimezone .Staff)}}</dd></div>
+        <div><dt>{{t .Locale "table.updated"}}</dt><dd>{{formatTime .Data.Scope.UpdatedAt (staffTimezone .Staff)}}</dd></div>
+      </dl>
+    </article>
+  {{end}}
+
+  <form class="form card" method="post" action="{{.Data.SubmitURL}}">
+    {{csrfField .CSRFToken}}
+    <div class="grid two">
+      <label>
+        <span>{{t .Locale "operations.code"}} *</span>
+        <input name="code" value="{{.Data.Scope.Code}}" {{if not .Data.IsNew}}readonly{{end}} required>
+      </label>
+      <label>
+        <span>{{t .Locale "operations.name"}} *</span>
+        <input name="name" value="{{.Data.Scope.Name}}" required>
+      </label>
+    </div>
+    <div class="form-actions split-actions">
+      <div>
+        {{if not .Data.IsNew}}
+          <button class="danger" type="submit" formaction="{{.Data.DeleteURL}}">{{t .Locale "action.delete"}}</button>
+        {{end}}
+      </div>
+      <button type="submit" class="primary">{{if .Data.IsNew}}{{t .Locale "action.create"}}{{else}}{{t .Locale "action.saveChanges"}}{{end}}</button>
+    </div>
+  </form>
+</section>
+{{template "pageEnd" .}}
+{{end}}

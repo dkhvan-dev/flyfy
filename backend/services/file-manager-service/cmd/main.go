@@ -15,6 +15,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
+	"kz/inflap/backend/pkg/switches"
 	"kz/inflap/backend/pkg/trustpolicy/grpcclient"
 	fraudadapter "kz/inflap/backend/services/file-manager-service/internal/adapter/fraud"
 	grpcadapter "kz/inflap/backend/services/file-manager-service/internal/adapter/grpc"
@@ -89,7 +90,7 @@ func main() {
 
 	httpServer := &http.Server{
 		Addr:         cfg.HTTP.Address(),
-		Handler:      httpadapter.Chain(cfg, httpMux),
+		Handler:      httpadapter.Chain(cfg, withTechBreakMaintenance(httpMux, cfg.Switches, cfg.Security.InternalServiceToken, "FILE_MANAGER")),
 		ReadTimeout:  cfg.HTTP.ReadTimeout,
 		WriteTimeout: cfg.HTTP.WriteTimeout,
 		IdleTimeout:  cfg.HTTP.IdleTimeout,
@@ -151,6 +152,28 @@ func main() {
 	} else {
 		log.Info().Msg("http server stopped")
 	}
+}
+
+func withTechBreakMaintenance(next http.Handler, cfg config.SwitchesServiceConfig, fallbackToken string, domainCode string) http.Handler {
+	token := switches.EffectiveInternalServiceToken(cfg.InternalServiceToken, fallbackToken)
+	middleware, err := switches.NewMaintenanceMiddleware(
+		switches.HTTPClientConfig{
+			BaseURL:              cfg.HTTPURL,
+			InternalServiceToken: token,
+			Timeout:              cfg.RequestTimeout,
+		},
+		switches.MaintenanceMiddlewareConfig{
+			DomainCode: domainCode,
+			OnCheckError: func(ctx context.Context, err error, check switches.TechBreakCheck) {
+				log.Warn().Err(err).Str("domain_code", check.DomainCode).Msg("tech break check failed; allowing request")
+			},
+		},
+	)
+	if err != nil {
+		log.Warn().Err(err).Str("domain_code", domainCode).Msg("tech break middleware disabled")
+		return next
+	}
+	return middleware(next)
 }
 
 func newPostgresPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, error) {

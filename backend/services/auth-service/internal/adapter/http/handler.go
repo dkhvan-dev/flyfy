@@ -95,6 +95,8 @@ func (h *AuthHandler) handleSendOTP(w http.ResponseWriter, r *http.Request) {
 			h.writeError(w, r, http.StatusTooManyRequests, "too many requests, try again later")
 		case model.ErrPhoneRequired:
 			h.writeError(w, r, http.StatusBadRequest, "phone number is required")
+		case model.ErrTechnicalMaintenance:
+			h.writeMaintenanceError(w, r)
 		default:
 			h.logger.Error().Err(err).Msg("send OTP failed")
 			h.writeError(w, r, http.StatusInternalServerError, "failed to send OTP")
@@ -135,6 +137,8 @@ func (h *AuthHandler) handleVerifyOTP(w http.ResponseWriter, r *http.Request) {
 			h.writeError(w, r, http.StatusForbidden, "account is blocked")
 		case model.ErrTokenServiceUnavailable:
 			h.writeError(w, r, http.StatusServiceUnavailable, "service temporarily unavailable")
+		case model.ErrTechnicalMaintenance:
+			h.writeMaintenanceError(w, r)
 		default:
 			h.logger.Error().Err(err).Msg("verify OTP failed")
 			h.writeError(w, r, http.StatusInternalServerError, "verification failed")
@@ -173,6 +177,8 @@ func (h *AuthHandler) handleStartEmailRegistration(w http.ResponseWriter, r *htt
 			h.writeError(w, r, http.StatusConflict, "email is already registered")
 		case errors.Is(err, model.ErrRateLimited), errors.Is(err, model.ErrOTPRateLimit):
 			h.writeError(w, r, http.StatusTooManyRequests, "too many requests, try again later")
+		case errors.Is(err, model.ErrTechnicalMaintenance):
+			h.writeMaintenanceError(w, r)
 		default:
 			h.logger.Error().Err(err).Msg("start email registration failed")
 			h.writeError(w, r, http.StatusInternalServerError, "registration failed")
@@ -212,6 +218,8 @@ func (h *AuthHandler) handleVerifyEmailRegistration(w http.ResponseWriter, r *ht
 			h.writeError(w, r, http.StatusTooManyRequests, "too many requests, try again later")
 		case errors.Is(err, model.ErrTokenServiceUnavailable):
 			h.writeError(w, r, http.StatusServiceUnavailable, "service temporarily unavailable")
+		case errors.Is(err, model.ErrTechnicalMaintenance):
+			h.writeMaintenanceError(w, r)
 		default:
 			h.logger.Error().Err(err).Msg("verify email registration failed")
 			h.writeError(w, r, http.StatusInternalServerError, "verification failed")
@@ -243,6 +251,8 @@ func (h *AuthHandler) handlePasswordLogin(w http.ResponseWriter, r *http.Request
 			h.writeError(w, r, http.StatusTooManyRequests, "too many requests, try again later")
 		case errors.Is(err, model.ErrTokenServiceUnavailable):
 			h.writeError(w, r, http.StatusServiceUnavailable, "service temporarily unavailable")
+		case errors.Is(err, model.ErrTechnicalMaintenance):
+			h.writeMaintenanceError(w, r)
 		default:
 			h.logger.Error().Err(err).Msg("password login failed")
 			h.writeError(w, r, http.StatusInternalServerError, "authentication failed")
@@ -901,6 +911,16 @@ func (h *AuthHandler) writeError(w http.ResponseWriter, r *http.Request, status 
 	})
 }
 
+func (h *AuthHandler) writeMaintenanceError(w http.ResponseWriter, r *http.Request) {
+	entry := maintenanceAuthError(r)
+	h.writeJSON(w, http.StatusServiceUnavailable, errorResponse{
+		Error:   entry.title,
+		Message: entry.message,
+		Code:    entry.code,
+		Kind:    "maintenance",
+	})
+}
+
 func localizedAuthError(r *http.Request, msg string) localizedError {
 	locale := authLocaleFromRequest(r)
 	if messages, ok := authErrorMessages[locale]; ok {
@@ -915,6 +935,29 @@ func localizedAuthError(r *http.Request, msg string) localizedError {
 		title:   "Некорректный запрос",
 		message: "Проверьте данные запроса и попробуйте снова.",
 		code:    "auth.bad_request",
+	}
+}
+
+func maintenanceAuthError(r *http.Request) localizedError {
+	switch authLocaleFromRequest(r) {
+	case "en":
+		return localizedError{
+			title:   "Maintenance in progress",
+			message: "Technical maintenance is in progress. Please try again later.",
+			code:    "auth.technical_maintenance",
+		}
+	case "kk":
+		return localizedError{
+			title:   "Техникалық жұмыстар",
+			message: "Қазір техникалық жұмыстар жүріп жатыр. Кейінірек қайталап көріңіз.",
+			code:    "auth.technical_maintenance",
+		}
+	default:
+		return localizedError{
+			title:   "Технические работы",
+			message: "Сейчас проводятся технические работы. Попробуйте позже.",
+			code:    "auth.technical_maintenance",
+		}
 	}
 }
 

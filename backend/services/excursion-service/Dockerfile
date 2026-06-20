@@ -5,6 +5,7 @@ RUN apk add --no-cache git ca-certificates tzdata
 WORKDIR /app
 
 COPY backend/services/excursion-service/go.mod backend/services/excursion-service/go.sum* ./backend/services/excursion-service/
+COPY backend/pkg/switches/go.mod ./backend/pkg/switches/
 COPY backend/pkg/trustpolicy/go.mod backend/pkg/trustpolicy/go.sum* ./backend/pkg/trustpolicy/
 COPY proto ./proto
 
@@ -12,6 +13,7 @@ WORKDIR /app/backend/services/excursion-service
 RUN go mod download
 
 COPY backend/pkg/trustpolicy /app/backend/pkg/trustpolicy
+COPY backend/pkg/switches /app/backend/pkg/switches
 COPY backend/services/excursion-service ./
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \

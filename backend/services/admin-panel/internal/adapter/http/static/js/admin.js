@@ -249,6 +249,15 @@
     });
   });
 
+  const maintenanceDialog = document.getElementById("maintenance-error-dialog");
+  if (maintenanceDialog) {
+    if (typeof maintenanceDialog.showModal === "function") {
+      maintenanceDialog.showModal();
+    } else {
+      maintenanceDialog.setAttribute("open", "");
+    }
+  }
+
   document.querySelectorAll("[data-paginated-table]").forEach((container) => {
     const rows = Array.from(container.querySelectorAll("[data-table-row]"));
     const pagination = container.querySelector("[data-table-pagination]");
@@ -923,92 +932,159 @@
   });
 
   const dialog = document.getElementById("decision-confirmation-dialog");
-  if (!dialog) {
-    return;
-  }
+  if (dialog) {
+    const message = dialog.querySelector("[data-confirm-message]");
+    const submitButton = dialog.querySelector("[data-confirm-submit]");
+    const cancelButton = dialog.querySelector("[data-confirm-cancel]");
+    let pendingForm = null;
+    let pendingSubmitter = null;
 
-  const message = dialog.querySelector("[data-confirm-message]");
-  const submitButton = dialog.querySelector("[data-confirm-submit]");
-  const cancelButton = dialog.querySelector("[data-confirm-cancel]");
-  let pendingForm = null;
-  let pendingSubmitter = null;
+    const labels = {
+      approve: {
+        en: "This will approve and publish the excursion. Continue?",
+        ru: "Экскурсия будет одобрена и опубликована. Продолжить?",
+      },
+      reject: {
+        en: "This will reject the excursion and hide it from publication. Continue?",
+        ru: "Экскурсия будет отклонена и скрыта от публикации. Продолжить?",
+      },
+      attractionMedia: {
+        en: "Selected images will replace the current attraction carousel in this exact order. Continue?",
+        ru: "Выбранные изображения заменят текущую карусель достопримечательности именно в этом порядке. Продолжить?",
+      },
+      mediaAppend: {
+        en: "Selected images will be added to the end of the current carousel. Continue?",
+        ru: "Выбранные изображения будут добавлены в конец текущей карусели. Продолжить?",
+      },
+      mediaManage: {
+        en: "The current carousel order and deletions will be saved. Continue?",
+        ru: "Порядок текущей карусели и выбранные удаления будут сохранены. Продолжить?",
+      },
+      revoke: {
+        en: "This will revoke guide status, disable guide tools, and hide public offers. Continue?",
+        ru: "Статус гида будет отозван, функции гида отключены, публичные предложения скрыты. Продолжить?",
+      },
+    };
 
-  const labels = {
-    approve: {
-      en: "This will approve and publish the excursion. Continue?",
-      ru: "Экскурсия будет одобрена и опубликована. Продолжить?",
-    },
-    reject: {
-      en: "This will reject the excursion and hide it from publication. Continue?",
-      ru: "Экскурсия будет отклонена и скрыта от публикации. Продолжить?",
-    },
-    attractionMedia: {
-      en: "Selected images will replace the current attraction carousel in this exact order. Continue?",
-      ru: "Выбранные изображения заменят текущую карусель достопримечательности именно в этом порядке. Продолжить?",
-    },
-    mediaAppend: {
-      en: "Selected images will be added to the end of the current carousel. Continue?",
-      ru: "Выбранные изображения будут добавлены в конец текущей карусели. Продолжить?",
-    },
-    mediaManage: {
-      en: "The current carousel order and deletions will be saved. Continue?",
-      ru: "Порядок текущей карусели и выбранные удаления будут сохранены. Продолжить?",
-    },
-    revoke: {
-      en: "This will revoke guide status, disable guide tools, and hide public offers. Continue?",
-      ru: "Статус гида будет отозван, функции гида отключены, публичные предложения скрыты. Продолжить?",
-    },
-  };
-
-  document.querySelectorAll("[data-confirm-form]").forEach((form) => {
-    form.addEventListener("submit", (event) => {
-      if (event.defaultPrevented || !form.checkValidity()) {
-        return;
-      }
-      if (form.dataset.confirmed === "true") {
-        return;
-      }
-      event.preventDefault();
-      pendingForm = form;
-      pendingSubmitter = event.submitter || null;
-      const type = form.dataset.confirmForm || "approve";
-      if (message) {
-        message.textContent = (labels[type] && labels[type][locale]) || labels.approve[locale];
-      }
-      if (typeof dialog.showModal === "function") {
-        dialog.showModal();
-      } else if (window.confirm(message ? message.textContent : "")) {
-        form.dataset.confirmed = "true";
-        if (typeof form.requestSubmit === "function") {
-          form.requestSubmit();
-        } else {
-          form.submit();
+    document.querySelectorAll("[data-confirm-form]").forEach((form) => {
+      form.addEventListener("submit", (event) => {
+        if (event.defaultPrevented || !form.checkValidity()) {
+          return;
         }
-      }
+        if (form.dataset.confirmed === "true") {
+          return;
+        }
+        event.preventDefault();
+        pendingForm = form;
+        pendingSubmitter = event.submitter || null;
+        const type = form.dataset.confirmForm || "approve";
+        if (message) {
+          message.textContent = (labels[type] && labels[type][locale]) || labels.approve[locale];
+        }
+        if (typeof dialog.showModal === "function") {
+          dialog.showModal();
+        } else if (window.confirm(message ? message.textContent : "")) {
+          form.dataset.confirmed = "true";
+          if (typeof form.requestSubmit === "function") {
+            form.requestSubmit();
+          } else {
+            form.submit();
+          }
+        }
+      });
     });
-  });
 
-  if (submitButton) {
-    submitButton.addEventListener("click", () => {
-      if (!pendingForm) {
+    if (submitButton) {
+      submitButton.addEventListener("click", () => {
+        if (!pendingForm) {
+          dialog.close();
+          return;
+        }
+        pendingForm.dataset.confirmed = "true";
         dialog.close();
+        if (typeof pendingForm.requestSubmit === "function") {
+          pendingForm.requestSubmit(pendingSubmitter || undefined);
+        } else {
+          pendingForm.submit();
+        }
+      });
+    }
+
+    if (cancelButton) {
+      cancelButton.addEventListener("click", () => {
+        pendingForm = null;
+        pendingSubmitter = null;
+        dialog.close();
+      });
+    }
+  }
+
+  document.querySelectorAll("[data-feature-flag-values]").forEach((container) => {
+    const form = container.closest("form");
+    const typeSelect = form ? form.querySelector("[data-feature-flag-type]") : null;
+    const list = container.querySelector("[data-feature-flag-value-list]");
+    const addButton = container.querySelector("[data-feature-flag-value-add]");
+
+    const clearRows = () => {
+      if (list) {
+        list.innerHTML = "";
+      }
+    };
+
+    const setInputsDisabled = (disabled) => {
+      if (!list) {
         return;
       }
-      pendingForm.dataset.confirmed = "true";
-      dialog.close();
-      if (typeof pendingForm.requestSubmit === "function") {
-        pendingForm.requestSubmit(pendingSubmitter || undefined);
-      } else {
-        pendingForm.submit();
-      }
-    });
-  }
+      list.querySelectorAll("input").forEach((input) => {
+        input.disabled = disabled;
+      });
+    };
 
-  if (cancelButton) {
-    cancelButton.addEventListener("click", () => {
-      pendingForm = null;
-      pendingSubmitter = null;
-      dialog.close();
-    });
-  }
+    const addRow = (value = "", focus = true) => {
+      if (!list) {
+        return;
+      }
+      const label = document.createElement("label");
+      label.className = "array-value-row";
+      const span = document.createElement("span");
+      span.textContent = locale === "ru" ? "Значение" : "Value";
+      const input = document.createElement("input");
+      input.name = "value";
+      input.value = value;
+      input.disabled = Boolean(typeSelect && typeSelect.value === "TOGGLE");
+      label.append(span, input);
+      list.appendChild(label);
+      if (focus && !input.disabled) {
+        input.focus();
+      }
+    };
+
+    const sync = () => {
+      const isArray = typeSelect && typeSelect.value !== "TOGGLE";
+      container.hidden = !isArray;
+      if (!isArray) {
+        clearRows();
+        return;
+      }
+      setInputsDisabled(false);
+      if (list && list.querySelectorAll("input").length === 0) {
+        addRow("", false);
+      }
+    };
+
+    if (addButton) {
+      addButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        if (typeSelect && typeSelect.value === "TOGGLE") {
+          return;
+        }
+        container.hidden = false;
+        addRow();
+      });
+    }
+    if (typeSelect) {
+      typeSelect.addEventListener("change", sync);
+    }
+    sync();
+  });
 })();

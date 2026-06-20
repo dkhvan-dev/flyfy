@@ -22,7 +22,7 @@ void main() {
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const OtpScreen(phone: '+77051698779'),
+        home: const OtpScreen(phone: '+77000000001'),
       ),
     );
   }

@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"kz/inflap/backend/services/admin-panel/internal/app"
 	"kz/inflap/backend/services/admin-panel/internal/domain/model"
 	"kz/inflap/backend/services/admin-panel/internal/domain/port"
 )
@@ -144,6 +145,9 @@ func (c *Client) doJSONRaw(ctx context.Context, method string, path string, head
 		return nil, err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		if isMaintenanceError(raw) {
+			return nil, app.ErrTechnicalMaintenance
+		}
 		return nil, fmt.Errorf("activity-service %s %s returned %d: %s", method, path, resp.StatusCode, strings.TrimSpace(string(raw)))
 	}
 	if dest != nil {
@@ -152,6 +156,18 @@ func (c *Client) doJSONRaw(ctx context.Context, method string, path string, head
 		}
 	}
 	return raw, nil
+}
+
+func isMaintenanceError(raw []byte) bool {
+	var payload struct {
+		Code string `json:"code"`
+		Kind string `json:"kind"`
+	}
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return false
+	}
+	return strings.TrimSpace(payload.Kind) == "maintenance" ||
+		strings.HasSuffix(strings.TrimSpace(payload.Code), ".technical_maintenance")
 }
 
 type activityListResponse struct {

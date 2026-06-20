@@ -49,6 +49,7 @@ var (
 	ErrActivityIdempotencyConflict = errors.New("activity idempotency key conflict")
 	ErrFraudRejected               = errors.New("activity action rejected by fraud policy")
 	ErrTrustPolicyRejected         = errors.New("activity action rejected by trust policy")
+	ErrTechnicalMaintenance        = errors.New("technical maintenance in progress")
 
 	ErrActivityLocationIncomplete             = errors.New("activity location is incomplete")
 	ErrActivityLocationCoordinatesRequired    = errors.New("activity location coordinates are required")

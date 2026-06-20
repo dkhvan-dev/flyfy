@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -267,6 +268,7 @@ type paymentGatewayStub struct {
 
 type userProfileResolverStub struct {
 	displayNameForUserID      func(ctx context.Context, userID uuid.UUID) (string, error)
+	emailForUserID            func(ctx context.Context, userID uuid.UUID) (string, error)
 	filterFriendUserIDs       func(ctx context.Context, userID uuid.UUID, candidateUserIDs []uuid.UUID) ([]uuid.UUID, error)
 	getUserProfileProjections func(ctx context.Context, userIDs []uuid.UUID) (map[uuid.UUID]port.UserProfileProjection, error)
 }
@@ -307,6 +309,13 @@ func (s fraudEvaluatorStub) AssessActivity(
 func (s userProfileResolverStub) DisplayNameForUserID(ctx context.Context, userID uuid.UUID) (string, error) {
 	if s.displayNameForUserID != nil {
 		return s.displayNameForUserID(ctx, userID)
+	}
+	return "", nil
+}
+
+func (s userProfileResolverStub) EmailForUserID(ctx context.Context, userID uuid.UUID) (string, error) {
+	if s.emailForUserID != nil {
+		return s.emailForUserID(ctx, userID)
 	}
 	return "", nil
 }
@@ -355,6 +364,32 @@ func (s paymentGatewayStub) Void(ctx context.Context, input port.PaymentChildInp
 		return s.void(ctx, input)
 	}
 	return &port.PaymentTransaction{ID: uuid.New(), Status: port.PaymentStatusSucceeded}, nil
+}
+
+type featureFlagReaderStub struct {
+	flags map[string]port.FeatureFlag
+	err   error
+}
+
+func (s featureFlagReaderStub) GetFeatureFlag(ctx context.Context, domainCode string, code string) (port.FeatureFlag, error) {
+	if s.err != nil {
+		return port.FeatureFlag{}, s.err
+	}
+	return s.flags[strings.ToUpper(strings.TrimSpace(domainCode))+":"+strings.ToUpper(strings.TrimSpace(code))], nil
+}
+
+type techBreakCheckerStub struct {
+	active bool
+	err    error
+	last   port.TechBreakCheckInput
+}
+
+func (s *techBreakCheckerStub) HasActiveTechBreak(ctx context.Context, input port.TechBreakCheckInput) (bool, error) {
+	s.last = input
+	if s.err != nil {
+		return false, s.err
+	}
+	return s.active, nil
 }
 
 func (s *activityTxRepoStub) GetActivityByIDForUpdate(ctx context.Context, activityID uuid.UUID) (*model.Activity, error) {
@@ -1774,6 +1809,125 @@ func TestJoinPaidActivityAuthorizesPaymentAndConfirmsParticipant(t *testing.T) {
 	}
 	if !containsString(createdEventTypes, ParticipantEventTypePaymentAuthorizationSucceeded) {
 		t.Fatalf("created event types = %v, want authorization event", createdEventTypes)
+	}
+}
+
+func TestJoinPaidActivitySkipsPaymentWhenFeatureFlagMatchesUserEmail(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	hostUserID := uuid.New()
+	userID := uuid.New()
+	priceAmount := 2500.0
+	currency := "KZT"
+
+	activity := validActivity(t, activityID, hostUserID)
+	activity.Status = enum.ActivityStatusEnrollmentOpen
+	activity.PriceType = enum.ActivityPriceTypePaid
+	activity.PriceAmount = &priceAmount
+	activity.Currency = &currency
+
+	var createdParticipant *model.ActivityParticipant
+	createdEventTypes := make([]string, 0)
+
+	repo := &activityRepoStub{
+		getActivityByID: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+			return activity, nil
+		},
+		withTx: func(ctx context.Context, fn func(repo port.ActivityTxRepository) error) error {
+			txRepo := &activityTxRepoStub{
+				getActivityByIDForUpdate: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+					return activity, nil
+				},
+				getParticipantByActivityAndUserForUpdate: func(ctx context.Context, requestedID uuid.UUID, requestedUserID uuid.UUID) (*model.ActivityParticipant, error) {
+					return createdParticipant, nil
+				},
+				countOccupiedSlotsForUpdate: func(ctx context.Context, requestedID uuid.UUID) (int, error) {
+					return 0, nil
+				},
+				createParticipant: func(ctx context.Context, item *model.ActivityParticipant) error {
+					createdParticipant = item
+					return nil
+				},
+				updateParticipant: func(ctx context.Context, item *model.ActivityParticipant) error {
+					createdParticipant = item
+					return nil
+				},
+				createParticipantEvent: func(ctx context.Context, item *model.ParticipantEvent) error {
+					createdEventTypes = append(createdEventTypes, item.EventType)
+					return nil
+				},
+			}
+			return fn(txRepo)
+		},
+	}
+
+	emailResolver := userProfileResolverStub{
+		emailForUserID: func(ctx context.Context, requestedUserID uuid.UUID) (string, error) {
+			if requestedUserID != userID {
+				t.Fatalf("EmailForUserID() userID = %s, want %s", requestedUserID, userID)
+			}
+			return "dkhvan.developer@gmail.com", nil
+		},
+	}
+	uc := NewJoinUseCase(repo, nil, emailResolver)
+	uc.SetUserEmailResolver(emailResolver)
+	uc.SetFeatureFlagReader(featureFlagReaderStub{
+		flags: map[string]port.FeatureFlag{
+			"PAYMENT:SKIP_PAYMENT": {
+				Enabled: true,
+				Type:    port.FeatureFlagTypeArrayString,
+				Values:  []string{"dkhvan.developer@gmail.com"},
+			},
+		},
+	})
+
+	participant, err := uc.JoinActivity(context.Background(), JoinActivityInput{
+		ActivityID: activityID,
+		UserID:     userID,
+	})
+	if err != nil {
+		t.Fatalf("JoinActivity() error = %v", err)
+	}
+	if participant == nil || createdParticipant == nil {
+		t.Fatal("JoinActivity() did not create participant")
+	}
+	if participant.Status != enum.ParticipantStatusConfirmed {
+		t.Fatalf("participant status = %s, want %s", participant.Status, enum.ParticipantStatusConfirmed)
+	}
+	if participant.PaymentTransactionID != nil {
+		t.Fatalf("PaymentTransactionID = %v, want nil when payment is skipped", participant.PaymentTransactionID)
+	}
+	if participant.PaidAt == nil {
+		t.Fatal("PaidAt is nil, want set when payment is skipped")
+	}
+	if containsString(createdEventTypes, ParticipantEventTypePaymentAuthorizationSucceeded) {
+		t.Fatalf("created event types = %v, want no payment authorization event", createdEventTypes)
+	}
+}
+
+func TestJoinActivityReturnsTechnicalMaintenanceWhenActivityBreakIsActive(t *testing.T) {
+	t.Parallel()
+
+	breaks := &techBreakCheckerStub{active: true}
+	uc := NewJoinUseCase(&activityRepoStub{}, nil)
+	uc.SetTechBreakChecker(breaks)
+
+	participant, err := uc.JoinActivity(context.Background(), JoinActivityInput{
+		ActivityID: uuid.New(),
+		UserID:     uuid.New(),
+	})
+	if !errors.Is(err, ErrTechnicalMaintenance) {
+		t.Fatalf("JoinActivity() error = %v, want %v", err, ErrTechnicalMaintenance)
+	}
+	if participant != nil {
+		t.Fatalf("JoinActivity() participant = %#v, want nil", participant)
+	}
+	if breaks.last.DomainCode != "ACTIVITY" {
+		t.Fatalf("tech break domain = %q, want ACTIVITY", breaks.last.DomainCode)
+	}
+	if len(breaks.last.ScopeCodes) != 0 {
+		t.Fatalf("tech break scopes = %v, want domain-wide check without scope", breaks.last.ScopeCodes)
 	}
 }
 

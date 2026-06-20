@@ -75,6 +75,21 @@ func (r *UserResolver) DisplayNameForUserID(ctx context.Context, userID uuid.UUI
 	return fullName, nil
 }
 
+func (r *UserResolver) EmailForUserID(ctx context.Context, userID uuid.UUID) (string, error) {
+	resp, err := r.client.GetUserById(ctx, &userv1.GetUserByIdRequest{
+		UserId: userID.String(),
+	})
+	if err != nil {
+		return "", err
+	}
+
+	aggregate := resp.GetAggregate()
+	if aggregate == nil || aggregate.GetUser() == nil {
+		return "", errors.New("empty user aggregate")
+	}
+	return strings.TrimSpace(aggregate.GetUser().GetPrimaryEmail()), nil
+}
+
 func (r *UserResolver) FilterFriendUserIDs(
 	ctx context.Context,
 	userID uuid.UUID,

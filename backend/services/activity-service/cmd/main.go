@@ -13,6 +13,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"kz/inflap/backend/pkg/switches"
 	"kz/inflap/backend/pkg/trustpolicy/grpcclient"
 	chatadapter "kz/inflap/backend/services/activity-service/internal/adapter/chat"
 	filemanageradapter "kz/inflap/backend/services/activity-service/internal/adapter/filemanager"
@@ -22,6 +23,7 @@ import (
 	notificationadapter "kz/inflap/backend/services/activity-service/internal/adapter/notification"
 	paymentadapter "kz/inflap/backend/services/activity-service/internal/adapter/payment"
 	"kz/inflap/backend/services/activity-service/internal/adapter/repository"
+	switchesadapter "kz/inflap/backend/services/activity-service/internal/adapter/switches"
 	"kz/inflap/backend/services/activity-service/internal/app"
 	"kz/inflap/backend/services/activity-service/internal/config"
 	"kz/inflap/backend/services/activity-service/internal/domain/port"
@@ -131,6 +133,10 @@ func main() {
 	joinUC.SetPaymentGateway(paymentClient)
 	joinUC.SetFraudEvaluator(fraudClient)
 	joinUC.SetNotificationGateway(notificationClient)
+	if switchesClient := newSwitchesClient(cfg); switchesClient != nil {
+		joinUC.SetFeatureFlagReader(switchesClient)
+		joinUC.SetTechBreakChecker(switchesClient)
+	}
 	searchUC := app.NewSearchUseCase(repo)
 	moderationUC := app.NewModerationUseCase(activityUC)
 
@@ -149,7 +155,7 @@ func main() {
 
 	httpServer := &http.Server{
 		Addr:         cfg.HTTP.Address(),
-		Handler:      httpadapter.Chain(cfg, withRequestLogging(httpMux)),
+		Handler:      httpadapter.Chain(cfg, withTechBreakMaintenance(withRequestLogging(httpMux), cfg.Switches, cfg.Security.InternalServiceToken, "ACTIVITY")),
 		ReadTimeout:  cfg.HTTP.ReadTimeout,
 		WriteTimeout: cfg.HTTP.WriteTimeout,
 		IdleTimeout:  cfg.HTTP.IdleTimeout,
@@ -237,6 +243,28 @@ func main() {
 	log.Info().Str("service", cfg.App.Name).Msg("service stopped")
 }
 
+func withTechBreakMaintenance(next http.Handler, cfg config.SwitchesServiceConfig, fallbackToken string, domainCode string) http.Handler {
+	token := switches.EffectiveInternalServiceToken(cfg.InternalServiceToken, fallbackToken)
+	middleware, err := switches.NewMaintenanceMiddleware(
+		switches.HTTPClientConfig{
+			BaseURL:              cfg.HTTPURL,
+			InternalServiceToken: token,
+			Timeout:              cfg.RequestTimeout,
+		},
+		switches.MaintenanceMiddlewareConfig{
+			DomainCode: domainCode,
+			OnCheckError: func(ctx context.Context, err error, check switches.TechBreakCheck) {
+				log.Warn().Err(err).Str("domain_code", check.DomainCode).Msg("tech break check failed; allowing request")
+			},
+		},
+	)
+	if err != nil {
+		log.Warn().Err(err).Str("domain_code", domainCode).Msg("tech break middleware disabled")
+		return next
+	}
+	return middleware(next)
+}
+
 func newFraudEvaluator(cfg *config.Config) (port.FraudEvaluator, error) {
 	if cfg == nil || !cfg.AntiFraud.Enabled {
 		return nil, nil
@@ -247,6 +275,23 @@ func newFraudEvaluator(cfg *config.Config) (port.FraudEvaluator, error) {
 		cfg.AntiFraud.SignalHashKey,
 		cfg.AntiFraud.Timeout,
 	)
+}
+
+func newSwitchesClient(cfg *config.Config) *switchesadapter.Client {
+	if cfg == nil || !cfg.Switches.Enabled() {
+		log.Warn().Msg("switches-service client is disabled; activity feature flags and tech breaks are not enforced")
+		return nil
+	}
+	client, err := switchesadapter.New(cfg.Switches)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to create switches-service client")
+		return nil
+	}
+	log.Info().
+		Str("base_url", cfg.Switches.HTTPURL).
+		Dur("timeout", cfg.Switches.RequestTimeout).
+		Msg("switches-service client initialized")
+	return client
 }
 
 func runActivityLifecycleTicker(ctx context.Context, activityUC *app.ActivityUseCase) {

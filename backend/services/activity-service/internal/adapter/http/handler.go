@@ -1547,6 +1547,9 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 	case errors.Is(err, app.ErrFriendshipVerificationUnavailable):
 		writeError(w, http.StatusServiceUnavailable, err.Error())
 
+	case errors.Is(err, app.ErrTechnicalMaintenance):
+		writeMaintenanceError(w)
+
 	case errors.Is(err, app.ErrActivityAlreadyPublished),
 		errors.Is(err, app.ErrActivityAlreadyStarted),
 		errors.Is(err, app.ErrActivityAlreadyCompleted),
@@ -1716,6 +1719,15 @@ func selectCoverMedia(items []*model.ActivityMedia) *model.ActivityMedia {
 
 func writeError(w http.ResponseWriter, status int, message string) {
 	writeJSON(w, status, buildErrorResponse("activity", status, message))
+}
+
+func writeMaintenanceError(w http.ResponseWriter) {
+	writeJSON(w, http.StatusServiceUnavailable, errorResponse{
+		Error:   "Технические работы",
+		Message: "Сейчас проводятся технические работы. Попробуйте позже.",
+		Code:    "activity.technical_maintenance",
+		Kind:    "maintenance",
+	})
 }
 
 type errorResponse struct {

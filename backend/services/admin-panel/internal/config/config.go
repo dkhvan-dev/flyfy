@@ -26,6 +26,9 @@ type Config struct {
 	Notification NotificationServiceConfig
 	Attraction   AttractionServiceConfig
 	FileManager  FileManagerServiceConfig
+	FeatureFlag  FeatureFlagServiceConfig
+	TechBreak    TechBreakServiceConfig
+	Switches     SwitchesServiceConfig
 	Bootstrap    BootstrapConfig
 }
 
@@ -167,6 +170,22 @@ type FileManagerServiceConfig struct {
 	BaseURL                 string        `env:"FILE_MANAGER_SERVICE_URL, default=http://file-manager-service:8083"`
 	Timeout                 time.Duration `env:"FILE_MANAGER_SERVICE_TIMEOUT, default=15s"`
 	MaxAttractionImageBytes int64         `env:"MAX_ATTRACTION_IMAGE_BYTES, default=20971520"`
+}
+
+type FeatureFlagServiceConfig struct {
+	BaseURL string        `env:"FEATURE_FLAG_SERVICE_URL, default=http://switches-service:8096"`
+	Timeout time.Duration `env:"FEATURE_FLAG_SERVICE_TIMEOUT, default=5s"`
+}
+
+type TechBreakServiceConfig struct {
+	BaseURL string        `env:"TECH_BREAK_SERVICE_URL, default=http://switches-service:8096"`
+	Timeout time.Duration `env:"TECH_BREAK_SERVICE_TIMEOUT, default=5s"`
+}
+
+type SwitchesServiceConfig struct {
+	HTTPURL              string        `env:"SWITCHES_SERVICE_URL, default=http://switches-service:8096"`
+	InternalServiceToken string        `env:"SWITCHES_INTERNAL_SERVICE_TOKEN"`
+	RequestTimeout       time.Duration `env:"SWITCHES_SERVICE_TIMEOUT, default=800ms"`
 }
 
 type BootstrapConfig struct {

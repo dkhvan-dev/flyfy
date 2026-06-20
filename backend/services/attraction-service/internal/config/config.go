@@ -17,6 +17,7 @@ type Config struct {
 	Security    SecurityConfig
 	UserService UserServiceConfig
 	Admin       AdminConfig
+	Switches    SwitchesServiceConfig
 }
 
 type AppConfig struct {
@@ -82,6 +83,12 @@ type SecurityConfig struct {
 
 type UserServiceConfig struct {
 	GRPCTarget string `env:"USER_SERVICE_GRPC_TARGET, default=dns:///user-service:9094"`
+}
+
+type SwitchesServiceConfig struct {
+	HTTPURL              string        `env:"SWITCHES_SERVICE_URL, default=http://switches-service:8096"`
+	InternalServiceToken string        `env:"SWITCHES_INTERNAL_SERVICE_TOKEN"`
+	RequestTimeout       time.Duration `env:"SWITCHES_SERVICE_TIMEOUT, default=800ms"`
 }
 
 type AdminConfig struct {

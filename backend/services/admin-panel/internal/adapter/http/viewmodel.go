@@ -17,15 +17,16 @@ import (
 )
 
 type PageData struct {
-	Title     string
-	Locale    string
-	Path      string
-	Staff     *model.StaffUser
-	CSRFToken string
-	Error     string
-	Flash     string
-	ActiveNav string
-	Data      any
+	Title            string
+	Locale           string
+	Path             string
+	Staff            *model.StaffUser
+	CSRFToken        string
+	Error            string
+	MaintenanceError bool
+	Flash            string
+	ActiveNav        string
+	Data             any
 }
 
 type LoginViewData struct {

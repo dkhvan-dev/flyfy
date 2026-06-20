@@ -1,0 +1,73 @@
+{{define "operations/feature_flag_history"}}
+{{template "pageStart" .}}
+<section class="section operations-page">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "operations.tab.featureFlags"}}</p>
+      <h1>{{t .Locale "operations.history"}}: {{.Data.Flag.Code}}</h1>
+    </div>
+    <div class="section-actions">
+      <a class="button" href="{{.Data.DetailURL}}">{{t .Locale "operations.backToFeatureFlag"}}</a>
+      <a class="button" href="{{.Data.BackURL}}">{{t .Locale "operations.backToDomain"}}</a>
+    </div>
+  </div>
+
+  <div class="table-wrap operations-table">
+    <table>
+      <thead>
+        <tr>
+          <th>{{t .Locale "operations.changedAt"}}</th>
+          <th>{{t .Locale "operations.changedBy"}}</th>
+          <th>{{t .Locale "operations.name"}}</th>
+          <th>{{t .Locale "operations.group"}}</th>
+          <th>{{t .Locale "operations.enabled"}}</th>
+          <th>{{t .Locale "operations.inArchive"}}</th>
+          <th>{{t .Locale "operations.startDate"}}</th>
+          <th>{{t .Locale "operations.endDate"}}</th>
+          <th>{{t .Locale "operations.value"}}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Data.History.Content}}
+          <tr>
+            <td>{{formatTime .UpdatedAt (staffTimezone $.Staff)}}</td>
+            <td>{{if .UpdatedBy}}{{.UpdatedBy}}{{else}}-{{end}}</td>
+            <td>{{.Name}}</td>
+            <td>{{.Group}}</td>
+            <td><span class="{{operationBoolBadgeClass .Enabled}}">{{operationBoolText $.Locale .Enabled}}</span></td>
+            <td><span class="{{operationBoolBadgeClass .InArchive}}">{{operationBoolText $.Locale .InArchive}}</span></td>
+            <td>{{formatTime .ActionStartDate (staffTimezone $.Staff)}}</td>
+            <td>{{formatTime .ActionEndDate (staffTimezone $.Staff)}}</td>
+            <td>{{operationValueText .Value}}</td>
+          </tr>
+        {{else}}
+          <tr><td colspan="9">{{t $.Locale "operations.noHistory"}}</td></tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+
+  {{if or .Data.Pagination.HasPrevious .Data.Pagination.HasNext}}
+    <nav class="pagination" aria-label="{{t .Locale "pagination.label"}}">
+      {{if gt .Data.Pagination.TotalPages 0}}
+        <p class="muted">{{t .Locale "pagination.page"}} {{.Data.Pagination.CurrentPageLabel}} / {{.Data.Pagination.TotalPages}}</p>
+      {{else}}
+        <p class="muted">{{t .Locale "pagination.page"}} {{.Data.Pagination.CurrentPageLabel}}</p>
+      {{end}}
+      <div class="pagination-actions">
+        {{if .Data.Pagination.HasPrevious}}
+          <a class="button" href="{{.Data.Pagination.PreviousURL}}">{{t .Locale "action.previousPage"}}</a>
+        {{else}}
+          <button type="button" disabled>{{t .Locale "action.previousPage"}}</button>
+        {{end}}
+        {{if .Data.Pagination.HasNext}}
+          <a class="button" href="{{.Data.Pagination.NextURL}}">{{t .Locale "action.nextPage"}}</a>
+        {{else}}
+          <button type="button" disabled>{{t .Locale "action.nextPage"}}</button>
+        {{end}}
+      </div>
+    </nav>
+  {{end}}
+</section>
+{{template "pageEnd" .}}
+{{end}}

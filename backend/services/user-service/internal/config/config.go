@@ -20,6 +20,7 @@ type Config struct {
 	FileManager FileManagerConfig
 	FeedService FeedServiceConfig
 	Social      SocialOutboxConfig
+	Switches    SwitchesServiceConfig
 }
 
 type AppConfig struct {
@@ -128,6 +129,12 @@ type FileManagerConfig struct {
 type FeedServiceConfig struct {
 	HTTPURL        string        `env:"FEED_SERVICE_HTTP_URL, default=http://feed-service:8087"`
 	RequestTimeout time.Duration `env:"FEED_SERVICE_REQUEST_TIMEOUT, default=3s"`
+}
+
+type SwitchesServiceConfig struct {
+	HTTPURL              string        `env:"SWITCHES_SERVICE_URL, default=http://switches-service:8096"`
+	InternalServiceToken string        `env:"SWITCHES_INTERNAL_SERVICE_TOKEN"`
+	RequestTimeout       time.Duration `env:"SWITCHES_SERVICE_TIMEOUT, default=800ms"`
 }
 
 type SocialOutboxConfig struct {

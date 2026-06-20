@@ -21,6 +21,7 @@ type Config struct {
 	ChatService  ChatServiceConfig
 	Notification NotificationServiceConfig
 	Payment      PaymentServiceConfig
+	Switches     SwitchesServiceConfig
 	AntiFraud    AntiFraudConfig
 	Trust        TrustServiceConfig
 }
@@ -115,6 +116,16 @@ type NotificationServiceConfig struct {
 type PaymentServiceConfig struct {
 	HTTPURL        string        `env:"PAYMENT_SERVICE_HTTP_URL, default=http://payment-service:8091"`
 	RequestTimeout time.Duration `env:"PAYMENT_SERVICE_REQUEST_TIMEOUT, default=5s"`
+}
+
+type SwitchesServiceConfig struct {
+	HTTPURL              string        `env:"SWITCHES_SERVICE_URL, default=http://switches-service:8096"`
+	InternalServiceToken string        `env:"SWITCHES_INTERNAL_SERVICE_TOKEN"`
+	RequestTimeout       time.Duration `env:"SWITCHES_SERVICE_TIMEOUT, default=800ms"`
+}
+
+func (c SwitchesServiceConfig) Enabled() bool {
+	return c.HTTPURL != "" && c.InternalServiceToken != ""
 }
 
 type AntiFraudConfig struct {

@@ -425,6 +425,268 @@ func TestRendererRendersCoreTemplates(t *testing.T) {
 	}
 }
 
+func TestRendererRendersOperationsViewsWithoutLegacyScopeValueField(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+	now := time.Date(2026, 6, 19, 15, 0, 0, 0, time.UTC)
+	domain := model.OperationDomain{
+		FeatureFlagServiceID: 1,
+		TechBreakServiceID:   2,
+		Code:                 "CORE",
+		Description:          "Core команда",
+		CreatedBy:            "admin@inflap.local",
+		CreatedAt:            now,
+		UpdatedAt:            &now,
+		UpdatedBy:            "ops@inflap.local",
+		FeatureFlagGroups:    []string{"onboarding"},
+	}
+	flag := model.OperationFeatureFlag{
+		DomainCode:      "CORE",
+		Code:            "NEED_CHECK_AUTH_PASSWORD",
+		Name:            "Проверка пароля при авторизации",
+		Group:           "onboarding",
+		Type:            "TOGGLE",
+		Enabled:         false,
+		ActionStartDate: now,
+		CreatedAt:       now,
+		CreatedBy:       "admin@inflap.local",
+	}
+	techBreak := model.OperationTechBreak{
+		ID:              7,
+		DomainCode:      "CORE",
+		Name:            "core tech break",
+		Enabled:         true,
+		ActionStartDate: now,
+		ActionEndDate:   &now,
+		CreatedAt:       now,
+		CreatedBy:       "admin@inflap.local",
+	}
+	scope := model.OperationTechBreakScope{
+		ID:         8,
+		DomainCode: "CORE",
+		Code:       "CORE_TEST",
+		Name:       "для теста scope",
+		CreatedAt:  now,
+		CreatedBy:  "admin@inflap.local",
+	}
+	pageData := PageData{
+		Title:     "Операции",
+		Locale:    localeRU,
+		Path:      "/admin/operations",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+	}
+
+	pageData.Data = NewOperationsDomainListViewData(model.OperationDomainPage{
+		Content:       []model.OperationDomain{domain},
+		Page:          0,
+		Size:          20,
+		TotalElements: 1,
+		TotalPages:    1,
+	}, OperationsDomainFilterViewData{Search: "core", Size: 20})
+	recorder := httptest.NewRecorder()
+	renderer.Render(recorder, http.StatusOK, "operations/index", pageData)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("operations index status = %d, body: %s", recorder.Code, recorder.Body.String())
+	}
+	body := html.UnescapeString(recorder.Body.String())
+	for _, expected := range []string{
+		"Операции",
+		"Домены",
+		"CORE",
+		"Core команда",
+		`href="/admin/operations/domains/CORE"`,
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("operations index did not render %q: %s", expected, body)
+		}
+	}
+
+	pageData.Path = "/admin/operations/domains/CORE"
+	pageData.Data = NewOperationsDomainDetailViewData(app.OperationsDomainDetailPage{
+		Domain: domain,
+		FeatureFlags: model.OperationPage[model.OperationFeatureFlag]{
+			Content: []model.OperationFeatureFlag{flag},
+		},
+		TechBreaks: model.OperationPage[model.OperationTechBreak]{
+			Content: []model.OperationTechBreak{techBreak},
+		},
+		Scopes: []model.OperationTechBreakScope{scope},
+	}, OperationsTabScopes, OperationsResourceFilterViewData{Size: 20})
+	recorder = httptest.NewRecorder()
+	renderer.Render(recorder, http.StatusOK, "operations/domain", pageData)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("operations domain status = %d, body: %s", recorder.Code, recorder.Body.String())
+	}
+	body = html.UnescapeString(recorder.Body.String())
+	for _, expected := range []string{
+		"Домен: Core команда",
+		"Фича флаги",
+		"Тех. перерывы",
+		"Scope'ы тех. перерывов",
+		"CORE_TEST",
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("operations domain did not render %q: %s", expected, body)
+		}
+	}
+	if strings.Contains(body, "Поддерживает значения") {
+		t.Fatalf("operations scope tab rendered unsupported legacy field: %s", body)
+	}
+
+	pageData.Data = NewOperationsDomainDetailViewData(app.OperationsDomainDetailPage{
+		Domain: domain,
+		FeatureFlags: model.OperationPage[model.OperationFeatureFlag]{
+			Content: []model.OperationFeatureFlag{flag},
+		},
+		TechBreaks: model.OperationPage[model.OperationTechBreak]{
+			Content: []model.OperationTechBreak{techBreak},
+		},
+		Scopes: []model.OperationTechBreakScope{scope},
+	}, OperationsTabDomain, OperationsResourceFilterViewData{Size: 20})
+	recorder = httptest.NewRecorder()
+	renderer.Render(recorder, http.StatusOK, "operations/domain", pageData)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("operations domain tab status = %d, body: %s", recorder.Code, recorder.Body.String())
+	}
+	body = html.UnescapeString(recorder.Body.String())
+	for _, legacy := range []string{"Категории значений тех. перерывов", "transfer_type"} {
+		if strings.Contains(body, legacy) {
+			t.Fatalf("operations domain rendered legacy tech break value category %q: %s", legacy, body)
+		}
+	}
+
+	pageData.Data = NewOperationsDomainDetailViewData(app.OperationsDomainDetailPage{
+		Domain: domain,
+		FeatureFlags: model.OperationPage[model.OperationFeatureFlag]{
+			Content: []model.OperationFeatureFlag{flag},
+		},
+		TechBreaks: model.OperationPage[model.OperationTechBreak]{
+			Content: []model.OperationTechBreak{techBreak},
+		},
+		Scopes: []model.OperationTechBreakScope{scope},
+	}, OperationsTabFeatureFlags, OperationsResourceFilterViewData{Size: 20})
+	recorder = httptest.NewRecorder()
+	renderer.Render(recorder, http.StatusOK, "operations/domain", pageData)
+	if !strings.Contains(html.UnescapeString(recorder.Body.String()), "NEED_CHECK_AUTH_PASSWORD") {
+		t.Fatalf("operations feature flag tab did not render flag: %s", recorder.Body.String())
+	}
+
+	arrayFlag := flag
+	arrayFlag.Type = "ARRAY_STRING"
+	arrayFlag.Value = []any{"ios", "android"}
+	pageData.Data = NewOperationsFeatureFlagFormViewData(app.OperationsFeatureFlagDetailPage{
+		Domain: domain,
+		Flag:   arrayFlag,
+	}, false)
+	recorder = httptest.NewRecorder()
+	renderer.Render(recorder, http.StatusOK, "operations/feature_flag_form", pageData)
+	body = html.UnescapeString(recorder.Body.String())
+	for _, expected := range []string{
+		`list="feature-flag-groups"`,
+		`<option value="onboarding"></option>`,
+		`data-feature-flag-values`,
+		`name="value" value="ios"`,
+		`name="value" value="android"`,
+		"Добавить значение",
+		`/admin/operations/domains/CORE/feature-flags/NEED_CHECK_AUTH_PASSWORD/history`,
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("operations feature flag form did not render %q: %s", expected, body)
+		}
+	}
+	if strings.Contains(body, "Дата изменения") {
+		t.Fatalf("operations feature flag form must not render inline history table: %s", body)
+	}
+	if strings.Contains(body, `<textarea name="value"`) {
+		t.Fatalf("operations feature flag form must not render raw value textarea: %s", body)
+	}
+
+	pageData.Data = NewOperationsFeatureFlagHistoryViewData(app.OperationsFeatureFlagDetailPage{
+		Domain: domain,
+		Flag:   arrayFlag,
+		History: model.OperationPage[model.OperationFeatureFlagHistory]{
+			Content: []model.OperationFeatureFlagHistory{
+				{
+					UpdatedAt:       now,
+					UpdatedBy:       "u00026321",
+					Name:            "Проверка пароля при авторизации",
+					Group:           "onboarding",
+					Enabled:         true,
+					ActionStartDate: now,
+					InArchive:       false,
+					Value:           []any{"ios"},
+				},
+			},
+			Page:          1,
+			Size:          20,
+			TotalElements: 41,
+			TotalPages:    3,
+		},
+	}, OperationsHistoryPaginationFilterViewData{Page: 1, Size: 20})
+	recorder = httptest.NewRecorder()
+	renderer.Render(recorder, http.StatusOK, "operations/feature_flag_history", pageData)
+	body = html.UnescapeString(recorder.Body.String())
+	for _, expected := range []string{
+		"История изменений",
+		"Дата изменения",
+		"u00026321",
+		`/admin/operations/domains/CORE/feature-flags/NEED_CHECK_AUTH_PASSWORD`,
+		`page=0`,
+		`page=2`,
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("operations feature flag history did not render %q: %s", expected, body)
+		}
+	}
+
+	pageData.Data = NewOperationsDomainDetailViewData(app.OperationsDomainDetailPage{
+		Domain: domain,
+		FeatureFlags: model.OperationPage[model.OperationFeatureFlag]{
+			Content: []model.OperationFeatureFlag{flag},
+		},
+		TechBreaks: model.OperationPage[model.OperationTechBreak]{
+			Content: []model.OperationTechBreak{techBreak},
+		},
+		Scopes: []model.OperationTechBreakScope{scope},
+	}, OperationsTabTechBreaks, OperationsResourceFilterViewData{Size: 20})
+	recorder = httptest.NewRecorder()
+	renderer.Render(recorder, http.StatusOK, "operations/domain", pageData)
+	if !strings.Contains(html.UnescapeString(recorder.Body.String()), "core tech break") {
+		t.Fatalf("operations tech break tab did not render break: %s", recorder.Body.String())
+	}
+
+	techBreak.ScopeCodes = []string{"CORE_TEST"}
+	pageData.Data = NewOperationsTechBreakFormViewData(app.OperationsTechBreakDetailPage{
+		Domain: domain,
+		Break:  techBreak,
+		Scopes: []model.OperationTechBreakScope{scope},
+	}, false)
+	recorder = httptest.NewRecorder()
+	renderer.Render(recorder, http.StatusOK, "operations/tech_break_form", pageData)
+	body = html.UnescapeString(recorder.Body.String())
+	for _, expected := range []string{
+		`<select name="scope_codes"`,
+		`<option value="CORE_TEST" selected>CORE_TEST · для теста scope</option>`,
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("operations tech break form did not render %q: %s", expected, body)
+		}
+	}
+	for _, forbidden := range []string{
+		`type="checkbox" name="scope_codes"`,
+		`<textarea name="value"`,
+	} {
+		if strings.Contains(body, forbidden) {
+			t.Fatalf("operations tech break form rendered forbidden control %q: %s", forbidden, body)
+		}
+	}
+}
+
 func TestRendererTopbarHidesAuditWithoutPermissionAndLinksOwnProfile(t *testing.T) {
 	t.Parallel()
 
@@ -7240,6 +7502,32 @@ func TestAdminJSPaginatedTablesKeepTotalPagesInClickHandlerScope(t *testing.T) {
 	}
 	if !strings.Contains(js, "totalPages = Math.max(1, Math.ceil(visibleRows.length / pageSize));") {
 		t.Fatalf("renderPage should refresh the outer totalPages value")
+	}
+}
+
+func TestAdminJSFeatureFlagArrayValuesStayControlledByType(t *testing.T) {
+	t.Parallel()
+
+	content, err := embeddedFiles.ReadFile("static/js/admin.js")
+	if err != nil {
+		t.Fatalf("ReadFile returned error: %v", err)
+	}
+	js := string(content)
+	for _, expected := range []string{
+		`document.querySelectorAll("[data-feature-flag-values]")`,
+		`event.preventDefault();`,
+		`clearRows();`,
+		`input.disabled = Boolean(typeSelect && typeSelect.value === "TOGGLE");`,
+		`typeSelect.addEventListener("change", sync);`,
+	} {
+		if !strings.Contains(js, expected) {
+			t.Fatalf("feature flag array value JS is missing %q", expected)
+		}
+	}
+	featureFlagInit := strings.Index(js, `document.querySelectorAll("[data-feature-flag-values]")`)
+	confirmationDialogEarlyReturn := strings.Index(js, "if (!dialog) {\n    return;\n  }")
+	if confirmationDialogEarlyReturn >= 0 && confirmationDialogEarlyReturn < featureFlagInit {
+		t.Fatal("feature flag array value JS must not be skipped when the moderation confirmation dialog is absent")
 	}
 }
 

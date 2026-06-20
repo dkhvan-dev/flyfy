@@ -14,17 +14,20 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"kz/inflap/backend/pkg/switches"
 	activityadapter "kz/inflap/backend/services/admin-panel/internal/adapter/activity"
 	antifraudadapter "kz/inflap/backend/services/admin-panel/internal/adapter/antifraud"
 	attractionadapter "kz/inflap/backend/services/admin-panel/internal/adapter/attraction"
 	chatadapter "kz/inflap/backend/services/admin-panel/internal/adapter/chat"
 	"kz/inflap/backend/services/admin-panel/internal/adapter/excursion"
+	featureflagadapter "kz/inflap/backend/services/admin-panel/internal/adapter/featureflag"
 	filemanageradapter "kz/inflap/backend/services/admin-panel/internal/adapter/filemanager"
 	guideadapter "kz/inflap/backend/services/admin-panel/internal/adapter/guide"
 	httpadapter "kz/inflap/backend/services/admin-panel/internal/adapter/http"
 	notificationadapter "kz/inflap/backend/services/admin-panel/internal/adapter/notification"
 	postadapter "kz/inflap/backend/services/admin-panel/internal/adapter/post"
 	"kz/inflap/backend/services/admin-panel/internal/adapter/repository"
+	techbreakadapter "kz/inflap/backend/services/admin-panel/internal/adapter/techbreak"
 	trustadapter "kz/inflap/backend/services/admin-panel/internal/adapter/trust"
 	useradapter "kz/inflap/backend/services/admin-panel/internal/adapter/user"
 	"kz/inflap/backend/services/admin-panel/internal/app"
@@ -117,6 +120,16 @@ func main() {
 		cfg.FileManager.Timeout,
 		cfg.Security.TrustedInternalToken,
 	)
+	featureFlagClient := featureflagadapter.NewClient(
+		cfg.FeatureFlag.BaseURL,
+		cfg.FeatureFlag.Timeout,
+		cfg.Security.TrustedInternalToken,
+	)
+	techBreakClient := techbreakadapter.NewClient(
+		cfg.TechBreak.BaseURL,
+		cfg.TechBreak.Timeout,
+		cfg.Security.TrustedInternalToken,
+	)
 	var notificationClient *notificationadapter.Client
 	if strings.TrimSpace(cfg.Notification.HTTPURL) != "" &&
 		strings.TrimSpace(cfg.Security.TrustedInternalToken) != "" {
@@ -168,6 +181,7 @@ func main() {
 			cfg.FileManager.MaxAttractionImageBytes,
 		),
 	)
+	operationsUC := app.NewOperationsUseCase(featureFlagClient, techBreakClient, auditRepo)
 	auditUC := app.NewAuditUseCase(auditRepo)
 
 	if created, err := bootstrapSuperAdmin(ctx, cfg, staffUC); err != nil {
@@ -186,12 +200,13 @@ func main() {
 	adminServer.SetReadinessCheck(pool.Ping)
 	adminServer.SetTrustAppealUseCase(trustAppealUC)
 	adminServer.SetCommunityAdminUseCase(communityAdminUC)
+	adminServer.SetOperationsUseCase(operationsUC)
 
 	go restrictionOutboxWorker.Start(ctx)
 
 	server := &http.Server{
 		Addr:              cfg.HTTP.Address(),
-		Handler:           adminServer.Handler(),
+		Handler:           withTechBreakMaintenance(adminServer.Handler(), cfg.Switches, cfg.Security.TrustedInternalToken, "ADMIN", "/admin/static/"),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       cfg.HTTP.ReadTimeout,
 		WriteTimeout:      cfg.HTTP.WriteTimeout,
@@ -214,6 +229,35 @@ func main() {
 	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatal().Err(err).Msg("admin-panel failed")
 	}
+}
+
+func withTechBreakMaintenance(
+	next http.Handler,
+	cfg config.SwitchesServiceConfig,
+	fallbackToken string,
+	domainCode string,
+	skipPathPrefixes ...string,
+) http.Handler {
+	token := switches.EffectiveInternalServiceToken(cfg.InternalServiceToken, fallbackToken)
+	middleware, err := switches.NewMaintenanceMiddleware(
+		switches.HTTPClientConfig{
+			BaseURL:              cfg.HTTPURL,
+			InternalServiceToken: token,
+			Timeout:              cfg.RequestTimeout,
+		},
+		switches.MaintenanceMiddlewareConfig{
+			DomainCode:       domainCode,
+			SkipPathPrefixes: skipPathPrefixes,
+			OnCheckError: func(ctx context.Context, err error, check switches.TechBreakCheck) {
+				log.Warn().Err(err).Str("domain_code", check.DomainCode).Msg("tech break check failed; allowing request")
+			},
+		},
+	)
+	if err != nil {
+		log.Warn().Err(err).Str("domain_code", domainCode).Msg("tech break middleware disabled")
+		return next
+	}
+	return middleware(next)
 }
 
 func configureLogger(cfg *config.Config) {

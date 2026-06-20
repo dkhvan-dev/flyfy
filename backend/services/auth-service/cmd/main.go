@@ -18,6 +18,7 @@ import (
 	"kz/inflap/backend/services/auth-service/internal/adapter/oauth"
 	"kz/inflap/backend/services/auth-service/internal/adapter/otp"
 	"kz/inflap/backend/services/auth-service/internal/adapter/repository"
+	switchesadapter "kz/inflap/backend/services/auth-service/internal/adapter/switches"
 	"kz/inflap/backend/services/auth-service/internal/adapter/tokenclient"
 	"kz/inflap/backend/services/auth-service/internal/adapter/userservice"
 	"kz/inflap/backend/services/auth-service/internal/app"
@@ -146,6 +147,10 @@ func main() {
 		SMTPTimeout:  cfg.Email.SMTPTimeout,
 	}, logger))
 	authUC.SetNicknameResolver(nicknameResolver)
+	if switchesClient := newSwitchesClient(cfg, logger); switchesClient != nil {
+		authUC.SetFeatureFlagReader(switchesClient)
+		authUC.SetTechBreakChecker(switchesClient)
+	}
 
 	// --- HTTP Server ---
 	authHandler := httpAdapter.NewAuthHandler(authUC, logger)
@@ -202,4 +207,21 @@ func newFraudEvaluator(cfg *config.Config) (port.FraudEvaluator, error) {
 		cfg.AntiFraud.SignalHashKey,
 		cfg.AntiFraud.Timeout,
 	)
+}
+
+func newSwitchesClient(cfg *config.Config, logger zerolog.Logger) *switchesadapter.Client {
+	if cfg == nil || !cfg.Switches.Enabled() {
+		logger.Warn().Msg("switches-service client is disabled; feature flags and tech breaks are not enforced")
+		return nil
+	}
+	client, err := switchesadapter.NewHTTPClient(cfg.Switches, logger)
+	if err != nil {
+		logger.Error().Err(err).Msg("failed to create switches-service client")
+		return nil
+	}
+	logger.Info().
+		Str("base_url", cfg.Switches.BaseURL).
+		Dur("timeout", cfg.Switches.Timeout).
+		Msg("switches-service client initialized")
+	return client
 }

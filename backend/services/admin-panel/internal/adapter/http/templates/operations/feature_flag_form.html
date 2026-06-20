@@ -1,0 +1,97 @@
+{{define "operations/feature_flag_form"}}
+{{template "pageStart" .}}
+<section class="section operations-page">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "operations.tab.featureFlags"}}</p>
+      <h1>{{if .Data.IsNew}}{{t .Locale "operations.featureFlagNewTitle"}}{{else}}{{t .Locale "operations.featureFlagTitle"}}: {{.Data.Flag.Code}}{{end}}</h1>
+    </div>
+    <div class="section-actions">
+      <a class="button" href="{{.Data.BackURL}}">{{t .Locale "operations.backToDomain"}}</a>
+      {{if not .Data.IsNew}}
+        <a class="button" href="{{.Data.HistoryURL}}">{{t .Locale "operations.history"}}</a>
+      {{end}}
+    </div>
+  </div>
+
+  {{if not .Data.IsNew}}
+    <article class="card detail">
+      <dl class="facts">
+        <div><dt>{{t .Locale "operations.code"}}</dt><dd>{{.Data.Flag.Code}}</dd></div>
+        <div><dt>{{t .Locale "table.createdBy"}}</dt><dd>{{if .Data.Flag.CreatedBy}}{{.Data.Flag.CreatedBy}}{{else}}-{{end}}</dd></div>
+        <div><dt>{{t .Locale "table.created"}}</dt><dd>{{formatTime .Data.Flag.CreatedAt (staffTimezone .Staff)}}</dd></div>
+        <div><dt>{{t .Locale "table.updated"}}</dt><dd>{{formatTime .Data.Flag.UpdatedAt (staffTimezone .Staff)}}</dd></div>
+        <div><dt>{{t .Locale "operations.enabled"}}</dt><dd><span class="{{operationBoolBadgeClass .Data.Flag.Enabled}}">{{operationBoolText .Locale .Data.Flag.Enabled}}</span></dd></div>
+        <div><dt>{{t .Locale "operations.inArchive"}}</dt><dd><span class="{{operationBoolBadgeClass .Data.Flag.InArchive}}">{{operationBoolText .Locale .Data.Flag.InArchive}}</span></dd></div>
+      </dl>
+    </article>
+  {{end}}
+
+  <form class="form card" method="post" action="{{.Data.SubmitURL}}">
+    {{csrfField .CSRFToken}}
+    <div class="grid two">
+      <label>
+        <span>{{t .Locale "operations.code"}} *</span>
+        <input name="code" value="{{.Data.Flag.Code}}" {{if not .Data.IsNew}}readonly{{end}} required>
+      </label>
+      <label>
+        <span>{{t .Locale "operations.name"}} *</span>
+        <input name="name" value="{{.Data.Flag.Name}}" required>
+      </label>
+      <label>
+        <span>{{t .Locale "operations.group"}} *</span>
+        <input name="group" value="{{.Data.Flag.Group}}" list="feature-flag-groups" required>
+        <datalist id="feature-flag-groups">
+          {{range .Data.Domain.FeatureFlagGroups}}
+            <option value="{{.}}"></option>
+          {{end}}
+        </datalist>
+      </label>
+      <label>
+        <span>{{t .Locale "operations.type"}} *</span>
+        <select name="type" required data-feature-flag-type>
+          {{range .Data.TypeOptions}}
+            <option value="{{.}}" {{if eq $.Data.Flag.Type .}}selected{{end}}>{{.}}</option>
+          {{end}}
+        </select>
+      </label>
+      <label class="check-inline">
+        <input type="checkbox" name="enabled" {{if .Data.Flag.Enabled}}checked{{end}}>
+        <span>{{t .Locale "operations.enabled"}}</span>
+      </label>
+      <label>
+        <span>{{t .Locale "operations.startDate"}} *</span>
+        <input type="datetime-local" name="action_start_date" value="{{operationDateTimeInput .Data.Flag.ActionStartDate}}" required>
+      </label>
+      <label>
+        <span>{{t .Locale "operations.endDate"}}</span>
+        <input type="datetime-local" name="action_end_date" value="{{operationOptionalDateTimeInput .Data.Flag.ActionEndDate}}">
+      </label>
+      <fieldset class="span-two operation-array-values" data-feature-flag-values {{if eq .Data.Flag.Type "TOGGLE"}}hidden{{end}}>
+        <legend>{{t .Locale "operations.value"}}</legend>
+        <div class="array-values" data-feature-flag-value-list>
+          {{range .Data.ValueRows}}
+            <label class="array-value-row">
+              <span>{{t $.Locale "operations.valueItem"}}</span>
+              <input name="value" value="{{.}}">
+            </label>
+          {{end}}
+        </div>
+        <button type="button" class="button small" data-feature-flag-value-add>{{t .Locale "operations.addValue"}}</button>
+      </fieldset>
+    </div>
+    <div class="form-actions split-actions">
+      <div>
+        {{if and (not .Data.IsNew) (not .Data.Flag.InArchive)}}
+          <button class="danger" type="submit" formaction="{{.Data.DeleteURL}}">{{t .Locale "action.delete"}}</button>
+        {{else if and (not .Data.IsNew) .Data.Flag.InArchive}}
+          <button type="submit" formaction="{{.Data.RecoverURL}}">{{t .Locale "operations.recover"}}</button>
+        {{end}}
+      </div>
+      <button type="submit" class="primary">{{if .Data.IsNew}}{{t .Locale "action.create"}}{{else}}{{t .Locale "action.saveChanges"}}{{end}}</button>
+    </div>
+  </form>
+
+</section>
+{{template "pageEnd" .}}
+{{end}}
