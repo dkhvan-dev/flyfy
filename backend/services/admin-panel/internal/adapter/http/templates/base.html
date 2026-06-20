@@ -15,29 +15,7 @@
   {{if .Staff}}
     <nav class="nav" aria-label="{{t .Locale "nav.primary"}}">
       <a class="{{if eq .ActiveNav "dashboard"}}active{{end}}" href="/admin">{{t .Locale "nav.dashboard"}}</a>
-      <a class="{{if eq .ActiveNav "moderation"}}active{{end}}" href="/admin/moderation/excursions">{{t .Locale "nav.excursions"}}</a>
-      <a class="{{if eq .ActiveNav "activities"}}active{{end}}" href="/admin/moderation/activities">{{t .Locale "nav.activities"}}</a>
-      <a class="{{if eq .ActiveNav "guides"}}active{{end}}" href="/admin/moderation/guides">{{t .Locale "nav.guides"}}</a>
-      <a class="{{if eq .ActiveNav "chats"}}active{{end}}" href="/admin/moderation/chats">{{t .Locale "nav.chats"}}</a>
-      <a class="{{if eq .ActiveNav "posts"}}active{{end}}" href="/admin/moderation/posts">{{t .Locale "nav.posts"}}</a>
-      <a class="{{if eq .ActiveNav "communities"}}active{{end}}" href="/admin/communities">{{t .Locale "nav.communities"}}</a>
-      {{if hasPermission .Staff "moderation.read"}}
-        <a class="{{if eq .ActiveNav "feed_quality"}}active{{end}}" href="/admin/feed-quality">{{t .Locale "nav.feedQuality"}}</a>
-      {{end}}
-      {{if hasPermission .Staff "users.read"}}
-        <a class="{{if eq .ActiveNav "users"}}active{{end}}" href="/admin/users">{{t .Locale "nav.users"}}</a>
-        <a class="{{if eq .ActiveNav "trust"}}active{{end}}" href="/admin/trust/appeals">{{t .Locale "nav.trust"}}</a>
-      {{end}}
-      {{if hasPermission .Staff "attraction.manage"}}
-        <a class="{{if eq .ActiveNav "attractions"}}active{{end}}" href="/admin/attractions">{{t .Locale "nav.attractions"}}</a>
-      {{end}}
-      {{if hasRole .Staff "SUPER_ADMIN"}}
-        <a class="{{if eq .ActiveNav "operations"}}active{{end}}" href="/admin/operations">{{t .Locale "nav.operations"}}</a>
-      {{end}}
-      <a class="{{if eq .ActiveNav "staff"}}active{{end}}" href="/admin/staff">{{t .Locale "nav.staff"}}</a>
-      {{if hasPermission .Staff "audit.read"}}
-        <a class="{{if eq .ActiveNav "audit"}}active{{end}}" href="/admin/audit">{{t .Locale "nav.audit"}}</a>
-      {{end}}
+      <a class="{{if or (eq .ActiveNav "navigation") (and (ne .ActiveNav "") (ne .ActiveNav "dashboard") (ne .ActiveNav "profile"))}}active{{end}}" href="/admin/navigation">{{t .Locale "nav.sections"}}</a>
     </nav>
     <div class="locale-switch" aria-label="{{t .Locale "nav.language"}}">
       <a class="{{if eq .Locale "ru"}}active{{end}}" href="{{localeURL .Path "ru"}}">{{t .Locale "lang.ru"}}</a>

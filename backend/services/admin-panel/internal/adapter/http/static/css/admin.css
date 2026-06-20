@@ -505,6 +505,44 @@ h3 {
   gap: 16px;
 }
 
+.navigation-sections {
+  display: grid;
+  gap: 24px;
+}
+
+.navigation-section {
+  display: grid;
+  gap: 12px;
+}
+
+.navigation-section h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.navigation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.navigation-item {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 12px 14px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.navigation-item:hover {
+  border-color: #aeb9c8;
+  background: var(--surface-soft);
+}
+
 .dashboard-panel {
   display: grid;
   gap: 16px;

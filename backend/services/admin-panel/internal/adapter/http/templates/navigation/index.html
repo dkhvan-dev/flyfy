@@ -1,0 +1,29 @@
+{{define "navigation/index"}}
+{{template "pageStart" .}}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "navigation.eyebrow"}}</p>
+      <h1>{{t .Locale "navigation.title"}}</h1>
+    </div>
+  </div>
+
+  <div class="navigation-sections">
+    {{range .Data.Sections}}
+      <section class="navigation-section" aria-labelledby="nav-section-{{.TitleKey}}">
+        <h2 id="nav-section-{{.TitleKey}}">{{t $.Locale .TitleKey}}</h2>
+        <div class="navigation-grid">
+          {{range .Items}}
+            <a class="navigation-item" href="{{.URL}}">
+              <span>{{t $.Locale .LabelKey}}</span>
+            </a>
+          {{end}}
+        </div>
+      </section>
+    {{else}}
+      <div class="empty card">{{t .Locale "navigation.empty"}}</div>
+    {{end}}
+  </div>
+</section>
+{{template "pageEnd" .}}
+{{end}}

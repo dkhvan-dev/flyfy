@@ -211,8 +211,9 @@ func TestRendererRendersCoreTemplates(t *testing.T) {
 				CreatedAt:    now,
 			},
 		}),
-		"staff/index": StaffListViewData{Staff: []*model.StaffUser{staff}},
-		"audit/index": AuditViewData{Events: []*model.AuditEvent{}},
+		"staff/index":      StaffListViewData{Staff: []*model.StaffUser{staff}},
+		"audit/index":      AuditViewData{Events: []*model.AuditEvent{}},
+		"navigation/index": NewAdminNavigationPageViewData(staff),
 	}
 
 	for name, data := range templates {
@@ -711,14 +712,21 @@ func TestRendererTopbarHidesAuditWithoutPermissionAndLinksOwnProfile(t *testing.
 		t.Fatalf("unexpected status: %d", recorder.Code)
 	}
 	body := recorder.Body.String()
-	if strings.Contains(body, `href="/admin/audit"`) {
-		t.Fatalf("audit nav link rendered without audit.read permission: %s", body)
+	topbar := renderedTopbar(body)
+	if strings.Contains(topbar, `href="/admin/audit"`) {
+		t.Fatalf("audit nav link rendered without audit.read permission: %s", topbar)
 	}
-	if strings.Contains(body, `href="/admin/users"`) {
-		t.Fatalf("users nav link rendered without users.read permission: %s", body)
+	if strings.Contains(topbar, `href="/admin/users"`) {
+		t.Fatalf("users nav link rendered in compact topbar: %s", topbar)
 	}
-	if !strings.Contains(body, `href="/admin/me"`) {
-		t.Fatalf("own profile link is missing from topbar: %s", body)
+	if strings.Contains(topbar, `href="/admin/moderation/excursions"`) {
+		t.Fatalf("moderation queue link rendered in compact topbar: %s", topbar)
+	}
+	if !strings.Contains(topbar, `href="/admin/navigation"`) {
+		t.Fatalf("sections link is missing from compact topbar: %s", topbar)
+	}
+	if !strings.Contains(topbar, `href="/admin/me"`) {
+		t.Fatalf("own profile link is missing from topbar: %s", topbar)
 	}
 
 	staff.Permissions = append(staff.Permissions, enum.PermissionAuditRead)
@@ -727,8 +735,9 @@ func TestRendererTopbarHidesAuditWithoutPermissionAndLinksOwnProfile(t *testing.
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("unexpected status: %d", recorder.Code)
 	}
-	if !strings.Contains(recorder.Body.String(), `href="/admin/audit"`) {
-		t.Fatalf("audit nav link missing for staff with audit.read permission: %s", recorder.Body.String())
+	topbar = renderedTopbar(recorder.Body.String())
+	if strings.Contains(topbar, `href="/admin/audit"`) {
+		t.Fatalf("audit nav link rendered in compact topbar: %s", topbar)
 	}
 
 	staff.Permissions = append(staff.Permissions, enum.PermissionUsersRead)
@@ -737,9 +746,39 @@ func TestRendererTopbarHidesAuditWithoutPermissionAndLinksOwnProfile(t *testing.
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("unexpected status: %d", recorder.Code)
 	}
-	if !strings.Contains(recorder.Body.String(), `href="/admin/users"`) {
-		t.Fatalf("users nav link missing for staff with users.read permission: %s", recorder.Body.String())
+	topbar = renderedTopbar(recorder.Body.String())
+	if strings.Contains(topbar, `href="/admin/users"`) {
+		t.Fatalf("users nav link rendered in compact topbar: %s", topbar)
 	}
+
+	pageData.Path = "/admin/navigation"
+	pageData.ActiveNav = "navigation"
+	pageData.Data = NewAdminNavigationPageViewData(staff)
+	recorder = httptest.NewRecorder()
+	renderer.Render(recorder, http.StatusOK, "navigation/index", pageData)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("unexpected status: %d", recorder.Code)
+	}
+	body = recorder.Body.String()
+	for _, expected := range []string{
+		`href="/admin/moderation/excursions"`,
+		`href="/admin/users"`,
+		`href="/admin/audit"`,
+		`href="/admin/staff"`,
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("navigation page did not render %q: %s", expected, body)
+		}
+	}
+}
+
+func renderedTopbar(body string) string {
+	start := strings.Index(body, `<header class="topbar">`)
+	end := strings.Index(body, `</header>`)
+	if start < 0 || end < start {
+		return body
+	}
+	return body[start : end+len(`</header>`)]
 }
 
 func TestRendererRendersUserModerationViews(t *testing.T) {

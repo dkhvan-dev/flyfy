@@ -86,6 +86,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /admin/password/change", s.ChangePasswordPage)
 	mux.HandleFunc("POST /admin/password/change", s.ChangePassword)
 	mux.HandleFunc("GET /admin", s.Dashboard)
+	mux.HandleFunc("GET /admin/navigation", s.AdminNavigation)
 	mux.HandleFunc("GET /admin/feed-quality", s.FeedQualityDashboard)
 	mux.HandleFunc("GET /admin/me", s.StaffProfile)
 	mux.HandleFunc("POST /admin/me/timezone", s.UpdateOwnTimezone)
@@ -280,6 +281,11 @@ func (s *Server) Dashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.renderPage(w, http.StatusOK, r, "dashboard/index", "dashboard.title", "dashboard", data, "")
+}
+
+func (s *Server) AdminNavigation(w http.ResponseWriter, r *http.Request) {
+	data := NewAdminNavigationPageViewData(staffFromContext(r.Context()))
+	s.renderPage(w, http.StatusOK, r, "navigation/index", "navigation.title", "navigation", data, "")
 }
 
 func (s *Server) FeedQualityDashboard(w http.ResponseWriter, r *http.Request) {

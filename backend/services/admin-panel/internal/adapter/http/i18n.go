@@ -28,6 +28,7 @@ var translations = map[string]map[string]string{
 
 		"nav.primary":     "Primary",
 		"nav.dashboard":   "Dashboard",
+		"nav.sections":    "Sections",
 		"nav.excursions":  "Excursions",
 		"nav.activities":  "Activities",
 		"nav.guides":      "Guides",
@@ -42,6 +43,14 @@ var translations = map[string]map[string]string{
 		"nav.staff":       "Staff",
 		"nav.audit":       "Audit",
 		"nav.language":    "Language",
+
+		"navigation.eyebrow":                "Navigation",
+		"navigation.title":                  "Sections",
+		"navigation.section.core":           "Core",
+		"navigation.section.moderation":     "Moderation",
+		"navigation.section.management":     "Management",
+		"navigation.section.administration": "Administration",
+		"navigation.empty":                  "No available sections.",
 
 		"action.signIn":                 "Sign in",
 		"action.signOut":                "Sign out",
@@ -1097,6 +1106,7 @@ var translations = map[string]map[string]string{
 
 		"nav.primary":     "Основная навигация",
 		"nav.dashboard":   "Панель",
+		"nav.sections":    "Разделы",
 		"nav.excursions":  "Экскурсии",
 		"nav.activities":  "Активности",
 		"nav.guides":      "Гиды",
@@ -1111,6 +1121,14 @@ var translations = map[string]map[string]string{
 		"nav.staff":       "Сотрудники",
 		"nav.audit":       "Аудит",
 		"nav.language":    "Язык",
+
+		"navigation.eyebrow":                "Навигация",
+		"navigation.title":                  "Разделы",
+		"navigation.section.core":           "Основное",
+		"navigation.section.moderation":     "Модерация",
+		"navigation.section.management":     "Управление",
+		"navigation.section.administration": "Администрирование",
+		"navigation.empty":                  "Нет доступных разделов.",
 
 		"action.signIn":                 "Войти",
 		"action.signOut":                "Выйти",
