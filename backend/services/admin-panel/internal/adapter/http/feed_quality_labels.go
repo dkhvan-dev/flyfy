@@ -9,7 +9,7 @@ var feedQualitySurfaceLabelKeys = map[string]string{
 
 var feedQualityBlockTypeLabelKeys = map[string]string{
 	"activity_card":         "feedQuality.blockType.activityCard",
-	"attraction_card":       "feedQuality.blockType.attractionCard",
+	"place_card":            "feedQuality.blockType.placeCard",
 	"guide_card":            "feedQuality.blockType.guideCard",
 	"official_news_card":    "feedQuality.blockType.officialNewsCard",
 	"profile_card":          "feedQuality.blockType.profileCard",

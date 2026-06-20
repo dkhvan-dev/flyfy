@@ -51,28 +51,37 @@ func (r *UserResolver) ResolveRolesBySubject(ctx context.Context, subject string
 }
 
 func (r *UserResolver) DisplayNameForUserID(ctx context.Context, userID uuid.UUID) (string, error) {
+	displayName, _, err := r.ProfileNamesForUserID(ctx, userID)
+	return displayName, err
+}
+
+func (r *UserResolver) FullNameForUserID(ctx context.Context, userID uuid.UUID) (string, error) {
+	_, fullName, err := r.ProfileNamesForUserID(ctx, userID)
+	return fullName, err
+}
+
+func (r *UserResolver) ProfileNamesForUserID(ctx context.Context, userID uuid.UUID) (string, string, error) {
 	resp, err := r.client.GetUserById(ctx, &userv1.GetUserByIdRequest{
 		UserId: userID.String(),
 	})
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	aggregate := resp.GetAggregate()
 	if aggregate == nil || aggregate.GetProfile() == nil {
-		return "", errors.New("empty user profile")
+		return "", "", errors.New("empty user profile")
 	}
 
 	profile := aggregate.GetProfile()
-	if nickname := strings.TrimSpace(profile.GetNickname()); nickname != "" {
-		return nickname, nil
-	}
-
 	fullName := strings.TrimSpace(strings.Join([]string{
 		strings.TrimSpace(profile.GetFirstName()),
 		strings.TrimSpace(profile.GetLastName()),
 	}, " "))
-	return fullName, nil
+	if nickname := strings.TrimSpace(profile.GetNickname()); nickname != "" {
+		return nickname, fullName, nil
+	}
+	return fullName, fullName, nil
 }
 
 func (r *UserResolver) EmailForUserID(ctx context.Context, userID uuid.UUID) (string, error) {

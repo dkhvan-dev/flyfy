@@ -1,39 +1,39 @@
 ALTER TABLE excursion_products
-    ADD COLUMN route_kind TEXT NOT NULL DEFAULT 'SINGLE_ATTRACTION',
+    ADD COLUMN route_kind TEXT NOT NULL DEFAULT 'SINGLE_PLACE',
     ADD COLUMN route_fingerprint TEXT NULL,
-    ADD COLUMN attraction_ids UUID[] NULL,
-    ADD COLUMN attraction_names TEXT[] NULL,
+    ADD COLUMN place_ids UUID[] NULL,
+    ADD COLUMN place_names TEXT[] NULL,
     ADD COLUMN stop_count INT NOT NULL DEFAULT 0,
     ADD COLUMN transport_mode TEXT NOT NULL DEFAULT 'WALKING',
     ADD COLUMN route_theme TEXT NULL,
     ADD COLUMN duration_bucket TEXT NULL,
     ADD CONSTRAINT chk_excursion_products_route_kind
-        CHECK (route_kind IN ('SINGLE_ATTRACTION', 'COMBINED_ROUTE')),
+        CHECK (route_kind IN ('SINGLE_PLACE', 'COMBINED_ROUTE')),
     ADD CONSTRAINT chk_excursion_products_stop_count
         CHECK (stop_count BETWEEN 0 AND 12),
     ADD CONSTRAINT chk_excursion_products_transport_mode
         CHECK (transport_mode IN ('WALKING', 'CAR', 'TRANSIT', 'MIXED')),
-    ADD CONSTRAINT chk_excursion_products_attraction_ids_cardinality
-        CHECK (attraction_ids IS NULL OR CARDINALITY(attraction_ids) = stop_count),
-    ADD CONSTRAINT chk_excursion_products_attraction_names_cardinality
-        CHECK (attraction_names IS NULL OR CARDINALITY(attraction_names) <= stop_count),
-    ADD CONSTRAINT chk_excursion_products_single_attraction_shape
-        CHECK (route_kind <> 'SINGLE_ATTRACTION' OR attraction_ids IS NULL OR CARDINALITY(attraction_ids) = 1),
+    ADD CONSTRAINT chk_excursion_products_place_ids_cardinality
+        CHECK (place_ids IS NULL OR CARDINALITY(place_ids) = stop_count),
+    ADD CONSTRAINT chk_excursion_products_place_names_cardinality
+        CHECK (place_names IS NULL OR CARDINALITY(place_names) <= stop_count),
+    ADD CONSTRAINT chk_excursion_products_single_place_shape
+        CHECK (route_kind <> 'SINGLE_PLACE' OR place_ids IS NULL OR CARDINALITY(place_ids) = 1),
     ADD CONSTRAINT chk_excursion_products_combined_route_shape
-        CHECK (route_kind <> 'COMBINED_ROUTE' OR attraction_ids IS NULL OR CARDINALITY(attraction_ids) >= 2);
+        CHECK (route_kind <> 'COMBINED_ROUTE' OR place_ids IS NULL OR CARDINALITY(place_ids) >= 2);
 
 UPDATE excursion_products
 SET
     route_kind = CASE
         WHEN landmark_id IS NULL THEN 'COMBINED_ROUTE'
-        ELSE 'SINGLE_ATTRACTION'
+        ELSE 'SINGLE_PLACE'
     END,
     route_fingerprint = canonical_key,
-    attraction_ids = CASE
+    place_ids = CASE
         WHEN landmark_id IS NULL THEN NULL
         ELSE ARRAY[landmark_id]::UUID[]
     END,
-    attraction_names = CASE
+    place_names = CASE
         WHEN landmark_id IS NULL OR landmark_name IS NULL OR BTRIM(landmark_name) = '' THEN NULL
         ELSE ARRAY[BTRIM(landmark_name)]::TEXT[]
     END,
@@ -59,19 +59,19 @@ CREATE INDEX idx_excursion_products_public_route_kind
     ON excursion_products(route_kind, updated_at DESC)
     WHERE status = 'PUBLISHED' AND visibility = 'PUBLIC';
 
-CREATE INDEX idx_excursion_products_attraction_ids
-    ON excursion_products USING GIN (attraction_ids)
-    WHERE attraction_ids IS NOT NULL;
+CREATE INDEX idx_excursion_products_place_ids
+    ON excursion_products USING GIN (place_ids)
+    WHERE place_ids IS NOT NULL;
 
 ALTER TABLE excursion_itinerary_items
-    ADD COLUMN attraction_id UUID NULL,
-    ADD COLUMN attraction_name VARCHAR(180) NULL,
+    ADD COLUMN place_id UUID NULL,
+    ADD COLUMN place_name VARCHAR(180) NULL,
     ADD COLUMN latitude NUMERIC(10,7) NULL,
     ADD COLUMN longitude NUMERIC(10,7) NULL,
     ADD COLUMN travel_from_previous_minutes INT NULL,
     ADD CONSTRAINT chk_excursion_itinerary_items_travel_from_previous
         CHECK (travel_from_previous_minutes IS NULL OR travel_from_previous_minutes >= 0);
 
-CREATE INDEX idx_excursion_itinerary_items_attraction_id
-    ON excursion_itinerary_items(attraction_id)
-    WHERE attraction_id IS NOT NULL;
+CREATE INDEX idx_excursion_itinerary_items_place_id
+    ON excursion_itinerary_items(place_id)
+    WHERE place_id IS NOT NULL;

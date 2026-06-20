@@ -871,7 +871,7 @@ CREATE TABLE IF NOT EXISTS post_feed_events (
     received_at timestamp with time zone DEFAULT now() NOT NULL,
     request_id text DEFAULT ''::text NOT NULL,
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
-    CONSTRAINT post_feed_events_block_type_check CHECK ((block_type = ANY (ARRAY['stories_tray'::text, 'suggested_communities'::text, 'my_subscriptions'::text, 'post_card'::text, 'activity_card'::text, 'attraction_card'::text, 'tour_card'::text, 'guide_card'::text, 'profile_card'::text, 'official_news_card'::text]))),
+    CONSTRAINT post_feed_events_block_type_check CHECK ((block_type = ANY (ARRAY['stories_tray'::text, 'suggested_communities'::text, 'my_subscriptions'::text, 'post_card'::text, 'activity_card'::text, 'place_card'::text, 'tour_card'::text, 'guide_card'::text, 'profile_card'::text, 'official_news_card'::text]))),
     CONSTRAINT post_feed_events_event_type_check CHECK ((event_type = ANY (ARRAY['impression'::text, 'click'::text, 'dwell'::text, 'like'::text, 'comment'::text, 'share'::text, 'subscribe'::text, 'hide'::text, 'not_interested'::text, 'report'::text]))),
     CONSTRAINT post_feed_events_rank_check CHECK ((rank >= 0)),
     CONSTRAINT post_feed_events_surface_check CHECK ((surface = ANY (ARRAY['home'::text, 'content'::text]))),
@@ -965,7 +965,7 @@ CREATE TABLE IF NOT EXISTS post_feed_user_interests (
     last_event_at timestamp with time zone NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
-    CONSTRAINT post_feed_user_interests_entity_type_check CHECK ((entity_type = ANY (ARRAY['post'::text, 'post_profile'::text, 'community'::text, 'activity'::text, 'attraction'::text, 'tour'::text, 'guide'::text, 'profile'::text, 'author'::text, 'city'::text, 'country'::text, 'category'::text, 'tag'::text]))),
+    CONSTRAINT post_feed_user_interests_entity_type_check CHECK ((entity_type = ANY (ARRAY['post'::text, 'post_profile'::text, 'community'::text, 'activity'::text, 'place'::text, 'tour'::text, 'guide'::text, 'profile'::text, 'author'::text, 'city'::text, 'country'::text, 'category'::text, 'tag'::text]))),
     CONSTRAINT post_feed_user_interests_score_check CHECK (((score >= ('-100'::integer)::numeric) AND (score <= (100)::numeric)))
 );
 

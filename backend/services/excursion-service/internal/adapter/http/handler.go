@@ -1400,15 +1400,15 @@ func toCreateExcursionBookingInput(actorUserID uuid.UUID, req dto.CreateExcursio
 func toAppItinerary(items []dto.ExcursionItineraryItemRequest) ([]app.ExcursionItineraryItemInput, error) {
 	result := make([]app.ExcursionItineraryItemInput, 0, len(items))
 	for index, item := range items {
-		attractionID, err := parseOptionalRouteStopUUID(item.AttractionID)
+		placeID, err := parseOptionalRouteStopUUID(item.PlaceID)
 		if err != nil {
-			return nil, fmt.Errorf("invalid itinerary[%d].attractionId", index)
+			return nil, fmt.Errorf("invalid itinerary[%d].placeId", index)
 		}
 		result = append(result, app.ExcursionItineraryItemInput{
 			StartOffsetMinutes:        item.StartOffsetMinutes,
 			DurationMinutes:           item.DurationMinutes,
-			AttractionID:              attractionID,
-			AttractionName:            item.AttractionName,
+			PlaceID:                   placeID,
+			PlaceName:                 item.PlaceName,
 			Latitude:                  item.Latitude,
 			Longitude:                 item.Longitude,
 			TravelFromPreviousMinutes: item.TravelFromPreviousMinutes,
@@ -1593,8 +1593,8 @@ func toExcursionProductCardResponse(aggregate *app.ExcursionProductCardAggregate
 		LandmarkName:         item.LandmarkName,
 		RouteKind:            string(item.RouteKind),
 		RouteFingerprint:     item.RouteFingerprint,
-		AttractionIDs:        uuidStrings(item.AttractionIDs),
-		AttractionNames:      item.AttractionNames,
+		PlaceIDs:             uuidStrings(item.PlaceIDs),
+		PlaceNames:           item.PlaceNames,
 		StopCount:            item.StopCount,
 		TransportMode:        item.TransportMode,
 		RouteTheme:           item.RouteTheme,
@@ -2039,18 +2039,18 @@ func toGuideReviewResponse(item *model.GuideReview) *dto.GuideReviewResponse {
 func toItineraryResponse(items []*model.ExcursionItineraryItem) []dto.ExcursionItineraryItemResponse {
 	result := make([]dto.ExcursionItineraryItemResponse, 0, len(items))
 	for _, item := range items {
-		var attractionID *string
-		if item.AttractionID != nil && *item.AttractionID != uuid.Nil {
-			value := item.AttractionID.String()
-			attractionID = &value
+		var placeID *string
+		if item.PlaceID != nil && *item.PlaceID != uuid.Nil {
+			value := item.PlaceID.String()
+			placeID = &value
 		}
 		result = append(result, dto.ExcursionItineraryItemResponse{
 			ID:                        item.ID.String(),
 			SortOrder:                 item.SortOrder,
 			StartOffsetMinutes:        item.StartOffsetMinutes,
 			DurationMinutes:           item.DurationMinutes,
-			AttractionID:              attractionID,
-			AttractionName:            item.AttractionName,
+			PlaceID:                   placeID,
+			PlaceName:                 item.PlaceName,
 			Latitude:                  item.Latitude,
 			Longitude:                 item.Longitude,
 			TravelFromPreviousMinutes: item.TravelFromPreviousMinutes,
@@ -2092,7 +2092,7 @@ func (h *Handler) writeUseCaseError(w http.ResponseWriter, r *http.Request, err 
 		errors.Is(err, app.ErrPaymentRefundFailed):
 		writeError(w, http.StatusConflict, err.Error())
 	case errors.Is(err, app.ErrInvalidExcursionID),
-		errors.Is(err, app.ErrExcursionAttractionRequired),
+		errors.Is(err, app.ErrExcursionPlaceRequired),
 		errors.Is(err, app.ErrCombinedExcursionRouteRequiresTwoStops),
 		errors.Is(err, app.ErrCombinedExcursionRouteTooManyStops),
 		errors.Is(err, app.ErrCombinedExcursionRouteDuplicateStop),

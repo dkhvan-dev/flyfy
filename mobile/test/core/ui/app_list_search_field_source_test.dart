@@ -39,7 +39,7 @@ void main() {
     for (final path in [
       'lib/screens/activities/activities_screen.dart',
       'lib/screens/excursions/excursions_screen.dart',
-      'lib/screens/attractions/attractions_screen.dart',
+      'lib/screens/places/places_screen.dart',
       'lib/screens/stories/stories_screen.dart',
       'lib/screens/guides/guides_screen.dart',
     ]) {

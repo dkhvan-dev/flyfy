@@ -203,7 +203,7 @@ class _MapScreenState extends State<MapScreen> {
     final targetPlace = _LocalPlace(
       id: 'target:${target.latitude}:${target.longitude}',
       title: target.title,
-      categoryValue: 'attraction',
+      categoryValue: 'place',
       categoryLabel: target.subtitle?.trim().isNotEmpty == true
           ? target.subtitle!.trim()
           : target.title,
@@ -2455,11 +2455,11 @@ class _NearbyPlacesApi {
 (
   node["amenity"~"cafe|restaurant|fast_food|bar|pub|pharmacy|hospital|clinic|bank|atm|fuel|cinema|theatre|library|marketplace"](around:$radiusMeters,${center.latitude},${center.longitude});
   node["shop"](around:$radiusMeters,${center.latitude},${center.longitude});
-  node["tourism"~"hotel|museum|attraction|viewpoint|gallery|guest_house|apartment"](around:$radiusMeters,${center.latitude},${center.longitude});
+  node["tourism"~"hotel|museum|place|viewpoint|gallery|guest_house|apartment"](around:$radiusMeters,${center.latitude},${center.longitude});
   node["leisure"~"park|fitness_centre|sports_centre"](around:$radiusMeters,${center.latitude},${center.longitude});
   way["amenity"~"cafe|restaurant|fast_food|bar|pub|pharmacy|hospital|clinic|bank|atm|fuel|cinema|theatre|library|marketplace"](around:$radiusMeters,${center.latitude},${center.longitude});
   way["shop"](around:$radiusMeters,${center.latitude},${center.longitude});
-  way["tourism"~"hotel|museum|attraction|viewpoint|gallery|guest_house|apartment"](around:$radiusMeters,${center.latitude},${center.longitude});
+  way["tourism"~"hotel|museum|place|viewpoint|gallery|guest_house|apartment"](around:$radiusMeters,${center.latitude},${center.longitude});
   way["leisure"~"park|fitness_centre|sports_centre"](around:$radiusMeters,${center.latitude},${center.longitude});
 );
 out center $resultLimit;
@@ -2699,7 +2699,7 @@ class _LocalPlace {
       case 'shop':
         return Icons.storefront_rounded;
       case 'viewpoint':
-      case 'attraction':
+      case 'place':
         return Icons.place_rounded;
       default:
         return Icons.location_on_rounded;

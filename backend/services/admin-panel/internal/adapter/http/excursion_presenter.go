@@ -2062,14 +2062,14 @@ func excursionTitleText(locale string, item *model.ExcursionModerationItem, fall
 	return strings.TrimSpace(fallback)
 }
 
-func excursionAttractionsText(locale string, item *model.ExcursionModerationItem) string {
+func excursionPlacesText(locale string, item *model.ExcursionModerationItem) string {
 	if item == nil {
 		return ""
 	}
 	if landmark := localizedLandmarkName(locale, item); landmark != "" {
 		return landmark
 	}
-	names := localizedAttractionNames(locale, item)
+	names := localizedPlaceNames(locale, item)
 	return strings.Join(names, ", ")
 }
 
@@ -2295,7 +2295,7 @@ func itineraryTitleText(locale string, item model.ExcursionItineraryItem) string
 	if title := strings.TrimSpace(item.Title); title != "" {
 		return title
 	}
-	if name := strings.TrimSpace(item.AttractionName); name != "" {
+	if name := strings.TrimSpace(item.PlaceName); name != "" {
 		return name
 	}
 	return "-"
@@ -2311,8 +2311,8 @@ func itineraryDescriptionText(locale string, item model.ExcursionItineraryItem) 
 	return ""
 }
 
-func itineraryAttractionText(item model.ExcursionItineraryItem) string {
-	return strings.TrimSpace(item.AttractionName)
+func itineraryPlaceText(item model.ExcursionItineraryItem) string {
+	return strings.TrimSpace(item.PlaceName)
 }
 
 func itineraryStartText(offsetMinutes int) string {
@@ -2419,7 +2419,7 @@ func routeNameForCopy(locale string, item *model.ExcursionModerationItem) string
 	if landmark := localizedLandmarkName(locale, item); landmark != "" {
 		return landmark
 	}
-	names := localizedAttractionNames(locale, item)
+	names := localizedPlaceNames(locale, item)
 	if len(names) > 0 {
 		return strings.Join(names, " + ")
 	}
@@ -2433,7 +2433,7 @@ func routeStopsForCopy(locale string, item *model.ExcursionModerationItem) strin
 	if landmark := localizedLandmarkName(locale, item); landmark != "" {
 		return landmark
 	}
-	names := localizedAttractionNames(locale, item)
+	names := localizedPlaceNames(locale, item)
 	if len(names) > 0 {
 		return strings.Join(names, ", ")
 	}
@@ -2444,7 +2444,7 @@ func localizedLandmarkName(locale string, item *model.ExcursionModerationItem) s
 	if item == nil {
 		return ""
 	}
-	if len(normalizedNameList(item.AttractionNames)) > 0 {
+	if len(normalizedNameList(item.PlaceNames)) > 0 {
 		return ""
 	}
 	if title := localizedCopyTitle(locale, item.ProductTranslations); title != "" {
@@ -2453,25 +2453,25 @@ func localizedLandmarkName(locale string, item *model.ExcursionModerationItem) s
 	return strings.TrimSpace(item.LandmarkName)
 }
 
-func localizedAttractionNames(locale string, item *model.ExcursionModerationItem) []string {
+func localizedPlaceNames(locale string, item *model.ExcursionModerationItem) []string {
 	if item == nil {
 		return nil
 	}
 	locale = normalizeLocaleOrDefault(locale)
-	if names := normalizedNameList(item.AttractionNamesByLocale[locale]); len(names) > 0 {
+	if names := normalizedNameList(item.PlaceNamesByLocale[locale]); len(names) > 0 {
 		return names
 	}
 	if locale != defaultLocale {
-		if names := normalizedNameList(item.AttractionNamesByLocale[defaultLocale]); len(names) > 0 {
+		if names := normalizedNameList(item.PlaceNamesByLocale[defaultLocale]); len(names) > 0 {
 			return names
 		}
 	}
-	for _, namesByLocale := range item.AttractionNamesByLocale {
+	for _, namesByLocale := range item.PlaceNamesByLocale {
 		if names := normalizedNameList(namesByLocale); len(names) > 0 {
 			return names
 		}
 	}
-	return normalizedNameList(item.AttractionNames)
+	return normalizedNameList(item.PlaceNames)
 }
 
 func localizedCopyTitle(locale string, items map[string]model.ExcursionLocalizedCopy) string {

@@ -9,7 +9,7 @@ void main() {
     final files = <String>[
       'lib/screens/activities/activities_screen.dart',
       'lib/screens/activities/my_activities_screen.dart',
-      'lib/screens/attractions/attractions_screen.dart',
+      'lib/screens/places/places_screen.dart',
       'lib/screens/guides/guides_screen.dart',
       'lib/screens/stories/stories_screen.dart',
     ];
@@ -31,14 +31,12 @@ void main() {
       final bottomNavSource = await _read(
         'lib/core/ui/app_bottom_navigation_bars.dart',
       );
-      final attractionsSource = await _read(
-        'lib/screens/attractions/attractions_screen.dart',
-      );
+      final placesSource = await _read('lib/screens/places/places_screen.dart');
       final homeSource = await _read('lib/screens/home/home_screen.dart');
 
       expect(bottomNavSource, contains('final AppBottomNavItem? activeItem;'));
       expect(
-        attractionsSource,
+        placesSource,
         isNot(contains('activeItem: AppBottomNavItem.home')),
       );
       expect(homeSource, contains('activeItem: AppBottomNavItem.home'));

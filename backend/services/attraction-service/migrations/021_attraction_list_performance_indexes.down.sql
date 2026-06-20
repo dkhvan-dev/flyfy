@@ -1,8 +1,0 @@
-DROP INDEX CONCURRENTLY IF EXISTS idx_attraction_city_links_attraction_kind_position;
-DROP INDEX CONCURRENTLY IF EXISTS idx_attraction_city_links_kind_city_attraction;
-DROP INDEX CONCURRENTLY IF EXISTS idx_attractions_active_country_city_duration_hours;
-DROP INDEX CONCURRENTLY IF EXISTS idx_attractions_active_country_city_price;
-DROP INDEX CONCURRENTLY IF EXISTS idx_attractions_active_country_city_rating;
-DROP INDEX CONCURRENTLY IF EXISTS idx_attractions_active_country_category_latest;
-DROP INDEX CONCURRENTLY IF EXISTS idx_attractions_active_country_city_category_latest;
-DROP INDEX CONCURRENTLY IF EXISTS idx_attractions_active_country_city_latest;

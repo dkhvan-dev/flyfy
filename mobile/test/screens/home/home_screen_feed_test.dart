@@ -3,8 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:inflap/features/activities/models/activity_category_vm.dart';
 import 'package:inflap/features/activities/models/activity_list_item_vm.dart';
-import 'package:inflap/features/attractions/data/attraction_api.dart';
-import 'package:inflap/features/attractions/models/attraction_vm.dart';
+import 'package:inflap/features/places/data/place_api.dart';
+import 'package:inflap/features/places/models/place_vm.dart';
 import 'package:inflap/features/feed/data/feed_api.dart';
 import 'package:inflap/features/feed/models/feed_block_vm.dart';
 import 'package:inflap/features/profile/data/guide_api.dart';
@@ -66,7 +66,7 @@ void main() {
         _homeApp(
           HomeScreen(
             feedApi: feedApi,
-            attractionApi: _FakeAttractionApi(),
+            placeApi: _FakePlaceApi(),
             initialDataLoadDelay: Duration.zero,
             initialDataLoadStagger: Duration.zero,
             waitForFirstFrameRasterized: false,
@@ -101,7 +101,7 @@ void main() {
       _homeApp(
         HomeScreen(
           feedApi: _FakeFeedApi(page: FeedPageVm(items: const [])),
-          attractionApi: _FakeAttractionApi(),
+          placeApi: _FakePlaceApi(),
           initialDataLoadDelay: Duration.zero,
           initialDataLoadStagger: Duration.zero,
           waitForFirstFrameRasterized: false,
@@ -159,7 +159,7 @@ void main() {
       _homeApp(
         HomeScreen(
           feedApi: feedApi,
-          attractionApi: _FakeAttractionApi(),
+          placeApi: _FakePlaceApi(),
           guideApi: _FakeGuideApi(),
           initialDataLoadDelay: Duration.zero,
           initialDataLoadStagger: Duration.zero,
@@ -219,7 +219,7 @@ void main() {
       _homeApp(
         HomeScreen(
           feedApi: feedApi,
-          attractionApi: _FakeAttractionApi(),
+          placeApi: _FakePlaceApi(),
           guideApi: _FakeGuideApi(),
           initialDataLoadDelay: Duration.zero,
           initialDataLoadStagger: Duration.zero,
@@ -271,7 +271,7 @@ void main() {
       _homeApp(
         HomeScreen(
           feedApi: feedApi,
-          attractionApi: _FakeAttractionApi(),
+          placeApi: _FakePlaceApi(),
           guideApi: _FakeGuideApi(),
           initialDataLoadDelay: Duration.zero,
           initialDataLoadStagger: Duration.zero,
@@ -325,7 +325,7 @@ void main() {
       _homeApp(
         HomeScreen(
           feedApi: feedApi,
-          attractionApi: _FakeAttractionApi(),
+          placeApi: _FakePlaceApi(),
           guideApi: _FakeGuideApi(),
           initialDataLoadDelay: Duration.zero,
           initialDataLoadStagger: Duration.zero,
@@ -360,7 +360,7 @@ void main() {
       _homeApp(
         HomeScreen(
           feedApi: feedApi,
-          attractionApi: _FakeAttractionApi(items: [_attraction()]),
+          placeApi: _FakePlaceApi(items: [_place()]),
           initialDataLoadDelay: Duration.zero,
           initialDataLoadStagger: Duration.zero,
           waitForFirstFrameRasterized: false,
@@ -384,12 +384,12 @@ void main() {
     expect(event.surface, 'home');
     expect(event.tab, 'for_you');
     expect(event.blockId, 'home:top_destinations');
-    expect(event.blockType, 'attraction_card');
+    expect(event.blockType, 'place_card');
     expect(event.postId, isNull);
     expect(event.rank, 0);
     expect(event.metadata['action'], 'conversion');
-    expect(event.metadata['entityType'], 'attraction');
-    expect(event.metadata['entityId'], 'attraction-1');
+    expect(event.metadata['entityType'], 'place');
+    expect(event.metadata['entityId'], 'place-1');
     expect(event.metadata['source'], 'home_top_destinations');
     expect(event.metadata['title'], 'Dragon Bridge');
     expect(event.metadata['tags'], ['bridge']);
@@ -405,7 +405,7 @@ void main() {
       _homeApp(
         HomeScreen(
           feedApi: feedApi,
-          attractionApi: _FakeAttractionApi(),
+          placeApi: _FakePlaceApi(),
           guideApi: _FakeGuideApi(),
           initialDataLoadDelay: Duration.zero,
           initialDataLoadStagger: Duration.zero,
@@ -492,7 +492,7 @@ Future<_FakeFeedApi> _tapHomeService(
     _homeApp(
       HomeScreen(
         feedApi: feedApi,
-        attractionApi: _FakeAttractionApi(),
+        placeApi: _FakePlaceApi(),
         initialDataLoadDelay: Duration.zero,
         initialDataLoadStagger: Duration.zero,
         waitForFirstFrameRasterized: false,
@@ -527,7 +527,7 @@ Widget _homeApp(
             Scaffold(body: Text('Post route ${state.pathParameters['slug']}')),
       ),
       GoRoute(
-        path: '/attractions/:id',
+        path: '/places/:id',
         builder: (context, state) => const Scaffold(body: SizedBox.shrink()),
       ),
       GoRoute(
@@ -687,13 +687,13 @@ class _FakeGuideApi extends GuideApi {
   Future<GuideProfileVm?> getMyGuideProfileOrNull() async => null;
 }
 
-class _FakeAttractionApi extends AttractionApi {
-  _FakeAttractionApi({this.items = const []});
+class _FakePlaceApi extends PlaceApi {
+  _FakePlaceApi({this.items = const []});
 
-  final List<AttractionVm> items;
+  final List<PlaceVm> items;
 
   @override
-  Future<({List<AttractionVm> items, int total})> getAttractions({
+  Future<({List<PlaceVm> items, int total})> getPlaces({
     String? search,
     String? category,
     String? countryCode,
@@ -850,9 +850,9 @@ PostVm _post(String id, {String? title, bool seenByViewer = false}) {
   );
 }
 
-AttractionVm _attraction() {
-  return AttractionVm(
-    id: 'attraction-1',
+PlaceVm _place() {
+  return PlaceVm(
+    id: 'place-1',
     locale: 'en',
     defaultLocale: 'en',
     title: 'Dragon Bridge',
@@ -866,16 +866,17 @@ AttractionVm _attraction() {
     source: 'IMPORT',
     status: 'PUBLISHED',
     tags: const ['bridge'],
-    visitInfo: AttractionVisitInfoVm.empty,
+    visitInfo: PlaceVisitInfoVm.empty,
     translations: const {},
     media: const [],
-    author: const AttractionAuthorVm(userId: 'author-1'),
+    author: const PlaceAuthorVm(userId: 'author-1'),
     createdAt: '2026-05-27T00:00:00Z',
     updatedAt: '2026-05-27T00:00:00Z',
   );
 }
 
 ActivityListItemVm _activity() {
+  final startAt = DateTime.now().toUtc().add(const Duration(days: 7));
   return ActivityListItemVm(
     id: 'activity-1',
     hostUserId: 'host-1',
@@ -890,8 +891,8 @@ ActivityListItemVm _activity() {
     tags: const ['hiking', 'family'],
     languageCode: 'en',
     timezone: 'Asia/Almaty',
-    startAt: DateTime.utc(2026, 6, 20, 5),
-    endAt: DateTime.utc(2026, 6, 20, 8),
+    startAt: startAt,
+    endAt: startAt.add(const Duration(hours: 3)),
     capacityType: 'LIMITED',
     priceType: 'FREE',
     requiresProfileCompletion: false,

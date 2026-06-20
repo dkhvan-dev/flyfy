@@ -3853,7 +3853,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Activities, attractions, excursions...'**
+  /// **'Activities, places, excursions...'**
   String get homeSearchHint;
 
   /// No description provided for @homeTopDestinations.
@@ -3928,11 +3928,11 @@ abstract class AppLocalizations {
   /// **'Stories'**
   String get homeServiceStories;
 
-  /// No description provided for @homeServiceAttractions.
+  /// No description provided for @homeServicePlaces.
   ///
   /// In en, this message translates to:
-  /// **'Attractions'**
-  String get homeServiceAttractions;
+  /// **'Places'**
+  String get homeServicePlaces;
 
   /// No description provided for @homeServiceCurrencyConverter.
   ///
@@ -5626,713 +5626,713 @@ abstract class AppLocalizations {
   /// **'Tap an activity marker to preview it and open details.'**
   String get mapTapActivityHint;
 
-  /// No description provided for @attractionsTitle.
+  /// No description provided for @placesTitle.
   ///
   /// In en, this message translates to:
-  /// **'Discover attractions'**
-  String get attractionsTitle;
+  /// **'Discover places'**
+  String get placesTitle;
 
-  /// No description provided for @attractionsSearchHint.
+  /// No description provided for @placesSearchHint.
   ///
   /// In en, this message translates to:
   /// **'Where to next?'**
-  String get attractionsSearchHint;
+  String get placesSearchHint;
 
-  /// No description provided for @attractionsLoadFailed.
+  /// No description provided for @placesLoadFailed.
   ///
   /// In en, this message translates to:
-  /// **'Failed to load attractions'**
-  String get attractionsLoadFailed;
+  /// **'Failed to load places'**
+  String get placesLoadFailed;
 
-  /// No description provided for @attractionsSeeAll.
+  /// No description provided for @placesSeeAll.
   ///
   /// In en, this message translates to:
   /// **'See all'**
-  String get attractionsSeeAll;
+  String get placesSeeAll;
 
-  /// No description provided for @attractionsNoResults.
+  /// No description provided for @placesNoResults.
   ///
   /// In en, this message translates to:
-  /// **'No attractions found'**
-  String get attractionsNoResults;
+  /// **'No places found'**
+  String get placesNoResults;
 
-  /// No description provided for @attractionsNoResultsSubtitle.
+  /// No description provided for @placesNoResultsSubtitle.
   ///
   /// In en, this message translates to:
   /// **'Try choosing another city in filters.'**
-  String get attractionsNoResultsSubtitle;
+  String get placesNoResultsSubtitle;
 
-  /// No description provided for @attractionsFiltersTitle.
+  /// No description provided for @placesFiltersTitle.
   ///
   /// In en, this message translates to:
   /// **'Filters'**
-  String get attractionsFiltersTitle;
+  String get placesFiltersTitle;
 
-  /// No description provided for @attractionsSortLabel.
+  /// No description provided for @placesSortLabel.
   ///
   /// In en, this message translates to:
   /// **'Sort by'**
-  String get attractionsSortLabel;
+  String get placesSortLabel;
 
-  /// No description provided for @attractionsSortRating.
+  /// No description provided for @placesSortRating.
   ///
   /// In en, this message translates to:
   /// **'Rating'**
-  String get attractionsSortRating;
+  String get placesSortRating;
 
-  /// No description provided for @attractionsSortDuration.
+  /// No description provided for @placesSortDuration.
   ///
   /// In en, this message translates to:
   /// **'Duration'**
-  String get attractionsSortDuration;
+  String get placesSortDuration;
 
-  /// No description provided for @attractionsSortPrice.
+  /// No description provided for @placesSortPrice.
   ///
   /// In en, this message translates to:
   /// **'Price'**
-  String get attractionsSortPrice;
+  String get placesSortPrice;
 
-  /// No description provided for @attractionFilterClearAll.
+  /// No description provided for @placeFilterClearAll.
   ///
   /// In en, this message translates to:
   /// **'Clear all'**
-  String get attractionFilterClearAll;
+  String get placeFilterClearAll;
 
-  /// No description provided for @attractionFilterCategoriesSection.
+  /// No description provided for @placeFilterCategoriesSection.
   ///
   /// In en, this message translates to:
   /// **'Categories'**
-  String get attractionFilterCategoriesSection;
+  String get placeFilterCategoriesSection;
 
-  /// No description provided for @attractionFilterCategoryAll.
+  /// No description provided for @placeFilterCategoryAll.
   ///
   /// In en, this message translates to:
   /// **'All Spots'**
-  String get attractionFilterCategoryAll;
+  String get placeFilterCategoryAll;
 
-  /// No description provided for @attractionFilterCategoryParks.
+  /// No description provided for @placeFilterCategoryParks.
   ///
   /// In en, this message translates to:
   /// **'Parks'**
-  String get attractionFilterCategoryParks;
+  String get placeFilterCategoryParks;
 
-  /// No description provided for @attractionFilterCategoryMuseums.
+  /// No description provided for @placeFilterCategoryMuseums.
   ///
   /// In en, this message translates to:
   /// **'Museums'**
-  String get attractionFilterCategoryMuseums;
+  String get placeFilterCategoryMuseums;
 
-  /// No description provided for @attractionFilterCategoryNature.
+  /// No description provided for @placeFilterCategoryNature.
   ///
   /// In en, this message translates to:
   /// **'Nature'**
-  String get attractionFilterCategoryNature;
+  String get placeFilterCategoryNature;
 
-  /// No description provided for @attractionFilterCategoryArchitecture.
+  /// No description provided for @placeFilterCategoryArchitecture.
   ///
   /// In en, this message translates to:
   /// **'Architecture'**
-  String get attractionFilterCategoryArchitecture;
+  String get placeFilterCategoryArchitecture;
 
-  /// No description provided for @attractionFilterCategoryBeach.
+  /// No description provided for @placeFilterCategoryBeach.
   ///
   /// In en, this message translates to:
   /// **'Beach'**
-  String get attractionFilterCategoryBeach;
+  String get placeFilterCategoryBeach;
 
-  /// No description provided for @attractionFilterCategoryTemple.
+  /// No description provided for @placeFilterCategoryTemple.
   ///
   /// In en, this message translates to:
   /// **'Temple'**
-  String get attractionFilterCategoryTemple;
+  String get placeFilterCategoryTemple;
 
-  /// No description provided for @attractionFilterCategoryEntertainment.
+  /// No description provided for @placeFilterCategoryEntertainment.
   ///
   /// In en, this message translates to:
   /// **'Entertainment'**
-  String get attractionFilterCategoryEntertainment;
+  String get placeFilterCategoryEntertainment;
 
-  /// No description provided for @attractionFilterCategoryFood.
+  /// No description provided for @placeFilterCategoryFood.
   ///
   /// In en, this message translates to:
   /// **'Food'**
-  String get attractionFilterCategoryFood;
+  String get placeFilterCategoryFood;
 
-  /// No description provided for @attractionFilterCategoryMarket.
+  /// No description provided for @placeFilterCategoryMarket.
   ///
   /// In en, this message translates to:
   /// **'Market'**
-  String get attractionFilterCategoryMarket;
+  String get placeFilterCategoryMarket;
 
-  /// No description provided for @attractionFilterCategoryShopping.
+  /// No description provided for @placeFilterCategoryShopping.
   ///
   /// In en, this message translates to:
   /// **'Shopping'**
-  String get attractionFilterCategoryShopping;
+  String get placeFilterCategoryShopping;
 
-  /// No description provided for @attractionFilterCategoryOther.
+  /// No description provided for @placeFilterCategoryOther.
   ///
   /// In en, this message translates to:
   /// **'Other'**
-  String get attractionFilterCategoryOther;
+  String get placeFilterCategoryOther;
 
-  /// No description provided for @attractionFilterCategoryHistory.
+  /// No description provided for @placeFilterCategoryHistory.
   ///
   /// In en, this message translates to:
   /// **'History'**
-  String get attractionFilterCategoryHistory;
+  String get placeFilterCategoryHistory;
 
-  /// No description provided for @attractionFilterCategoryAdventure.
+  /// No description provided for @placeFilterCategoryAdventure.
   ///
   /// In en, this message translates to:
   /// **'Adventure'**
-  String get attractionFilterCategoryAdventure;
+  String get placeFilterCategoryAdventure;
 
-  /// No description provided for @attractionFilterCountrySection.
+  /// No description provided for @placeFilterCountrySection.
   ///
   /// In en, this message translates to:
   /// **'Country'**
-  String get attractionFilterCountrySection;
+  String get placeFilterCountrySection;
 
-  /// No description provided for @attractionFilterCountryAll.
+  /// No description provided for @placeFilterCountryAll.
   ///
   /// In en, this message translates to:
   /// **'All countries'**
-  String get attractionFilterCountryAll;
+  String get placeFilterCountryAll;
 
-  /// No description provided for @attractionFilterCountrySearchHint.
+  /// No description provided for @placeFilterCountrySearchHint.
   ///
   /// In en, this message translates to:
   /// **'Country, code, or phone'**
-  String get attractionFilterCountrySearchHint;
+  String get placeFilterCountrySearchHint;
 
-  /// No description provided for @attractionFilterCountryNoResults.
+  /// No description provided for @placeFilterCountryNoResults.
   ///
   /// In en, this message translates to:
   /// **'Country not found'**
-  String get attractionFilterCountryNoResults;
+  String get placeFilterCountryNoResults;
 
-  /// No description provided for @attractionFilterMinRatingSection.
+  /// No description provided for @placeFilterMinRatingSection.
   ///
   /// In en, this message translates to:
   /// **'Minimum rating'**
-  String get attractionFilterMinRatingSection;
+  String get placeFilterMinRatingSection;
 
-  /// No description provided for @attractionFilterRatingAny.
+  /// No description provided for @placeFilterRatingAny.
   ///
   /// In en, this message translates to:
   /// **'Any'**
-  String get attractionFilterRatingAny;
+  String get placeFilterRatingAny;
 
-  /// No description provided for @attractionFilterDurationSection.
+  /// No description provided for @placeFilterDurationSection.
   ///
   /// In en, this message translates to:
   /// **'Duration'**
-  String get attractionFilterDurationSection;
+  String get placeFilterDurationSection;
 
-  /// No description provided for @attractionFilterDurationShort.
+  /// No description provided for @placeFilterDurationShort.
   ///
   /// In en, this message translates to:
   /// **'Short < 2h'**
-  String get attractionFilterDurationShort;
+  String get placeFilterDurationShort;
 
-  /// No description provided for @attractionFilterDurationMedium.
+  /// No description provided for @placeFilterDurationMedium.
   ///
   /// In en, this message translates to:
   /// **'Medium 2–5h'**
-  String get attractionFilterDurationMedium;
+  String get placeFilterDurationMedium;
 
-  /// No description provided for @attractionFilterDurationFullDay.
+  /// No description provided for @placeFilterDurationFullDay.
   ///
   /// In en, this message translates to:
   /// **'Full Day 5h+'**
-  String get attractionFilterDurationFullDay;
+  String get placeFilterDurationFullDay;
 
-  /// No description provided for @attractionFilterDurationMultiDay.
+  /// No description provided for @placeFilterDurationMultiDay.
   ///
   /// In en, this message translates to:
   /// **'Multi-day'**
-  String get attractionFilterDurationMultiDay;
+  String get placeFilterDurationMultiDay;
 
-  /// No description provided for @attractionFilterRangeSection.
+  /// No description provided for @placeFilterRangeSection.
   ///
   /// In en, this message translates to:
   /// **'Specific range'**
-  String get attractionFilterRangeSection;
+  String get placeFilterRangeSection;
 
-  /// No description provided for @attractionFilterRangeValue.
+  /// No description provided for @placeFilterRangeValue.
   ///
   /// In en, this message translates to:
   /// **'{min}h – {max}h'**
-  String attractionFilterRangeValue(int min, int max);
+  String placeFilterRangeValue(int min, int max);
 
-  /// No description provided for @attractionFilterRangeMinTick.
+  /// No description provided for @placeFilterRangeMinTick.
   ///
   /// In en, this message translates to:
   /// **'1h'**
-  String get attractionFilterRangeMinTick;
+  String get placeFilterRangeMinTick;
 
-  /// No description provided for @attractionFilterRangeMaxTick.
+  /// No description provided for @placeFilterRangeMaxTick.
   ///
   /// In en, this message translates to:
   /// **'12h+'**
-  String get attractionFilterRangeMaxTick;
+  String get placeFilterRangeMaxTick;
 
-  /// No description provided for @attractionFilterPriceRangeSection.
+  /// No description provided for @placeFilterPriceRangeSection.
   ///
   /// In en, this message translates to:
   /// **'Price range'**
-  String get attractionFilterPriceRangeSection;
+  String get placeFilterPriceRangeSection;
 
-  /// No description provided for @attractionFilterShowSpots.
+  /// No description provided for @placeFilterShowSpots.
   ///
   /// In en, this message translates to:
   /// **'Show {count} spots'**
-  String attractionFilterShowSpots(int count);
+  String placeFilterShowSpots(int count);
 
-  /// No description provided for @attractionFilterClear.
+  /// No description provided for @placeFilterClear.
   ///
   /// In en, this message translates to:
   /// **'Clear'**
-  String get attractionFilterClear;
+  String get placeFilterClear;
 
-  /// No description provided for @attractionMinPriceLabel.
+  /// No description provided for @placeMinPriceLabel.
   ///
   /// In en, this message translates to:
   /// **'Min price'**
-  String get attractionMinPriceLabel;
+  String get placeMinPriceLabel;
 
-  /// No description provided for @attractionMaxPriceLabel.
+  /// No description provided for @placeMaxPriceLabel.
   ///
   /// In en, this message translates to:
   /// **'Max price'**
-  String get attractionMaxPriceLabel;
+  String get placeMaxPriceLabel;
 
-  /// No description provided for @attractionPriceValidationError.
+  /// No description provided for @placePriceValidationError.
   ///
   /// In en, this message translates to:
   /// **'Enter a valid price'**
-  String get attractionPriceValidationError;
+  String get placePriceValidationError;
 
-  /// No description provided for @attractionPriceRangeValidationError.
+  /// No description provided for @placePriceRangeValidationError.
   ///
   /// In en, this message translates to:
   /// **'Max price must be greater than min price'**
-  String get attractionPriceRangeValidationError;
+  String get placePriceRangeValidationError;
 
-  /// No description provided for @attractionHoursUnit.
+  /// No description provided for @placeHoursUnit.
   ///
   /// In en, this message translates to:
   /// **'Hours'**
-  String get attractionHoursUnit;
+  String get placeHoursUnit;
 
-  /// No description provided for @attractionDaysUnit.
+  /// No description provided for @placeDaysUnit.
   ///
   /// In en, this message translates to:
   /// **'Days'**
-  String get attractionDaysUnit;
+  String get placeDaysUnit;
 
-  /// No description provided for @attractionHoursUnitShort.
+  /// No description provided for @placeHoursUnitShort.
   ///
   /// In en, this message translates to:
   /// **'h'**
-  String get attractionHoursUnitShort;
+  String get placeHoursUnitShort;
 
-  /// No description provided for @attractionDaysUnitShort.
+  /// No description provided for @placeDaysUnitShort.
   ///
   /// In en, this message translates to:
   /// **'d'**
-  String get attractionDaysUnitShort;
+  String get placeDaysUnitShort;
 
-  /// No description provided for @attractionMinLabel.
+  /// No description provided for @placeMinLabel.
   ///
   /// In en, this message translates to:
   /// **'Min'**
-  String get attractionMinLabel;
+  String get placeMinLabel;
 
-  /// No description provided for @attractionMaxLabel.
+  /// No description provided for @placeMaxLabel.
   ///
   /// In en, this message translates to:
   /// **'Max'**
-  String get attractionMaxLabel;
+  String get placeMaxLabel;
 
-  /// No description provided for @attractionDurationValidationError.
+  /// No description provided for @placeDurationValidationError.
   ///
   /// In en, this message translates to:
   /// **'Enter a valid duration'**
-  String get attractionDurationValidationError;
+  String get placeDurationValidationError;
 
-  /// No description provided for @attractionDurationRangeValidationError.
+  /// No description provided for @placeDurationRangeValidationError.
   ///
   /// In en, this message translates to:
   /// **'Max duration must be greater than min'**
-  String get attractionDurationRangeValidationError;
+  String get placeDurationRangeValidationError;
 
-  /// No description provided for @attractionDetailsLoadFailed.
+  /// No description provided for @placeDetailsLoadFailed.
   ///
   /// In en, this message translates to:
-  /// **'Failed to load attraction'**
-  String get attractionDetailsLoadFailed;
+  /// **'Failed to load place'**
+  String get placeDetailsLoadFailed;
 
-  /// No description provided for @attractionDetailsTitle.
+  /// No description provided for @placeDetailsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Attraction details'**
-  String get attractionDetailsTitle;
+  /// **'Place details'**
+  String get placeDetailsTitle;
 
-  /// No description provided for @attractionMustVisitBadge.
+  /// No description provided for @placeMustVisitBadge.
   ///
   /// In en, this message translates to:
   /// **'Must visit'**
-  String get attractionMustVisitBadge;
+  String get placeMustVisitBadge;
 
-  /// No description provided for @attractionStatRating.
+  /// No description provided for @placeStatRating.
   ///
   /// In en, this message translates to:
   /// **'Rating'**
-  String get attractionStatRating;
+  String get placeStatRating;
 
-  /// No description provided for @attractionStatDuration.
+  /// No description provided for @placeStatDuration.
   ///
   /// In en, this message translates to:
   /// **'Duration'**
-  String get attractionStatDuration;
+  String get placeStatDuration;
 
-  /// No description provided for @attractionStatPrice.
+  /// No description provided for @placeStatPrice.
   ///
   /// In en, this message translates to:
   /// **'Price'**
-  String get attractionStatPrice;
+  String get placeStatPrice;
 
-  /// No description provided for @attractionExperienceSection.
+  /// No description provided for @placeExperienceSection.
   ///
   /// In en, this message translates to:
   /// **'The experience'**
-  String get attractionExperienceSection;
+  String get placeExperienceSection;
 
-  /// No description provided for @attractionExpectSection.
+  /// No description provided for @placeExpectSection.
   ///
   /// In en, this message translates to:
   /// **'What to expect'**
-  String get attractionExpectSection;
+  String get placeExpectSection;
 
-  /// No description provided for @attractionVisitPlanSection.
+  /// No description provided for @placeVisitPlanSection.
   ///
   /// In en, this message translates to:
   /// **'Plan your visit'**
-  String get attractionVisitPlanSection;
+  String get placeVisitPlanSection;
 
-  /// No description provided for @attractionInflapTipTitle.
+  /// No description provided for @placeInflapTipTitle.
   ///
   /// In en, this message translates to:
   /// **'Inflap tip'**
-  String get attractionInflapTipTitle;
+  String get placeInflapTipTitle;
 
-  /// No description provided for @attractionVisitDurationLabel.
+  /// No description provided for @placeVisitDurationLabel.
   ///
   /// In en, this message translates to:
   /// **'Time needed'**
-  String get attractionVisitDurationLabel;
+  String get placeVisitDurationLabel;
 
-  /// No description provided for @attractionVisitDurationFlexible.
+  /// No description provided for @placeVisitDurationFlexible.
   ///
   /// In en, this message translates to:
   /// **'Flexible'**
-  String get attractionVisitDurationFlexible;
+  String get placeVisitDurationFlexible;
 
-  /// No description provided for @attractionVisitTicketsLabel.
+  /// No description provided for @placeVisitTicketsLabel.
   ///
   /// In en, this message translates to:
   /// **'Tickets'**
-  String get attractionVisitTicketsLabel;
+  String get placeVisitTicketsLabel;
 
-  /// No description provided for @attractionVisitFreeEntry.
+  /// No description provided for @placeVisitFreeEntry.
   ///
   /// In en, this message translates to:
   /// **'Free or varies'**
-  String get attractionVisitFreeEntry;
+  String get placeVisitFreeEntry;
 
-  /// No description provided for @attractionVisitBookingRecommended.
+  /// No description provided for @placeVisitBookingRecommended.
   ///
   /// In en, this message translates to:
   /// **'book ahead'**
-  String get attractionVisitBookingRecommended;
+  String get placeVisitBookingRecommended;
 
-  /// No description provided for @attractionVisitBestTimeLabel.
+  /// No description provided for @placeVisitBestTimeLabel.
   ///
   /// In en, this message translates to:
   /// **'Best time'**
-  String get attractionVisitBestTimeLabel;
+  String get placeVisitBestTimeLabel;
 
-  /// No description provided for @attractionVisitBestTimeEarlyMorning.
+  /// No description provided for @placeVisitBestTimeEarlyMorning.
   ///
   /// In en, this message translates to:
   /// **'Early morning'**
-  String get attractionVisitBestTimeEarlyMorning;
+  String get placeVisitBestTimeEarlyMorning;
 
-  /// No description provided for @attractionVisitBestTimeMorning.
+  /// No description provided for @placeVisitBestTimeMorning.
   ///
   /// In en, this message translates to:
   /// **'Morning'**
-  String get attractionVisitBestTimeMorning;
+  String get placeVisitBestTimeMorning;
 
-  /// No description provided for @attractionVisitBestTimeAfternoon.
+  /// No description provided for @placeVisitBestTimeAfternoon.
   ///
   /// In en, this message translates to:
   /// **'Afternoon'**
-  String get attractionVisitBestTimeAfternoon;
+  String get placeVisitBestTimeAfternoon;
 
-  /// No description provided for @attractionVisitBestTimeSunset.
+  /// No description provided for @placeVisitBestTimeSunset.
   ///
   /// In en, this message translates to:
   /// **'Sunset'**
-  String get attractionVisitBestTimeSunset;
+  String get placeVisitBestTimeSunset;
 
-  /// No description provided for @attractionVisitBestTimeAnytime.
+  /// No description provided for @placeVisitBestTimeAnytime.
   ///
   /// In en, this message translates to:
   /// **'Anytime'**
-  String get attractionVisitBestTimeAnytime;
+  String get placeVisitBestTimeAnytime;
 
-  /// No description provided for @attractionVisitGoodForLabel.
+  /// No description provided for @placeVisitGoodForLabel.
   ///
   /// In en, this message translates to:
   /// **'Good for'**
-  String get attractionVisitGoodForLabel;
+  String get placeVisitGoodForLabel;
 
-  /// No description provided for @attractionVisitAccessLabel.
+  /// No description provided for @placeVisitAccessLabel.
   ///
   /// In en, this message translates to:
   /// **'Access'**
-  String get attractionVisitAccessLabel;
+  String get placeVisitAccessLabel;
 
-  /// No description provided for @attractionVisitAccessGood.
+  /// No description provided for @placeVisitAccessGood.
   ///
   /// In en, this message translates to:
   /// **'Easy access'**
-  String get attractionVisitAccessGood;
+  String get placeVisitAccessGood;
 
-  /// No description provided for @attractionVisitAccessLimited.
+  /// No description provided for @placeVisitAccessLimited.
   ///
   /// In en, this message translates to:
   /// **'Limited access'**
-  String get attractionVisitAccessLimited;
+  String get placeVisitAccessLimited;
 
-  /// No description provided for @attractionVisitAccessUnknown.
+  /// No description provided for @placeVisitAccessUnknown.
   ///
   /// In en, this message translates to:
   /// **'Check locally'**
-  String get attractionVisitAccessUnknown;
+  String get placeVisitAccessUnknown;
 
-  /// No description provided for @attractionVisitSafetyLabel.
+  /// No description provided for @placeVisitSafetyLabel.
   ///
   /// In en, this message translates to:
   /// **'Prepare'**
-  String get attractionVisitSafetyLabel;
+  String get placeVisitSafetyLabel;
 
-  /// No description provided for @attractionVisitSafetyCheckWeather.
+  /// No description provided for @placeVisitSafetyCheckWeather.
   ///
   /// In en, this message translates to:
   /// **'Check weather'**
-  String get attractionVisitSafetyCheckWeather;
+  String get placeVisitSafetyCheckWeather;
 
-  /// No description provided for @attractionVisitSafetyBringWater.
+  /// No description provided for @placeVisitSafetyBringWater.
   ///
   /// In en, this message translates to:
   /// **'Bring water'**
-  String get attractionVisitSafetyBringWater;
+  String get placeVisitSafetyBringWater;
 
-  /// No description provided for @attractionVisitSafetyCheckHours.
+  /// No description provided for @placeVisitSafetyCheckHours.
   ///
   /// In en, this message translates to:
   /// **'Check hours'**
-  String get attractionVisitSafetyCheckHours;
+  String get placeVisitSafetyCheckHours;
 
-  /// No description provided for @attractionVisitAudienceCouples.
+  /// No description provided for @placeVisitAudienceCouples.
   ///
   /// In en, this message translates to:
   /// **'Couples'**
-  String get attractionVisitAudienceCouples;
+  String get placeVisitAudienceCouples;
 
-  /// No description provided for @attractionVisitAudienceWellness.
+  /// No description provided for @placeVisitAudienceWellness.
   ///
   /// In en, this message translates to:
   /// **'Wellness'**
-  String get attractionVisitAudienceWellness;
+  String get placeVisitAudienceWellness;
 
-  /// No description provided for @attractionVisitTipNature.
+  /// No description provided for @placeVisitTipNature.
   ///
   /// In en, this message translates to:
   /// **'Plan transport and weather before you go; guided routes are usually safer and more predictable.'**
-  String get attractionVisitTipNature;
+  String get placeVisitTipNature;
 
-  /// No description provided for @attractionVisitTipCulture.
+  /// No description provided for @placeVisitTipCulture.
   ///
   /// In en, this message translates to:
   /// **'Come earlier in the day for calmer photos and leave time for nearby cultural stops.'**
-  String get attractionVisitTipCulture;
+  String get placeVisitTipCulture;
 
-  /// No description provided for @attractionVisitTipDefault.
+  /// No description provided for @placeVisitTipDefault.
   ///
   /// In en, this message translates to:
   /// **'Check current hours and combine this stop with nearby activities to avoid losing time in transit.'**
-  String get attractionVisitTipDefault;
+  String get placeVisitTipDefault;
 
-  /// No description provided for @attractionReviewsSection.
+  /// No description provided for @placeReviewsSection.
   ///
   /// In en, this message translates to:
   /// **'Explorer\'s voice'**
-  String get attractionReviewsSection;
+  String get placeReviewsSection;
 
-  /// No description provided for @attractionSeeAllReviews.
+  /// No description provided for @placeSeeAllReviews.
   ///
   /// In en, this message translates to:
   /// **'See all ({count})'**
-  String attractionSeeAllReviews(int count);
+  String placeSeeAllReviews(int count);
 
-  /// No description provided for @attractionNoReviews.
+  /// No description provided for @placeNoReviews.
   ///
   /// In en, this message translates to:
   /// **'No reviews yet. Be the first!'**
-  String get attractionNoReviews;
+  String get placeNoReviews;
 
-  /// No description provided for @attractionAddReview.
+  /// No description provided for @placeAddReview.
   ///
   /// In en, this message translates to:
   /// **'Add review'**
-  String get attractionAddReview;
+  String get placeAddReview;
 
-  /// No description provided for @attractionReviewSheetTitle.
+  /// No description provided for @placeReviewSheetTitle.
   ///
   /// In en, this message translates to:
   /// **'Share your visit'**
-  String get attractionReviewSheetTitle;
+  String get placeReviewSheetTitle;
 
-  /// No description provided for @attractionReviewRatingLabel.
+  /// No description provided for @placeReviewRatingLabel.
   ///
   /// In en, this message translates to:
   /// **'Rating'**
-  String get attractionReviewRatingLabel;
+  String get placeReviewRatingLabel;
 
-  /// No description provided for @attractionReviewCommentLabel.
+  /// No description provided for @placeReviewCommentLabel.
   ///
   /// In en, this message translates to:
   /// **'Comment'**
-  String get attractionReviewCommentLabel;
+  String get placeReviewCommentLabel;
 
-  /// No description provided for @attractionReviewCommentHint.
+  /// No description provided for @placeReviewCommentHint.
   ///
   /// In en, this message translates to:
   /// **'What stood out, what would you recommend, and what should others know?'**
-  String get attractionReviewCommentHint;
+  String get placeReviewCommentHint;
 
-  /// No description provided for @attractionReviewAddPhoto.
+  /// No description provided for @placeReviewAddPhoto.
   ///
   /// In en, this message translates to:
   /// **'Photo'**
-  String get attractionReviewAddPhoto;
+  String get placeReviewAddPhoto;
 
-  /// No description provided for @attractionReviewAddVideo.
+  /// No description provided for @placeReviewAddVideo.
   ///
   /// In en, this message translates to:
   /// **'Video'**
-  String get attractionReviewAddVideo;
+  String get placeReviewAddVideo;
 
-  /// No description provided for @attractionReviewSubmit.
+  /// No description provided for @placeReviewSubmit.
   ///
   /// In en, this message translates to:
   /// **'Publish review'**
-  String get attractionReviewSubmit;
+  String get placeReviewSubmit;
 
-  /// No description provided for @attractionReviewSubmitting.
+  /// No description provided for @placeReviewSubmitting.
   ///
   /// In en, this message translates to:
   /// **'Publishing...'**
-  String get attractionReviewSubmitting;
+  String get placeReviewSubmitting;
 
-  /// No description provided for @attractionReviewMediaLimit.
+  /// No description provided for @placeReviewMediaLimit.
   ///
   /// In en, this message translates to:
   /// **'You can attach up to {count} files'**
-  String attractionReviewMediaLimit(int count);
+  String placeReviewMediaLimit(int count);
 
-  /// No description provided for @attractionReviewPickFailed.
+  /// No description provided for @placeReviewPickFailed.
   ///
   /// In en, this message translates to:
   /// **'Could not attach this file'**
-  String get attractionReviewPickFailed;
+  String get placeReviewPickFailed;
 
-  /// No description provided for @attractionReviewMediaTooLarge.
+  /// No description provided for @placeReviewMediaTooLarge.
   ///
   /// In en, this message translates to:
   /// **'File is too large'**
-  String get attractionReviewMediaTooLarge;
+  String get placeReviewMediaTooLarge;
 
-  /// No description provided for @attractionReviewUnsupportedFormat.
+  /// No description provided for @placeReviewUnsupportedFormat.
   ///
   /// In en, this message translates to:
   /// **'Unsupported file format'**
-  String get attractionReviewUnsupportedFormat;
+  String get placeReviewUnsupportedFormat;
 
-  /// No description provided for @attractionReviewSubmitFailed.
+  /// No description provided for @placeReviewSubmitFailed.
   ///
   /// In en, this message translates to:
   /// **'Could not publish the review'**
-  String get attractionReviewSubmitFailed;
+  String get placeReviewSubmitFailed;
 
-  /// No description provided for @attractionReviewSubmitSuccess.
+  /// No description provided for @placeReviewSubmitSuccess.
   ///
   /// In en, this message translates to:
   /// **'Review published'**
-  String get attractionReviewSubmitSuccess;
+  String get placeReviewSubmitSuccess;
 
-  /// No description provided for @attractionReviewCommentRequired.
+  /// No description provided for @placeReviewCommentRequired.
   ///
   /// In en, this message translates to:
   /// **'Write a short comment'**
-  String get attractionReviewCommentRequired;
+  String get placeReviewCommentRequired;
 
-  /// No description provided for @attractionReviewRemoveMedia.
+  /// No description provided for @placeReviewRemoveMedia.
   ///
   /// In en, this message translates to:
   /// **'Remove file'**
-  String get attractionReviewRemoveMedia;
+  String get placeReviewRemoveMedia;
 
-  /// No description provided for @attractionReviewVideoPreview.
+  /// No description provided for @placeReviewVideoPreview.
   ///
   /// In en, this message translates to:
   /// **'Video'**
-  String get attractionReviewVideoPreview;
+  String get placeReviewVideoPreview;
 
-  /// No description provided for @attractionFindExcursions.
+  /// No description provided for @placeFindExcursions.
   ///
   /// In en, this message translates to:
   /// **'Find excursions'**
-  String get attractionFindExcursions;
+  String get placeFindExcursions;
 
-  /// No description provided for @attractionMapLink.
+  /// No description provided for @placeMapLink.
   ///
   /// In en, this message translates to:
   /// **'View on map'**
-  String get attractionMapLink;
+  String get placeMapLink;
 
-  /// No description provided for @attractionVerifiedNomad.
+  /// No description provided for @placeVerifiedNomad.
   ///
   /// In en, this message translates to:
   /// **'Verified nomad'**
-  String get attractionVerifiedNomad;
+  String get placeVerifiedNomad;
 
-  /// No description provided for @attractionReviewsTitle.
+  /// No description provided for @placeReviewsTitle.
   ///
   /// In en, this message translates to:
   /// **'Reviews'**
-  String get attractionReviewsTitle;
+  String get placeReviewsTitle;
 
-  /// No description provided for @attractionTravelerFallback.
+  /// No description provided for @placeTravelerFallback.
   ///
   /// In en, this message translates to:
   /// **'Traveler'**
-  String get attractionTravelerFallback;
+  String get placeTravelerFallback;
 
   /// No description provided for @profileGuideReviewsTitle.
   ///
@@ -6406,149 +6406,149 @@ abstract class AppLocalizations {
   /// **'Pull to refresh or open the profile again.'**
   String get profileGuideReviewsLoadFailedHint;
 
-  /// No description provided for @attractionPriceVaries.
+  /// No description provided for @placePriceVaries.
   ///
   /// In en, this message translates to:
   /// **'Price varies'**
-  String get attractionPriceVaries;
+  String get placePriceVaries;
 
-  /// No description provided for @attractionPriceVariesShort.
+  /// No description provided for @placePriceVariesShort.
   ///
   /// In en, this message translates to:
   /// **'Varies'**
-  String get attractionPriceVariesShort;
+  String get placePriceVariesShort;
 
-  /// No description provided for @attractionDurationHours.
+  /// No description provided for @placeDurationHours.
   ///
   /// In en, this message translates to:
   /// **'{hours} h'**
-  String attractionDurationHours(int hours);
+  String placeDurationHours(int hours);
 
-  /// No description provided for @attractionDurationDays.
+  /// No description provided for @placeDurationDays.
   ///
   /// In en, this message translates to:
   /// **'{days} d'**
-  String attractionDurationDays(int days);
+  String placeDurationDays(int days);
 
-  /// No description provided for @attractionBackTooltip.
+  /// No description provided for @placeBackTooltip.
   ///
   /// In en, this message translates to:
   /// **'Back'**
-  String get attractionBackTooltip;
+  String get placeBackTooltip;
 
-  /// No description provided for @attractionNotificationsTooltip.
+  /// No description provided for @placeNotificationsTooltip.
   ///
   /// In en, this message translates to:
   /// **'Notifications'**
-  String get attractionNotificationsTooltip;
+  String get placeNotificationsTooltip;
 
-  /// No description provided for @attractionBookmarkTooltip.
+  /// No description provided for @placeBookmarkTooltip.
   ///
   /// In en, this message translates to:
-  /// **'Save attraction'**
-  String get attractionBookmarkTooltip;
+  /// **'Save place'**
+  String get placeBookmarkTooltip;
 
-  /// No description provided for @attractionTagFamilyLabel.
+  /// No description provided for @placeTagFamilyLabel.
   ///
   /// In en, this message translates to:
   /// **'Family friendly'**
-  String get attractionTagFamilyLabel;
+  String get placeTagFamilyLabel;
 
-  /// No description provided for @attractionTagFamilySubtitle.
+  /// No description provided for @placeTagFamilySubtitle.
   ///
   /// In en, this message translates to:
   /// **'Suitable for all ages'**
-  String get attractionTagFamilySubtitle;
+  String get placeTagFamilySubtitle;
 
-  /// No description provided for @attractionTagSunsetLabel.
+  /// No description provided for @placeTagSunsetLabel.
   ///
   /// In en, this message translates to:
   /// **'Best at sunset'**
-  String get attractionTagSunsetLabel;
+  String get placeTagSunsetLabel;
 
-  /// No description provided for @attractionTagSunsetSubtitle.
+  /// No description provided for @placeTagSunsetSubtitle.
   ///
   /// In en, this message translates to:
   /// **'Stunning twilight views'**
-  String get attractionTagSunsetSubtitle;
+  String get placeTagSunsetSubtitle;
 
-  /// No description provided for @attractionTagAccessibilityLabel.
+  /// No description provided for @placeTagAccessibilityLabel.
   ///
   /// In en, this message translates to:
   /// **'Accessibility'**
-  String get attractionTagAccessibilityLabel;
+  String get placeTagAccessibilityLabel;
 
-  /// No description provided for @attractionTagAccessibilitySubtitle.
+  /// No description provided for @placeTagAccessibilitySubtitle.
   ///
   /// In en, this message translates to:
   /// **'Wheelchair friendly'**
-  String get attractionTagAccessibilitySubtitle;
+  String get placeTagAccessibilitySubtitle;
 
-  /// No description provided for @attractionTagDiningLabel.
+  /// No description provided for @placeTagDiningLabel.
   ///
   /// In en, this message translates to:
   /// **'Fine dining'**
-  String get attractionTagDiningLabel;
+  String get placeTagDiningLabel;
 
-  /// No description provided for @attractionTagDiningSubtitle.
+  /// No description provided for @placeTagDiningSubtitle.
   ///
   /// In en, this message translates to:
   /// **'Gourmet restaurants'**
-  String get attractionTagDiningSubtitle;
+  String get placeTagDiningSubtitle;
 
-  /// No description provided for @attractionTagOutdoorLabel.
+  /// No description provided for @placeTagOutdoorLabel.
   ///
   /// In en, this message translates to:
   /// **'Outdoor'**
-  String get attractionTagOutdoorLabel;
+  String get placeTagOutdoorLabel;
 
-  /// No description provided for @attractionTagOutdoorSubtitle.
+  /// No description provided for @placeTagOutdoorSubtitle.
   ///
   /// In en, this message translates to:
   /// **'Nature and fresh air'**
-  String get attractionTagOutdoorSubtitle;
+  String get placeTagOutdoorSubtitle;
 
-  /// No description provided for @attractionTagPhotoLabel.
+  /// No description provided for @placeTagPhotoLabel.
   ///
   /// In en, this message translates to:
   /// **'Photo spot'**
-  String get attractionTagPhotoLabel;
+  String get placeTagPhotoLabel;
 
-  /// No description provided for @attractionTagPhotoSubtitle.
+  /// No description provided for @placeTagPhotoSubtitle.
   ///
   /// In en, this message translates to:
   /// **'Great for memorable shots'**
-  String get attractionTagPhotoSubtitle;
+  String get placeTagPhotoSubtitle;
 
-  /// No description provided for @attractionTagHistoryLabel.
+  /// No description provided for @placeTagHistoryLabel.
   ///
   /// In en, this message translates to:
   /// **'Historic'**
-  String get attractionTagHistoryLabel;
+  String get placeTagHistoryLabel;
 
-  /// No description provided for @attractionTagHistorySubtitle.
+  /// No description provided for @placeTagHistorySubtitle.
   ///
   /// In en, this message translates to:
   /// **'Rich cultural heritage'**
-  String get attractionTagHistorySubtitle;
+  String get placeTagHistorySubtitle;
 
-  /// No description provided for @attractionTagAdventureLabel.
+  /// No description provided for @placeTagAdventureLabel.
   ///
   /// In en, this message translates to:
   /// **'Adventure'**
-  String get attractionTagAdventureLabel;
+  String get placeTagAdventureLabel;
 
-  /// No description provided for @attractionTagAdventureSubtitle.
+  /// No description provided for @placeTagAdventureSubtitle.
   ///
   /// In en, this message translates to:
   /// **'Active experiences'**
-  String get attractionTagAdventureSubtitle;
+  String get placeTagAdventureSubtitle;
 
-  /// No description provided for @attractionTagUniqueSubtitle.
+  /// No description provided for @placeTagUniqueSubtitle.
   ///
   /// In en, this message translates to:
   /// **'Unique experience'**
-  String get attractionTagUniqueSubtitle;
+  String get placeTagUniqueSubtitle;
 
   /// No description provided for @activitiesEntryTitle.
   ///
@@ -6832,17 +6832,17 @@ abstract class AppLocalizations {
   /// **'Try another city, category, or excursion name.'**
   String get excursionsEmptySearchSubtitle;
 
-  /// No description provided for @excursionsNoAttractionExcursionsTitle.
+  /// No description provided for @excursionsNoPlaceExcursionsTitle.
   ///
   /// In en, this message translates to:
-  /// **'No excursions for this attraction yet'**
-  String get excursionsNoAttractionExcursionsTitle;
+  /// **'No excursions for this place yet'**
+  String get excursionsNoPlaceExcursionsTitle;
 
-  /// No description provided for @excursionsNoAttractionExcursionsSubtitle.
+  /// No description provided for @excursionsNoPlaceExcursionsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Showing other available excursions. When guides add a route for this attraction, it will appear here.'**
-  String get excursionsNoAttractionExcursionsSubtitle;
+  /// **'Showing other available excursions. When guides add a route for this place, it will appear here.'**
+  String get excursionsNoPlaceExcursionsSubtitle;
 
   /// No description provided for @guidesTitle.
   ///
@@ -7711,13 +7711,13 @@ abstract class AppLocalizations {
   /// No description provided for @createExcursionCoverUploadHint.
   ///
   /// In en, this message translates to:
-  /// **'JPG, PNG or WEBP. If you selected an attraction, its photo will be used unless you upload your own.'**
+  /// **'JPG, PNG or WEBP. If you selected a place, its photo will be used unless you upload your own.'**
   String get createExcursionCoverUploadHint;
 
   /// No description provided for @createExcursionSelectedLandmark.
   ///
   /// In en, this message translates to:
-  /// **'Attraction'**
+  /// **'Place'**
   String get createExcursionSelectedLandmark;
 
   /// No description provided for @createExcursionLandmarkNameLabel.
@@ -7735,7 +7735,7 @@ abstract class AppLocalizations {
   /// No description provided for @createExcursionLandmarkValidation.
   ///
   /// In en, this message translates to:
-  /// **'Choose an attraction'**
+  /// **'Choose a place'**
   String get createExcursionLandmarkValidation;
 
   /// No description provided for @createExcursionCountryValidation.
@@ -7753,32 +7753,32 @@ abstract class AppLocalizations {
   /// No description provided for @createExcursionManualLocationHint.
   ///
   /// In en, this message translates to:
-  /// **'You can enter a custom location or choose an attraction from this country.'**
+  /// **'You can enter a custom location or choose a place from this country.'**
   String get createExcursionManualLocationHint;
 
-  /// No description provided for @createExcursionLocationLockedByAttraction.
+  /// No description provided for @createExcursionLocationLockedByPlace.
   ///
   /// In en, this message translates to:
-  /// **'This location comes from the attraction catalog. Change the attraction to edit it.'**
-  String get createExcursionLocationLockedByAttraction;
+  /// **'This location comes from the places catalog. Change the place to edit it.'**
+  String get createExcursionLocationLockedByPlace;
 
-  /// No description provided for @createExcursionAttractionCatalogHint.
+  /// No description provided for @createExcursionPlaceCatalogHint.
   ///
   /// In en, this message translates to:
-  /// **'Attraction catalog for the selected country'**
-  String get createExcursionAttractionCatalogHint;
+  /// **'Places catalog for the selected country'**
+  String get createExcursionPlaceCatalogHint;
 
-  /// No description provided for @createExcursionAttractionCatalogSource.
+  /// No description provided for @createExcursionPlaceCatalogSource.
   ///
   /// In en, this message translates to:
-  /// **'From the attraction catalog'**
-  String get createExcursionAttractionCatalogSource;
+  /// **'From the places catalog'**
+  String get createExcursionPlaceCatalogSource;
 
-  /// No description provided for @createExcursionSingleAttractionMode.
+  /// No description provided for @createExcursionSinglePlaceMode.
   ///
   /// In en, this message translates to:
-  /// **'Single attraction'**
-  String get createExcursionSingleAttractionMode;
+  /// **'Single place'**
+  String get createExcursionSinglePlaceMode;
 
   /// No description provided for @createExcursionCombinedRouteMode.
   ///
@@ -7789,25 +7789,25 @@ abstract class AppLocalizations {
   /// No description provided for @createExcursionCombinedRouteMinStopsValidation.
   ///
   /// In en, this message translates to:
-  /// **'Add at least {count} attraction stops'**
+  /// **'Add at least {count} place stops'**
   String createExcursionCombinedRouteMinStopsValidation(Object count);
 
   /// No description provided for @createExcursionCombinedRouteMaxStopsValidation.
   ///
   /// In en, this message translates to:
-  /// **'Add no more than {count} attraction stops'**
+  /// **'Add no more than {count} place stops'**
   String createExcursionCombinedRouteMaxStopsValidation(Object count);
 
   /// No description provided for @createExcursionDuplicateRouteStopValidation.
   ///
   /// In en, this message translates to:
-  /// **'This attraction is already in the route.'**
+  /// **'This place is already in the route.'**
   String get createExcursionDuplicateRouteStopValidation;
 
   /// No description provided for @excursionSelectLocationTitle.
   ///
   /// In en, this message translates to:
-  /// **'Select Attraction'**
+  /// **'Select place'**
   String get excursionSelectLocationTitle;
 
   /// No description provided for @excursionSelectLocationCountrySection.
@@ -7846,17 +7846,17 @@ abstract class AppLocalizations {
   /// **'Italy'**
   String get excursionCountryItaly;
 
-  /// No description provided for @excursionSelectLocationAttractionSection.
+  /// No description provided for @excursionSelectLocationPlaceSection.
   ///
   /// In en, this message translates to:
-  /// **'Select Attraction'**
-  String get excursionSelectLocationAttractionSection;
+  /// **'Select place'**
+  String get excursionSelectLocationPlaceSection;
 
-  /// No description provided for @excursionSelectLocationAttractionSearchHint.
+  /// No description provided for @excursionSelectLocationPlaceSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Attractions'**
-  String get excursionSelectLocationAttractionSearchHint;
+  /// **'Places'**
+  String get excursionSelectLocationPlaceSearchHint;
 
   /// No description provided for @excursionSelectLocationSelected.
   ///
@@ -10478,11 +10478,11 @@ abstract class AppLocalizations {
   /// **'Via guide: {guide}'**
   String excursionReviewViaGuide(Object guide);
 
-  /// No description provided for @excursionReviewSourceAttractionBadge.
+  /// No description provided for @excursionReviewSourcePlaceBadge.
   ///
   /// In en, this message translates to:
   /// **'Review based on a visited excursion'**
-  String get excursionReviewSourceAttractionBadge;
+  String get excursionReviewSourcePlaceBadge;
 
   /// No description provided for @activityReviewsSectionTitle.
   ///

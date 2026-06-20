@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:inflap/features/attractions/models/attraction_vm.dart';
+import 'package:inflap/features/places/models/place_vm.dart';
 import 'package:inflap/screens/excursions/excursion_select_location_screen.dart';
 
 void main() {
   test('selection keeps localized filter city name for excursion payload', () {
-    final selection = ExcursionLocationSelection.fromAttraction(
-      _attraction(cityId: 'da-nang'),
+    final selection = ExcursionLocationSelection.fromPlace(
+      _place(cityId: 'da-nang'),
       fallbackCityName: 'Дананг',
     );
 
@@ -13,26 +13,23 @@ void main() {
     expect(selection.cityName, 'Дананг');
   });
 
-  test(
-    'selection falls back to attraction city id when city name is missing',
-    () {
-      final selection = ExcursionLocationSelection.fromAttraction(
-        _attraction(cityId: 'da-nang'),
-      );
+  test('selection falls back to place city id when city name is missing', () {
+    final selection = ExcursionLocationSelection.fromPlace(
+      _place(cityId: 'da-nang'),
+    );
 
-      expect(selection.cityId, 'da-nang');
-      expect(selection.cityName, 'da-nang');
-    },
-  );
+    expect(selection.cityId, 'da-nang');
+    expect(selection.cityName, 'da-nang');
+  });
 
   test(
     'selection keeps external cover when imported media has no file mirror',
     () {
-      final selection = ExcursionLocationSelection.fromAttraction(
-        _attraction(
+      final selection = ExcursionLocationSelection.fromPlace(
+        _place(
           cityId: 'da-nang',
           media: const [
-            AttractionMediaVm(
+            PlaceMediaVm(
               id: 'media-id',
               fileId: '00000000-0000-0000-0000-000000000000',
               externalUrl: 'https://upload.wikimedia.org/dragon-bridge.jpg',
@@ -55,11 +52,8 @@ void main() {
   );
 }
 
-AttractionVm _attraction({
-  required String cityId,
-  List<AttractionMediaVm> media = const [],
-}) {
-  return AttractionVm(
+PlaceVm _place({required String cityId, List<PlaceMediaVm> media = const []}) {
+  return PlaceVm(
     id: '5841aaeb-c597-4b89-992d-26a844dd2054',
     locale: 'en',
     defaultLocale: 'en',
@@ -76,10 +70,10 @@ AttractionVm _attraction({
     source: 'IMPORT',
     status: 'PUBLISHED',
     tags: const [],
-    visitInfo: AttractionVisitInfoVm.empty,
+    visitInfo: PlaceVisitInfoVm.empty,
     translations: const {},
     media: media,
-    author: const AttractionAuthorVm(userId: ''),
+    author: const PlaceAuthorVm(userId: ''),
     createdAt: '2026-05-27T00:00:00Z',
     updatedAt: '2026-05-27T00:00:00Z',
   );

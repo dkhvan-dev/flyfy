@@ -24,7 +24,7 @@ type Config struct {
 	Trust        TrustServiceConfig
 	AntiFraud    AntiFraudServiceConfig
 	Notification NotificationServiceConfig
-	Attraction   AttractionServiceConfig
+	Place        PlaceServiceConfig
 	FileManager  FileManagerServiceConfig
 	FeatureFlag  FeatureFlagServiceConfig
 	TechBreak    TechBreakServiceConfig
@@ -161,15 +161,15 @@ type NotificationServiceConfig struct {
 	RequestTimeout time.Duration `env:"NOTIFICATION_SERVICE_REQUEST_TIMEOUT, default=3s"`
 }
 
-type AttractionServiceConfig struct {
-	BaseURL string        `env:"ATTRACTION_SERVICE_URL, default=http://attraction-service:8090"`
-	Timeout time.Duration `env:"ATTRACTION_SERVICE_TIMEOUT, default=5s"`
+type PlaceServiceConfig struct {
+	BaseURL string        `env:"PLACE_SERVICE_URL, default=http://place-service:8090"`
+	Timeout time.Duration `env:"PLACE_SERVICE_TIMEOUT, default=5s"`
 }
 
 type FileManagerServiceConfig struct {
-	BaseURL                 string        `env:"FILE_MANAGER_SERVICE_URL, default=http://file-manager-service:8083"`
-	Timeout                 time.Duration `env:"FILE_MANAGER_SERVICE_TIMEOUT, default=15s"`
-	MaxAttractionImageBytes int64         `env:"MAX_ATTRACTION_IMAGE_BYTES, default=20971520"`
+	BaseURL            string        `env:"FILE_MANAGER_SERVICE_URL, default=http://file-manager-service:8083"`
+	Timeout            time.Duration `env:"FILE_MANAGER_SERVICE_TIMEOUT, default=15s"`
+	MaxPlaceImageBytes int64         `env:"MAX_PLACE_IMAGE_BYTES, default=20971520"`
 }
 
 type FeatureFlagServiceConfig struct {

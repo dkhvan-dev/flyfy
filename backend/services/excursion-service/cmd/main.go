@@ -16,7 +16,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"kz/inflap/backend/pkg/switches"
 	"kz/inflap/backend/pkg/trustpolicy/grpcclient"
-	attractionadapter "kz/inflap/backend/services/excursion-service/internal/adapter/attraction"
 	chatadapter "kz/inflap/backend/services/excursion-service/internal/adapter/chat"
 	filemanageradapter "kz/inflap/backend/services/excursion-service/internal/adapter/filemanager"
 	fraudadapter "kz/inflap/backend/services/excursion-service/internal/adapter/fraud"
@@ -25,6 +24,7 @@ import (
 	httpadapter "kz/inflap/backend/services/excursion-service/internal/adapter/http"
 	notificationadapter "kz/inflap/backend/services/excursion-service/internal/adapter/notification"
 	paymentadapter "kz/inflap/backend/services/excursion-service/internal/adapter/payment"
+	placeadapter "kz/inflap/backend/services/excursion-service/internal/adapter/place"
 	"kz/inflap/backend/services/excursion-service/internal/adapter/repository"
 	translationadapter "kz/inflap/backend/services/excursion-service/internal/adapter/translation"
 	userserviceadapter "kz/inflap/backend/services/excursion-service/internal/adapter/userservice"
@@ -94,8 +94,8 @@ func main() {
 		cfg.Translation.Timeout,
 		cfg.Security.InternalServiceToken,
 	)
-	attractionRatingClient := attractionadapter.NewClient(
-		cfg.Attraction.BaseURL,
+	placeRatingClient := placeadapter.NewClient(
+		cfg.Place.BaseURL,
 		cfg.Security.InternalServiceToken,
 	)
 	chatClient := chatadapter.New(
@@ -136,7 +136,7 @@ func main() {
 	}
 	excursionUC := app.NewExcursionUseCase(repo, guideClient, fileManagerClient, translator).
 		WithUserProfileResolver(userClient).
-		WithAttractionRatingUpdater(attractionRatingClient).
+		WithPlaceRatingUpdater(placeRatingClient).
 		WithExcursionChatGateway(chatClient).
 		WithNotificationGateway(notificationClient).
 		WithPaymentGateway(paymentClient).

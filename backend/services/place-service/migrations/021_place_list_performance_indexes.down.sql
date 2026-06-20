@@ -1,0 +1,8 @@
+DROP INDEX CONCURRENTLY IF EXISTS idx_place_city_links_place_kind_position;
+DROP INDEX CONCURRENTLY IF EXISTS idx_place_city_links_kind_city_place;
+DROP INDEX CONCURRENTLY IF EXISTS idx_places_active_country_city_duration_hours;
+DROP INDEX CONCURRENTLY IF EXISTS idx_places_active_country_city_price;
+DROP INDEX CONCURRENTLY IF EXISTS idx_places_active_country_city_rating;
+DROP INDEX CONCURRENTLY IF EXISTS idx_places_active_country_category_latest;
+DROP INDEX CONCURRENTLY IF EXISTS idx_places_active_country_city_category_latest;
+DROP INDEX CONCURRENTLY IF EXISTS idx_places_active_country_city_latest;

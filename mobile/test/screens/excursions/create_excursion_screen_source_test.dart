@@ -220,7 +220,7 @@ void main() {
   });
 
   test(
-    'create excursion does not use selected attraction as meeting point',
+    'create excursion does not use selected place as meeting point',
     () async {
       final source = await File(
         'lib/screens/excursions/create_excursion_screen.dart',
@@ -602,7 +602,7 @@ void main() {
   );
 
   test(
-    'create excursion can upload a custom cover or reuse selected attraction cover',
+    'create excursion can upload a custom cover or reuse selected place cover',
     () async {
       final source = await File(
         'lib/screens/excursions/create_excursion_screen.dart',
@@ -620,25 +620,25 @@ void main() {
       expect(source, contains('_effectiveCoverFileId'));
       expect(source, contains('coverFileId: _offerCoverFileId'));
       expect(source, contains('productCoverFileId: _productCoverFileId'));
-      expect(source, contains('_selectedAttractionCoverFileId'));
-      expect(source, contains('_selectedAttractionCoverImageUrl'));
+      expect(source, contains('_selectedPlaceCoverFileId'));
+      expect(source, contains('_selectedPlaceCoverImageUrl'));
       expect(source, contains('_ExcursionCoverUploadCard'));
       expect(fileApiSource, contains('createExcursionCoverUpload'));
       expect(fileApiSource, contains("purpose: 'EXCURSION_MEDIA'"));
       expect(selectorSource, contains('coverFileId'));
       expect(selectorSource, contains('coverImageUrl'));
-      expect(selectorSource, contains('resolveAttractionMediaUrl'));
+      expect(selectorSource, contains('resolvePlaceMediaUrl'));
     },
   );
 
   test(
-    'create excursion replaces custom cover when attraction is selected',
+    'create excursion replaces custom cover when place is selected',
     () async {
       final source = await File(
         'lib/screens/excursions/create_excursion_screen.dart',
       ).readAsString();
 
-      expect(source, contains('_replaceCustomCoverWithAttractionCover'));
+      expect(source, contains('_replaceCustomCoverWithPlaceCover'));
       expect(source, contains('_coverPreviewBytes = null'));
       expect(source, contains('_coverFileId = null'));
       expect(source, contains('_coverChanged = false'));
@@ -655,11 +655,8 @@ void main() {
       expect(selectorEnd, greaterThan(selectorStart));
 
       final selectorSource = source.substring(selectorStart, selectorEnd);
-      expect(selectorSource, contains('_selectedAttractionCoverFileId ='));
-      expect(
-        selectorSource,
-        contains('_replaceCustomCoverWithAttractionCover();'),
-      );
+      expect(selectorSource, contains('_selectedPlaceCoverFileId ='));
+      expect(selectorSource, contains('_replaceCustomCoverWithPlaceCover();'));
     },
   );
 
@@ -715,7 +712,7 @@ void main() {
   );
 
   test(
-    'create excursion opens attraction selector without a country picker',
+    'create excursion opens place selector without a country picker',
     () async {
       final source = await File(
         'lib/screens/excursions/create_excursion_screen.dart',
@@ -723,7 +720,7 @@ void main() {
 
       expect(source, contains('class _LandmarkSelectionCard'));
       expect(source, contains('String? _selectedCountryCode'));
-      expect(source, contains('l10n.excursionSelectLocationAttractionSection'));
+      expect(source, contains('l10n.excursionSelectLocationPlaceSection'));
       expect(source, contains('context.push<ExcursionLocationSelection>'));
       expect(source, contains("countryCode: _selectedCountryCode ?? ''"));
       expect(source, contains('onSelectLocation:'));
@@ -746,26 +743,26 @@ void main() {
   );
 
   test(
-    'create excursion supports single attraction and combined route modes',
+    'create excursion supports single place and combined route modes',
     () async {
       final source = await File(
         'lib/screens/excursions/create_excursion_screen.dart',
       ).readAsString();
 
       expect(source, contains('enum _ExcursionCreationMode'));
-      expect(source, contains('singleAttraction'));
+      expect(source, contains('singlePlace'));
       expect(source, contains('combinedRoute'));
-      expect(source, contains('_maxItineraryAttractionStops = 5'));
+      expect(source, contains('_maxItineraryPlaceStops = 5'));
       expect(
         source,
-        contains('_creationMode = _ExcursionCreationMode.singleAttraction'),
+        contains('_creationMode = _ExcursionCreationMode.singlePlace'),
       );
       expect(source, contains('class _CreationModeSelector'));
-      expect(source, contains('createExcursionSingleAttractionMode'));
+      expect(source, contains('createExcursionSinglePlaceMode'));
       expect(source, contains('createExcursionCombinedRouteMode'));
       expect(source, contains('Wrap('));
-      expect(source, contains('enableAttractionSelection: isCombinedRoute'));
-      expect(source, contains('_openStopAttractionSelector'));
+      expect(source, contains('enablePlaceSelection: isCombinedRoute'));
+      expect(source, contains('_openStopPlaceSelector'));
     },
   );
 
@@ -783,7 +780,7 @@ void main() {
       expect(source, contains('_confirmCreationModeChangeIfNeeded'));
       expect(source, contains('_hasCreationModeSpecificDraft'));
       expect(source, contains('_clearModeSpecificDraft'));
-      expect(source, contains('_clearSingleAttractionModeDraft'));
+      expect(source, contains('_clearSinglePlaceModeDraft'));
       expect(source, contains('_clearCombinedRouteModeDraft'));
       expect(source, contains('l10n.createExcursionModeSwitchTitle'));
       expect(source, contains('l10n.createExcursionModeSwitchConfirm'));
@@ -795,7 +792,7 @@ void main() {
   );
 
   test(
-    'create excursion validates combined routes by attraction stop count',
+    'create excursion validates combined routes by place stop count',
     () async {
       final source = await File(
         'lib/screens/excursions/create_excursion_screen.dart',
@@ -803,13 +800,13 @@ void main() {
 
       expect(
         source,
-        contains('_creationMode == _ExcursionCreationMode.singleAttraction'),
+        contains('_creationMode == _ExcursionCreationMode.singlePlace'),
       );
       expect(
         source,
         contains('_creationMode == _ExcursionCreationMode.combinedRoute'),
       );
-      expect(source, contains('_itineraryAttractionStopCount'));
+      expect(source, contains('_itineraryPlaceStopCount'));
       expect(
         source,
         contains('createExcursionCombinedRouteMinStopsValidation'),
@@ -818,12 +815,10 @@ void main() {
         source,
         contains('createExcursionCombinedRouteMaxStopsValidation'),
       );
-      expect(source, contains('_maxItineraryAttractionStops'));
+      expect(source, contains('_maxItineraryPlaceStops'));
       expect(
         source,
-        isNot(
-          contains('if (!_hasSelectedAttraction) {\n      _landmarkErrorText'),
-        ),
+        isNot(contains('if (!_hasSelectedPlace) {\n      _landmarkErrorText')),
       );
     },
   );
@@ -837,13 +832,13 @@ void main() {
       final enSource = await File('lib/l10n/app_en.arb').readAsString();
       final ruSource = await File('lib/l10n/app_ru.arb').readAsString();
 
-      expect(source, contains('reservedAttractionIds'));
-      expect(source, contains('_reservedItineraryAttractionIds'));
-      expect(source, contains('_isReservedAttraction'));
+      expect(source, contains('reservedPlaceIds'));
+      expect(source, contains('_reservedItineraryPlaceIds'));
+      expect(source, contains('_isReservedPlace'));
       expect(source, contains('createExcursionDuplicateRouteStopValidation'));
       expect(
         RegExp(
-          r"readOnly:\s*widget\.enableAttractionSelection\s*&&\s*\(_selectedAttractionId \?\? ''\)\.trim\(\)\.isNotEmpty",
+          r"readOnly:\s*widget\.enablePlaceSelection\s*&&\s*\(_selectedPlaceId \?\? ''\)\.trim\(\)\.isNotEmpty",
         ).hasMatch(source),
         isTrue,
       );
@@ -862,16 +857,16 @@ void main() {
 
       expect(source, contains('excursion.routeKind'));
       expect(source, contains("'COMBINED_ROUTE'"));
-      expect(source, contains('attractionId: item.attractionId'));
-      expect(source, contains('attractionName: item.attractionName'));
+      expect(source, contains('placeId: item.placeId'));
+      expect(source, contains('placeName: item.placeName'));
       expect(source, contains('latitude: item.latitude'));
       expect(source, contains('longitude: item.longitude'));
       expect(
         source,
         contains('travelFromPreviousMinutes: item.travelFromPreviousMinutes'),
       );
-      expect(source, contains('attractionId: _selectedAttractionId'));
-      expect(source, contains('attractionName: _selectedAttractionName'));
+      expect(source, contains('placeId: _selectedPlaceId'));
+      expect(source, contains('placeName: _selectedPlaceName'));
       expect(source, contains('latitude: _selectedLatitude'));
       expect(source, contains('longitude: _selectedLongitude'));
     },
@@ -898,13 +893,13 @@ void main() {
       );
       expect(
         RegExp(
-          r'attractionId:\s*isCombinedRoute\s*\?\s*item\.attractionId\s*:\s*null',
+          r'placeId:\s*isCombinedRoute\s*\?\s*item\.placeId\s*:\s*null',
         ).hasMatch(source),
         isTrue,
       );
       expect(
         RegExp(
-          r'attractionName:\s*isCombinedRoute\s*\?\s*item\.attractionName\s*:\s*null',
+          r'placeName:\s*isCombinedRoute\s*\?\s*item\.placeName\s*:\s*null',
         ).hasMatch(source),
         isTrue,
       );

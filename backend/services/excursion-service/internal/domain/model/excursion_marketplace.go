@@ -11,8 +11,8 @@ import (
 type ExcursionRouteKind string
 
 const (
-	ExcursionRouteKindSingleAttraction ExcursionRouteKind = "SINGLE_ATTRACTION"
-	ExcursionRouteKindCombinedRoute    ExcursionRouteKind = "COMBINED_ROUTE"
+	ExcursionRouteKindSinglePlace   ExcursionRouteKind = "SINGLE_PLACE"
+	ExcursionRouteKindCombinedRoute ExcursionRouteKind = "COMBINED_ROUTE"
 )
 
 type ExcursionProductCard struct {
@@ -21,8 +21,8 @@ type ExcursionProductCard struct {
 
 	RouteKind        ExcursionRouteKind
 	RouteFingerprint *string
-	AttractionIDs    []uuid.UUID
-	AttractionNames  []string
+	PlaceIDs         []uuid.UUID
+	PlaceNames       []string
 	StopCount        int
 	TransportMode    string
 	RouteTheme       *string

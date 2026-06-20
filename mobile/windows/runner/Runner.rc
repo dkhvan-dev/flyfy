@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "kz.inflap" "\0"
-            VALUE "FileDescription", "inflap" "\0"
+            VALUE "FileDescription", "Inflap" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "inflap" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 kz.inflap. All rights reserved." "\0"
             VALUE "OriginalFilename", "inflap.exe" "\0"
-            VALUE "ProductName", "inflap" "\0"
+            VALUE "ProductName", "Inflap" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

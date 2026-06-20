@@ -40,7 +40,7 @@
             </dd>
           </div>
           <div><dt>{{t $.Locale "label.riskScore"}}</dt><dd>{{.PublishRiskScore}}</dd></div>
-          <div><dt>{{t $.Locale "label.landmark"}}</dt><dd>{{if excursionAttractions $.Locale .}}{{excursionAttractions $.Locale .}}{{else}}-{{end}}</dd></div>
+          <div><dt>{{t $.Locale "label.landmark"}}</dt><dd>{{if excursionPlaces $.Locale .}}{{excursionPlaces $.Locale .}}{{else}}-{{end}}</dd></div>
           <div><dt>{{t $.Locale "label.city"}}</dt><dd>{{excursionLocation $.Locale .}}</dd></div>
           <div><dt>{{t $.Locale "label.duration"}}</dt><dd>{{excursionDuration $.Locale .}}</dd></div>
           <div><dt>{{t $.Locale "label.groupSize"}}</dt><dd>{{excursionMaxGroup $.Locale .}}</dd></div>
@@ -87,7 +87,7 @@
                   <div class="meta-row compact">
                     {{with itineraryDuration $.Locale .DurationMinutes}}<span>{{.}}</span>{{end}}
                     {{with itineraryTravel $.Locale .TravelFromPreviousMinutes}}<span>{{.}}</span>{{end}}
-                    {{with itineraryAttraction .}}<span>{{.}}</span>{{end}}
+                    {{with itineraryPlace .}}<span>{{.}}</span>{{end}}
                   </div>
                   {{with itineraryDescription $.Locale .}}<p class="preline">{{.}}</p>{{end}}
                 </div>
@@ -190,7 +190,24 @@
           <p class="reason">{{t $.Locale "label.signals"}}: {{chatMessageSignals $.Locale .}}</p>
         {{end}}
         <h2>{{t $.Locale "section.message"}}</h2>
-        <p class="preline">{{chatMessagePreview $.Locale .}}</p>
+        <div class="chat-message-card">
+          {{with chatMessageKindBadge $.Locale .}}
+            <span class="chat-message-kind" data-chat-message-kind>{{.}}</span>
+          {{end}}
+          {{with chatMessageBody .}}
+            <p class="preline">{{.}}</p>
+          {{end}}
+          {{if .FileIDs}}
+            <div class="chat-attachments" aria-label="{{t $.Locale "label.attachments"}}">
+              {{range .FileIDs}}
+                <span class="chat-attachment" data-chat-attachment-id="{{.}}">
+                  <span>{{t $.Locale "label.attachment"}}</span>
+                  <code>{{.}}</code>
+                </span>
+              {{end}}
+            </div>
+          {{end}}
+        </div>
         <h2>{{t $.Locale "section.participants"}}</h2>
         {{if .Participants}}
           <div class="chip-list">
@@ -208,7 +225,22 @@
               <div class="timeline-marker">{{formatTime .SentAt (staffTimezone $.Staff)}}</div>
               <div class="timeline-body">
                 <h3>{{chatContextSender .}}</h3>
-                <p class="preline">{{chatContextContent $.Locale .}}</p>
+                {{with chatContextKindBadge $.Locale .}}
+                  <span class="chat-message-kind" data-chat-message-kind>{{.}}</span>
+                {{end}}
+                {{with chatContextBody .}}
+                  <p class="preline">{{.}}</p>
+                {{end}}
+                {{if .FileIDs}}
+                  <div class="chat-attachments" aria-label="{{t $.Locale "label.attachments"}}">
+                    {{range .FileIDs}}
+                      <span class="chat-attachment" data-chat-attachment-id="{{.}}">
+                        <span>{{t $.Locale "label.attachment"}}</span>
+                        <code>{{.}}</code>
+                      </span>
+                    {{end}}
+                  </div>
+                {{end}}
               </div>
             </li>
           {{end}}
@@ -216,7 +248,22 @@
             <div class="timeline-marker">{{formatTime .SentAt (staffTimezone $.Staff)}}</div>
             <div class="timeline-body highlighted">
               <h3>{{chatMessageSender .}}</h3>
-              <p class="preline">{{chatMessagePreview $.Locale .}}</p>
+              {{with chatMessageKindBadge $.Locale .}}
+                <span class="chat-message-kind" data-chat-message-kind>{{.}}</span>
+              {{end}}
+              {{with chatMessageBody .}}
+                <p class="preline">{{.}}</p>
+              {{end}}
+              {{if .FileIDs}}
+                <div class="chat-attachments" aria-label="{{t $.Locale "label.attachments"}}">
+                  {{range .FileIDs}}
+                    <span class="chat-attachment" data-chat-attachment-id="{{.}}">
+                      <span>{{t $.Locale "label.attachment"}}</span>
+                      <code>{{.}}</code>
+                    </span>
+                  {{end}}
+                </div>
+              {{end}}
             </div>
           </li>
           {{range .ContextAfter}}
@@ -224,7 +271,22 @@
               <div class="timeline-marker">{{formatTime .SentAt (staffTimezone $.Staff)}}</div>
               <div class="timeline-body">
                 <h3>{{chatContextSender .}}</h3>
-                <p class="preline">{{chatContextContent $.Locale .}}</p>
+                {{with chatContextKindBadge $.Locale .}}
+                  <span class="chat-message-kind" data-chat-message-kind>{{.}}</span>
+                {{end}}
+                {{with chatContextBody .}}
+                  <p class="preline">{{.}}</p>
+                {{end}}
+                {{if .FileIDs}}
+                  <div class="chat-attachments" aria-label="{{t $.Locale "label.attachments"}}">
+                    {{range .FileIDs}}
+                      <span class="chat-attachment" data-chat-attachment-id="{{.}}">
+                        <span>{{t $.Locale "label.attachment"}}</span>
+                        <code>{{.}}</code>
+                      </span>
+                    {{end}}
+                  </div>
+                {{end}}
               </div>
             </li>
           {{end}}

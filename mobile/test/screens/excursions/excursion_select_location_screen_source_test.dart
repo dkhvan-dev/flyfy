@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test(
-    'excursion location selector loads attractions and returns a selection',
+    'excursion location selector loads places and returns a selection',
     () async {
       final source = await File(
         'lib/screens/excursions/excursion_select_location_screen.dart',
@@ -13,8 +13,8 @@ void main() {
       expect(source, contains('class ExcursionSelectLocationScreen'));
       expect(source, contains('class ExcursionLocationSelection'));
       expect(source, contains('final String? cityId'));
-      expect(source, contains('AttractionApi'));
-      expect(source, contains('getAttractions('));
+      expect(source, contains('PlaceApi'));
+      expect(source, contains('getPlaces('));
       expect(source, contains('context.pop<ExcursionLocationSelection>'));
       expect(source, contains('GridView.builder'));
       expect(source, contains('RefreshIndicator'));
@@ -58,22 +58,19 @@ void main() {
     expect(source, contains('Navigator.of(context).maybePop'));
   });
 
-  test('location selector filter button opens attraction filters', () async {
+  test('location selector filter button opens place filters', () async {
     final source = await File(
       'lib/screens/excursions/excursion_select_location_screen.dart',
     ).readAsString();
     final filterSource = await File(
-      'lib/screens/attractions/attractions_filter_sheet.dart',
+      'lib/screens/places/places_filter_sheet.dart',
     ).readAsString();
 
-    expect(
-      source,
-      contains("import '../attractions/attractions_filter_sheet.dart';"),
-    );
-    expect(source, contains('AttractionFilterResult _filters'));
+    expect(source, contains("import '../places/places_filter_sheet.dart';"));
+    expect(source, contains('PlaceFilterResult _filters'));
     expect(source, contains('Future<void> _openFilters() async'));
-    expect(source, contains('showModalBottomSheet<AttractionFilterResult>'));
-    expect(source, contains('AttractionsFilterSheet('));
+    expect(source, contains('showModalBottomSheet<PlaceFilterResult>'));
+    expect(source, contains('PlacesFilterSheet('));
     expect(source, contains('fallbackCountryCode: _selectedCountryCode'));
     expect(source, isNot(contains('accessCityId: widget.accessCityId')));
     expect(source, isNot(contains('widget.accessCityId')));

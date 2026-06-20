@@ -43,7 +43,7 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 	trustAppealLimit := 10
 	storyCommentLimit := 20
 	communityAdminLimit := 30
-	attractionLimit := 180
+	placeLimit := 180
 	chatLimit := 300
 	paymentLimit := 180
 	stickerLimit := 180
@@ -646,27 +646,27 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			RewritePrefix:      "/v1/exchange-rates",
 		},
 		{
-			Name:               "attraction-reviews",
-			Prefix:             apiPrefix + "/attractions/",
+			Name:               "place-reviews",
+			Prefix:             apiPrefix + "/places/",
 			AuthMode:           RouteAuthPublic,
-			Upstream:           "attraction",
-			RateLimitPerMinute: &attractionLimit,
-			RewritePrefix:      "/v1/attractions/",
+			Upstream:           "place",
+			RateLimitPerMinute: &placeLimit,
+			RewritePrefix:      "/v1/places/",
 		},
 		{
-			Name:               "attractions",
-			Prefix:             apiPrefix + "/attractions",
+			Name:               "places",
+			Prefix:             apiPrefix + "/places",
 			AuthMode:           RouteAuthPublic,
-			Upstream:           "attraction",
-			RateLimitPerMinute: &attractionLimit,
-			RewritePrefix:      "/v1/attractions",
+			Upstream:           "place",
+			RateLimitPerMinute: &placeLimit,
+			RewritePrefix:      "/v1/places",
 		},
 		{
 			Name:               "reviews-delete",
 			Prefix:             apiPrefix + "/reviews/",
 			AuthMode:           RouteAuthAuthenticated,
-			Upstream:           "attraction",
-			RateLimitPerMinute: &attractionLimit,
+			Upstream:           "place",
+			RateLimitPerMinute: &placeLimit,
 			RewritePrefix:      "/v1/reviews/",
 		},
 	}

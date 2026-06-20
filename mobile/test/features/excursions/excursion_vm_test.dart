@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:inflap/features/attractions/models/attraction_vm.dart';
+import 'package:inflap/features/places/models/place_vm.dart';
 import 'package:inflap/features/excursions/models/excursion_vm.dart';
 import 'package:inflap/features/excursions/excursion_localization.dart';
 
@@ -298,8 +298,8 @@ void main() {
       'visibility': 'PUBLIC',
       'routeKind': 'COMBINED_ROUTE',
       'routeFingerprint': 'route:kz:almaty:culture:2-4h:walking:a,b',
-      'attractionIds': ['a', 'b'],
-      'attractionNames': ['Kok-Tobe', 'Cathedral'],
+      'placeIds': ['a', 'b'],
+      'placeNames': ['Kok-Tobe', 'Cathedral'],
       'stopCount': 2,
       'transportMode': 'WALKING',
       'routeTheme': 'culture',
@@ -310,8 +310,8 @@ void main() {
           'sortOrder': 0,
           'startOffsetMinutes': 0,
           'durationMinutes': 45,
-          'attractionId': 'a',
-          'attractionName': 'Kok-Tobe',
+          'placeId': 'a',
+          'placeName': 'Kok-Tobe',
           'latitude': 43.233,
           'longitude': 76.976,
           'title': 'Kok-Tobe',
@@ -325,14 +325,14 @@ void main() {
       excursion.routeFingerprint,
       'route:kz:almaty:culture:2-4h:walking:a,b',
     );
-    expect(excursion.attractionIds, ['a', 'b']);
-    expect(excursion.attractionNames, ['Kok-Tobe', 'Cathedral']);
+    expect(excursion.placeIds, ['a', 'b']);
+    expect(excursion.placeNames, ['Kok-Tobe', 'Cathedral']);
     expect(excursion.stopCount, 2);
     expect(excursion.transportMode, 'WALKING');
     expect(excursion.routeTheme, 'culture');
     expect(excursion.durationBucket, '2-4h');
-    expect(excursion.itinerary.first.attractionId, 'a');
-    expect(excursion.itinerary.first.attractionName, 'Kok-Tobe');
+    expect(excursion.itinerary.first.placeId, 'a');
+    expect(excursion.itinerary.first.placeName, 'Kok-Tobe');
     expect(excursion.itinerary.first.latitude, 43.233);
     expect(excursion.itinerary.first.longitude, 76.976);
     expect(
@@ -357,60 +357,57 @@ void main() {
     );
   });
 
-  test(
-    'localizes landmark based excursion title from attraction translations',
-    () {
-      const excursion = ExcursionVm(
-        id: 'excursion-product-1',
-        landmarkId: 'attraction-1',
-        landmarkName: 'Charyn Canyon',
-        title: 'Charyn Canyon',
-        summary: 'Shared route',
-        status: 'PUBLISHED',
-        visibility: 'PUBLIC',
-        priceAmount: 0,
-        currency: 'KZT',
-      );
-      final attraction = AttractionVm.fromJson(const {
-        'id': 'attraction-1',
-        'locale': 'kk',
-        'defaultLocale': 'ru',
-        'title': 'Шарын шатқалы',
-        'description': 'Қазақстандағы шатқал.',
-        'translations': {
-          'ru': {
-            'title': 'Чарынский каньон',
-            'description': 'Каньон в Казахстане.',
-          },
-          'kk': {
-            'title': 'Шарын шатқалы',
-            'description': 'Қазақстандағы шатқал.',
-          },
+  test('localizes landmark based excursion title from place translations', () {
+    const excursion = ExcursionVm(
+      id: 'excursion-product-1',
+      landmarkId: 'place-1',
+      landmarkName: 'Charyn Canyon',
+      title: 'Charyn Canyon',
+      summary: 'Shared route',
+      status: 'PUBLISHED',
+      visibility: 'PUBLIC',
+      priceAmount: 0,
+      currency: 'KZT',
+    );
+    final place = PlaceVm.fromJson(const {
+      'id': 'place-1',
+      'locale': 'kk',
+      'defaultLocale': 'ru',
+      'title': 'Шарын шатқалы',
+      'description': 'Қазақстандағы шатқал.',
+      'translations': {
+        'ru': {
+          'title': 'Чарынский каньон',
+          'description': 'Каньон в Казахстане.',
         },
-      });
+        'kk': {
+          'title': 'Шарын шатқалы',
+          'description': 'Қазақстандағы шатқал.',
+        },
+      },
+    });
 
-      expect(
-        localizedExcursionTitle(
-          languageCode: 'kk',
-          excursion: excursion,
-          attraction: attraction,
-        ),
-        'Шарын шатқалы',
-      );
-      expect(
-        localizedExcursionDescription(
-          languageCode: 'kk',
-          excursion: excursion,
-          attraction: attraction,
-        ),
-        'Қазақстандағы шатқал.',
-      );
-    },
-  );
+    expect(
+      localizedExcursionTitle(
+        languageCode: 'kk',
+        excursion: excursion,
+        place: place,
+      ),
+      'Шарын шатқалы',
+    );
+    expect(
+      localizedExcursionDescription(
+        languageCode: 'kk',
+        excursion: excursion,
+        place: place,
+      ),
+      'Қазақстандағы шатқал.',
+    );
+  });
 
-  test('localizes attraction title with booking-safe fallback', () {
-    final attraction = AttractionVm.fromJson(const {
-      'id': 'attraction-1',
+  test('localizes place title with booking-safe fallback', () {
+    final place = PlaceVm.fromJson(const {
+      'id': 'place-1',
       'locale': 'ru',
       'defaultLocale': 'en',
       'title': 'Чарынский каньон',
@@ -428,17 +425,17 @@ void main() {
     });
 
     expect(
-      localizedAttractionTitle(
+      localizedPlaceTitle(
         languageCode: 'kk-KZ',
-        attraction: attraction,
+        place: place,
         fallback: 'Charyn Canyon',
       ),
       'Шарын шатқалы',
     );
     expect(
-      localizedAttractionTitle(
+      localizedPlaceTitle(
         languageCode: 'tr',
-        attraction: null,
+        place: null,
         fallback: 'Charyn Canyon',
       ),
       'Charyn Canyon',

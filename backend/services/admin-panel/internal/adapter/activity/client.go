@@ -178,6 +178,7 @@ type activityResponse struct {
 	ID                    string   `json:"id"`
 	HostUserID            string   `json:"hostUserId"`
 	HostDisplayName       string   `json:"hostDisplayName"`
+	HostFullName          string   `json:"hostFullName"`
 	SourceActivityID      *string  `json:"sourceActivityId"`
 	Title                 string   `json:"title"`
 	Description           string   `json:"description"`
@@ -236,6 +237,7 @@ func (r activityResponse) toModel() model.ActivityModerationItem {
 		ID:                    id,
 		HostUserID:            hostUserID,
 		HostDisplayName:       r.HostDisplayName,
+		HostFullName:          r.HostFullName,
 		SourceActivityID:      sourceActivityID,
 		Title:                 r.Title,
 		Description:           r.Description,

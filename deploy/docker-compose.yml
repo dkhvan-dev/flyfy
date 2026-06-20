@@ -285,9 +285,9 @@ services:
       POSTGRES_USER: excursion_service
       POSTGRES_PASSWORD: excursion_secret_dev
     volumes:
-      - ./init-scripts/012_excursion_service_migrate.sh:/usr/local/bin/012_excursion_service_migrate.sh:ro
+      - ./init-scripts:/usr/local/bin/inflap-init-scripts:ro
       - ../backend/services/excursion-service/migrations:/migrations/excursion-service:ro
-    entrypoint: ["/bin/sh", "/usr/local/bin/012_excursion_service_migrate.sh"]
+    entrypoint: ["/bin/sh", "/usr/local/bin/inflap-init-scripts/012_excursion_service_migrate.sh"]
     depends_on:
       excursion-postgres:
         condition: service_healthy
@@ -1538,23 +1538,23 @@ services:
       - inflap-network
 
   # ============================================
-  # Attraction PostgreSQL
+  # Place PostgreSQL
   # ============================================
-  attraction-postgres:
+  place-postgres:
     image: postgres:17-alpine
-    container_name: attraction-postgres
+    container_name: place-postgres
     environment:
-      POSTGRES_DB: attraction_service_db
-      POSTGRES_USER: attraction_service
-      POSTGRES_PASSWORD: attraction_secret_dev
+      POSTGRES_DB: place_service_db
+      POSTGRES_USER: place_service
+      POSTGRES_PASSWORD: place_secret_dev
     ports:
       - "5441:5432"
     volumes:
-      - attraction_postgres_data:/var/lib/postgresql/data
-      - ./init-scripts/009_attraction_service.sh:/docker-entrypoint-initdb.d/009_attraction_service.sh
-      - ../backend/services/attraction-service/migrations:/migrations/attraction-service:ro
+      - place_postgres_data:/var/lib/postgresql/data
+      - ./init-scripts/009_place_service.sh:/docker-entrypoint-initdb.d/009_place_service.sh
+      - ../backend/services/place-service/migrations:/migrations/place-service:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U attraction_service -d attraction_service_db"]
+      test: ["CMD-SHELL", "pg_isready -U place_service -d place_service_db"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -1562,21 +1562,21 @@ services:
     networks:
       - inflap-network
 
-  attraction-postgres-migrator:
+  place-postgres-migrator:
     image: postgres:17-alpine
-    container_name: attraction-postgres-migrator
+    container_name: place-postgres-migrator
     environment:
-      PGHOST: attraction-postgres
+      PGHOST: place-postgres
       PGPORT: 5432
-      POSTGRES_DB: attraction_service_db
-      POSTGRES_USER: attraction_service
-      POSTGRES_PASSWORD: attraction_secret_dev
+      POSTGRES_DB: place_service_db
+      POSTGRES_USER: place_service
+      POSTGRES_PASSWORD: place_secret_dev
     volumes:
-      - ./init-scripts/009_attraction_service_migrate.sh:/usr/local/bin/009_attraction_service_migrate.sh:ro
-      - ../backend/services/attraction-service/migrations:/migrations/attraction-service:ro
-    entrypoint: ["/bin/sh", "/usr/local/bin/009_attraction_service_migrate.sh"]
+      - ./init-scripts/009_place_service_migrate.sh:/usr/local/bin/009_place_service_migrate.sh:ro
+      - ../backend/services/place-service/migrations:/migrations/place-service:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/009_place_service_migrate.sh"]
     depends_on:
-      attraction-postgres:
+      place-postgres:
         condition: service_healthy
     restart: "no"
     networks:
@@ -1718,17 +1718,17 @@ services:
       - inflap-network
 
   # ============================================
-  # Attraction Service
+  # Place Service
   # ============================================
-  attraction-service:
+  place-service:
     build:
       context: ..
-      dockerfile: ./backend/services/attraction-service/Dockerfile
-    container_name: attraction-service
+      dockerfile: ./backend/services/place-service/Dockerfile
+    container_name: place-service
     depends_on:
-      attraction-postgres:
+      place-postgres:
         condition: service_healthy
-      attraction-postgres-migrator:
+      place-postgres-migrator:
         condition: service_completed_successfully
       user-service:
         condition: service_started
@@ -1739,7 +1739,7 @@ services:
     ports:
       - "8090:8090"
     environment:
-      APP_NAME: attraction-service
+      APP_NAME: place-service
       APP_ENV: development
 
       HTTP_PORT: 8090
@@ -1747,22 +1747,22 @@ services:
       HTTP_WRITE_TIMEOUT: 15s
       HTTP_IDLE_TIMEOUT: 60s
 
-      POSTGRES_HOST: attraction-postgres
+      POSTGRES_HOST: place-postgres
       POSTGRES_PORT: 5432
-      POSTGRES_USER: attraction_service
-      POSTGRES_PASSWORD: attraction_secret_dev
-      POSTGRES_DB: attraction_service_db
+      POSTGRES_USER: place_service
+      POSTGRES_PASSWORD: place_secret_dev
+      POSTGRES_DB: place_service_db
       POSTGRES_SSLMODE: disable
       POSTGRES_MAX_CONNS: 10
       POSTGRES_MIN_CONNS: 2
 
       LOG_LEVEL: info
 
-      ATTRACTION_CACHE_ENABLED: "true"
+      PLACE_CACHE_ENABLED: "true"
       REDIS_ADDR: redis:6379
       REDIS_CACHE_DB: 4
-      ATTRACTION_DETAIL_CACHE_TTL: 15m
-      ATTRACTION_LIST_CACHE_TTL: 5m
+      PLACE_DETAIL_CACHE_TTL: 15m
+      PLACE_LIST_CACHE_TTL: 5m
 
       INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       REQUIRE_AUTHENTICATED_WRITES: "true"
@@ -2103,7 +2103,7 @@ services:
         condition: service_started
       currency-service:
         condition: service_started
-      attraction-service:
+      place-service:
         condition: service_started
       payment-service:
         condition: service_started
@@ -2141,7 +2141,7 @@ services:
       STICKER_SERVICE_HTTP_URL: http://sticker-service:8092
       REFERENCE_SERVICE_HTTP_URL: http://reference-service:8089
       CURRENCY_SERVICE_HTTP_URL: http://currency-service:8098
-      ATTRACTION_SERVICE_HTTP_URL: http://attraction-service:8090
+      PLACE_SERVICE_HTTP_URL: http://place-service:8090
       PAYMENT_SERVICE_HTTP_URL: http://payment-service:8091
       ADMIN_PANEL_SERVICE_HTTP_URL: http://admin-panel:8095
 
@@ -2188,7 +2188,7 @@ volumes:
   notification_postgres_data:
   switches_postgres_data:
   nats_data:
-  attraction_postgres_data:
+  place_postgres_data:
   payment_postgres_data:
   anti_fraud_postgres_data:
   sticker_postgres_data:

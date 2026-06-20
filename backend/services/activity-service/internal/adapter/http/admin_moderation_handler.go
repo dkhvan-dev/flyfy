@@ -159,12 +159,7 @@ func (h *Handler) toAdminActivityModerationResponse(ctx context.Context, item *m
 	if err != nil {
 		return dto.AdminActivityModerationResponse{}, err
 	}
-	hostDisplayName := ""
-	if resolver, ok := h.actorResolver.(interface {
-		DisplayNameForUserID(context.Context, uuid.UUID) (string, error)
-	}); ok {
-		hostDisplayName, _ = resolver.DisplayNameForUserID(ctx, item.HostUserID)
-	}
+	hostNames := resolveActivityHostNames(ctx, h.actorResolver, item.HostUserID)
 	category, subcategory := activityModerationTaxonomyLabels(item)
 	return dto.AdminActivityModerationResponse{
 		ActivityResponse:         base,
@@ -176,7 +171,8 @@ func (h *Handler) toAdminActivityModerationResponse(ctx context.Context, item *m
 		AuthorCityID:             item.AuthorCityID,
 		AuthorCityName:           item.AuthorCityName,
 		AuthorLocationCapturedAt: formatOptionalTime(item.AuthorLocationCapturedAt),
-		HostDisplayName:          strings.TrimSpace(hostDisplayName),
+		HostDisplayName:          hostNames.DisplayName,
+		HostFullName:             hostNames.FullName,
 		CategoryName:             category.Name,
 		CategoryNameRu:           category.NameRu,
 		CategoryNameKk:           category.NameKk,
@@ -184,6 +180,44 @@ func (h *Handler) toAdminActivityModerationResponse(ctx context.Context, item *m
 		SubcategoryNameRu:        subcategory.NameRu,
 		SubcategoryNameKk:        subcategory.NameKk,
 	}, nil
+}
+
+type activityHostNames struct {
+	DisplayName string
+	FullName    string
+}
+
+func resolveActivityHostNames(ctx context.Context, resolver ActorResolver, hostUserID uuid.UUID) activityHostNames {
+	if resolver == nil || hostUserID == uuid.Nil {
+		return activityHostNames{}
+	}
+	if namesResolver, ok := resolver.(interface {
+		ProfileNamesForUserID(context.Context, uuid.UUID) (displayName string, fullName string, err error)
+	}); ok {
+		displayName, fullName, err := namesResolver.ProfileNamesForUserID(ctx, hostUserID)
+		if err == nil {
+			return activityHostNames{
+				DisplayName: strings.TrimSpace(displayName),
+				FullName:    strings.TrimSpace(fullName),
+			}
+		}
+	}
+	var names activityHostNames
+	if displayNameResolver, ok := resolver.(interface {
+		DisplayNameForUserID(context.Context, uuid.UUID) (string, error)
+	}); ok {
+		if value, err := displayNameResolver.DisplayNameForUserID(ctx, hostUserID); err == nil {
+			names.DisplayName = strings.TrimSpace(value)
+		}
+	}
+	if fullNameResolver, ok := resolver.(interface {
+		FullNameForUserID(context.Context, uuid.UUID) (string, error)
+	}); ok {
+		if value, err := fullNameResolver.FullNameForUserID(ctx, hostUserID); err == nil {
+			names.FullName = strings.TrimSpace(value)
+		}
+	}
+	return names
 }
 
 func activityModerationTaxonomyLabels(item *model.Activity) (model.ActivityCategory, model.ActivityTaxonomyItem) {

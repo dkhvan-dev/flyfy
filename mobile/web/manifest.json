@@ -1,6 +1,6 @@
 {
-    "name": "inflap",
-    "short_name": "inflap",
+    "name": "Inflap",
+    "short_name": "Inflap",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

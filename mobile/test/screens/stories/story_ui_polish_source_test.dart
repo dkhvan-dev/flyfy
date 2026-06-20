@@ -310,7 +310,7 @@ void main() {
     }
   });
 
-  test('story fullscreen gallery uses attraction-style dialog route', () {
+  test('story fullscreen gallery uses place-style dialog route', () {
     final detailSource = File(
       'lib/screens/stories/story_details_screen.dart',
     ).readAsStringSync();
@@ -327,7 +327,7 @@ void main() {
     expect(openSource, isNot(contains('PageRouteBuilder<int>(')));
   });
 
-  test('story fullscreen gallery uses attraction-style image sizing', () {
+  test('story fullscreen gallery uses place-style image sizing', () {
     final detailSource = File(
       'lib/screens/stories/story_details_screen.dart',
     ).readAsStringSync();

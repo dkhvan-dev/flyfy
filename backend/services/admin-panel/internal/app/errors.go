@@ -19,7 +19,7 @@ var (
 	ErrModerationCaseConflict    = port.ErrModerationCaseConflict
 	ErrModerationCaseNotFound    = errors.New("moderation case not found")
 	ErrUserNotFound              = errors.New("user not found")
-	ErrAttractionNotFound        = errors.New("attraction not found")
+	ErrPlaceNotFound             = errors.New("place not found")
 	ErrIntegrationNotReady       = errors.New("integration is not ready")
 	ErrTechnicalMaintenance      = errors.New("technical maintenance in progress")
 	ErrOperationDomainNotFound   = errors.New("operation domain not found")

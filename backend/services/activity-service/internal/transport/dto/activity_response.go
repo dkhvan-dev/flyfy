@@ -76,6 +76,7 @@ type AdminActivityModerationResponse struct {
 	AuthorCityName           *string  `json:"authorCityName,omitempty"`
 	AuthorLocationCapturedAt *string  `json:"authorLocationCapturedAt,omitempty"`
 	HostDisplayName          string   `json:"hostDisplayName,omitempty"`
+	HostFullName             string   `json:"hostFullName,omitempty"`
 	CategoryName             string   `json:"categoryName,omitempty"`
 	CategoryNameRu           string   `json:"categoryNameRu,omitempty"`
 	CategoryNameKk           string   `json:"categoryNameKk,omitempty"`

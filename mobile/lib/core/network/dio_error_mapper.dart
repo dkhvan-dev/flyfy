@@ -69,7 +69,7 @@ class DioErrorMapper {
       'unauthorized' => 'Войдите в аккаунт, чтобы продолжить.',
       'invalid excursion itinerary description' =>
         'Описание каждого этапа маршрута должно быть не короче 5 символов.',
-      'excursion already exists for this guide and attraction' =>
+      'excursion already exists for this guide and place' =>
         'У вас уже есть экскурсия по этой достопримечательности.',
       'excursion schedule slot must start at least 3 hours from now' =>
         'Выберите дату и время минимум за 3 часа до начала.',

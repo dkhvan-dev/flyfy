@@ -488,11 +488,11 @@ func (s *translatorStub) TranslateTexts(ctx context.Context, input port.Translat
 	return s.result, s.err
 }
 
-type attractionRatingUpdaterStub struct {
-	snapshots []port.AttractionRatingSnapshot
+type placeRatingUpdaterStub struct {
+	snapshots []port.PlaceRatingSnapshot
 }
 
-func (s *attractionRatingUpdaterStub) ApplyAttractionRatingSnapshot(ctx context.Context, snapshot port.AttractionRatingSnapshot) error {
+func (s *placeRatingUpdaterStub) ApplyPlaceRatingSnapshot(ctx context.Context, snapshot port.PlaceRatingSnapshot) error {
 	s.snapshots = append(s.snapshots, snapshot)
 	return nil
 }
@@ -559,7 +559,7 @@ func TestCreateExcursionRequiresActiveExcursionGuide(t *testing.T) {
 	}
 }
 
-func TestCreateExcursionRejectsRouteWithoutLandmarkOrAttractionStops(t *testing.T) {
+func TestCreateExcursionRejectsRouteWithoutLandmarkOrPlaceStops(t *testing.T) {
 	repo := &excursionRepoStub{}
 	actorUserID := uuid.New()
 	uc := NewExcursionUseCase(repo, guideVerifierStub{
@@ -624,8 +624,8 @@ func TestCreateExcursionAcceptsCombinedRouteWithoutLandmark(t *testing.T) {
 		PriceAmount:     45000,
 		Currency:        "KZT",
 		Itinerary: []ExcursionItineraryItemInput{
-			{StartOffsetMinutes: 0, AttractionID: &a, AttractionName: stringPtr("Kok-Tobe"), Title: "Kok-Tobe", Description: "Start with the city view."},
-			{StartOffsetMinutes: 60, AttractionID: &b, AttractionName: stringPtr("Cathedral"), Title: "Cathedral", Description: "Visit the cathedral story."},
+			{StartOffsetMinutes: 0, PlaceID: &a, PlaceName: stringPtr("Kok-Tobe"), Title: "Kok-Tobe", Description: "Start with the city view."},
+			{StartOffsetMinutes: 60, PlaceID: &b, PlaceName: stringPtr("Cathedral"), Title: "Cathedral", Description: "Visit the cathedral story."},
 		},
 	})
 
@@ -646,7 +646,7 @@ func TestCreateExcursionAcceptsCombinedRouteWithoutLandmark(t *testing.T) {
 	}
 }
 
-func TestCreateExcursionRejectsCombinedRouteWithOneAttractionStop(t *testing.T) {
+func TestCreateExcursionRejectsCombinedRouteWithOnePlaceStop(t *testing.T) {
 	repo := &excursionRepoStub{}
 	actorUserID := uuid.New()
 	a := uuid.New()
@@ -673,7 +673,7 @@ func TestCreateExcursionRejectsCombinedRouteWithOneAttractionStop(t *testing.T) 
 		PriceAmount:     30000,
 		Currency:        "KZT",
 		Itinerary: []ExcursionItineraryItemInput{
-			{StartOffsetMinutes: 0, AttractionID: &a, AttractionName: stringPtr("Kok-Tobe"), Title: "Kok-Tobe", Description: "Only one stop."},
+			{StartOffsetMinutes: 0, PlaceID: &a, PlaceName: stringPtr("Kok-Tobe"), Title: "Kok-Tobe", Description: "Only one stop."},
 		},
 	})
 
@@ -682,7 +682,7 @@ func TestCreateExcursionRejectsCombinedRouteWithOneAttractionStop(t *testing.T) 
 	}
 }
 
-func TestCreateExcursionRejectsCombinedRouteDuplicateAttractionStop(t *testing.T) {
+func TestCreateExcursionRejectsCombinedRouteDuplicatePlaceStop(t *testing.T) {
 	repo := &excursionRepoStub{}
 	actorUserID := uuid.New()
 	a := uuid.New()
@@ -709,8 +709,8 @@ func TestCreateExcursionRejectsCombinedRouteDuplicateAttractionStop(t *testing.T
 		PriceAmount:     30000,
 		Currency:        "KZT",
 		Itinerary: []ExcursionItineraryItemInput{
-			{StartOffsetMinutes: 0, AttractionID: &a, AttractionName: stringPtr("Kok-Tobe"), Title: "Kok-Tobe", Description: "First stop."},
-			{StartOffsetMinutes: 60, AttractionID: &a, AttractionName: stringPtr("Kok-Tobe"), Title: "Kok-Tobe again", Description: "Duplicate stop."},
+			{StartOffsetMinutes: 0, PlaceID: &a, PlaceName: stringPtr("Kok-Tobe"), Title: "Kok-Tobe", Description: "First stop."},
+			{StartOffsetMinutes: 60, PlaceID: &a, PlaceName: stringPtr("Kok-Tobe"), Title: "Kok-Tobe again", Description: "Duplicate stop."},
 		},
 	})
 
@@ -718,11 +718,11 @@ func TestCreateExcursionRejectsCombinedRouteDuplicateAttractionStop(t *testing.T
 		t.Fatalf("error = %v, want %v", err, ErrCombinedExcursionRouteDuplicateStop)
 	}
 	if repo.createdExcursion != nil {
-		t.Fatal("excursion was persisted despite duplicate attraction stop")
+		t.Fatal("excursion was persisted despite duplicate place stop")
 	}
 }
 
-func TestCreateExcursionRejectsCombinedRouteTooManyAttractionStops(t *testing.T) {
+func TestCreateExcursionRejectsCombinedRouteTooManyPlaceStops(t *testing.T) {
 	repo := &excursionRepoStub{}
 	actorUserID := uuid.New()
 	uc := NewExcursionUseCase(repo, guideVerifierStub{
@@ -734,11 +734,11 @@ func TestCreateExcursionRejectsCombinedRouteTooManyAttractionStops(t *testing.T)
 	}, nil)
 	itinerary := make([]ExcursionItineraryItemInput, 0, 6)
 	for i := 0; i < 6; i++ {
-		attractionID := uuid.New()
+		placeID := uuid.New()
 		itinerary = append(itinerary, ExcursionItineraryItemInput{
 			StartOffsetMinutes: i * 30,
-			AttractionID:       &attractionID,
-			AttractionName:     stringPtr("Stop"),
+			PlaceID:            &placeID,
+			PlaceName:          stringPtr("Stop"),
 			Title:              "Stop",
 			Description:        "A valid route stop.",
 		})
@@ -765,7 +765,7 @@ func TestCreateExcursionRejectsCombinedRouteTooManyAttractionStops(t *testing.T)
 		t.Fatalf("error = %v, want %v", err, ErrCombinedExcursionRouteTooManyStops)
 	}
 	if repo.createdExcursion != nil {
-		t.Fatal("excursion was persisted despite too many attraction stops")
+		t.Fatal("excursion was persisted despite too many place stops")
 	}
 }
 
@@ -800,8 +800,8 @@ func TestCreateExcursionNormalizesNilLandmarkIDForCombinedRoute(t *testing.T) {
 		PriceAmount:     45000,
 		Currency:        "KZT",
 		Itinerary: []ExcursionItineraryItemInput{
-			{StartOffsetMinutes: 0, AttractionID: &a, AttractionName: stringPtr("Kok-Tobe"), Title: "Kok-Tobe", Description: "Start with the city view."},
-			{StartOffsetMinutes: 60, AttractionID: &b, AttractionName: stringPtr("Cathedral"), Title: "Cathedral", Description: "Visit the cathedral story."},
+			{StartOffsetMinutes: 0, PlaceID: &a, PlaceName: stringPtr("Kok-Tobe"), Title: "Kok-Tobe", Description: "Start with the city view."},
+			{StartOffsetMinutes: 60, PlaceID: &b, PlaceName: stringPtr("Cathedral"), Title: "Cathedral", Description: "Visit the cathedral story."},
 		},
 	})
 
@@ -1975,8 +1975,8 @@ func TestUpdateExcursionAppliesCombinedRouteInput(t *testing.T) {
 		PriceAmount:     45000,
 		Currency:        "KZT",
 		Itinerary: []ExcursionItineraryItemInput{
-			{StartOffsetMinutes: 0, AttractionID: &a, AttractionName: stringPtr("Kok-Tobe"), Title: "Kok-Tobe", Description: "Start with the city view."},
-			{StartOffsetMinutes: 60, AttractionID: &b, AttractionName: stringPtr("Cathedral"), Title: "Cathedral", Description: "Visit the cathedral story."},
+			{StartOffsetMinutes: 0, PlaceID: &a, PlaceName: stringPtr("Kok-Tobe"), Title: "Kok-Tobe", Description: "Start with the city view."},
+			{StartOffsetMinutes: 60, PlaceID: &b, PlaceName: stringPtr("Cathedral"), Title: "Cathedral", Description: "Visit the cathedral story."},
 		},
 	})
 
@@ -2139,7 +2139,7 @@ func TestCreateExcursionBookingChargesPaymentBeforePersistingPaidRequest(t *test
 	}
 }
 
-func TestCreateExcursionReviewRequestsAttractionRatingRecalculation(t *testing.T) {
+func TestCreateExcursionReviewRequestsPlaceRatingRecalculation(t *testing.T) {
 	productID := uuid.New()
 	offerID := uuid.New()
 	landmarkID := uuid.New()
@@ -2167,9 +2167,9 @@ func TestCreateExcursionReviewRequestsAttractionRatingRecalculation(t *testing.T
 			item.LandmarkID = &landmarkID
 		},
 	}
-	ratings := &attractionRatingUpdaterStub{}
+	ratings := &placeRatingUpdaterStub{}
 	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil).
-		WithAttractionRatingUpdater(ratings)
+		WithPlaceRatingUpdater(ratings)
 
 	_, err = uc.CreateExcursionReview(context.Background(), CreateExcursionReviewInput{
 		ActorUserID: touristUserID,
@@ -2187,12 +2187,12 @@ func TestCreateExcursionReviewRequestsAttractionRatingRecalculation(t *testing.T
 		t.Fatalf("snapshots count = %d, want 1", len(ratings.snapshots))
 	}
 	got := ratings.snapshots[0]
-	if got.AttractionID != landmarkID ||
-		got.Source != attractionRatingSourceExcursionReviews ||
+	if got.PlaceID != landmarkID ||
+		got.Source != placeRatingSourceExcursionReviews ||
 		got.RatingAvg != 4.7 ||
 		got.ReviewCount != 9 {
-		t.Fatalf("snapshot = %+v, want attraction %s source %s rating 4.7 count 9",
-			got, landmarkID, attractionRatingSourceExcursionReviews)
+		t.Fatalf("snapshot = %+v, want place %s source %s rating 4.7 count 9",
+			got, landmarkID, placeRatingSourceExcursionReviews)
 	}
 }
 
@@ -2234,9 +2234,9 @@ func TestSaveBookingReviewsUpdatesExcursionAndCreatesGuideReviewFromBookingAutho
 		landmarkRatingAvg:    4.4,
 		landmarkReviewsCount: 12,
 	}
-	ratings := &attractionRatingUpdaterStub{}
+	ratings := &placeRatingUpdaterStub{}
 	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil).
-		WithAttractionRatingUpdater(ratings)
+		WithPlaceRatingUpdater(ratings)
 
 	result, err := uc.SaveBookingReviews(context.Background(), SaveBookingReviewsInput{
 		ActorUserID: touristUserID,
@@ -2280,7 +2280,7 @@ func TestSaveBookingReviewsUpdatesExcursionAndCreatesGuideReviewFromBookingAutho
 		t.Fatalf("result guide review = %+v", result.GuideReview)
 	}
 	if len(ratings.snapshots) != 1 || repo.landmarkReviewStatsID != landmarkID {
-		t.Fatalf("attraction snapshots = %+v, landmark stats id = %s, want one refresh for %s",
+		t.Fatalf("place snapshots = %+v, landmark stats id = %s, want one refresh for %s",
 			ratings.snapshots, repo.landmarkReviewStatsID, landmarkID)
 	}
 }
@@ -2333,9 +2333,9 @@ func TestSaveBookingReviewsDeletesReviewsAndRefreshesLandmarkStats(t *testing.T)
 		landmarkRatingAvg:    0,
 		landmarkReviewsCount: 0,
 	}
-	ratings := &attractionRatingUpdaterStub{}
+	ratings := &placeRatingUpdaterStub{}
 	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil).
-		WithAttractionRatingUpdater(ratings)
+		WithPlaceRatingUpdater(ratings)
 
 	result, err := uc.SaveBookingReviews(context.Background(), SaveBookingReviewsInput{
 		ActorUserID:     touristUserID,
@@ -2356,7 +2356,7 @@ func TestSaveBookingReviewsDeletesReviewsAndRefreshesLandmarkStats(t *testing.T)
 		t.Fatalf("result = %+v, want nil reviews after delete", result)
 	}
 	if len(ratings.snapshots) != 1 || ratings.snapshots[0].ReviewCount != 0 {
-		t.Fatalf("snapshots = %+v, want attraction reset after delete", ratings.snapshots)
+		t.Fatalf("snapshots = %+v, want place reset after delete", ratings.snapshots)
 	}
 }
 

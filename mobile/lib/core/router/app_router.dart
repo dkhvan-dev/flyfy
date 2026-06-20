@@ -44,9 +44,9 @@ import '../../screens/guides/guides_screen.dart';
 import '../../screens/attendance/attendance_scanner_screen.dart';
 import '../../screens/chat/conversations_screen.dart';
 import '../../screens/chat/chat_screen.dart';
-import '../../screens/attractions/attractions_screen.dart';
-import '../../screens/attractions/attraction_details_screen.dart';
-import '../../features/attractions/models/attraction_vm.dart';
+import '../../screens/places/places_screen.dart';
+import '../../screens/places/place_details_screen.dart';
+import '../../features/places/models/place_vm.dart';
 import '../../features/excursions/models/excursion_vm.dart';
 import '../../features/feed/presentation/community_members_screen.dart';
 import '../../features/feed/presentation/community_moderation_screen.dart';
@@ -570,22 +570,36 @@ class AppRouter {
               _withAndroidBackSwipe(const FeatureStubScreen(title: 'Menu')),
         ),
         GoRoute(
-          path: '/attractions',
+          path: '/places',
           builder: (context, state) =>
-              _withAndroidBackSwipe(const AttractionsScreen()),
+              _withAndroidBackSwipe(const PlacesScreen()),
         ),
         GoRoute(
-          path: '/attractions/:attractionId',
+          path: '/places/:placeId',
           builder: (context, state) {
-            final attractionId = state.pathParameters['attractionId'] ?? '';
-            final initialAttraction = state.extra is AttractionVm
-                ? state.extra! as AttractionVm
+            final placeId = state.pathParameters['placeId'] ?? '';
+            final initialPlace = state.extra is PlaceVm
+                ? state.extra! as PlaceVm
                 : null;
             return _withAndroidBackSwipe(
-              AttractionDetailsScreen(
-                attractionId: attractionId,
-                initialAttraction: initialAttraction,
-              ),
+              PlaceDetailsScreen(placeId: placeId, initialPlace: initialPlace),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/places',
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const PlacesScreen()),
+        ),
+        GoRoute(
+          path: '/places/:placeId',
+          builder: (context, state) {
+            final placeId = state.pathParameters['placeId'] ?? '';
+            final initialPlace = state.extra is PlaceVm
+                ? state.extra! as PlaceVm
+                : null;
+            return _withAndroidBackSwipe(
+              PlaceDetailsScreen(placeId: placeId, initialPlace: initialPlace),
             );
           },
         ),
@@ -774,7 +788,10 @@ class AppRouter {
       return true;
     }
 
-    if (location == '/attractions' || location.startsWith('/attractions/')) {
+    if (location == '/places' ||
+        location.startsWith('/places/') ||
+        location == '/places' ||
+        location.startsWith('/places/')) {
       return true;
     }
 

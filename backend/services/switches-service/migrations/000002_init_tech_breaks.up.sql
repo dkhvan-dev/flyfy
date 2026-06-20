@@ -56,7 +56,7 @@ values ('system', now(), 'system', 'CORE', 'Общие'),
        ('system', now(), 'system', 'CHAT', 'Чаты'),
        ('system', now(), 'system', 'MAP', 'Карта'),
        ('system', now(), 'system', 'PAYMENT', 'Платежи'),
-       ('system', now(), 'system', 'ATTRACTION', 'Достопримечательности'),
+       ('system', now(), 'system', 'PLACE', 'Достопримечательности'),
        ('system', now(), 'system', 'EXCHANGE_RATE', 'Конвертер валют'),
        ('system', now(), 'system', 'FEED', 'Лента'),
        ('system', now(), 'system', 'NOTIFICATION', 'Уведомления'),
@@ -87,7 +87,7 @@ values ('system', 'REGISTRATION', 'Регистрация', 'ONBOARDING'),
        ('system', 'MODIFY_POST', 'Создание/Редактирование поста', 'FEED'),
        ('system', 'COMMUNITIES', 'Просмотр сообществ', 'FEED'),
        ('system', 'MODIFY_COMMUNITY', 'Создание/Редактирование сообщества', 'FEED'),
-       ('system', 'MODIFY_ATTRACTION', 'Создание/Редактирование достопримечательности', 'ATTRACTION'),
+       ('system', 'MODIFY_PLACE', 'Создание/Редактирование достопримечательности', 'PLACE'),
        ('system', 'CREATE_GUIDE_STATUS', 'Создание заявки на статус гида', 'GUIDE')
 on conflict do nothing;
 
@@ -98,7 +98,7 @@ call create_tech_breaks_table('excursion');
 call create_tech_breaks_table('chat');
 call create_tech_breaks_table('map');
 call create_tech_breaks_table('payment');
-call create_tech_breaks_table('attraction');
+call create_tech_breaks_table('place');
 call create_tech_breaks_table('exchange_rate');
 call create_tech_breaks_table('feed');
 call create_tech_breaks_table('notification');

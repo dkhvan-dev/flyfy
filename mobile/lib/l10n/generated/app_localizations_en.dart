@@ -2092,7 +2092,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get homeSearchHint => 'Activities, attractions, excursions...';
+  String get homeSearchHint => 'Activities, places, excursions...';
 
   @override
   String get homeTopDestinations => 'Top Destinations';
@@ -2131,7 +2131,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeServiceStories => 'Stories';
 
   @override
-  String get homeServiceAttractions => 'Attractions';
+  String get homeServicePlaces => 'Places';
 
   @override
   String get homeServiceCurrencyConverter => 'Exchange Rates';
@@ -3067,373 +3067,372 @@ class AppLocalizationsEn extends AppLocalizations {
       'Tap an activity marker to preview it and open details.';
 
   @override
-  String get attractionsTitle => 'Discover attractions';
+  String get placesTitle => 'Discover places';
 
   @override
-  String get attractionsSearchHint => 'Where to next?';
+  String get placesSearchHint => 'Where to next?';
 
   @override
-  String get attractionsLoadFailed => 'Failed to load attractions';
+  String get placesLoadFailed => 'Failed to load places';
 
   @override
-  String get attractionsSeeAll => 'See all';
+  String get placesSeeAll => 'See all';
 
   @override
-  String get attractionsNoResults => 'No attractions found';
+  String get placesNoResults => 'No places found';
 
   @override
-  String get attractionsNoResultsSubtitle =>
-      'Try choosing another city in filters.';
+  String get placesNoResultsSubtitle => 'Try choosing another city in filters.';
 
   @override
-  String get attractionsFiltersTitle => 'Filters';
+  String get placesFiltersTitle => 'Filters';
 
   @override
-  String get attractionsSortLabel => 'Sort by';
+  String get placesSortLabel => 'Sort by';
 
   @override
-  String get attractionsSortRating => 'Rating';
+  String get placesSortRating => 'Rating';
 
   @override
-  String get attractionsSortDuration => 'Duration';
+  String get placesSortDuration => 'Duration';
 
   @override
-  String get attractionsSortPrice => 'Price';
+  String get placesSortPrice => 'Price';
 
   @override
-  String get attractionFilterClearAll => 'Clear all';
+  String get placeFilterClearAll => 'Clear all';
 
   @override
-  String get attractionFilterCategoriesSection => 'Categories';
+  String get placeFilterCategoriesSection => 'Categories';
 
   @override
-  String get attractionFilterCategoryAll => 'All Spots';
+  String get placeFilterCategoryAll => 'All Spots';
 
   @override
-  String get attractionFilterCategoryParks => 'Parks';
+  String get placeFilterCategoryParks => 'Parks';
 
   @override
-  String get attractionFilterCategoryMuseums => 'Museums';
+  String get placeFilterCategoryMuseums => 'Museums';
 
   @override
-  String get attractionFilterCategoryNature => 'Nature';
+  String get placeFilterCategoryNature => 'Nature';
 
   @override
-  String get attractionFilterCategoryArchitecture => 'Architecture';
+  String get placeFilterCategoryArchitecture => 'Architecture';
 
   @override
-  String get attractionFilterCategoryBeach => 'Beach';
+  String get placeFilterCategoryBeach => 'Beach';
 
   @override
-  String get attractionFilterCategoryTemple => 'Temple';
+  String get placeFilterCategoryTemple => 'Temple';
 
   @override
-  String get attractionFilterCategoryEntertainment => 'Entertainment';
+  String get placeFilterCategoryEntertainment => 'Entertainment';
 
   @override
-  String get attractionFilterCategoryFood => 'Food';
+  String get placeFilterCategoryFood => 'Food';
 
   @override
-  String get attractionFilterCategoryMarket => 'Market';
+  String get placeFilterCategoryMarket => 'Market';
 
   @override
-  String get attractionFilterCategoryShopping => 'Shopping';
+  String get placeFilterCategoryShopping => 'Shopping';
 
   @override
-  String get attractionFilterCategoryOther => 'Other';
+  String get placeFilterCategoryOther => 'Other';
 
   @override
-  String get attractionFilterCategoryHistory => 'History';
+  String get placeFilterCategoryHistory => 'History';
 
   @override
-  String get attractionFilterCategoryAdventure => 'Adventure';
+  String get placeFilterCategoryAdventure => 'Adventure';
 
   @override
-  String get attractionFilterCountrySection => 'Country';
+  String get placeFilterCountrySection => 'Country';
 
   @override
-  String get attractionFilterCountryAll => 'All countries';
+  String get placeFilterCountryAll => 'All countries';
 
   @override
-  String get attractionFilterCountrySearchHint => 'Country, code, or phone';
+  String get placeFilterCountrySearchHint => 'Country, code, or phone';
 
   @override
-  String get attractionFilterCountryNoResults => 'Country not found';
+  String get placeFilterCountryNoResults => 'Country not found';
 
   @override
-  String get attractionFilterMinRatingSection => 'Minimum rating';
+  String get placeFilterMinRatingSection => 'Minimum rating';
 
   @override
-  String get attractionFilterRatingAny => 'Any';
+  String get placeFilterRatingAny => 'Any';
 
   @override
-  String get attractionFilterDurationSection => 'Duration';
+  String get placeFilterDurationSection => 'Duration';
 
   @override
-  String get attractionFilterDurationShort => 'Short < 2h';
+  String get placeFilterDurationShort => 'Short < 2h';
 
   @override
-  String get attractionFilterDurationMedium => 'Medium 2–5h';
+  String get placeFilterDurationMedium => 'Medium 2–5h';
 
   @override
-  String get attractionFilterDurationFullDay => 'Full Day 5h+';
+  String get placeFilterDurationFullDay => 'Full Day 5h+';
 
   @override
-  String get attractionFilterDurationMultiDay => 'Multi-day';
+  String get placeFilterDurationMultiDay => 'Multi-day';
 
   @override
-  String get attractionFilterRangeSection => 'Specific range';
+  String get placeFilterRangeSection => 'Specific range';
 
   @override
-  String attractionFilterRangeValue(int min, int max) {
+  String placeFilterRangeValue(int min, int max) {
     return '${min}h – ${max}h';
   }
 
   @override
-  String get attractionFilterRangeMinTick => '1h';
+  String get placeFilterRangeMinTick => '1h';
 
   @override
-  String get attractionFilterRangeMaxTick => '12h+';
+  String get placeFilterRangeMaxTick => '12h+';
 
   @override
-  String get attractionFilterPriceRangeSection => 'Price range';
+  String get placeFilterPriceRangeSection => 'Price range';
 
   @override
-  String attractionFilterShowSpots(int count) {
+  String placeFilterShowSpots(int count) {
     return 'Show $count spots';
   }
 
   @override
-  String get attractionFilterClear => 'Clear';
+  String get placeFilterClear => 'Clear';
 
   @override
-  String get attractionMinPriceLabel => 'Min price';
+  String get placeMinPriceLabel => 'Min price';
 
   @override
-  String get attractionMaxPriceLabel => 'Max price';
+  String get placeMaxPriceLabel => 'Max price';
 
   @override
-  String get attractionPriceValidationError => 'Enter a valid price';
+  String get placePriceValidationError => 'Enter a valid price';
 
   @override
-  String get attractionPriceRangeValidationError =>
+  String get placePriceRangeValidationError =>
       'Max price must be greater than min price';
 
   @override
-  String get attractionHoursUnit => 'Hours';
+  String get placeHoursUnit => 'Hours';
 
   @override
-  String get attractionDaysUnit => 'Days';
+  String get placeDaysUnit => 'Days';
 
   @override
-  String get attractionHoursUnitShort => 'h';
+  String get placeHoursUnitShort => 'h';
 
   @override
-  String get attractionDaysUnitShort => 'd';
+  String get placeDaysUnitShort => 'd';
 
   @override
-  String get attractionMinLabel => 'Min';
+  String get placeMinLabel => 'Min';
 
   @override
-  String get attractionMaxLabel => 'Max';
+  String get placeMaxLabel => 'Max';
 
   @override
-  String get attractionDurationValidationError => 'Enter a valid duration';
+  String get placeDurationValidationError => 'Enter a valid duration';
 
   @override
-  String get attractionDurationRangeValidationError =>
+  String get placeDurationRangeValidationError =>
       'Max duration must be greater than min';
 
   @override
-  String get attractionDetailsLoadFailed => 'Failed to load attraction';
+  String get placeDetailsLoadFailed => 'Failed to load place';
 
   @override
-  String get attractionDetailsTitle => 'Attraction details';
+  String get placeDetailsTitle => 'Place details';
 
   @override
-  String get attractionMustVisitBadge => 'Must visit';
+  String get placeMustVisitBadge => 'Must visit';
 
   @override
-  String get attractionStatRating => 'Rating';
+  String get placeStatRating => 'Rating';
 
   @override
-  String get attractionStatDuration => 'Duration';
+  String get placeStatDuration => 'Duration';
 
   @override
-  String get attractionStatPrice => 'Price';
+  String get placeStatPrice => 'Price';
 
   @override
-  String get attractionExperienceSection => 'The experience';
+  String get placeExperienceSection => 'The experience';
 
   @override
-  String get attractionExpectSection => 'What to expect';
+  String get placeExpectSection => 'What to expect';
 
   @override
-  String get attractionVisitPlanSection => 'Plan your visit';
+  String get placeVisitPlanSection => 'Plan your visit';
 
   @override
-  String get attractionInflapTipTitle => 'Inflap tip';
+  String get placeInflapTipTitle => 'Inflap tip';
 
   @override
-  String get attractionVisitDurationLabel => 'Time needed';
+  String get placeVisitDurationLabel => 'Time needed';
 
   @override
-  String get attractionVisitDurationFlexible => 'Flexible';
+  String get placeVisitDurationFlexible => 'Flexible';
 
   @override
-  String get attractionVisitTicketsLabel => 'Tickets';
+  String get placeVisitTicketsLabel => 'Tickets';
 
   @override
-  String get attractionVisitFreeEntry => 'Free or varies';
+  String get placeVisitFreeEntry => 'Free or varies';
 
   @override
-  String get attractionVisitBookingRecommended => 'book ahead';
+  String get placeVisitBookingRecommended => 'book ahead';
 
   @override
-  String get attractionVisitBestTimeLabel => 'Best time';
+  String get placeVisitBestTimeLabel => 'Best time';
 
   @override
-  String get attractionVisitBestTimeEarlyMorning => 'Early morning';
+  String get placeVisitBestTimeEarlyMorning => 'Early morning';
 
   @override
-  String get attractionVisitBestTimeMorning => 'Morning';
+  String get placeVisitBestTimeMorning => 'Morning';
 
   @override
-  String get attractionVisitBestTimeAfternoon => 'Afternoon';
+  String get placeVisitBestTimeAfternoon => 'Afternoon';
 
   @override
-  String get attractionVisitBestTimeSunset => 'Sunset';
+  String get placeVisitBestTimeSunset => 'Sunset';
 
   @override
-  String get attractionVisitBestTimeAnytime => 'Anytime';
+  String get placeVisitBestTimeAnytime => 'Anytime';
 
   @override
-  String get attractionVisitGoodForLabel => 'Good for';
+  String get placeVisitGoodForLabel => 'Good for';
 
   @override
-  String get attractionVisitAccessLabel => 'Access';
+  String get placeVisitAccessLabel => 'Access';
 
   @override
-  String get attractionVisitAccessGood => 'Easy access';
+  String get placeVisitAccessGood => 'Easy access';
 
   @override
-  String get attractionVisitAccessLimited => 'Limited access';
+  String get placeVisitAccessLimited => 'Limited access';
 
   @override
-  String get attractionVisitAccessUnknown => 'Check locally';
+  String get placeVisitAccessUnknown => 'Check locally';
 
   @override
-  String get attractionVisitSafetyLabel => 'Prepare';
+  String get placeVisitSafetyLabel => 'Prepare';
 
   @override
-  String get attractionVisitSafetyCheckWeather => 'Check weather';
+  String get placeVisitSafetyCheckWeather => 'Check weather';
 
   @override
-  String get attractionVisitSafetyBringWater => 'Bring water';
+  String get placeVisitSafetyBringWater => 'Bring water';
 
   @override
-  String get attractionVisitSafetyCheckHours => 'Check hours';
+  String get placeVisitSafetyCheckHours => 'Check hours';
 
   @override
-  String get attractionVisitAudienceCouples => 'Couples';
+  String get placeVisitAudienceCouples => 'Couples';
 
   @override
-  String get attractionVisitAudienceWellness => 'Wellness';
+  String get placeVisitAudienceWellness => 'Wellness';
 
   @override
-  String get attractionVisitTipNature =>
+  String get placeVisitTipNature =>
       'Plan transport and weather before you go; guided routes are usually safer and more predictable.';
 
   @override
-  String get attractionVisitTipCulture =>
+  String get placeVisitTipCulture =>
       'Come earlier in the day for calmer photos and leave time for nearby cultural stops.';
 
   @override
-  String get attractionVisitTipDefault =>
+  String get placeVisitTipDefault =>
       'Check current hours and combine this stop with nearby activities to avoid losing time in transit.';
 
   @override
-  String get attractionReviewsSection => 'Explorer\'s voice';
+  String get placeReviewsSection => 'Explorer\'s voice';
 
   @override
-  String attractionSeeAllReviews(int count) {
+  String placeSeeAllReviews(int count) {
     return 'See all ($count)';
   }
 
   @override
-  String get attractionNoReviews => 'No reviews yet. Be the first!';
+  String get placeNoReviews => 'No reviews yet. Be the first!';
 
   @override
-  String get attractionAddReview => 'Add review';
+  String get placeAddReview => 'Add review';
 
   @override
-  String get attractionReviewSheetTitle => 'Share your visit';
+  String get placeReviewSheetTitle => 'Share your visit';
 
   @override
-  String get attractionReviewRatingLabel => 'Rating';
+  String get placeReviewRatingLabel => 'Rating';
 
   @override
-  String get attractionReviewCommentLabel => 'Comment';
+  String get placeReviewCommentLabel => 'Comment';
 
   @override
-  String get attractionReviewCommentHint =>
+  String get placeReviewCommentHint =>
       'What stood out, what would you recommend, and what should others know?';
 
   @override
-  String get attractionReviewAddPhoto => 'Photo';
+  String get placeReviewAddPhoto => 'Photo';
 
   @override
-  String get attractionReviewAddVideo => 'Video';
+  String get placeReviewAddVideo => 'Video';
 
   @override
-  String get attractionReviewSubmit => 'Publish review';
+  String get placeReviewSubmit => 'Publish review';
 
   @override
-  String get attractionReviewSubmitting => 'Publishing...';
+  String get placeReviewSubmitting => 'Publishing...';
 
   @override
-  String attractionReviewMediaLimit(int count) {
+  String placeReviewMediaLimit(int count) {
     return 'You can attach up to $count files';
   }
 
   @override
-  String get attractionReviewPickFailed => 'Could not attach this file';
+  String get placeReviewPickFailed => 'Could not attach this file';
 
   @override
-  String get attractionReviewMediaTooLarge => 'File is too large';
+  String get placeReviewMediaTooLarge => 'File is too large';
 
   @override
-  String get attractionReviewUnsupportedFormat => 'Unsupported file format';
+  String get placeReviewUnsupportedFormat => 'Unsupported file format';
 
   @override
-  String get attractionReviewSubmitFailed => 'Could not publish the review';
+  String get placeReviewSubmitFailed => 'Could not publish the review';
 
   @override
-  String get attractionReviewSubmitSuccess => 'Review published';
+  String get placeReviewSubmitSuccess => 'Review published';
 
   @override
-  String get attractionReviewCommentRequired => 'Write a short comment';
+  String get placeReviewCommentRequired => 'Write a short comment';
 
   @override
-  String get attractionReviewRemoveMedia => 'Remove file';
+  String get placeReviewRemoveMedia => 'Remove file';
 
   @override
-  String get attractionReviewVideoPreview => 'Video';
+  String get placeReviewVideoPreview => 'Video';
 
   @override
-  String get attractionFindExcursions => 'Find excursions';
+  String get placeFindExcursions => 'Find excursions';
 
   @override
-  String get attractionMapLink => 'View on map';
+  String get placeMapLink => 'View on map';
 
   @override
-  String get attractionVerifiedNomad => 'Verified nomad';
+  String get placeVerifiedNomad => 'Verified nomad';
 
   @override
-  String get attractionReviewsTitle => 'Reviews';
+  String get placeReviewsTitle => 'Reviews';
 
   @override
-  String get attractionTravelerFallback => 'Traveler';
+  String get placeTravelerFallback => 'Traveler';
 
   @override
   String get profileGuideReviewsTitle => 'Best excursion reviews';
@@ -3478,80 +3477,80 @@ class AppLocalizationsEn extends AppLocalizations {
       'Pull to refresh or open the profile again.';
 
   @override
-  String get attractionPriceVaries => 'Price varies';
+  String get placePriceVaries => 'Price varies';
 
   @override
-  String get attractionPriceVariesShort => 'Varies';
+  String get placePriceVariesShort => 'Varies';
 
   @override
-  String attractionDurationHours(int hours) {
+  String placeDurationHours(int hours) {
     return '$hours h';
   }
 
   @override
-  String attractionDurationDays(int days) {
+  String placeDurationDays(int days) {
     return '$days d';
   }
 
   @override
-  String get attractionBackTooltip => 'Back';
+  String get placeBackTooltip => 'Back';
 
   @override
-  String get attractionNotificationsTooltip => 'Notifications';
+  String get placeNotificationsTooltip => 'Notifications';
 
   @override
-  String get attractionBookmarkTooltip => 'Save attraction';
+  String get placeBookmarkTooltip => 'Save place';
 
   @override
-  String get attractionTagFamilyLabel => 'Family friendly';
+  String get placeTagFamilyLabel => 'Family friendly';
 
   @override
-  String get attractionTagFamilySubtitle => 'Suitable for all ages';
+  String get placeTagFamilySubtitle => 'Suitable for all ages';
 
   @override
-  String get attractionTagSunsetLabel => 'Best at sunset';
+  String get placeTagSunsetLabel => 'Best at sunset';
 
   @override
-  String get attractionTagSunsetSubtitle => 'Stunning twilight views';
+  String get placeTagSunsetSubtitle => 'Stunning twilight views';
 
   @override
-  String get attractionTagAccessibilityLabel => 'Accessibility';
+  String get placeTagAccessibilityLabel => 'Accessibility';
 
   @override
-  String get attractionTagAccessibilitySubtitle => 'Wheelchair friendly';
+  String get placeTagAccessibilitySubtitle => 'Wheelchair friendly';
 
   @override
-  String get attractionTagDiningLabel => 'Fine dining';
+  String get placeTagDiningLabel => 'Fine dining';
 
   @override
-  String get attractionTagDiningSubtitle => 'Gourmet restaurants';
+  String get placeTagDiningSubtitle => 'Gourmet restaurants';
 
   @override
-  String get attractionTagOutdoorLabel => 'Outdoor';
+  String get placeTagOutdoorLabel => 'Outdoor';
 
   @override
-  String get attractionTagOutdoorSubtitle => 'Nature and fresh air';
+  String get placeTagOutdoorSubtitle => 'Nature and fresh air';
 
   @override
-  String get attractionTagPhotoLabel => 'Photo spot';
+  String get placeTagPhotoLabel => 'Photo spot';
 
   @override
-  String get attractionTagPhotoSubtitle => 'Great for memorable shots';
+  String get placeTagPhotoSubtitle => 'Great for memorable shots';
 
   @override
-  String get attractionTagHistoryLabel => 'Historic';
+  String get placeTagHistoryLabel => 'Historic';
 
   @override
-  String get attractionTagHistorySubtitle => 'Rich cultural heritage';
+  String get placeTagHistorySubtitle => 'Rich cultural heritage';
 
   @override
-  String get attractionTagAdventureLabel => 'Adventure';
+  String get placeTagAdventureLabel => 'Adventure';
 
   @override
-  String get attractionTagAdventureSubtitle => 'Active experiences';
+  String get placeTagAdventureSubtitle => 'Active experiences';
 
   @override
-  String get attractionTagUniqueSubtitle => 'Unique experience';
+  String get placeTagUniqueSubtitle => 'Unique experience';
 
   @override
   String get activitiesEntryTitle => 'Activities';
@@ -3707,12 +3706,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Try another city, category, or excursion name.';
 
   @override
-  String get excursionsNoAttractionExcursionsTitle =>
-      'No excursions for this attraction yet';
+  String get excursionsNoPlaceExcursionsTitle =>
+      'No excursions for this place yet';
 
   @override
-  String get excursionsNoAttractionExcursionsSubtitle =>
-      'Showing other available excursions. When guides add a route for this attraction, it will appear here.';
+  String get excursionsNoPlaceExcursionsSubtitle =>
+      'Showing other available excursions. When guides add a route for this place, it will appear here.';
 
   @override
   String get guidesTitle => 'Travel Guides';
@@ -4217,10 +4216,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createExcursionCoverUploadHint =>
-      'JPG, PNG or WEBP. If you selected an attraction, its photo will be used unless you upload your own.';
+      'JPG, PNG or WEBP. If you selected a place, its photo will be used unless you upload your own.';
 
   @override
-  String get createExcursionSelectedLandmark => 'Attraction';
+  String get createExcursionSelectedLandmark => 'Place';
 
   @override
   String get createExcursionLandmarkNameLabel => 'Landmark';
@@ -4229,7 +4228,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createExcursionLandmarkNameHint => 'e.g. Medeu';
 
   @override
-  String get createExcursionLandmarkValidation => 'Choose an attraction';
+  String get createExcursionLandmarkValidation => 'Choose a place';
 
   @override
   String get createExcursionCountryValidation => 'Select a country first';
@@ -4239,42 +4238,41 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createExcursionManualLocationHint =>
-      'You can enter a custom location or choose an attraction from this country.';
+      'You can enter a custom location or choose a place from this country.';
 
   @override
-  String get createExcursionLocationLockedByAttraction =>
-      'This location comes from the attraction catalog. Change the attraction to edit it.';
+  String get createExcursionLocationLockedByPlace =>
+      'This location comes from the places catalog. Change the place to edit it.';
 
   @override
-  String get createExcursionAttractionCatalogHint =>
-      'Attraction catalog for the selected country';
+  String get createExcursionPlaceCatalogHint =>
+      'Places catalog for the selected country';
 
   @override
-  String get createExcursionAttractionCatalogSource =>
-      'From the attraction catalog';
+  String get createExcursionPlaceCatalogSource => 'From the places catalog';
 
   @override
-  String get createExcursionSingleAttractionMode => 'Single attraction';
+  String get createExcursionSinglePlaceMode => 'Single place';
 
   @override
   String get createExcursionCombinedRouteMode => 'Combined route';
 
   @override
   String createExcursionCombinedRouteMinStopsValidation(Object count) {
-    return 'Add at least $count attraction stops';
+    return 'Add at least $count place stops';
   }
 
   @override
   String createExcursionCombinedRouteMaxStopsValidation(Object count) {
-    return 'Add no more than $count attraction stops';
+    return 'Add no more than $count place stops';
   }
 
   @override
   String get createExcursionDuplicateRouteStopValidation =>
-      'This attraction is already in the route.';
+      'This place is already in the route.';
 
   @override
-  String get excursionSelectLocationTitle => 'Select Attraction';
+  String get excursionSelectLocationTitle => 'Select place';
 
   @override
   String get excursionSelectLocationCountrySection => 'Select Country';
@@ -4295,10 +4293,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get excursionCountryItaly => 'Italy';
 
   @override
-  String get excursionSelectLocationAttractionSection => 'Select Attraction';
+  String get excursionSelectLocationPlaceSection => 'Select place';
 
   @override
-  String get excursionSelectLocationAttractionSearchHint => 'Attractions';
+  String get excursionSelectLocationPlaceSearchHint => 'Places';
 
   @override
   String get excursionSelectLocationSelected => 'Selected';
@@ -5756,7 +5754,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get excursionReviewSourceAttractionBadge =>
+  String get excursionReviewSourcePlaceBadge =>
       'Review based on a visited excursion';
 
   @override

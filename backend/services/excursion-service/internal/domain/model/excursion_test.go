@@ -445,8 +445,8 @@ func TestExcursionMoveToArchiveKeepsOfferRestorable(t *testing.T) {
 	}
 }
 
-func TestNewExcursionItineraryItemAcceptsAttractionSnapshot(t *testing.T) {
-	attractionID := uuid.New()
+func TestNewExcursionItineraryItemAcceptsPlaceSnapshot(t *testing.T) {
+	placeID := uuid.New()
 	lat := 43.238949
 	lng := 76.889709
 	travel := 12
@@ -456,8 +456,8 @@ func TestNewExcursionItineraryItemAcceptsAttractionSnapshot(t *testing.T) {
 		SortOrder:                 1,
 		StartOffsetMinutes:        60,
 		DurationMinutes:           intPtr(45),
-		AttractionID:              &attractionID,
-		AttractionName:            stringPtr("  Medeu  "),
+		PlaceID:                   &placeID,
+		PlaceName:                 stringPtr("  Medeu  "),
 		Latitude:                  &lat,
 		Longitude:                 &lng,
 		TravelFromPreviousMinutes: &travel,
@@ -468,11 +468,11 @@ func TestNewExcursionItineraryItemAcceptsAttractionSnapshot(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewExcursionItineraryItem() error = %v", err)
 	}
-	if item.AttractionID == nil || *item.AttractionID != attractionID {
-		t.Fatalf("AttractionID = %v, want %s", item.AttractionID, attractionID)
+	if item.PlaceID == nil || *item.PlaceID != placeID {
+		t.Fatalf("PlaceID = %v, want %s", item.PlaceID, placeID)
 	}
-	if item.AttractionName == nil || *item.AttractionName != "Medeu" {
-		t.Fatalf("AttractionName = %v, want Medeu", item.AttractionName)
+	if item.PlaceName == nil || *item.PlaceName != "Medeu" {
+		t.Fatalf("PlaceName = %v, want Medeu", item.PlaceName)
 	}
 	if item.Latitude == nil || *item.Latitude != lat {
 		t.Fatalf("Latitude = %v, want %f", item.Latitude, lat)
@@ -485,9 +485,9 @@ func TestNewExcursionItineraryItemAcceptsAttractionSnapshot(t *testing.T) {
 	}
 }
 
-func TestNewExcursionItineraryItemCopiesAttractionSnapshotPointers(t *testing.T) {
-	attractionID := uuid.New()
-	originalAttractionID := attractionID
+func TestNewExcursionItineraryItemCopiesPlaceSnapshotPointers(t *testing.T) {
+	placeID := uuid.New()
+	originalPlaceID := placeID
 	lat := 43.238949
 	lng := 76.889709
 	duration := 45
@@ -498,7 +498,7 @@ func TestNewExcursionItineraryItemCopiesAttractionSnapshotPointers(t *testing.T)
 		SortOrder:                 1,
 		StartOffsetMinutes:        60,
 		DurationMinutes:           &duration,
-		AttractionID:              &attractionID,
+		PlaceID:                   &placeID,
 		Latitude:                  &lat,
 		Longitude:                 &lng,
 		TravelFromPreviousMinutes: &travel,
@@ -509,14 +509,14 @@ func TestNewExcursionItineraryItemCopiesAttractionSnapshotPointers(t *testing.T)
 		t.Fatalf("NewExcursionItineraryItem() error = %v", err)
 	}
 
-	attractionID = uuid.New()
+	placeID = uuid.New()
 	lat = 1
 	lng = 2
 	duration = -1
 	travel = -1
 
-	if item.AttractionID == nil || *item.AttractionID != originalAttractionID {
-		t.Fatalf("AttractionID = %v, want %s", item.AttractionID, originalAttractionID)
+	if item.PlaceID == nil || *item.PlaceID != originalPlaceID {
+		t.Fatalf("PlaceID = %v, want %s", item.PlaceID, originalPlaceID)
 	}
 	if item.DurationMinutes == nil || *item.DurationMinutes != 45 {
 		t.Fatalf("DurationMinutes = %v, want %d", item.DurationMinutes, 45)
@@ -532,21 +532,21 @@ func TestNewExcursionItineraryItemCopiesAttractionSnapshotPointers(t *testing.T)
 	}
 }
 
-func TestNewExcursionItineraryItemNormalizesNilAttractionID(t *testing.T) {
-	attractionID := uuid.Nil
+func TestNewExcursionItineraryItemNormalizesNilPlaceID(t *testing.T) {
+	placeID := uuid.Nil
 
 	item, err := NewExcursionItineraryItem(NewExcursionItineraryItemParams{
-		ExcursionID:  uuid.New(),
-		SortOrder:    1,
-		AttractionID: &attractionID,
-		Title:        "Stop",
-		Description:  "A valid stop description.",
+		ExcursionID: uuid.New(),
+		SortOrder:   1,
+		PlaceID:     &placeID,
+		Title:       "Stop",
+		Description: "A valid stop description.",
 	})
 	if err != nil {
 		t.Fatalf("NewExcursionItineraryItem() error = %v", err)
 	}
-	if item.AttractionID != nil {
-		t.Fatalf("AttractionID = %v, want nil", item.AttractionID)
+	if item.PlaceID != nil {
+		t.Fatalf("PlaceID = %v, want nil", item.PlaceID)
 	}
 }
 
@@ -566,19 +566,19 @@ func TestNewExcursionItineraryItemRejectsNegativeTravelTime(t *testing.T) {
 	}
 }
 
-func TestNewExcursionItineraryItemNormalizesBlankAttractionName(t *testing.T) {
+func TestNewExcursionItineraryItemNormalizesBlankPlaceName(t *testing.T) {
 	item, err := NewExcursionItineraryItem(NewExcursionItineraryItemParams{
-		ExcursionID:    uuid.New(),
-		SortOrder:      1,
-		Title:          "Stop",
-		Description:    "A valid stop description.",
-		AttractionName: stringPtr("   "),
+		ExcursionID: uuid.New(),
+		SortOrder:   1,
+		Title:       "Stop",
+		Description: "A valid stop description.",
+		PlaceName:   stringPtr("   "),
 	})
 	if err != nil {
 		t.Fatalf("NewExcursionItineraryItem() error = %v", err)
 	}
-	if item.AttractionName != nil {
-		t.Fatalf("AttractionName = %q, want nil", *item.AttractionName)
+	if item.PlaceName != nil {
+		t.Fatalf("PlaceName = %q, want nil", *item.PlaceName)
 	}
 }
 

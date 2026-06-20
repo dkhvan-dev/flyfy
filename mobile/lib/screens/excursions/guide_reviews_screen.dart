@@ -346,7 +346,7 @@ class _GuideReviewCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context).toLanguageTag();
     final authorName = review.author.resolvedDisplayName.isEmpty
-        ? l10n.attractionTravelerFallback
+        ? l10n.placeTravelerFallback
         : review.author.resolvedDisplayName;
     final avatarUrl = review.author.resolvedAvatarFileId.isEmpty
         ? null
@@ -459,7 +459,7 @@ class _DirectGuideReviewCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context).toLanguageTag();
     final authorName = review.author.resolvedDisplayName.isEmpty
-        ? l10n.attractionTravelerFallback
+        ? l10n.placeTravelerFallback
         : review.author.resolvedDisplayName;
     final avatarUrl = review.author.resolvedAvatarFileId.isEmpty
         ? null

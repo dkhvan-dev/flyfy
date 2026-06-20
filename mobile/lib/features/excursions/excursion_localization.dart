@@ -1,20 +1,17 @@
 import '../../l10n/generated/app_localizations.dart';
-import '../attractions/models/attraction_vm.dart';
+import '../places/models/place_vm.dart';
 import 'models/excursion_vm.dart';
 
 String localizedExcursionTitle({
   required String languageCode,
   required ExcursionVm excursion,
-  AttractionVm? attraction,
+  PlaceVm? place,
   String fallback = '',
 }) {
   return _firstNonBlank([
     _excursionCopyFor(excursion, languageCode)?.title,
-    if (_isSameAttraction(excursion, attraction))
-      localizedAttractionTitle(
-        languageCode: languageCode,
-        attraction: attraction,
-      ),
+    if (_isSamePlace(excursion, place))
+      localizedPlaceTitle(languageCode: languageCode, place: place),
     excursion.title,
     excursion.landmarkName,
     fallback,
@@ -24,13 +21,13 @@ String localizedExcursionTitle({
 String localizedExcursionSummary({
   required String languageCode,
   required ExcursionVm excursion,
-  AttractionVm? attraction,
+  PlaceVm? place,
   String fallback = '',
 }) {
   return _firstNonBlank([
     _excursionCopyFor(excursion, languageCode)?.summary,
-    if (_isSameAttraction(excursion, attraction))
-      _localizedAttractionDescription(attraction, languageCode),
+    if (_isSamePlace(excursion, place))
+      _localizedPlaceDescription(place, languageCode),
     excursion.summary,
     fallback,
   ]);
@@ -39,13 +36,13 @@ String localizedExcursionSummary({
 String localizedExcursionDescription({
   required String languageCode,
   required ExcursionVm excursion,
-  AttractionVm? attraction,
+  PlaceVm? place,
   String fallback = '',
 }) {
   return _firstNonBlank([
     _excursionCopyFor(excursion, languageCode)?.description,
-    if (_isSameAttraction(excursion, attraction))
-      _localizedAttractionDescription(attraction, languageCode),
+    if (_isSamePlace(excursion, place))
+      _localizedPlaceDescription(place, languageCode),
     excursion.description,
     excursion.summary,
     fallback,
@@ -55,15 +52,12 @@ String localizedExcursionDescription({
 String localizedExcursionLandmarkName({
   required String languageCode,
   required ExcursionVm excursion,
-  AttractionVm? attraction,
+  PlaceVm? place,
   String fallback = '',
 }) {
   return _firstNonBlank([
-    if (_isSameAttraction(excursion, attraction))
-      localizedAttractionTitle(
-        languageCode: languageCode,
-        attraction: attraction,
-      ),
+    if (_isSamePlace(excursion, place))
+      localizedPlaceTitle(languageCode: languageCode, place: place),
     excursion.landmarkName,
     fallback,
   ]);
@@ -79,59 +73,53 @@ ExcursionLocalizedCopyVm? _excursionCopyFor(
       excursion.translations[normalized.split('-').first];
 }
 
-String localizedAttractionTitle({
+String localizedPlaceTitle({
   required String languageCode,
-  AttractionVm? attraction,
+  PlaceVm? place,
   String fallback = '',
 }) {
-  if (attraction == null) return fallback.trim();
+  if (place == null) return fallback.trim();
   final normalized = _normalizeLocale(languageCode);
-  final requested = attraction.translations[normalized]?.title;
+  final requested = place.translations[normalized]?.title;
   final requestedLanguage =
-      attraction.translations[normalized.split('-').first]?.title;
+      place.translations[normalized.split('-').first]?.title;
 
   return _firstNonBlank([
     requested,
     requestedLanguage,
-    if (_normalizeLocale(attraction.locale) == normalized) attraction.title,
-    if (_normalizeLocale(attraction.locale) == normalized.split('-').first)
-      attraction.title,
-    attraction.translations[_normalizeLocale(attraction.defaultLocale)]?.title,
-    attraction.title,
+    if (_normalizeLocale(place.locale) == normalized) place.title,
+    if (_normalizeLocale(place.locale) == normalized.split('-').first)
+      place.title,
+    place.translations[_normalizeLocale(place.defaultLocale)]?.title,
+    place.title,
     fallback,
   ]);
 }
 
-String _localizedAttractionDescription(
-  AttractionVm? attraction,
-  String languageCode,
-) {
-  if (attraction == null) return '';
+String _localizedPlaceDescription(PlaceVm? place, String languageCode) {
+  if (place == null) return '';
   final normalized = _normalizeLocale(languageCode);
-  final requested = attraction.translations[normalized]?.description;
+  final requested = place.translations[normalized]?.description;
   final requestedLanguage =
-      attraction.translations[normalized.split('-').first]?.description;
+      place.translations[normalized.split('-').first]?.description;
 
   return _firstNonBlank([
     requested,
     requestedLanguage,
-    if (_normalizeLocale(attraction.locale) == normalized)
-      attraction.description,
-    if (_normalizeLocale(attraction.locale) == normalized.split('-').first)
-      attraction.description,
-    attraction
-        .translations[_normalizeLocale(attraction.defaultLocale)]
-        ?.description,
-    attraction.description,
+    if (_normalizeLocale(place.locale) == normalized) place.description,
+    if (_normalizeLocale(place.locale) == normalized.split('-').first)
+      place.description,
+    place.translations[_normalizeLocale(place.defaultLocale)]?.description,
+    place.description,
   ]);
 }
 
-bool _isSameAttraction(ExcursionVm excursion, AttractionVm? attraction) {
+bool _isSamePlace(ExcursionVm excursion, PlaceVm? place) {
   final landmarkId = excursion.landmarkId?.trim();
-  if (landmarkId == null || landmarkId.isEmpty || attraction == null) {
+  if (landmarkId == null || landmarkId.isEmpty || place == null) {
     return false;
   }
-  return landmarkId == attraction.id.trim();
+  return landmarkId == place.id.trim();
 }
 
 String _normalizeLocale(String value) {
@@ -201,7 +189,7 @@ String localizedExcursionCategoryLabel(
     case 'gourmet':
       return l10n.createExcursionCategoryCulinary;
     case 'market':
-      return l10n.attractionFilterCategoryMarket;
+      return l10n.placeFilterCategoryMarket;
     case 'wellness':
       return l10n.createExcursionCategoryWellness;
     default:

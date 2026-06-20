@@ -58,11 +58,11 @@
         <span>{{t .Locale "field.country"}}</span>
         <input type="hidden" name="country_code" value="{{.Data.Input.CountryCode}}" data-country-filter-value>
         <div class="filter-combobox" data-filter-combobox>
-          <input type="search" data-country-filter-input value="{{if .Data.Input.CountryCode}}{{attractionCountry .Locale .Data.Input.CountryCode}}{{end}}" placeholder="{{t .Locale "community.locationNone"}}" autocomplete="off" autocorrect="off" spellcheck="false" aria-autocomplete="none" aria-expanded="false" aria-controls="community-form-country-suggestions">
+          <input type="search" data-country-filter-input value="{{if .Data.Input.CountryCode}}{{placeCountry .Locale .Data.Input.CountryCode}}{{end}}" placeholder="{{t .Locale "community.locationNone"}}" autocomplete="off" autocorrect="off" spellcheck="false" aria-autocomplete="none" aria-expanded="false" aria-controls="community-form-country-suggestions">
           <div class="filter-suggestions" id="community-form-country-suggestions" data-country-filter-suggestions role="listbox" hidden>
             {{range .Data.Countries}}
-              <button type="button" class="filter-suggestion" data-country-filter-option data-value="{{.Value}}" data-label="{{attractionCountry $.Locale .Value}}" data-search="{{attractionCountrySearch .Value}}" role="option">
-                <span>{{attractionCountry $.Locale .Value}}</span>
+              <button type="button" class="filter-suggestion" data-country-filter-option data-value="{{.Value}}" data-label="{{placeCountry $.Locale .Value}}" data-search="{{placeCountrySearch .Value}}" role="option">
+                <span>{{placeCountry $.Locale .Value}}</span>
               </button>
             {{end}}
           </div>
@@ -72,12 +72,12 @@
         <span>{{t .Locale "field.city"}}</span>
         <input type="hidden" name="city_id" value="{{.Data.Input.CityID}}" data-city-filter-value {{if not .Data.Input.CountryCode}}disabled{{end}}>
         <div class="filter-combobox" data-filter-combobox>
-          <input type="search" data-city-filter-input value="{{if .Data.Input.CityID}}{{attractionCityName .Locale .Data.Input.CityID}}{{end}}" placeholder="{{t .Locale "community.locationNone"}}" autocomplete="off" autocorrect="off" spellcheck="false" aria-autocomplete="none" aria-expanded="false" aria-controls="community-form-city-suggestions" {{if not .Data.Input.CountryCode}}disabled{{end}}>
+          <input type="search" data-city-filter-input value="{{if .Data.Input.CityID}}{{placeCityName .Locale .Data.Input.CityID}}{{end}}" placeholder="{{t .Locale "community.locationNone"}}" autocomplete="off" autocorrect="off" spellcheck="false" aria-autocomplete="none" aria-expanded="false" aria-controls="community-form-city-suggestions" {{if not .Data.Input.CountryCode}}disabled{{end}}>
           <div class="filter-suggestions" id="community-form-city-suggestions" data-city-filter-suggestions role="listbox" hidden>
             {{range .Data.Cities}}
-              <button type="button" class="filter-suggestion" data-city-filter-option data-country="{{.CountryCode}}" data-value="{{.Value}}" data-label="{{attractionCityName $.Locale .Value}}" data-search="{{attractionCitySearch .CountryCode .Value}}" role="option">
-                <span>{{attractionCityName $.Locale .Value}}</span>
-                <small>{{attractionCountry $.Locale .CountryCode}}</small>
+              <button type="button" class="filter-suggestion" data-city-filter-option data-country="{{.CountryCode}}" data-value="{{.Value}}" data-label="{{placeCityName $.Locale .Value}}" data-search="{{placeCitySearch .CountryCode .Value}}" role="option">
+                <span>{{placeCityName $.Locale .Value}}</span>
+                <small>{{placeCountry $.Locale .CountryCode}}</small>
               </button>
             {{end}}
           </div>

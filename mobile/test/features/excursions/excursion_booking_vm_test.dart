@@ -14,7 +14,7 @@ void main() {
       'guideDisplayName': 'Aruzhan',
       'title': 'Medeu sunrise walk',
       'summary': 'Private city-to-mountain route',
-      'landmarkId': 'attraction-1',
+      'landmarkId': 'place-1',
       'landmarkName': 'Medeu',
       'scheduledFor': '2026-05-01T08:00:00Z',
       'adults': 2,
@@ -32,7 +32,7 @@ void main() {
         'id': 'review-1',
         'bookingId': 'booking-1',
         'productId': 'product-1',
-        'landmarkId': 'attraction-1',
+        'landmarkId': 'place-1',
         'touristUserId': 'tourist-1',
         'guideUserId': 'guide-user-1',
         'guideProfileId': 'guide-profile-1',
@@ -81,7 +81,7 @@ void main() {
     expect(booking.author.userId, 'tourist-1');
     expect(booking.author.nickname, '@booking_author');
     expect(booking.author.avatarFileId, 'booking-avatar-1');
-    expect(booking.landmarkId, 'attraction-1');
+    expect(booking.landmarkId, 'place-1');
     expect(booking.scheduleSlotId, 'slot-1');
     expect(booking.scheduledFor, DateTime.utc(2026, 5, 1, 8));
   });

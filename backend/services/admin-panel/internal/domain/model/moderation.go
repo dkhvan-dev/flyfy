@@ -106,8 +106,8 @@ type ExcursionItineraryItem struct {
 	SortOrder                 int
 	StartOffsetMinutes        int
 	DurationMinutes           *int
-	AttractionID              *uuid.UUID
-	AttractionName            string
+	PlaceID                   *uuid.UUID
+	PlaceName                 string
 	TravelFromPreviousMinutes *int
 	Title                     string
 	Description               string
@@ -115,52 +115,53 @@ type ExcursionItineraryItem struct {
 }
 
 type ExcursionModerationItem struct {
-	ID                      uuid.UUID
-	Title                   string
-	Summary                 string
-	Description             string
-	Translations            map[string]ExcursionLocalizedCopy
-	ProductTranslations     map[string]ExcursionLocalizedCopy
-	Status                  string
-	Visibility              string
-	GuideUserID             uuid.UUID
-	GuideDisplayName        string
-	GuideNickname           string
-	GuideFirstName          string
-	GuideLastName           string
-	GuideTrustScore         int
-	PublishRiskScore        int
-	ModerationReasonCodes   []string
-	LandmarkName            string
-	AttractionNames         []string
-	AttractionNamesByLocale map[string][]string
-	StopCount               int
-	DurationMinutes         int
-	MaxGroupSize            int
-	LanguageCodes           []string
-	CountryCode             string
-	CityName                string
-	DepartureCityID         string
-	MeetingPoint            string
-	MeetingPointByLocale    map[string]string
-	Latitude                *float64
-	Longitude               *float64
-	MapURL                  *string
-	PriceAmount             float64
-	Currency                string
-	IncludedItems           []string
-	IncludedItemsByLocale   map[string][]string
-	Itinerary               []ExcursionItineraryItem
-	Revision                int
-	SubmittedForReviewAt    *time.Time
-	CreatedAt               time.Time
-	UpdatedAt               time.Time
+	ID                    uuid.UUID
+	Title                 string
+	Summary               string
+	Description           string
+	Translations          map[string]ExcursionLocalizedCopy
+	ProductTranslations   map[string]ExcursionLocalizedCopy
+	Status                string
+	Visibility            string
+	GuideUserID           uuid.UUID
+	GuideDisplayName      string
+	GuideNickname         string
+	GuideFirstName        string
+	GuideLastName         string
+	GuideTrustScore       int
+	PublishRiskScore      int
+	ModerationReasonCodes []string
+	LandmarkName          string
+	PlaceNames            []string
+	PlaceNamesByLocale    map[string][]string
+	StopCount             int
+	DurationMinutes       int
+	MaxGroupSize          int
+	LanguageCodes         []string
+	CountryCode           string
+	CityName              string
+	DepartureCityID       string
+	MeetingPoint          string
+	MeetingPointByLocale  map[string]string
+	Latitude              *float64
+	Longitude             *float64
+	MapURL                *string
+	PriceAmount           float64
+	Currency              string
+	IncludedItems         []string
+	IncludedItemsByLocale map[string][]string
+	Itinerary             []ExcursionItineraryItem
+	Revision              int
+	SubmittedForReviewAt  *time.Time
+	CreatedAt             time.Time
+	UpdatedAt             time.Time
 }
 
 type ActivityModerationItem struct {
 	ID               uuid.UUID
 	HostUserID       uuid.UUID
 	HostDisplayName  string
+	HostFullName     string
 	SourceActivityID *uuid.UUID
 
 	Title       string

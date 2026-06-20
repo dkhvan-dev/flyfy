@@ -651,7 +651,7 @@ void main() {
     expect(page.items.single.id, 'guide-review-1');
   });
 
-  test('getExcursionReviews can filter public reviews by attraction', () async {
+  test('getExcursionReviews can filter public reviews by place', () async {
     final adapter = _ExcursionJsonAdapter({
       '/excursion-reviews': {
         'items': [_reviewJson()],
@@ -667,7 +667,7 @@ void main() {
     );
 
     final page = await api.getExcursionReviews(
-      landmarkId: 'attraction-1',
+      landmarkId: 'place-1',
       limit: 5,
       offset: 0,
     );
@@ -675,7 +675,7 @@ void main() {
     expect(adapter.requests.single.path, '/excursion-reviews');
     expect(adapter.requests.single.extra['requiresAuth'], isFalse);
     expect(adapter.requests.single.queryParameters, {
-      'landmarkId': 'attraction-1',
+      'landmarkId': 'place-1',
       'limit': 5,
       'offset': 0,
     });
@@ -731,7 +731,7 @@ void main() {
       await api.updateExcursionOffer(
         'excursion-1',
         const CreateExcursionRequest(
-          landmarkId: 'attraction-1',
+          landmarkId: 'place-1',
           landmarkName: 'Medeu',
           categorySlug: 'adventure',
           durationMinutes: 180,
@@ -828,7 +828,7 @@ Map<String, Object?> _bookingJson() {
     'guideDisplayName': 'Aruzhan',
     'title': 'Medeu sunrise walk',
     'summary': 'Private city-to-mountain route',
-    'landmarkId': 'attraction-1',
+    'landmarkId': 'place-1',
     'landmarkName': 'Medeu',
     'scheduledFor': '2026-05-01T08:00:00Z',
     'adults': 2,
@@ -852,7 +852,7 @@ Map<String, Object?> _reviewJson() {
     'guideProfileId': 'guide-profile-1',
     'guideUserId': 'guide-user-1',
     'guideDisplayName': 'Aruzhan',
-    'landmarkId': 'attraction-1',
+    'landmarkId': 'place-1',
     'landmarkName': 'Medeu',
     'rating': 4.5,
     'comment': 'Warm guide and a smooth route.',

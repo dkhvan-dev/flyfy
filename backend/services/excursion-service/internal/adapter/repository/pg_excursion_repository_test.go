@@ -223,8 +223,8 @@ func TestExcursionMarketplaceCanonicalKeyPrefersLandmarkID(t *testing.T) {
 
 	got := excursionMarketplaceCanonicalKey(item, port.ExcursionRelations{
 		Itinerary: []*model.ExcursionItineraryItem{
-			{AttractionID: &routeStopA},
-			{AttractionID: &routeStopB},
+			{PlaceID: &routeStopA},
+			{PlaceID: &routeStopB},
 		},
 	})
 	want := "landmark:" + landmarkID.String()
@@ -234,7 +234,7 @@ func TestExcursionMarketplaceCanonicalKeyPrefersLandmarkID(t *testing.T) {
 	}
 }
 
-func TestExcursionMarketplaceCanonicalKeyGroupsCombinedRouteBySortedAttractions(t *testing.T) {
+func TestExcursionMarketplaceCanonicalKeyGroupsCombinedRouteBySortedPlaces(t *testing.T) {
 	first := validRepositoryExcursion(t)
 	first.LandmarkID = nil
 	first.LandmarkName = nil
@@ -249,18 +249,18 @@ func TestExcursionMarketplaceCanonicalKeyGroupsCombinedRouteBySortedAttractions(
 
 	firstKey := excursionMarketplaceCanonicalKey(first, port.ExcursionRelations{
 		Itinerary: []*model.ExcursionItineraryItem{
-			{AttractionID: &a},
-			{AttractionID: &b},
-			{AttractionID: &c},
+			{PlaceID: &a},
+			{PlaceID: &b},
+			{PlaceID: &c},
 		},
 	})
 
 	second := *first
 	secondKey := excursionMarketplaceCanonicalKey(&second, port.ExcursionRelations{
 		Itinerary: []*model.ExcursionItineraryItem{
-			{AttractionID: &c},
-			{AttractionID: &a},
-			{AttractionID: &b},
+			{PlaceID: &c},
+			{PlaceID: &a},
+			{PlaceID: &b},
 		},
 	})
 
@@ -287,8 +287,8 @@ func TestSyncExcursionMarketplacePassesCombinedRouteMetadataToProduct(t *testing
 
 	err := syncExcursionMarketplace(context.Background(), exec, item, port.ExcursionRelations{
 		Itinerary: []*model.ExcursionItineraryItem{
-			{AttractionID: &a, AttractionName: stringPtr("Kok-Tobe")},
-			{AttractionID: &b, AttractionName: stringPtr("Cathedral")},
+			{PlaceID: &a, PlaceName: stringPtr("Kok-Tobe")},
+			{PlaceID: &b, PlaceName: stringPtr("Cathedral")},
 		},
 	})
 	if err != nil {
@@ -302,19 +302,19 @@ func TestSyncExcursionMarketplacePassesCombinedRouteMetadataToProduct(t *testing
 	if got := fmt.Sprint(productArgs[23]); !strings.HasPrefix(got, "route:kz:almaty:culture:2-4h:walking:") {
 		t.Fatalf("route_fingerprint arg = %q, want route fingerprint", got)
 	}
-	attractionIDs, ok := productArgs[24].([]uuid.UUID)
+	placeIDs, ok := productArgs[24].([]uuid.UUID)
 	if !ok {
-		t.Fatalf("attraction_ids arg type = %T, want []uuid.UUID", productArgs[24])
+		t.Fatalf("place_ids arg type = %T, want []uuid.UUID", productArgs[24])
 	}
-	if len(attractionIDs) != 2 || attractionIDs[0] != a || attractionIDs[1] != b {
-		t.Fatalf("attraction_ids arg = %#v, want sorted [%s %s]", attractionIDs, a, b)
+	if len(placeIDs) != 2 || placeIDs[0] != a || placeIDs[1] != b {
+		t.Fatalf("place_ids arg = %#v, want sorted [%s %s]", placeIDs, a, b)
 	}
-	attractionNames, ok := productArgs[25].([]string)
+	placeNames, ok := productArgs[25].([]string)
 	if !ok {
-		t.Fatalf("attraction_names arg type = %T, want []string", productArgs[25])
+		t.Fatalf("place_names arg type = %T, want []string", productArgs[25])
 	}
-	if strings.Join(attractionNames, ",") != "Kok-Tobe,Cathedral" {
-		t.Fatalf("attraction_names arg = %#v, want sorted attraction names", attractionNames)
+	if strings.Join(placeNames, ",") != "Kok-Tobe,Cathedral" {
+		t.Fatalf("place_names arg = %#v, want sorted place names", placeNames)
 	}
 	if got := fmt.Sprint(productArgs[26]); got != "2" {
 		t.Fatalf("stop_count arg = %q, want 2", got)
@@ -379,35 +379,35 @@ func TestCombinedRouteMigrationAddsRouteMetadata(t *testing.T) {
 	migration := readMigration(t, "015_combined_excursion_routes.up.sql")
 	required := []string{
 		"ALTER TABLE excursion_products",
-		"route_kind TEXT NOT NULL DEFAULT 'SINGLE_ATTRACTION'",
+		"route_kind TEXT NOT NULL DEFAULT 'SINGLE_PLACE'",
 		"route_fingerprint TEXT NULL",
-		"attraction_ids UUID[] NULL",
-		"attraction_names TEXT[] NULL",
+		"place_ids UUID[] NULL",
+		"place_names TEXT[] NULL",
 		"stop_count INT NOT NULL DEFAULT 0",
 		"transport_mode TEXT NOT NULL DEFAULT 'WALKING'",
 		"route_theme TEXT NULL",
 		"duration_bucket TEXT NULL",
-		"chk_excursion_products_attraction_ids_cardinality",
-		"chk_excursion_products_attraction_names_cardinality",
-		"chk_excursion_products_single_attraction_shape",
+		"chk_excursion_products_place_ids_cardinality",
+		"chk_excursion_products_place_names_cardinality",
+		"chk_excursion_products_single_place_shape",
 		"chk_excursion_products_combined_route_shape",
 		"route_kind = CASE",
 		"WHEN landmark_id IS NULL THEN 'COMBINED_ROUTE'",
 		"route_fingerprint = canonical_key",
-		"attraction_ids = CASE",
+		"place_ids = CASE",
 		"WHEN landmark_id IS NULL THEN NULL",
 		"ELSE ARRAY[landmark_id]::UUID[]",
-		"attraction_names = CASE",
+		"place_names = CASE",
 		"WHEN landmark_id IS NULL OR landmark_name IS NULL OR BTRIM(landmark_name) = '' THEN NULL",
 		"stop_count = CASE",
 		"WHEN landmark_id IS NULL THEN 0",
 		"ELSE 1",
 		"WHEN duration_minutes IS NULL THEN NULL",
 		"WHERE route_fingerprint IS NULL",
-		"WHERE attraction_ids IS NOT NULL",
+		"WHERE place_ids IS NOT NULL",
 		"ALTER TABLE excursion_itinerary_items",
-		"attraction_id UUID NULL",
-		"attraction_name VARCHAR(180) NULL",
+		"place_id UUID NULL",
+		"place_name VARCHAR(180) NULL",
 		"latitude NUMERIC(10,7) NULL",
 		"longitude NUMERIC(10,7) NULL",
 		"travel_from_previous_minutes INT NULL",
@@ -423,9 +423,9 @@ func TestCombinedRouteMigrationAddsRouteMetadata(t *testing.T) {
 	for _, fragment := range []string{
 		"DROP COLUMN IF EXISTS route_kind",
 		"DROP INDEX IF EXISTS uq_excursion_products_route_fingerprint",
-		"DROP CONSTRAINT IF EXISTS chk_excursion_products_attraction_ids_cardinality",
-		"DROP CONSTRAINT IF EXISTS chk_excursion_products_attraction_names_cardinality",
-		"DROP CONSTRAINT IF EXISTS chk_excursion_products_single_attraction_shape",
+		"DROP CONSTRAINT IF EXISTS chk_excursion_products_place_ids_cardinality",
+		"DROP CONSTRAINT IF EXISTS chk_excursion_products_place_names_cardinality",
+		"DROP CONSTRAINT IF EXISTS chk_excursion_products_single_place_shape",
 		"DROP CONSTRAINT IF EXISTS chk_excursion_products_combined_route_shape",
 		"DROP COLUMN IF EXISTS travel_from_previous_minutes",
 	} {
@@ -534,7 +534,7 @@ func TestSyncExcursionMarketplaceUsesContiguousPlaceholders(t *testing.T) {
 	}
 }
 
-func TestSyncExcursionMarketplaceKeepsSharedCardAndOfferAttractionBased(t *testing.T) {
+func TestSyncExcursionMarketplaceKeepsSharedCardAndOfferPlaceBased(t *testing.T) {
 	item := validRepositoryExcursion(t)
 	landmarkName := "Medeu"
 	item.LandmarkName = &landmarkName

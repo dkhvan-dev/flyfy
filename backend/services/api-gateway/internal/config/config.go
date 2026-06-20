@@ -69,7 +69,7 @@ type DownstreamsConfig struct {
 	ChatService         string `env:"CHAT_SERVICE_HTTP_URL, default=http://chat-service:8088"`
 	ReferenceService    string `env:"REFERENCE_SERVICE_HTTP_URL, default=http://reference-service:8089"`
 	CurrencyService     string `env:"CURRENCY_SERVICE_HTTP_URL, default=http://currency-service:8098"`
-	AttractionService   string `env:"ATTRACTION_SERVICE_HTTP_URL, default=http://attraction-service:8090"`
+	PlaceService        string `env:"PLACE_SERVICE_HTTP_URL, default=http://place-service:8090"`
 	PaymentService      string `env:"PAYMENT_SERVICE_HTTP_URL, default=http://payment-service:8091"`
 	StickerService      string `env:"STICKER_SERVICE_HTTP_URL, default=http://sticker-service:8092"`
 	NotificationService string `env:"NOTIFICATION_SERVICE_HTTP_URL, default=http://notification-service:8097"`

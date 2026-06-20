@@ -5666,7 +5666,7 @@ class _ActivityReviewCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context).toLanguageTag();
     final authorName = author.resolvedDisplayName.isEmpty
-        ? l10n.attractionTravelerFallback
+        ? l10n.placeTravelerFallback
         : author.resolvedDisplayName;
     final avatarUrl = author.resolvedAvatarFileId.isEmpty
         ? null

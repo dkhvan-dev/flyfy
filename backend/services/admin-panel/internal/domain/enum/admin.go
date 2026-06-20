@@ -64,7 +64,7 @@ const (
 	PermissionActivityModerate   Permission = "activity.moderate"
 	PermissionGuideModerate      Permission = "guide.moderate"
 	PermissionChatModerate       Permission = "chat.moderate"
-	PermissionAttractionManage   Permission = "attraction.manage"
+	PermissionPlaceManage        Permission = "place.manage"
 	PermissionFraudReview        Permission = "fraud.review"
 	PermissionUsersRead          Permission = "users.read"
 	PermissionUsersModerate      Permission = "users.moderate"

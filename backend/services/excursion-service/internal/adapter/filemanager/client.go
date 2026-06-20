@@ -65,7 +65,7 @@ func (c *Client) ValidateExcursionCoverFile(ctx context.Context, fileID uuid.UUI
 	}
 	if !strings.EqualFold(resp.GetPurpose(), "EXCURSION_MEDIA") &&
 		!strings.EqualFold(resp.GetPurpose(), "ACTIVITY_MEDIA") &&
-		!strings.EqualFold(resp.GetPurpose(), "ATTRACTION_MEDIA") {
+		!strings.EqualFold(resp.GetPurpose(), "PLACE_MEDIA") {
 		return app.ErrExcursionCoverFileNotAllowed
 	}
 	return nil

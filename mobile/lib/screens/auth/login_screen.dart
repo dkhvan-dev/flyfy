@@ -271,23 +271,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                     borderRadius: BorderRadius.circular(999),
                                     child: Row(
                                       children: [
-                                        Container(
-                                          width: logoSize,
-                                          height: logoSize,
-                                          decoration: const BoxDecoration(
-                                            color: AppColors.accent,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          alignment: Alignment.center,
-                                          child: Icon(
-                                            Icons.flight_takeoff,
-                                            color: AppColors.background,
-                                            size: authScaled(
-                                              context,
-                                              24,
-                                              min: 20,
-                                              max: 24,
-                                            ),
+                                        ClipOval(
+                                          child: Image.asset(
+                                            'assets/icons/inflap_app_icon_white_bg_256.png',
+                                            width: logoSize,
+                                            height: logoSize,
+                                            fit: BoxFit.cover,
                                           ),
                                         ),
                                         SizedBox(

@@ -18,8 +18,8 @@ import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../core/ui/error_view.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
-import '../../features/attractions/data/attraction_api.dart';
-import '../../features/attractions/models/attraction_vm.dart';
+import '../../features/places/data/place_api.dart';
+import '../../features/places/models/place_vm.dart';
 import '../../features/profile/data/profile_api.dart';
 import '../../features/profile/models/user_profile_vm.dart';
 import '../../features/excursions/models/excursion_booking_vm.dart';
@@ -49,10 +49,10 @@ class ExcursionDetailsScreen extends StatefulWidget {
 }
 
 class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
-  final AttractionApi _attractionApi = AttractionApi();
+  final PlaceApi _placeApi = PlaceApi();
   final ProfileApi _profileApi = ProfileApi();
   final ChatApi _chatApi = ChatApi();
-  AttractionVm? _localizedLandmark;
+  PlaceVm? _localizedLandmark;
   String? _localizedLandmarkId;
   String? _localizedLandmarkLocale;
   String? _loadingLocalizedLandmarkId;
@@ -445,16 +445,13 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
 
   Future<void> _loadLocalizedLandmark(String landmarkId, String lang) async {
     try {
-      final attraction = await _attractionApi.getAttraction(
-        landmarkId,
-        locale: lang,
-      );
+      final place = await _placeApi.getPlace(landmarkId, locale: lang);
       if (!mounted || _loadingLocalizedLandmarkId != '$landmarkId:$lang') {
         return;
       }
 
       setState(() {
-        _localizedLandmark = attraction;
+        _localizedLandmark = place;
         _localizedLandmarkId = landmarkId;
         _localizedLandmarkLocale = lang;
         _loadingLocalizedLandmarkId = null;
@@ -659,7 +656,7 @@ class ExcursionDetailsContent extends StatelessWidget {
   });
 
   final ExcursionVm excursion;
-  final AttractionVm? localizedLandmark;
+  final PlaceVm? localizedLandmark;
   final List<ExcursionOfferVm>? offers;
   final List<ExcursionReviewVm> excursionReviews;
   final ExcursionOfferVm? selectedOffer;
@@ -850,7 +847,7 @@ class _ExcursionDetailsTopBar extends StatelessWidget {
               ),
               _CircleIconButton(
                 icon: Icons.notifications_outlined,
-                tooltip: l10n.attractionNotificationsTooltip,
+                tooltip: l10n.placeNotificationsTooltip,
                 color: AppColors.accent,
                 background: AppColors.accent.withValues(alpha: 0.12),
                 onTap: onNotificationsTap,
@@ -909,7 +906,7 @@ class _ExcursionHero extends StatelessWidget {
   });
 
   final ExcursionVm excursion;
-  final AttractionVm? localizedLandmark;
+  final PlaceVm? localizedLandmark;
 
   @override
   Widget build(BuildContext context) {
@@ -918,7 +915,7 @@ class _ExcursionHero extends StatelessWidget {
     final title = localizedExcursionTitle(
       languageCode: Localizations.localeOf(context).languageCode,
       excursion: excursion,
-      attraction: localizedLandmark,
+      place: localizedLandmark,
       fallback: label,
     );
 
@@ -1276,14 +1273,14 @@ class _ExcursionExperienceSection extends StatelessWidget {
   });
 
   final ExcursionVm excursion;
-  final AttractionVm? localizedLandmark;
+  final PlaceVm? localizedLandmark;
 
   void _openLandmarkDetails(BuildContext context) {
     final landmarkId = (excursion.landmarkId ?? '').trim();
     if (landmarkId.isEmpty) return;
 
     context.push(
-      '/attractions/${Uri.encodeComponent(landmarkId)}',
+      '/places/${Uri.encodeComponent(landmarkId)}',
       extra: localizedLandmark,
     );
   }
@@ -1295,7 +1292,7 @@ class _ExcursionExperienceSection extends StatelessWidget {
     final description = localizedExcursionDescription(
       languageCode: Localizations.localeOf(context).languageCode,
       excursion: excursion,
-      attraction: localizedLandmark,
+      place: localizedLandmark,
       fallback: l10n.excursionDetailsNoDescription,
     );
 
@@ -3546,7 +3543,7 @@ class _ExcursionItinerarySection extends StatelessWidget {
   });
 
   final ExcursionVm excursion;
-  final AttractionVm? localizedLandmark;
+  final PlaceVm? localizedLandmark;
 
   @override
   Widget build(BuildContext context) {
@@ -3555,7 +3552,7 @@ class _ExcursionItinerarySection extends StatelessWidget {
     final summary = localizedExcursionSummary(
       languageCode: languageCode,
       excursion: excursion,
-      attraction: localizedLandmark,
+      place: localizedLandmark,
     );
     final steps = excursion.itinerary.isNotEmpty
         ? excursion.itinerary
@@ -3630,11 +3627,11 @@ class _ExcursionItineraryStep extends StatelessWidget {
       totalSteps,
     );
     final description = _localizedItineraryDescription(step, languageCode);
-    final attractionName = step.attractionName?.trim() ?? '';
+    final placeName = step.placeName?.trim() ?? '';
     final travelFromPreviousMinutes = step.travelFromPreviousMinutes;
     final metaChips = <Widget>[
-      if (attractionName.isNotEmpty)
-        _RouteStopMetaChip(icon: Icons.place_rounded, label: attractionName),
+      if (placeName.isNotEmpty)
+        _RouteStopMetaChip(icon: Icons.place_rounded, label: placeName),
       if (travelFromPreviousMinutes != null && travelFromPreviousMinutes > 0)
         _RouteStopMetaChip(
           icon: Icons.route_rounded,
@@ -3862,7 +3859,7 @@ class _ExcursionReviewCard extends StatelessWidget {
         ? l10n.myExcursionsGuideFallback
         : review.guideDisplayName.trim();
     final authorName = review.author.resolvedDisplayName.isEmpty
-        ? l10n.attractionTravelerFallback
+        ? l10n.placeTravelerFallback
         : review.author.resolvedDisplayName;
     final authorAvatarUrl = review.author.resolvedAvatarFileId.isEmpty
         ? null

@@ -31,7 +31,7 @@ type ProxyHandler struct {
 	chatProxy         *httputil.ReverseProxy
 	referenceProxy    *httputil.ReverseProxy
 	currencyProxy     *httputil.ReverseProxy
-	attractionProxy   *httputil.ReverseProxy
+	placeProxy        *httputil.ReverseProxy
 	paymentProxy      *httputil.ReverseProxy
 	stickerProxy      *httputil.ReverseProxy
 	notificationProxy *httputil.ReverseProxy
@@ -91,7 +91,7 @@ func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHan
 		return nil, err
 	}
 
-	attractionProxy, err := newSingleHostProxy("attraction", cfg.Downstreams.AttractionService, cfg.Security.InternalServiceToken)
+	placeProxy, err := newSingleHostProxy("place", cfg.Downstreams.PlaceService, cfg.Security.InternalServiceToken)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +140,7 @@ func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHan
 		chatProxy:         chatProxy,
 		referenceProxy:    referenceProxy,
 		currencyProxy:     currencyProxy,
-		attractionProxy:   attractionProxy,
+		placeProxy:        placeProxy,
 		paymentProxy:      paymentProxy,
 		stickerProxy:      stickerProxy,
 		notificationProxy: notificationProxy,
@@ -245,8 +245,8 @@ func (h *ProxyHandler) resolveProxy(upstream string) *httputil.ReverseProxy {
 		return h.referenceProxy
 	case "currency":
 		return h.currencyProxy
-	case "attraction":
-		return h.attractionProxy
+	case "place":
+		return h.placeProxy
 	case "payment":
 		return h.paymentProxy
 	case "sticker":

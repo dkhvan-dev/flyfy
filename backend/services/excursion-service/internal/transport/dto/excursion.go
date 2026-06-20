@@ -3,8 +3,8 @@ package dto
 type ExcursionItineraryItemRequest struct {
 	StartOffsetMinutes        int                                        `json:"startOffsetMinutes"`
 	DurationMinutes           *int                                       `json:"durationMinutes,omitempty"`
-	AttractionID              *string                                    `json:"attractionId,omitempty"`
-	AttractionName            *string                                    `json:"attractionName,omitempty"`
+	PlaceID                   *string                                    `json:"placeId,omitempty"`
+	PlaceName                 *string                                    `json:"placeName,omitempty"`
 	Latitude                  *float64                                   `json:"latitude,omitempty"`
 	Longitude                 *float64                                   `json:"longitude,omitempty"`
 	TravelFromPreviousMinutes *int                                       `json:"travelFromPreviousMinutes,omitempty"`
@@ -57,8 +57,8 @@ type ExcursionItineraryItemResponse struct {
 	SortOrder                 int                                        `json:"sortOrder"`
 	StartOffsetMinutes        int                                        `json:"startOffsetMinutes"`
 	DurationMinutes           *int                                       `json:"durationMinutes,omitempty"`
-	AttractionID              *string                                    `json:"attractionId,omitempty"`
-	AttractionName            *string                                    `json:"attractionName,omitempty"`
+	PlaceID                   *string                                    `json:"placeId,omitempty"`
+	PlaceName                 *string                                    `json:"placeName,omitempty"`
 	Latitude                  *float64                                   `json:"latitude,omitempty"`
 	Longitude                 *float64                                   `json:"longitude,omitempty"`
 	TravelFromPreviousMinutes *int                                       `json:"travelFromPreviousMinutes,omitempty"`
@@ -128,8 +128,8 @@ type ExcursionProductCardResponse struct {
 	LandmarkName         *string                           `json:"landmarkName,omitempty"`
 	RouteKind            string                            `json:"routeKind"`
 	RouteFingerprint     *string                           `json:"routeFingerprint,omitempty"`
-	AttractionIDs        []string                          `json:"attractionIds,omitempty"`
-	AttractionNames      []string                          `json:"attractionNames,omitempty"`
+	PlaceIDs             []string                          `json:"placeIds,omitempty"`
+	PlaceNames           []string                          `json:"placeNames,omitempty"`
 	StopCount            int                               `json:"stopCount"`
 	TransportMode        string                            `json:"transportMode"`
 	RouteTheme           *string                           `json:"routeTheme,omitempty"`

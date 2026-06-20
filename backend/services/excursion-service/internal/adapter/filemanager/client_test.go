@@ -13,7 +13,7 @@ import (
 	filev1 "kz/inflap/proto/gen/go/file/v1"
 )
 
-func TestValidateExcursionCoverFileAcceptsAttractionMedia(t *testing.T) {
+func TestValidateExcursionCoverFileAcceptsPlaceMedia(t *testing.T) {
 	t.Parallel()
 
 	fileID := uuid.New()
@@ -22,13 +22,13 @@ func TestValidateExcursionCoverFileAcceptsAttractionMedia(t *testing.T) {
 		&filev1.GetFileResponse{
 			FileId:  fileID.String(),
 			Status:  "READY",
-			Purpose: "ATTRACTION_MEDIA",
+			Purpose: "PLACE_MEDIA",
 		},
 	)
 	defer cleanup()
 
 	if err := client.ValidateExcursionCoverFile(context.Background(), fileID); err != nil {
-		t.Fatalf("ValidateExcursionCoverFile returned error for attraction media: %v", err)
+		t.Fatalf("ValidateExcursionCoverFile returned error for place media: %v", err)
 	}
 }
 

@@ -96,7 +96,7 @@ func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 	return f(r)
 }
 
-func TestExcursionResponseToModelExtractsItineraryAttractions(t *testing.T) {
+func TestExcursionResponseToModelExtractsItineraryPlaces(t *testing.T) {
 	t.Parallel()
 
 	firstID := "11111111-1111-1111-1111-111111111111"
@@ -131,8 +131,8 @@ func TestExcursionResponseToModelExtractsItineraryAttractions(t *testing.T) {
 				SortOrder:          0,
 				StartOffsetMinutes: 0,
 				DurationMinutes:    intPtr(45),
-				AttractionID:       &firstID,
-				AttractionName:     stringPtr("Kok-Tobe"),
+				PlaceID:            &firstID,
+				PlaceName:          stringPtr("Kok-Tobe"),
 				Title:              "Kok-Tobe",
 				Description:        "Ride uphill.",
 				Translations: map[string]localizedItineraryResponse{
@@ -144,17 +144,17 @@ func TestExcursionResponseToModelExtractsItineraryAttractions(t *testing.T) {
 				StartOffsetMinutes:        75,
 				DurationMinutes:           intPtr(30),
 				TravelFromPreviousMinutes: intPtr(20),
-				AttractionID:              stringPtr("44444444-4444-4444-4444-444444444444"),
-				AttractionName:            stringPtr("Cathedral"),
+				PlaceID:                   stringPtr("44444444-4444-4444-4444-444444444444"),
+				PlaceName:                 stringPtr("Cathedral"),
 				Title:                     "Cathedral",
 				Translations: map[string]localizedItineraryResponse{
 					"ru": {Title: "Собор"},
 				},
 			},
 			{
-				AttractionID:   &firstID,
-				AttractionName: stringPtr("Kok-Tobe"),
-				Title:          "Duplicate",
+				PlaceID:   &firstID,
+				PlaceName: stringPtr("Kok-Tobe"),
+				Title:     "Duplicate",
 				Translations: map[string]localizedItineraryResponse{
 					"ru": {Title: "Кок-Тобе"},
 				},
@@ -167,11 +167,11 @@ func TestExcursionResponseToModelExtractsItineraryAttractions(t *testing.T) {
 	if item.StopCount != 4 {
 		t.Fatalf("StopCount = %d, want 4", item.StopCount)
 	}
-	if len(item.AttractionNames) != 2 {
-		t.Fatalf("AttractionNames length = %d, want 2: %#v", len(item.AttractionNames), item.AttractionNames)
+	if len(item.PlaceNames) != 2 {
+		t.Fatalf("PlaceNames length = %d, want 2: %#v", len(item.PlaceNames), item.PlaceNames)
 	}
-	if item.AttractionNames[0] != "Kok-Tobe" || item.AttractionNames[1] != "Cathedral" {
-		t.Fatalf("AttractionNames = %#v, want Kok-Tobe, Cathedral", item.AttractionNames)
+	if item.PlaceNames[0] != "Kok-Tobe" || item.PlaceNames[1] != "Cathedral" {
+		t.Fatalf("PlaceNames = %#v, want Kok-Tobe, Cathedral", item.PlaceNames)
 	}
 	if item.GuideNickname != "@nomad_aru" {
 		t.Fatalf("GuideNickname = %q, want @nomad_aru", item.GuideNickname)
@@ -182,8 +182,8 @@ func TestExcursionResponseToModelExtractsItineraryAttractions(t *testing.T) {
 	if item.ProductTranslations["ru"].Title != "Кок-Тобе и собор" {
 		t.Fatalf("localized product title = %q, want Russian title", item.ProductTranslations["ru"].Title)
 	}
-	if got := item.AttractionNamesByLocale["ru"]; len(got) != 2 || got[0] != "Кок-Тобе" || got[1] != "Собор" {
-		t.Fatalf("localized attraction names = %#v, want Russian names", got)
+	if got := item.PlaceNamesByLocale["ru"]; len(got) != 2 || got[0] != "Кок-Тобе" || got[1] != "Собор" {
+		t.Fatalf("localized place names = %#v, want Russian names", got)
 	}
 	if item.DurationMinutes != 180 || item.MaxGroupSize != 10 || item.MeetingPoint != "Main entrance" {
 		t.Fatalf("route facts = duration %d group %d meeting %q, want 180/10/Main entrance", item.DurationMinutes, item.MaxGroupSize, item.MeetingPoint)

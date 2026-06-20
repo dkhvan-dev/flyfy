@@ -1766,8 +1766,8 @@ func normalizeFeedInterestEntityType(value string) string {
 		return model.FeedInterestEntityTypeCommunity
 	case model.FeedInterestEntityTypeActivity:
 		return model.FeedInterestEntityTypeActivity
-	case model.FeedInterestEntityTypeAttraction:
-		return model.FeedInterestEntityTypeAttraction
+	case model.FeedInterestEntityTypePlace:
+		return model.FeedInterestEntityTypePlace
 	case model.FeedInterestEntityTypeTour:
 		return model.FeedInterestEntityTypeTour
 	case model.FeedInterestEntityTypeGuide:
@@ -1957,7 +1957,7 @@ func isFeedBlockType(value string) bool {
 		model.FeedBlockTypeMySubscriptions,
 		model.FeedBlockTypePostCard,
 		model.FeedBlockTypeActivityCard,
-		model.FeedBlockTypeAttractionCard,
+		model.FeedBlockTypePlaceCard,
 		model.FeedBlockTypeTourCard,
 		model.FeedBlockTypeGuideCard,
 		model.FeedBlockTypeProfileCard,

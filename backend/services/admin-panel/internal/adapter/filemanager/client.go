@@ -35,7 +35,7 @@ func NewClient(baseURL string, timeout time.Duration, internalToken string) *Cli
 	}
 }
 
-func (c *Client) UploadPublicAttractionImage(ctx context.Context, input model.FileUploadInput) (*model.UploadedFile, error) {
+func (c *Client) UploadPublicPlaceImage(ctx context.Context, input model.FileUploadInput) (*model.UploadedFile, error) {
 	ownerID := input.OwnerID.String()
 	ownerType := input.OwnerType
 	createReq := createUploadRequest{

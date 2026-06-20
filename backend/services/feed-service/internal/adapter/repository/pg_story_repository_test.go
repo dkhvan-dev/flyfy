@@ -684,7 +684,7 @@ func TestFeedEntityConversionBlockTypesMigrationExtendsConstraint(t *testing.T) 
 		"post_feed_events_block_type_check",
 		"post_feed_events_block_type_check",
 		"'activity_card'",
-		"'attraction_card'",
+		"'place_card'",
 		"'tour_card'",
 		"'guide_card'",
 		"'profile_card'",
@@ -838,7 +838,7 @@ func TestFeedUserInterestsMigrationCreatesViewerInterestReadModel(t *testing.T) 
 		"idx_post_feed_user_interests_viewer_score",
 		"idx_post_feed_user_interests_entity_score",
 		"'activity'",
-		"'attraction'",
+		"'place'",
 		"'post'",
 		"'author'",
 		"'post_profile'",
@@ -1032,7 +1032,7 @@ func TestRepositoryCreateFeedEventsProjectsRicherSemanticMappings(t *testing.T) 
 	for _, needle := range []string{
 		"COALESCE(NULLIF(metadata->>'profileUserId', ''), NULLIF(metadata->>'profileId', ''))",
 		"jsonb_array_elements_text(signal.metadata->'postTags')",
-		"jsonb_array_elements_text(signal.metadata->'attractionTags')",
+		"jsonb_array_elements_text(signal.metadata->'placeTags')",
 		"jsonb_array_elements_text(signal.metadata->'seasonalTags')",
 		"jsonb_array_elements_text(signal.metadata->'localIntentTags')",
 	} {

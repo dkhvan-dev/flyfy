@@ -16,7 +16,7 @@ import (
 	"kz/inflap/backend/services/admin-panel/internal/domain/model"
 )
 
-//go:embed templates/*.html templates/*/*.html static/css/*.css static/js/*.js static/vendor/maplibre/*.css static/vendor/maplibre/*.js
+//go:embed templates/*.html templates/*/*.html static/favicon.ico static/apple-touch-icon.png static/css/*.css static/js/*.js static/vendor/maplibre/*.css static/vendor/maplibre/*.js
 var embeddedFiles embed.FS
 
 type Renderer struct {
@@ -114,8 +114,8 @@ func NewRenderer() (*Renderer, error) {
 			}
 			return excursionTitleText(fmt.Sprint(locale), item, value)
 		},
-		"excursionAttractions": func(locale any, item *model.ExcursionModerationItem) string {
-			return excursionAttractionsText(fmt.Sprint(locale), item)
+		"excursionPlaces": func(locale any, item *model.ExcursionModerationItem) string {
+			return excursionPlacesText(fmt.Sprint(locale), item)
 		},
 		"excursionGuidePrimary": func(item *model.ExcursionModerationItem) string {
 			return excursionGuidePrimaryText(item)
@@ -179,6 +179,10 @@ func NewRenderer() (*Renderer, error) {
 		"chatMessagePreview": func(locale any, item *model.ChatMessageModerationItem) string {
 			return chatMessagePreviewText(fmt.Sprint(locale), item)
 		},
+		"chatMessageBody": chatMessageBodyText,
+		"chatMessageKindBadge": func(locale any, item *model.ChatMessageModerationItem) string {
+			return chatMessageKindBadgeText(fmt.Sprint(locale), item)
+		},
 		"chatMessageSender": chatMessageSenderText,
 		"chatMessageConversation": func(locale any, item *model.ChatMessageModerationItem) string {
 			return chatMessageConversationText(fmt.Sprint(locale), item)
@@ -186,11 +190,18 @@ func NewRenderer() (*Renderer, error) {
 		"chatMessageSignals": func(locale any, item *model.ChatMessageModerationItem) string {
 			return chatMessageSignalsText(fmt.Sprint(locale), item)
 		},
+		"moderationSignal": func(locale any, code string) string {
+			return moderationSignalText(fmt.Sprint(locale), code)
+		},
 		"chatMessageDecisionLocked": chatMessageDecisionLocked,
 		"chatMessageType": func(locale any, value string) string {
 			return chatMessageTypeText(fmt.Sprint(locale), value)
 		},
 		"chatContextSender": chatContextSenderText,
+		"chatContextBody":   chatContextBodyText,
+		"chatContextKindBadge": func(locale any, item model.ChatMessageContextItem) string {
+			return chatContextKindBadgeText(fmt.Sprint(locale), item)
+		},
 		"chatContextContent": func(locale any, item model.ChatMessageContextItem) string {
 			return chatContextContentText(fmt.Sprint(locale), item)
 		},
@@ -225,42 +236,42 @@ func NewRenderer() (*Renderer, error) {
 		"guideApplicationServices":       guideApplicationServiceList,
 		"guideApplicationDecisionLocked": guideApplicationDecisionLocked,
 		"guideApplicationCanRevoke":      guideApplicationCanRevoke,
-		"attractionCategory": func(locale any, category string) string {
-			return attractionCategoryText(fmt.Sprint(locale), category)
+		"placeCategory": func(locale any, category string) string {
+			return placeCategoryText(fmt.Sprint(locale), category)
 		},
-		"attractionCity": func(locale any, countryCode string, cityID string) string {
-			return attractionCityText(fmt.Sprint(locale), countryCode, cityID)
+		"placeCity": func(locale any, countryCode string, cityID string) string {
+			return placeCityText(fmt.Sprint(locale), countryCode, cityID)
 		},
-		"attractionCountry": func(locale any, countryCode string) string {
+		"placeCountry": func(locale any, countryCode string) string {
 			return countryText(fmt.Sprint(locale), countryCode)
 		},
 		"countryWithCode": func(locale any, countryCode string) string {
 			return countryTextWithCode(fmt.Sprint(locale), countryCode)
 		},
-		"attractionCityName": func(locale any, cityID string) string {
-			return attractionCityNameText(fmt.Sprint(locale), cityID)
+		"placeCityName": func(locale any, cityID string) string {
+			return placeCityNameText(fmt.Sprint(locale), cityID)
 		},
-		"attractionCountrySearch": attractionCountrySearchText,
-		"attractionCitySearch":    attractionCitySearchText,
-		"attractionCurrency": func(locale any, currency string) string {
-			return attractionCurrencyText(fmt.Sprint(locale), currency)
+		"placeCountrySearch": placeCountrySearchText,
+		"placeCitySearch":    placeCitySearchText,
+		"placeCurrency": func(locale any, currency string) string {
+			return placeCurrencyText(fmt.Sprint(locale), currency)
 		},
-		"attractionListMeta": func(locale any, item model.AdminAttraction) string {
-			return attractionListMetaText(fmt.Sprint(locale), item)
+		"placeListMeta": func(locale any, item model.AdminPlace) string {
+			return placeListMetaText(fmt.Sprint(locale), item)
 		},
-		"attractionPaginationSummary": func(locale any, pagination AttractionPaginationViewData) string {
-			return attractionPaginationSummary(fmt.Sprint(locale), pagination)
+		"placePaginationSummary": func(locale any, pagination PlacePaginationViewData) string {
+			return placePaginationSummary(fmt.Sprint(locale), pagination)
 		},
-		"attractionMediaURL":               attractionMediaURL,
-		"attractionMediaImageURL":          attractionMediaImageURL,
-		"attractionMediaPosition":          attractionMediaPosition,
-		"attractionTags":                   attractionTagsText,
-		"attractionCityLinks":              attractionCityLinksText,
-		"attractionTranslationTitle":       attractionTranslationTitle,
-		"attractionTranslationDescription": attractionTranslationDescription,
-		"attractionVisitInfoValue":         attractionVisitInfoValue,
-		"attractionCategoryOptions":        attractionCategoryOptions,
-		"attractionOptionalStringEquals":   attractionOptionalStringEquals,
+		"placeMediaURL":               placeMediaURL,
+		"placeMediaImageURL":          placeMediaImageURL,
+		"placeMediaPosition":          placeMediaPosition,
+		"placeTags":                   placeTagsText,
+		"placeCityLinks":              placeCityLinksText,
+		"placeTranslationTitle":       placeTranslationTitle,
+		"placeTranslationDescription": placeTranslationDescription,
+		"placeVisitInfoValue":         placeVisitInfoValue,
+		"placeCategoryOptions":        placeCategoryOptions,
+		"placeOptionalStringEquals":   placeOptionalStringEquals,
 		"moderationReasonOptions": func(locale any) []moderationReasonOption {
 			return moderationReasonCodeOptions(fmt.Sprint(locale))
 		},
@@ -273,8 +284,8 @@ func NewRenderer() (*Renderer, error) {
 		"itineraryDescription": func(locale any, item model.ExcursionItineraryItem) string {
 			return itineraryDescriptionText(fmt.Sprint(locale), item)
 		},
-		"itineraryAttraction": itineraryAttractionText,
-		"itineraryStart":      itineraryStartText,
+		"itineraryPlace": itineraryPlaceText,
+		"itineraryStart": itineraryStartText,
 		"itineraryDuration": func(locale any, value *int) string {
 			return itineraryDurationText(fmt.Sprint(locale), value)
 		},

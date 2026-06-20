@@ -11,9 +11,10 @@ import (
 
 	"kz/inflap/backend/services/admin-panel/internal/app"
 	"kz/inflap/backend/services/admin-panel/internal/config"
+	"kz/inflap/backend/services/admin-panel/internal/domain/model"
 )
 
-func TestServerHandlerRegistersAttractionRoutesWithoutConflict(t *testing.T) {
+func TestServerHandlerRegistersPlaceRoutesWithoutConflict(t *testing.T) {
 	t.Parallel()
 
 	renderer, err := NewRenderer()
@@ -35,21 +36,50 @@ func TestServerHandlerRegistersAttractionRoutesWithoutConflict(t *testing.T) {
 	}
 }
 
-func TestAttractionMediaURLUsesDedicatedRoute(t *testing.T) {
+func TestPlaceMediaURLUsesDedicatedRoute(t *testing.T) {
 	t.Parallel()
 
 	fileID := uuid.New()
-	got := string(attractionMediaURL(fileID))
-	want := "/admin/attraction-media/" + fileID.String()
+	got := string(placeMediaURL(fileID))
+	want := "/admin/place-media/" + fileID.String()
 	if got != want {
-		t.Fatalf("attractionMediaURL() = %q, want %q", got, want)
+		t.Fatalf("placeMediaURL() = %q, want %q", got, want)
 	}
 }
 
-func TestSecurityHeadersAllowTrustedWikimediaAttractionImages(t *testing.T) {
+func TestPlaceMediaImageURLOptimizesWikimediaExternalPreviews(t *testing.T) {
 	t.Parallel()
 
-	request := httptest.NewRequest(http.MethodGet, "/admin/attractions/id/edit", nil)
+	cases := map[string]string{
+		"https://commons.wikimedia.org/wiki/Special:FilePath/Toompea_Castle.jpg?width=1400":                                                                    "https://commons.wikimedia.org/wiki/Special:FilePath/Toompea_Castle.jpg?width=480",
+		"https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Golden_Bridge_at_Ba_Na_Hills_20250718.jpg/3840px-Golden_Bridge_at_Ba_Na_Hills_20250718.jpg": "https://commons.wikimedia.org/wiki/Special:FilePath/Golden_Bridge_at_Ba_Na_Hills_20250718.jpg?width=480",
+	}
+	for externalURL, want := range cases {
+		item := model.AdminPlaceMedia{ExternalURL: externalURL}
+		if got := string(placeMediaImageURL(item)); got != want {
+			t.Fatalf("placeMediaImageURL(%q) = %q, want %q", externalURL, got, want)
+		}
+	}
+}
+
+func TestPlaceMediaImageURLPrefersLocalFileRoute(t *testing.T) {
+	t.Parallel()
+
+	fileID := uuid.New()
+	item := model.AdminPlaceMedia{
+		FileID:      fileID,
+		ExternalURL: "https://commons.wikimedia.org/wiki/Special:FilePath/Toompea_Castle.jpg?width=1400",
+	}
+	want := "/admin/place-media/" + fileID.String()
+	if got := string(placeMediaImageURL(item)); got != want {
+		t.Fatalf("placeMediaImageURL() = %q, want %q", got, want)
+	}
+}
+
+func TestSecurityHeadersAllowTrustedWikimediaPlaceImages(t *testing.T) {
+	t.Parallel()
+
+	request := httptest.NewRequest(http.MethodGet, "/admin/places/id/edit", nil)
 	recorder := httptest.NewRecorder()
 	handler := securityHeadersMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

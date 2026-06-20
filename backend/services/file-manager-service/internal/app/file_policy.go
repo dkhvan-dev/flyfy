@@ -79,7 +79,7 @@ func DefaultUploadPolicies(globalMaxSize int64) UploadPolicies {
 				"image/jpeg", "image/png", "image/webp",
 			),
 		},
-		enum.FilePurposeAttractionMedia: {
+		enum.FilePurposePlaceMedia: {
 			MaxSizeBytes: 20 * 1024 * 1024,
 			AllowedExtensions: setOf(
 				"jpg", "jpeg", "png", "webp",
@@ -88,7 +88,7 @@ func DefaultUploadPolicies(globalMaxSize int64) UploadPolicies {
 				"image/jpeg", "image/png", "image/webp",
 			),
 		},
-		enum.FilePurposeAttractionReviewMedia: {
+		enum.FilePurposePlaceReviewMedia: {
 			MaxSizeBytes: 50 * 1024 * 1024,
 			AllowedExtensions: setOf(
 				"jpg", "jpeg", "png", "webp",

@@ -2149,7 +2149,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get homeServiceStories => 'Хикаялар';
 
   @override
-  String get homeServiceAttractions => 'Көрікті жерлер';
+  String get homeServicePlaces => 'Орындар';
 
   @override
   String get homeServiceCurrencyConverter => 'Валюта бағамдары';
@@ -3093,375 +3093,372 @@ class AppLocalizationsKk extends AppLocalizations {
       'Қысқаша ақпаратты көріп, мәліметтерін ашу үшін белсенділік маркерін басыңыз.';
 
   @override
-  String get attractionsTitle => 'Көрікті жерлер';
+  String get placesTitle => 'Орындар';
 
   @override
-  String get attractionsSearchHint => 'Қайда барамыз?';
+  String get placesSearchHint => 'Қайда барамыз?';
 
   @override
-  String get attractionsLoadFailed => 'Көрікті жерлерді жүктеу сәтсіз аяқталды';
+  String get placesLoadFailed => 'Орындарды жүктеу сәтсіз аяқталды';
 
   @override
-  String get attractionsSeeAll => 'Барлығын көру';
+  String get placesSeeAll => 'Барлығын көру';
 
   @override
-  String get attractionsNoResults => 'Көрікті жерлер табылмады';
+  String get placesNoResults => 'Орындар табылмады';
 
   @override
-  String get attractionsNoResultsSubtitle =>
-      'Сүзгілерден басқа қаланы таңдаңыз.';
+  String get placesNoResultsSubtitle => 'Сүзгілерден басқа қаланы таңдаңыз.';
 
   @override
-  String get attractionsFiltersTitle => 'Сүзгілер';
+  String get placesFiltersTitle => 'Сүзгілер';
 
   @override
-  String get attractionsSortLabel => 'Сұрыптау';
+  String get placesSortLabel => 'Сұрыптау';
 
   @override
-  String get attractionsSortRating => 'Рейтинг';
+  String get placesSortRating => 'Рейтинг';
 
   @override
-  String get attractionsSortDuration => 'Ұзақтығы';
+  String get placesSortDuration => 'Ұзақтығы';
 
   @override
-  String get attractionsSortPrice => 'Баға';
+  String get placesSortPrice => 'Баға';
 
   @override
-  String get attractionFilterClearAll => 'Барлығын тазалау';
+  String get placeFilterClearAll => 'Барлығын тазалау';
 
   @override
-  String get attractionFilterCategoriesSection => 'Санаттар';
+  String get placeFilterCategoriesSection => 'Санаттар';
 
   @override
-  String get attractionFilterCategoryAll => 'Барлық орындар';
+  String get placeFilterCategoryAll => 'Барлық орындар';
 
   @override
-  String get attractionFilterCategoryParks => 'Саябақтар';
+  String get placeFilterCategoryParks => 'Саябақтар';
 
   @override
-  String get attractionFilterCategoryMuseums => 'Мұражайлар';
+  String get placeFilterCategoryMuseums => 'Мұражайлар';
 
   @override
-  String get attractionFilterCategoryNature => 'Табиғат';
+  String get placeFilterCategoryNature => 'Табиғат';
 
   @override
-  String get attractionFilterCategoryArchitecture => 'Сәулет';
+  String get placeFilterCategoryArchitecture => 'Сәулет';
 
   @override
-  String get attractionFilterCategoryBeach => 'Жағажай';
+  String get placeFilterCategoryBeach => 'Жағажай';
 
   @override
-  String get attractionFilterCategoryTemple => 'Ғибадат орындары';
+  String get placeFilterCategoryTemple => 'Ғибадат орындары';
 
   @override
-  String get attractionFilterCategoryEntertainment => 'Ойын-сауық';
+  String get placeFilterCategoryEntertainment => 'Ойын-сауық';
 
   @override
-  String get attractionFilterCategoryFood => 'Тағам';
+  String get placeFilterCategoryFood => 'Тағам';
 
   @override
-  String get attractionFilterCategoryMarket => 'Базар';
+  String get placeFilterCategoryMarket => 'Базар';
 
   @override
-  String get attractionFilterCategoryShopping => 'Шопинг';
+  String get placeFilterCategoryShopping => 'Шопинг';
 
   @override
-  String get attractionFilterCategoryOther => 'Басқа';
+  String get placeFilterCategoryOther => 'Басқа';
 
   @override
-  String get attractionFilterCategoryHistory => 'Тарих';
+  String get placeFilterCategoryHistory => 'Тарих';
 
   @override
-  String get attractionFilterCategoryAdventure => 'Шытырман';
+  String get placeFilterCategoryAdventure => 'Шытырман';
 
   @override
-  String get attractionFilterCountrySection => 'Ел';
+  String get placeFilterCountrySection => 'Ел';
 
   @override
-  String get attractionFilterCountryAll => 'Барлық елдер';
+  String get placeFilterCountryAll => 'Барлық елдер';
 
   @override
-  String get attractionFilterCountrySearchHint => 'Ел, код немесе телефон';
+  String get placeFilterCountrySearchHint => 'Ел, код немесе телефон';
 
   @override
-  String get attractionFilterCountryNoResults => 'Ел табылмады';
+  String get placeFilterCountryNoResults => 'Ел табылмады';
 
   @override
-  String get attractionFilterMinRatingSection => 'Минимум рейтинг';
+  String get placeFilterMinRatingSection => 'Минимум рейтинг';
 
   @override
-  String get attractionFilterRatingAny => 'Кез келген';
+  String get placeFilterRatingAny => 'Кез келген';
 
   @override
-  String get attractionFilterDurationSection => 'Ұзақтығы';
+  String get placeFilterDurationSection => 'Ұзақтығы';
 
   @override
-  String get attractionFilterDurationShort => 'Қысқа < 2 сағ';
+  String get placeFilterDurationShort => 'Қысқа < 2 сағ';
 
   @override
-  String get attractionFilterDurationMedium => 'Орташа 2–5 сағ';
+  String get placeFilterDurationMedium => 'Орташа 2–5 сағ';
 
   @override
-  String get attractionFilterDurationFullDay => 'Толық күн 5 сағ+';
+  String get placeFilterDurationFullDay => 'Толық күн 5 сағ+';
 
   @override
-  String get attractionFilterDurationMultiDay => 'Бірнеше күн';
+  String get placeFilterDurationMultiDay => 'Бірнеше күн';
 
   @override
-  String get attractionFilterRangeSection => 'Нақты ауқым';
+  String get placeFilterRangeSection => 'Нақты ауқым';
 
   @override
-  String attractionFilterRangeValue(int min, int max) {
+  String placeFilterRangeValue(int min, int max) {
     return '$min сағ – $max сағ';
   }
 
   @override
-  String get attractionFilterRangeMinTick => '1 сағ';
+  String get placeFilterRangeMinTick => '1 сағ';
 
   @override
-  String get attractionFilterRangeMaxTick => '12 сағ+';
+  String get placeFilterRangeMaxTick => '12 сағ+';
 
   @override
-  String get attractionFilterPriceRangeSection => 'Баға ауқымы';
+  String get placeFilterPriceRangeSection => 'Баға ауқымы';
 
   @override
-  String attractionFilterShowSpots(int count) {
+  String placeFilterShowSpots(int count) {
     return '$count орын көрсету';
   }
 
   @override
-  String get attractionFilterClear => 'Тазалау';
+  String get placeFilterClear => 'Тазалау';
 
   @override
-  String get attractionMinPriceLabel => 'Мин. баға';
+  String get placeMinPriceLabel => 'Мин. баға';
 
   @override
-  String get attractionMaxPriceLabel => 'Макс. баға';
+  String get placeMaxPriceLabel => 'Макс. баға';
 
   @override
-  String get attractionPriceValidationError => 'Дұрыс баға енгізіңіз';
+  String get placePriceValidationError => 'Дұрыс баға енгізіңіз';
 
   @override
-  String get attractionPriceRangeValidationError =>
+  String get placePriceRangeValidationError =>
       'Максималды баға минималды бағадан жоғары болуы керек';
 
   @override
-  String get attractionHoursUnit => 'Сағат';
+  String get placeHoursUnit => 'Сағат';
 
   @override
-  String get attractionDaysUnit => 'Күн';
+  String get placeDaysUnit => 'Күн';
 
   @override
-  String get attractionHoursUnitShort => 'сағ';
+  String get placeHoursUnitShort => 'сағ';
 
   @override
-  String get attractionDaysUnitShort => 'күн';
+  String get placeDaysUnitShort => 'күн';
 
   @override
-  String get attractionMinLabel => 'Мин.';
+  String get placeMinLabel => 'Мин.';
 
   @override
-  String get attractionMaxLabel => 'Макс.';
+  String get placeMaxLabel => 'Макс.';
 
   @override
-  String get attractionDurationValidationError => 'Дұрыс ұзақтық енгізіңіз';
+  String get placeDurationValidationError => 'Дұрыс ұзақтық енгізіңіз';
 
   @override
-  String get attractionDurationRangeValidationError =>
+  String get placeDurationRangeValidationError =>
       'Максималды ұзақтық минималды ұзақтықтан жоғары болуы керек';
 
   @override
-  String get attractionDetailsLoadFailed =>
-      'Көрікті жерді жүктеу сәтсіз аяқталды';
+  String get placeDetailsLoadFailed => 'Орынды жүктеу сәтсіз аяқталды';
 
   @override
-  String get attractionDetailsTitle => 'Жер туралы';
+  String get placeDetailsTitle => 'Орын туралы';
 
   @override
-  String get attractionMustVisitBadge => 'Бару керек';
+  String get placeMustVisitBadge => 'Бару керек';
 
   @override
-  String get attractionStatRating => 'Рейтинг';
+  String get placeStatRating => 'Рейтинг';
 
   @override
-  String get attractionStatDuration => 'Ұзақтығы';
+  String get placeStatDuration => 'Ұзақтығы';
 
   @override
-  String get attractionStatPrice => 'Баға';
+  String get placeStatPrice => 'Баға';
 
   @override
-  String get attractionExperienceSection => 'Әсер';
+  String get placeExperienceSection => 'Әсер';
 
   @override
-  String get attractionExpectSection => 'Не күтуге болады';
+  String get placeExpectSection => 'Не күтуге болады';
 
   @override
-  String get attractionVisitPlanSection => 'Сапар жоспары';
+  String get placeVisitPlanSection => 'Сапар жоспары';
 
   @override
-  String get attractionInflapTipTitle => 'Inflap кеңесі';
+  String get placeInflapTipTitle => 'Inflap кеңесі';
 
   @override
-  String get attractionVisitDurationLabel => 'Орынға уақыт';
+  String get placeVisitDurationLabel => 'Орынға уақыт';
 
   @override
-  String get attractionVisitDurationFlexible => 'Икемді';
+  String get placeVisitDurationFlexible => 'Икемді';
 
   @override
-  String get attractionVisitTicketsLabel => 'Билеттер';
+  String get placeVisitTicketsLabel => 'Билеттер';
 
   @override
-  String get attractionVisitFreeEntry => 'Тегін немесе маусымға байланысты';
+  String get placeVisitFreeEntry => 'Тегін немесе маусымға байланысты';
 
   @override
-  String get attractionVisitBookingRecommended => 'алдын ала брондаған дұрыс';
+  String get placeVisitBookingRecommended => 'алдын ала брондаған дұрыс';
 
   @override
-  String get attractionVisitBestTimeLabel => 'Ең жақсы уақыт';
+  String get placeVisitBestTimeLabel => 'Ең жақсы уақыт';
 
   @override
-  String get attractionVisitBestTimeEarlyMorning => 'Ерте таң';
+  String get placeVisitBestTimeEarlyMorning => 'Ерте таң';
 
   @override
-  String get attractionVisitBestTimeMorning => 'Таңертең';
+  String get placeVisitBestTimeMorning => 'Таңертең';
 
   @override
-  String get attractionVisitBestTimeAfternoon => 'Күндіз';
+  String get placeVisitBestTimeAfternoon => 'Күндіз';
 
   @override
-  String get attractionVisitBestTimeSunset => 'Күн батқанда';
+  String get placeVisitBestTimeSunset => 'Күн батқанда';
 
   @override
-  String get attractionVisitBestTimeAnytime => 'Кез келген уақытта';
+  String get placeVisitBestTimeAnytime => 'Кез келген уақытта';
 
   @override
-  String get attractionVisitGoodForLabel => 'Кімге қолайлы';
+  String get placeVisitGoodForLabel => 'Кімге қолайлы';
 
   @override
-  String get attractionVisitAccessLabel => 'Қолжетімділік';
+  String get placeVisitAccessLabel => 'Қолжетімділік';
 
   @override
-  String get attractionVisitAccessGood => 'Жету ыңғайлы';
+  String get placeVisitAccessGood => 'Жету ыңғайлы';
 
   @override
-  String get attractionVisitAccessLimited => 'Қолжетімділігі шектеулі';
+  String get placeVisitAccessLimited => 'Қолжетімділігі шектеулі';
 
   @override
-  String get attractionVisitAccessUnknown => 'Орнында нақтылаңыз';
+  String get placeVisitAccessUnknown => 'Орнында нақтылаңыз';
 
   @override
-  String get attractionVisitSafetyLabel => 'Дайындық';
+  String get placeVisitSafetyLabel => 'Дайындық';
 
   @override
-  String get attractionVisitSafetyCheckWeather => 'Ауа райын тексеріңіз';
+  String get placeVisitSafetyCheckWeather => 'Ауа райын тексеріңіз';
 
   @override
-  String get attractionVisitSafetyBringWater => 'Су алыңыз';
+  String get placeVisitSafetyBringWater => 'Су алыңыз';
 
   @override
-  String get attractionVisitSafetyCheckHours => 'Жұмыс уақытын тексеріңіз';
+  String get placeVisitSafetyCheckHours => 'Жұмыс уақытын тексеріңіз';
 
   @override
-  String get attractionVisitAudienceCouples => 'Жұптар';
+  String get placeVisitAudienceCouples => 'Жұптар';
 
   @override
-  String get attractionVisitAudienceWellness => 'Сауықтыру';
+  String get placeVisitAudienceWellness => 'Сауықтыру';
 
   @override
-  String get attractionVisitTipNature =>
+  String get placeVisitTipNature =>
       'Жолға шығар алдында көлік пен ауа райын тексеріңіз: гидпен бағыт әдетте қауіпсіз әрі болжамды.';
 
   @override
-  String get attractionVisitTipCulture =>
+  String get placeVisitTipCulture =>
       'Ертерек келіңіз: фотоға ыңғайлырақ, әрі жақын мәдени орындарға уақыт қалады.';
 
   @override
-  String get attractionVisitTipDefault =>
+  String get placeVisitTipDefault =>
       'Ағымдағы кестені тексеріп, жолға уақыт жоғалтпау үшін жақын белсенділіктермен біріктіріңіз.';
 
   @override
-  String get attractionReviewsSection => 'Саяхатшылар пікірі';
+  String get placeReviewsSection => 'Саяхатшылар пікірі';
 
   @override
-  String attractionSeeAllReviews(int count) {
+  String placeSeeAllReviews(int count) {
     return 'Барлық пікірлер ($count)';
   }
 
   @override
-  String get attractionNoReviews => 'Әзірге пікір жоқ. Бірінші болыңыз!';
+  String get placeNoReviews => 'Әзірге пікір жоқ. Бірінші болыңыз!';
 
   @override
-  String get attractionAddReview => 'Пікір қалдыру';
+  String get placeAddReview => 'Пікір қалдыру';
 
   @override
-  String get attractionReviewSheetTitle => 'Әсеріңізбен бөлісіңіз';
+  String get placeReviewSheetTitle => 'Әсеріңізбен бөлісіңіз';
 
   @override
-  String get attractionReviewRatingLabel => 'Баға';
+  String get placeReviewRatingLabel => 'Баға';
 
   @override
-  String get attractionReviewCommentLabel => 'Пікір';
+  String get placeReviewCommentLabel => 'Пікір';
 
   @override
-  String get attractionReviewCommentHint =>
+  String get placeReviewCommentHint =>
       'Не ұнады, не ұсынар едіңіз және басқалар нені білуі керек?';
 
   @override
-  String get attractionReviewAddPhoto => 'Фото';
+  String get placeReviewAddPhoto => 'Фото';
 
   @override
-  String get attractionReviewAddVideo => 'Видео';
+  String get placeReviewAddVideo => 'Видео';
 
   @override
-  String get attractionReviewSubmit => 'Пікірді жариялау';
+  String get placeReviewSubmit => 'Пікірді жариялау';
 
   @override
-  String get attractionReviewSubmitting => 'Жариялануда...';
+  String get placeReviewSubmitting => 'Жариялануда...';
 
   @override
-  String attractionReviewMediaLimit(int count) {
+  String placeReviewMediaLimit(int count) {
     return '$count файлға дейін тіркей аласыз';
   }
 
   @override
-  String get attractionReviewPickFailed => 'Файлды тіркеу мүмкін болмады';
+  String get placeReviewPickFailed => 'Файлды тіркеу мүмкін болмады';
 
   @override
-  String get attractionReviewMediaTooLarge => 'Файл тым үлкен';
+  String get placeReviewMediaTooLarge => 'Файл тым үлкен';
 
   @override
-  String get attractionReviewUnsupportedFormat =>
-      'Файл пішімі қолдау көрсетілмейді';
+  String get placeReviewUnsupportedFormat => 'Файл пішімі қолдау көрсетілмейді';
 
   @override
-  String get attractionReviewSubmitFailed => 'Пікірді жариялау мүмкін болмады';
+  String get placeReviewSubmitFailed => 'Пікірді жариялау мүмкін болмады';
 
   @override
-  String get attractionReviewSubmitSuccess => 'Пікір жарияланды';
+  String get placeReviewSubmitSuccess => 'Пікір жарияланды';
 
   @override
-  String get attractionReviewCommentRequired => 'Қысқа пікір жазыңыз';
+  String get placeReviewCommentRequired => 'Қысқа пікір жазыңыз';
 
   @override
-  String get attractionReviewRemoveMedia => 'Файлды жою';
+  String get placeReviewRemoveMedia => 'Файлды жою';
 
   @override
-  String get attractionReviewVideoPreview => 'Видео';
+  String get placeReviewVideoPreview => 'Видео';
 
   @override
-  String get attractionFindExcursions => 'Экскурсиялар табу';
+  String get placeFindExcursions => 'Экскурсиялар табу';
 
   @override
-  String get attractionMapLink => 'Картадан көру';
+  String get placeMapLink => 'Картадан көру';
 
   @override
-  String get attractionVerifiedNomad => 'Тексерілген саяхатшы';
+  String get placeVerifiedNomad => 'Тексерілген саяхатшы';
 
   @override
-  String get attractionReviewsTitle => 'Пікірлер';
+  String get placeReviewsTitle => 'Пікірлер';
 
   @override
-  String get attractionTravelerFallback => 'Саяхатшы';
+  String get placeTravelerFallback => 'Саяхатшы';
 
   @override
   String get profileGuideReviewsTitle => 'Экскурсиялар бойынша үздік пікірлер';
@@ -3508,80 +3505,80 @@ class AppLocalizationsKk extends AppLocalizations {
       'Жаңарту үшін төмен тартыңыз немесе профильді қайта ашыңыз.';
 
   @override
-  String get attractionPriceVaries => 'Баға өзгеруі мүмкін';
+  String get placePriceVaries => 'Баға өзгеруі мүмкін';
 
   @override
-  String get attractionPriceVariesShort => 'Өзгеруі мүмкін';
+  String get placePriceVariesShort => 'Өзгеруі мүмкін';
 
   @override
-  String attractionDurationHours(int hours) {
+  String placeDurationHours(int hours) {
     return '$hours сағ';
   }
 
   @override
-  String attractionDurationDays(int days) {
+  String placeDurationDays(int days) {
     return '$days күн';
   }
 
   @override
-  String get attractionBackTooltip => 'Артқа';
+  String get placeBackTooltip => 'Артқа';
 
   @override
-  String get attractionNotificationsTooltip => 'Хабарландырулар';
+  String get placeNotificationsTooltip => 'Хабарландырулар';
 
   @override
-  String get attractionBookmarkTooltip => 'Жерді сақтау';
+  String get placeBookmarkTooltip => 'Орынды сақтау';
 
   @override
-  String get attractionTagFamilyLabel => 'Отбасына қолайлы';
+  String get placeTagFamilyLabel => 'Отбасына қолайлы';
 
   @override
-  String get attractionTagFamilySubtitle => 'Барлық жасқа жарайды';
+  String get placeTagFamilySubtitle => 'Барлық жасқа жарайды';
 
   @override
-  String get attractionTagSunsetLabel => 'Күн батқанда жақсы';
+  String get placeTagSunsetLabel => 'Күн батқанда жақсы';
 
   @override
-  String get attractionTagSunsetSubtitle => 'Әдемі кешкі көріністер';
+  String get placeTagSunsetSubtitle => 'Әдемі кешкі көріністер';
 
   @override
-  String get attractionTagAccessibilityLabel => 'Қолжетімділік';
+  String get placeTagAccessibilityLabel => 'Қолжетімділік';
 
   @override
-  String get attractionTagAccessibilitySubtitle => 'Арбаға қолайлы';
+  String get placeTagAccessibilitySubtitle => 'Арбаға қолайлы';
 
   @override
-  String get attractionTagDiningLabel => 'Мейрамханалар';
+  String get placeTagDiningLabel => 'Мейрамханалар';
 
   @override
-  String get attractionTagDiningSubtitle => 'Гастрономиялық орындар';
+  String get placeTagDiningSubtitle => 'Гастрономиялық орындар';
 
   @override
-  String get attractionTagOutdoorLabel => 'Табиғатта';
+  String get placeTagOutdoorLabel => 'Табиғатта';
 
   @override
-  String get attractionTagOutdoorSubtitle => 'Таза ауа мен көріністер';
+  String get placeTagOutdoorSubtitle => 'Таза ауа мен көріністер';
 
   @override
-  String get attractionTagPhotoLabel => 'Фото орын';
+  String get placeTagPhotoLabel => 'Фото орын';
 
   @override
-  String get attractionTagPhotoSubtitle => 'Есте қаларлық кадрлар';
+  String get placeTagPhotoSubtitle => 'Есте қаларлық кадрлар';
 
   @override
-  String get attractionTagHistoryLabel => 'Тарихи';
+  String get placeTagHistoryLabel => 'Тарихи';
 
   @override
-  String get attractionTagHistorySubtitle => 'Бай мәдени мұра';
+  String get placeTagHistorySubtitle => 'Бай мәдени мұра';
 
   @override
-  String get attractionTagAdventureLabel => 'Шытырман';
+  String get placeTagAdventureLabel => 'Шытырман';
 
   @override
-  String get attractionTagAdventureSubtitle => 'Белсенді әсерлер';
+  String get placeTagAdventureSubtitle => 'Белсенді әсерлер';
 
   @override
-  String get attractionTagUniqueSubtitle => 'Ерекше әсер';
+  String get placeTagUniqueSubtitle => 'Ерекше әсер';
 
   @override
   String get activitiesEntryTitle => 'Белсенділіктер';
@@ -3737,12 +3734,12 @@ class AppLocalizationsKk extends AppLocalizations {
       'Басқа қаланы, санатты немесе экскурсия атауын қолданып көріңіз.';
 
   @override
-  String get excursionsNoAttractionExcursionsTitle =>
-      'Бұл көрікті орын бойынша экскурсиялар әзірге жоқ';
+  String get excursionsNoPlaceExcursionsTitle =>
+      'Бұл орын бойынша экскурсиялар әзірге жоқ';
 
   @override
-  String get excursionsNoAttractionExcursionsSubtitle =>
-      'Басқа қолжетімді экскурсияларды көрсетіп тұрмыз. Гидтер осы көрікті орынға маршрут қосқанда, ол осында пайда болады.';
+  String get excursionsNoPlaceExcursionsSubtitle =>
+      'Басқа қолжетімді экскурсияларды көрсетіп тұрмыз. Гидтер осы орынға маршрут қосқанда, ол осында пайда болады.';
 
   @override
   String get guidesTitle => 'Гидтер';
@@ -4249,10 +4246,10 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get createExcursionCoverUploadHint =>
-      'JPG, PNG немесе WEBP. Көрікті орын таңдалса, өз суретіңізді жүктемейінше оның суреті қолданылады.';
+      'JPG, PNG немесе WEBP. Орын таңдалса, өз суретіңізді жүктемейінше оның суреті қолданылады.';
 
   @override
-  String get createExcursionSelectedLandmark => 'Көрікті жер';
+  String get createExcursionSelectedLandmark => 'Орын';
 
   @override
   String get createExcursionLandmarkNameLabel => 'Орын';
@@ -4261,7 +4258,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get createExcursionLandmarkNameHint => 'Мысалы, Медеу';
 
   @override
-  String get createExcursionLandmarkValidation => 'Көрікті жерді таңдаңыз';
+  String get createExcursionLandmarkValidation => 'Орынды таңдаңыз';
 
   @override
   String get createExcursionCountryValidation => 'Алдымен елді таңдаңыз';
@@ -4271,39 +4268,38 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get createExcursionManualLocationHint =>
-      'Өз локацияңызды енгізуге немесе осы елдегі көрікті жерді таңдауға болады.';
+      'Өз локацияңызды енгізуге немесе осы елдегі орынды таңдауға болады.';
 
   @override
-  String get createExcursionLocationLockedByAttraction =>
-      'Локация көрікті жерлер анықтамалығынан алынды. Өзгерту үшін басқа көрікті жерді таңдаңыз.';
+  String get createExcursionLocationLockedByPlace =>
+      'Локация орындар анықтамалығынан алынды. Өзгерту үшін басқа орынды таңдаңыз.';
 
   @override
-  String get createExcursionAttractionCatalogHint =>
-      'Таңдалған елдің көрікті жерлер каталогы';
+  String get createExcursionPlaceCatalogHint =>
+      'Таңдалған елдің орындар каталогы';
 
   @override
-  String get createExcursionAttractionCatalogSource =>
-      'Көрікті жерлер каталогынан';
+  String get createExcursionPlaceCatalogSource => 'Орындар каталогынан';
 
   @override
-  String get createExcursionSingleAttractionMode => 'Бір көрікті жер';
+  String get createExcursionSinglePlaceMode => 'Бір орын';
 
   @override
   String get createExcursionCombinedRouteMode => 'Бірнеше аялдамалы маршрут';
 
   @override
   String createExcursionCombinedRouteMinStopsValidation(Object count) {
-    return 'Кемінде $count көрікті жер аялдамасын қосыңыз';
+    return 'Кемінде $count орын аялдамасын қосыңыз';
   }
 
   @override
   String createExcursionCombinedRouteMaxStopsValidation(Object count) {
-    return '$count-тен көп көрікті жер аялдамасын қоспаңыз';
+    return '$count-тен көп орын аялдамасын қоспаңыз';
   }
 
   @override
   String get createExcursionDuplicateRouteStopValidation =>
-      'Бұл көрікті жер маршрутта бар.';
+      'Бұл орын маршрутта бар.';
 
   @override
   String get excursionSelectLocationTitle => 'Орын таңдау';
@@ -4327,11 +4323,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get excursionCountryItaly => 'Италия';
 
   @override
-  String get excursionSelectLocationAttractionSection =>
-      'Көрікті жерді таңдаңыз';
+  String get excursionSelectLocationPlaceSection => 'Орынды таңдаңыз';
 
   @override
-  String get excursionSelectLocationAttractionSearchHint => 'Көрікті жерлер';
+  String get excursionSelectLocationPlaceSearchHint => 'Орындар';
 
   @override
   String get excursionSelectLocationSelected => 'Таңдалды';
@@ -5803,7 +5798,7 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
-  String get excursionReviewSourceAttractionBadge =>
+  String get excursionReviewSourcePlaceBadge =>
       'Пікір барған экскурсия негізінде';
 
   @override

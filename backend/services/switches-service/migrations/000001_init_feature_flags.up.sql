@@ -72,7 +72,7 @@ values ('system', now(), 'system', 'CORE', 'Общие'),
        ('system', now(), 'system', 'CHAT', 'Чаты'),
        ('system', now(), 'system', 'MAP', 'Карта'),
        ('system', now(), 'system', 'PAYMENT', 'Платежи'),
-       ('system', now(), 'system', 'ATTRACTION', 'Достопримечательности'),
+       ('system', now(), 'system', 'PLACE', 'Достопримечательности'),
        ('system', now(), 'system', 'EXCHANGE_RATE', 'Конвертер валют'),
        ('system', now(), 'system', 'FEED', 'Лента'),
        ('system', now(), 'system', 'NOTIFICATION', 'Уведомления'),
@@ -86,7 +86,7 @@ call create_feature_flags_table('excursion');
 call create_feature_flags_table('chat');
 call create_feature_flags_table('map');
 call create_feature_flags_table('payment');
-call create_feature_flags_table('attraction');
+call create_feature_flags_table('place');
 call create_feature_flags_table('exchange_rate');
 call create_feature_flags_table('feed');
 call create_feature_flags_table('notification');

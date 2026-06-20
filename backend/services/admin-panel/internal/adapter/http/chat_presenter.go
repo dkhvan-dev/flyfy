@@ -12,8 +12,8 @@ func chatMessagePreviewText(locale string, item *model.ChatMessageModerationItem
 	}
 	content := strings.TrimSpace(item.Content)
 	if content == "" {
-		if len(item.FileIDs) > 0 {
-			return translate(locale, "chat.attachmentMessage")
+		if value := chatMessageVisualKindText(locale, item.Type, len(item.FileIDs) > 0); value != "" {
+			return value
 		}
 		return "-"
 	}
@@ -23,6 +23,20 @@ func chatMessagePreviewText(locale string, item *model.ChatMessageModerationItem
 		return string(runes[:120]) + "..."
 	}
 	return content
+}
+
+func chatMessageBodyText(item *model.ChatMessageModerationItem) string {
+	if item == nil {
+		return ""
+	}
+	return strings.TrimSpace(item.Content)
+}
+
+func chatMessageKindBadgeText(locale string, item *model.ChatMessageModerationItem) string {
+	if item == nil {
+		return ""
+	}
+	return chatMessageVisualKindText(locale, item.Type, len(item.FileIDs) > 0)
 }
 
 func chatMessageSenderText(item *model.ChatMessageModerationItem) string {
@@ -62,7 +76,7 @@ func chatMessageSignalsText(locale string, item *model.ChatMessageModerationItem
 		if code == "" {
 			continue
 		}
-		labels = append(labels, translate(locale, "reason."+code))
+		labels = append(labels, moderationSignalText(locale, code))
 	}
 	return strings.Join(labels, ", ")
 }
@@ -88,6 +102,18 @@ func chatMessageTypeText(locale string, value string) string {
 	return translated
 }
 
+func chatMessageVisualKindText(locale string, value string, hasFiles bool) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	switch value {
+	case "sticker", "emoji", "file":
+		return chatMessageTypeText(locale, value)
+	}
+	if hasFiles {
+		return translate(locale, "chat.attachmentMessage")
+	}
+	return ""
+}
+
 func chatContextSenderText(item model.ChatMessageContextItem) string {
 	if value := strings.TrimSpace(item.SenderDisplayName); value != "" {
 		return value
@@ -95,12 +121,20 @@ func chatContextSenderText(item model.ChatMessageContextItem) string {
 	return "-"
 }
 
+func chatContextBodyText(item model.ChatMessageContextItem) string {
+	return strings.TrimSpace(item.Content)
+}
+
+func chatContextKindBadgeText(locale string, item model.ChatMessageContextItem) string {
+	return chatMessageVisualKindText(locale, item.Type, len(item.FileIDs) > 0)
+}
+
 func chatContextContentText(locale string, item model.ChatMessageContextItem) string {
 	if strings.TrimSpace(item.Content) != "" {
 		return item.Content
 	}
-	if len(item.FileIDs) > 0 {
-		return translate(locale, "chat.attachmentMessage")
+	if value := chatMessageVisualKindText(locale, item.Type, len(item.FileIDs) > 0); value != "" {
+		return value
 	}
 	return "-"
 }

@@ -481,8 +481,8 @@ func moderationSearchSQL() string {
 		"COALESCE(snapshot->>'LandmarkName', '') || ' ' || " +
 		"COALESCE(snapshot->>'ProductTranslations', '') || ' ' || " +
 		"COALESCE(snapshot->>'Translations', '') || ' ' || " +
-		"COALESCE(snapshot->>'AttractionNames', '') || ' ' || " +
-		"COALESCE(snapshot->>'AttractionNamesByLocale', '') || ' ' || " +
+		"COALESCE(snapshot->>'PlaceNames', '') || ' ' || " +
+		"COALESCE(snapshot->>'PlaceNamesByLocale', '') || ' ' || " +
 		"COALESCE(snapshot->>'GuideDisplayName', '') || ' ' || " +
 		"COALESCE(snapshot->>'GuideNickname', '') || ' ' || " +
 		"COALESCE(snapshot->>'GuideFirstName', '') || ' ' || " +

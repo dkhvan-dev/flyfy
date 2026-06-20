@@ -158,16 +158,16 @@ func TestParseExcursionProductFilterAcceptsLandmarkID(t *testing.T) {
 	}
 }
 
-func TestToAppItineraryMapsAttractionRouteFields(t *testing.T) {
-	attractionID := uuid.New()
+func TestToAppItineraryMapsPlaceRouteFields(t *testing.T) {
+	placeID := uuid.New()
 	lat := 43.238949
 	lng := 76.889709
 	travel := 12
 
 	input := []dto.ExcursionItineraryItemRequest{
 		{
-			AttractionID:              ptrString(attractionID.String()),
-			AttractionName:            ptrString("Medeu"),
+			PlaceID:                   ptrString(placeID.String()),
+			PlaceName:                 ptrString("Medeu"),
 			Latitude:                  &lat,
 			Longitude:                 &lng,
 			TravelFromPreviousMinutes: &travel,
@@ -184,21 +184,21 @@ func TestToAppItineraryMapsAttractionRouteFields(t *testing.T) {
 	if len(got) != 1 {
 		t.Fatalf("items = %d, want 1", len(got))
 	}
-	if got[0].AttractionID == nil || *got[0].AttractionID != attractionID {
-		t.Fatalf("AttractionID = %v, want %s", got[0].AttractionID, attractionID)
+	if got[0].PlaceID == nil || *got[0].PlaceID != placeID {
+		t.Fatalf("PlaceID = %v, want %s", got[0].PlaceID, placeID)
 	}
-	if got[0].AttractionName == nil || *got[0].AttractionName != "Medeu" {
-		t.Fatalf("AttractionName = %v, want Medeu", got[0].AttractionName)
+	if got[0].PlaceName == nil || *got[0].PlaceName != "Medeu" {
+		t.Fatalf("PlaceName = %v, want Medeu", got[0].PlaceName)
 	}
 	if got[0].TravelFromPreviousMinutes == nil || *got[0].TravelFromPreviousMinutes != travel {
 		t.Fatalf("TravelFromPreviousMinutes = %v, want %d", got[0].TravelFromPreviousMinutes, travel)
 	}
 }
 
-func TestToAppItineraryRejectsInvalidAttractionID(t *testing.T) {
+func TestToAppItineraryRejectsInvalidPlaceID(t *testing.T) {
 	_, err := toAppItinerary([]dto.ExcursionItineraryItemRequest{
 		{
-			AttractionID:       ptrString("not-a-uuid"),
+			PlaceID:            ptrString("not-a-uuid"),
 			StartOffsetMinutes: 0,
 			Title:              "Medeu",
 			Description:        "Explore Medeu with a guide.",
@@ -206,13 +206,13 @@ func TestToAppItineraryRejectsInvalidAttractionID(t *testing.T) {
 	})
 
 	if err == nil {
-		t.Fatal("toAppItinerary() error = nil, want invalid attraction id error")
+		t.Fatal("toAppItinerary() error = nil, want invalid place id error")
 	}
 }
 
-func TestToItineraryResponseMapsAttractionRouteFields(t *testing.T) {
-	attractionID := uuid.New()
-	attractionName := "Medeu"
+func TestToItineraryResponseMapsPlaceRouteFields(t *testing.T) {
+	placeID := uuid.New()
+	placeName := "Medeu"
 	lat := 43.238949
 	lng := 76.889709
 	travel := 12
@@ -220,8 +220,8 @@ func TestToItineraryResponseMapsAttractionRouteFields(t *testing.T) {
 	response := toItineraryResponse([]*model.ExcursionItineraryItem{
 		{
 			ID:                        uuid.New(),
-			AttractionID:              &attractionID,
-			AttractionName:            &attractionName,
+			PlaceID:                   &placeID,
+			PlaceName:                 &placeName,
 			Latitude:                  &lat,
 			Longitude:                 &lng,
 			TravelFromPreviousMinutes: &travel,
@@ -235,11 +235,11 @@ func TestToItineraryResponseMapsAttractionRouteFields(t *testing.T) {
 	if len(response) != 1 {
 		t.Fatalf("items = %d, want 1", len(response))
 	}
-	if response[0].AttractionID == nil || *response[0].AttractionID != attractionID.String() {
-		t.Fatalf("AttractionID = %v, want %s", response[0].AttractionID, attractionID)
+	if response[0].PlaceID == nil || *response[0].PlaceID != placeID.String() {
+		t.Fatalf("PlaceID = %v, want %s", response[0].PlaceID, placeID)
 	}
-	if response[0].AttractionName == nil || *response[0].AttractionName != attractionName {
-		t.Fatalf("AttractionName = %v, want %s", response[0].AttractionName, attractionName)
+	if response[0].PlaceName == nil || *response[0].PlaceName != placeName {
+		t.Fatalf("PlaceName = %v, want %s", response[0].PlaceName, placeName)
 	}
 	if response[0].Latitude == nil || *response[0].Latitude != lat {
 		t.Fatalf("Latitude = %v, want %f", response[0].Latitude, lat)
@@ -264,8 +264,8 @@ func TestExcursionProductCardResponseMapsRouteMetadata(t *testing.T) {
 			ID:               uuid.New(),
 			RouteKind:        model.ExcursionRouteKindCombinedRoute,
 			RouteFingerprint: &fingerprint,
-			AttractionIDs:    []uuid.UUID{a, b},
-			AttractionNames:  []string{"Kok-Tobe", "Cathedral"},
+			PlaceIDs:         []uuid.UUID{a, b},
+			PlaceNames:       []string{"Kok-Tobe", "Cathedral"},
 			StopCount:        2,
 			TransportMode:    "WALKING",
 			RouteTheme:       &theme,
@@ -284,11 +284,11 @@ func TestExcursionProductCardResponseMapsRouteMetadata(t *testing.T) {
 	if response.RouteFingerprint == nil || *response.RouteFingerprint != fingerprint {
 		t.Fatalf("RouteFingerprint = %v, want %s", response.RouteFingerprint, fingerprint)
 	}
-	if len(response.AttractionIDs) != 2 || response.AttractionIDs[0] != a.String() || response.AttractionIDs[1] != b.String() {
-		t.Fatalf("AttractionIDs = %#v, want [%s %s]", response.AttractionIDs, a, b)
+	if len(response.PlaceIDs) != 2 || response.PlaceIDs[0] != a.String() || response.PlaceIDs[1] != b.String() {
+		t.Fatalf("PlaceIDs = %#v, want [%s %s]", response.PlaceIDs, a, b)
 	}
-	if len(response.AttractionNames) != 2 || response.AttractionNames[0] != "Kok-Tobe" || response.AttractionNames[1] != "Cathedral" {
-		t.Fatalf("AttractionNames = %#v, want route names", response.AttractionNames)
+	if len(response.PlaceNames) != 2 || response.PlaceNames[0] != "Kok-Tobe" || response.PlaceNames[1] != "Cathedral" {
+		t.Fatalf("PlaceNames = %#v, want route names", response.PlaceNames)
 	}
 	if response.StopCount != 2 {
 		t.Fatalf("StopCount = %d, want 2", response.StopCount)

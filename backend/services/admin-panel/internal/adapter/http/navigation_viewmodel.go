@@ -59,8 +59,8 @@ func adminNavigationSections(staff *model.StaffUser) []AdminNavigationSectionVie
 			AdminNavigationItemView{Key: "trust", LabelKey: "nav.trust", URL: "/admin/trust/appeals"},
 		)
 	}
-	if staff.HasPermission(enum.PermissionAttractionManage) {
-		management = append(management, AdminNavigationItemView{Key: "attractions", LabelKey: "nav.attractions", URL: "/admin/attractions"})
+	if staff.HasPermission(enum.PermissionPlaceManage) {
+		management = append(management, AdminNavigationItemView{Key: "places", LabelKey: "nav.places", URL: "/admin/places"})
 	}
 	if len(management) > 0 {
 		sections = append(sections, AdminNavigationSectionView{TitleKey: "navigation.section.management", Items: management})

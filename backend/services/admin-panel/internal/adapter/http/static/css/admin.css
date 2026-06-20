@@ -1187,6 +1187,61 @@ tr:last-child td {
   overflow-wrap: anywhere;
 }
 
+.chat-message-card {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  padding: 12px;
+}
+
+.chat-message-card p {
+  margin: 0;
+}
+
+.chat-message-kind {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  align-items: center;
+  border: 1px solid var(--primary);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--primary-dark);
+  padding: 4px 10px;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.chat-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chat-attachment {
+  display: inline-grid;
+  max-width: 100%;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 8px 10px;
+}
+
+.chat-attachment span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.chat-attachment code {
+  overflow-wrap: anywhere;
+  color: var(--text);
+}
+
 .timeline {
   display: grid;
   gap: 12px;

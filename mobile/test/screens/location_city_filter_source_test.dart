@@ -29,8 +29,8 @@ void main() {
         'excursions': await File(
           'lib/screens/excursions/excursions_screen.dart',
         ).readAsString(),
-        'attractions': await File(
-          'lib/screens/attractions/attractions_screen.dart',
+        'places': await File(
+          'lib/screens/places/places_screen.dart',
         ).readAsString(),
         'guides': await File(
           'lib/screens/guides/guides_screen.dart',
@@ -54,7 +54,7 @@ void main() {
           isNot(contains('final location = provider.selectedLocation')),
           reason: entry.key,
         );
-        if (entry.key == 'attractions') {
+        if (entry.key == 'places') {
           expect(
             entry.value,
             contains(
@@ -136,8 +136,8 @@ void main() {
         'excursions': await File(
           'lib/screens/excursions/excursions_screen.dart',
         ).readAsString(),
-        'attractions': await File(
-          'lib/screens/attractions/attractions_screen.dart',
+        'places': await File(
+          'lib/screens/places/places_screen.dart',
         ).readAsString(),
         'guides': await File(
           'lib/screens/guides/guides_screen.dart',
@@ -175,8 +175,8 @@ void main() {
       final excursions = await File(
         'lib/screens/excursions/excursions_screen.dart',
       ).readAsString();
-      final attractions = await File(
-        'lib/screens/attractions/attractions_filter_sheet.dart',
+      final places = await File(
+        'lib/screens/places/places_filter_sheet.dart',
       ).readAsString();
       final guides = await File(
         'lib/features/guides/data/guide_discovery_api.dart',
@@ -187,7 +187,7 @@ void main() {
       expect(activities, contains('item.cityName'));
       expect(excursions, contains('filters.city'));
       expect(excursions, contains('excursion.cityName'));
-      expect(attractions, contains('cityId: staged.cityId'));
+      expect(places, contains('cityId: staged.cityId'));
       expect(guides, contains('String? cityId'));
       expect(guides, contains("queryParameters['cityId']"));
       expect(guides, contains("queryParameters['cityName']"));

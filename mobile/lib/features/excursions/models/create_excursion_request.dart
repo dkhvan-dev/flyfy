@@ -181,8 +181,8 @@ class CreateExcursionItineraryItemRequest {
     required this.title,
     required this.description,
     this.durationMinutes,
-    this.attractionId,
-    this.attractionName,
+    this.placeId,
+    this.placeName,
     this.latitude,
     this.longitude,
     this.travelFromPreviousMinutes,
@@ -191,8 +191,8 @@ class CreateExcursionItineraryItemRequest {
 
   final int startOffsetMinutes;
   final int? durationMinutes;
-  final String? attractionId;
-  final String? attractionName;
+  final String? placeId;
+  final String? placeName;
   final double? latitude;
   final double? longitude;
   final int? travelFromPreviousMinutes;
@@ -205,10 +205,10 @@ class CreateExcursionItineraryItemRequest {
     return {
       'startOffsetMinutes': startOffsetMinutes,
       if (durationMinutes != null) 'durationMinutes': durationMinutes,
-      if (CreateExcursionRequest._isPresent(attractionId))
-        'attractionId': attractionId!.trim(),
-      if (CreateExcursionRequest._isPresent(attractionName))
-        'attractionName': attractionName!.trim(),
+      if (CreateExcursionRequest._isPresent(placeId))
+        'placeId': placeId!.trim(),
+      if (CreateExcursionRequest._isPresent(placeName))
+        'placeName': placeName!.trim(),
       if (latitude != null) 'latitude': latitude,
       if (longitude != null) 'longitude': longitude,
       if (travelFromPreviousMinutes != null)

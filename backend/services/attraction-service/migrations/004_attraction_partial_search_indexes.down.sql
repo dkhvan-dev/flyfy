@@ -1,2 +1,0 @@
-DROP INDEX IF EXISTS idx_attraction_translations_description_trgm;
-DROP INDEX IF EXISTS idx_attraction_translations_title_trgm;

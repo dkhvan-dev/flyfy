@@ -2,104 +2,101 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inflap/features/excursions/models/create_excursion_request.dart';
 
 void main() {
-  test(
-    'serializes attraction based guide offer payload for excursion-service',
-    () {
-      final request = CreateExcursionRequest(
-        landmarkId: 'attraction-id',
-        landmarkName: 'Medeu',
-        categorySlug: 'adventure',
-        durationMinutes: 240,
-        maxGroupSize: 8,
-        languageCodes: const ['en', 'ru'],
-        visibility: 'UNLISTED',
-        meetingPoint: 'Hotel pickup',
-        countryCode: 'KZ',
-        departureCityId: 'almaty',
-        cityName: 'Almaty',
-        latitude: 43.238949,
-        longitude: 76.889709,
-        mapUrl: 'https://maps.example.test/medeu',
-        priceAmount: 120,
-        currency: 'USD',
-        includedItems: const ['Private SUV', 'Gourmet picnic'],
-        includedItemTranslations: const {
-          'ru': ['Частный внедорожник', 'Пикник'],
-          'kk': ['Жеке жол талғамайтын көлік', 'Пикник'],
-        },
-        itinerary: const [
-          CreateExcursionItineraryItemRequest(
-            startOffsetMinutes: 0,
-            durationMinutes: 45,
-            title: 'Hotel departure',
-            description: 'Meet your guide and start the route.',
-            translations: {
-              'ru': CreateExcursionItineraryLocalizedCopyRequest(
-                title: 'Выезд из отеля',
-                description: 'Встреча с гидом и начало маршрута.',
-              ),
-              'kk': CreateExcursionItineraryLocalizedCopyRequest(
-                title: 'Қонақүйден шығу',
-                description: 'Гидпен кездесіп, маршрутты бастау.',
-              ),
-            },
-          ),
-        ],
-        coverFileId: 'cover-file-id',
-        productCoverFileId: 'attraction-cover-file-id',
-        productCoverImageUrl: 'https://upload.wikimedia.org/attraction.jpg',
-      );
+  test('serializes place based guide offer payload for excursion-service', () {
+    final request = CreateExcursionRequest(
+      landmarkId: 'place-id',
+      landmarkName: 'Medeu',
+      categorySlug: 'adventure',
+      durationMinutes: 240,
+      maxGroupSize: 8,
+      languageCodes: const ['en', 'ru'],
+      visibility: 'UNLISTED',
+      meetingPoint: 'Hotel pickup',
+      countryCode: 'KZ',
+      departureCityId: 'almaty',
+      cityName: 'Almaty',
+      latitude: 43.238949,
+      longitude: 76.889709,
+      mapUrl: 'https://maps.example.test/medeu',
+      priceAmount: 120,
+      currency: 'USD',
+      includedItems: const ['Private SUV', 'Gourmet picnic'],
+      includedItemTranslations: const {
+        'ru': ['Частный внедорожник', 'Пикник'],
+        'kk': ['Жеке жол талғамайтын көлік', 'Пикник'],
+      },
+      itinerary: const [
+        CreateExcursionItineraryItemRequest(
+          startOffsetMinutes: 0,
+          durationMinutes: 45,
+          title: 'Hotel departure',
+          description: 'Meet your guide and start the route.',
+          translations: {
+            'ru': CreateExcursionItineraryLocalizedCopyRequest(
+              title: 'Выезд из отеля',
+              description: 'Встреча с гидом и начало маршрута.',
+            ),
+            'kk': CreateExcursionItineraryLocalizedCopyRequest(
+              title: 'Қонақүйден шығу',
+              description: 'Гидпен кездесіп, маршрутты бастау.',
+            ),
+          },
+        ),
+      ],
+      coverFileId: 'cover-file-id',
+      productCoverFileId: 'place-cover-file-id',
+      productCoverImageUrl: 'https://upload.wikimedia.org/place.jpg',
+    );
 
-      expect(request.toJson(), {
-        'landmarkId': 'attraction-id',
-        'landmarkName': 'Medeu',
-        'categorySlug': 'adventure',
-        'durationMinutes': 240,
-        'maxGroupSize': 8,
-        'languageCodes': ['en', 'ru'],
-        'visibility': 'UNLISTED',
-        'meetingPoint': 'Hotel pickup',
-        'countryCode': 'KZ',
-        'departureCityId': 'almaty',
-        'cityName': 'Almaty',
-        'latitude': 43.238949,
-        'longitude': 76.889709,
-        'mapUrl': 'https://maps.example.test/medeu',
-        'priceAmount': 120.0,
-        'currency': 'USD',
-        'includedItems': ['Private SUV', 'Gourmet picnic'],
-        'includedItemTranslations': {
-          'ru': ['Частный внедорожник', 'Пикник'],
-          'kk': ['Жеке жол талғамайтын көлік', 'Пикник'],
-        },
-        'itinerary': [
-          {
-            'startOffsetMinutes': 0,
-            'durationMinutes': 45,
-            'title': 'Hotel departure',
-            'description': 'Meet your guide and start the route.',
-            'translations': {
-              'ru': {
-                'title': 'Выезд из отеля',
-                'description': 'Встреча с гидом и начало маршрута.',
-              },
-              'kk': {
-                'title': 'Қонақүйден шығу',
-                'description': 'Гидпен кездесіп, маршрутты бастау.',
-              },
+    expect(request.toJson(), {
+      'landmarkId': 'place-id',
+      'landmarkName': 'Medeu',
+      'categorySlug': 'adventure',
+      'durationMinutes': 240,
+      'maxGroupSize': 8,
+      'languageCodes': ['en', 'ru'],
+      'visibility': 'UNLISTED',
+      'meetingPoint': 'Hotel pickup',
+      'countryCode': 'KZ',
+      'departureCityId': 'almaty',
+      'cityName': 'Almaty',
+      'latitude': 43.238949,
+      'longitude': 76.889709,
+      'mapUrl': 'https://maps.example.test/medeu',
+      'priceAmount': 120.0,
+      'currency': 'USD',
+      'includedItems': ['Private SUV', 'Gourmet picnic'],
+      'includedItemTranslations': {
+        'ru': ['Частный внедорожник', 'Пикник'],
+        'kk': ['Жеке жол талғамайтын көлік', 'Пикник'],
+      },
+      'itinerary': [
+        {
+          'startOffsetMinutes': 0,
+          'durationMinutes': 45,
+          'title': 'Hotel departure',
+          'description': 'Meet your guide and start the route.',
+          'translations': {
+            'ru': {
+              'title': 'Выезд из отеля',
+              'description': 'Встреча с гидом и начало маршрута.',
+            },
+            'kk': {
+              'title': 'Қонақүйден шығу',
+              'description': 'Гидпен кездесіп, маршрутты бастау.',
             },
           },
-        ],
-        'coverFileId': 'cover-file-id',
-        'productCoverFileId': 'attraction-cover-file-id',
-        'productCoverImageUrl': 'https://upload.wikimedia.org/attraction.jpg',
-      });
-    },
-  );
+        },
+      ],
+      'coverFileId': 'cover-file-id',
+      'productCoverFileId': 'place-cover-file-id',
+      'productCoverImageUrl': 'https://upload.wikimedia.org/place.jpg',
+    });
+  });
 
   test('omits optional blank fields from excursion payload', () {
     final request = CreateExcursionRequest(
-      landmarkId: 'attraction-id',
+      landmarkId: 'place-id',
       categorySlug: 'cultural',
       durationMinutes: 90,
       maxGroupSize: 6,
@@ -131,7 +128,7 @@ void main() {
 
   test('serializes prepared translations without runtime translation', () {
     final request = CreateExcursionRequest(
-      landmarkId: 'attraction-id',
+      landmarkId: 'place-id',
       landmarkName: 'Шарын шатқалы',
       categorySlug: 'adventure',
       durationMinutes: 180,
@@ -183,8 +180,8 @@ void main() {
         CreateExcursionItineraryItemRequest(
           startOffsetMinutes: 0,
           durationMinutes: 45,
-          attractionId: 'kok-tobe-id',
-          attractionName: 'Kok-Tobe',
+          placeId: 'kok-tobe-id',
+          placeName: 'Kok-Tobe',
           latitude: 43.233,
           longitude: 76.976,
           title: 'Kok-Tobe',
@@ -193,8 +190,8 @@ void main() {
         CreateExcursionItineraryItemRequest(
           startOffsetMinutes: 60,
           durationMinutes: 45,
-          attractionId: 'cathedral-id',
-          attractionName: 'Cathedral',
+          placeId: 'cathedral-id',
+          placeName: 'Cathedral',
           latitude: 43.258,
           longitude: 76.954,
           travelFromPreviousMinutes: 15,
@@ -205,8 +202,8 @@ void main() {
     );
 
     final itinerary = request.toJson()['itinerary'] as List<dynamic>;
-    expect(itinerary.first, containsPair('attractionId', 'kok-tobe-id'));
-    expect(itinerary.first, containsPair('attractionName', 'Kok-Tobe'));
+    expect(itinerary.first, containsPair('placeId', 'kok-tobe-id'));
+    expect(itinerary.first, containsPair('placeName', 'Kok-Tobe'));
     expect(itinerary.first, containsPair('latitude', 43.233));
     expect(itinerary.first, containsPair('longitude', 76.976));
     expect(itinerary.last, containsPair('travelFromPreviousMinutes', 15));

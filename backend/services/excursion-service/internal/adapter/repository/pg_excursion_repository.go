@@ -168,7 +168,7 @@ const excursionSelectColumns = `
 
 const excursionProductCardSelectColumns = `
 	id, canonical_key,
-	route_kind, route_fingerprint, attraction_ids, attraction_names,
+	route_kind, route_fingerprint, place_ids, place_names,
 	stop_count, transport_mode, route_theme, duration_bucket,
 	landmark_id, landmark_name,
 	title, summary, description, translations, category_slug,
@@ -1161,9 +1161,9 @@ func (r *PGExcursionRepository) ListExcursionProductCards(ctx context.Context, f
 		args = append(args, *filter.LandmarkID)
 		argPos++
 	}
-	if filter.AttractionID != nil && *filter.AttractionID != uuid.Nil {
-		parts = append(parts, fmt.Sprintf(" AND attraction_ids @> ARRAY[$%d::uuid]", argPos))
-		args = append(args, *filter.AttractionID)
+	if filter.PlaceID != nil && *filter.PlaceID != uuid.Nil {
+		parts = append(parts, fmt.Sprintf(" AND place_ids @> ARRAY[$%d::uuid]", argPos))
+		args = append(args, *filter.PlaceID)
 		argPos++
 	}
 	if filter.RouteKind != nil && strings.TrimSpace(*filter.RouteKind) != "" {
@@ -3299,7 +3299,7 @@ func replaceItinerary(ctx context.Context, tx pgx.Tx, excursionID uuid.UUID, ite
 		const query = `
 			INSERT INTO excursion_itinerary_items (
 				id, excursion_id, sort_order, start_offset_minutes, duration_minutes,
-				attraction_id, attraction_name, latitude, longitude, travel_from_previous_minutes,
+				place_id, place_name, latitude, longitude, travel_from_previous_minutes,
 				title, description, translations, created_at, updated_at
 			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::jsonb, $14, $15)
 		`
@@ -3311,8 +3311,8 @@ func replaceItinerary(ctx context.Context, tx pgx.Tx, excursionID uuid.UUID, ite
 			item.SortOrder,
 			item.StartOffsetMinutes,
 			item.DurationMinutes,
-			item.AttractionID,
-			item.AttractionName,
+			item.PlaceID,
+			item.PlaceName,
 			item.Latitude,
 			item.Longitude,
 			item.TravelFromPreviousMinutes,
@@ -3385,7 +3385,7 @@ func upsertExcursionProduct(ctx context.Context, exec dbExecutor, item *model.Ex
 			duration_minutes,
 			country_code, city_name, departure_city_id, latitude, longitude, map_url, cover_file_id, cover_image_url,
 			created_at, updated_at, translations,
-			route_kind, route_fingerprint, attraction_ids, attraction_names,
+			route_kind, route_fingerprint, place_ids, place_names,
 			stop_count, transport_mode, route_theme, duration_bucket
 		) VALUES (
 			$1, $2,
@@ -3426,8 +3426,8 @@ func upsertExcursionProduct(ctx context.Context, exec dbExecutor, item *model.Ex
 			cover_image_url = COALESCE(excursion_products.cover_image_url, EXCLUDED.cover_image_url),
 			route_kind = CASE WHEN excursion_products.published_offers_count = 0 THEN EXCLUDED.route_kind ELSE excursion_products.route_kind END,
 			route_fingerprint = COALESCE(excursion_products.route_fingerprint, EXCLUDED.route_fingerprint),
-			attraction_ids = CASE WHEN excursion_products.published_offers_count = 0 THEN EXCLUDED.attraction_ids ELSE excursion_products.attraction_ids END,
-			attraction_names = CASE WHEN excursion_products.published_offers_count = 0 THEN EXCLUDED.attraction_names ELSE excursion_products.attraction_names END,
+			place_ids = CASE WHEN excursion_products.published_offers_count = 0 THEN EXCLUDED.place_ids ELSE excursion_products.place_ids END,
+			place_names = CASE WHEN excursion_products.published_offers_count = 0 THEN EXCLUDED.place_names ELSE excursion_products.place_names END,
 			stop_count = CASE WHEN excursion_products.published_offers_count = 0 THEN EXCLUDED.stop_count ELSE excursion_products.stop_count END,
 			transport_mode = CASE WHEN excursion_products.published_offers_count = 0 THEN EXCLUDED.transport_mode ELSE excursion_products.transport_mode END,
 			route_theme = CASE WHEN excursion_products.published_offers_count = 0 THEN EXCLUDED.route_theme ELSE excursion_products.route_theme END,
@@ -3464,8 +3464,8 @@ func upsertExcursionProduct(ctx context.Context, exec dbExecutor, item *model.Ex
 		excursionTranslationsJSON(item.ProductTranslations),
 		metadata.routeKind,
 		routeFingerprint,
-		metadata.attractionIDs,
-		metadata.attractionNames,
+		metadata.placeIDs,
+		metadata.placeNames,
 		metadata.stopCount,
 		metadata.transportMode,
 		metadata.routeTheme,
@@ -3654,8 +3654,8 @@ func excursionMarketplaceCanonicalKey(item *model.Excursion, relations port.Excu
 type excursionRouteProductMetadata struct {
 	routeKind        string
 	routeFingerprint string
-	attractionIDs    []uuid.UUID
-	attractionNames  []string
+	placeIDs         []uuid.UUID
+	placeNames       []string
 	stopCount        int
 	transportMode    string
 	routeTheme       *string
@@ -3674,10 +3674,10 @@ func excursionRouteMetadata(item *model.Excursion, relations port.ExcursionRelat
 
 	if item != nil && item.LandmarkID != nil && *item.LandmarkID != uuid.Nil {
 		return excursionRouteProductMetadata{
-			routeKind:        string(model.ExcursionRouteKindSingleAttraction),
+			routeKind:        string(model.ExcursionRouteKindSinglePlace),
 			routeFingerprint: "landmark:" + item.LandmarkID.String(),
-			attractionIDs:    []uuid.UUID{*item.LandmarkID},
-			attractionNames:  optionalStringSlice(item.LandmarkName),
+			placeIDs:         []uuid.UUID{*item.LandmarkID},
+			placeNames:       optionalStringSlice(item.LandmarkName),
 			stopCount:        1,
 			transportMode:    transportMode,
 			routeTheme:       routeTheme,
@@ -3685,46 +3685,46 @@ func excursionRouteMetadata(item *model.Excursion, relations port.ExcursionRelat
 		}
 	}
 
-	attractionIDs := make([]uuid.UUID, 0, len(relations.Itinerary))
-	attractionNamesByID := make(map[uuid.UUID]string, len(relations.Itinerary))
+	placeIDs := make([]uuid.UUID, 0, len(relations.Itinerary))
+	placeNamesByID := make(map[uuid.UUID]string, len(relations.Itinerary))
 	seen := make(map[uuid.UUID]struct{}, len(relations.Itinerary))
 	for _, step := range relations.Itinerary {
-		if step == nil || step.AttractionID == nil || *step.AttractionID == uuid.Nil {
+		if step == nil || step.PlaceID == nil || *step.PlaceID == uuid.Nil {
 			continue
 		}
-		if step.AttractionName != nil {
-			if name := strings.TrimSpace(*step.AttractionName); name != "" {
-				if _, hasName := attractionNamesByID[*step.AttractionID]; !hasName {
-					attractionNamesByID[*step.AttractionID] = name
+		if step.PlaceName != nil {
+			if name := strings.TrimSpace(*step.PlaceName); name != "" {
+				if _, hasName := placeNamesByID[*step.PlaceID]; !hasName {
+					placeNamesByID[*step.PlaceID] = name
 				}
 			}
 		}
-		if _, ok := seen[*step.AttractionID]; ok {
+		if _, ok := seen[*step.PlaceID]; ok {
 			continue
 		}
-		seen[*step.AttractionID] = struct{}{}
-		attractionIDs = append(attractionIDs, *step.AttractionID)
+		seen[*step.PlaceID] = struct{}{}
+		placeIDs = append(placeIDs, *step.PlaceID)
 	}
 
-	if len(attractionIDs) < 2 {
+	if len(placeIDs) < 2 {
 		return excursionRouteProductMetadata{
-			routeKind:      string(model.ExcursionRouteKindSingleAttraction),
+			routeKind:      string(model.ExcursionRouteKindSinglePlace),
 			transportMode:  transportMode,
 			routeTheme:     routeTheme,
 			durationBucket: durationBucket,
 		}
 	}
 
-	sortedIDs := append([]uuid.UUID(nil), attractionIDs...)
+	sortedIDs := append([]uuid.UUID(nil), placeIDs...)
 	sort.Slice(sortedIDs, func(i, j int) bool {
 		return sortedIDs[i].String() < sortedIDs[j].String()
 	})
 	idParts := make([]string, 0, len(sortedIDs))
-	attractionNames := make([]string, 0, len(sortedIDs))
+	placeNames := make([]string, 0, len(sortedIDs))
 	for _, id := range sortedIDs {
 		idParts = append(idParts, id.String())
-		if name := strings.TrimSpace(attractionNamesByID[id]); name != "" {
-			attractionNames = append(attractionNames, name)
+		if name := strings.TrimSpace(placeNamesByID[id]); name != "" {
+			placeNames = append(placeNames, name)
 		}
 	}
 
@@ -3741,9 +3741,9 @@ func excursionRouteMetadata(item *model.Excursion, relations port.ExcursionRelat
 	return excursionRouteProductMetadata{
 		routeKind:        string(model.ExcursionRouteKindCombinedRoute),
 		routeFingerprint: fingerprint,
-		attractionIDs:    sortedIDs,
-		attractionNames:  attractionNames,
-		stopCount:        len(attractionIDs),
+		placeIDs:         sortedIDs,
+		placeNames:       placeNames,
+		stopCount:        len(placeIDs),
 		transportMode:    transportMode,
 		routeTheme:       routeTheme,
 		durationBucket:   durationBucket,
@@ -3996,7 +3996,7 @@ func (r *PGExcursionRepository) listIncludedItems(ctx context.Context, table str
 func (r *PGExcursionRepository) listItinerary(ctx context.Context, excursionID uuid.UUID) ([]*model.ExcursionItineraryItem, error) {
 	const query = `
 		SELECT id, excursion_id, sort_order, start_offset_minutes, duration_minutes,
-		       attraction_id, attraction_name, latitude, longitude, travel_from_previous_minutes,
+		       place_id, place_name, latitude, longitude, travel_from_previous_minutes,
 		       title, description, translations, created_at, updated_at
 		FROM excursion_itinerary_items
 		WHERE excursion_id = $1
@@ -4183,8 +4183,8 @@ func scanExcursionProductCard(row excursionScanner) (*model.ExcursionProductCard
 		&item.CanonicalKey,
 		&routeKindRaw,
 		&item.RouteFingerprint,
-		&item.AttractionIDs,
-		&item.AttractionNames,
+		&item.PlaceIDs,
+		&item.PlaceNames,
 		&item.StopCount,
 		&item.TransportMode,
 		&item.RouteTheme,
@@ -4664,8 +4664,8 @@ func scanItineraryItem(row excursionScanner) (*model.ExcursionItineraryItem, err
 		&item.SortOrder,
 		&item.StartOffsetMinutes,
 		&item.DurationMinutes,
-		&item.AttractionID,
-		&item.AttractionName,
+		&item.PlaceID,
+		&item.PlaceName,
 		&item.Latitude,
 		&item.Longitude,
 		&item.TravelFromPreviousMinutes,

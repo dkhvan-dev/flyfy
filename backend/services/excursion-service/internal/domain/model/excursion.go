@@ -32,7 +32,7 @@ var (
 	ErrExcursionItineraryRequired          = errors.New("excursion itinerary is required")
 	ErrExcursionAlreadyArchived            = errors.New("excursion already archived")
 	ErrExcursionNotPendingReview           = errors.New("excursion is not pending review")
-	ErrExcursionGuideLandmarkAlreadyExists = errors.New("excursion already exists for this guide and attraction")
+	ErrExcursionGuideLandmarkAlreadyExists = errors.New("excursion already exists for this guide and place")
 )
 
 const (

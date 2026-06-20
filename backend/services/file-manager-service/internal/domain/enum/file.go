@@ -39,18 +39,18 @@ func (v FileVisibility) IsValid() bool {
 type FilePurpose string
 
 const (
-	FilePurposeAvatar                FilePurpose = "AVATAR"
-	FilePurposeGuideVerificationDoc  FilePurpose = "GUIDE_VERIFICATION_DOC"
-	FilePurposeActivityMedia         FilePurpose = "ACTIVITY_MEDIA"
-	FilePurposePostMedia             FilePurpose = "POST_MEDIA"
-	FilePurposeStoryMedia            FilePurpose = "STORY_MEDIA"
-	FilePurposeCommunityMedia        FilePurpose = "COMMUNITY_MEDIA"
-	FilePurposeExcursionMedia        FilePurpose = "EXCURSION_MEDIA"
-	FilePurposeAttractionMedia       FilePurpose = "ATTRACTION_MEDIA"
-	FilePurposeAttractionReviewMedia FilePurpose = "ATTRACTION_REVIEW_MEDIA"
-	FilePurposeChatAttachment        FilePurpose = "CHAT_ATTACHMENT"
-	FilePurposeChatSticker           FilePurpose = "CHAT_STICKER"
-	FilePurposeGenericDocument       FilePurpose = "GENERIC_DOCUMENT"
+	FilePurposeAvatar               FilePurpose = "AVATAR"
+	FilePurposeGuideVerificationDoc FilePurpose = "GUIDE_VERIFICATION_DOC"
+	FilePurposeActivityMedia        FilePurpose = "ACTIVITY_MEDIA"
+	FilePurposePostMedia            FilePurpose = "POST_MEDIA"
+	FilePurposeStoryMedia           FilePurpose = "STORY_MEDIA"
+	FilePurposeCommunityMedia       FilePurpose = "COMMUNITY_MEDIA"
+	FilePurposeExcursionMedia       FilePurpose = "EXCURSION_MEDIA"
+	FilePurposePlaceMedia           FilePurpose = "PLACE_MEDIA"
+	FilePurposePlaceReviewMedia     FilePurpose = "PLACE_REVIEW_MEDIA"
+	FilePurposeChatAttachment       FilePurpose = "CHAT_ATTACHMENT"
+	FilePurposeChatSticker          FilePurpose = "CHAT_STICKER"
+	FilePurposeGenericDocument      FilePurpose = "GENERIC_DOCUMENT"
 )
 
 func (p FilePurpose) IsValid() bool {
@@ -62,8 +62,8 @@ func (p FilePurpose) IsValid() bool {
 		FilePurposeStoryMedia,
 		FilePurposeCommunityMedia,
 		FilePurposeExcursionMedia,
-		FilePurposeAttractionMedia,
-		FilePurposeAttractionReviewMedia,
+		FilePurposePlaceMedia,
+		FilePurposePlaceReviewMedia,
 		FilePurposeChatAttachment,
 		FilePurposeChatSticker,
 		FilePurposeGenericDocument:
@@ -83,7 +83,7 @@ const (
 	OwnerTypePost                     OwnerType = "POST"
 	OwnerTypeStory                    OwnerType = "STORY"
 	OwnerTypeCommunity                OwnerType = "COMMUNITY"
-	OwnerTypeAttraction               OwnerType = "ATTRACTION"
+	OwnerTypePlace                    OwnerType = "PLACE"
 	OwnerTypeExcursion                OwnerType = "EXCURSION"
 	OwnerTypeOrganization             OwnerType = "ORGANIZATION"
 )
@@ -97,7 +97,7 @@ func (o OwnerType) IsValid() bool {
 		OwnerTypePost,
 		OwnerTypeStory,
 		OwnerTypeCommunity,
-		OwnerTypeAttraction,
+		OwnerTypePlace,
 		OwnerTypeExcursion,
 		OwnerTypeOrganization:
 		return true

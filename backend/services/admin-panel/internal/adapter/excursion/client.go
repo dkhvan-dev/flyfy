@@ -203,8 +203,8 @@ type excursionItineraryItemResponse struct {
 	SortOrder                 int                                   `json:"sortOrder"`
 	StartOffsetMinutes        int                                   `json:"startOffsetMinutes"`
 	DurationMinutes           *int                                  `json:"durationMinutes"`
-	AttractionID              *string                               `json:"attractionId"`
-	AttractionName            *string                               `json:"attractionName"`
+	PlaceID                   *string                               `json:"placeId"`
+	PlaceName                 *string                               `json:"placeName"`
 	TravelFromPreviousMinutes *int                                  `json:"travelFromPreviousMinutes"`
 	Title                     string                                `json:"title"`
 	Description               string                                `json:"description"`
@@ -225,49 +225,49 @@ type localizedItineraryResponse struct {
 func (r excursionResponse) toModel() model.ExcursionModerationItem {
 	id, _ := uuid.Parse(r.ID)
 	guideUserID, _ := uuid.Parse(r.GuideUserID)
-	attractionNames := itineraryAttractionNames(r.Itinerary)
-	attractionNamesByLocale := itineraryAttractionNamesByLocale(r.Itinerary)
+	placeNames := itineraryPlaceNames(r.Itinerary)
+	placeNamesByLocale := itineraryPlaceNamesByLocale(r.Itinerary)
 	return model.ExcursionModerationItem{
-		ID:                      id,
-		Title:                   r.Title,
-		Summary:                 r.Summary,
-		Description:             r.Description,
-		Translations:            localizedCopiesToModel(r.Translations),
-		ProductTranslations:     localizedCopiesToModel(r.ProductTranslations),
-		Status:                  r.Status,
-		Visibility:              r.Visibility,
-		GuideUserID:             guideUserID,
-		GuideDisplayName:        r.GuideDisplayName,
-		GuideNickname:           r.GuideNickname,
-		GuideFirstName:          r.GuideFirstName,
-		GuideLastName:           r.GuideLastName,
-		GuideTrustScore:         r.GuideTrustScore,
-		PublishRiskScore:        r.PublishRiskScore,
-		ModerationReasonCodes:   r.ModerationReasonCodes,
-		LandmarkName:            deref(r.LandmarkName),
-		AttractionNames:         attractionNames,
-		AttractionNamesByLocale: attractionNamesByLocale,
-		StopCount:               len(r.Itinerary),
-		DurationMinutes:         r.DurationMinutes,
-		MaxGroupSize:            r.MaxGroupSize,
-		LanguageCodes:           normalizedStringSlice(r.LanguageCodes),
-		CountryCode:             deref(r.CountryCode),
-		CityName:                deref(r.CityName),
-		DepartureCityID:         deref(r.DepartureCityID),
-		MeetingPoint:            strings.TrimSpace(r.MeetingPoint),
-		MeetingPointByLocale:    localizedStringMapToModel(r.MeetingPointTranslations),
-		Latitude:                r.Latitude,
-		Longitude:               r.Longitude,
-		MapURL:                  r.MapURL,
-		PriceAmount:             r.PriceAmount,
-		Currency:                r.Currency,
-		IncludedItems:           normalizedStringSlice(r.IncludedItems),
-		IncludedItemsByLocale:   localizedStringSlicesToModel(r.IncludedTranslations),
-		Itinerary:               itineraryToModel(r.Itinerary),
-		Revision:                r.Revision,
-		SubmittedForReviewAt:    parseOptionalTime(r.SubmittedForReviewAt),
-		CreatedAt:               parseTime(r.CreatedAt),
-		UpdatedAt:               parseTime(r.UpdatedAt),
+		ID:                    id,
+		Title:                 r.Title,
+		Summary:               r.Summary,
+		Description:           r.Description,
+		Translations:          localizedCopiesToModel(r.Translations),
+		ProductTranslations:   localizedCopiesToModel(r.ProductTranslations),
+		Status:                r.Status,
+		Visibility:            r.Visibility,
+		GuideUserID:           guideUserID,
+		GuideDisplayName:      r.GuideDisplayName,
+		GuideNickname:         r.GuideNickname,
+		GuideFirstName:        r.GuideFirstName,
+		GuideLastName:         r.GuideLastName,
+		GuideTrustScore:       r.GuideTrustScore,
+		PublishRiskScore:      r.PublishRiskScore,
+		ModerationReasonCodes: r.ModerationReasonCodes,
+		LandmarkName:          deref(r.LandmarkName),
+		PlaceNames:            placeNames,
+		PlaceNamesByLocale:    placeNamesByLocale,
+		StopCount:             len(r.Itinerary),
+		DurationMinutes:       r.DurationMinutes,
+		MaxGroupSize:          r.MaxGroupSize,
+		LanguageCodes:         normalizedStringSlice(r.LanguageCodes),
+		CountryCode:           deref(r.CountryCode),
+		CityName:              deref(r.CityName),
+		DepartureCityID:       deref(r.DepartureCityID),
+		MeetingPoint:          strings.TrimSpace(r.MeetingPoint),
+		MeetingPointByLocale:  localizedStringMapToModel(r.MeetingPointTranslations),
+		Latitude:              r.Latitude,
+		Longitude:             r.Longitude,
+		MapURL:                r.MapURL,
+		PriceAmount:           r.PriceAmount,
+		Currency:              r.Currency,
+		IncludedItems:         normalizedStringSlice(r.IncludedItems),
+		IncludedItemsByLocale: localizedStringSlicesToModel(r.IncludedTranslations),
+		Itinerary:             itineraryToModel(r.Itinerary),
+		Revision:              r.Revision,
+		SubmittedForReviewAt:  parseOptionalTime(r.SubmittedForReviewAt),
+		CreatedAt:             parseTime(r.CreatedAt),
+		UpdatedAt:             parseTime(r.UpdatedAt),
 	}
 }
 
@@ -360,10 +360,10 @@ func itineraryToModel(items []excursionItineraryItemResponse) []model.ExcursionI
 	result := make([]model.ExcursionItineraryItem, 0, len(items))
 	for _, item := range items {
 		id, _ := uuid.Parse(strings.TrimSpace(item.ID))
-		var attractionID *uuid.UUID
-		if item.AttractionID != nil {
-			if parsed, err := uuid.Parse(strings.TrimSpace(*item.AttractionID)); err == nil {
-				attractionID = &parsed
+		var placeID *uuid.UUID
+		if item.PlaceID != nil {
+			if parsed, err := uuid.Parse(strings.TrimSpace(*item.PlaceID)); err == nil {
+				placeID = &parsed
 			}
 		}
 		result = append(result, model.ExcursionItineraryItem{
@@ -371,8 +371,8 @@ func itineraryToModel(items []excursionItineraryItemResponse) []model.ExcursionI
 			SortOrder:                 item.SortOrder,
 			StartOffsetMinutes:        item.StartOffsetMinutes,
 			DurationMinutes:           item.DurationMinutes,
-			AttractionID:              attractionID,
-			AttractionName:            deref(item.AttractionName),
+			PlaceID:                   placeID,
+			PlaceName:                 deref(item.PlaceName),
 			TravelFromPreviousMinutes: item.TravelFromPreviousMinutes,
 			Title:                     strings.TrimSpace(item.Title),
 			Description:               strings.TrimSpace(item.Description),
@@ -382,12 +382,12 @@ func itineraryToModel(items []excursionItineraryItemResponse) []model.ExcursionI
 	return result
 }
 
-func itineraryAttractionNames(items []excursionItineraryItemResponse) []string {
+func itineraryPlaceNames(items []excursionItineraryItemResponse) []string {
 	names := make([]string, 0, len(items))
 	seen := make(map[string]struct{}, len(items))
 	for _, item := range items {
-		name := deref(item.AttractionName)
-		if name == "" && item.AttractionID != nil {
+		name := deref(item.PlaceName)
+		if name == "" && item.PlaceID != nil {
 			name = strings.TrimSpace(item.Title)
 		}
 		key := strings.ToLower(name)
@@ -403,7 +403,7 @@ func itineraryAttractionNames(items []excursionItineraryItemResponse) []string {
 	return names
 }
 
-func itineraryAttractionNamesByLocale(items []excursionItineraryItemResponse) map[string][]string {
+func itineraryPlaceNamesByLocale(items []excursionItineraryItemResponse) map[string][]string {
 	result := make(map[string][]string)
 	seen := make(map[string]map[string]struct{})
 	for _, item := range items {

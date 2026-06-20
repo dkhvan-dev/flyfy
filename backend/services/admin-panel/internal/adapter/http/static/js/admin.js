@@ -345,7 +345,7 @@
     renderPage();
   });
 
-  const syncAttractionRequiredLocale = (form) => {
+  const syncPlaceRequiredLocale = (form) => {
     const localeSelect = form.querySelector("[data-default-locale-select]");
     if (!localeSelect) {
       return;
@@ -356,11 +356,11 @@
     });
   };
 
-  document.querySelectorAll("[data-attraction-form]").forEach((form) => {
-    syncAttractionRequiredLocale(form);
+  document.querySelectorAll("[data-place-form]").forEach((form) => {
+    syncPlaceRequiredLocale(form);
     const localeSelect = form.querySelector("[data-default-locale-select]");
     if (localeSelect) {
-      localeSelect.addEventListener("change", () => syncAttractionRequiredLocale(form));
+      localeSelect.addEventListener("change", () => syncPlaceRequiredLocale(form));
     }
     const mapInput = form.querySelector("[data-map-url-input]");
     const latitudeInput = form.querySelector("[data-latitude-input]");
@@ -381,11 +381,11 @@
       mapInput.addEventListener("change", () => syncMapCoordinates(true));
       syncMapCoordinates();
     }
-    const countrySelect = form.querySelector("[data-attraction-country-select]");
-    const citySelect = form.querySelector("[data-attraction-city-select]");
-    const cityLinkOptions = Array.from(form.querySelectorAll("[data-attraction-city-link-option]"));
+    const countrySelect = form.querySelector("[data-place-country-select]");
+    const citySelect = form.querySelector("[data-place-city-select]");
+    const cityLinkOptions = Array.from(form.querySelectorAll("[data-place-city-link-option]"));
     if (countrySelect) {
-      const syncAttractionCountryFields = () => {
+      const syncPlaceCountryFields = () => {
         const selectedCountry = (countrySelect.value || "").trim().toUpperCase();
         if (citySelect) {
           Array.from(citySelect.options).forEach((option) => {
@@ -409,12 +409,12 @@
           });
         });
       };
-      countrySelect.addEventListener("change", syncAttractionCountryFields);
-      syncAttractionCountryFields();
+      countrySelect.addEventListener("change", syncPlaceCountryFields);
+      syncPlaceCountryFields();
     }
   });
 
-  document.querySelectorAll("[data-attraction-filter-form], [data-location-filter-form], [data-country-filter-form]").forEach((form) => {
+  document.querySelectorAll("[data-place-filter-form], [data-location-filter-form], [data-country-filter-form]").forEach((form) => {
     const countryInput = form.querySelector("[data-country-filter-input]");
     const countryValue = form.querySelector("[data-country-filter-value]");
     const countrySuggestions = form.querySelector("[data-country-filter-suggestions]");
@@ -664,17 +664,17 @@
     syncCityFilter();
   });
 
-  document.querySelectorAll("[data-attraction-media-form]").forEach((form) => {
-    const input = form.querySelector("[data-attraction-media-input]");
-    const preview = form.querySelector("[data-attraction-media-preview]");
-    const previewList = form.querySelector("[data-attraction-media-preview-list]");
-    const count = form.querySelector("[data-attraction-media-count]");
-    const empty = form.querySelector("[data-attraction-media-empty]");
-    const manageSubmit = form.querySelector("[data-attraction-media-manage-submit]");
-    const appendSubmit = form.querySelector("[data-attraction-media-append-submit]");
-    const replaceSubmit = form.querySelector("[data-attraction-media-replace-submit]");
+  document.querySelectorAll("[data-place-media-form]").forEach((form) => {
+    const input = form.querySelector("[data-place-media-input]");
+    const preview = form.querySelector("[data-place-media-preview]");
+    const previewList = form.querySelector("[data-place-media-preview-list]");
+    const count = form.querySelector("[data-place-media-count]");
+    const empty = form.querySelector("[data-place-media-empty]");
+    const manageSubmit = form.querySelector("[data-place-media-manage-submit]");
+    const appendSubmit = form.querySelector("[data-place-media-append-submit]");
+    const replaceSubmit = form.querySelector("[data-place-media-replace-submit]");
     const actionInput = form.querySelector("[data-media-action-input]");
-    const currentList = form.querySelector("[data-attraction-media-current]");
+    const currentList = form.querySelector("[data-place-media-current]");
     const deleteFields = form.querySelector("[data-media-delete-fields]");
     if (!input || !preview || !previewList) {
       return;
@@ -713,7 +713,7 @@
       if (action === "append") {
         form.dataset.confirmForm = "mediaAppend";
       } else if (action === "replace") {
-        form.dataset.confirmForm = "attractionMedia";
+        form.dataset.confirmForm = "placeMedia";
       } else {
         form.dataset.confirmForm = "mediaManage";
       }
@@ -922,7 +922,7 @@
 
   document.querySelectorAll("form").forEach((form) => {
     form.addEventListener("submit", (event) => {
-      syncAttractionRequiredLocale(form);
+      syncPlaceRequiredLocale(form);
       form.classList.add("was-validated");
       if (!form.checkValidity()) {
         event.preventDefault();
@@ -948,9 +948,9 @@
         en: "This will reject the excursion and hide it from publication. Continue?",
         ru: "Экскурсия будет отклонена и скрыта от публикации. Продолжить?",
       },
-      attractionMedia: {
-        en: "Selected images will replace the current attraction carousel in this exact order. Continue?",
-        ru: "Выбранные изображения заменят текущую карусель достопримечательности именно в этом порядке. Продолжить?",
+      placeMedia: {
+        en: "Selected images will replace the current place carousel in this exact order. Continue?",
+        ru: "Выбранные изображения заменят текущую карусель места именно в этом порядке. Продолжить?",
       },
       mediaAppend: {
         en: "Selected images will be added to the end of the current carousel. Continue?",

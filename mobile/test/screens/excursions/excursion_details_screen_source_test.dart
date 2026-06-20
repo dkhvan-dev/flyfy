@@ -106,7 +106,7 @@ void main() {
   });
 
   test(
-    'excursion details links description section to attraction details',
+    'excursion details links description section to place details',
     () async {
       final source = await File(
         'lib/screens/excursions/excursion_details_screen.dart',
@@ -114,10 +114,7 @@ void main() {
 
       expect(source, contains('_openLandmarkDetails'));
       expect(source, contains('context.push('));
-      expect(
-        source,
-        contains("'/attractions/\${Uri.encodeComponent(landmarkId)}'"),
-      );
+      expect(source, contains("'/places/\${Uri.encodeComponent(landmarkId)}'"));
       expect(source, contains('extra: localizedLandmark'));
       expect(source, contains('actionLabel:'));
       expect(source, contains('l10n.detailsButton'));
@@ -436,7 +433,7 @@ void main() {
   );
 
   test(
-    'excursion details resolves localized attraction text for landmark excursions',
+    'excursion details resolves localized place text for landmark excursions',
     () async {
       final source = await File(
         'lib/screens/excursions/excursion_details_screen.dart',
@@ -444,18 +441,14 @@ void main() {
 
       expect(
         source,
-        contains(
-          "import '../../features/attractions/data/attraction_api.dart';",
-        ),
+        contains("import '../../features/places/data/place_api.dart';"),
       );
       expect(
         source,
-        contains(
-          "import '../../features/attractions/models/attraction_vm.dart';",
-        ),
+        contains("import '../../features/places/models/place_vm.dart';"),
       );
-      expect(source, contains('final AttractionApi _attractionApi'));
-      expect(source, contains('AttractionVm? _localizedLandmark'));
+      expect(source, contains('final PlaceApi _placeApi'));
+      expect(source, contains('PlaceVm? _localizedLandmark'));
       expect(source, contains('_loadLocalizedLandmark'));
       expect(source, contains('locale: lang'));
       expect(source, contains('localizedLandmark:'));
@@ -533,7 +526,7 @@ void main() {
       expect(source, contains("excursion.routeKind == 'COMBINED_ROUTE'"));
       expect(source, contains('excursion.stopCount > 1'));
       expect(source, contains('excursionDetailsRouteStopsCount'));
-      expect(source, contains('step.attractionName'));
+      expect(source, contains('step.placeName'));
       expect(source, contains('step.travelFromPreviousMinutes'));
       expect(source, contains('excursionDetailsTravelFromPrevious'));
       expect(source, contains('class _RouteStopMetaChip'));

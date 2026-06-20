@@ -317,15 +317,15 @@ type CommunityPostDecisionInput struct {
 	RequestID       string
 }
 
-type AttractionAdminClient interface {
-	ListAttractions(ctx context.Context, filter model.AdminAttractionFilter) ([]model.AdminAttraction, int, error)
-	GetAttraction(ctx context.Context, id uuid.UUID) (*model.AdminAttraction, error)
-	CreateAttraction(ctx context.Context, input model.AttractionInput) (*model.AdminAttraction, error)
-	UpdateAttraction(ctx context.Context, id uuid.UUID, input model.AttractionInput) (*model.AdminAttraction, error)
-	ReplaceMedia(ctx context.Context, id uuid.UUID, media []model.AttractionMediaInput) error
+type PlaceAdminClient interface {
+	ListPlaces(ctx context.Context, filter model.AdminPlaceFilter) ([]model.AdminPlace, int, error)
+	GetPlace(ctx context.Context, id uuid.UUID) (*model.AdminPlace, error)
+	CreatePlace(ctx context.Context, input model.PlaceInput) (*model.AdminPlace, error)
+	UpdatePlace(ctx context.Context, id uuid.UUID, input model.PlaceInput) (*model.AdminPlace, error)
+	ReplaceMedia(ctx context.Context, id uuid.UUID, media []model.PlaceMediaInput) error
 }
 
 type FileUploadClient interface {
-	UploadPublicAttractionImage(ctx context.Context, input model.FileUploadInput) (*model.UploadedFile, error)
+	UploadPublicPlaceImage(ctx context.Context, input model.FileUploadInput) (*model.UploadedFile, error)
 	GetPublicContent(ctx context.Context, fileID uuid.UUID) (*model.FileContent, error)
 }

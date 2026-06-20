@@ -378,9 +378,9 @@ class PushNotificationDeepLinkResolver {
       return '/excursions/${Uri.encodeComponent(excursionId)}';
     }
 
-    final attractionId = _value(data, 'attractionId');
-    if (attractionId.isNotEmpty) {
-      return '/attractions/${Uri.encodeComponent(attractionId)}';
+    final placeId = _value(data, 'placeId');
+    if (placeId.isNotEmpty) {
+      return '/places/${Uri.encodeComponent(placeId)}';
     }
 
     final storySlug = _value(data, 'storySlug');

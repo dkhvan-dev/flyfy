@@ -22,7 +22,7 @@ void main() {
                     TravelServiceEntry(
                       title: 'Достопримечательности',
                       icon: Icons.account_balance_rounded,
-                      route: '/attractions',
+                      route: '/places',
                     ),
                     TravelServiceEntry(
                       title: 'Курсы валют',
@@ -59,9 +59,9 @@ void main() {
               child: ServiceGrid(
                 services: const [
                   TravelServiceEntry(
-                    title: 'Attractions',
+                    title: 'Places',
                     icon: Icons.account_balance_rounded,
-                    route: '/attractions',
+                    route: '/places',
                   ),
                 ],
                 onServiceTap: (_) {},

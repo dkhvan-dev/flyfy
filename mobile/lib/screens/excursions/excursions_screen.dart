@@ -12,8 +12,8 @@ import '../../core/ui/app_list_search_field.dart';
 import '../../core/ui/app_list_screen_header.dart';
 import '../../core/ui/error_view.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
-import '../../features/attractions/data/attraction_api.dart';
-import '../../features/attractions/models/attraction_vm.dart';
+import '../../features/places/data/place_api.dart';
+import '../../features/places/models/place_vm.dart';
 import '../../features/profile/profile_completion_gate.dart';
 import '../../features/profile/profile_guard_result.dart';
 import '../../features/feed/widgets/contextual_story_tray.dart';
@@ -31,23 +31,23 @@ import '../../shared/widgets/app_city_filter_section.dart';
 
 class ExcursionsRouteArgs {
   const ExcursionsRouteArgs({
-    this.showNoAttractionExcursionsNotice = false,
-    this.attractionId,
-    this.attractionTitle,
+    this.showNoPlaceExcursionsNotice = false,
+    this.placeId,
+    this.placeTitle,
   });
 
-  const ExcursionsRouteArgs.noAttractionExcursions({
-    required String attractionId,
-    String? attractionTitle,
+  const ExcursionsRouteArgs.noPlaceExcursions({
+    required String placeId,
+    String? placeTitle,
   }) : this(
-         showNoAttractionExcursionsNotice: true,
-         attractionId: attractionId,
-         attractionTitle: attractionTitle,
+         showNoPlaceExcursionsNotice: true,
+         placeId: placeId,
+         placeTitle: placeTitle,
        );
 
-  final bool showNoAttractionExcursionsNotice;
-  final String? attractionId;
-  final String? attractionTitle;
+  final bool showNoPlaceExcursionsNotice;
+  final String? placeId;
+  final String? placeTitle;
 }
 
 class ExcursionsScreen extends StatefulWidget {
@@ -375,11 +375,11 @@ double? _parseExcursionPriceInput(String value) {
 }
 
 class _ExcursionsScreenState extends State<ExcursionsScreen> {
-  final AttractionApi _attractionApi = AttractionApi();
+  final PlaceApi _placeApi = PlaceApi();
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  Map<String, AttractionVm> _localizedLandmarks = const {};
+  Map<String, PlaceVm> _localizedLandmarks = const {};
   final Set<String> _loadingLocalizedLandmarkIds = <String>{};
   String? _localizedLandmarksLocale;
   bool _hasAppliedDefaultCityFilter = false;
@@ -542,14 +542,11 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
 
   Future<void> _loadLocalizedLandmark(String landmarkId, String lang) async {
     try {
-      final attraction = await _attractionApi.getAttraction(
-        landmarkId,
-        locale: lang,
-      );
+      final place = await _placeApi.getPlace(landmarkId, locale: lang);
       if (!mounted || _localizedLandmarksLocale != lang) return;
 
       setState(() {
-        _localizedLandmarks = {..._localizedLandmarks, landmarkId: attraction};
+        _localizedLandmarks = {..._localizedLandmarks, landmarkId: place};
         _loadingLocalizedLandmarkIds.remove(landmarkId);
       });
     } catch (_) {
@@ -558,7 +555,7 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
     }
   }
 
-  AttractionVm? _localizedLandmarkFor(ExcursionVm excursion) {
+  PlaceVm? _localizedLandmarkFor(ExcursionVm excursion) {
     final landmarkId = excursion.landmarkId?.trim();
     if (landmarkId == null || landmarkId.isEmpty) return null;
     return _localizedLandmarks[landmarkId];
@@ -680,7 +677,7 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
           children: [
             AppListScreenHeader(
               title: l10n.excursionsDiscoverTitle,
-              notificationsTooltip: l10n.attractionNotificationsTooltip,
+              notificationsTooltip: l10n.placeNotificationsTooltip,
               onBackTap: _goBack,
               onNotificationsTap: () => context.push('/notifications'),
             ),
@@ -757,10 +754,10 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
                                 ),
                                 if (widget
                                         .routeArgs
-                                        ?.showNoAttractionExcursionsNotice ==
+                                        ?.showNoPlaceExcursionsNotice ==
                                     true) ...[
                                   const SizedBox(height: 14),
-                                  _buildNoAttractionExcursionsNotice(l10n),
+                                  _buildNoPlaceExcursionsNotice(l10n),
                                 ],
                               ],
                             ),
@@ -875,12 +872,12 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
       final aTitle = localizedExcursionTitle(
         languageCode: lang,
         excursion: a,
-        attraction: _localizedLandmarkFor(a),
+        place: _localizedLandmarkFor(a),
       );
       final bTitle = localizedExcursionTitle(
         languageCode: lang,
         excursion: b,
-        attraction: _localizedLandmarkFor(b),
+        place: _localizedLandmarkFor(b),
       );
       return aTitle.compareTo(bTitle);
     });
@@ -888,7 +885,7 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
     return sorted;
   }
 
-  Widget _buildNoAttractionExcursionsNotice(AppLocalizations l10n) {
+  Widget _buildNoPlaceExcursionsNotice(AppLocalizations l10n) {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: AppColors.accent.withValues(alpha: 0.11),
@@ -919,7 +916,7 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    l10n.excursionsNoAttractionExcursionsTitle,
+                    l10n.excursionsNoPlaceExcursionsTitle,
                     style: const TextStyle(
                       color: AppColors.textPrimary,
                       fontSize: 14,
@@ -929,7 +926,7 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    l10n.excursionsNoAttractionExcursionsSubtitle,
+                    l10n.excursionsNoPlaceExcursionsSubtitle,
                     style: const TextStyle(
                       color: Color(0xFFD6C5B8),
                       fontSize: 13,
@@ -956,22 +953,22 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
       localizedExcursionTitle(
         languageCode: lang,
         excursion: excursion,
-        attraction: landmark,
+        place: landmark,
       ),
       localizedExcursionSummary(
         languageCode: lang,
         excursion: excursion,
-        attraction: landmark,
+        place: landmark,
       ),
       localizedExcursionDescription(
         languageCode: lang,
         excursion: excursion,
-        attraction: landmark,
+        place: landmark,
       ),
       localizedExcursionLandmarkName(
         languageCode: lang,
         excursion: excursion,
-        attraction: landmark,
+        place: landmark,
       ),
       excursion.title,
       excursion.summary,
@@ -1545,10 +1542,10 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       AppCountryFilterSection(
-                        title: l10n.attractionFilterCountrySection,
-                        allCountriesLabel: l10n.attractionFilterCountryAll,
-                        searchHint: l10n.attractionFilterCountrySearchHint,
-                        noResultsText: l10n.attractionFilterCountryNoResults,
+                        title: l10n.placeFilterCountrySection,
+                        allCountriesLabel: l10n.placeFilterCountryAll,
+                        searchHint: l10n.placeFilterCountrySearchHint,
+                        noResultsText: l10n.placeFilterCountryNoResults,
                         selectedCountry: _filters.country,
                         onChanged: _setCountry,
                       ),
@@ -2188,7 +2185,7 @@ class ExcursionListCard extends StatelessWidget {
   final ExcursionVm excursion;
   final String languageCode;
   final int seed;
-  final AttractionVm? localizedLandmark;
+  final PlaceVm? localizedLandmark;
   final VoidCallback? onTap;
 
   @override
@@ -2201,7 +2198,7 @@ class ExcursionListCard extends StatelessWidget {
     final displayTitle = localizedExcursionTitle(
       languageCode: languageCode,
       excursion: excursion,
-      attraction: localizedLandmark,
+      place: localizedLandmark,
       fallback: category,
     );
     final location = _primaryLocation(excursion, displayTitle, category);
@@ -2334,7 +2331,7 @@ class ExcursionListCard extends StatelessWidget {
     final landmark = localizedExcursionLandmarkName(
       languageCode: languageCode,
       excursion: excursion,
-      attraction: localizedLandmark,
+      place: localizedLandmark,
     ).trim();
     if (landmark.isNotEmpty && !_isSameLabel(landmark, displayTitle)) {
       return landmark;

@@ -160,7 +160,7 @@ void main() {
   });
 
   test(
-    'my excursions cards resolve localized attraction text for landmark bookings',
+    'my excursions cards resolve localized place text for landmark bookings',
     () async {
       final source = await File(
         'lib/screens/excursions/my_excursions_screen.dart',
@@ -169,15 +169,11 @@ void main() {
       expect(source, contains('dart:async'));
       expect(
         source,
-        contains(
-          "import '../../features/attractions/data/attraction_api.dart';",
-        ),
+        contains("import '../../features/places/data/place_api.dart';"),
       );
       expect(
         source,
-        contains(
-          "import '../../features/attractions/models/attraction_vm.dart';",
-        ),
+        contains("import '../../features/places/models/place_vm.dart';"),
       );
       expect(
         source,
@@ -185,21 +181,15 @@ void main() {
           "import '../../features/excursions/excursion_localization.dart';",
         ),
       );
-      expect(source, contains('final AttractionApi _attractionApi'));
-      expect(source, contains('Map<String, AttractionVm> _localizedLandmarks'));
+      expect(source, contains('final PlaceApi _placeApi'));
+      expect(source, contains('Map<String, PlaceVm> _localizedLandmarks'));
       expect(source, contains('_scheduleResolveLocalizedLandmarks'));
       expect(source, contains('_loadLocalizedLandmark'));
       expect(source, contains('locale: lang'));
       expect(source, contains('localizedLandmark:'));
-      expect(source, contains('localizedAttractionTitle('));
-      expect(
-        source,
-        contains('final displayTitle = localizedAttractionTitle('),
-      );
-      expect(
-        source,
-        contains('final landmarkName = localizedAttractionTitle('),
-      );
+      expect(source, contains('localizedPlaceTitle('));
+      expect(source, contains('final displayTitle = localizedPlaceTitle('));
+      expect(source, contains('final landmarkName = localizedPlaceTitle('));
       expect(source, contains('displayTitle.isEmpty'));
       expect(source, isNot(contains('booking.landmarkName!.trim()')));
       expect(
@@ -271,10 +261,10 @@ void main() {
       expect(source, contains('final AppCityFilterValue? city'));
       expect(source, contains('AppCountryFilterSection'));
       expect(source, contains('AppCityFilterSection'));
-      expect(source, contains('attractionFilterCountrySection'));
-      expect(source, contains('attractionFilterCountryAll'));
-      expect(source, contains('attractionFilterCountrySearchHint'));
-      expect(source, contains('attractionFilterCountryNoResults'));
+      expect(source, contains('placeFilterCountrySection'));
+      expect(source, contains('placeFilterCountryAll'));
+      expect(source, contains('placeFilterCountrySearchHint'));
+      expect(source, contains('placeFilterCountryNoResults'));
       expect(source, contains('locationFilterCitySection'));
       expect(source, contains('filters.city'));
       expect(source, contains('filters.country'));

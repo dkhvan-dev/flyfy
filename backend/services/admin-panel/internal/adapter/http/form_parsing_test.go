@@ -29,7 +29,7 @@ func TestParseRequestFormReadsCSRFFromMultipart(t *testing.T) {
 		t.Fatalf("Close returned error: %v", err)
 	}
 
-	request := httptest.NewRequest(http.MethodPost, "/admin/attractions/id/media", body)
+	request := httptest.NewRequest(http.MethodPost, "/admin/places/id/media", body)
 	request.Header.Set("Content-Type", writer.FormDataContentType())
 
 	if err = parseRequestForm(request); err != nil {
@@ -43,7 +43,7 @@ func TestParseRequestFormReadsCSRFFromMultipart(t *testing.T) {
 	}
 }
 
-func TestParseAttractionImagesReadsMultipleCarouselImages(t *testing.T) {
+func TestParsePlaceImagesReadsMultipleCarouselImages(t *testing.T) {
 	t.Parallel()
 
 	body := &bytes.Buffer{}
@@ -65,12 +65,12 @@ func TestParseAttractionImagesReadsMultipleCarouselImages(t *testing.T) {
 		t.Fatalf("Close returned error: %v", err)
 	}
 
-	request := httptest.NewRequest(http.MethodPost, "/admin/attractions/id/media", body)
+	request := httptest.NewRequest(http.MethodPost, "/admin/places/id/media", body)
 	request.Header.Set("Content-Type", writer.FormDataContentType())
 
-	images, err := parseAttractionImages(request)
+	images, err := parsePlaceImages(request)
 	if err != nil {
-		t.Fatalf("parseAttractionImages returned error: %v", err)
+		t.Fatalf("parsePlaceImages returned error: %v", err)
 	}
 	if len(images) != 2 {
 		t.Fatalf("images count = %d, want 2", len(images))
@@ -80,7 +80,7 @@ func TestParseAttractionImagesReadsMultipleCarouselImages(t *testing.T) {
 	}
 }
 
-func TestParseAttractionFormDerivesCoordinatesFromMapURL(t *testing.T) {
+func TestParsePlaceFormDerivesCoordinatesFromMapURL(t *testing.T) {
 	t.Parallel()
 
 	values := url.Values{}
@@ -92,12 +92,12 @@ func TestParseAttractionFormDerivesCoordinatesFromMapURL(t *testing.T) {
 	values.Set("category", "NATURE")
 	values.Set("status", "PUBLISHED")
 	values.Set("location_source_url", "https://www.openstreetmap.org/?mlat=43.24353420852949&mlon=76.90412855566406#map=16/43.24353420852949/76.90412855566406")
-	request := httptest.NewRequest(http.MethodPost, "/admin/attractions", strings.NewReader(values.Encode()))
+	request := httptest.NewRequest(http.MethodPost, "/admin/places", strings.NewReader(values.Encode()))
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	input, _, err := parseAttractionForm(request)
+	input, _, err := parsePlaceForm(request)
 	if err != nil {
-		t.Fatalf("parseAttractionForm returned error: %v", err)
+		t.Fatalf("parsePlaceForm returned error: %v", err)
 	}
 	if input.Latitude == nil || input.Longitude == nil {
 		t.Fatalf("coordinates were not derived from location_source_url: %#v", input)
@@ -133,21 +133,21 @@ func TestParseCityLinkValuesDropsCitiesOutsideSelectedCountry(t *testing.T) {
 	}
 }
 
-func TestAttractionCityLinkOptionsHideCitiesOutsideAttractionCountry(t *testing.T) {
+func TestPlaceCityLinkOptionsHideCitiesOutsidePlaceCountry(t *testing.T) {
 	t.Parallel()
 
-	options := attractionCityLinkOptions(nil, "VN")
+	options := placeCityLinkOptions(nil, "VN")
 	var foundVietnamCity bool
 	for _, option := range options {
 		if option.CountryCode == "VN" && option.CityID == "hanoi" {
 			foundVietnamCity = true
 			if option.Hidden {
-				t.Fatalf("Vietnam city option should be visible for VN attraction: %#v", option)
+				t.Fatalf("Vietnam city option should be visible for VN place: %#v", option)
 			}
 			continue
 		}
 		if option.CountryCode != "VN" && !option.Hidden {
-			t.Fatalf("foreign city option should be hidden for VN attraction: %#v", option)
+			t.Fatalf("foreign city option should be hidden for VN place: %#v", option)
 		}
 	}
 	if !foundVietnamCity {
@@ -155,7 +155,7 @@ func TestAttractionCityLinkOptionsHideCitiesOutsideAttractionCountry(t *testing.
 	}
 }
 
-func TestAttractionListQueryPreservesCountryAndCityFilters(t *testing.T) {
+func TestPlaceListQueryPreservesCountryAndCityFilters(t *testing.T) {
 	t.Parallel()
 
 	values := url.Values{}
@@ -164,7 +164,7 @@ func TestAttractionListQueryPreservesCountryAndCityFilters(t *testing.T) {
 	values.Set("city", " Almaty ")
 	values.Set("page", "3")
 
-	got := attractionListQuery(values)
+	got := placeListQuery(values)
 
 	if got.Search != "lake" || got.CountryCode != "KZ" || got.CityID != "almaty" || got.Page != 3 {
 		t.Fatalf("filters = %#v, want normalized search/country/city/page", got)
@@ -174,50 +174,50 @@ func TestAttractionListQueryPreservesCountryAndCityFilters(t *testing.T) {
 	}
 }
 
-func TestAttractionListQueryIgnoresCityWithoutCountry(t *testing.T) {
+func TestPlaceListQueryIgnoresCityWithoutCountry(t *testing.T) {
 	t.Parallel()
 
 	values := url.Values{}
 	values.Set("city", "almaty")
 
-	got := attractionListQuery(values)
+	got := placeListQuery(values)
 
 	if got.CountryCode != "" || got.CityID != "" || got.Query != "" {
 		t.Fatalf("filters = %#v, want city cleared until country is selected", got)
 	}
 }
 
-func TestAttractionListQueryPreservesIndonesiaBaliRegionalFilter(t *testing.T) {
+func TestPlaceListQueryPreservesIndonesiaBaliRegionalFilter(t *testing.T) {
 	t.Parallel()
 
 	values := url.Values{}
 	values.Set("country", "ID")
 	values.Set("city", "bali")
 
-	got := attractionListQuery(values)
+	got := placeListQuery(values)
 
 	if got.CountryCode != "ID" || got.CityID != "bali" || got.Query != "city=bali&country=ID" {
 		t.Fatalf("filters = %#v, want Bali regional filter preserved for Indonesia", got)
 	}
 }
 
-func TestAttractionListQueryDefaultsInvalidPage(t *testing.T) {
+func TestPlaceListQueryDefaultsInvalidPage(t *testing.T) {
 	t.Parallel()
 
 	values := url.Values{}
 	values.Set("page", "-2")
 
-	got := attractionListQuery(values)
+	got := placeListQuery(values)
 
 	if got.Page != 1 {
 		t.Fatalf("page = %d, want 1", got.Page)
 	}
 }
 
-func TestAttractionReferenceOptionsIncludeRussiaCities(t *testing.T) {
+func TestPlaceReferenceOptionsIncludeRussiaCities(t *testing.T) {
 	t.Parallel()
 
-	countries := attractionCountryOptions("RU")
+	countries := placeCountryOptions("RU")
 	var foundRussia bool
 	for _, option := range countries {
 		if option.Value == "RU" && option.Selected {
@@ -229,7 +229,7 @@ func TestAttractionReferenceOptionsIncludeRussiaCities(t *testing.T) {
 		t.Fatalf("country options = %#v, want selected RU option", countries)
 	}
 
-	cities := attractionCityOptions("moscow")
+	cities := placeCityOptions("moscow")
 	var foundMoscow bool
 	for _, option := range cities {
 		if option.Value == "moscow" && option.CountryCode == "RU" && option.Selected {
@@ -241,15 +241,15 @@ func TestAttractionReferenceOptionsIncludeRussiaCities(t *testing.T) {
 		t.Fatalf("city options = %#v, want selected RU Moscow option", cities)
 	}
 
-	if got := attractionCityText(localeRU, "RU", "saint-petersburg"); got != "Санкт-Петербург, Россия" {
+	if got := placeCityText(localeRU, "RU", "saint-petersburg"); got != "Санкт-Петербург, Россия" {
 		t.Fatalf("city text = %q, want localized Russia city", got)
 	}
 }
 
-func TestAttractionReferenceOptionsIncludeVietnamCitiesAndCurrency(t *testing.T) {
+func TestPlaceReferenceOptionsIncludeVietnamCitiesAndCurrency(t *testing.T) {
 	t.Parallel()
 
-	countries := attractionCountryOptions("VN")
+	countries := placeCountryOptions("VN")
 	var foundVietnam bool
 	for _, option := range countries {
 		if option.Value == "VN" && option.Selected {
@@ -261,7 +261,7 @@ func TestAttractionReferenceOptionsIncludeVietnamCitiesAndCurrency(t *testing.T)
 		t.Fatalf("country options = %#v, want selected VN option", countries)
 	}
 
-	cities := attractionCityOptions("ho-chi-minh-city")
+	cities := placeCityOptions("ho-chi-minh-city")
 	var foundHoChiMinhCity bool
 	for _, option := range cities {
 		if option.Value == "ho-chi-minh-city" && option.CountryCode == "VN" && option.Selected {
@@ -273,21 +273,21 @@ func TestAttractionReferenceOptionsIncludeVietnamCitiesAndCurrency(t *testing.T)
 		t.Fatalf("city options = %#v, want selected VN Ho Chi Minh City option", cities)
 	}
 
-	if got := attractionCityText(localeRU, "VN", "da-nang"); got != "Дананг, Вьетнам" {
+	if got := placeCityText(localeRU, "VN", "da-nang"); got != "Дананг, Вьетнам" {
 		t.Fatalf("city text = %q, want localized Vietnam city", got)
 	}
-	if got := attractionCityText(localeRU, "VN", "phan-thiet"); got != "Фантхьет, Вьетнам" {
+	if got := placeCityText(localeRU, "VN", "phan-thiet"); got != "Фантхьет, Вьетнам" {
 		t.Fatalf("city text = %q, want localized Phan Thiet city", got)
 	}
-	if got := attractionCurrencyText(localeRU, "VND"); got != "Вьетнамский донг" {
+	if got := placeCurrencyText(localeRU, "VND"); got != "Вьетнамский донг" {
 		t.Fatalf("currency text = %q, want localized Vietnamese dong", got)
 	}
 }
 
-func TestAttractionReferenceOptionsIncludeThailandCitiesAndCurrency(t *testing.T) {
+func TestPlaceReferenceOptionsIncludeThailandCitiesAndCurrency(t *testing.T) {
 	t.Parallel()
 
-	countries := attractionCountryOptions("TH")
+	countries := placeCountryOptions("TH")
 	var foundThailand bool
 	for _, option := range countries {
 		if option.Value == "TH" && option.Selected {
@@ -299,7 +299,7 @@ func TestAttractionReferenceOptionsIncludeThailandCitiesAndCurrency(t *testing.T
 		t.Fatalf("country options = %#v, want selected TH option", countries)
 	}
 
-	cities := attractionCityOptions("koh-samui")
+	cities := placeCityOptions("koh-samui")
 	var foundKohSamui bool
 	for _, option := range cities {
 		if option.Value == "koh-samui" && option.CountryCode == "TH" && option.Selected {
@@ -311,18 +311,18 @@ func TestAttractionReferenceOptionsIncludeThailandCitiesAndCurrency(t *testing.T
 		t.Fatalf("city options = %#v, want selected TH Koh Samui option", cities)
 	}
 
-	if got := attractionCityText(localeRU, "TH", "phang-nga"); got != "Пхангнга, Таиланд" {
+	if got := placeCityText(localeRU, "TH", "phang-nga"); got != "Пхангнга, Таиланд" {
 		t.Fatalf("city text = %q, want localized Phang Nga city", got)
 	}
-	if got := attractionCurrencyText(localeRU, "THB"); got != "Тайский бат" {
+	if got := placeCurrencyText(localeRU, "THB"); got != "Тайский бат" {
 		t.Fatalf("currency text = %q, want localized Thai baht", got)
 	}
 }
 
-func TestAttractionReferenceOptionsIncludeMaldivesCitiesAndCurrency(t *testing.T) {
+func TestPlaceReferenceOptionsIncludeMaldivesCitiesAndCurrency(t *testing.T) {
 	t.Parallel()
 
-	countries := attractionCountryOptions("MV")
+	countries := placeCountryOptions("MV")
 	var foundMaldives bool
 	for _, option := range countries {
 		if option.Value == "MV" && option.Selected {
@@ -334,7 +334,7 @@ func TestAttractionReferenceOptionsIncludeMaldivesCitiesAndCurrency(t *testing.T
 		t.Fatalf("country options = %#v, want selected MV option", countries)
 	}
 
-	cities := attractionCityOptions("maafushi")
+	cities := placeCityOptions("maafushi")
 	var foundMaafushi bool
 	for _, option := range cities {
 		if option.Value == "maafushi" && option.CountryCode == "MV" && option.Selected {
@@ -346,18 +346,18 @@ func TestAttractionReferenceOptionsIncludeMaldivesCitiesAndCurrency(t *testing.T
 		t.Fatalf("city options = %#v, want selected MV Maafushi option", cities)
 	}
 
-	if got := attractionCityText(localeRU, "MV", "hulhumale"); got != "Хулхумале, Мальдивы" {
+	if got := placeCityText(localeRU, "MV", "hulhumale"); got != "Хулхумале, Мальдивы" {
 		t.Fatalf("city text = %q, want localized Hulhumale city", got)
 	}
-	if got := attractionCurrencyText(localeRU, "MVR"); got != "Мальдивская руфия" {
+	if got := placeCurrencyText(localeRU, "MVR"); got != "Мальдивская руфия" {
 		t.Fatalf("currency text = %q, want localized Maldivian rufiyaa", got)
 	}
 }
 
-func TestAttractionReferenceOptionsIncludeGeorgiaCitiesAndCurrency(t *testing.T) {
+func TestPlaceReferenceOptionsIncludeGeorgiaCitiesAndCurrency(t *testing.T) {
 	t.Parallel()
 
-	countries := attractionCountryOptions("GE")
+	countries := placeCountryOptions("GE")
 	var foundGeorgia bool
 	for _, option := range countries {
 		if option.Value == "GE" && option.Selected {
@@ -369,7 +369,7 @@ func TestAttractionReferenceOptionsIncludeGeorgiaCitiesAndCurrency(t *testing.T)
 		t.Fatalf("country options = %#v, want selected GE option", countries)
 	}
 
-	cities := attractionCityOptions("stepantsminda")
+	cities := placeCityOptions("stepantsminda")
 	var foundKazbegi bool
 	for _, option := range cities {
 		if option.Value == "stepantsminda" && option.CountryCode == "GE" && option.Selected {
@@ -381,18 +381,18 @@ func TestAttractionReferenceOptionsIncludeGeorgiaCitiesAndCurrency(t *testing.T)
 		t.Fatalf("city options = %#v, want selected GE Stepantsminda/Kazbegi option", cities)
 	}
 
-	if got := attractionCityText(localeRU, "GE", "stepantsminda"); got != "Степанцминда (Казбеги), Грузия" {
+	if got := placeCityText(localeRU, "GE", "stepantsminda"); got != "Степанцминда (Казбеги), Грузия" {
 		t.Fatalf("city text = %q, want localized Stepantsminda/Kazbegi city", got)
 	}
-	if got := attractionCurrencyText(localeRU, "GEL"); got != "Грузинский лари" {
+	if got := placeCurrencyText(localeRU, "GEL"); got != "Грузинский лари" {
 		t.Fatalf("currency text = %q, want localized Georgian lari", got)
 	}
 }
 
-func TestAttractionReferenceOptionsIncludeArmeniaCitiesAndCurrency(t *testing.T) {
+func TestPlaceReferenceOptionsIncludeArmeniaCitiesAndCurrency(t *testing.T) {
 	t.Parallel()
 
-	countries := attractionCountryOptions("AM")
+	countries := placeCountryOptions("AM")
 	var foundArmenia bool
 	for _, option := range countries {
 		if option.Value == "AM" && option.Selected {
@@ -404,7 +404,7 @@ func TestAttractionReferenceOptionsIncludeArmeniaCitiesAndCurrency(t *testing.T)
 		t.Fatalf("country options = %#v, want selected AM option", countries)
 	}
 
-	cities := attractionCityOptions("vagharshapat")
+	cities := placeCityOptions("vagharshapat")
 	var foundEchmiadzin bool
 	for _, option := range cities {
 		if option.Value == "vagharshapat" && option.CountryCode == "AM" && option.Selected {
@@ -416,18 +416,18 @@ func TestAttractionReferenceOptionsIncludeArmeniaCitiesAndCurrency(t *testing.T)
 		t.Fatalf("city options = %#v, want selected AM Vagharshapat/Echmiadzin option", cities)
 	}
 
-	if got := attractionCityText(localeRU, "AM", "vagharshapat"); got != "Вагаршапат (Эчмиадзин), Армения" {
+	if got := placeCityText(localeRU, "AM", "vagharshapat"); got != "Вагаршапат (Эчмиадзин), Армения" {
 		t.Fatalf("city text = %q, want localized Vagharshapat/Echmiadzin city", got)
 	}
-	if got := attractionCurrencyText(localeRU, "AMD"); got != "Армянский драм" {
+	if got := placeCurrencyText(localeRU, "AMD"); got != "Армянский драм" {
 		t.Fatalf("currency text = %q, want localized Armenian dram", got)
 	}
 }
 
-func TestAttractionCategoryOptionsIncludeMarket(t *testing.T) {
+func TestPlaceCategoryOptionsIncludeMarket(t *testing.T) {
 	t.Parallel()
 
-	options := attractionCategoryOptions("MARKET")
+	options := placeCategoryOptions("MARKET")
 	var foundMarket bool
 	for _, option := range options {
 		if option.Value == "MARKET" {
@@ -435,23 +435,23 @@ func TestAttractionCategoryOptionsIncludeMarket(t *testing.T) {
 			if !option.Selected {
 				t.Fatalf("MARKET category option should be selected: %#v", option)
 			}
-			if option.LabelKey != "attraction.category.MARKET" {
-				t.Fatalf("MARKET option label key = %q, want attraction.category.MARKET", option.LabelKey)
+			if option.LabelKey != "place.category.MARKET" {
+				t.Fatalf("MARKET option label key = %q, want place.category.MARKET", option.LabelKey)
 			}
 		}
 	}
 	if !foundMarket {
 		t.Fatalf("category options = %#v, want MARKET option", options)
 	}
-	if got := attractionCategoryText(localeRU, "MARKET"); got != "Рынок" {
+	if got := placeCategoryText(localeRU, "MARKET"); got != "Рынок" {
 		t.Fatalf("Russian MARKET label = %q, want Рынок", got)
 	}
-	if got := attractionCategoryText(localeEN, "MARKET"); got != "Market" {
+	if got := placeCategoryText(localeEN, "MARKET"); got != "Market" {
 		t.Fatalf("English MARKET label = %q, want Market", got)
 	}
 }
 
-func TestAttractionCategoryTextLocalizesAttractionServiceCategories(t *testing.T) {
+func TestPlaceCategoryTextLocalizesPlaceServiceCategories(t *testing.T) {
 	t.Parallel()
 
 	cases := map[string]string{
@@ -467,16 +467,16 @@ func TestAttractionCategoryTextLocalizesAttractionServiceCategories(t *testing.T
 		"OTHER":         "Другое",
 	}
 	for category, want := range cases {
-		if got := attractionCategoryText(localeRU, category); got != want {
-			t.Fatalf("attractionCategoryText(%q) = %q, want %q", category, got, want)
+		if got := placeCategoryText(localeRU, category); got != want {
+			t.Fatalf("placeCategoryText(%q) = %q, want %q", category, got, want)
 		}
 	}
 }
 
-func TestAttractionCategoryOptionsMatchAttractionServiceCategories(t *testing.T) {
+func TestPlaceCategoryOptionsMatchPlaceServiceCategories(t *testing.T) {
 	t.Parallel()
 
-	got := attractionCategoryOptions("MUSEUM")
+	got := placeCategoryOptions("MUSEUM")
 	values := make(map[string]bool, len(got))
 	for _, item := range got {
 		values[item.Value] = true
@@ -491,7 +491,7 @@ func TestAttractionCategoryOptionsMatchAttractionServiceCategories(t *testing.T)
 	}
 	for _, unexpected := range []string{"CULTURE", "HISTORY", "RELIGION", "SPORT"} {
 		if values[unexpected] {
-			t.Fatalf("category options include unsupported attraction-service category %q: %#v", unexpected, got)
+			t.Fatalf("category options include unsupported place-service category %q: %#v", unexpected, got)
 		}
 	}
 }

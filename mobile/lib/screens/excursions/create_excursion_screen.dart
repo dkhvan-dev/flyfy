@@ -62,7 +62,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   static const int _maxCoverUploadBytes = 20 * 1024 * 1024;
   static const int _maxExcursionLanguages = 5;
   static const int _minItinerarySlots = 2;
-  static const int _maxItineraryAttractionStops = 5;
+  static const int _maxItineraryPlaceStops = 5;
   static const String _autosaveKey = 'create_excursion_autosave_v1';
   static const int _autosaveVersion = 1;
   static const Duration _autosaveDebounceDuration = Duration(milliseconds: 650);
@@ -90,7 +90,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   var _visibility = 'PUBLIC';
   var _selectedDurationUnit = _ExcursionDurationUnit.hours;
   var _selectedCurrencyCode = 'KZT';
-  var _creationMode = _ExcursionCreationMode.singleAttraction;
+  var _creationMode = _ExcursionCreationMode.singlePlace;
   String? _selectedCountryCode;
   String? _departureCityId;
   String? _selectedLandmarkId;
@@ -100,8 +100,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   int _mapUrlResolveSerial = 0;
   String? _mapUrlResolvingRawValue;
   String? _mapUrlResolveFailedRawValue;
-  String? _selectedAttractionCoverFileId;
-  String? _selectedAttractionCoverImageUrl;
+  String? _selectedPlaceCoverFileId;
+  String? _selectedPlaceCoverImageUrl;
   Map<String, CreateExcursionLocalizedCopyRequest> _productTranslations =
       const {};
   Uint8List? _coverPreviewBytes;
@@ -293,15 +293,15 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
 
   bool get _hasNewDraftInput {
     return _currentStep > 0 ||
-        _creationMode != _ExcursionCreationMode.singleAttraction ||
+        _creationMode != _ExcursionCreationMode.singlePlace ||
         _selectedCategorySlug != 'adventure' ||
         _visibility != 'PUBLIC' ||
         _selectedDurationUnit != _ExcursionDurationUnit.hours ||
         _selectedCurrencyCode != 'KZT' ||
         _landmarkNameCtrl.text.trim().isNotEmpty ||
         (_selectedLandmarkId ?? '').trim().isNotEmpty ||
-        (_selectedAttractionCoverFileId ?? '').trim().isNotEmpty ||
-        (_selectedAttractionCoverImageUrl ?? '').trim().isNotEmpty ||
+        (_selectedPlaceCoverFileId ?? '').trim().isNotEmpty ||
+        (_selectedPlaceCoverImageUrl ?? '').trim().isNotEmpty ||
         _durationValueCtrl.text.trim() != '4' ||
         _maxGroupSizeCtrl.text.trim() != '8' ||
         !_hasDefaultLanguageSelection ||
@@ -339,8 +339,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       'selectedLandmarkId': _selectedLandmarkId,
       'selectedLatitude': _selectedLatitude,
       'selectedLongitude': _selectedLongitude,
-      'selectedAttractionCoverFileId': _selectedAttractionCoverFileId,
-      'selectedAttractionCoverImageUrl': _selectedAttractionCoverImageUrl,
+      'selectedPlaceCoverFileId': _selectedPlaceCoverFileId,
+      'selectedPlaceCoverImageUrl': _selectedPlaceCoverImageUrl,
       'coverFileId': _coverFileId,
       'coverChanged': _coverChanged,
       'productTranslations': _productTranslations.map(
@@ -395,11 +395,11 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       _selectedLandmarkId = _stringFromDraft(draft['selectedLandmarkId']);
       _selectedLatitude = _doubleFromDraft(draft['selectedLatitude']);
       _selectedLongitude = _doubleFromDraft(draft['selectedLongitude']);
-      _selectedAttractionCoverFileId = _stringFromDraft(
-        draft['selectedAttractionCoverFileId'],
+      _selectedPlaceCoverFileId = _stringFromDraft(
+        draft['selectedPlaceCoverFileId'],
       );
-      _selectedAttractionCoverImageUrl = _stringFromDraft(
-        draft['selectedAttractionCoverImageUrl'],
+      _selectedPlaceCoverImageUrl = _stringFromDraft(
+        draft['selectedPlaceCoverImageUrl'],
       );
       _coverFileId = _stringFromDraft(draft['coverFileId']);
       _coverChanged = draft['coverChanged'] == true && _coverFileId != null;
@@ -444,8 +444,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       'startOffsetMinutes': item.startOffsetMinutes,
       'countryCode': item.countryCode,
       'durationMinutes': item.durationMinutes,
-      'attractionId': item.attractionId,
-      'attractionName': item.attractionName,
+      'placeId': item.placeId,
+      'placeName': item.placeName,
       'latitude': item.latitude,
       'longitude': item.longitude,
       'travelFromPreviousMinutes': item.travelFromPreviousMinutes,
@@ -463,8 +463,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
             startOffsetMinutes: _intFromDraft(item['startOffsetMinutes']) ?? 0,
             countryCode: _stringFromDraft(item['countryCode']),
             durationMinutes: _intFromDraft(item['durationMinutes']),
-            attractionId: _stringFromDraft(item['attractionId']),
-            attractionName: _stringFromDraft(item['attractionName']),
+            placeId: _stringFromDraft(item['placeId']),
+            placeName: _stringFromDraft(item['placeName']),
             latitude: _doubleFromDraft(item['latitude']),
             longitude: _doubleFromDraft(item['longitude']),
             travelFromPreviousMinutes: _intFromDraft(
@@ -618,7 +618,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     _editingExcursionStatus = excursion.status.trim().toUpperCase();
     _creationMode = excursion.routeKind.trim().toUpperCase() == 'COMBINED_ROUTE'
         ? _ExcursionCreationMode.combinedRoute
-        : _ExcursionCreationMode.singleAttraction;
+        : _ExcursionCreationMode.singlePlace;
     _selectedLandmarkId = (excursion.landmarkId ?? '').trim().isEmpty
         ? null
         : excursion.landmarkId!.trim();
@@ -686,8 +686,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
                 Localizations.localeOf(context).languageCode,
               ),
               countryCode: excursion.countryCode,
-              attractionId: item.attractionId,
-              attractionName: item.attractionName,
+              placeId: item.placeId,
+              placeName: item.placeName,
               latitude: item.latitude,
               longitude: item.longitude,
               travelFromPreviousMinutes: item.travelFromPreviousMinutes,
@@ -789,18 +789,18 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       return _itineraryErrorText;
     }
     if (_creationMode == _ExcursionCreationMode.combinedRoute) {
-      final attractionStopCount = _itineraryAttractionStopCount;
-      if (_itinerary.length > _maxItineraryAttractionStops ||
-          attractionStopCount > _maxItineraryAttractionStops) {
+      final placeStopCount = _itineraryPlaceStopCount;
+      if (_itinerary.length > _maxItineraryPlaceStops ||
+          placeStopCount > _maxItineraryPlaceStops) {
         _itineraryErrorText = l10n
             .createExcursionCombinedRouteMaxStopsValidation(
-              _maxItineraryAttractionStops,
+              _maxItineraryPlaceStops,
             );
         return _itineraryErrorText;
       }
       if (_itinerary.length < _minItinerarySlots ||
-          attractionStopCount < _minItinerarySlots ||
-          attractionStopCount != _itinerary.length) {
+          placeStopCount < _minItinerarySlots ||
+          placeStopCount != _itinerary.length) {
         _itineraryErrorText = l10n
             .createExcursionCombinedRouteMinStopsValidation(_minItinerarySlots);
         return _itineraryErrorText;
@@ -810,8 +810,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   }
 
   String? _validateLandmarkStep(AppLocalizations l10n) {
-    if (_creationMode == _ExcursionCreationMode.singleAttraction &&
-        !_hasSelectedAttraction) {
+    if (_creationMode == _ExcursionCreationMode.singlePlace &&
+        !_hasSelectedPlace) {
       _landmarkErrorText = l10n.createExcursionLandmarkValidation;
       return _landmarkErrorText;
     }
@@ -987,8 +987,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
               durationMinutes: item.durationMinutes,
               title: item.title,
               description: item.description,
-              attractionId: isCombinedRoute ? item.attractionId : null,
-              attractionName: isCombinedRoute ? item.attractionName : null,
+              placeId: isCombinedRoute ? item.placeId : null,
+              placeName: isCombinedRoute ? item.placeName : null,
               latitude: isCombinedRoute ? item.latitude : null,
               longitude: isCombinedRoute ? item.longitude : null,
               travelFromPreviousMinutes: isCombinedRoute
@@ -1170,12 +1170,11 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     _scheduleAutosave();
   }
 
-  bool get _hasSelectedAttraction =>
-      (_selectedLandmarkId ?? '').trim().isNotEmpty;
+  bool get _hasSelectedPlace => (_selectedLandmarkId ?? '').trim().isNotEmpty;
 
-  int get _itineraryAttractionStopCount {
+  int get _itineraryPlaceStopCount {
     return _itinerary
-        .where((item) => (item.attractionId ?? '').trim().isNotEmpty)
+        .where((item) => (item.placeId ?? '').trim().isNotEmpty)
         .length;
   }
 
@@ -1220,11 +1219,11 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
 
   bool _hasCreationModeSpecificDraft(_ExcursionCreationMode mode) {
     return switch (mode) {
-      _ExcursionCreationMode.singleAttraction =>
-        _hasSelectedAttraction ||
+      _ExcursionCreationMode.singlePlace =>
+        _hasSelectedPlace ||
             _landmarkNameCtrl.text.trim().isNotEmpty ||
-            (_selectedAttractionCoverFileId ?? '').trim().isNotEmpty ||
-            (_selectedAttractionCoverImageUrl ?? '').trim().isNotEmpty ||
+            (_selectedPlaceCoverFileId ?? '').trim().isNotEmpty ||
+            (_selectedPlaceCoverImageUrl ?? '').trim().isNotEmpty ||
             _productTranslations.isNotEmpty ||
             _selectedCategorySlug != 'adventure',
       _ExcursionCreationMode.combinedRoute => _itinerary.isNotEmpty,
@@ -1233,20 +1232,20 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
 
   void _clearModeSpecificDraft(_ExcursionCreationMode mode) {
     switch (mode) {
-      case _ExcursionCreationMode.singleAttraction:
-        _clearSingleAttractionModeDraft();
+      case _ExcursionCreationMode.singlePlace:
+        _clearSinglePlaceModeDraft();
       case _ExcursionCreationMode.combinedRoute:
         _clearCombinedRouteModeDraft();
     }
   }
 
-  void _clearSingleAttractionModeDraft() {
+  void _clearSinglePlaceModeDraft() {
     _selectedLandmarkId = null;
     _landmarkNameCtrl.clear();
     _departureCityId = null;
     _cityNameCtrl.clear();
-    _selectedAttractionCoverFileId = null;
-    _selectedAttractionCoverImageUrl = null;
+    _selectedPlaceCoverFileId = null;
+    _selectedPlaceCoverImageUrl = null;
     _productTranslations = const {};
     _selectedCategorySlug = 'adventure';
     _landmarkErrorText = null;
@@ -1257,7 +1256,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     _itineraryErrorText = null;
   }
 
-  void _replaceCustomCoverWithAttractionCover() {
+  void _replaceCustomCoverWithPlaceCover() {
     _coverUploadGeneration += 1;
     _coverPreviewBytes = null;
     _coverFileId = null;
@@ -1271,8 +1270,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     if (customCover.isNotEmpty) {
       return customCover;
     }
-    final attractionCover = (_selectedAttractionCoverFileId ?? '').trim();
-    return attractionCover.isEmpty ? null : attractionCover;
+    final placeCover = (_selectedPlaceCoverFileId ?? '').trim();
+    return placeCover.isEmpty ? null : placeCover;
   }
 
   String? get _offerCoverFileId {
@@ -1280,18 +1279,18 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     if (customCover.isNotEmpty) {
       return customCover;
     }
-    if (!_hasSelectedAttraction) {
+    if (!_hasSelectedPlace) {
       return _effectiveCoverFileId;
     }
     return null;
   }
 
   String? get _productCoverFileId {
-    final attractionCover = (_selectedAttractionCoverFileId ?? '').trim();
-    if (attractionCover.isNotEmpty) {
-      return attractionCover;
+    final placeCover = (_selectedPlaceCoverFileId ?? '').trim();
+    if (placeCover.isNotEmpty) {
+      return placeCover;
     }
-    if (!_hasSelectedAttraction) {
+    if (!_hasSelectedPlace) {
       final customCover = (_coverFileId ?? '').trim();
       return customCover.isEmpty ? null : customCover;
     }
@@ -1299,18 +1298,18 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   }
 
   String? get _productCoverImageUrl {
-    if (!_hasSelectedAttraction) return null;
-    final attractionImage = (_selectedAttractionCoverImageUrl ?? '').trim();
-    return attractionImage.isEmpty ? null : attractionImage;
+    if (!_hasSelectedPlace) return null;
+    final placeImage = (_selectedPlaceCoverImageUrl ?? '').trim();
+    return placeImage.isEmpty ? null : placeImage;
   }
 
   String? get _effectiveCoverImageUrl {
     if (_coverPreviewBytes?.isNotEmpty ?? false) {
       return null;
     }
-    final attractionImage = (_selectedAttractionCoverImageUrl ?? '').trim();
-    if (attractionImage.isNotEmpty) {
-      return attractionImage;
+    final placeImage = (_selectedPlaceCoverImageUrl ?? '').trim();
+    if (placeImage.isNotEmpty) {
+      return placeImage;
     }
     final existingImage = (_existingCoverImageUrl ?? '').trim();
     return existingImage.isEmpty ? null : existingImage;
@@ -1721,8 +1720,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           countryCode: _selectedCountryCode ?? '',
           cityId: _departureCityId,
           cityName: _cityNameCtrl.text.trim(),
-          coverFileId: _selectedAttractionCoverFileId,
-          coverImageUrl: _selectedAttractionCoverImageUrl,
+          coverFileId: _selectedPlaceCoverFileId,
+          coverImageUrl: _selectedPlaceCoverImageUrl,
           translations: _locationTranslationsForPicker(),
           categorySlug: _selectedCategorySlug,
         ),
@@ -1742,14 +1741,13 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       } else {
         _cityNameCtrl.clear();
       }
-      _selectedAttractionCoverFileId = (result.coverFileId ?? '').trim().isEmpty
+      _selectedPlaceCoverFileId = (result.coverFileId ?? '').trim().isEmpty
           ? null
           : result.coverFileId!.trim();
-      _selectedAttractionCoverImageUrl =
-          (result.coverImageUrl ?? '').trim().isEmpty
+      _selectedPlaceCoverImageUrl = (result.coverImageUrl ?? '').trim().isEmpty
           ? null
           : result.coverImageUrl!.trim();
-      _replaceCustomCoverWithAttractionCover();
+      _replaceCustomCoverWithPlaceCover();
       _productTranslations = _copyLocationTranslations(result.translations);
       if (result.categorySlug.trim().isNotEmpty) {
         _selectedCategorySlug = result.categorySlug.trim();
@@ -1774,9 +1772,9 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       builder: (context) => _AddItinerarySlotSheet(
         l10n: l10n,
         initialItem: item,
-        enableAttractionSelection: isCombinedRoute,
+        enablePlaceSelection: isCombinedRoute,
         countryCode: _selectedCountryCode,
-        reservedAttractionIds: _reservedItineraryAttractionIds(item),
+        reservedPlaceIds: _reservedItineraryPlaceIds(item),
       ),
     );
     if (result == null) return;
@@ -1800,10 +1798,10 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     _scheduleAutosave();
   }
 
-  Set<String> _reservedItineraryAttractionIds(_ExcursionItineraryDraft? item) {
+  Set<String> _reservedItineraryPlaceIds(_ExcursionItineraryDraft? item) {
     return _itinerary
         .where((draft) => !identical(draft, item))
-        .map((draft) => (draft.attractionId ?? '').trim())
+        .map((draft) => (draft.placeId ?? '').trim())
         .where((id) => id.isNotEmpty)
         .toSet();
   }
@@ -2115,12 +2113,12 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           selectedMode: _creationMode,
           onChanged: _selectCreationMode,
         ),
-        if (_creationMode == _ExcursionCreationMode.singleAttraction) ...[
+        if (_creationMode == _ExcursionCreationMode.singlePlace) ...[
           const SizedBox(height: 12),
           _LandmarkSelectionCard(
             landmarkName: _landmarkNameCtrl.text,
             cityName: _cityNameCtrl.text,
-            hasSelection: _hasSelectedAttraction,
+            hasSelection: _hasSelectedPlace,
             errorText: _landmarkErrorText,
             onSelectLocation: _openLocationSelector,
           ),
@@ -2307,7 +2305,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   }
 }
 
-enum _ExcursionCreationMode { singleAttraction, combinedRoute }
+enum _ExcursionCreationMode { singlePlace, combinedRoute }
 
 enum _ExcursionDurationUnit { minutes, hours, days }
 
@@ -2482,8 +2480,8 @@ class _ExcursionItineraryDraft {
     required this.description,
     this.countryCode,
     this.durationMinutes,
-    this.attractionId,
-    this.attractionName,
+    this.placeId,
+    this.placeName,
     this.latitude,
     this.longitude,
     this.travelFromPreviousMinutes,
@@ -2492,8 +2490,8 @@ class _ExcursionItineraryDraft {
   final int startOffsetMinutes;
   final String? countryCode;
   final int? durationMinutes;
-  final String? attractionId;
-  final String? attractionName;
+  final String? placeId;
+  final String? placeName;
   final double? latitude;
   final double? longitude;
   final int? travelFromPreviousMinutes;
@@ -3766,10 +3764,10 @@ class _CreationModeSelector extends StatelessWidget {
       runSpacing: 8,
       children: [
         _CreationModeChip(
-          label: l10n.createExcursionSingleAttractionMode,
+          label: l10n.createExcursionSinglePlaceMode,
           icon: Icons.place_rounded,
-          selected: selectedMode == _ExcursionCreationMode.singleAttraction,
-          onTap: () => onChanged(_ExcursionCreationMode.singleAttraction),
+          selected: selectedMode == _ExcursionCreationMode.singlePlace,
+          onTap: () => onChanged(_ExcursionCreationMode.singlePlace),
         ),
         _CreationModeChip(
           label: l10n.createExcursionCombinedRouteMode,
@@ -3862,10 +3860,10 @@ class _LandmarkSelectionCard extends StatelessWidget {
     final subtitle = hasSelection
         ? (displayCity.isNotEmpty
               ? displayCity
-              : l10n.createExcursionAttractionCatalogSource)
+              : l10n.createExcursionPlaceCatalogSource)
         : onSelectLocation == null
         ? l10n.createExcursionSelectCountryFirst
-        : l10n.createExcursionAttractionCatalogHint;
+        : l10n.createExcursionPlaceCatalogHint;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -3979,7 +3977,7 @@ class _LandmarkSelectionCard extends StatelessWidget {
                           child: Text(
                             hasSelection
                                 ? l10n.change
-                                : l10n.excursionSelectLocationAttractionSection,
+                                : l10n.excursionSelectLocationPlaceSection,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
@@ -4794,16 +4792,16 @@ class _AddItinerarySlotSheet extends StatefulWidget {
   const _AddItinerarySlotSheet({
     required this.l10n,
     this.initialItem,
-    this.enableAttractionSelection = false,
+    this.enablePlaceSelection = false,
     this.countryCode,
-    this.reservedAttractionIds = const {},
+    this.reservedPlaceIds = const {},
   });
 
   final AppLocalizations l10n;
   final _ExcursionItineraryDraft? initialItem;
-  final bool enableAttractionSelection;
+  final bool enablePlaceSelection;
   final String? countryCode;
-  final Set<String> reservedAttractionIds;
+  final Set<String> reservedPlaceIds;
 
   @override
   State<_AddItinerarySlotSheet> createState() => _AddItinerarySlotSheetState();
@@ -4814,13 +4812,13 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
   final _durationCtrl = TextEditingController(text: '60');
   final _titleCtrl = TextEditingController();
   final _descriptionCtrl = TextEditingController();
-  String? _selectedAttractionId;
-  String? _selectedAttractionName;
+  String? _selectedPlaceId;
+  String? _selectedPlaceName;
   String? _selectedCountryCode;
   double? _selectedLatitude;
   double? _selectedLongitude;
   String? _errorText;
-  String? _attractionErrorText;
+  String? _placeErrorText;
   String? _offsetErrorText;
   String? _titleErrorText;
   String? _descriptionErrorText;
@@ -4836,13 +4834,13 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
     _offsetCtrl.text = initialItem.startOffsetMinutes.toString();
     _durationCtrl.text = initialItem.durationMinutes?.toString() ?? '';
     _titleCtrl.text =
-        widget.enableAttractionSelection &&
-            (initialItem.attractionName ?? '').trim().isNotEmpty
-        ? initialItem.attractionName!.trim()
+        widget.enablePlaceSelection &&
+            (initialItem.placeName ?? '').trim().isNotEmpty
+        ? initialItem.placeName!.trim()
         : initialItem.title;
     _descriptionCtrl.text = initialItem.description;
-    _selectedAttractionId = initialItem.attractionId;
-    _selectedAttractionName = initialItem.attractionName;
+    _selectedPlaceId = initialItem.placeId;
+    _selectedPlaceName = initialItem.placeName;
     _selectedCountryCode =
         (initialItem.countryCode ?? _selectedCountryCode ?? '')
             .trim()
@@ -4860,11 +4858,11 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
     super.dispose();
   }
 
-  Future<void> _openStopAttractionSelector() async {
+  Future<void> _openStopPlaceSelector() async {
     final countryCode = (_selectedCountryCode ?? '').trim().toUpperCase();
 
     FocusScope.of(context).unfocus();
-    final selectedId = (_selectedAttractionId ?? '').trim();
+    final selectedId = (_selectedPlaceId ?? '').trim();
     final result = await context.push<ExcursionLocationSelection>(
       '/excursions/create/location',
       extra: ExcursionLocationPickerArgs(
@@ -4873,7 +4871,7 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
             ? null
             : ExcursionLocationSelection(
                 id: selectedId,
-                name: (_selectedAttractionName ?? '').trim(),
+                name: (_selectedPlaceName ?? '').trim(),
                 countryCode: countryCode,
                 latitude: _selectedLatitude,
                 longitude: _selectedLongitude,
@@ -4882,31 +4880,31 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
     );
     if (!mounted || result == null) return;
 
-    final attractionId = result.id.trim();
-    if (_isReservedAttraction(attractionId)) {
+    final placeId = result.id.trim();
+    if (_isReservedPlace(placeId)) {
       setState(() {
-        _attractionErrorText =
+        _placeErrorText =
             widget.l10n.createExcursionDuplicateRouteStopValidation;
       });
       return;
     }
 
     setState(() {
-      _selectedAttractionId = attractionId.isEmpty ? null : attractionId;
-      _selectedAttractionName = result.name.trim();
+      _selectedPlaceId = placeId.isEmpty ? null : placeId;
+      _selectedPlaceName = result.name.trim();
       _selectedCountryCode = result.countryCode.trim().toUpperCase();
       _selectedLatitude = result.latitude;
       _selectedLongitude = result.longitude;
       _titleCtrl.text = result.name.trim();
-      _attractionErrorText = null;
+      _placeErrorText = null;
       _errorText = null;
     });
   }
 
-  bool _isReservedAttraction(String attractionId) {
-    final normalized = attractionId.trim();
+  bool _isReservedPlace(String placeId) {
+    final normalized = placeId.trim();
     return normalized.isNotEmpty &&
-        widget.reservedAttractionIds.contains(normalized);
+        widget.reservedPlaceIds.contains(normalized);
   }
 
   void _submit() {
@@ -4918,26 +4916,23 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
       durationMinutes: duration,
       title: _titleCtrl.text.trim(),
       description: _descriptionCtrl.text.trim(),
-      attractionId: _selectedAttractionId,
-      attractionName: _selectedAttractionName,
+      placeId: _selectedPlaceId,
+      placeName: _selectedPlaceName,
       latitude: _selectedLatitude,
       longitude: _selectedLongitude,
       travelFromPreviousMinutes: widget.initialItem?.travelFromPreviousMinutes,
     );
     String? formErrorText;
-    String? attractionErrorText;
+    String? placeErrorText;
     String? offsetErrorText;
     String? titleErrorText;
     String? descriptionErrorText;
     final isCompleteDraft = _isCompleteItineraryDraft(draft);
-    if (widget.enableAttractionSelection &&
-        (draft.attractionId ?? '').trim().isEmpty) {
-      attractionErrorText = widget.l10n.createExcursionLandmarkValidation;
+    if (widget.enablePlaceSelection && (draft.placeId ?? '').trim().isEmpty) {
+      placeErrorText = widget.l10n.createExcursionLandmarkValidation;
     }
-    if (widget.enableAttractionSelection &&
-        _isReservedAttraction(draft.attractionId ?? '')) {
-      attractionErrorText =
-          widget.l10n.createExcursionDuplicateRouteStopValidation;
+    if (widget.enablePlaceSelection && _isReservedPlace(draft.placeId ?? '')) {
+      placeErrorText = widget.l10n.createExcursionDuplicateRouteStopValidation;
     }
     if (offset == null || offset < 0) {
       offsetErrorText = widget.l10n.createExcursionStartOffsetValidation;
@@ -4949,14 +4944,14 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
       descriptionErrorText = widget.l10n
           .createExcursionItineraryDescriptionMinLengthValidation(5);
     }
-    if (attractionErrorText != null ||
+    if (placeErrorText != null ||
         offsetErrorText != null ||
         titleErrorText != null ||
         descriptionErrorText != null) {
       formErrorText = null;
       setState(() {
         _errorText = formErrorText;
-        _attractionErrorText = attractionErrorText;
+        _placeErrorText = placeErrorText;
         _offsetErrorText = offsetErrorText;
         _titleErrorText = titleErrorText;
         _descriptionErrorText = descriptionErrorText;
@@ -4990,15 +4985,13 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
                         : widget.l10n.createExcursionEditTimeSlot,
                   ),
                   const SizedBox(height: 14),
-                  if (widget.enableAttractionSelection) ...[
+                  if (widget.enablePlaceSelection) ...[
                     _LandmarkSelectionCard(
-                      landmarkName: _selectedAttractionName ?? '',
+                      landmarkName: _selectedPlaceName ?? '',
                       cityName: '',
-                      hasSelection: (_selectedAttractionId ?? '')
-                          .trim()
-                          .isNotEmpty,
-                      errorText: _attractionErrorText,
-                      onSelectLocation: _openStopAttractionSelector,
+                      hasSelection: (_selectedPlaceId ?? '').trim().isNotEmpty,
+                      errorText: _placeErrorText,
+                      onSelectLocation: _openStopPlaceSelector,
                     ),
                     const SizedBox(height: 12),
                   ],
@@ -5038,8 +5031,8 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
                     hint: widget.l10n.createExcursionItineraryTitleHint,
                     icon: Icons.route_outlined,
                     readOnly:
-                        widget.enableAttractionSelection &&
-                        (_selectedAttractionId ?? '').trim().isNotEmpty,
+                        widget.enablePlaceSelection &&
+                        (_selectedPlaceId ?? '').trim().isNotEmpty,
                     errorText: _titleErrorText,
                     onChanged: (_) {
                       if (_titleErrorText != null) {

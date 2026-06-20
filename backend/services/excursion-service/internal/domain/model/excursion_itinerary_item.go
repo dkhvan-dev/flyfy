@@ -23,8 +23,8 @@ type ExcursionItineraryItem struct {
 	SortOrder                 int
 	StartOffsetMinutes        int
 	DurationMinutes           *int
-	AttractionID              *uuid.UUID
-	AttractionName            *string
+	PlaceID                   *uuid.UUID
+	PlaceName                 *string
 	Latitude                  *float64
 	Longitude                 *float64
 	TravelFromPreviousMinutes *int
@@ -47,8 +47,8 @@ type NewExcursionItineraryItemParams struct {
 	SortOrder                 int
 	StartOffsetMinutes        int
 	DurationMinutes           *int
-	AttractionID              *uuid.UUID
-	AttractionName            *string
+	PlaceID                   *uuid.UUID
+	PlaceName                 *string
 	Latitude                  *float64
 	Longitude                 *float64
 	TravelFromPreviousMinutes *int
@@ -65,8 +65,8 @@ func NewExcursionItineraryItem(params NewExcursionItineraryItemParams) (*Excursi
 		SortOrder:                 params.SortOrder,
 		StartOffsetMinutes:        params.StartOffsetMinutes,
 		DurationMinutes:           copyOptionalInt(params.DurationMinutes),
-		AttractionID:              normalizeOptionalUUID(params.AttractionID),
-		AttractionName:            NormalizeOptionalString(params.AttractionName),
+		PlaceID:                   normalizeOptionalUUID(params.PlaceID),
+		PlaceName:                 NormalizeOptionalString(params.PlaceName),
 		Latitude:                  copyOptionalFloat64(params.Latitude),
 		Longitude:                 copyOptionalFloat64(params.Longitude),
 		TravelFromPreviousMinutes: copyOptionalInt(params.TravelFromPreviousMinutes),

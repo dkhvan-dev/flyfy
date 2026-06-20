@@ -258,7 +258,7 @@ func readCommunityImageFromForm(r *http.Request, field string) (*app.CommunityIm
 	if len(headers) > 1 {
 		return nil, app.ErrInvalidInput
 	}
-	image, err := readAttractionImage(headers[0])
+	image, err := readPlaceImage(headers[0])
 	if err != nil {
 		return nil, err
 	}

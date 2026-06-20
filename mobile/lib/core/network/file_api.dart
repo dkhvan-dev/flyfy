@@ -118,7 +118,7 @@ class FileApi {
     );
   }
 
-  Future<FileUploadRequestVm> createAttractionReviewMediaUpload({
+  Future<FileUploadRequestVm> createPlaceReviewMediaUpload({
     required String originalName,
     required String contentType,
     required int sizeBytes,
@@ -127,12 +127,12 @@ class FileApi {
       originalName: originalName,
       contentType: contentType,
       sizeBytes: sizeBytes,
-      purpose: 'ATTRACTION_REVIEW_MEDIA',
+      purpose: 'PLACE_REVIEW_MEDIA',
       visibility: 'PUBLIC',
     );
   }
 
-  Future<FileUploadRequestVm> createAttractionMediaUpload({
+  Future<FileUploadRequestVm> createPlaceMediaUpload({
     required String originalName,
     required String contentType,
     required int sizeBytes,
@@ -141,7 +141,7 @@ class FileApi {
       originalName: originalName,
       contentType: contentType,
       sizeBytes: sizeBytes,
-      purpose: 'ATTRACTION_MEDIA',
+      purpose: 'PLACE_MEDIA',
       visibility: 'PUBLIC',
     );
   }

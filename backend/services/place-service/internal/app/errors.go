@@ -1,0 +1,30 @@
+package app
+
+import "errors"
+
+var (
+	ErrPlaceNotFound       = errors.New("place not found")
+	ErrReviewNotFound      = errors.New("review not found")
+	ErrAccessDenied        = errors.New("you do not have access to this resource")
+	ErrUnauthenticated     = errors.New("missing authenticated subject")
+	ErrInvalidPlaceID      = errors.New("invalid place id")
+	ErrInvalidReviewID     = errors.New("invalid review id")
+	ErrInvalidTitle        = errors.New("title is required and must be 200 characters or fewer")
+	ErrInvalidLocale       = errors.New("locale must be one of: en, ru, kk")
+	ErrInvalidCategory     = errors.New("invalid place category")
+	ErrInvalidStatus       = errors.New("invalid place status")
+	ErrInvalidCountryCode  = errors.New("country code must be an ISO-2 reference country code")
+	ErrInvalidCityID       = errors.New("city id must be a reference city id")
+	ErrInvalidRating       = errors.New("rating must be between 1.0 and 5.0")
+	ErrInvalidRatingSource = errors.New("invalid rating source snapshot")
+	ErrInvalidMediaType    = errors.New("media type must be PHOTO or VIDEO")
+	ErrInvalidDuration     = errors.New("invalid duration: value and unit must both be set or both be empty")
+	ErrInvalidPrice        = errors.New("invalid price: amount and currency must both be set or both be empty")
+	ErrInvalidLocation     = errors.New("invalid location: latitude and longitude must both be set and source URL must be HTTPS")
+	ErrInvalidVisitInfo    = errors.New("invalid visit info")
+	ErrReviewConflict      = errors.New("you have already reviewed this place")
+	ErrCannotReviewOwn     = errors.New("you cannot review your own place")
+	ErrPlaceDeleted        = errors.New("place is deleted")
+	ErrPlaceNotPublished   = errors.New("place is not published")
+	ErrUserNotFound        = errors.New("user not found")
+)

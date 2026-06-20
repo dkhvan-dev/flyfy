@@ -25,7 +25,7 @@
               {{if .Excursion}}{{$title = excursionTitle $.Locale .Excursion .TargetTitle}}{{end}}
               {{if .ChatMessage}}{{$title = chatMessagePreview $.Locale .ChatMessage}}{{end}}
               {{$subtitle := .TargetSubtitle}}
-              {{if .Excursion}}{{$subtitle = excursionAttractions $.Locale .Excursion}}{{end}}
+              {{if .Excursion}}{{$subtitle = excursionPlaces $.Locale .Excursion}}{{end}}
               {{if .GuideApplication}}{{$subtitle = guideApplicationType $.Locale .GuideApplication}}{{end}}
               {{if .ChatMessage}}{{$subtitle = chatMessageSignals $.Locale .ChatMessage}}{{end}}
               {{$location := ""}}

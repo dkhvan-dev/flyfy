@@ -17,7 +17,6 @@ import (
 	"kz/inflap/backend/pkg/switches"
 	activityadapter "kz/inflap/backend/services/admin-panel/internal/adapter/activity"
 	antifraudadapter "kz/inflap/backend/services/admin-panel/internal/adapter/antifraud"
-	attractionadapter "kz/inflap/backend/services/admin-panel/internal/adapter/attraction"
 	chatadapter "kz/inflap/backend/services/admin-panel/internal/adapter/chat"
 	"kz/inflap/backend/services/admin-panel/internal/adapter/excursion"
 	featureflagadapter "kz/inflap/backend/services/admin-panel/internal/adapter/featureflag"
@@ -25,6 +24,7 @@ import (
 	guideadapter "kz/inflap/backend/services/admin-panel/internal/adapter/guide"
 	httpadapter "kz/inflap/backend/services/admin-panel/internal/adapter/http"
 	notificationadapter "kz/inflap/backend/services/admin-panel/internal/adapter/notification"
+	placeadapter "kz/inflap/backend/services/admin-panel/internal/adapter/place"
 	postadapter "kz/inflap/backend/services/admin-panel/internal/adapter/post"
 	"kz/inflap/backend/services/admin-panel/internal/adapter/repository"
 	techbreakadapter "kz/inflap/backend/services/admin-panel/internal/adapter/techbreak"
@@ -110,9 +110,9 @@ func main() {
 		cfg.AntiFraud.Timeout,
 		cfg.Security.TrustedInternalToken,
 	)
-	attractionClient := attractionadapter.NewClient(
-		cfg.Attraction.BaseURL,
-		cfg.Attraction.Timeout,
+	placeClient := placeadapter.NewClient(
+		cfg.Place.BaseURL,
+		cfg.Place.Timeout,
 		cfg.Security.TrustedInternalToken,
 	)
 	fileManagerClient := filemanageradapter.NewClient(
@@ -170,15 +170,15 @@ func main() {
 		},
 	)
 	fraudUC := app.NewFraudUseCase(antiFraudClient, auditRepo)
-	attractionUC := app.NewAttractionContentUseCase(attractionClient, fileManagerClient, auditRepo, app.AttractionContentConfig{
-		MaxImageBytes: cfg.FileManager.MaxAttractionImageBytes,
+	placeUC := app.NewPlaceContentUseCase(placeClient, fileManagerClient, auditRepo, app.PlaceContentConfig{
+		MaxImageBytes: cfg.FileManager.MaxPlaceImageBytes,
 	})
 	communityAdminUC := app.NewCommunityAdminUseCase(
 		postClient,
 		auditRepo,
 		app.WithCommunityAdminFileUploads(
 			fileManagerClient,
-			cfg.FileManager.MaxAttractionImageBytes,
+			cfg.FileManager.MaxPlaceImageBytes,
 		),
 	)
 	operationsUC := app.NewOperationsUseCase(featureFlagClient, techBreakClient, auditRepo)
@@ -196,7 +196,7 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to initialize renderer")
 	}
-	adminServer := httpadapter.NewServer(cfg, renderer, authUC, staffUC, moderationUC, userModerationUC, auditUC, attractionUC, fraudUC)
+	adminServer := httpadapter.NewServer(cfg, renderer, authUC, staffUC, moderationUC, userModerationUC, auditUC, placeUC, fraudUC)
 	adminServer.SetReadinessCheck(pool.Ping)
 	adminServer.SetTrustAppealUseCase(trustAppealUC)
 	adminServer.SetCommunityAdminUseCase(communityAdminUC)

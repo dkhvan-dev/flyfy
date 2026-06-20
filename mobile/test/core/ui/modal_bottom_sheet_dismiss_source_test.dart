@@ -41,7 +41,7 @@ void main() {
     for (final path in [
       'lib/screens/guides/guides_screen.dart',
       'lib/screens/excursions/excursions_screen.dart',
-      'lib/screens/attractions/attractions_filter_sheet.dart',
+      'lib/screens/places/places_filter_sheet.dart',
     ]) {
       expect(
         File(path).readAsStringSync(),

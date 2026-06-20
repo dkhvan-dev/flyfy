@@ -59,7 +59,7 @@ type ExcursionUseCase struct {
 	fileManager             port.ExcursionCoverFileManager
 	translator              port.ExcursionTranslator
 	userProfiles            port.UserProfileResolver
-	attractionRatingUpdater port.AttractionRatingUpdater
+	placeRatingUpdater      port.PlaceRatingUpdater
 	chatGateway             port.ExcursionChatGateway
 	notificationGateway     port.ExcursionNotificationGateway
 	fraud                   port.FraudEvaluator
@@ -76,7 +76,7 @@ const (
 	excursionAttendanceQRLeadTime               = time.Hour
 	excursionScheduleAutoCancelReasonNoBookings = "NO_BOOKINGS_BEFORE_START_2H"
 	excursionScheduleAutoCompleteReasonEnded    = "SLOT_END_REACHED"
-	attractionRatingSourceExcursionReviews      = "excursion_reviews"
+	placeRatingSourceExcursionReviews           = "excursion_reviews"
 
 	excursionBookingRefundPolicyFull24H    = "FULL_REFUND_BEFORE_24H"
 	excursionBookingRefundPolicyPartial12H = "PARTIAL_REFUND_BEFORE_12H"
@@ -134,8 +134,8 @@ func (u *ExcursionUseCase) WithUserProfileResolver(resolver port.UserProfileReso
 	return u
 }
 
-func (u *ExcursionUseCase) WithAttractionRatingUpdater(updater port.AttractionRatingUpdater) *ExcursionUseCase {
-	u.attractionRatingUpdater = updater
+func (u *ExcursionUseCase) WithPlaceRatingUpdater(updater port.PlaceRatingUpdater) *ExcursionUseCase {
+	u.placeRatingUpdater = updater
 	return u
 }
 
@@ -169,8 +169,8 @@ func (u *ExcursionUseCase) WithAttendanceQRConfig(secret string, ttl time.Durati
 type ExcursionItineraryItemInput struct {
 	StartOffsetMinutes        int
 	DurationMinutes           *int
-	AttractionID              *uuid.UUID
-	AttractionName            *string
+	PlaceID                   *uuid.UUID
+	PlaceName                 *string
 	Latitude                  *float64
 	Longitude                 *float64
 	TravelFromPreviousMinutes *int
@@ -428,7 +428,7 @@ func (u *ExcursionUseCase) CreateExcursion(ctx context.Context, input CreateExcu
 	if err = u.validateCoverFiles(ctx, input.CoverFileID, input.ProductCoverFileID); err != nil {
 		return nil, err
 	}
-	marketingCopy := attractionBasedExcursionCopy(landmarkName)
+	marketingCopy := placeBasedExcursionCopy(landmarkName)
 	if landmarkID == nil {
 		marketingCopy = combinedRouteMarketingCopy(input)
 	}
@@ -552,7 +552,7 @@ func (u *ExcursionUseCase) UpdateExcursion(ctx context.Context, input UpdateExcu
 	inputLandmarkID := normalizeUUIDPtr(input.LandmarkID)
 	effectiveLandmarkID := inputLandmarkID
 	effectiveLandmarkName := input.LandmarkName
-	if input.LandmarkID == nil && !hasItineraryAttractionStops(input.Itinerary) {
+	if input.LandmarkID == nil && !hasItineraryPlaceStops(input.Itinerary) {
 		effectiveLandmarkID = normalizeUUIDPtr(item.LandmarkID)
 		effectiveLandmarkName = item.LandmarkName
 	}
@@ -564,7 +564,7 @@ func (u *ExcursionUseCase) UpdateExcursion(ctx context.Context, input UpdateExcu
 	if err = validateCombinedRouteInput(effectiveLandmarkID, input.Itinerary); err != nil {
 		return nil, err
 	}
-	marketingCopy := attractionBasedExcursionCopy(effectiveLandmarkName)
+	marketingCopy := placeBasedExcursionCopy(effectiveLandmarkName)
 	if effectiveLandmarkID == nil || *effectiveLandmarkID == uuid.Nil {
 		marketingCopy = combinedRouteMarketingCopy(CreateExcursionInput{Itinerary: input.Itinerary})
 	}
@@ -2605,7 +2605,7 @@ func (u *ExcursionUseCase) CreateExcursionReview(ctx context.Context, input Crea
 		return nil, fmt.Errorf("create excursion review: %w", err)
 	}
 	u.enrichExcursionReviewAuthors(ctx, []*model.ExcursionReview{review})
-	u.applyAttractionRatingSnapshot(ctx, review)
+	u.applyPlaceRatingSnapshot(ctx, review)
 	return review, nil
 }
 
@@ -2673,7 +2673,7 @@ func (u *ExcursionUseCase) SaveBookingReviews(ctx context.Context, input SaveBoo
 	if result.GuideReview != nil {
 		result.GuideReview.Author.UserID = result.GuideReview.TouristUserID
 	}
-	u.applyAttractionRatingSnapshot(ctx, refreshLandmarkReview)
+	u.applyPlaceRatingSnapshot(ctx, refreshLandmarkReview)
 	return result, nil
 }
 
@@ -2768,19 +2768,19 @@ func isExcursionBookingReviewable(booking *model.ExcursionBooking) bool {
 		!booking.ScheduledFor.After(time.Now().UTC())
 }
 
-func (u *ExcursionUseCase) applyAttractionRatingSnapshot(ctx context.Context, review *model.ExcursionReview) {
-	if review == nil || review.LandmarkID == nil || *review.LandmarkID == uuid.Nil || u.attractionRatingUpdater == nil {
+func (u *ExcursionUseCase) applyPlaceRatingSnapshot(ctx context.Context, review *model.ExcursionReview) {
+	if review == nil || review.LandmarkID == nil || *review.LandmarkID == uuid.Nil || u.placeRatingUpdater == nil {
 		return
 	}
 	ratingAvg, reviewsCount, err := u.repo.CalculateLandmarkReviewStats(ctx, *review.LandmarkID)
 	if err != nil {
 		return
 	}
-	_ = u.attractionRatingUpdater.ApplyAttractionRatingSnapshot(ctx, port.AttractionRatingSnapshot{
-		AttractionID: *review.LandmarkID,
-		Source:       attractionRatingSourceExcursionReviews,
-		RatingAvg:    ratingAvg,
-		ReviewCount:  reviewsCount,
+	_ = u.placeRatingUpdater.ApplyPlaceRatingSnapshot(ctx, port.PlaceRatingSnapshot{
+		PlaceID:     *review.LandmarkID,
+		Source:      placeRatingSourceExcursionReviews,
+		RatingAvg:   ratingAvg,
+		ReviewCount: reviewsCount,
 	})
 }
 
@@ -3398,8 +3398,8 @@ func buildRelations(
 			SortOrder:                 sortOrder,
 			StartOffsetMinutes:        input.StartOffsetMinutes,
 			DurationMinutes:           input.DurationMinutes,
-			AttractionID:              input.AttractionID,
-			AttractionName:            input.AttractionName,
+			PlaceID:                   input.PlaceID,
+			PlaceName:                 input.PlaceName,
 			Latitude:                  input.Latitude,
 			Longitude:                 input.Longitude,
 			TravelFromPreviousMinutes: input.TravelFromPreviousMinutes,
@@ -3487,13 +3487,13 @@ func validateCombinedRouteInput(landmarkID *uuid.UUID, itinerary []ExcursionItin
 	}
 	seen := make(map[uuid.UUID]struct{}, len(itinerary))
 	for _, item := range itinerary {
-		if item.AttractionID == nil || *item.AttractionID == uuid.Nil {
+		if item.PlaceID == nil || *item.PlaceID == uuid.Nil {
 			continue
 		}
-		if _, ok := seen[*item.AttractionID]; ok {
+		if _, ok := seen[*item.PlaceID]; ok {
 			return ErrCombinedExcursionRouteDuplicateStop
 		}
-		seen[*item.AttractionID] = struct{}{}
+		seen[*item.PlaceID] = struct{}{}
 	}
 	if len(seen) < 2 {
 		return ErrCombinedExcursionRouteRequiresTwoStops
@@ -3504,9 +3504,9 @@ func validateCombinedRouteInput(landmarkID *uuid.UUID, itinerary []ExcursionItin
 	return nil
 }
 
-func hasItineraryAttractionStops(itinerary []ExcursionItineraryItemInput) bool {
+func hasItineraryPlaceStops(itinerary []ExcursionItineraryItemInput) bool {
 	for _, item := range itinerary {
-		if item.AttractionID != nil && *item.AttractionID != uuid.Nil {
+		if item.PlaceID != nil && *item.PlaceID != uuid.Nil {
 			return true
 		}
 	}
@@ -3586,7 +3586,7 @@ func normalizeIncludedItems(values []ExcursionIncludedItemInput) ([]model.Excurs
 
 type excursionMarketingCopy = model.ExcursionLocalizedCopy
 
-func attractionBasedExcursionCopy(landmarkName *string) model.ExcursionLocalizedCopy {
+func placeBasedExcursionCopy(landmarkName *string) model.ExcursionLocalizedCopy {
 	name := strings.TrimSpace(optionalStringValue(landmarkName))
 	if name == "" {
 		name = "Inflap excursion"
@@ -3602,10 +3602,10 @@ func combinedRouteMarketingCopy(input CreateExcursionInput) excursionMarketingCo
 	names := make([]string, 0, len(input.Itinerary))
 	seen := make(map[string]struct{}, len(input.Itinerary))
 	for _, item := range input.Itinerary {
-		if item.AttractionName == nil {
+		if item.PlaceName == nil {
 			continue
 		}
-		name := strings.TrimSpace(*item.AttractionName)
+		name := strings.TrimSpace(*item.PlaceName)
 		key := strings.ToLower(name)
 		if key == "" {
 			continue

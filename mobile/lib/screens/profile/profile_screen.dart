@@ -3104,7 +3104,7 @@ class _ProfileActivityReviewCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context).toLanguageTag();
     final authorName = author.resolvedDisplayName.isEmpty
-        ? l10n.attractionTravelerFallback
+        ? l10n.placeTravelerFallback
         : author.resolvedDisplayName;
     final avatarUrl = author.resolvedAvatarFileId.isEmpty
         ? null
@@ -3211,7 +3211,7 @@ class _ProfileGuideReviewCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context).toLanguageTag();
     final authorName = review.author.resolvedDisplayName.isEmpty
-        ? l10n.attractionTravelerFallback
+        ? l10n.placeTravelerFallback
         : review.author.resolvedDisplayName;
     final avatarUrl = review.author.resolvedAvatarFileId.isEmpty
         ? null
@@ -3319,7 +3319,7 @@ class _ProfileDirectGuideReviewCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context).toLanguageTag();
     final authorName = review.author.resolvedDisplayName.isEmpty
-        ? l10n.attractionTravelerFallback
+        ? l10n.placeTravelerFallback
         : review.author.resolvedDisplayName;
     final avatarUrl = review.author.resolvedAvatarFileId.isEmpty
         ? null
@@ -3668,9 +3668,9 @@ String _reviewInitial(String value) {
 
 extension _ProfileExcursionReviewTitle on ExcursionReviewVm {
   String get titleForProfileCard {
-    final attraction = (landmarkName ?? '').trim();
-    if (attraction.isNotEmpty) {
-      return attraction;
+    final place = (landmarkName ?? '').trim();
+    if (place.isNotEmpty) {
+      return place;
     }
     return guideDisplayName.trim().isEmpty ? sourceLabel : guideDisplayName;
   }

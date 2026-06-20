@@ -64,8 +64,9 @@ type QueueViewData struct {
 	HostHeaderKey        string
 	LocationHeaderKey    string
 	SearchPlaceholderKey string
-	Countries            []AttractionOptionView
-	Cities               []AttractionOptionView
+	Countries            []PlaceOptionView
+	Cities               []PlaceOptionView
+	SignalOptions        []QueueSignalOptionView
 }
 
 type QueueFilterViewData struct {
@@ -170,16 +171,16 @@ type FraudBlockView struct {
 	ReviewBaseURL string
 }
 
-type AttractionListViewData struct {
-	Items      []model.AdminAttraction
-	Filters    AttractionFilterViewData
+type PlaceListViewData struct {
+	Items      []model.AdminPlace
+	Filters    PlaceFilterViewData
 	Total      int
-	Pagination AttractionPaginationViewData
-	Countries  []AttractionOptionView
-	Cities     []AttractionOptionView
+	Pagination PlacePaginationViewData
+	Countries  []PlaceOptionView
+	Cities     []PlaceOptionView
 }
 
-type AttractionFilterViewData struct {
+type PlaceFilterViewData struct {
 	Search      string
 	Category    string
 	Status      string
@@ -190,7 +191,7 @@ type AttractionFilterViewData struct {
 	ReturnQuery string
 }
 
-type AttractionPaginationViewData struct {
+type PlacePaginationViewData struct {
 	Page          int
 	PageSize      int
 	Total         int
@@ -201,31 +202,31 @@ type AttractionPaginationViewData struct {
 	HasNext       bool
 	PreviousQuery string
 	NextQuery     string
-	Pages         []AttractionPaginationPageViewData
+	Pages         []PlacePaginationPageViewData
 }
 
-type AttractionPaginationPageViewData struct {
+type PlacePaginationPageViewData struct {
 	Page      int
 	Query     string
 	IsCurrent bool
 	IsDots    bool
 }
 
-type AttractionFormViewData struct {
-	Item                 *model.AdminAttraction
-	Input                model.AttractionInput
+type PlaceFormViewData struct {
+	Item                 *model.AdminPlace
+	Input                model.PlaceInput
 	IsEdit               bool
 	SubmitURL            string
 	MediaURL             string
 	ListURL              string
-	Categories           []AttractionOptionView
-	Statuses             []AttractionOptionView
-	Locales              []AttractionOptionView
-	Countries            []AttractionOptionView
-	Cities               []AttractionOptionView
-	Currencies           []AttractionOptionView
-	AccessCityOptions    []AttractionCityLinkOptionView
-	DepartureCityOptions []AttractionCityLinkOptionView
+	Categories           []PlaceOptionView
+	Statuses             []PlaceOptionView
+	Locales              []PlaceOptionView
+	Countries            []PlaceOptionView
+	Cities               []PlaceOptionView
+	Currencies           []PlaceOptionView
+	AccessCityOptions    []PlaceCityLinkOptionView
+	DepartureCityOptions []PlaceCityLinkOptionView
 }
 
 type CommunityFormViewData struct {
@@ -233,14 +234,14 @@ type CommunityFormViewData struct {
 	Item            *model.AdminCommunity
 	IsEdit          bool
 	SubmitURL       string
-	Locales         []AttractionOptionView
-	SlugOptions     []AttractionOptionView
-	Topics          []AttractionOptionView
-	Visibilities    []AttractionOptionView
-	PostingPolicies []AttractionOptionView
-	Statuses        []AttractionOptionView
-	Countries       []AttractionOptionView
-	Cities          []AttractionOptionView
+	Locales         []PlaceOptionView
+	SlugOptions     []PlaceOptionView
+	Topics          []PlaceOptionView
+	Visibilities    []PlaceOptionView
+	PostingPolicies []PlaceOptionView
+	Statuses        []PlaceOptionView
+	Countries       []PlaceOptionView
+	Cities          []PlaceOptionView
 }
 
 type CommunityPlatformViewData struct {
@@ -250,9 +251,9 @@ type CommunityPlatformViewData struct {
 	Blueprints                   []CommunityBlueprintView
 	GeoHubs                      []CommunityGeoHubView
 	Instances                    []CommunityInstanceView
-	ScopeOptions                 []AttractionOptionView
-	Countries                    []AttractionOptionView
-	Cities                       []AttractionOptionView
+	ScopeOptions                 []PlaceOptionView
+	Countries                    []PlaceOptionView
+	Cities                       []PlaceOptionView
 	BlueprintCategoryFilters     []CommunityTableFilterOption
 	BlueprintStatusFilters       []CommunityTableFilterOption
 	GeoHubTierFilters            []CommunityTableFilterOption
@@ -341,14 +342,14 @@ type CommunityFormInput struct {
 	Status          string
 }
 
-type AttractionOptionView struct {
+type PlaceOptionView struct {
 	Value       string
 	LabelKey    string
 	Selected    bool
 	CountryCode string
 }
 
-type AttractionCityLinkOptionView struct {
+type PlaceCityLinkOptionView struct {
 	Value       string
 	CountryCode string
 	CityID      string
@@ -411,8 +412,8 @@ type AdminUsersFilterViewData struct {
 type AdminUsersListViewData struct {
 	Items       []AdminUserListItemView
 	Filters     AdminUsersFilterViewData
-	Countries   []AttractionOptionView
-	RoleOptions []AttractionOptionView
+	Countries   []PlaceOptionView
+	RoleOptions []PlaceOptionView
 	NextPageURL string
 	ResetURL    string
 	CanModerate bool
@@ -605,7 +606,7 @@ func NewAdminUsersListViewData(
 	return AdminUsersListViewData{
 		Items:       items,
 		Filters:     filters,
-		Countries:   attractionCountryFilterOptions(filters.CountryCode),
+		Countries:   placeCountryFilterOptions(filters.CountryCode),
 		RoleOptions: adminUserRoleFilterOptions(filters.Role),
 		NextPageURL: nextPageURL,
 		ResetURL:    "/admin/users",
@@ -810,21 +811,21 @@ func NewCaseDetailViewData(detail *app.ModerationCaseDetail, returnQuery string)
 	}
 }
 
-func NewAttractionListViewData(items []model.AdminAttraction, total int, filters AttractionFilterViewData) AttractionListViewData {
-	return AttractionListViewData{
+func NewPlaceListViewData(items []model.AdminPlace, total int, filters PlaceFilterViewData) PlaceListViewData {
+	return PlaceListViewData{
 		Items:      items,
 		Total:      total,
 		Filters:    filters,
-		Pagination: attractionPagination(total, filters),
-		Countries:  attractionCountryFilterOptions(filters.CountryCode),
-		Cities:     attractionCityFilterOptions(filters.CityID),
+		Pagination: placePagination(total, filters),
+		Countries:  placeCountryFilterOptions(filters.CountryCode),
+		Cities:     placeCityFilterOptions(filters.CityID),
 	}
 }
 
-func NewAttractionFormViewData(item *model.AdminAttraction, input model.AttractionInput, listURL ...string) AttractionFormViewData {
+func NewPlaceFormViewData(item *model.AdminPlace, input model.PlaceInput, listURL ...string) PlaceFormViewData {
 	isEdit := item != nil && item.ID != uuid.Nil
 	if isEdit && input.Title == "" {
-		input = attractionInputFromItem(item)
+		input = placeInputFromItem(item)
 	}
 	input.CountryCode = strings.ToUpper(strings.TrimSpace(input.CountryCode))
 	if input.CountryCode == "" {
@@ -842,7 +843,7 @@ func NewAttractionFormViewData(item *model.AdminAttraction, input model.Attracti
 	if input.Status == "" {
 		input.Status = "PUBLISHED"
 	}
-	backURL := "/admin/attractions"
+	backURL := "/admin/places"
 	if len(listURL) > 0 {
 		if candidate := strings.TrimSpace(listURL[0]); candidate != "" {
 			backURL = candidate
@@ -852,27 +853,27 @@ func NewAttractionFormViewData(item *model.AdminAttraction, input model.Attracti
 	if _, query, ok := strings.Cut(backURL, "?"); ok && strings.TrimSpace(query) != "" {
 		actionQuerySuffix = "?" + query
 	}
-	submitURL := "/admin/attractions"
+	submitURL := "/admin/places"
 	mediaURL := ""
 	if isEdit {
-		submitURL = "/admin/attractions/" + item.ID.String() + actionQuerySuffix
-		mediaURL = "/admin/attractions/" + item.ID.String() + "/media" + actionQuerySuffix
+		submitURL = "/admin/places/" + item.ID.String() + actionQuerySuffix
+		mediaURL = "/admin/places/" + item.ID.String() + "/media" + actionQuerySuffix
 	}
-	return AttractionFormViewData{
+	return PlaceFormViewData{
 		Item:                 item,
 		Input:                input,
 		IsEdit:               isEdit,
 		SubmitURL:            submitURL,
 		MediaURL:             mediaURL,
 		ListURL:              backURL,
-		Categories:           attractionCategoryOptions(input.Category),
-		Statuses:             attractionStatusOptions(input.Status),
-		Locales:              attractionLocaleOptions(input.DefaultLocale),
-		Countries:            attractionCountryOptions(input.CountryCode),
-		Cities:               attractionCityOptions(input.CityID),
-		Currencies:           attractionCurrencyOptions(input.PriceCurrency),
-		AccessCityOptions:    attractionCityLinkOptions(input.AccessCities, input.CountryCode),
-		DepartureCityOptions: attractionCityLinkOptions(input.DepartureCities, input.CountryCode),
+		Categories:           placeCategoryOptions(input.Category),
+		Statuses:             placeStatusOptions(input.Status),
+		Locales:              placeLocaleOptions(input.DefaultLocale),
+		Countries:            placeCountryOptions(input.CountryCode),
+		Cities:               placeCityOptions(input.CityID),
+		Currencies:           placeCurrencyOptions(input.PriceCurrency),
+		AccessCityOptions:    placeCityLinkOptions(input.AccessCities, input.CountryCode),
+		DepartureCityOptions: placeCityLinkOptions(input.DepartureCities, input.CountryCode),
 	}
 }
 
@@ -956,8 +957,8 @@ func NewCommunityPlatformViewData(
 		GeoHubs:                      geoHubs,
 		Instances:                    instances,
 		ScopeOptions:                 communityScopeOptions(filters.ScopeType),
-		Countries:                    attractionCountryFilterOptions(filters.CountryCode),
-		Cities:                       attractionCityFilterOptions(filters.CityID),
+		Countries:                    placeCountryFilterOptions(filters.CountryCode),
+		Cities:                       placeCityFilterOptions(filters.CityID),
 		BlueprintCategoryFilters:     communityBlueprintCategoryFilters(blueprints),
 		BlueprintStatusFilters:       communityBlueprintStatusFilters(locale, blueprints),
 		GeoHubTierFilters:            communityGeoHubTierFilters(geoHubs),
@@ -1020,8 +1021,8 @@ func NewCommunityFormViewData(input CommunityFormInput, items ...*model.AdminCom
 		Visibilities:    communityOptionViews(input.Visibility, map[string]string{"PUBLIC": "community.visibility.PUBLIC", "HIDDEN": "community.visibility.HIDDEN", "INVITE_ONLY": "community.visibility.INVITE_ONLY"}),
 		PostingPolicies: communityOptionViews(input.PostingPolicy, map[string]string{"ADMINS_ONLY": "community.postingPolicy.ADMINS_ONLY", "MEMBERS_AFTER_MODERATION": "community.postingPolicy.MEMBERS_AFTER_MODERATION", "TRUSTED_MEMBERS": "community.postingPolicy.TRUSTED_MEMBERS", "OPEN_MEMBERS": "community.postingPolicy.OPEN_MEMBERS"}),
 		Statuses:        communityOptionViews(input.Status, map[string]string{"ACTIVE": "community.status.ACTIVE", "ARCHIVED": "community.status.ARCHIVED", "HIDDEN": "community.status.HIDDEN"}),
-		Countries:       attractionCountryFilterOptions(input.CountryCode),
-		Cities:          attractionCityFilterOptions(input.CityID),
+		Countries:       placeCountryFilterOptions(input.CountryCode),
+		Cities:          placeCityFilterOptions(input.CityID),
 	}
 }
 
@@ -1078,7 +1079,7 @@ func cloneStringMap(input map[string]string) map[string]string {
 	return out
 }
 
-func communitySlugOptions(selected string) []AttractionOptionView {
+func communitySlugOptions(selected string) []PlaceOptionView {
 	templates := []string{
 		"general",
 		"city-guides",
@@ -1099,9 +1100,9 @@ func communitySlugOptions(selected string) []AttractionOptionView {
 			values = append(values, value)
 		}
 	}
-	out := make([]AttractionOptionView, 0, len(values))
+	out := make([]PlaceOptionView, 0, len(values))
 	for _, value := range values {
-		out = append(out, AttractionOptionView{
+		out = append(out, PlaceOptionView{
 			Value:    value,
 			LabelKey: value,
 			Selected: value == selected,
@@ -1158,7 +1159,7 @@ func normalizeCommunityPlatformFilters(filters CommunityPlatformFilterViewData) 
 	return filters
 }
 
-func communityScopeOptions(selected string) []AttractionOptionView {
+func communityScopeOptions(selected string) []PlaceOptionView {
 	return communityOptionViews(selected, map[string]string{
 		"":       "community.scope.all",
 		"CITY":   "community.scope.CITY",
@@ -1191,11 +1192,11 @@ func communityLocationText(locale string, countryCode string, cityID string) str
 	cityID = strings.TrimSpace(cityID)
 	switch {
 	case countryCode != "" && cityID != "":
-		return countryText(locale, countryCode) + " · " + attractionCityNameText(locale, cityID)
+		return countryText(locale, countryCode) + " · " + placeCityNameText(locale, cityID)
 	case countryCode != "":
 		return countryText(locale, countryCode)
 	case cityID != "":
-		return attractionCityNameText(locale, cityID)
+		return placeCityNameText(locale, cityID)
 	default:
 		return "-"
 	}
@@ -1387,11 +1388,11 @@ func humanizeCode(raw string) string {
 	return strings.Join(words, " ")
 }
 
-func communityLocaleOptions() []AttractionOptionView {
-	return []AttractionOptionView{
-		{Value: "ru", LabelKey: "attraction.locale.ru"},
-		{Value: "en", LabelKey: "attraction.locale.en"},
-		{Value: "kk", LabelKey: "attraction.locale.kk"},
+func communityLocaleOptions() []PlaceOptionView {
+	return []PlaceOptionView{
+		{Value: "ru", LabelKey: "place.locale.ru"},
+		{Value: "en", LabelKey: "place.locale.en"},
+		{Value: "kk", LabelKey: "place.locale.kk"},
 	}
 }
 
@@ -1405,15 +1406,15 @@ func communityTopicOptions() map[string]string {
 	}
 }
 
-func communityOptionViews(selected string, labels map[string]string) []AttractionOptionView {
+func communityOptionViews(selected string, labels map[string]string) []PlaceOptionView {
 	order := make([]string, 0, len(labels))
 	for value := range labels {
 		order = append(order, value)
 	}
 	sort.Strings(order)
-	out := make([]AttractionOptionView, 0, len(order))
+	out := make([]PlaceOptionView, 0, len(order))
 	for _, value := range order {
-		out = append(out, AttractionOptionView{
+		out = append(out, PlaceOptionView{
 			Value:    value,
 			LabelKey: labels[value],
 			Selected: strings.EqualFold(selected, value),
@@ -1559,11 +1560,11 @@ func auditEntityTitle(locale string, event *model.AuditEvent, before auditStaffS
 		return translate(locale, "audit.entity.moderationCase")
 	case "guide_profile":
 		return translate(locale, "audit.entity.guideProfile")
-	case "attraction":
+	case "place":
 		if title := auditMetadataValue(event.Metadata, "title"); title != "" {
-			return fmt.Sprintf("%s: %s", translate(locale, "audit.entity.attraction"), title)
+			return fmt.Sprintf("%s: %s", translate(locale, "audit.entity.place"), title)
 		}
-		return translate(locale, "audit.entity.attraction")
+		return translate(locale, "audit.entity.place")
 	case "fraud_assessment":
 		return translate(locale, "audit.entity.fraudAssessment")
 	case "trust_restriction_appeal":
@@ -1624,12 +1625,12 @@ func auditDetails(locale string, event *model.AuditEvent, before auditStaffSnaps
 		if value := auditMetadataValue(event.Metadata, "failedCount"); value != "" {
 			details = append(details, fmt.Sprintf(translate(locale, "audit.detail.failedLoginCount"), value))
 		}
-	case "attraction.created", "attraction.updated", "attraction.media.replaced", "attraction.media.updated":
+	case "place.created", "place.updated", "place.media.replaced", "place.media.updated":
 		if title := auditMetadataValue(event.Metadata, "title"); title != "" {
 			details = append(details, fmt.Sprintf("%s: %s", translate(locale, "field.title"), title))
 		}
 		if category := auditMetadataValue(event.Metadata, "category"); category != "" {
-			details = append(details, fmt.Sprintf("%s: %s", translate(locale, "field.category"), attractionCategoryText(locale, category)))
+			details = append(details, fmt.Sprintf("%s: %s", translate(locale, "field.category"), placeCategoryText(locale, category)))
 		}
 	case "fraud.block.confirmed", "fraud.block.false_positive", "fraud.block.escalated", "fraud.block.review_failed":
 		if status := auditMetadataValue(event.Metadata, "status"); status != "" {
@@ -1824,13 +1825,13 @@ func adminUsersQuery(filters AdminUsersFilterViewData) string {
 	return values.Encode()
 }
 
-func adminUserRoleFilterOptions(selected string) []AttractionOptionView {
+func adminUserRoleFilterOptions(selected string) []PlaceOptionView {
 	selected = strings.ToUpper(strings.TrimSpace(selected))
 	values := []string{"USER", "GUIDE", "ADMIN", "MODERATOR", "SUPPORT"}
-	out := make([]AttractionOptionView, 0, len(values)+1)
+	out := make([]PlaceOptionView, 0, len(values)+1)
 	var found bool
 	for _, value := range values {
-		option := AttractionOptionView{
+		option := PlaceOptionView{
 			Value:    value,
 			LabelKey: value,
 			Selected: selected == value,
@@ -1841,7 +1842,7 @@ func adminUserRoleFilterOptions(selected string) []AttractionOptionView {
 		out = append(out, option)
 	}
 	if selected != "" && !found {
-		out = append(out, AttractionOptionView{
+		out = append(out, PlaceOptionView{
 			Value:    selected,
 			LabelKey: selected,
 			Selected: true,
@@ -2047,7 +2048,7 @@ func newQueueViewData(cases []*model.ModerationCase, targetType model.Moderation
 			view.GuideFullName = guideApplicationFullNameText(guideApplication)
 		} else if chatMessage != nil {
 			view.GuideName = chatMessageSenderText(chatMessage)
-			view.GuideFullName = chatMessageConversationText(defaultLocale, chatMessage)
+			view.GuideFullName = ""
 		} else if post != nil {
 			view.GuideName = "Author " + shortString(post.AuthorUserID.String())
 			view.GuideFullName = strings.TrimSpace(post.Category)
@@ -2079,8 +2080,9 @@ func newQueueViewData(cases []*model.ModerationCase, targetType model.Moderation
 		HostHeaderKey:        queueHostHeaderKey(targetType),
 		LocationHeaderKey:    queueLocationHeaderKey(targetType),
 		SearchPlaceholderKey: queueSearchPlaceholderKey(targetType),
-		Countries:            attractionCountryFilterOptions(viewFilters.CountryCode),
-		Cities:               attractionCityFilterOptions(viewFilters.CityID),
+		Countries:            placeCountryFilterOptions(viewFilters.CountryCode),
+		Cities:               placeCityFilterOptions(viewFilters.CityID),
+		SignalOptions:        queueSignalOptions(targetType, viewFilters.Signal),
 	}
 	if targetType == model.ModerationTargetGuideApplication {
 		data.CurrentGuidesURL = "/admin/moderation/guides/current"
@@ -2238,7 +2240,7 @@ func queueTargetTitle(item *model.ModerationCase, excursion *model.ExcursionMode
 		if title := strings.TrimSpace(excursion.Title); title != "" {
 			return title
 		}
-		if landmarks := excursionAttractionsText(defaultLocale, excursion); landmarks != "" {
+		if landmarks := excursionPlacesText(defaultLocale, excursion); landmarks != "" {
 			return landmarks
 		}
 	}
@@ -2295,9 +2297,9 @@ func queueTargetSubtitle(excursion *model.ExcursionModerationItem, activity *mod
 			}
 			return guideApplicationTypeText(defaultLocale, guideApplication)
 		}
-		return activityLocationText(defaultLocale, activity)
+		return ""
 	}
-	return excursionAttractionsText(defaultLocale, excursion)
+	return excursionPlacesText(defaultLocale, excursion)
 }
 
 func activityHostPrimaryText(item *model.ActivityModerationItem) string {
@@ -2311,7 +2313,14 @@ func activityHostPrimaryText(item *model.ActivityModerationItem) string {
 }
 
 func activityHostSecondaryText(item *model.ActivityModerationItem) string {
-	return ""
+	if item == nil {
+		return ""
+	}
+	fullName := strings.TrimSpace(item.HostFullName)
+	if fullName == "" || strings.EqualFold(fullName, strings.TrimSpace(item.HostDisplayName)) {
+		return ""
+	}
+	return fullName
 }
 
 func queueBaseURL(targetType model.ModerationTargetType) string {

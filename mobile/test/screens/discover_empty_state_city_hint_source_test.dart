@@ -7,8 +7,8 @@ void main() {
     final enArb = await File('lib/l10n/app_en.arb').readAsString();
     final ruArb = await File('lib/l10n/app_ru.arb').readAsString();
     final kkArb = await File('lib/l10n/app_kk.arb').readAsString();
-    final attractionsScreen = await File(
-      'lib/screens/attractions/attractions_screen.dart',
+    final placesScreen = await File(
+      'lib/screens/places/places_screen.dart',
     ).readAsString();
 
     expect(
@@ -21,7 +21,7 @@ void main() {
     expect(
       enArb,
       contains(
-        '"attractionsNoResultsSubtitle": "Try choosing another city in filters."',
+        '"placesNoResultsSubtitle": "Try choosing another city in filters."',
       ),
     );
     expect(
@@ -41,6 +41,6 @@ void main() {
 
     expect(ruArb, contains('выбрать другой город'));
     expect(kkArb, contains('басқа қаланы'));
-    expect(attractionsScreen, contains('l10n.attractionsNoResultsSubtitle'));
+    expect(placesScreen, contains('l10n.placesNoResultsSubtitle'));
   });
 }

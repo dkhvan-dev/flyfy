@@ -642,8 +642,8 @@ func (r *PGPostRepository) CreateFeedEvents(ctx context.Context, events []model.
 				signal.entity_type AS parent_entity_type,
 				signal.entity_id AS parent_entity_id
 			FROM interest_signal signal
-			CROSS JOIN LATERAL jsonb_array_elements_text(signal.metadata->'attractionTags') AS tag(value)
-			WHERE jsonb_typeof(signal.metadata->'attractionTags') = 'array'
+			CROSS JOIN LATERAL jsonb_array_elements_text(signal.metadata->'placeTags') AS tag(value)
+			WHERE jsonb_typeof(signal.metadata->'placeTags') = 'array'
 			  AND trim(tag.value) <> ''
 
 			UNION ALL
@@ -700,7 +700,7 @@ func (r *PGPostRepository) CreateFeedEvents(ctx context.Context, events []model.
 				'' AS parent_entity_type,
 				'' AS parent_entity_id
 			FROM interest_signal
-			WHERE entity_type IN ('post', 'post_profile', 'community', 'activity', 'attraction', 'tour', 'guide', 'profile')
+			WHERE entity_type IN ('post', 'post_profile', 'community', 'activity', 'place', 'tour', 'guide', 'profile')
 			  AND entity_id IS NOT NULL
 			  AND entity_id <> ''
 

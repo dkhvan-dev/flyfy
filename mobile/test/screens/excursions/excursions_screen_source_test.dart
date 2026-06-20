@@ -131,10 +131,10 @@ void main() {
       expect(source, contains('final AppCityFilterValue? city'));
       expect(source, contains('AppCountryFilterSection'));
       expect(source, contains('AppCityFilterSection'));
-      expect(source, contains('attractionFilterCountrySection'));
-      expect(source, contains('attractionFilterCountryAll'));
-      expect(source, contains('attractionFilterCountrySearchHint'));
-      expect(source, contains('attractionFilterCountryNoResults'));
+      expect(source, contains('placeFilterCountrySection'));
+      expect(source, contains('placeFilterCountryAll'));
+      expect(source, contains('placeFilterCountrySearchHint'));
+      expect(source, contains('placeFilterCountryNoResults'));
       expect(source, contains('locationFilterCitySection'));
       expect(source, contains('filters.city'));
       expect(source, contains('countryCode: _filters.country?.countryCode'));
@@ -291,7 +291,7 @@ void main() {
     expect(routerSource, contains("location == '/excursions'"));
   });
 
-  test('excursions list can show attraction-specific empty notice', () async {
+  test('excursions list can show place-specific empty notice', () async {
     final source = await File(
       'lib/screens/excursions/excursions_screen.dart',
     ).readAsString();
@@ -300,11 +300,11 @@ void main() {
     ).readAsString();
 
     expect(source, contains('class ExcursionsRouteArgs'));
-    expect(source, contains('ExcursionsRouteArgs.noAttractionExcursions'));
-    expect(source, contains('_buildNoAttractionExcursionsNotice'));
-    expect(source, contains('excursionsNoAttractionExcursionsTitle'));
-    expect(source, contains('excursionsNoAttractionExcursionsSubtitle'));
-    expect(source, contains('showNoAttractionExcursionsNotice =='));
+    expect(source, contains('ExcursionsRouteArgs.noPlaceExcursions'));
+    expect(source, contains('_buildNoPlaceExcursionsNotice'));
+    expect(source, contains('excursionsNoPlaceExcursionsTitle'));
+    expect(source, contains('excursionsNoPlaceExcursionsSubtitle'));
+    expect(source, contains('showNoPlaceExcursionsNotice =='));
     expect(routerSource, contains('ExcursionsRouteArgs'));
     expect(routerSource, contains('ExcursionsScreen(routeArgs: args)'));
   });
@@ -385,7 +385,7 @@ void main() {
   );
 
   test(
-    'excursions list resolves localized attraction text for landmark excursions',
+    'excursions list resolves localized place text for landmark excursions',
     () async {
       final source = await File(
         'lib/screens/excursions/excursions_screen.dart',
@@ -393,18 +393,14 @@ void main() {
 
       expect(
         source,
-        contains(
-          "import '../../features/attractions/data/attraction_api.dart';",
-        ),
+        contains("import '../../features/places/data/place_api.dart';"),
       );
       expect(
         source,
-        contains(
-          "import '../../features/attractions/models/attraction_vm.dart';",
-        ),
+        contains("import '../../features/places/models/place_vm.dart';"),
       );
-      expect(source, contains('final AttractionApi _attractionApi'));
-      expect(source, contains('Map<String, AttractionVm> _localizedLandmarks'));
+      expect(source, contains('final PlaceApi _placeApi'));
+      expect(source, contains('Map<String, PlaceVm> _localizedLandmarks'));
       expect(source, contains('_scheduleResolveLocalizedLandmarks'));
       expect(source, contains('_loadLocalizedLandmark'));
       expect(source, contains('locale: lang'));

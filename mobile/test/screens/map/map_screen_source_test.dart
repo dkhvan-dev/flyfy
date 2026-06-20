@@ -106,23 +106,20 @@ void main() {
     expect(activitiesSource, contains('priceLabel: priceLabel'));
   });
 
-  test(
-    'target map keeps attraction marker and also loads user location',
-    () async {
-      final mapSource = await File(
-        'lib/screens/map/map_screen.dart',
-      ).readAsString();
+  test('target map keeps place marker and also loads user location', () async {
+    final mapSource = await File(
+      'lib/screens/map/map_screen.dart',
+    ).readAsString();
 
-      expect(mapSource, contains('Future<void> _loadTargetUserLocation('));
-      expect(
-        mapSource,
-        contains('_loadTargetUserLocation(requestPermission: true)'),
-      );
-      expect(mapSource, contains('_userLocation = userPoint;'));
-      expect(mapSource, contains('_targetPlace = targetPlace;'));
-      expect(mapSource, contains('_selectedPlace = targetPlace;'));
-    },
-  );
+    expect(mapSource, contains('Future<void> _loadTargetUserLocation('));
+    expect(
+      mapSource,
+      contains('_loadTargetUserLocation(requestPermission: true)'),
+    );
+    expect(mapSource, contains('_userLocation = userPoint;'));
+    expect(mapSource, contains('_targetPlace = targetPlace;'));
+    expect(mapSource, contains('_selectedPlace = targetPlace;'));
+  });
 
   test('nearby places map is not capped at forty POI', () async {
     final mapSource = await File(

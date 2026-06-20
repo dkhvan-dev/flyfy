@@ -16,8 +16,8 @@ import '../../core/ui/filter_sheet_chrome.dart';
 import '../../core/ui/pagination_bar.dart';
 import '../../core/time/app_time.dart';
 import '../../core/utils/pagination.dart';
-import '../../features/attractions/data/attraction_api.dart';
-import '../../features/attractions/models/attraction_vm.dart';
+import '../../features/places/data/place_api.dart';
+import '../../features/places/models/place_vm.dart';
 import '../../features/excursions/excursion_currency.dart';
 import '../../features/excursions/excursion_localization.dart';
 import '../../features/excursions/models/create_excursion_review_request.dart';
@@ -38,12 +38,12 @@ class MyExcursionsScreen extends StatefulWidget {
 class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
   static const int _pageSize = 8;
 
-  final AttractionApi _attractionApi = AttractionApi();
+  final PlaceApi _placeApi = PlaceApi();
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
 
-  Map<String, AttractionVm> _localizedLandmarks = const {};
+  Map<String, PlaceVm> _localizedLandmarks = const {};
   final Set<String> _loadingLocalizedLandmarkIds = <String>{};
   String? _localizedLandmarksLocale;
   MyExcursionsTab _activeTab = MyExcursionsTab.booked;
@@ -209,14 +209,11 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
 
   Future<void> _loadLocalizedLandmark(String landmarkId, String lang) async {
     try {
-      final attraction = await _attractionApi.getAttraction(
-        landmarkId,
-        locale: lang,
-      );
+      final place = await _placeApi.getPlace(landmarkId, locale: lang);
       if (!mounted || _localizedLandmarksLocale != lang) return;
 
       setState(() {
-        _localizedLandmarks = {..._localizedLandmarks, landmarkId: attraction};
+        _localizedLandmarks = {..._localizedLandmarks, landmarkId: place};
         _loadingLocalizedLandmarkIds.remove(landmarkId);
       });
     } catch (_) {
@@ -225,7 +222,7 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
     }
   }
 
-  AttractionVm? _localizedLandmarkFor(ExcursionBookingVm booking) {
+  PlaceVm? _localizedLandmarkFor(ExcursionBookingVm booking) {
     final landmarkId = booking.landmarkId?.trim();
     if (landmarkId == null || landmarkId.isEmpty) return null;
     return _localizedLandmarks[landmarkId];
@@ -780,7 +777,7 @@ class _MyExcursionBookingCard extends StatelessWidget {
 
   final ExcursionBookingVm booking;
   final String languageCode;
-  final AttractionVm? localizedLandmark;
+  final PlaceVm? localizedLandmark;
   final VoidCallback onTap;
   final VoidCallback? onEditGuestsTap;
   final VoidCallback? onCancelTap;
@@ -804,14 +801,14 @@ class _MyExcursionBookingCard extends StatelessWidget {
       localeName: localeName,
       useExcursionListCurrencyFormat: true,
     );
-    final displayTitle = localizedAttractionTitle(
+    final displayTitle = localizedPlaceTitle(
       languageCode: languageCode,
-      attraction: localizedLandmark,
+      place: localizedLandmark,
       fallback: booking.title,
     ).trim();
-    final landmarkName = localizedAttractionTitle(
+    final landmarkName = localizedPlaceTitle(
       languageCode: languageCode,
-      attraction: localizedLandmark,
+      place: localizedLandmark,
       fallback: booking.landmarkName ?? '',
     ).trim();
     final showLandmarkName =
@@ -2356,13 +2353,10 @@ class _MyExcursionsFilterSheetState extends State<_MyExcursionsFilterSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       AppCountryFilterSection(
-                        title: widget.l10n.attractionFilterCountrySection,
-                        allCountriesLabel:
-                            widget.l10n.attractionFilterCountryAll,
-                        searchHint:
-                            widget.l10n.attractionFilterCountrySearchHint,
-                        noResultsText:
-                            widget.l10n.attractionFilterCountryNoResults,
+                        title: widget.l10n.placeFilterCountrySection,
+                        allCountriesLabel: widget.l10n.placeFilterCountryAll,
+                        searchHint: widget.l10n.placeFilterCountrySearchHint,
+                        noResultsText: widget.l10n.placeFilterCountryNoResults,
                         selectedCountry: _country,
                         onChanged: _setCountry,
                       ),

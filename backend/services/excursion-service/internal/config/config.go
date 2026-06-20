@@ -16,7 +16,7 @@ type Config struct {
 	Security     SecurityConfig
 	GuideService GuideServiceConfig
 	UserService  UserServiceConfig
-	Attraction   AttractionServiceConfig
+	Place        PlaceServiceConfig
 	FileManager  FileManagerConfig
 	ChatService  ChatServiceConfig
 	Notification NotificationServiceConfig
@@ -107,8 +107,8 @@ type UserServiceConfig struct {
 	Target string `env:"USER_SERVICE_GRPC_TARGET, default=dns:///user-service:9094"`
 }
 
-type AttractionServiceConfig struct {
-	BaseURL string `env:"ATTRACTION_SERVICE_URL, default=http://attraction-service:8090"`
+type PlaceServiceConfig struct {
+	BaseURL string `env:"PLACE_SERVICE_URL, default=http://place-service:8090"`
 }
 
 type FileManagerConfig struct {

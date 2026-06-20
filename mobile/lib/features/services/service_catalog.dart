@@ -39,9 +39,9 @@ List<TravelServiceEntry> buildTravelServiceCatalog(AppLocalizations l10n) {
       route: '/feed',
     ),
     TravelServiceEntry(
-      title: l10n.homeServiceAttractions,
+      title: l10n.homeServicePlaces,
       icon: Icons.account_balance_rounded,
-      route: '/attractions',
+      route: '/places',
     ),
     TravelServiceEntry(
       title: l10n.homeServiceCurrencyConverter,

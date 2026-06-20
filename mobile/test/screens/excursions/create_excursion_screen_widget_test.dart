@@ -5,8 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:inflap/core/network/excursion_api.dart';
 import 'package:inflap/core/network/reference_api.dart';
-import 'package:inflap/features/attractions/data/attraction_api.dart';
-import 'package:inflap/features/attractions/models/attraction_vm.dart';
+import 'package:inflap/features/places/data/place_api.dart';
+import 'package:inflap/features/places/models/place_vm.dart';
 import 'package:inflap/features/excursions/models/create_excursion_request.dart';
 import 'package:inflap/features/excursions/models/excursion_vm.dart';
 import 'package:inflap/l10n/generated/app_localizations.dart';
@@ -38,9 +38,9 @@ void main() {
     );
 
     expect(find.text('Create Excursion'), findsOneWidget);
-    expect(find.text('Attraction'), findsOneWidget);
+    expect(find.text('Place'), findsOneWidget);
     expect(find.text('Country'), findsNothing);
-    expect(find.text('Select Attraction'), findsOneWidget);
+    expect(find.text('Select place'), findsOneWidget);
     expect(find.text('Next Step'), findsOneWidget);
   });
 
@@ -79,7 +79,7 @@ void main() {
     },
   );
 
-  testWidgets('attraction selector cards do not overflow on compact width', (
+  testWidgets('place selector cards do not overflow on compact width', (
     tester,
   ) async {
     tester.view.devicePixelRatio = 1;
@@ -98,14 +98,14 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         home: ExcursionSelectLocationScreen(
           countryCode: 'KZ',
-          api: _FakeAttractionApi([
-            _attraction(
-              id: 'attraction-short',
+          api: _FakePlaceApi([
+            _place(
+              id: 'place-short',
               title: 'Чарынский каньон',
               category: 'NATURE',
             ),
-            _attraction(
-              id: 'attraction-long',
+            _place(
+              id: 'place-long',
               title: 'Национальный парк\nАлтын-Эмель',
               category: 'TEMPLE',
             ),
@@ -187,7 +187,7 @@ void main() {
     expect(secondCategoryTop, lessThan(secondCardTop + secondCardHeight * 0.5));
   });
 
-  testWidgets('location selector returns localized city name for attraction', (
+  testWidgets('location selector returns localized city name for place', (
     tester,
   ) async {
     tester.view.devicePixelRatio = 1;
@@ -218,9 +218,9 @@ void main() {
           builder: (context, state) {
             return ExcursionSelectLocationScreen(
               countryCode: 'KZ',
-              api: _FakeAttractionApi([
-                _attraction(
-                  id: 'attraction-short',
+              api: _FakePlaceApi([
+                _place(
+                  id: 'place-short',
                   title: 'Чарынский каньон',
                   category: 'NATURE',
                 ),
@@ -281,13 +281,13 @@ class _FakeExcursionApi extends ExcursionApi {
   }
 }
 
-class _FakeAttractionApi extends AttractionApi {
-  _FakeAttractionApi(this.items);
+class _FakePlaceApi extends PlaceApi {
+  _FakePlaceApi(this.items);
 
-  final List<AttractionVm> items;
+  final List<PlaceVm> items;
 
   @override
-  Future<({List<AttractionVm> items, int total})> getAttractions({
+  Future<({List<PlaceVm> items, int total})> getPlaces({
     String? search,
     String? category,
     String? countryCode,
@@ -327,7 +327,7 @@ const _editableExcursion = ExcursionVm(
   summary: 'Shared route',
   status: 'PUBLISHED',
   visibility: 'PUBLIC',
-  landmarkId: 'attraction-1',
+  landmarkId: 'place-1',
   landmarkName: 'Charyn Canyon',
   categorySlug: 'nature',
   durationMinutes: 240,
@@ -350,32 +350,32 @@ const _editableExcursion = ExcursionVm(
   ],
 );
 
-AttractionVm _attraction({
-  String id = 'attraction-compact',
+PlaceVm _place({
+  String id = 'place-compact',
   required String title,
   String category = 'nature',
 }) {
-  return AttractionVm(
+  return PlaceVm(
     id: id,
     locale: 'en',
     defaultLocale: 'en',
     title: title,
-    description: 'A compact selector test attraction.',
+    description: 'A compact selector test place.',
     countryCode: 'KZ',
     cityId: 'almaty',
     latitude: 43.238,
     longitude: 76.945,
-    locationSourceUrl: 'https://maps.example.test/attraction-compact',
+    locationSourceUrl: 'https://maps.example.test/place-compact',
     category: category,
     rating: 4.8,
     reviewCount: 12,
     source: 'manual',
     status: 'published',
     tags: const [],
-    visitInfo: AttractionVisitInfoVm.empty,
+    visitInfo: PlaceVisitInfoVm.empty,
     translations: const {},
     media: const [],
-    author: const AttractionAuthorVm(userId: 'author-1'),
+    author: const PlaceAuthorVm(userId: 'author-1'),
     createdAt: '2026-06-17T00:00:00Z',
     updatedAt: '2026-06-17T00:00:00Z',
   );

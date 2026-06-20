@@ -230,15 +230,13 @@ class ExcursionProvider extends ChangeNotifier {
     return List<ExcursionVm>.unmodifiable(items);
   }
 
-  Future<ExcursionVm?> findFirstExcursionForAttraction(
-    String attractionId,
-  ) async {
-    final trimmedAttractionId = attractionId.trim();
-    if (trimmedAttractionId.isEmpty) return null;
+  Future<ExcursionVm?> findFirstExcursionForPlace(String placeId) async {
+    final trimmedPlaceId = placeId.trim();
+    if (trimmedPlaceId.isEmpty) return null;
 
     final items = await _excursionApi.getExcursions(
       limit: 1,
-      landmarkId: trimmedAttractionId,
+      landmarkId: trimmedPlaceId,
     );
     return items.isEmpty ? null : items.first;
   }

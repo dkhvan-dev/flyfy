@@ -35,7 +35,7 @@ void main() {
         'lib/screens/home/home_screen.dart',
       ).readAsString();
       final rowStart = source.indexOf('class _TopDestinationsRow');
-      final rowEnd = source.indexOf('class _TopDestinationAttractionCard');
+      final rowEnd = source.indexOf('class _TopDestinationPlaceCard');
       final cardStart = rowEnd;
       final cardEnd = source.indexOf('class _DestinationBookmarkBadge');
 
@@ -62,7 +62,7 @@ void main() {
       final source = await File(
         'lib/screens/home/home_screen.dart',
       ).readAsString();
-      final cardStart = source.indexOf('class _TopDestinationAttractionCard');
+      final cardStart = source.indexOf('class _TopDestinationPlaceCard');
       final cardEnd = source.indexOf('class _DestinationBookmarkBadge');
 
       expect(cardStart, isNonNegative);
@@ -120,7 +120,7 @@ void main() {
       'lib/screens/home/home_screen.dart',
     ).readAsString();
     final confirmStart = source.indexOf('Future<void> _confirmLogout()');
-    final confirmEnd = source.indexOf('Future<void> _loadTopAttractions');
+    final confirmEnd = source.indexOf('Future<void> _loadTopPlaces');
     final dialogStart = source.indexOf('class _LogoutConfirmDialog');
     final dialogEnd = source.indexOf('class _HomeHeader');
 
@@ -400,14 +400,14 @@ void main() {
   );
 
   test(
-    'top destinations use backend attraction categories, not tag fallback',
+    'top destinations use backend place categories, not tag fallback',
     () async {
       final source = await File(
         'lib/screens/home/home_screen.dart',
       ).readAsString();
 
       final labelMatch = RegExp(
-        r'String\?? _homeAttractionCategoryLabel\(',
+        r'String\?? _homePlaceCategoryLabel\(',
       ).firstMatch(source);
       final labelStart = labelMatch?.start ?? -1;
       final nextFunctionStart = source.indexOf(
@@ -436,11 +436,8 @@ void main() {
         expect(labelSource, contains("case '$category':"));
       }
 
-      expect(labelSource, contains('l10n.attractionFilterCategoryOther'));
-      expect(
-        labelSource,
-        isNot(contains('for (final tag in attraction.tags)')),
-      );
+      expect(labelSource, contains('l10n.placeFilterCategoryOther'));
+      expect(labelSource, isNot(contains('for (final tag in place.tags)')));
     },
   );
 
@@ -594,7 +591,7 @@ void main() {
       expect(initSource, contains('_scheduleInitialDataLoad();'));
       expect(initSource, isNot(contains('provider.loadActivities();')));
       expect(initSource, isNot(contains('provider.loadActivityCategories();')));
-      expect(initSource, isNot(contains('_loadTopAttractions();')));
+      expect(initSource, isNot(contains('_loadTopPlaces();')));
       expect(initSource, isNot(contains('_loadHomeFeed();')));
       expect(
         scheduleSource,
@@ -613,7 +610,7 @@ void main() {
       );
       expect(runSource, contains('provider.loadActivityCategories();'));
       expect(runSource, contains('unawaited(categoryLoad);'));
-      expect(runSource, contains('unawaited(_loadTopAttractions());'));
+      expect(runSource, contains('unawaited(_loadTopPlaces());'));
       expect(runSource, contains('unawaited(_loadHomeFeed());'));
     },
   );

@@ -28,7 +28,7 @@ type Server struct {
 	users        *app.UserModerationUseCase
 	trustAppeals *app.TrustAppealUseCase
 	audit        *app.AuditUseCase
-	attractions  *app.AttractionContentUseCase
+	places       *app.PlaceContentUseCase
 	communities  *app.CommunityAdminUseCase
 	fraud        *app.FraudUseCase
 	operations   *app.OperationsUseCase
@@ -43,19 +43,19 @@ func NewServer(
 	moderation *app.ModerationUseCase,
 	users *app.UserModerationUseCase,
 	audit *app.AuditUseCase,
-	attractions *app.AttractionContentUseCase,
+	places *app.PlaceContentUseCase,
 	fraud *app.FraudUseCase,
 ) *Server {
 	return &Server{
-		cfg:         cfg,
-		renderer:    renderer,
-		auth:        auth,
-		staff:       staff,
-		moderation:  moderation,
-		users:       users,
-		audit:       audit,
-		attractions: attractions,
-		fraud:       fraud,
+		cfg:        cfg,
+		renderer:   renderer,
+		auth:       auth,
+		staff:      staff,
+		moderation: moderation,
+		users:      users,
+		audit:      audit,
+		places:     places,
+		fraud:      fraud,
 	}
 }
 
@@ -146,13 +146,13 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /admin/moderation/guides/{caseID}/approve", s.ApproveGuideApplication)
 	mux.HandleFunc("POST /admin/moderation/guides/{caseID}/reject", s.RejectGuideApplication)
 	mux.HandleFunc("POST /admin/moderation/guides/{caseID}/revoke", s.RevokeGuideApplication)
-	mux.HandleFunc("GET /admin/attractions", s.AttractionList)
-	mux.HandleFunc("GET /admin/attractions/new", s.NewAttractionPage)
-	mux.HandleFunc("POST /admin/attractions", s.CreateAttraction)
-	mux.HandleFunc("GET /admin/attraction-media/{fileID}", s.AttractionMedia)
-	mux.HandleFunc("GET /admin/attractions/{attractionID}/edit", s.EditAttractionPage)
-	mux.HandleFunc("POST /admin/attractions/{attractionID}", s.UpdateAttraction)
-	mux.HandleFunc("POST /admin/attractions/{attractionID}/media", s.ReplaceAttractionMedia)
+	mux.HandleFunc("GET /admin/places", s.PlaceList)
+	mux.HandleFunc("GET /admin/places/new", s.NewPlacePage)
+	mux.HandleFunc("POST /admin/places", s.CreatePlace)
+	mux.HandleFunc("GET /admin/place-media/{fileID}", s.PlaceMedia)
+	mux.HandleFunc("GET /admin/places/{placeID}/edit", s.EditPlacePage)
+	mux.HandleFunc("POST /admin/places/{placeID}", s.UpdatePlace)
+	mux.HandleFunc("POST /admin/places/{placeID}/media", s.ReplacePlaceMedia)
 	mux.HandleFunc("GET /admin/communities", s.CommunityPlatformPage)
 	mux.HandleFunc("GET /admin/communities/new", s.NewCommunityPage)
 	mux.HandleFunc("POST /admin/communities", s.CreateCommunity)
@@ -1022,45 +1022,45 @@ func (s *Server) RevokeActiveGuide(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, redirectWithFlash("/admin/moderation/guides/current", "moderation.decisionSaved"), http.StatusSeeOther)
 }
 
-func (s *Server) AttractionList(w http.ResponseWriter, r *http.Request) {
+func (s *Server) PlaceList(w http.ResponseWriter, r *http.Request) {
 	staff := staffFromContext(r.Context())
-	filters := attractionListQuery(r.URL.Query())
-	items, total, err := s.attractions.ListAttractions(r.Context(), staff, model.AdminAttractionFilter{
+	filters := placeListQuery(r.URL.Query())
+	items, total, err := s.places.ListPlaces(r.Context(), staff, model.AdminPlaceFilter{
 		Search:      filters.Search,
 		Locale:      localeFromContext(r.Context()),
 		Category:    filters.Category,
 		CountryCode: filters.CountryCode,
 		CityID:      filters.CityID,
 		Status:      filters.Status,
-		Limit:       attractionListPageSize,
-		Offset:      (filters.Page - 1) * attractionListPageSize,
+		Limit:       placeListPageSize,
+		Offset:      (filters.Page - 1) * placeListPageSize,
 	})
 	if err != nil {
-		s.renderPage(w, errorStatus(err), r, "attractions/index", "attraction.title", "attractions", NewAttractionListViewData(nil, 0, filters), publicError(localeFromContext(r.Context()), err))
+		s.renderPage(w, errorStatus(err), r, "places/index", "place.title", "places", NewPlaceListViewData(nil, 0, filters), publicError(localeFromContext(r.Context()), err))
 		return
 	}
-	s.renderPage(w, http.StatusOK, r, "attractions/index", "attraction.title", "attractions", NewAttractionListViewData(items, total, filters), "")
+	s.renderPage(w, http.StatusOK, r, "places/index", "place.title", "places", NewPlaceListViewData(items, total, filters), "")
 }
 
-func (s *Server) NewAttractionPage(w http.ResponseWriter, r *http.Request) {
-	if staff := staffFromContext(r.Context()); staff == nil || !staff.HasPermission(enum.PermissionAttractionManage) {
-		s.renderPage(w, http.StatusForbidden, r, "attractions/form", "attraction.createTitle", "attractions", NewAttractionFormViewData(nil, attractionInputFromItem(nil)), publicError(localeFromContext(r.Context()), app.ErrPermissionDenied))
+func (s *Server) NewPlacePage(w http.ResponseWriter, r *http.Request) {
+	if staff := staffFromContext(r.Context()); staff == nil || !staff.HasPermission(enum.PermissionPlaceManage) {
+		s.renderPage(w, http.StatusForbidden, r, "places/form", "place.createTitle", "places", NewPlaceFormViewData(nil, placeInputFromItem(nil)), publicError(localeFromContext(r.Context()), app.ErrPermissionDenied))
 		return
 	}
-	data := NewAttractionFormViewData(nil, attractionInputFromItem(nil))
-	s.renderPage(w, http.StatusOK, r, "attractions/form", "attraction.createTitle", "attractions", data, "")
+	data := NewPlaceFormViewData(nil, placeInputFromItem(nil))
+	s.renderPage(w, http.StatusOK, r, "places/form", "place.createTitle", "places", data, "")
 }
 
-func (s *Server) CreateAttraction(w http.ResponseWriter, r *http.Request) {
+func (s *Server) CreatePlace(w http.ResponseWriter, r *http.Request) {
 	staff := staffFromContext(r.Context())
-	input, images, err := parseAttractionForm(r)
+	input, images, err := parsePlaceForm(r)
 	if err != nil {
-		s.renderPage(w, http.StatusBadRequest, r, "attractions/form", "attraction.createTitle", "attractions", NewAttractionFormViewData(nil, input), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
+		s.renderPage(w, http.StatusBadRequest, r, "places/form", "place.createTitle", "places", NewPlaceFormViewData(nil, input), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
 		return
 	}
-	item, err := s.attractions.CreateAttraction(r.Context(), staff, input, requestMetadata(r))
+	item, err := s.places.CreatePlace(r.Context(), staff, input, requestMetadata(r))
 	if err != nil {
-		s.renderPage(w, errorStatus(err), r, "attractions/form", "attraction.createTitle", "attractions", NewAttractionFormViewData(nil, input), publicError(localeFromContext(r.Context()), err))
+		s.renderPage(w, errorStatus(err), r, "places/form", "place.createTitle", "places", NewPlaceFormViewData(nil, input), publicError(localeFromContext(r.Context()), err))
 		return
 	}
 	if len(images) > 0 && item != nil {
@@ -1068,106 +1068,106 @@ func (s *Server) CreateAttraction(w http.ResponseWriter, r *http.Request) {
 		for i := range images {
 			images[i].Metadata = metadata
 		}
-		if err = s.attractions.ReplaceCarouselImages(r.Context(), staff, item.ID, images); err != nil {
-			s.renderPage(w, errorStatus(err), r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(item, input), publicError(localeFromContext(r.Context()), err))
+		if err = s.places.ReplaceCarouselImages(r.Context(), staff, item.ID, images); err != nil {
+			s.renderPage(w, errorStatus(err), r, "places/form", "place.editTitle", "places", NewPlaceFormViewData(item, input), publicError(localeFromContext(r.Context()), err))
 			return
 		}
 	}
-	http.Redirect(w, r, redirectWithFlash("/admin/attractions", "attraction.created"), http.StatusSeeOther)
+	http.Redirect(w, r, redirectWithFlash("/admin/places", "place.created"), http.StatusSeeOther)
 }
 
-func (s *Server) EditAttractionPage(w http.ResponseWriter, r *http.Request) {
-	attractionID, ok := parsePathUUID(w, r, "attractionID")
+func (s *Server) EditPlacePage(w http.ResponseWriter, r *http.Request) {
+	placeID, ok := parsePathUUID(w, r, "placeID")
 	if !ok {
 		return
 	}
-	returnQuery := attractionListQuery(r.URL.Query()).ReturnQuery
-	listURL := attractionListURL(returnQuery)
+	returnQuery := placeListQuery(r.URL.Query()).ReturnQuery
+	listURL := placeListURL(returnQuery)
 	staff := staffFromContext(r.Context())
-	item, err := s.attractions.GetAttraction(r.Context(), staff, attractionID)
+	item, err := s.places.GetPlace(r.Context(), staff, placeID)
 	if err != nil {
-		s.renderPage(w, errorStatus(err), r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(nil, model.AttractionInput{}, listURL), publicError(localeFromContext(r.Context()), err))
+		s.renderPage(w, errorStatus(err), r, "places/form", "place.editTitle", "places", NewPlaceFormViewData(nil, model.PlaceInput{}, listURL), publicError(localeFromContext(r.Context()), err))
 		return
 	}
-	s.renderPage(w, http.StatusOK, r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(item, model.AttractionInput{}, listURL), "")
+	s.renderPage(w, http.StatusOK, r, "places/form", "place.editTitle", "places", NewPlaceFormViewData(item, model.PlaceInput{}, listURL), "")
 }
 
-func (s *Server) UpdateAttraction(w http.ResponseWriter, r *http.Request) {
-	attractionID, ok := parsePathUUID(w, r, "attractionID")
+func (s *Server) UpdatePlace(w http.ResponseWriter, r *http.Request) {
+	placeID, ok := parsePathUUID(w, r, "placeID")
 	if !ok {
 		return
 	}
-	returnQuery := attractionListQuery(r.URL.Query()).ReturnQuery
-	listURL := attractionListURL(returnQuery)
+	returnQuery := placeListQuery(r.URL.Query()).ReturnQuery
+	listURL := placeListURL(returnQuery)
 	staff := staffFromContext(r.Context())
-	input, _, err := parseAttractionForm(r)
+	input, _, err := parsePlaceForm(r)
 	if err != nil {
-		s.renderPage(w, http.StatusBadRequest, r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(&model.AdminAttraction{ID: attractionID}, input, listURL), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
+		s.renderPage(w, http.StatusBadRequest, r, "places/form", "place.editTitle", "places", NewPlaceFormViewData(&model.AdminPlace{ID: placeID}, input, listURL), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
 		return
 	}
-	item, err := s.attractions.UpdateAttraction(r.Context(), staff, attractionID, input, requestMetadata(r))
+	item, err := s.places.UpdatePlace(r.Context(), staff, placeID, input, requestMetadata(r))
 	if err != nil {
-		s.renderPage(w, errorStatus(err), r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(&model.AdminAttraction{ID: attractionID}, input, listURL), publicError(localeFromContext(r.Context()), err))
+		s.renderPage(w, errorStatus(err), r, "places/form", "place.editTitle", "places", NewPlaceFormViewData(&model.AdminPlace{ID: placeID}, input, listURL), publicError(localeFromContext(r.Context()), err))
 		return
 	}
-	http.Redirect(w, r, redirectWithFlash(attractionEditURL(item.ID, returnQuery), "attraction.updated"), http.StatusSeeOther)
+	http.Redirect(w, r, redirectWithFlash(placeEditURL(item.ID, returnQuery), "place.updated"), http.StatusSeeOther)
 }
 
-func (s *Server) ReplaceAttractionMedia(w http.ResponseWriter, r *http.Request) {
-	attractionID, ok := parsePathUUID(w, r, "attractionID")
+func (s *Server) ReplacePlaceMedia(w http.ResponseWriter, r *http.Request) {
+	placeID, ok := parsePathUUID(w, r, "placeID")
 	if !ok {
 		return
 	}
-	returnQuery := attractionListQuery(r.URL.Query()).ReturnQuery
-	listURL := attractionListURL(returnQuery)
+	returnQuery := placeListQuery(r.URL.Query()).ReturnQuery
+	listURL := placeListURL(returnQuery)
 	staff := staffFromContext(r.Context())
 	if err := parseRequestForm(r); err != nil {
-		item, _ := s.attractions.GetAttraction(r.Context(), staff, attractionID)
-		s.renderPage(w, http.StatusBadRequest, r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(item, model.AttractionInput{}, listURL), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
+		item, _ := s.places.GetPlace(r.Context(), staff, placeID)
+		s.renderPage(w, http.StatusBadRequest, r, "places/form", "place.editTitle", "places", NewPlaceFormViewData(item, model.PlaceInput{}, listURL), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
 		return
 	}
-	images, err := parseAttractionImages(r)
+	images, err := parsePlaceImages(r)
 	if err != nil {
-		item, _ := s.attractions.GetAttraction(r.Context(), staff, attractionID)
-		s.renderPage(w, http.StatusBadRequest, r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(item, model.AttractionInput{}, listURL), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
+		item, _ := s.places.GetPlace(r.Context(), staff, placeID)
+		s.renderPage(w, http.StatusBadRequest, r, "places/form", "place.editTitle", "places", NewPlaceFormViewData(item, model.PlaceInput{}, listURL), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
 		return
 	}
 	existingMediaIDs, err := parseUUIDValues(r.Form["media_ids"])
 	if err != nil {
-		item, _ := s.attractions.GetAttraction(r.Context(), staff, attractionID)
-		s.renderPage(w, http.StatusBadRequest, r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(item, model.AttractionInput{}, listURL), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
+		item, _ := s.places.GetPlace(r.Context(), staff, placeID)
+		s.renderPage(w, http.StatusBadRequest, r, "places/form", "place.editTitle", "places", NewPlaceFormViewData(item, model.PlaceInput{}, listURL), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
 		return
 	}
 	deleteMediaIDs, err := parseUUIDValues(r.Form["delete_media_ids"])
 	if err != nil {
-		item, _ := s.attractions.GetAttraction(r.Context(), staff, attractionID)
-		s.renderPage(w, http.StatusBadRequest, r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(item, model.AttractionInput{}, listURL), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
+		item, _ := s.places.GetPlace(r.Context(), staff, placeID)
+		s.renderPage(w, http.StatusBadRequest, r, "places/form", "place.editTitle", "places", NewPlaceFormViewData(item, model.PlaceInput{}, listURL), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
 		return
 	}
 	metadata := requestMetadata(r)
 	for i := range images {
 		images[i].Metadata = metadata
 	}
-	if err = s.attractions.UpdateCarouselImages(r.Context(), staff, attractionID, app.AttractionMediaUpdateInput{
-		Action:           app.AttractionMediaAction(r.Form.Get("media_action")),
+	if err = s.places.UpdateCarouselImages(r.Context(), staff, placeID, app.PlaceMediaUpdateInput{
+		Action:           app.PlaceMediaAction(r.Form.Get("media_action")),
 		ExistingMediaIDs: existingMediaIDs,
 		DeleteMediaIDs:   deleteMediaIDs,
 		Uploads:          images,
 		Metadata:         metadata,
 	}); err != nil {
-		item, _ := s.attractions.GetAttraction(r.Context(), staff, attractionID)
-		s.renderPage(w, errorStatus(err), r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(item, model.AttractionInput{}, listURL), publicError(localeFromContext(r.Context()), err))
+		item, _ := s.places.GetPlace(r.Context(), staff, placeID)
+		s.renderPage(w, errorStatus(err), r, "places/form", "place.editTitle", "places", NewPlaceFormViewData(item, model.PlaceInput{}, listURL), publicError(localeFromContext(r.Context()), err))
 		return
 	}
-	http.Redirect(w, r, redirectWithFlash(attractionEditURL(attractionID, returnQuery), "attraction.mediaUpdated"), http.StatusSeeOther)
+	http.Redirect(w, r, redirectWithFlash(placeEditURL(placeID, returnQuery), "place.mediaUpdated"), http.StatusSeeOther)
 }
 
-func (s *Server) AttractionMedia(w http.ResponseWriter, r *http.Request) {
+func (s *Server) PlaceMedia(w http.ResponseWriter, r *http.Request) {
 	fileID, ok := parsePathUUID(w, r, "fileID")
 	if !ok {
 		return
 	}
-	content, err := s.attractions.GetPublicImageContent(r.Context(), staffFromContext(r.Context()), fileID)
+	content, err := s.places.GetPublicImageContent(r.Context(), staffFromContext(r.Context()), fileID)
 	if err != nil {
 		http.Error(w, publicError(localeFromContext(r.Context()), err), errorStatus(err))
 		return
@@ -1649,18 +1649,18 @@ func adminUserDetailURL(userID uuid.UUID) string {
 	return "/admin/users/" + userID.String()
 }
 
-func parseAttractionForm(r *http.Request) (model.AttractionInput, []app.AttractionImageUploadInput, error) {
+func parsePlaceForm(r *http.Request) (model.PlaceInput, []app.PlaceImageUploadInput, error) {
 	if err := parseRequestForm(r); err != nil {
-		return model.AttractionInput{}, nil, err
+		return model.PlaceInput{}, nil, err
 	}
 
 	latitude, err := parseOptionalFloat(r.Form.Get("latitude"))
 	if err != nil {
-		return model.AttractionInput{}, nil, err
+		return model.PlaceInput{}, nil, err
 	}
 	longitude, err := parseOptionalFloat(r.Form.Get("longitude"))
 	if err != nil {
-		return model.AttractionInput{}, nil, err
+		return model.PlaceInput{}, nil, err
 	}
 	locationSourceURL := r.Form.Get("location_source_url")
 	if (latitude == nil || longitude == nil) && strings.TrimSpace(locationSourceURL) != "" {
@@ -1675,24 +1675,24 @@ func parseAttractionForm(r *http.Request) (model.AttractionInput, []app.Attracti
 	}
 	priceAmount, err := parseOptionalFloat(r.Form.Get("price_amount"))
 	if err != nil {
-		return model.AttractionInput{}, nil, err
+		return model.PlaceInput{}, nil, err
 	}
 	durationValue, err := parseOptionalInt(r.Form.Get("duration_value"))
 	if err != nil {
-		return model.AttractionInput{}, nil, err
+		return model.PlaceInput{}, nil, err
 	}
 	spots, err := parseOptionalInt(r.Form.Get("spots"))
 	if err != nil {
-		return model.AttractionInput{}, nil, err
+		return model.PlaceInput{}, nil, err
 	}
 
 	defaultLocale := strings.TrimSpace(r.Form.Get("default_locale"))
-	translations := map[string]model.AttractionTranslation{}
+	translations := map[string]model.PlaceTranslation{}
 	for _, locale := range []string{"ru", "en", "kk"} {
 		title := strings.TrimSpace(r.Form.Get("title_" + locale))
 		description := strings.TrimSpace(r.Form.Get("description_" + locale))
 		if title != "" || description != "" {
-			translations[locale] = model.AttractionTranslation{
+			translations[locale] = model.PlaceTranslation{
 				Title:       title,
 				Description: description,
 			}
@@ -1702,7 +1702,7 @@ func parseAttractionForm(r *http.Request) (model.AttractionInput, []app.Attracti
 	priceCurrency := optionalString(r.Form.Get("price_currency"))
 	durationUnit := optionalString(r.Form.Get("duration_unit"))
 	bookingRequired := optionalBool(r.Form.Get("booking_required"))
-	visitInfo := &model.AttractionVisitInfo{
+	visitInfo := &model.PlaceVisitInfo{
 		BestTime:        strings.TrimSpace(r.Form.Get("visit_best_time")),
 		Accessibility:   strings.TrimSpace(r.Form.Get("visit_accessibility")),
 		BookingRequired: bookingRequired,
@@ -1711,7 +1711,7 @@ func parseAttractionForm(r *http.Request) (model.AttractionInput, []app.Attracti
 		Audience:        splitCSV(r.Form.Get("visit_audience")),
 		SafetyNotes:     splitCSV(r.Form.Get("visit_safety_notes")),
 	}
-	input := model.AttractionInput{
+	input := model.PlaceInput{
 		Title:             defaultTranslation.Title,
 		Description:       defaultTranslation.Description,
 		DefaultLocale:     defaultLocale,
@@ -1733,11 +1733,11 @@ func parseAttractionForm(r *http.Request) (model.AttractionInput, []app.Attracti
 		Tags:              splitCSV(r.Form.Get("tags")),
 		VisitInfo:         visitInfo,
 	}
-	images, err := parseAttractionImages(r)
+	images, err := parsePlaceImages(r)
 	return input, images, err
 }
 
-func parseAttractionImages(r *http.Request) ([]app.AttractionImageUploadInput, error) {
+func parsePlaceImages(r *http.Request) ([]app.PlaceImageUploadInput, error) {
 	if err := parseRequestForm(r); err != nil {
 		return nil, err
 	}
@@ -1755,12 +1755,12 @@ func parseAttractionImages(r *http.Request) ([]app.AttractionImageUploadInput, e
 		return nil, app.ErrInvalidInput
 	}
 
-	images := make([]app.AttractionImageUploadInput, 0, len(headers))
+	images := make([]app.PlaceImageUploadInput, 0, len(headers))
 	for _, header := range headers {
 		if header == nil {
 			continue
 		}
-		image, err := readAttractionImage(header)
+		image, err := readPlaceImage(header)
 		if err != nil {
 			return nil, err
 		}
@@ -1769,26 +1769,26 @@ func parseAttractionImages(r *http.Request) ([]app.AttractionImageUploadInput, e
 	return images, nil
 }
 
-func readAttractionImage(header *multipart.FileHeader) (app.AttractionImageUploadInput, error) {
+func readPlaceImage(header *multipart.FileHeader) (app.PlaceImageUploadInput, error) {
 	file, err := header.Open()
 	if err != nil {
-		return app.AttractionImageUploadInput{}, err
+		return app.PlaceImageUploadInput{}, err
 	}
 	defer file.Close()
 
 	content, err := io.ReadAll(io.LimitReader(file, 25<<20))
 	if err != nil {
-		return app.AttractionImageUploadInput{}, err
+		return app.PlaceImageUploadInput{}, err
 	}
 	if len(content) == 0 {
-		return app.AttractionImageUploadInput{}, app.ErrInvalidInput
+		return app.PlaceImageUploadInput{}, app.ErrInvalidInput
 	}
 	contentType := ""
 	contentType = header.Header.Get("Content-Type")
 	if strings.TrimSpace(contentType) == "" {
 		contentType = http.DetectContentType(content)
 	}
-	return app.AttractionImageUploadInput{
+	return app.PlaceImageUploadInput{
 		FileName:    header.Filename,
 		ContentType: contentType,
 		Content:     content,
@@ -1865,8 +1865,8 @@ func publicError(locale string, err error) string {
 	if errors.Is(err, app.ErrUserNotFound) {
 		return translate(locale, "error.userNotFound")
 	}
-	if errors.Is(err, app.ErrAttractionNotFound) {
-		return translate(locale, "error.attractionNotFound")
+	if errors.Is(err, app.ErrPlaceNotFound) {
+		return translate(locale, "error.placeNotFound")
 	}
 	if errors.Is(err, app.ErrOperationDomainNotFound) || errors.Is(err, app.ErrOperationResourceNotFound) {
 		return translate(locale, "error.notFound")
@@ -1899,7 +1899,7 @@ func errorStatus(err error) int {
 		return http.StatusNotFound
 	case errors.Is(err, app.ErrUserNotFound):
 		return http.StatusNotFound
-	case errors.Is(err, app.ErrAttractionNotFound):
+	case errors.Is(err, app.ErrPlaceNotFound):
 		return http.StatusNotFound
 	case errors.Is(err, app.ErrOperationDomainNotFound):
 		return http.StatusNotFound

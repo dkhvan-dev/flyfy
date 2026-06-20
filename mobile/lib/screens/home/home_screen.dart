@@ -11,9 +11,9 @@ import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/activity_taxonomy_resolver.dart';
 import '../../features/activities/models/activity_category_vm.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
-import '../../features/attractions/attraction_ui.dart';
-import '../../features/attractions/data/attraction_api.dart';
-import '../../features/attractions/models/attraction_vm.dart';
+import '../../features/places/place_ui.dart';
+import '../../features/places/data/place_api.dart';
+import '../../features/places/models/place_vm.dart';
 import '../../features/feed/data/feed_api.dart';
 import '../../features/feed/models/feed_block_vm.dart';
 import '../../features/feed/widgets/contextual_story_tray.dart';
@@ -38,7 +38,7 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
     this.feedApi,
-    this.attractionApi,
+    this.placeApi,
     this.guideApi,
     this.initialDataLoadDelay = _initialHomeDataDelay,
     this.initialDataLoadStagger = _initialHomeDataStagger,
@@ -49,7 +49,7 @@ class HomeScreen extends StatefulWidget {
   static const _initialHomeDataStagger = Duration(milliseconds: 160);
 
   final FeedApi? feedApi;
-  final AttractionApi? attractionApi;
+  final PlaceApi? placeApi;
   final GuideApi? guideApi;
   final Duration initialDataLoadDelay;
   final Duration initialDataLoadStagger;
@@ -69,16 +69,15 @@ class _HomeScreenState extends State<HomeScreen> {
       GlobalKey<RefreshIndicatorState>();
   final ScrollController _scrollController = ScrollController();
   late final GuideApi _guideApi = widget.guideApi ?? GuideApi();
-  late final AttractionApi _attractionApi =
-      widget.attractionApi ?? AttractionApi();
+  late final PlaceApi _placeApi = widget.placeApi ?? PlaceApi();
   late final FeedApi _feedApi = widget.feedApi ?? FeedApi();
   String? _requestedHostedActivitiesForUserId;
   String? _requestedJoinedActivitiesForUserId;
-  String? _requestedTopAttractionsLocale;
+  String? _requestedTopPlacesLocale;
   String? _guideBadgeUserId;
   bool _isGuideBadgeLoading = false;
   int _guideBadgeRequestVersion = 0;
-  List<AttractionVm> _topAttractions = const [];
+  List<PlaceVm> _topPlaces = const [];
   List<StoryVm> _homeStoryTrayStories = const [];
   List<PostVm> _topPosts = const [];
   List<_HomePostFeedItem> _homePostFeedItems = const [];
@@ -86,8 +85,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _homePostFeedNextCursor;
   String? _requestedHomeFeedCountryCode;
   String? _requestedHomeFeedCityId;
-  bool _topAttractionsLoading = true;
-  bool _topAttractionsLoadFailed = false;
+  bool _topPlacesLoading = true;
+  bool _topPlacesLoadFailed = false;
   bool _topPostsLoading = true;
   bool _topPostsLoadFailed = false;
   bool _homePostFeedLoadingMore = false;
@@ -182,7 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     await Future<void>.delayed(widget.initialDataLoadStagger);
     if (!mounted) return;
-    unawaited(_loadTopAttractions());
+    unawaited(_loadTopPlaces());
 
     await Future<void>.delayed(widget.initialDataLoadStagger);
     if (!mounted) return;
@@ -386,8 +385,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _openAttractions() {
-    context.push('/attractions');
+  void _openPlaces() {
+    context.push('/places');
   }
 
   void _openServices() {
@@ -416,27 +415,25 @@ class _HomeScreenState extends State<HomeScreen> {
     context.push(service.route);
   }
 
-  void _openAttractionDetails(AttractionVm attraction) {
-    final attractionId = attraction.id.trim();
-    final rank = _topAttractions.indexWhere(
-      (item) => item.id.trim() == attractionId,
-    );
+  void _openPlaceDetails(PlaceVm place) {
+    final placeId = place.id.trim();
+    final rank = _topPlaces.indexWhere((item) => item.id.trim() == placeId);
     _trackHomeEntityConversionClick(
       blockId: 'home:top_destinations',
-      blockType: 'attraction_card',
-      entityType: 'attraction',
-      entityId: attractionId,
+      blockType: 'place_card',
+      entityType: 'place',
+      entityId: placeId,
       source: 'home_top_destinations',
       rank: rank,
       metadata: {
-        'title': attraction.title,
-        'category': attraction.category,
-        'countryCode': attraction.countryCode,
-        'cityId': attraction.cityId,
-        'tags': attraction.tags,
+        'title': place.title,
+        'category': place.category,
+        'countryCode': place.countryCode,
+        'cityId': place.cityId,
+        'tags': place.tags,
       },
     );
-    context.push('/attractions/${attraction.id}', extra: attraction);
+    context.push('/places/${place.id}', extra: place);
   }
 
   void _openRecommendedActivityDetails(ActivityListItemVm activity, int rank) {
@@ -484,7 +481,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ]);
     }
     await Future.wait<void>([
-      _loadTopAttractions(force: true),
+      _loadTopPlaces(force: true),
       _loadHomeFeed(force: true),
     ]);
   }
@@ -524,38 +521,38 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
   }
 
-  Future<void> _loadTopAttractions({bool force = false}) async {
+  Future<void> _loadTopPlaces({bool force = false}) async {
     if (!mounted) return;
 
     final locale = Localizations.localeOf(context).languageCode;
     if (!force &&
-        _requestedTopAttractionsLocale == locale &&
-        (_topAttractions.isNotEmpty || _topAttractionsLoading)) {
+        _requestedTopPlacesLocale == locale &&
+        (_topPlaces.isNotEmpty || _topPlacesLoading)) {
       return;
     }
 
-    _requestedTopAttractionsLocale = locale;
+    _requestedTopPlacesLocale = locale;
     setState(() {
-      _topAttractionsLoading = _topAttractions.isEmpty;
-      _topAttractionsLoadFailed = false;
+      _topPlacesLoading = _topPlaces.isEmpty;
+      _topPlacesLoadFailed = false;
     });
 
     try {
-      final result = await _attractionApi.getAttractions(
+      final result = await _placeApi.getPlaces(
         sort: 'rating',
         locale: locale,
         limit: 10,
       );
-      if (!mounted || _requestedTopAttractionsLocale != locale) return;
+      if (!mounted || _requestedTopPlacesLocale != locale) return;
       setState(() {
-        _topAttractions = result.items.take(10).toList(growable: false);
-        _topAttractionsLoading = false;
+        _topPlaces = result.items.take(10).toList(growable: false);
+        _topPlacesLoading = false;
       });
     } catch (_) {
-      if (!mounted || _requestedTopAttractionsLocale != locale) return;
+      if (!mounted || _requestedTopPlacesLocale != locale) return;
       setState(() {
-        _topAttractionsLoading = false;
-        _topAttractionsLoadFailed = true;
+        _topPlacesLoading = false;
+        _topPlacesLoadFailed = true;
       });
     }
   }
@@ -793,11 +790,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     _ensureGuideBadgeState(currentUserId);
-    if (_requestedTopAttractionsLocale != languageCode &&
-        !_topAttractionsLoading) {
+    if (_requestedTopPlacesLocale != languageCode && !_topPlacesLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        _loadTopAttractions(force: true);
+        _loadTopPlaces(force: true);
       });
     }
 
@@ -952,16 +948,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                       _SectionHeader(
                                         title: l10n.homeTopDestinations,
                                         actionLabel: l10n.homeSeeAll,
-                                        onActionTap: _openAttractions,
+                                        onActionTap: _openPlaces,
                                       ),
                                       const SizedBox(height: 14),
                                       _TopDestinationsRow(
-                                        attractions: _topAttractions,
-                                        isLoading: _topAttractionsLoading,
-                                        hasError: _topAttractionsLoadFailed,
-                                        onAttractionTap: _openAttractionDetails,
+                                        places: _topPlaces,
+                                        isLoading: _topPlacesLoading,
+                                        hasError: _topPlacesLoadFailed,
+                                        onPlaceTap: _openPlaceDetails,
                                         onRetry: () =>
-                                            _loadTopAttractions(force: true),
+                                            _loadTopPlaces(force: true),
                                       ),
                                       SizedBox(height: isCompact ? 30 : 34),
                                       _SectionHeader(
@@ -1780,17 +1776,17 @@ class _PromoCard extends StatelessWidget {
 
 class _TopDestinationsRow extends StatelessWidget {
   const _TopDestinationsRow({
-    required this.attractions,
+    required this.places,
     required this.isLoading,
     required this.hasError,
-    required this.onAttractionTap,
+    required this.onPlaceTap,
     required this.onRetry,
   });
 
-  final List<AttractionVm> attractions;
+  final List<PlaceVm> places;
   final bool isLoading;
   final bool hasError;
-  final ValueChanged<AttractionVm> onAttractionTap;
+  final ValueChanged<PlaceVm> onPlaceTap;
   final VoidCallback onRetry;
 
   @override
@@ -1812,7 +1808,7 @@ class _TopDestinationsRow extends StatelessWidget {
           textScale: textScale,
         );
 
-        if (isLoading && attractions.isEmpty) {
+        if (isLoading && places.isEmpty) {
           return MediaQuery(
             data: MediaQuery.of(
               context,
@@ -1834,25 +1830,25 @@ class _TopDestinationsRow extends StatelessWidget {
           );
         }
 
-        if (hasError && attractions.isEmpty) {
+        if (hasError && places.isEmpty) {
           return _TopDestinationMessage(
             icon: Icons.cloud_off_rounded,
-            message: l10n.attractionsLoadFailed,
+            message: l10n.placesLoadFailed,
             actionLabel: l10n.retryButton,
             onActionTap: onRetry,
           );
         }
 
-        if (attractions.isEmpty) {
+        if (places.isEmpty) {
           return _TopDestinationMessage(
             icon: Icons.landscape_rounded,
-            message: l10n.attractionsNoResults,
+            message: l10n.placesNoResults,
             actionLabel: l10n.homeSeeAll,
             onActionTap: onRetry,
           );
         }
 
-        final items = attractions.take(10).toList(growable: false);
+        final items = places.take(10).toList(growable: false);
         return MediaQuery(
           data: MediaQuery.of(
             context,
@@ -1866,12 +1862,12 @@ class _TopDestinationsRow extends StatelessWidget {
               itemCount: items.length,
               separatorBuilder: (_, _) => SizedBox(width: gap),
               itemBuilder: (context, index) {
-                final attraction = items[index];
+                final place = items[index];
                 return SizedBox(
                   width: cardWidth,
-                  child: _TopDestinationAttractionCard(
-                    attraction: attraction,
-                    onTap: () => onAttractionTap(attraction),
+                  child: _TopDestinationPlaceCard(
+                    place: place,
+                    onTap: () => onPlaceTap(place),
                   ),
                 );
               },
@@ -1883,13 +1879,10 @@ class _TopDestinationsRow extends StatelessWidget {
   }
 }
 
-class _TopDestinationAttractionCard extends StatelessWidget {
-  const _TopDestinationAttractionCard({
-    required this.attraction,
-    required this.onTap,
-  });
+class _TopDestinationPlaceCard extends StatelessWidget {
+  const _TopDestinationPlaceCard({required this.place, required this.onTap});
 
-  final AttractionVm attraction;
+  final PlaceVm place;
   final VoidCallback onTap;
 
   @override
@@ -1909,9 +1902,9 @@ class _TopDestinationAttractionCard extends StatelessWidget {
       isCompact: isCompact,
       textScale: textScale,
     );
-    final coverMedia = attraction.coverMedia;
-    final coverUrl = _resolveHomeAttractionImageUrl(coverMedia);
-    final categoryLabel = _homeAttractionCategoryLabel(l10n, attraction);
+    final coverMedia = place.coverMedia;
+    final coverUrl = _resolveHomePlaceImageUrl(coverMedia);
+    final categoryLabel = _homePlaceCategoryLabel(l10n, place);
 
     return Material(
       color: Colors.transparent,
@@ -1942,9 +1935,9 @@ class _TopDestinationAttractionCard extends StatelessWidget {
                       fit: StackFit.expand,
                       children: [
                         if (coverUrl == null)
-                          const _AttractionCardImagePlaceholder()
+                          const _PlaceCardImagePlaceholder()
                         else
-                          _AttractionCardNetworkImage(
+                          _PlaceCardNetworkImage(
                             imageUrl: coverUrl,
                             logicalWidth:
                                 MediaQuery.sizeOf(context).width * 0.5,
@@ -1988,7 +1981,7 @@ class _TopDestinationAttractionCard extends StatelessWidget {
               child: Align(
                 alignment: Alignment.topLeft,
                 child: Text(
-                  attraction.title,
+                  place.title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: titleStyle,
@@ -2005,7 +1998,7 @@ class _TopDestinationAttractionCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    formatAttractionPriceLabel(context, l10n, attraction),
+                    formatPlacePriceLabel(context, l10n, place),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -2016,7 +2009,7 @@ class _TopDestinationAttractionCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '★ ${attraction.rating.toStringAsFixed(1)}',
+                  '★ ${place.rating.toStringAsFixed(1)}',
                   style: TextStyle(
                     color: AppColors.accent,
                     fontSize: isCompact ? 13 : 14,
@@ -2086,8 +2079,8 @@ class _DestinationTag extends StatelessWidget {
   }
 }
 
-class _AttractionCardNetworkImage extends StatelessWidget {
-  const _AttractionCardNetworkImage({
+class _PlaceCardNetworkImage extends StatelessWidget {
+  const _PlaceCardNetworkImage({
     required this.imageUrl,
     required this.logicalWidth,
   });
@@ -2099,9 +2092,9 @@ class _AttractionCardNetworkImage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Image.network(
       imageUrl,
-      headers: attractionImageRequestHeaders(imageUrl),
+      headers: placeImageRequestHeaders(imageUrl),
       fit: BoxFit.cover,
-      cacheWidth: attractionImageTargetWidth(
+      cacheWidth: placeImageTargetWidth(
         context,
         logicalWidth,
         minWidth: 360,
@@ -2111,15 +2104,15 @@ class _AttractionCardNetworkImage extends StatelessWidget {
       gaplessPlayback: true,
       loadingBuilder: (context, child, progress) {
         if (progress == null) return child;
-        return const _AttractionCardImagePlaceholder();
+        return const _PlaceCardImagePlaceholder();
       },
-      errorBuilder: (_, _, _) => const _AttractionCardImagePlaceholder(),
+      errorBuilder: (_, _, _) => const _PlaceCardImagePlaceholder(),
     );
   }
 }
 
-class _AttractionCardImagePlaceholder extends StatelessWidget {
-  const _AttractionCardImagePlaceholder();
+class _PlaceCardImagePlaceholder extends StatelessWidget {
+  const _PlaceCardImagePlaceholder();
 
   @override
   Widget build(BuildContext context) {
@@ -3604,10 +3597,10 @@ double _homeTopDestinationCardHeight({
   return imageHeight + 13 + titleBlockHeight + 8 + footerHeight + 4;
 }
 
-String? _resolveHomeAttractionImageUrl(AttractionMediaVm? media) {
+String? _resolveHomePlaceImageUrl(PlaceMediaVm? media) {
   if (media == null) return null;
 
-  final fileUrl = resolveAttractionMediaUrl(media)?.trim() ?? '';
+  final fileUrl = resolvePlaceMediaUrl(media)?.trim() ?? '';
   if (fileUrl.isNotEmpty) return fileUrl;
 
   final externalUrl = media.externalUrl.trim();
@@ -3619,43 +3612,40 @@ String? _resolveHomeAttractionImageUrl(AttractionMediaVm? media) {
   return null;
 }
 
-String _homeAttractionCategoryLabel(
-  AppLocalizations l10n,
-  AttractionVm attraction,
-) {
-  switch (attraction.category.toUpperCase()) {
+String _homePlaceCategoryLabel(AppLocalizations l10n, PlaceVm place) {
+  switch (place.category.toUpperCase()) {
     case 'PARK':
-      return l10n.attractionFilterCategoryParks;
+      return l10n.placeFilterCategoryParks;
     case 'MUSEUM':
-      return l10n.attractionFilterCategoryMuseums;
+      return l10n.placeFilterCategoryMuseums;
     case 'NATURE':
-      return l10n.attractionFilterCategoryNature;
+      return l10n.placeFilterCategoryNature;
     case 'ARCHITECTURE':
-      return l10n.attractionFilterCategoryArchitecture;
+      return l10n.placeFilterCategoryArchitecture;
     case 'BEACH':
-      return l10n.attractionFilterCategoryBeach;
+      return l10n.placeFilterCategoryBeach;
     case 'TEMPLE':
-      return l10n.attractionFilterCategoryTemple;
+      return l10n.placeFilterCategoryTemple;
     case 'ENTERTAINMENT':
-      return l10n.attractionFilterCategoryEntertainment;
+      return l10n.placeFilterCategoryEntertainment;
     case 'FOOD':
-      return l10n.attractionFilterCategoryFood;
+      return l10n.placeFilterCategoryFood;
     case 'MARKET':
-      return l10n.attractionFilterCategoryMarket;
+      return l10n.placeFilterCategoryMarket;
     case 'SHOPPING':
-      return l10n.attractionFilterCategoryShopping;
+      return l10n.placeFilterCategoryShopping;
     case 'OTHER':
-      return l10n.attractionFilterCategoryOther;
+      return l10n.placeFilterCategoryOther;
     case 'PARKS':
-      return l10n.attractionFilterCategoryParks;
+      return l10n.placeFilterCategoryParks;
     case 'MUSEUMS':
-      return l10n.attractionFilterCategoryMuseums;
+      return l10n.placeFilterCategoryMuseums;
     case 'HISTORY':
-      return l10n.attractionFilterCategoryHistory;
+      return l10n.placeFilterCategoryHistory;
     case 'ADVENTURE':
-      return l10n.attractionFilterCategoryAdventure;
+      return l10n.placeFilterCategoryAdventure;
     default:
-      return l10n.attractionFilterCategoryOther;
+      return l10n.placeFilterCategoryOther;
   }
 }
 

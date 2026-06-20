@@ -6,14 +6,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/app_list_search_field.dart';
-import '../../features/attractions/attraction_ui.dart';
-import '../../features/attractions/data/attraction_api.dart';
-import '../../features/attractions/models/attraction_vm.dart';
+import '../../features/places/place_ui.dart';
+import '../../features/places/data/place_api.dart';
+import '../../features/places/models/place_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../shared/reference/app_location_label_resolver.dart';
 import '../../shared/map/app_map_links.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
-import '../attractions/attractions_filter_sheet.dart';
+import '../places/places_filter_sheet.dart';
 
 class ExcursionLocationSelection {
   const ExcursionLocationSelection({
@@ -61,21 +61,21 @@ class ExcursionLocationSelection {
     );
   }
 
-  factory ExcursionLocationSelection.fromAttraction(
-    AttractionVm attraction, {
+  factory ExcursionLocationSelection.fromPlace(
+    PlaceVm place, {
     String? fallbackCityName,
   }) {
-    final coverMedia = attraction.coverMedia;
+    final coverMedia = place.coverMedia;
     final coverImageUrl = coverMedia == null
         ? null
-        : resolveAttractionMediaUrl(coverMedia);
-    final cityId = attraction.cityId.trim();
+        : resolvePlaceMediaUrl(coverMedia);
+    final cityId = place.cityId.trim();
     final cityName = _selectionCityName(
       cityId: cityId,
       fallbackCityName: fallbackCityName,
     );
     final translations = <String, ExcursionLocationLocalizedCopy>{};
-    for (final entry in attraction.translations.entries) {
+    for (final entry in place.translations.entries) {
       final locale = entry.key.trim().toLowerCase().replaceAll('_', '-');
       if (locale.isEmpty) continue;
       final title = entry.value.title.trim();
@@ -86,38 +86,38 @@ class ExcursionLocationSelection {
         description: description,
       );
     }
-    final locale = attraction.locale.trim().toLowerCase().replaceAll('_', '-');
+    final locale = place.locale.trim().toLowerCase().replaceAll('_', '-');
     if (locale.isNotEmpty &&
-        (attraction.title.trim().isNotEmpty ||
-            attraction.description.trim().isNotEmpty)) {
+        (place.title.trim().isNotEmpty ||
+            place.description.trim().isNotEmpty)) {
       translations.putIfAbsent(
         locale,
         () => ExcursionLocationLocalizedCopy(
-          title: attraction.title.trim(),
-          description: attraction.description.trim(),
+          title: place.title.trim(),
+          description: place.description.trim(),
         ),
       );
     }
     return ExcursionLocationSelection(
-      id: attraction.id,
-      name: attraction.title,
-      countryCode: attraction.countryCode,
+      id: place.id,
+      name: place.title,
+      countryCode: place.countryCode,
       cityId: cityId.isEmpty ? null : cityId,
       cityName: cityName,
-      latitude: attraction.latitude,
-      longitude: attraction.longitude,
-      mapUrl: attraction.hasLocation
+      latitude: place.latitude,
+      longitude: place.longitude,
+      mapUrl: place.hasLocation
           ? AppMapLinks.buildUrl(
-              latitude: attraction.latitude!,
-              longitude: attraction.longitude!,
-              title: attraction.title,
-              subtitle: cityName ?? attraction.countryCode,
+              latitude: place.latitude!,
+              longitude: place.longitude!,
+              title: place.title,
+              subtitle: cityName ?? place.countryCode,
             )
           : null,
-      coverFileId: attraction.coverFileId,
+      coverFileId: place.coverFileId,
       coverImageUrl: coverImageUrl,
       translations: translations,
-      categorySlug: attraction.category.trim(),
+      categorySlug: place.category.trim(),
     );
   }
 }
@@ -127,7 +127,7 @@ String? _selectionCityName({required String cityId, String? fallbackCityName}) {
   if (cityName != null && cityName.isNotEmpty) {
     return cityName;
   }
-  return null;
+  return cityId.trim().isEmpty ? null : cityId.trim();
 }
 
 class ExcursionLocationLocalizedCopy {
@@ -163,7 +163,7 @@ class ExcursionSelectLocationScreen extends StatefulWidget {
 
   final String countryCode;
   final ExcursionLocationSelection? initialSelection;
-  final AttractionApi? api;
+  final PlaceApi? api;
   final AppLocationLabelResolver? locationLabelResolver;
 
   @override
@@ -177,9 +177,9 @@ class _ExcursionSelectLocationScreenState
   static const double _swipeCloseMinDistance = 56;
   static const double _swipeCloseMinVelocity = 700;
 
-  late final AttractionApi _api;
+  late final PlaceApi _api;
   late final AppLocationLabelResolver _locationLabelResolver;
-  final _attractionSearchCtrl = TextEditingController();
+  final _placeSearchCtrl = TextEditingController();
   final _scrollController = ScrollController();
 
   Timer? _searchDebounce;
@@ -191,8 +191,8 @@ class _ExcursionSelectLocationScreenState
   var _isLoading = true;
   var _isRefreshing = false;
   String? _error;
-  AttractionFilterResult _filters = AttractionFilterResult.empty;
-  List<AttractionVm> _items = const [];
+  PlaceFilterResult _filters = PlaceFilterResult.empty;
+  List<PlaceVm> _items = const [];
   ExcursionLocationSelection? _selectedLocation;
 
   int get _totalPages {
@@ -203,7 +203,7 @@ class _ExcursionSelectLocationScreenState
   @override
   void initState() {
     super.initState();
-    _api = widget.api ?? AttractionApi();
+    _api = widget.api ?? PlaceApi();
     _locationLabelResolver =
         widget.locationLabelResolver ?? AppLocationLabelResolver();
     _selectedCountryCode = widget.countryCode.trim().toUpperCase();
@@ -215,8 +215,8 @@ class _ExcursionSelectLocationScreenState
       _selectedLocation = initial;
     }
     _filters = _initialLocationFilter(initial);
-    _attractionSearchCtrl.addListener(_onAttractionSearchChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadAttractions());
+    _placeSearchCtrl.addListener(_onPlaceSearchChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPlaces());
   }
 
   bool _hasUsableInitialSelection(ExcursionLocationSelection? initial) {
@@ -225,14 +225,14 @@ class _ExcursionSelectLocationScreenState
         initial.countryCode.trim().toUpperCase() == _selectedCountryCode;
   }
 
-  AttractionFilterResult _initialLocationFilter(
+  PlaceFilterResult _initialLocationFilter(
     ExcursionLocationSelection? initial,
   ) {
     final country = AppCountryFilterValue.fromParts(
       countryCode: _selectedCountryCode,
     );
     if (initial == null || initial.countryCode != _selectedCountryCode) {
-      return AttractionFilterResult(country: country);
+      return PlaceFilterResult(country: country);
     }
 
     final city = AppCityFilterValue.fromParts(
@@ -240,26 +240,26 @@ class _ExcursionSelectLocationScreenState
       cityName: initial.cityName,
       countryCode: initial.countryCode,
     );
-    return AttractionFilterResult(country: country, city: city);
+    return PlaceFilterResult(country: country, city: city);
   }
 
   @override
   void dispose() {
     _searchDebounce?.cancel();
-    _attractionSearchCtrl.dispose();
+    _placeSearchCtrl.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
-  void _onAttractionSearchChanged() {
+  void _onPlaceSearchChanged() {
     _searchDebounce?.cancel();
     _searchDebounce = Timer(
       const Duration(milliseconds: 380),
-      () => _loadAttractions(page: 1),
+      () => _loadPlaces(page: 1),
     );
   }
 
-  Future<void> _loadAttractions({int page = 1, bool refresh = false}) async {
+  Future<void> _loadPlaces({int page = 1, bool refresh = false}) async {
     if (!mounted) return;
     final normalizedPage = page < 1 ? 1 : page;
     setState(() {
@@ -270,8 +270,8 @@ class _ExcursionSelectLocationScreenState
 
     try {
       final locale = Localizations.localeOf(context).languageCode;
-      final search = _attractionSearchCtrl.text.trim();
-      final result = await _api.getAttractions(
+      final search = _placeSearchCtrl.text.trim();
+      final result = await _api.getPlaces(
         search: search.isEmpty ? null : search,
         countryCode: _filters.countryCode,
         cityId: _filters.cityId,
@@ -305,28 +305,27 @@ class _ExcursionSelectLocationScreenState
     }
   }
 
-  Future<void> _refresh() =>
-      _loadAttractions(page: _currentPage, refresh: true);
+  Future<void> _refresh() => _loadPlaces(page: _currentPage, refresh: true);
 
   Future<void> _openFilters() async {
     FocusScope.of(context).unfocus();
 
-    final result = await showModalBottomSheet<AttractionFilterResult>(
+    final result = await showModalBottomSheet<PlaceFilterResult>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => AttractionsFilterSheet(
+      builder: (_) => PlacesFilterSheet(
         initial: _filters,
         api: _api,
-        searchQuery: _attractionSearchCtrl.text,
+        searchQuery: _placeSearchCtrl.text,
         fallbackCountryCode: _selectedCountryCode,
       ),
     );
     if (result == null || !mounted) return;
     setState(() => _filters = result);
-    await _loadAttractions(page: 1);
+    await _loadPlaces(page: 1);
   }
 
   Future<void> _changePage(int page) async {
@@ -334,7 +333,7 @@ class _ExcursionSelectLocationScreenState
       return;
     }
     FocusScope.of(context).unfocus();
-    await _loadAttractions(page: page);
+    await _loadPlaces(page: page);
     if (!mounted || !_scrollController.hasClients) return;
     await _scrollController.animateTo(
       0,
@@ -343,15 +342,13 @@ class _ExcursionSelectLocationScreenState
     );
   }
 
-  void _selectAttraction(AttractionVm attraction) {
-    unawaited(_selectAttractionWithLocalizedCity(attraction));
+  void _selectPlace(PlaceVm place) {
+    unawaited(_selectPlaceWithLocalizedCity(place));
   }
 
-  Future<void> _selectAttractionWithLocalizedCity(
-    AttractionVm attraction,
-  ) async {
-    final selection = ExcursionLocationSelection.fromAttraction(
-      attraction,
+  Future<void> _selectPlaceWithLocalizedCity(PlaceVm place) async {
+    final selection = ExcursionLocationSelection.fromPlace(
+      place,
       fallbackCityName: _filters.cityName,
     );
     if (!mounted) return;
@@ -447,7 +444,7 @@ class _ExcursionSelectLocationScreenState
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return AttractionTextScale(
+    return PlaceTextScale(
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.light,
         child: Scaffold(
@@ -481,20 +478,19 @@ class _ExcursionSelectLocationScreenState
                             padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
                             children: [
                               _LocationSectionTitle(
-                                title: l10n
-                                    .excursionSelectLocationAttractionSection,
+                                title: l10n.excursionSelectLocationPlaceSection,
                               ),
                               const SizedBox(height: 20),
                               AppListSearchField(
-                                controller: _attractionSearchCtrl,
-                                hintText: l10n
-                                    .excursionSelectLocationAttractionSearchHint,
-                                filterTooltip: l10n.attractionsFiltersTitle,
+                                controller: _placeSearchCtrl,
+                                hintText:
+                                    l10n.excursionSelectLocationPlaceSearchHint,
+                                filterTooltip: l10n.placesFiltersTitle,
                                 activeFilterCount: _filters.activeCount,
                                 onFilterTap: _openFilters,
                               ),
                               const SizedBox(height: 24),
-                              _buildAttractions(l10n),
+                              _buildPlaces(l10n),
                               const SizedBox(height: 24),
                               _LocationPagination(
                                 currentPage: _currentPage,
@@ -548,24 +544,24 @@ class _ExcursionSelectLocationScreenState
     );
   }
 
-  Widget _buildAttractions(AppLocalizations l10n) {
+  Widget _buildPlaces(AppLocalizations l10n) {
     if (_isLoading) {
-      return const _AttractionGridPlaceholder();
+      return const _PlaceGridPlaceholder();
     }
     if (_error != null) {
       return _LocationStateBlock(
         icon: Icons.cloud_off_rounded,
-        title: l10n.attractionsLoadFailed,
+        title: l10n.placesLoadFailed,
         actionLabel: l10n.createCategoryRetry,
-        onAction: () => _loadAttractions(page: _currentPage),
+        onAction: () => _loadPlaces(page: _currentPage),
       );
     }
     if (_items.isEmpty) {
       return _LocationStateBlock(
         icon: Icons.location_off_rounded,
-        title: l10n.attractionsNoResults,
+        title: l10n.placesNoResults,
         actionLabel: l10n.createCategoryRetry,
-        onAction: () => _loadAttractions(page: 1),
+        onAction: () => _loadPlaces(page: 1),
       );
     }
 
@@ -588,10 +584,10 @@ class _ExcursionSelectLocationScreenState
           ),
           itemBuilder: (context, index) {
             final item = _items[index];
-            return _AttractionSelectionCard(
-              attraction: item,
+            return _PlaceSelectionCard(
+              place: item,
               selected: _selectedLocation?.id == item.id,
-              onTap: () => _selectAttraction(item),
+              onTap: () => _selectPlace(item),
             );
           },
         );
@@ -667,27 +663,27 @@ class _LocationSectionTitle extends StatelessWidget {
   }
 }
 
-class _AttractionSelectionCard extends StatelessWidget {
-  const _AttractionSelectionCard({
-    required this.attraction,
+class _PlaceSelectionCard extends StatelessWidget {
+  const _PlaceSelectionCard({
+    required this.place,
     required this.selected,
     required this.onTap,
   });
 
-  final AttractionVm attraction;
+  final PlaceVm place;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final coverUrl = _resolveAttractionCoverUrl(attraction);
-    final imageTargetWidth = attractionImageTargetWidth(
+    final coverUrl = _resolvePlaceCoverUrl(place);
+    final imageTargetWidth = placeImageTargetWidth(
       context,
       MediaQuery.sizeOf(context).width / 2,
       minWidth: _locationCardMinWidth(context).round(),
       maxWidth: 760,
     );
-    final categoryLabel = _attractionSubtitle(context, attraction);
+    final categoryLabel = _placeSubtitle(context, place);
 
     return Material(
       color: const Color(0xFF2C2014),
@@ -706,18 +702,18 @@ class _AttractionSelectionCard extends StatelessWidget {
                   if (coverUrl != null)
                     Image.network(
                       coverUrl,
-                      headers: attractionImageRequestHeaders(coverUrl),
+                      headers: placeImageRequestHeaders(coverUrl),
                       fit: BoxFit.cover,
                       cacheWidth: imageTargetWidth,
                       filterQuality: FilterQuality.medium,
-                      errorBuilder: (_, _, _) => const _AttractionFallback(),
+                      errorBuilder: (_, _, _) => const _PlaceFallback(),
                       loadingBuilder: (context, child, progress) {
                         if (progress == null) return child;
-                        return const _AttractionFallback();
+                        return const _PlaceFallback();
                       },
                     )
                   else
-                    const _AttractionFallback(),
+                    const _PlaceFallback(),
                   DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -735,7 +731,7 @@ class _AttractionSelectionCard extends StatelessWidget {
                     left: 12,
                     right: 12,
                     bottom: 12,
-                    child: _AttractionCategoryTag(label: categoryLabel),
+                    child: _PlaceCategoryTag(label: categoryLabel),
                   ),
                 ],
               ),
@@ -750,7 +746,7 @@ class _AttractionSelectionCard extends StatelessWidget {
                     SizedBox(
                       height: 44,
                       child: Text(
-                        attraction.title,
+                        place.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -774,8 +770,8 @@ class _AttractionSelectionCard extends StatelessWidget {
   }
 }
 
-class _AttractionCategoryTag extends StatelessWidget {
-  const _AttractionCategoryTag({required this.label});
+class _PlaceCategoryTag extends StatelessWidget {
+  const _PlaceCategoryTag({required this.label});
 
   final String label;
 
@@ -867,8 +863,8 @@ class _SelectButton extends StatelessWidget {
   }
 }
 
-class _AttractionFallback extends StatelessWidget {
-  const _AttractionFallback();
+class _PlaceFallback extends StatelessWidget {
+  const _PlaceFallback();
 
   @override
   Widget build(BuildContext context) {
@@ -891,8 +887,8 @@ class _AttractionFallback extends StatelessWidget {
   }
 }
 
-class _AttractionGridPlaceholder extends StatelessWidget {
-  const _AttractionGridPlaceholder();
+class _PlaceGridPlaceholder extends StatelessWidget {
+  const _PlaceGridPlaceholder();
 
   @override
   Widget build(BuildContext context) {
@@ -1206,11 +1202,11 @@ class _LocationConfirmBar extends StatelessWidget {
   }
 }
 
-String? _resolveAttractionCoverUrl(AttractionVm attraction) {
-  final media = attraction.coverMedia;
+String? _resolvePlaceCoverUrl(PlaceVm place) {
+  final media = place.coverMedia;
   if (media == null) return null;
 
-  final fileUrl = resolveAttractionMediaUrl(media)?.trim() ?? '';
+  final fileUrl = resolvePlaceMediaUrl(media)?.trim() ?? '';
   if (fileUrl.isNotEmpty) return fileUrl;
 
   final externalUrl = media.externalUrl.trim();
@@ -1222,12 +1218,12 @@ String? _resolveAttractionCoverUrl(AttractionVm attraction) {
   return null;
 }
 
-String _attractionSubtitle(BuildContext context, AttractionVm attraction) {
-  final category = attraction.category.trim();
+String _placeSubtitle(BuildContext context, PlaceVm place) {
+  final category = place.category.trim();
   if (category.isNotEmpty) {
     final l10n = AppLocalizations.of(context)!;
-    return localizedAttractionCategoryLabel(l10n, category);
+    return localizedPlaceCategoryLabel(l10n, category);
   }
-  final country = attraction.countryCode.trim();
-  return country.isEmpty ? 'ATTRACTION' : country.toUpperCase();
+  final country = place.countryCode.trim();
+  return country.isEmpty ? 'PLACE' : country.toUpperCase();
 }

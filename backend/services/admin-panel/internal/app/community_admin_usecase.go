@@ -74,7 +74,7 @@ func NewCommunityAdminUseCase(
 	u := &CommunityAdminUseCase{
 		communities: communities,
 		audit:       audit,
-		maxImage:    defaultMaxAttractionImage,
+		maxImage:    defaultMaxPlaceImage,
 	}
 	for _, option := range options {
 		if option != nil {
@@ -211,7 +211,7 @@ func (u *CommunityAdminUseCase) UploadCommunityImage(
 	if err := u.validateCommunityImageUpload(input); err != nil {
 		return nil, err
 	}
-	return u.files.UploadPublicAttractionImage(ctx, model.FileUploadInput{
+	return u.files.UploadPublicPlaceImage(ctx, model.FileUploadInput{
 		FileName:    strings.TrimSpace(input.FileName),
 		ContentType: normalizeContentType(input.ContentType, input.Content),
 		Content:     input.Content,
