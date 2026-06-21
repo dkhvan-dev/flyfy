@@ -10,6 +10,7 @@ import '../../core/time/app_time.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../core/ui/error_view.dart';
+import '../../features/checklists/models/travel_checklist_route_args.dart';
 import '../../features/excursions/models/create_excursion_booking_request.dart';
 import '../../features/excursions/models/excursion_booking_vm.dart';
 import '../../features/excursions/models/excursion_schedule_vm.dart';
@@ -25,6 +26,8 @@ class ExcursionBookingRouteArgs {
   final ExcursionVm? excursion;
   final String? selectedOfferId;
 }
+
+enum _BookingCompletionAction { openChecklist, myExcursions }
 
 class ExcursionBookingScreen extends StatefulWidget {
   const ExcursionBookingScreen({
@@ -300,7 +303,38 @@ class _ExcursionBookingScreenState extends State<ExcursionBookingScreen> {
     await provider.loadMyExcursionBookings(force: true);
     if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    context.go('/me/excursions');
+    final createdBooking = provider.lastCreatedExcursionBooking;
+    if (createdBooking == null) {
+      context.go('/me/excursions');
+      return;
+    }
+
+    final checklistArgs = TravelChecklistRouteArgs.fromExcursionBooking(
+      booking: createdBooking,
+      excursion: _excursion,
+    );
+    final action = await _showBookingChecklistSheet(checklistArgs);
+    if (!mounted) return;
+
+    switch (action) {
+      case _BookingCompletionAction.openChecklist:
+        context.go('/travel-checklist', extra: checklistArgs);
+      case _BookingCompletionAction.myExcursions:
+        context.go('/me/excursions');
+    }
+  }
+
+  Future<_BookingCompletionAction> _showBookingChecklistSheet(
+    TravelChecklistRouteArgs checklistArgs,
+  ) async {
+    final action = await showModalBottomSheet<_BookingCompletionAction>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const _BookingChecklistAddedSheet(),
+    );
+    return action ?? _BookingCompletionAction.myExcursions;
   }
 
   int get _totalTravelers => _adults + _children;
@@ -1869,6 +1903,121 @@ class _AlreadyBookedNotice extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BookingChecklistAddedSheet extends StatelessWidget {
+  const _BookingChecklistAddedSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(14, 0, 14, 14 + bottomInset),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: _BookingColors.panel,
+          borderRadius: BorderRadius.circular(26),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x55000000),
+              blurRadius: 28,
+              offset: Offset(0, 14),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Icon(
+                Icons.checklist_rounded,
+                color: AppColors.accent,
+                size: 34,
+              ),
+              const SizedBox(height: 14),
+              Text(
+                l10n.excursionBookingChecklistAddedTitle,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: _BookingColors.text,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  height: 1.08,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                l10n.excursionBookingChecklistAddedMessage,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: _BookingColors.muted,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 22),
+              FilledButton.icon(
+                onPressed: () => Navigator.of(
+                  context,
+                ).pop(_BookingCompletionAction.openChecklist),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(54),
+                  backgroundColor: AppColors.accent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                icon: const Icon(Icons.task_alt_rounded, size: 20),
+                label: Text(
+                  l10n.excursionBookingOpenChecklist,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.of(
+                  context,
+                ).pop(_BookingCompletionAction.myExcursions),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(52),
+                  foregroundColor: _BookingColors.text,
+                  side: BorderSide(color: Colors.white.withValues(alpha: 0.14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                icon: const Icon(Icons.confirmation_number_rounded, size: 19),
+                label: Text(
+                  l10n.excursionBookingOpenMyExcursions,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../navigation/android_back_swipe_scope.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
+import '../../features/checklists/models/travel_checklist_route_args.dart';
 import '../../features/profile/models/user_profile_vm.dart';
 import '../../features/stories/editor/presentation/story_editor_trust_context.dart';
 import '../../features/stories/models/post_vm.dart';
@@ -57,6 +58,7 @@ import '../../features/feed/models/feed_block_vm.dart';
 import '../../features/notifications/data/notification_api.dart';
 import '../../shared/map/app_map_links.dart';
 import '../../screens/common/feature_stub_screen.dart';
+import '../../screens/checklists/travel_checklist_screen.dart';
 import '../../screens/currency/currency_converter_screen.dart';
 import '../../screens/map/map_screen.dart';
 import '../../screens/notifications/notifications_screen.dart';
@@ -653,6 +655,22 @@ class AppRouter {
               _withAndroidBackSwipe(const CurrencyConverterScreen()),
         ),
         GoRoute(
+          path: '/travel-checklist',
+          builder: (context, state) {
+            final checklistArgs = state.extra is TravelChecklistRouteArgs
+                ? state.extra! as TravelChecklistRouteArgs
+                : _travelChecklistArgsFromQuery(state.uri.queryParameters);
+            return _withAndroidBackSwipe(
+              TravelChecklistScreen(routeArgs: checklistArgs),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/me/checklists',
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const TravelChecklistListScreen()),
+        ),
+        GoRoute(
           path: '/chats',
           builder: (context, state) =>
               _withAndroidBackSwipe(const ConversationsScreen()),
@@ -711,6 +729,24 @@ class AppRouter {
         ),
       ],
     );
+  }
+
+  static TravelChecklistRouteArgs? _travelChecklistArgsFromQuery(
+    Map<String, String> queryParameters,
+  ) {
+    const requiredKeys = [
+      'tripId',
+      'countryCode',
+      'cityName',
+      'startAt',
+      'endAt',
+    ];
+    for (final key in requiredKeys) {
+      if ((queryParameters[key] ?? '').trim().isEmpty) {
+        return null;
+      }
+    }
+    return TravelChecklistRouteArgs.fromQueryParameters(queryParameters);
   }
 
   static bool _isPublicRoute(String location) {

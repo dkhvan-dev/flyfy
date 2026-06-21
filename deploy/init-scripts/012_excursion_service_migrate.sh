@@ -29,19 +29,10 @@ mark_applied() {
   psql_cmd -c "INSERT INTO schema_migrations (filename) VALUES ('$filename') ON CONFLICT (filename) DO NOTHING;" >/dev/null
 }
 
-migration_version() {
-  printf '%s' "$1" | sed -n 's/^\([0-9][0-9]*\)_.*/\1/p'
-}
-
 migration_already_applied() {
   filename="$1"
-  version="$(migration_version "$filename")"
 
   if [ "$(query_scalar "SELECT 1 FROM schema_migrations WHERE filename = '$filename' LIMIT 1;")" = "1" ]; then
-    return 0
-  fi
-
-  if [ -n "$version" ] && [ "$(query_scalar "SELECT 1 FROM schema_migrations WHERE left(filename, char_length('$version') + 1) = '${version}_' LIMIT 1;")" = "1" ]; then
     return 0
   fi
 

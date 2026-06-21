@@ -1,0 +1,4 @@
+-- This repair migration is intentionally irreversible.
+-- It restores columns and constraints that may be missing on local volumes whose
+-- schema_migrations table marked 015_combined_excursion_routes.up.sql as applied
+-- before the full route metadata schema existed.

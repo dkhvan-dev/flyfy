@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/device/device_context_service.dart';
 import '../../core/network/activity_api.dart';
+import '../../core/network/checklist_api.dart';
 import '../../core/network/file_api.dart';
 import '../../core/time/app_time.dart';
 import '../../core/ui/app_colors.dart';
@@ -24,6 +25,8 @@ import '../../features/activities/models/activity_category_vm.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/activities/models/activity_participant_vm.dart';
 import '../../features/activities/models/activity_review_vm.dart';
+import '../../features/checklists/data/checklist_offline_cache.dart';
+import '../../features/checklists/models/travel_checklist_route_args.dart';
 import '../../features/profile/profile_completion_gate.dart';
 import '../../features/profile/profile_guard_result.dart';
 import '../../features/profile/data/profile_api.dart';
@@ -36,6 +39,7 @@ import '../../providers/session_provider.dart';
 import '../../shared/map/app_map_links.dart';
 import '../../shared/widgets/app_localized_location_text.dart';
 import '../../shared/widgets/app_map_card.dart';
+import '../../shared/widgets/trip_preparation_cta.dart';
 import 'activity_payment_screen.dart';
 import 'widgets/activity_review_sheet.dart';
 
@@ -68,6 +72,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   static const double _backSwipeMinVelocity = 700;
 
   final ActivityApi _activityApi = ActivityApi();
+  final ChecklistOfflineCache _checklistCache = ChecklistOfflineCache();
   final DeviceContextService _deviceContextService =
       const DeviceContextService();
   final ProfileApi _profileApi = ProfileApi();
@@ -435,6 +440,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       return;
     }
 
+    await _removeCachedActivityChecklist();
     await _reloadAfterAction(includeJoined: true);
     if (!mounted) return;
     setState(() {
@@ -444,6 +450,12 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(l10n.activityLeaveSuccess)));
+  }
+
+  Future<void> _removeCachedActivityChecklist() async {
+    await _checklistCache.removeTripChecklist(
+      _activityChecklistTripId(widget.activityId),
+    );
   }
 
   Future<void> _openPayment(
@@ -1347,6 +1359,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     }
 
     final isJoined = currentParticipant != null;
+    final canPrepareTrip = isOwner || currentParticipant != null;
     final canOpenParticipantChat =
         currentParticipant?.hasConfirmedAccess == true;
     final requiresParticipantPayment =
@@ -1565,6 +1578,18 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                           l10n: l10n,
                           compact: compact,
                         ),
+                        if (canPrepareTrip) ...[
+                          const SizedBox(height: 22),
+                          TripPreparationCta(
+                            title: l10n.travelChecklistCtaTitle,
+                            subtitle: l10n.travelChecklistCtaSubtitle,
+                            actionLabel: l10n.travelChecklistOpen,
+                            onTap: () => context.push(
+                              '/travel-checklist',
+                              extra: _activityChecklistRouteArgs(activity),
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 22),
                         _ParticipantsSection(
                           l10n: l10n,
@@ -6724,4 +6749,44 @@ String? _resolveMeetingActionCopyValue(ActivityListItemVm activity) {
     return activity.shortLocation;
   }
   return null;
+}
+
+TravelChecklistRouteArgs _activityChecklistRouteArgs(
+  ActivityListItemVm activity,
+) {
+  final startAt = activity.startAt.toUtc();
+  final endAt = activity.endAt.toUtc().isAfter(startAt)
+      ? activity.endAt.toUtc()
+      : startAt.add(const Duration(hours: 2));
+
+  return TravelChecklistRouteArgs(
+    tripId: _activityChecklistTripId(activity.id),
+    destination: TripChecklistDestinationRequest(
+      countryCode: (activity.countryCode ?? '').trim(),
+      cityName: (activity.cityName ?? '').trim(),
+      cityId: _trimmedOrNull(activity.cityId),
+    ),
+    startAt: startAt,
+    endAt: endAt,
+    transportModes: const ['flight'],
+    activitySlugs: _activityChecklistSlugs(activity),
+  );
+}
+
+String _activityChecklistTripId(String activityId) {
+  return 'activity:${activityId.trim()}';
+}
+
+List<String> _activityChecklistSlugs(ActivityListItemVm activity) {
+  return TravelChecklistRouteArgs.normalizedTokens([
+    activity.categorySlug,
+    activity.subcategorySlug,
+    activity.format,
+    ...activity.tags,
+  ]);
+}
+
+String? _trimmedOrNull(String? value) {
+  final trimmed = (value ?? '').trim();
+  return trimmed.isEmpty ? null : trimmed;
 }

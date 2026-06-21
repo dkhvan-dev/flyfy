@@ -29,6 +29,11 @@ List<TravelServiceEntry> buildTravelServiceCatalog(AppLocalizations l10n) {
       route: '/excursions',
     ),
     TravelServiceEntry(
+      title: l10n.serviceTravelChecklist,
+      icon: Icons.fact_check_rounded,
+      route: '/travel-checklist',
+    ),
+    TravelServiceEntry(
       title: l10n.serviceGuides,
       icon: Icons.flag_rounded,
       route: '/guides',

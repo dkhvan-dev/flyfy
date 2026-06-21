@@ -36,6 +36,22 @@ void main() {
       );
     });
 
+    test('builds checklist routes from structured notification data', () {
+      final route = resolver.resolveRoute({
+        'category': 'checklist',
+        'checklistTripId': 'trip-bali-jan',
+        'countryCode': 'ID',
+        'cityName': 'Bali',
+        'startAt': '2026-01-12T10:00:00Z',
+        'endAt': '2026-01-19T10:00:00Z',
+      });
+
+      expect(route, startsWith('/travel-checklist?'));
+      expect(route, contains('tripId=trip-bali-jan'));
+      expect(route, contains('countryCode=ID'));
+      expect(route, contains('cityName=Bali'));
+    });
+
     test('rejects external or unsafe links', () {
       expect(
         resolver.resolveRoute({'deepLink': 'https://evil.test/phish'}),
@@ -109,6 +125,45 @@ void main() {
 
       await coordinator.dispose();
     });
+
+    test(
+      'routes checklist notifications through the checklist channel',
+      () async {
+        final source = _FakePushNotificationSource();
+        final presenter = _FakePushNotificationPresenter();
+        final coordinator = PushNotificationCoordinator(
+          source: source,
+          presenter: presenter,
+          routeHandler: (_) {},
+        );
+
+        await coordinator.start();
+        source.foregroundController.add(
+          const PushNotificationEnvelope(
+            id: 'checklist-1',
+            title: 'Проверьте документы',
+            body: 'До поездки осталось 3 дня',
+            data: {
+              'category': 'checklist',
+              'checklistTripId': 'trip-bali-jan',
+              'countryCode': 'ID',
+              'cityName': 'Bali',
+              'startAt': '2026-01-12T10:00:00Z',
+              'endAt': '2026-01-19T10:00:00Z',
+            },
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          presenter.shown.single.channel,
+          PushNotificationChannel.checklists,
+        );
+        expect(presenter.shown.single.route, startsWith('/travel-checklist?'));
+
+        await coordinator.dispose();
+      },
+    );
 
     test('routes notification opened from background', () async {
       final source = _FakePushNotificationSource();

@@ -1,4 +1,5 @@
 import '../../core/network/reference_api.dart';
+import 'app_country_names.dart';
 
 typedef ReferenceCountryLookup =
     Future<ReferenceCountry?> Function(String code, {required String lang});
@@ -146,7 +147,9 @@ class AppLocationLabelResolver {
     }
 
     final cityLabel = _normalizeText(city?.name) ?? normalizedCityName;
-    final countryLabel = _normalizeText(country?.name);
+    final countryLabel =
+        _normalizeText(country?.name) ??
+        appCountryNameForCode(normalizedCountryCode, localeName: lang);
 
     return _ResolvedLocationLabels(city: cityLabel, country: countryLabel);
   }

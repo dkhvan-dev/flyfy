@@ -1460,6 +1460,13 @@ _NotificationCategoryMeta _categoryMeta(
         icon: Icons.confirmation_number_rounded,
         color: const Color(0xFFB6F36C),
       );
+    case 'checklist':
+    case 'checklists':
+      return _NotificationCategoryMeta(
+        label: l10n.notificationsCategoryChecklist,
+        icon: Icons.checklist_rounded,
+        color: AppColors.accent,
+      );
     case 'chat':
     case 'message':
     case 'messages':

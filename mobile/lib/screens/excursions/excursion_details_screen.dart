@@ -19,6 +19,7 @@ import '../../core/ui/error_dialog.dart';
 import '../../core/ui/error_view.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
 import '../../features/places/data/place_api.dart';
+import '../../features/checklists/models/travel_checklist_route_args.dart';
 import '../../features/places/models/place_vm.dart';
 import '../../features/profile/data/profile_api.dart';
 import '../../features/profile/models/user_profile_vm.dart';
@@ -31,6 +32,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/excursion_provider.dart';
 import '../../shared/widgets/app_map_card.dart';
+import '../../shared/widgets/trip_preparation_cta.dart';
 import 'excursion_booking_screen.dart';
 import 'widgets/excursion_review_management_sheet.dart';
 
@@ -64,6 +66,7 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
   final Map<String, bool> _offerScheduleAvailability = <String, bool>{};
   final Set<String> _loadingOfferScheduleAvailability = <String>{};
   bool _isMessageGuideLoading = false;
+  String? _scheduledMyBookingsUserId;
 
   @override
   void initState() {
@@ -112,6 +115,17 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
       widget.excursionId,
       initialExcursion: initialExcursion ?? widget.initialExcursion,
     );
+  }
+
+  void _scheduleLoadMyExcursionBookings(String currentUserId) {
+    final userId = currentUserId.trim();
+    if (userId.isEmpty || _scheduledMyBookingsUserId == userId) return;
+
+    _scheduledMyBookingsUserId = userId;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(context.read<ExcursionProvider>().loadMyExcursionBookings());
+    });
   }
 
   void _showInfoSnack(String message) {
@@ -227,6 +241,19 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
       extra: ExcursionBookingRouteArgs(
         excursion: bookingExcursion,
         selectedOfferId: selectedOffer?.id,
+      ),
+    );
+  }
+
+  void _openChecklistPreview({
+    required ExcursionVm excursion,
+    required ExcursionOfferVm? selectedOffer,
+  }) {
+    context.push(
+      '/travel-checklist',
+      extra: TravelChecklistRouteArgs.fromExcursionPreview(
+        excursion: excursion,
+        selectedOffer: selectedOffer,
       ),
     );
   }
@@ -542,6 +569,7 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
                   .trim();
           final hasBookableOffer = offers.isNotEmpty;
           final currentUserId = (session.profile?.userId ?? '').trim();
+          _scheduleLoadMyExcursionBookings(currentUserId);
           final isCurrentUserGuide =
               session.profile?.roles.any(
                 (role) => role.trim().toUpperCase() == 'GUIDE',
@@ -549,6 +577,12 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
               false;
           final isAuthor =
               guideUserId.isNotEmpty && currentUserId == guideUserId;
+          final activeChecklistBooking = _activeExcursionChecklistBooking(
+            provider.myExcursionBookings,
+            excursion: excursion,
+            selectedOffer: selectedOffer,
+            currentUserId: currentUserId,
+          );
           if (!isAuthor && hasBookableOffer) {
             _scheduleLoadSelectedOfferAvailability(excursion, selectedOffer);
           }
@@ -573,6 +607,13 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
                     ? l10n.excursionDetailsCheckingSchedule
                     : l10n.excursionDetailsNoAvailableSlots)
               : null;
+          final showBookingAction =
+              !isAuthor && hasBookableOffer && hasAvailableSchedule;
+          final showCheckoutPrice =
+              !isCurrentUserGuide && !isAuthor && hasBookableOffer;
+          final showEditOfferAction =
+              isAuthor &&
+              (selectedOffer?.legacyExcursionId ?? '').trim().isNotEmpty;
           _scheduleResolveGuideProfiles(
             offers.map((offer) => offer.guideUserId),
             session.profile,
@@ -592,14 +633,11 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
             isCurrentUserGuide: isCurrentUserGuide,
             enableRemoteOffers: true,
             offerProfiles: offerProfiles,
+            activeChecklistBooking: activeChecklistBooking,
             showMessageGuide: !isAuthor && guideUserId.isNotEmpty,
-            showBookingAction:
-                !isAuthor && hasBookableOffer && hasAvailableSchedule,
-            showCheckoutPrice:
-                !isCurrentUserGuide && !isAuthor && hasBookableOffer,
-            showEditOfferAction:
-                isAuthor &&
-                (selectedOffer?.legacyExcursionId ?? '').trim().isNotEmpty,
+            showBookingAction: showBookingAction,
+            showCheckoutPrice: showCheckoutPrice,
+            showEditOfferAction: showEditOfferAction,
             isMessageGuideLoading: _isMessageGuideLoading,
             bookingUnavailableMessage: bookingUnavailableMessage,
             onBackTap: _goBack,
@@ -614,6 +652,17 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
             },
             onBookTap: () => _openBooking(excursion, selectedOffer),
             onEditOfferTap: () => _openEditOffer(excursion, selectedOffer),
+            onFullChecklistTap: () => context.push(
+              '/travel-checklist',
+              extra: TravelChecklistRouteArgs.fromExcursionBooking(
+                booking: activeChecklistBooking!,
+                excursion: displayExcursion,
+              ),
+            ),
+            onChecklistPreviewTap: () => _openChecklistPreview(
+              excursion: excursion,
+              selectedOffer: selectedOffer,
+            ),
             onMessageGuideTap: () => _openGuideChat(guideUserId),
             onOfferSelected: _selectOffer,
             onOffersChanged: (offers) =>
@@ -650,9 +699,12 @@ class ExcursionDetailsContent extends StatelessWidget {
     this.bookingUnavailableMessage,
     this.onBackTap,
     this.onNotificationsTap,
+    this.onFullChecklistTap,
+    this.onChecklistPreviewTap,
     this.onOffersChanged,
     this.onReviewLongPress,
     this.localizedLandmark,
+    this.activeChecklistBooking,
   });
 
   final ExcursionVm excursion;
@@ -660,6 +712,7 @@ class ExcursionDetailsContent extends StatelessWidget {
   final List<ExcursionOfferVm>? offers;
   final List<ExcursionReviewVm> excursionReviews;
   final ExcursionOfferVm? selectedOffer;
+  final ExcursionBookingVm? activeChecklistBooking;
   final Map<String, UserProfileVm> offerProfiles;
   final VoidCallback onBookTap;
   final VoidCallback onEditOfferTap;
@@ -677,6 +730,8 @@ class ExcursionDetailsContent extends StatelessWidget {
   final String? bookingUnavailableMessage;
   final VoidCallback? onBackTap;
   final VoidCallback? onNotificationsTap;
+  final VoidCallback? onFullChecklistTap;
+  final VoidCallback? onChecklistPreviewTap;
   final ValueChanged<List<ExcursionOfferVm>>? onOffersChanged;
   final ValueChanged<ExcursionReviewVm>? onReviewLongPress;
 
@@ -697,7 +752,7 @@ class ExcursionDetailsContent extends StatelessWidget {
                 : l10n.excursionDetailsBook,
             icon: showEditOfferAction
                 ? Icons.edit_rounded
-                : Icons.arrow_forward_ios_rounded,
+                : Icons.chevron_right_rounded,
             helperText: showBookingAction
                 ? l10n.excursionDetailsBookingSeatCheckNote
                 : null,
@@ -745,6 +800,17 @@ class ExcursionDetailsContent extends StatelessWidget {
                         _ExcursionStatsGrid(
                           excursion: excursion,
                           selectedOffer: activeSelectedOffer,
+                        ),
+                        const SizedBox(height: 24),
+                        TripPreparationCta(
+                          title: l10n.travelChecklistCtaTitle,
+                          subtitle: l10n.travelChecklistCtaSubtitle,
+                          actionLabel: activeChecklistBooking == null
+                              ? l10n.travelChecklistPreviewAction
+                              : l10n.travelChecklistOpen,
+                          onTap: activeChecklistBooking == null
+                              ? (onChecklistPreviewTap ?? onBookTap)
+                              : (onFullChecklistTap ?? onBookTap),
                         ),
                         const SizedBox(height: 40),
                         _ExcursionExperienceSection(
@@ -4181,10 +4247,11 @@ class _ExcursionCheckoutBar extends StatelessWidget {
                   Expanded(
                     child: FilledButton.icon(
                       onPressed: onTap,
+                      iconAlignment: IconAlignment.end,
                       style: FilledButton.styleFrom(
                         minimumSize: const Size.fromHeight(58),
                         backgroundColor: AppColors.accent,
-                        foregroundColor: Colors.white,
+                        foregroundColor: AppColors.textPrimary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(15),
                         ),
@@ -4357,4 +4424,56 @@ String _displayInitials(String value, {String fallback = 'FG'}) {
 String _categoryLabel(BuildContext context, String? categorySlug) {
   final l10n = AppLocalizations.of(context)!;
   return localizedExcursionCategoryLabel(l10n, categorySlug);
+}
+
+ExcursionBookingVm? _activeExcursionChecklistBooking(
+  Iterable<ExcursionBookingVm> bookings, {
+  required ExcursionVm excursion,
+  required ExcursionOfferVm? selectedOffer,
+  required String currentUserId,
+  DateTime? now,
+}) {
+  final userId = currentUserId.trim();
+  if (userId.isEmpty) return null;
+
+  final productIds = <String>{
+    excursion.id.trim(),
+    for (final offer in excursion.offers) offer.productId.trim(),
+  }..remove('');
+  final legacyExcursionIds = <String>{
+    for (final offer in excursion.offers)
+      (offer.legacyExcursionId ?? '').trim(),
+  }..remove('');
+  final selectedOfferId = (selectedOffer?.id ?? '').trim();
+  final referenceNow = (now ?? DateTime.now()).toUtc();
+  final candidates = <ExcursionBookingVm>[];
+
+  for (final booking in bookings) {
+    final bookingTouristUserId = booking.touristUserId.trim();
+    if (bookingTouristUserId.isNotEmpty && bookingTouristUserId != userId) {
+      continue;
+    }
+    if (!booking.isBooked(referenceNow)) continue;
+
+    final bookingProductId = booking.productId.trim();
+    final bookingLegacyExcursionId = (booking.legacyExcursionId ?? '').trim();
+    final matchesProduct =
+        (bookingProductId.isNotEmpty &&
+            productIds.contains(bookingProductId)) ||
+        (bookingLegacyExcursionId.isNotEmpty &&
+            legacyExcursionIds.contains(bookingLegacyExcursionId));
+    if (!matchesProduct) continue;
+
+    if (selectedOfferId.isNotEmpty &&
+        booking.offerId.trim() != selectedOfferId) {
+      continue;
+    }
+    candidates.add(booking);
+  }
+
+  if (candidates.isEmpty) return null;
+  candidates.sort(
+    (a, b) => a.scheduledFor.toUtc().compareTo(b.scheduledFor.toUtc()),
+  );
+  return candidates.first;
 }

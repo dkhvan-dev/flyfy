@@ -293,6 +293,9 @@ func androidChannelID(delivery model.Delivery) string {
 		delivery.Payload.Data["excursionId"] != "" {
 		return "inflap_activity"
 	}
+	if strings.Contains(category, "checklist") || delivery.Payload.Data["checklistTripId"] != "" {
+		return "inflap_checklists"
+	}
 	return "inflap_system"
 }
 

@@ -562,6 +562,50 @@ services:
       - inflap-network
 
   # ============================================
+  # Checklist Service PostgreSQL
+  # ============================================
+  checklist-postgres:
+    image: postgres:17-alpine
+    container_name: checklist-postgres
+    environment:
+      POSTGRES_DB: checklist_service_db
+      POSTGRES_USER: checklist_service
+      POSTGRES_PASSWORD: checklist_secret_dev
+    ports:
+      - "5452:5432"
+    volumes:
+      - checklist_postgres_data:/var/lib/postgresql/data
+      - ../backend/services/checklist-service/migrations:/migrations/checklist-service:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U checklist_service -d checklist_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - inflap-network
+
+  checklist-postgres-migrator:
+    image: postgres:17-alpine
+    container_name: checklist-postgres-migrator
+    environment:
+      PGHOST: checklist-postgres
+      PGPORT: 5432
+      POSTGRES_DB: checklist_service_db
+      POSTGRES_USER: checklist_service
+      POSTGRES_PASSWORD: checklist_secret_dev
+    volumes:
+      - ./init-scripts/020_checklist_service_migrate.sh:/usr/local/bin/020_checklist_service_migrate.sh:ro
+      - ../backend/services/checklist-service/migrations:/migrations/checklist-service:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/020_checklist_service_migrate.sh"]
+    depends_on:
+      checklist-postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - inflap-network
+
+  # ============================================
   # NATS
   # ============================================
   nats:
@@ -2035,6 +2079,44 @@ services:
       - inflap-network
 
   # ============================================
+  # Checklist Service
+  # ============================================
+  checklist-service:
+    build:
+      context: ..
+      dockerfile: ./backend/services/checklist-service/Dockerfile
+    container_name: checklist-service
+    depends_on:
+      checklist-postgres-migrator:
+        condition: service_completed_successfully
+    ports:
+      - "8099:8099"
+    environment:
+      APP_NAME: checklist-service
+      APP_ENV: development
+
+      HTTP_PORT: 8099
+      HTTP_READ_TIMEOUT: 10s
+      HTTP_WRITE_TIMEOUT: 10s
+      HTTP_IDLE_TIMEOUT: 60s
+
+      DB_HOST: checklist-postgres
+      DB_PORT: 5432
+      DB_NAME: checklist_service_db
+      DB_USER: checklist_service
+      DB_PASSWORD: checklist_secret_dev
+      DB_SSLMODE: disable
+      DB_MAX_CONNS: 10
+      DB_MIN_CONNS: 2
+      DB_MAX_CONN_IDLE: 5m
+      DB_MAX_CONN_LIFETIME: 1h
+
+      LOG_LEVEL: info
+    restart: unless-stopped
+    networks:
+      - inflap-network
+
+  # ============================================
   # Currency Service
   # ============================================
   currency-service:
@@ -2101,6 +2183,8 @@ services:
         condition: service_started
       reference-service:
         condition: service_started
+      checklist-service:
+        condition: service_started
       currency-service:
         condition: service_started
       place-service:
@@ -2140,6 +2224,7 @@ services:
       NOTIFICATION_SERVICE_HTTP_URL: http://notification-service:8097
       STICKER_SERVICE_HTTP_URL: http://sticker-service:8092
       REFERENCE_SERVICE_HTTP_URL: http://reference-service:8089
+      CHECKLIST_SERVICE_HTTP_URL: http://checklist-service:8099
       CURRENCY_SERVICE_HTTP_URL: http://currency-service:8098
       PLACE_SERVICE_HTTP_URL: http://place-service:8090
       PAYMENT_SERVICE_HTTP_URL: http://payment-service:8091
@@ -2187,6 +2272,7 @@ volumes:
   chat_postgres_data:
   notification_postgres_data:
   switches_postgres_data:
+  checklist_postgres_data:
   nats_data:
   place_postgres_data:
   payment_postgres_data:

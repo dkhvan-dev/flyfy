@@ -294,7 +294,9 @@ void main() {
       expect(source, contains("context.push('/services')"));
       expect(source, contains('buildTravelServiceCatalog('));
       expect(source, contains('l10n,'));
+      expect(source, contains('_homeServicesPreview('));
       expect(source, contains('.take(6)'));
+      expect(source, contains("service.route != '/travel-checklist'"));
       expect(source, contains('actionLabel: l10n.servicesAllButton'));
       expect(source, contains('onActionTap: _openServices'));
       expect(source, contains('ServiceGrid('));
@@ -338,6 +340,23 @@ void main() {
       scaffoldSource,
       contains('_ensureGuideBadgeState(currentUserId, force: true)'),
     );
+  });
+
+  test('home drawer opens saved checklist list', () async {
+    final source = await File(
+      'lib/screens/home/home_screen.dart',
+    ).readAsString();
+
+    final drawerStart = source.indexOf('drawer: AppSideDrawer(');
+    final drawerEnd = source.indexOf('bottomNavigationBar:', drawerStart);
+
+    expect(drawerStart, isNonNegative);
+    expect(drawerEnd, greaterThan(drawerStart));
+
+    final drawerSource = source.substring(drawerStart, drawerEnd);
+
+    expect(drawerSource, contains('onMyChecklistsTap:'));
+    expect(drawerSource, contains("context.push('/me/checklists')"));
   });
 
   test(

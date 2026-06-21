@@ -763,9 +763,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final homeLocation = homeLocationProvider.effectiveLocation;
     final location = homeLocation.fallbackLabel;
     final promos = _buildPromoCards(l10n);
-    final servicesPreview = buildTravelServiceCatalog(
-      l10n,
-    ).take(6).toList(growable: false);
+    final servicesPreview = _homeServicesPreview(l10n);
     final homePostStreamItems = _homePostFeedItems
         .skip(_homeTrendingPostLimit)
         .toList(growable: false);
@@ -848,6 +846,8 @@ class _HomeScreenState extends State<HomeScreen> {
         onMyActivitiesTap: () => _runDrawerAction(_openMyActivities),
         onMyExcursionsTap: () =>
             _runDrawerAction(() => context.push('/me/excursions')),
+        onMyChecklistsTap: () =>
+            _runDrawerAction(() => context.push('/me/checklists')),
         onMyStoriesTap: () => _runDrawerAction(() => context.push('/me/posts')),
         onMyStoryArchiveTap: () =>
             _runDrawerAction(() => context.push('/me/stories')),
@@ -3826,6 +3826,13 @@ String? _trimmedHomeStringOrNull(String? value) {
 
 bool _isHomePostViewable(PostVm post) {
   return post.isPublished && !post.isExpired && post.slug.trim().isNotEmpty;
+}
+
+List<TravelServiceEntry> _homeServicesPreview(AppLocalizations l10n) {
+  return buildTravelServiceCatalog(l10n)
+      .where((service) => service.route != '/travel-checklist')
+      .take(6)
+      .toList(growable: false);
 }
 
 String? _homeFeedBlockTypeWire(FeedBlockType type) {

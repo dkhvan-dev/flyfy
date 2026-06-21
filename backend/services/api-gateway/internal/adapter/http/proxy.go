@@ -30,6 +30,7 @@ type ProxyHandler struct {
 	feedProxy         *httputil.ReverseProxy
 	chatProxy         *httputil.ReverseProxy
 	referenceProxy    *httputil.ReverseProxy
+	checklistProxy    *httputil.ReverseProxy
 	currencyProxy     *httputil.ReverseProxy
 	placeProxy        *httputil.ReverseProxy
 	paymentProxy      *httputil.ReverseProxy
@@ -82,6 +83,11 @@ func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHan
 	}
 
 	referenceProxy, err := newSingleHostProxy("reference", cfg.Downstreams.ReferenceService, cfg.Security.InternalServiceToken)
+	if err != nil {
+		return nil, err
+	}
+
+	checklistProxy, err := newSingleHostProxy("checklist", cfg.Downstreams.ChecklistService, cfg.Security.InternalServiceToken)
 	if err != nil {
 		return nil, err
 	}
@@ -139,6 +145,7 @@ func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHan
 		feedProxy:         feedProxy,
 		chatProxy:         chatProxy,
 		referenceProxy:    referenceProxy,
+		checklistProxy:    checklistProxy,
 		currencyProxy:     currencyProxy,
 		placeProxy:        placeProxy,
 		paymentProxy:      paymentProxy,
@@ -243,6 +250,8 @@ func (h *ProxyHandler) resolveProxy(upstream string) *httputil.ReverseProxy {
 		return h.chatProxy
 	case "reference":
 		return h.referenceProxy
+	case "checklist":
+		return h.checklistProxy
 	case "currency":
 		return h.currencyProxy
 	case "place":

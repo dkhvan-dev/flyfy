@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inflap/core/network/excursion_api.dart';
 import 'package:inflap/core/network/excursion_schedule_api.dart';
+import 'package:inflap/features/excursions/models/create_excursion_booking_request.dart';
 import 'package:inflap/features/excursions/models/create_excursion_request.dart';
 import 'package:inflap/features/excursions/models/excursion_booking_vm.dart';
 import 'package:inflap/features/excursions/models/excursion_schedule_vm.dart';
@@ -301,6 +302,34 @@ void main() {
     );
     expect(provider.selectedExcursion?.id, 'product-other');
   });
+
+  test(
+    'createExcursionBooking exposes created booking for post-booking flows',
+    () async {
+      final api = _FakeExcursionApi(
+        excursionBatches: const [],
+        createdExcursion: _createdDraft,
+        publishedExcursion: _publishedExcursion,
+        createdBooking: _createdBooking,
+      );
+      final provider = ExcursionProvider(excursionApi: api);
+
+      final success = await provider.createExcursionBooking(
+        CreateExcursionBookingRequest(
+          productId: 'product-new',
+          offerId: 'offer-new',
+          scheduledFor: DateTime.utc(2026, 6, 1, 10),
+          adults: 2,
+          children: 1,
+          scheduleSlotId: 'slot-1',
+        ),
+      );
+
+      expect(success, isTrue);
+      expect(provider.lastCreatedExcursionBooking?.id, 'booking-created');
+      expect(provider.myExcursionBookings.single.id, 'booking-created');
+    },
+  );
 }
 
 const _existingExcursion = ExcursionVm(
@@ -484,6 +513,29 @@ final _secondUpcomingGuideBooking = ExcursionBookingVm(
   status: 'REQUESTED',
 );
 
+final _createdBooking = ExcursionBookingVm(
+  id: 'booking-created',
+  productId: 'product-new',
+  offerId: 'offer-new',
+  scheduleSlotId: 'slot-1',
+  touristUserId: 'tourist-1',
+  guideUserId: 'guide-user-1',
+  guideProfileId: 'guide-profile-1',
+  guideDisplayName: 'Aruzhan',
+  title: 'New Excursion',
+  summary: 'Published route',
+  categorySlug: 'adventure',
+  countryCode: 'KZ',
+  cityName: 'Almaty',
+  scheduledFor: DateTime.utc(2026, 6, 1, 10),
+  adults: 2,
+  children: 1,
+  totalSeats: 3,
+  totalPriceAmount: 360,
+  currency: 'KZT',
+  status: 'REQUESTED',
+);
+
 final _cancelledSlot = ExcursionScheduleSlotVm(
   id: 'slot-1',
   offerId: 'offer-new',
@@ -545,6 +597,7 @@ class _FakeExcursionApi extends ExcursionApi {
     this.myExcursionPages = const [],
     this.guideBookings = const [],
     this.guideBookingPages = const [],
+    this.createdBooking,
   });
 
   final List<List<ExcursionVm>> excursionBatches;
@@ -557,6 +610,7 @@ class _FakeExcursionApi extends ExcursionApi {
   final List<ExcursionsPage> myExcursionPages;
   final List<ExcursionBookingVm> guideBookings;
   final List<ExcursionBookingsPage> guideBookingPages;
+  final ExcursionBookingVm? createdBooking;
   int getExcursionsCallCount = 0;
   int getExcursionsPageCallCount = 0;
   final List<int> getExcursionsPageOffsets = [];
@@ -657,6 +711,13 @@ class _FakeExcursionApi extends ExcursionApi {
   @override
   Future<void> deleteExcursionOffer(String excursionId) async {
     deletedExcursionIds.add(excursionId);
+  }
+
+  @override
+  Future<ExcursionBookingVm> createExcursionBooking(
+    CreateExcursionBookingRequest request,
+  ) async {
+    return createdBooking ?? _createdBooking;
   }
 
   @override

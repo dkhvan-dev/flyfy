@@ -550,6 +550,960 @@ abstract class AppLocalizations {
   /// **'Transport'**
   String get serviceTransport;
 
+  /// No description provided for @serviceTravelChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Travel checklist'**
+  String get serviceTravelChecklist;
+
+  /// No description provided for @travelChecklistTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip preparation'**
+  String get travelChecklistTitle;
+
+  /// No description provided for @travelChecklistSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **''**
+  String get travelChecklistSubtitle;
+
+  /// No description provided for @travelChecklistCtaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare for this trip'**
+  String get travelChecklistCtaTitle;
+
+  /// No description provided for @travelChecklistCtaSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Readiness, season and baggage rules'**
+  String get travelChecklistCtaSubtitle;
+
+  /// No description provided for @travelChecklistOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open checklist'**
+  String get travelChecklistOpen;
+
+  /// No description provided for @travelChecklistPreviewAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get travelChecklistPreviewAction;
+
+  /// No description provided for @travelChecklistPreviewMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Book this excursion to save a personal checklist with progress, reminders, and your own items.'**
+  String get travelChecklistPreviewMessage;
+
+  /// No description provided for @travelChecklistPreviewDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected when booking'**
+  String get travelChecklistPreviewDate;
+
+  /// No description provided for @travelChecklistSampleTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Tokyo · July sample'**
+  String get travelChecklistSampleTrip;
+
+  /// No description provided for @travelChecklistMissingContextTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a trip first'**
+  String get travelChecklistMissingContextTitle;
+
+  /// No description provided for @travelChecklistMissingContextMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The checklist is calculated from destination, dates, transport, and activities. Open it from a booking, excursion, or activity so Inflap does not show unrelated advice.'**
+  String get travelChecklistMissingContextMessage;
+
+  /// No description provided for @travelChecklistMissingContextPrimaryAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose excursion'**
+  String get travelChecklistMissingContextPrimaryAction;
+
+  /// No description provided for @travelChecklistMissingContextSecondaryAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open activities'**
+  String get travelChecklistMissingContextSecondaryAction;
+
+  /// No description provided for @travelChecklistQuickPrepTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick preparation'**
+  String get travelChecklistQuickPrepTitle;
+
+  /// No description provided for @travelChecklistQuickPrepMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Create preparation without a booking: enter destination, dates, transport, and activities, and Inflap will build the checklist for this trip.'**
+  String get travelChecklistQuickPrepMessage;
+
+  /// No description provided for @travelChecklistQuickPrepCountryCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Country'**
+  String get travelChecklistQuickPrepCountryCode;
+
+  /// No description provided for @travelChecklistQuickPrepCountryCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Example: Turkey'**
+  String get travelChecklistQuickPrepCountryCodeHint;
+
+  /// No description provided for @travelChecklistQuickPrepCity.
+  ///
+  /// In en, this message translates to:
+  /// **'City'**
+  String get travelChecklistQuickPrepCity;
+
+  /// No description provided for @travelChecklistQuickPrepCityHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Example: Istanbul'**
+  String get travelChecklistQuickPrepCityHint;
+
+  /// No description provided for @travelChecklistQuickPrepStartDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get travelChecklistQuickPrepStartDate;
+
+  /// No description provided for @travelChecklistQuickPrepEndDate.
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get travelChecklistQuickPrepEndDate;
+
+  /// No description provided for @travelChecklistQuickPrepTransportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How you get there'**
+  String get travelChecklistQuickPrepTransportTitle;
+
+  /// No description provided for @travelChecklistQuickPrepActivitiesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What you plan'**
+  String get travelChecklistQuickPrepActivitiesTitle;
+
+  /// No description provided for @travelChecklistQuickPrepWithChildren.
+  ///
+  /// In en, this message translates to:
+  /// **'Traveling with children'**
+  String get travelChecklistQuickPrepWithChildren;
+
+  /// No description provided for @travelChecklistQuickPrepSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Create preparation'**
+  String get travelChecklistQuickPrepSubmit;
+
+  /// No description provided for @travelChecklistQuickPrepDuplicateOpened.
+  ///
+  /// In en, this message translates to:
+  /// **'You already have a preparation for this trip.'**
+  String get travelChecklistQuickPrepDuplicateOpened;
+
+  /// No description provided for @travelChecklistQuickPrepCountryRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a country.'**
+  String get travelChecklistQuickPrepCountryRequired;
+
+  /// No description provided for @travelChecklistQuickPrepCountryInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a country from the list or enter a clear country name.'**
+  String get travelChecklistQuickPrepCountryInvalid;
+
+  /// No description provided for @travelChecklistQuickPrepCityRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a city.'**
+  String get travelChecklistQuickPrepCityRequired;
+
+  /// No description provided for @travelChecklistQuickPrepAlternativeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Or open a checklist from an existing flow'**
+  String get travelChecklistQuickPrepAlternativeTitle;
+
+  /// No description provided for @travelChecklistRecentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My checklists'**
+  String get travelChecklistRecentTitle;
+
+  /// No description provided for @travelChecklistRecentMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently created preparations appear here so you can reopen the same trip context.'**
+  String get travelChecklistRecentMessage;
+
+  /// No description provided for @travelChecklistRecentEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No checklists yet'**
+  String get travelChecklistRecentEmptyTitle;
+
+  /// No description provided for @travelChecklistRecentEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a preparation with country, city, dates, transport, and activities. Your checklist will appear here afterwards.'**
+  String get travelChecklistRecentEmptyMessage;
+
+  /// No description provided for @travelChecklistFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get travelChecklistFilterAll;
+
+  /// No description provided for @travelChecklistFilterUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming'**
+  String get travelChecklistFilterUpcoming;
+
+  /// No description provided for @travelChecklistFilterManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Mine'**
+  String get travelChecklistFilterManual;
+
+  /// No description provided for @travelChecklistFilterActivities.
+  ///
+  /// In en, this message translates to:
+  /// **'Activities'**
+  String get travelChecklistFilterActivities;
+
+  /// No description provided for @travelChecklistFilterExcursions.
+  ///
+  /// In en, this message translates to:
+  /// **'Excursions'**
+  String get travelChecklistFilterExcursions;
+
+  /// No description provided for @travelChecklistSectionUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming preparations'**
+  String get travelChecklistSectionUpcoming;
+
+  /// No description provided for @travelChecklistSectionManual.
+  ///
+  /// In en, this message translates to:
+  /// **'My plans'**
+  String get travelChecklistSectionManual;
+
+  /// No description provided for @travelChecklistSectionPast.
+  ///
+  /// In en, this message translates to:
+  /// **'Past'**
+  String get travelChecklistSectionPast;
+
+  /// No description provided for @travelChecklistSourceManual.
+  ///
+  /// In en, this message translates to:
+  /// **'My checklist'**
+  String get travelChecklistSourceManual;
+
+  /// No description provided for @travelChecklistSourceActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get travelChecklistSourceActivity;
+
+  /// No description provided for @travelChecklistSourceExcursion.
+  ///
+  /// In en, this message translates to:
+  /// **'Excursion'**
+  String get travelChecklistSourceExcursion;
+
+  /// No description provided for @travelChecklistFilterEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No checklists here'**
+  String get travelChecklistFilterEmptyTitle;
+
+  /// No description provided for @travelChecklistFilterEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another filter or create a new preparation.'**
+  String get travelChecklistFilterEmptyMessage;
+
+  /// No description provided for @travelChecklistContextTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip context'**
+  String get travelChecklistContextTitle;
+
+  /// No description provided for @travelChecklistContextDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Destination'**
+  String get travelChecklistContextDestination;
+
+  /// No description provided for @travelChecklistContextDates.
+  ///
+  /// In en, this message translates to:
+  /// **'Dates'**
+  String get travelChecklistContextDates;
+
+  /// No description provided for @travelChecklistContextTransport.
+  ///
+  /// In en, this message translates to:
+  /// **'Transport'**
+  String get travelChecklistContextTransport;
+
+  /// No description provided for @travelChecklistContextActivities.
+  ///
+  /// In en, this message translates to:
+  /// **'Activities'**
+  String get travelChecklistContextActivities;
+
+  /// No description provided for @travelChecklistContextTravelerProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Travelers'**
+  String get travelChecklistContextTravelerProfile;
+
+  /// No description provided for @travelChecklistContextNoActivities.
+  ///
+  /// In en, this message translates to:
+  /// **'No special activities'**
+  String get travelChecklistContextNoActivities;
+
+  /// No description provided for @travelChecklistContextWithChildren.
+  ///
+  /// In en, this message translates to:
+  /// **'With children'**
+  String get travelChecklistContextWithChildren;
+
+  /// No description provided for @travelChecklistReminderDaysBefore.
+  ///
+  /// In en, this message translates to:
+  /// **'{days} days before the trip'**
+  String travelChecklistReminderDaysBefore(Object days);
+
+  /// No description provided for @travelChecklistReminderOnTripDay.
+  ///
+  /// In en, this message translates to:
+  /// **'On trip day'**
+  String get travelChecklistReminderOnTripDay;
+
+  /// No description provided for @travelChecklistReminderDueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date: {date}'**
+  String travelChecklistReminderDueDate(Object date);
+
+  /// No description provided for @travelChecklistTransportFlight.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight'**
+  String get travelChecklistTransportFlight;
+
+  /// No description provided for @travelChecklistTransportTrain.
+  ///
+  /// In en, this message translates to:
+  /// **'Train'**
+  String get travelChecklistTransportTrain;
+
+  /// No description provided for @travelChecklistTransportBus.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus'**
+  String get travelChecklistTransportBus;
+
+  /// No description provided for @travelChecklistTransportCar.
+  ///
+  /// In en, this message translates to:
+  /// **'Car'**
+  String get travelChecklistTransportCar;
+
+  /// No description provided for @travelChecklistTransportFerry.
+  ///
+  /// In en, this message translates to:
+  /// **'Ferry'**
+  String get travelChecklistTransportFerry;
+
+  /// No description provided for @travelChecklistActivityWalking.
+  ///
+  /// In en, this message translates to:
+  /// **'Walking'**
+  String get travelChecklistActivityWalking;
+
+  /// No description provided for @travelChecklistActivityHiking.
+  ///
+  /// In en, this message translates to:
+  /// **'Hiking'**
+  String get travelChecklistActivityHiking;
+
+  /// No description provided for @travelChecklistActivityCulture.
+  ///
+  /// In en, this message translates to:
+  /// **'Culture'**
+  String get travelChecklistActivityCulture;
+
+  /// No description provided for @travelChecklistActivityFood.
+  ///
+  /// In en, this message translates to:
+  /// **'Food'**
+  String get travelChecklistActivityFood;
+
+  /// No description provided for @travelChecklistActivityBeach.
+  ///
+  /// In en, this message translates to:
+  /// **'Beach'**
+  String get travelChecklistActivityBeach;
+
+  /// No description provided for @travelChecklistActivityMuseum.
+  ///
+  /// In en, this message translates to:
+  /// **'Museums'**
+  String get travelChecklistActivityMuseum;
+
+  /// No description provided for @travelChecklistActivityShopping.
+  ///
+  /// In en, this message translates to:
+  /// **'Shopping'**
+  String get travelChecklistActivityShopping;
+
+  /// No description provided for @travelChecklistActivityNightlife.
+  ///
+  /// In en, this message translates to:
+  /// **'Nightlife'**
+  String get travelChecklistActivityNightlife;
+
+  /// No description provided for @travelChecklistReadiness.
+  ///
+  /// In en, this message translates to:
+  /// **'Readiness'**
+  String get travelChecklistReadiness;
+
+  /// No description provided for @travelChecklistSystemReadiness.
+  ///
+  /// In en, this message translates to:
+  /// **'System readiness'**
+  String get travelChecklistSystemReadiness;
+
+  /// No description provided for @travelChecklistPersonalProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal items: {done} of {total}'**
+  String travelChecklistPersonalProgress(int done, int total);
+
+  /// No description provided for @travelChecklistSeasonalProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Seasonal profile'**
+  String get travelChecklistSeasonalProfile;
+
+  /// No description provided for @travelChecklistChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist'**
+  String get travelChecklistChecklist;
+
+  /// No description provided for @travelChecklistItemsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search checklist items'**
+  String get travelChecklistItemsSearchHint;
+
+  /// No description provided for @travelChecklistItemsSearchEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No items found for this search.'**
+  String get travelChecklistItemsSearchEmpty;
+
+  /// No description provided for @travelChecklistAddItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Add item'**
+  String get travelChecklistAddItem;
+
+  /// No description provided for @travelChecklistCustomItemBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Mine'**
+  String get travelChecklistCustomItemBadge;
+
+  /// No description provided for @travelChecklistCustomItemTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What to take or do'**
+  String get travelChecklistCustomItemTitle;
+
+  /// No description provided for @travelChecklistCustomItemTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Example: camera charger'**
+  String get travelChecklistCustomItemTitleHint;
+
+  /// No description provided for @travelChecklistCustomItemNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get travelChecklistCustomItemNote;
+
+  /// No description provided for @travelChecklistCustomItemAdditional.
+  ///
+  /// In en, this message translates to:
+  /// **'More options'**
+  String get travelChecklistCustomItemAdditional;
+
+  /// No description provided for @travelChecklistCustomItemReuse.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to future checklists'**
+  String get travelChecklistCustomItemReuse;
+
+  /// No description provided for @travelChecklistCustomItemSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get travelChecklistCustomItemSave;
+
+  /// No description provided for @travelChecklistCustomItemEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get travelChecklistCustomItemEdit;
+
+  /// No description provided for @travelChecklistCustomItemDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get travelChecklistCustomItemDelete;
+
+  /// No description provided for @travelChecklistCustomItemCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Item added'**
+  String get travelChecklistCustomItemCreated;
+
+  /// No description provided for @travelChecklistCustomItemUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Item updated'**
+  String get travelChecklistCustomItemUpdated;
+
+  /// No description provided for @travelChecklistCustomItemDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Item deleted'**
+  String get travelChecklistCustomItemDeleted;
+
+  /// No description provided for @travelChecklistCustomItemFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update the personal item. Try again later.'**
+  String get travelChecklistCustomItemFailed;
+
+  /// No description provided for @travelChecklistCustomItemTitleRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the item title.'**
+  String get travelChecklistCustomItemTitleRequired;
+
+  /// No description provided for @travelChecklistCarrySearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Can I bring it?'**
+  String get travelChecklistCarrySearch;
+
+  /// No description provided for @travelChecklistCarrySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Power bank, liquids, scissors'**
+  String get travelChecklistCarrySearchHint;
+
+  /// No description provided for @travelChecklistSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get travelChecklistSearch;
+
+  /// No description provided for @travelChecklistNoCarryResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching rule yet. Check the airline or official authority.'**
+  String get travelChecklistNoCarryResults;
+
+  /// No description provided for @travelChecklistCarryOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Carry-on'**
+  String get travelChecklistCarryOn;
+
+  /// No description provided for @travelChecklistCheckedBaggage.
+  ///
+  /// In en, this message translates to:
+  /// **'Checked baggage'**
+  String get travelChecklistCheckedBaggage;
+
+  /// No description provided for @travelChecklistRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get travelChecklistRetry;
+
+  /// No description provided for @travelChecklistLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the checklist. Check your connection and try again.'**
+  String get travelChecklistLoadFailed;
+
+  /// No description provided for @travelChecklistOfflineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline copy'**
+  String get travelChecklistOfflineTitle;
+
+  /// No description provided for @travelChecklistOfflineMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing the last saved checklist. Some statuses may sync when the connection returns.'**
+  String get travelChecklistOfflineMessage;
+
+  /// No description provided for @travelChecklistReminders.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders'**
+  String get travelChecklistReminders;
+
+  /// No description provided for @travelChecklistAssignToMe.
+  ///
+  /// In en, this message translates to:
+  /// **'I will take it'**
+  String get travelChecklistAssignToMe;
+
+  /// No description provided for @travelChecklistAssignedToMe.
+  ///
+  /// In en, this message translates to:
+  /// **'I am taking it'**
+  String get travelChecklistAssignedToMe;
+
+  /// No description provided for @travelChecklistAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned'**
+  String get travelChecklistAssigned;
+
+  /// No description provided for @travelChecklistAssignmentFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update assignment. Try again later.'**
+  String get travelChecklistAssignmentFailed;
+
+  /// No description provided for @travelChecklistFeedbackHelpful.
+  ///
+  /// In en, this message translates to:
+  /// **'Useful'**
+  String get travelChecklistFeedbackHelpful;
+
+  /// No description provided for @travelChecklistFeedbackNotHelpful.
+  ///
+  /// In en, this message translates to:
+  /// **'Not useful'**
+  String get travelChecklistFeedbackNotHelpful;
+
+  /// No description provided for @travelChecklistFeedbackAddNextTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Add next time'**
+  String get travelChecklistFeedbackAddNextTime;
+
+  /// No description provided for @travelChecklistFeedbackSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks, we will use this'**
+  String get travelChecklistFeedbackSent;
+
+  /// No description provided for @travelChecklistFeedbackHelpfulSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback saved: we will show items like this more often.'**
+  String get travelChecklistFeedbackHelpfulSaved;
+
+  /// No description provided for @travelChecklistFeedbackNotHelpfulSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback saved: we will show items like this less often.'**
+  String get travelChecklistFeedbackNotHelpfulSaved;
+
+  /// No description provided for @travelChecklistFeedbackAddNextTimeSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback saved: we will add this to future checklists.'**
+  String get travelChecklistFeedbackAddNextTimeSaved;
+
+  /// No description provided for @travelChecklistFeedbackFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send feedback. Try again later.'**
+  String get travelChecklistFeedbackFailed;
+
+  /// No description provided for @travelChecklistUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get travelChecklistUnknown;
+
+  /// No description provided for @travelChecklistReadinessNotReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Not ready'**
+  String get travelChecklistReadinessNotReady;
+
+  /// No description provided for @travelChecklistReadinessAtRisk.
+  ///
+  /// In en, this message translates to:
+  /// **'At risk'**
+  String get travelChecklistReadinessAtRisk;
+
+  /// No description provided for @travelChecklistReadinessOnTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'On track'**
+  String get travelChecklistReadinessOnTrack;
+
+  /// No description provided for @travelChecklistReadinessAlmostReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Almost ready'**
+  String get travelChecklistReadinessAlmostReady;
+
+  /// No description provided for @travelChecklistReadinessReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get travelChecklistReadinessReady;
+
+  /// No description provided for @travelChecklistReadinessReadyWithWarnings.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready with warnings'**
+  String get travelChecklistReadinessReadyWithWarnings;
+
+  /// No description provided for @travelChecklistPriorityCritical.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical'**
+  String get travelChecklistPriorityCritical;
+
+  /// No description provided for @travelChecklistPriorityEssential.
+  ///
+  /// In en, this message translates to:
+  /// **'Essential'**
+  String get travelChecklistPriorityEssential;
+
+  /// No description provided for @travelChecklistPriorityImportant.
+  ///
+  /// In en, this message translates to:
+  /// **'Important'**
+  String get travelChecklistPriorityImportant;
+
+  /// No description provided for @travelChecklistPriorityRecommended.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended'**
+  String get travelChecklistPriorityRecommended;
+
+  /// No description provided for @travelChecklistPriorityOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional'**
+  String get travelChecklistPriorityOptional;
+
+  /// No description provided for @travelChecklistTemperatureCold.
+  ///
+  /// In en, this message translates to:
+  /// **'Cold'**
+  String get travelChecklistTemperatureCold;
+
+  /// No description provided for @travelChecklistTemperatureMild.
+  ///
+  /// In en, this message translates to:
+  /// **'Mild'**
+  String get travelChecklistTemperatureMild;
+
+  /// No description provided for @travelChecklistTemperatureWarm.
+  ///
+  /// In en, this message translates to:
+  /// **'Warm'**
+  String get travelChecklistTemperatureWarm;
+
+  /// No description provided for @travelChecklistTemperatureHot.
+  ///
+  /// In en, this message translates to:
+  /// **'Hot'**
+  String get travelChecklistTemperatureHot;
+
+  /// No description provided for @travelChecklistTemperatureVeryHot.
+  ///
+  /// In en, this message translates to:
+  /// **'Very hot'**
+  String get travelChecklistTemperatureVeryHot;
+
+  /// No description provided for @travelChecklistPrecipitationDry.
+  ///
+  /// In en, this message translates to:
+  /// **'Dry'**
+  String get travelChecklistPrecipitationDry;
+
+  /// No description provided for @travelChecklistPrecipitationOccasionalRain.
+  ///
+  /// In en, this message translates to:
+  /// **'Occasional rain'**
+  String get travelChecklistPrecipitationOccasionalRain;
+
+  /// No description provided for @travelChecklistPrecipitationRainy.
+  ///
+  /// In en, this message translates to:
+  /// **'Rainy'**
+  String get travelChecklistPrecipitationRainy;
+
+  /// No description provided for @travelChecklistPrecipitationMonsoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Monsoon'**
+  String get travelChecklistPrecipitationMonsoon;
+
+  /// No description provided for @travelChecklistPrecipitationSnow.
+  ///
+  /// In en, this message translates to:
+  /// **'Snow'**
+  String get travelChecklistPrecipitationSnow;
+
+  /// No description provided for @travelChecklistSkySunny.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get travelChecklistSkySunny;
+
+  /// No description provided for @travelChecklistSkyMixed.
+  ///
+  /// In en, this message translates to:
+  /// **'Mixed clouds'**
+  String get travelChecklistSkyMixed;
+
+  /// No description provided for @travelChecklistSkyCloudy.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloudy'**
+  String get travelChecklistSkyCloudy;
+
+  /// No description provided for @travelChecklistRiskCold.
+  ///
+  /// In en, this message translates to:
+  /// **'Cold risk'**
+  String get travelChecklistRiskCold;
+
+  /// No description provided for @travelChecklistRiskDry.
+  ///
+  /// In en, this message translates to:
+  /// **'Dry'**
+  String get travelChecklistRiskDry;
+
+  /// No description provided for @travelChecklistRiskHeat.
+  ///
+  /// In en, this message translates to:
+  /// **'Heat'**
+  String get travelChecklistRiskHeat;
+
+  /// No description provided for @travelChecklistRiskHighUv.
+  ///
+  /// In en, this message translates to:
+  /// **'High UV'**
+  String get travelChecklistRiskHighUv;
+
+  /// No description provided for @travelChecklistRiskHumid.
+  ///
+  /// In en, this message translates to:
+  /// **'Humid'**
+  String get travelChecklistRiskHumid;
+
+  /// No description provided for @travelChecklistRiskIcy.
+  ///
+  /// In en, this message translates to:
+  /// **'Icy'**
+  String get travelChecklistRiskIcy;
+
+  /// No description provided for @travelChecklistRiskMixedWeather.
+  ///
+  /// In en, this message translates to:
+  /// **'Changeable weather'**
+  String get travelChecklistRiskMixedWeather;
+
+  /// No description provided for @travelChecklistRiskRain.
+  ///
+  /// In en, this message translates to:
+  /// **'Rain'**
+  String get travelChecklistRiskRain;
+
+  /// No description provided for @travelChecklistRiskWindy.
+  ///
+  /// In en, this message translates to:
+  /// **'Windy'**
+  String get travelChecklistRiskWindy;
+
+  /// No description provided for @travelChecklistCarryItemPowerBank.
+  ///
+  /// In en, this message translates to:
+  /// **'Power bank'**
+  String get travelChecklistCarryItemPowerBank;
+
+  /// No description provided for @travelChecklistCarryItemTravelVisa.
+  ///
+  /// In en, this message translates to:
+  /// **'Visa / documents'**
+  String get travelChecklistCarryItemTravelVisa;
+
+  /// No description provided for @travelChecklistCarryItemLiquids.
+  ///
+  /// In en, this message translates to:
+  /// **'Liquids'**
+  String get travelChecklistCarryItemLiquids;
+
+  /// No description provided for @travelChecklistCarryItemSharpItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharp items'**
+  String get travelChecklistCarryItemSharpItems;
+
+  /// No description provided for @travelChecklistCarryAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed'**
+  String get travelChecklistCarryAllowed;
+
+  /// No description provided for @travelChecklistCarryAllowedWithConditions.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed with conditions'**
+  String get travelChecklistCarryAllowedWithConditions;
+
+  /// No description provided for @travelChecklistCarryProhibited.
+  ///
+  /// In en, this message translates to:
+  /// **'Prohibited'**
+  String get travelChecklistCarryProhibited;
+
+  /// No description provided for @travelChecklistCarryCheckAuthority.
+  ///
+  /// In en, this message translates to:
+  /// **'Check rules'**
+  String get travelChecklistCarryCheckAuthority;
+
   /// No description provided for @logoutDialogTitle.
   ///
   /// In en, this message translates to:
@@ -7552,6 +8506,24 @@ abstract class AppLocalizations {
   /// **'Booking is confirmed. Online payment will be connected soon.'**
   String get excursionBookingSubmitted;
 
+  /// No description provided for @excursionBookingChecklistAddedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip preparation is ready'**
+  String get excursionBookingChecklistAddedTitle;
+
+  /// No description provided for @excursionBookingChecklistAddedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Inflap prepared a checklist for this booking: documents, weather, baggage rules, and activity essentials.'**
+  String get excursionBookingChecklistAddedMessage;
+
+  /// No description provided for @excursionBookingOpenChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Open checklist'**
+  String get excursionBookingOpenChecklist;
+
   /// No description provided for @excursionBookingAlreadyBookedTitle.
   ///
   /// In en, this message translates to:
@@ -14293,6 +15265,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Bookings'**
   String get notificationsCategoryBooking;
+
+  /// No description provided for @notificationsCategoryChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklists'**
+  String get notificationsCategoryChecklist;
 
   /// No description provided for @notificationsCategoryChat.
   ///

@@ -250,6 +250,514 @@ class AppLocalizationsRu extends AppLocalizations {
   String get serviceTransport => 'Транспорт';
 
   @override
+  String get serviceTravelChecklist => 'Чек-лист поездки';
+
+  @override
+  String get travelChecklistTitle => 'Подготовка к поездке';
+
+  @override
+  String get travelChecklistSubtitle => '';
+
+  @override
+  String get travelChecklistCtaTitle => 'Подготовиться к поездке';
+
+  @override
+  String get travelChecklistCtaSubtitle =>
+      'Готовность, сезон и багажные правила';
+
+  @override
+  String get travelChecklistOpen => 'Открыть чек-лист';
+
+  @override
+  String get travelChecklistPreviewAction => 'Предпросмотр';
+
+  @override
+  String get travelChecklistPreviewMessage =>
+      'Забронируйте экскурсию, чтобы сохранить личный чек-лист с прогрессом, напоминаниями и своими пунктами.';
+
+  @override
+  String get travelChecklistPreviewDate => 'Выбирается при бронировании';
+
+  @override
+  String get travelChecklistSampleTrip => 'Токио · июль, пример';
+
+  @override
+  String get travelChecklistMissingContextTitle => 'Сначала выберите поездку';
+
+  @override
+  String get travelChecklistMissingContextMessage =>
+      'Чек-лист рассчитывается по направлению, датам, транспорту и активностям. Откройте его из бронирования, экскурсии или активности, чтобы Inflap не показывал случайные советы.';
+
+  @override
+  String get travelChecklistMissingContextPrimaryAction => 'Выбрать экскурсию';
+
+  @override
+  String get travelChecklistMissingContextSecondaryAction =>
+      'Открыть активности';
+
+  @override
+  String get travelChecklistQuickPrepTitle => 'Быстрая подготовка';
+
+  @override
+  String get travelChecklistQuickPrepMessage =>
+      'Создайте подготовку без бронирования: укажите направление, даты, транспорт и активности — Inflap соберет чек-лист под эту поездку.';
+
+  @override
+  String get travelChecklistQuickPrepCountryCode => 'Страна';
+
+  @override
+  String get travelChecklistQuickPrepCountryCodeHint => 'Например: Турция';
+
+  @override
+  String get travelChecklistQuickPrepCity => 'Город';
+
+  @override
+  String get travelChecklistQuickPrepCityHint => 'Например: Стамбул';
+
+  @override
+  String get travelChecklistQuickPrepStartDate => 'Начало';
+
+  @override
+  String get travelChecklistQuickPrepEndDate => 'Окончание';
+
+  @override
+  String get travelChecklistQuickPrepTransportTitle => 'Как добираетесь';
+
+  @override
+  String get travelChecklistQuickPrepActivitiesTitle => 'Что планируете';
+
+  @override
+  String get travelChecklistQuickPrepWithChildren => 'Еду с детьми';
+
+  @override
+  String get travelChecklistQuickPrepSubmit => 'Создать подготовку';
+
+  @override
+  String get travelChecklistQuickPrepDuplicateOpened =>
+      'У вас уже есть подготовка для этой поездки.';
+
+  @override
+  String get travelChecklistQuickPrepCountryRequired => 'Выберите страну.';
+
+  @override
+  String get travelChecklistQuickPrepCountryInvalid =>
+      'Выберите страну из списка или введите понятное название страны.';
+
+  @override
+  String get travelChecklistQuickPrepCityRequired => 'Укажите город.';
+
+  @override
+  String get travelChecklistQuickPrepAlternativeTitle =>
+      'Или откройте чек-лист из существующего сценария';
+
+  @override
+  String get travelChecklistRecentTitle => 'Мои чек-листы';
+
+  @override
+  String get travelChecklistRecentMessage =>
+      'Последние созданные подготовки можно открыть здесь и продолжить с того же контекста поездки.';
+
+  @override
+  String get travelChecklistRecentEmptyTitle => 'Пока нет чек-листов';
+
+  @override
+  String get travelChecklistRecentEmptyMessage =>
+      'Создайте подготовку по стране, городу, датам, транспорту и активностям — после этого чек-лист появится здесь.';
+
+  @override
+  String get travelChecklistFilterAll => 'Все';
+
+  @override
+  String get travelChecklistFilterUpcoming => 'Ближайшие';
+
+  @override
+  String get travelChecklistFilterManual => 'Мои';
+
+  @override
+  String get travelChecklistFilterActivities => 'Активности';
+
+  @override
+  String get travelChecklistFilterExcursions => 'Экскурсии';
+
+  @override
+  String get travelChecklistSectionUpcoming => 'Ближайшие подготовки';
+
+  @override
+  String get travelChecklistSectionManual => 'Мои планы';
+
+  @override
+  String get travelChecklistSectionPast => 'Прошедшие';
+
+  @override
+  String get travelChecklistSourceManual => 'Мой чек-лист';
+
+  @override
+  String get travelChecklistSourceActivity => 'Активность';
+
+  @override
+  String get travelChecklistSourceExcursion => 'Экскурсия';
+
+  @override
+  String get travelChecklistFilterEmptyTitle => 'Здесь пока нет чек-листов';
+
+  @override
+  String get travelChecklistFilterEmptyMessage =>
+      'Попробуйте другой фильтр или создайте новую подготовку.';
+
+  @override
+  String get travelChecklistContextTitle => 'Для какой поездки';
+
+  @override
+  String get travelChecklistContextDestination => 'Направление';
+
+  @override
+  String get travelChecklistContextDates => 'Даты';
+
+  @override
+  String get travelChecklistContextTransport => 'Транспорт';
+
+  @override
+  String get travelChecklistContextActivities => 'Активности';
+
+  @override
+  String get travelChecklistContextTravelerProfile => 'Путешественники';
+
+  @override
+  String get travelChecklistContextNoActivities =>
+      'Без специальных активностей';
+
+  @override
+  String get travelChecklistContextWithChildren => 'С детьми';
+
+  @override
+  String travelChecklistReminderDaysBefore(Object days) {
+    return 'За $days дн. до поездки';
+  }
+
+  @override
+  String get travelChecklistReminderOnTripDay => 'В день поездки';
+
+  @override
+  String travelChecklistReminderDueDate(Object date) {
+    return 'Дата: $date';
+  }
+
+  @override
+  String get travelChecklistTransportFlight => 'Перелет';
+
+  @override
+  String get travelChecklistTransportTrain => 'Поезд';
+
+  @override
+  String get travelChecklistTransportBus => 'Автобус';
+
+  @override
+  String get travelChecklistTransportCar => 'Авто';
+
+  @override
+  String get travelChecklistTransportFerry => 'Паром';
+
+  @override
+  String get travelChecklistActivityWalking => 'Пешие прогулки';
+
+  @override
+  String get travelChecklistActivityHiking => 'Хайкинг';
+
+  @override
+  String get travelChecklistActivityCulture => 'Культура';
+
+  @override
+  String get travelChecklistActivityFood => 'Еда';
+
+  @override
+  String get travelChecklistActivityBeach => 'Пляж';
+
+  @override
+  String get travelChecklistActivityMuseum => 'Музеи';
+
+  @override
+  String get travelChecklistActivityShopping => 'Шопинг';
+
+  @override
+  String get travelChecklistActivityNightlife => 'Ночная жизнь';
+
+  @override
+  String get travelChecklistReadiness => 'Готовность';
+
+  @override
+  String get travelChecklistSystemReadiness => 'Системная готовность';
+
+  @override
+  String travelChecklistPersonalProgress(int done, int total) {
+    return 'Личные пункты: $done из $total';
+  }
+
+  @override
+  String get travelChecklistSeasonalProfile => 'Сезонный профиль';
+
+  @override
+  String get travelChecklistChecklist => 'Чек-лист';
+
+  @override
+  String get travelChecklistItemsSearchHint => 'Поиск по пунктам чек-листа';
+
+  @override
+  String get travelChecklistItemsSearchEmpty =>
+      'По этому запросу ничего не найдено.';
+
+  @override
+  String get travelChecklistAddItem => 'Добавить пункт';
+
+  @override
+  String get travelChecklistCustomItemBadge => 'Мое';
+
+  @override
+  String get travelChecklistCustomItemTitle => 'Что нужно взять или сделать';
+
+  @override
+  String get travelChecklistCustomItemTitleHint =>
+      'Например: зарядка для камеры';
+
+  @override
+  String get travelChecklistCustomItemNote => 'Заметка';
+
+  @override
+  String get travelChecklistCustomItemAdditional => 'Дополнительно';
+
+  @override
+  String get travelChecklistCustomItemReuse => 'Добавлять в будущие чек-листы';
+
+  @override
+  String get travelChecklistCustomItemSave => 'Сохранить';
+
+  @override
+  String get travelChecklistCustomItemEdit => 'Изменить';
+
+  @override
+  String get travelChecklistCustomItemDelete => 'Удалить';
+
+  @override
+  String get travelChecklistCustomItemCreated => 'Пункт добавлен';
+
+  @override
+  String get travelChecklistCustomItemUpdated => 'Пункт обновлен';
+
+  @override
+  String get travelChecklistCustomItemDeleted => 'Пункт удален';
+
+  @override
+  String get travelChecklistCustomItemFailed =>
+      'Не удалось обновить личный пункт. Попробуйте позже.';
+
+  @override
+  String get travelChecklistCustomItemTitleRequired =>
+      'Введите название пункта.';
+
+  @override
+  String get travelChecklistCarrySearch => 'Можно ли взять?';
+
+  @override
+  String get travelChecklistCarrySearchHint => 'Повербанк, жидкости, ножницы';
+
+  @override
+  String get travelChecklistSearch => 'Найти';
+
+  @override
+  String get travelChecklistNoCarryResults =>
+      'Пока нет подходящего правила. Проверьте авиакомпанию или официальный источник.';
+
+  @override
+  String get travelChecklistCarryOn => 'Ручная кладь';
+
+  @override
+  String get travelChecklistCheckedBaggage => 'Багаж';
+
+  @override
+  String get travelChecklistRetry => 'Повторить';
+
+  @override
+  String get travelChecklistLoadFailed =>
+      'Не удалось загрузить чек-лист. Проверьте соединение и попробуйте снова.';
+
+  @override
+  String get travelChecklistOfflineTitle => 'Офлайн-копия';
+
+  @override
+  String get travelChecklistOfflineMessage =>
+      'Показываем последний сохраненный чек-лист. Некоторые статусы синхронизируются после восстановления связи.';
+
+  @override
+  String get travelChecklistReminders => 'Напоминания';
+
+  @override
+  String get travelChecklistAssignToMe => 'Возьму';
+
+  @override
+  String get travelChecklistAssignedToMe => 'Я беру';
+
+  @override
+  String get travelChecklistAssigned => 'Назначено';
+
+  @override
+  String get travelChecklistAssignmentFailed =>
+      'Не удалось обновить назначение. Попробуйте позже.';
+
+  @override
+  String get travelChecklistFeedbackHelpful => 'Пригодилось';
+
+  @override
+  String get travelChecklistFeedbackNotHelpful => 'Не пригодилось';
+
+  @override
+  String get travelChecklistFeedbackAddNextTime => 'Добавить в следующий раз';
+
+  @override
+  String get travelChecklistFeedbackSent => 'Спасибо, учтем это';
+
+  @override
+  String get travelChecklistFeedbackHelpfulSaved =>
+      'Отзыв учтен: будем чаще показывать такие пункты.';
+
+  @override
+  String get travelChecklistFeedbackNotHelpfulSaved =>
+      'Отзыв учтен: будем реже показывать такие пункты.';
+
+  @override
+  String get travelChecklistFeedbackAddNextTimeSaved =>
+      'Отзыв учтен: добавим в будущие чек-листы.';
+
+  @override
+  String get travelChecklistFeedbackFailed =>
+      'Не удалось отправить отзыв. Попробуйте позже.';
+
+  @override
+  String get travelChecklistUnknown => 'Неизвестно';
+
+  @override
+  String get travelChecklistReadinessNotReady => 'Не готово';
+
+  @override
+  String get travelChecklistReadinessAtRisk => 'Есть риски';
+
+  @override
+  String get travelChecklistReadinessOnTrack => 'По плану';
+
+  @override
+  String get travelChecklistReadinessAlmostReady => 'Почти готово';
+
+  @override
+  String get travelChecklistReadinessReady => 'Готово';
+
+  @override
+  String get travelChecklistReadinessReadyWithWarnings =>
+      'Готово с предупреждениями';
+
+  @override
+  String get travelChecklistPriorityCritical => 'Критично';
+
+  @override
+  String get travelChecklistPriorityEssential => 'Необходимо';
+
+  @override
+  String get travelChecklistPriorityImportant => 'Важное';
+
+  @override
+  String get travelChecklistPriorityRecommended => 'Рекомендуется';
+
+  @override
+  String get travelChecklistPriorityOptional => 'Опционально';
+
+  @override
+  String get travelChecklistTemperatureCold => 'Холодно';
+
+  @override
+  String get travelChecklistTemperatureMild => 'Прохладно';
+
+  @override
+  String get travelChecklistTemperatureWarm => 'Тепло';
+
+  @override
+  String get travelChecklistTemperatureHot => 'Жарко';
+
+  @override
+  String get travelChecklistTemperatureVeryHot => 'Очень жарко';
+
+  @override
+  String get travelChecklistPrecipitationDry => 'Сухо';
+
+  @override
+  String get travelChecklistPrecipitationOccasionalRain => 'Иногда дождь';
+
+  @override
+  String get travelChecklistPrecipitationRainy => 'Дождливо';
+
+  @override
+  String get travelChecklistPrecipitationMonsoon => 'Сезон ливней';
+
+  @override
+  String get travelChecklistPrecipitationSnow => 'Снег';
+
+  @override
+  String get travelChecklistSkySunny => 'Ясно';
+
+  @override
+  String get travelChecklistSkyMixed => 'Переменная облачность';
+
+  @override
+  String get travelChecklistSkyCloudy => 'Пасмурно';
+
+  @override
+  String get travelChecklistRiskCold => 'Холод';
+
+  @override
+  String get travelChecklistRiskDry => 'Сухость';
+
+  @override
+  String get travelChecklistRiskHeat => 'Жара';
+
+  @override
+  String get travelChecklistRiskHighUv => 'Высокий UV';
+
+  @override
+  String get travelChecklistRiskHumid => 'Влажно';
+
+  @override
+  String get travelChecklistRiskIcy => 'Гололед';
+
+  @override
+  String get travelChecklistRiskMixedWeather => 'Переменчивая погода';
+
+  @override
+  String get travelChecklistRiskRain => 'Дождь';
+
+  @override
+  String get travelChecklistRiskWindy => 'Ветрено';
+
+  @override
+  String get travelChecklistCarryItemPowerBank => 'Повербанк';
+
+  @override
+  String get travelChecklistCarryItemTravelVisa => 'Виза / документы';
+
+  @override
+  String get travelChecklistCarryItemLiquids => 'Жидкости';
+
+  @override
+  String get travelChecklistCarryItemSharpItems => 'Острые предметы';
+
+  @override
+  String get travelChecklistCarryAllowed => 'Можно';
+
+  @override
+  String get travelChecklistCarryAllowedWithConditions => 'Можно с условиями';
+
+  @override
+  String get travelChecklistCarryProhibited => 'Запрещено';
+
+  @override
+  String get travelChecklistCarryCheckAuthority => 'Проверьте правила';
+
+  @override
   String get logoutDialogTitle => 'Выйти из аккаунта?';
 
   @override
@@ -4154,6 +4662,17 @@ class AppLocalizationsRu extends AppLocalizations {
       'Бронь подтверждена. Онлайн-оплата будет подключена скоро.';
 
   @override
+  String get excursionBookingChecklistAddedTitle =>
+      'Подготовка к поездке готова';
+
+  @override
+  String get excursionBookingChecklistAddedMessage =>
+      'Inflap подготовил чек-лист для этой брони: документы, погода, правила багажа и важное для активности.';
+
+  @override
+  String get excursionBookingOpenChecklist => 'Открыть чек-лист';
+
+  @override
   String get excursionBookingAlreadyBookedTitle =>
       'Вы уже забронировали это время';
 
@@ -7959,6 +8478,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get notificationsCategoryBooking => 'Бронирования';
+
+  @override
+  String get notificationsCategoryChecklist => 'Чек-листы';
 
   @override
   String get notificationsCategoryChat => 'Сообщения';

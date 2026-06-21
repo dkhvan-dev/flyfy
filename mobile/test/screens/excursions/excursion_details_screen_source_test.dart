@@ -260,6 +260,88 @@ void main() {
   });
 
   test(
+    'excursion details checklist and booking CTAs use primary text chevron actions',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursion_details_screen.dart',
+      ).readAsString();
+      final ctaSource = await File(
+        'lib/shared/widgets/trip_preparation_cta.dart',
+      ).readAsString();
+
+      expect(source, contains('TripPreparationCta('));
+      expect(ctaSource, contains('Icons.chevron_right_rounded'));
+      expect(ctaSource, contains('iconAlignment: IconAlignment.end'));
+      expect(ctaSource, contains('foregroundColor: AppColors.textPrimary'));
+
+      final bottomActionStart = source.indexOf('final bottomAction =');
+      final contentStart = source.indexOf(
+        'return DecoratedBox(',
+        bottomActionStart,
+      );
+      expect(bottomActionStart, isNonNegative);
+      expect(contentStart, greaterThan(bottomActionStart));
+
+      final bottomActionSource = source.substring(
+        bottomActionStart,
+        contentStart,
+      );
+      expect(bottomActionSource, contains(': l10n.excursionDetailsBook'));
+      expect(bottomActionSource, contains(': Icons.chevron_right_rounded'));
+      expect(
+        bottomActionSource,
+        isNot(contains('Icons.arrow_forward_ios_rounded')),
+      );
+
+      final checkoutStart = source.indexOf('class _ExcursionCheckoutBar');
+      final loadingStart = source.indexOf(
+        'class _ExcursionDetailsLoading',
+        checkoutStart,
+      );
+      expect(checkoutStart, isNonNegative);
+      expect(loadingStart, greaterThan(checkoutStart));
+
+      final checkoutSource = source.substring(checkoutStart, loadingStart);
+      expect(
+        checkoutSource,
+        contains('foregroundColor: AppColors.textPrimary'),
+      );
+      expect(checkoutSource, contains('iconAlignment: IconAlignment.end'));
+    },
+  );
+
+  test(
+    'excursion details keeps checklist preview public but full checklist booking scoped',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursion_details_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('loadMyExcursionBookings()'));
+      expect(source, contains('_activeExcursionChecklistBooking('));
+      expect(
+        source,
+        contains('activeChecklistBooking: activeChecklistBooking'),
+      );
+      expect(source, contains('onFullChecklistTap: () => context.push('));
+      expect(
+        source,
+        contains('TravelChecklistRouteArgs.fromExcursionBooking('),
+      );
+      expect(
+        source,
+        contains('TravelChecklistRouteArgs.fromExcursionPreview('),
+      );
+      expect(source, isNot(contains('_ExcursionChecklistPreviewSheet')));
+      expect(source, contains('travelChecklistPreviewAction'));
+      expect(source, contains('activeChecklistBooking == null'));
+      expect(source, contains('actionLabel: activeChecklistBooking == null'));
+      expect(source, contains('onTap: activeChecklistBooking == null'));
+      expect(source, isNot(contains("tripId: 'excursion:\$excursionId'")));
+    },
+  );
+
+  test(
     'excursion details creates direct chat with guide from message CTA',
     () async {
       final source = await File(

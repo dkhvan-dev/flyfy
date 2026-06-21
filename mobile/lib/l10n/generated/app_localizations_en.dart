@@ -248,6 +248,510 @@ class AppLocalizationsEn extends AppLocalizations {
   String get serviceTransport => 'Transport';
 
   @override
+  String get serviceTravelChecklist => 'Travel checklist';
+
+  @override
+  String get travelChecklistTitle => 'Trip preparation';
+
+  @override
+  String get travelChecklistSubtitle => '';
+
+  @override
+  String get travelChecklistCtaTitle => 'Prepare for this trip';
+
+  @override
+  String get travelChecklistCtaSubtitle =>
+      'Readiness, season and baggage rules';
+
+  @override
+  String get travelChecklistOpen => 'Open checklist';
+
+  @override
+  String get travelChecklistPreviewAction => 'Preview';
+
+  @override
+  String get travelChecklistPreviewMessage =>
+      'Book this excursion to save a personal checklist with progress, reminders, and your own items.';
+
+  @override
+  String get travelChecklistPreviewDate => 'Selected when booking';
+
+  @override
+  String get travelChecklistSampleTrip => 'Tokyo · July sample';
+
+  @override
+  String get travelChecklistMissingContextTitle => 'Choose a trip first';
+
+  @override
+  String get travelChecklistMissingContextMessage =>
+      'The checklist is calculated from destination, dates, transport, and activities. Open it from a booking, excursion, or activity so Inflap does not show unrelated advice.';
+
+  @override
+  String get travelChecklistMissingContextPrimaryAction => 'Choose excursion';
+
+  @override
+  String get travelChecklistMissingContextSecondaryAction => 'Open activities';
+
+  @override
+  String get travelChecklistQuickPrepTitle => 'Quick preparation';
+
+  @override
+  String get travelChecklistQuickPrepMessage =>
+      'Create preparation without a booking: enter destination, dates, transport, and activities, and Inflap will build the checklist for this trip.';
+
+  @override
+  String get travelChecklistQuickPrepCountryCode => 'Country';
+
+  @override
+  String get travelChecklistQuickPrepCountryCodeHint => 'Example: Turkey';
+
+  @override
+  String get travelChecklistQuickPrepCity => 'City';
+
+  @override
+  String get travelChecklistQuickPrepCityHint => 'Example: Istanbul';
+
+  @override
+  String get travelChecklistQuickPrepStartDate => 'Start';
+
+  @override
+  String get travelChecklistQuickPrepEndDate => 'End';
+
+  @override
+  String get travelChecklistQuickPrepTransportTitle => 'How you get there';
+
+  @override
+  String get travelChecklistQuickPrepActivitiesTitle => 'What you plan';
+
+  @override
+  String get travelChecklistQuickPrepWithChildren => 'Traveling with children';
+
+  @override
+  String get travelChecklistQuickPrepSubmit => 'Create preparation';
+
+  @override
+  String get travelChecklistQuickPrepDuplicateOpened =>
+      'You already have a preparation for this trip.';
+
+  @override
+  String get travelChecklistQuickPrepCountryRequired => 'Choose a country.';
+
+  @override
+  String get travelChecklistQuickPrepCountryInvalid =>
+      'Choose a country from the list or enter a clear country name.';
+
+  @override
+  String get travelChecklistQuickPrepCityRequired => 'Enter a city.';
+
+  @override
+  String get travelChecklistQuickPrepAlternativeTitle =>
+      'Or open a checklist from an existing flow';
+
+  @override
+  String get travelChecklistRecentTitle => 'My checklists';
+
+  @override
+  String get travelChecklistRecentMessage =>
+      'Recently created preparations appear here so you can reopen the same trip context.';
+
+  @override
+  String get travelChecklistRecentEmptyTitle => 'No checklists yet';
+
+  @override
+  String get travelChecklistRecentEmptyMessage =>
+      'Create a preparation with country, city, dates, transport, and activities. Your checklist will appear here afterwards.';
+
+  @override
+  String get travelChecklistFilterAll => 'All';
+
+  @override
+  String get travelChecklistFilterUpcoming => 'Upcoming';
+
+  @override
+  String get travelChecklistFilterManual => 'Mine';
+
+  @override
+  String get travelChecklistFilterActivities => 'Activities';
+
+  @override
+  String get travelChecklistFilterExcursions => 'Excursions';
+
+  @override
+  String get travelChecklistSectionUpcoming => 'Upcoming preparations';
+
+  @override
+  String get travelChecklistSectionManual => 'My plans';
+
+  @override
+  String get travelChecklistSectionPast => 'Past';
+
+  @override
+  String get travelChecklistSourceManual => 'My checklist';
+
+  @override
+  String get travelChecklistSourceActivity => 'Activity';
+
+  @override
+  String get travelChecklistSourceExcursion => 'Excursion';
+
+  @override
+  String get travelChecklistFilterEmptyTitle => 'No checklists here';
+
+  @override
+  String get travelChecklistFilterEmptyMessage =>
+      'Try another filter or create a new preparation.';
+
+  @override
+  String get travelChecklistContextTitle => 'Trip context';
+
+  @override
+  String get travelChecklistContextDestination => 'Destination';
+
+  @override
+  String get travelChecklistContextDates => 'Dates';
+
+  @override
+  String get travelChecklistContextTransport => 'Transport';
+
+  @override
+  String get travelChecklistContextActivities => 'Activities';
+
+  @override
+  String get travelChecklistContextTravelerProfile => 'Travelers';
+
+  @override
+  String get travelChecklistContextNoActivities => 'No special activities';
+
+  @override
+  String get travelChecklistContextWithChildren => 'With children';
+
+  @override
+  String travelChecklistReminderDaysBefore(Object days) {
+    return '$days days before the trip';
+  }
+
+  @override
+  String get travelChecklistReminderOnTripDay => 'On trip day';
+
+  @override
+  String travelChecklistReminderDueDate(Object date) {
+    return 'Date: $date';
+  }
+
+  @override
+  String get travelChecklistTransportFlight => 'Flight';
+
+  @override
+  String get travelChecklistTransportTrain => 'Train';
+
+  @override
+  String get travelChecklistTransportBus => 'Bus';
+
+  @override
+  String get travelChecklistTransportCar => 'Car';
+
+  @override
+  String get travelChecklistTransportFerry => 'Ferry';
+
+  @override
+  String get travelChecklistActivityWalking => 'Walking';
+
+  @override
+  String get travelChecklistActivityHiking => 'Hiking';
+
+  @override
+  String get travelChecklistActivityCulture => 'Culture';
+
+  @override
+  String get travelChecklistActivityFood => 'Food';
+
+  @override
+  String get travelChecklistActivityBeach => 'Beach';
+
+  @override
+  String get travelChecklistActivityMuseum => 'Museums';
+
+  @override
+  String get travelChecklistActivityShopping => 'Shopping';
+
+  @override
+  String get travelChecklistActivityNightlife => 'Nightlife';
+
+  @override
+  String get travelChecklistReadiness => 'Readiness';
+
+  @override
+  String get travelChecklistSystemReadiness => 'System readiness';
+
+  @override
+  String travelChecklistPersonalProgress(int done, int total) {
+    return 'Personal items: $done of $total';
+  }
+
+  @override
+  String get travelChecklistSeasonalProfile => 'Seasonal profile';
+
+  @override
+  String get travelChecklistChecklist => 'Checklist';
+
+  @override
+  String get travelChecklistItemsSearchHint => 'Search checklist items';
+
+  @override
+  String get travelChecklistItemsSearchEmpty =>
+      'No items found for this search.';
+
+  @override
+  String get travelChecklistAddItem => 'Add item';
+
+  @override
+  String get travelChecklistCustomItemBadge => 'Mine';
+
+  @override
+  String get travelChecklistCustomItemTitle => 'What to take or do';
+
+  @override
+  String get travelChecklistCustomItemTitleHint => 'Example: camera charger';
+
+  @override
+  String get travelChecklistCustomItemNote => 'Note';
+
+  @override
+  String get travelChecklistCustomItemAdditional => 'More options';
+
+  @override
+  String get travelChecklistCustomItemReuse => 'Add to future checklists';
+
+  @override
+  String get travelChecklistCustomItemSave => 'Save';
+
+  @override
+  String get travelChecklistCustomItemEdit => 'Edit';
+
+  @override
+  String get travelChecklistCustomItemDelete => 'Delete';
+
+  @override
+  String get travelChecklistCustomItemCreated => 'Item added';
+
+  @override
+  String get travelChecklistCustomItemUpdated => 'Item updated';
+
+  @override
+  String get travelChecklistCustomItemDeleted => 'Item deleted';
+
+  @override
+  String get travelChecklistCustomItemFailed =>
+      'Could not update the personal item. Try again later.';
+
+  @override
+  String get travelChecklistCustomItemTitleRequired => 'Enter the item title.';
+
+  @override
+  String get travelChecklistCarrySearch => 'Can I bring it?';
+
+  @override
+  String get travelChecklistCarrySearchHint => 'Power bank, liquids, scissors';
+
+  @override
+  String get travelChecklistSearch => 'Search';
+
+  @override
+  String get travelChecklistNoCarryResults =>
+      'No matching rule yet. Check the airline or official authority.';
+
+  @override
+  String get travelChecklistCarryOn => 'Carry-on';
+
+  @override
+  String get travelChecklistCheckedBaggage => 'Checked baggage';
+
+  @override
+  String get travelChecklistRetry => 'Try again';
+
+  @override
+  String get travelChecklistLoadFailed =>
+      'Could not load the checklist. Check your connection and try again.';
+
+  @override
+  String get travelChecklistOfflineTitle => 'Offline copy';
+
+  @override
+  String get travelChecklistOfflineMessage =>
+      'Showing the last saved checklist. Some statuses may sync when the connection returns.';
+
+  @override
+  String get travelChecklistReminders => 'Reminders';
+
+  @override
+  String get travelChecklistAssignToMe => 'I will take it';
+
+  @override
+  String get travelChecklistAssignedToMe => 'I am taking it';
+
+  @override
+  String get travelChecklistAssigned => 'Assigned';
+
+  @override
+  String get travelChecklistAssignmentFailed =>
+      'Could not update assignment. Try again later.';
+
+  @override
+  String get travelChecklistFeedbackHelpful => 'Useful';
+
+  @override
+  String get travelChecklistFeedbackNotHelpful => 'Not useful';
+
+  @override
+  String get travelChecklistFeedbackAddNextTime => 'Add next time';
+
+  @override
+  String get travelChecklistFeedbackSent => 'Thanks, we will use this';
+
+  @override
+  String get travelChecklistFeedbackHelpfulSaved =>
+      'Feedback saved: we will show items like this more often.';
+
+  @override
+  String get travelChecklistFeedbackNotHelpfulSaved =>
+      'Feedback saved: we will show items like this less often.';
+
+  @override
+  String get travelChecklistFeedbackAddNextTimeSaved =>
+      'Feedback saved: we will add this to future checklists.';
+
+  @override
+  String get travelChecklistFeedbackFailed =>
+      'Could not send feedback. Try again later.';
+
+  @override
+  String get travelChecklistUnknown => 'Unknown';
+
+  @override
+  String get travelChecklistReadinessNotReady => 'Not ready';
+
+  @override
+  String get travelChecklistReadinessAtRisk => 'At risk';
+
+  @override
+  String get travelChecklistReadinessOnTrack => 'On track';
+
+  @override
+  String get travelChecklistReadinessAlmostReady => 'Almost ready';
+
+  @override
+  String get travelChecklistReadinessReady => 'Ready';
+
+  @override
+  String get travelChecklistReadinessReadyWithWarnings => 'Ready with warnings';
+
+  @override
+  String get travelChecklistPriorityCritical => 'Critical';
+
+  @override
+  String get travelChecklistPriorityEssential => 'Essential';
+
+  @override
+  String get travelChecklistPriorityImportant => 'Important';
+
+  @override
+  String get travelChecklistPriorityRecommended => 'Recommended';
+
+  @override
+  String get travelChecklistPriorityOptional => 'Optional';
+
+  @override
+  String get travelChecklistTemperatureCold => 'Cold';
+
+  @override
+  String get travelChecklistTemperatureMild => 'Mild';
+
+  @override
+  String get travelChecklistTemperatureWarm => 'Warm';
+
+  @override
+  String get travelChecklistTemperatureHot => 'Hot';
+
+  @override
+  String get travelChecklistTemperatureVeryHot => 'Very hot';
+
+  @override
+  String get travelChecklistPrecipitationDry => 'Dry';
+
+  @override
+  String get travelChecklistPrecipitationOccasionalRain => 'Occasional rain';
+
+  @override
+  String get travelChecklistPrecipitationRainy => 'Rainy';
+
+  @override
+  String get travelChecklistPrecipitationMonsoon => 'Monsoon';
+
+  @override
+  String get travelChecklistPrecipitationSnow => 'Snow';
+
+  @override
+  String get travelChecklistSkySunny => 'Clear';
+
+  @override
+  String get travelChecklistSkyMixed => 'Mixed clouds';
+
+  @override
+  String get travelChecklistSkyCloudy => 'Cloudy';
+
+  @override
+  String get travelChecklistRiskCold => 'Cold risk';
+
+  @override
+  String get travelChecklistRiskDry => 'Dry';
+
+  @override
+  String get travelChecklistRiskHeat => 'Heat';
+
+  @override
+  String get travelChecklistRiskHighUv => 'High UV';
+
+  @override
+  String get travelChecklistRiskHumid => 'Humid';
+
+  @override
+  String get travelChecklistRiskIcy => 'Icy';
+
+  @override
+  String get travelChecklistRiskMixedWeather => 'Changeable weather';
+
+  @override
+  String get travelChecklistRiskRain => 'Rain';
+
+  @override
+  String get travelChecklistRiskWindy => 'Windy';
+
+  @override
+  String get travelChecklistCarryItemPowerBank => 'Power bank';
+
+  @override
+  String get travelChecklistCarryItemTravelVisa => 'Visa / documents';
+
+  @override
+  String get travelChecklistCarryItemLiquids => 'Liquids';
+
+  @override
+  String get travelChecklistCarryItemSharpItems => 'Sharp items';
+
+  @override
+  String get travelChecklistCarryAllowed => 'Allowed';
+
+  @override
+  String get travelChecklistCarryAllowedWithConditions =>
+      'Allowed with conditions';
+
+  @override
+  String get travelChecklistCarryProhibited => 'Prohibited';
+
+  @override
+  String get travelChecklistCarryCheckAuthority => 'Check rules';
+
+  @override
   String get logoutDialogTitle => 'Sign out?';
 
   @override
@@ -4124,6 +4628,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Booking is confirmed. Online payment will be connected soon.';
 
   @override
+  String get excursionBookingChecklistAddedTitle => 'Trip preparation is ready';
+
+  @override
+  String get excursionBookingChecklistAddedMessage =>
+      'Inflap prepared a checklist for this booking: documents, weather, baggage rules, and activity essentials.';
+
+  @override
+  String get excursionBookingOpenChecklist => 'Open checklist';
+
+  @override
   String get excursionBookingAlreadyBookedTitle =>
       'You already booked this time';
 
@@ -7895,6 +8409,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notificationsCategoryBooking => 'Bookings';
+
+  @override
+  String get notificationsCategoryChecklist => 'Checklists';
 
   @override
   String get notificationsCategoryChat => 'Messages';

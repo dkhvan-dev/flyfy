@@ -2,9 +2,27 @@ package repository
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
+
+func TestExcursionMigratorDoesNotSkipMigrationsByVersionPrefix(t *testing.T) {
+	path := filepath.Join("..", "..", "..", "..", "..", "..", "deploy", "init-scripts", "012_excursion_service_migrate.sh")
+	source, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read excursion migrator: %v", err)
+	}
+
+	body := string(source)
+	if strings.Contains(body, "left(filename") ||
+		strings.Contains(body, "char_length('$version')") {
+		t.Fatal("excursion migrator must not mark a migration applied because another filename with the same numeric prefix exists")
+	}
+	if !strings.Contains(body, "SELECT 1 FROM schema_migrations WHERE filename = '$filename' LIMIT 1") {
+		t.Fatal("excursion migrator should check exact migration filenames")
+	}
+}
 
 func TestListExcursionLanguageCodesByGuideUserIDsAggregatesExcursionsAndOffers(t *testing.T) {
 	source, err := os.ReadFile("pg_excursion_repository.go")

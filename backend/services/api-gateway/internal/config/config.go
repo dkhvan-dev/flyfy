@@ -68,6 +68,7 @@ type DownstreamsConfig struct {
 	FeedService         string `env:"FEED_SERVICE_HTTP_URL, default=http://feed-service:8087"`
 	ChatService         string `env:"CHAT_SERVICE_HTTP_URL, default=http://chat-service:8088"`
 	ReferenceService    string `env:"REFERENCE_SERVICE_HTTP_URL, default=http://reference-service:8089"`
+	ChecklistService    string `env:"CHECKLIST_SERVICE_HTTP_URL, default=http://checklist-service:8099"`
 	CurrencyService     string `env:"CURRENCY_SERVICE_HTTP_URL, default=http://currency-service:8098"`
 	PlaceService        string `env:"PLACE_SERVICE_HTTP_URL, default=http://place-service:8090"`
 	PaymentService      string `env:"PAYMENT_SERVICE_HTTP_URL, default=http://payment-service:8091"`

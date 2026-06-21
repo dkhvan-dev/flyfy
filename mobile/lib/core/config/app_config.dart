@@ -19,7 +19,7 @@ final class AppConfig {
     }
 
     const String testUrl =
-        "https://jump-michael-blogging-finds.trycloudflare.com/api/v1";
+        "https://qualities-hoping-all-drama.trycloudflare.com/api/v1";
 
     if (kIsWeb) {
       return testUrl;

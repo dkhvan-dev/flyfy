@@ -249,6 +249,93 @@ void main() {
     },
   );
 
+  test(
+    'activity details shows trip preparation for participants and host',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activity_details_screen.dart',
+      ).readAsString();
+
+      expect(
+        source,
+        contains(
+          'final canPrepareTrip = isOwner || currentParticipant != null;',
+        ),
+      );
+
+      final statsStart = source.indexOf('_StatsGrid(');
+      final participantsStart = source.indexOf('_ParticipantsSection(');
+      expect(statsStart, isNonNegative);
+      expect(participantsStart, greaterThan(statsStart));
+
+      final betweenStatsAndParticipants = source.substring(
+        statsStart,
+        participantsStart,
+      );
+      expect(betweenStatsAndParticipants, contains('if (canPrepareTrip) ...['));
+      expect(betweenStatsAndParticipants, contains('TripPreparationCta('));
+    },
+  );
+
+  test(
+    'leaving activity removes cached activity checklist after successful leave',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activity_details_screen.dart',
+      ).readAsString();
+
+      expect(
+        source,
+        contains(
+          "import '../../features/checklists/data/checklist_offline_cache.dart';",
+        ),
+      );
+      expect(source, contains('final ChecklistOfflineCache _checklistCache'));
+
+      final leaveStart = source.indexOf('Future<void> _handleLeave() async');
+      final paymentStart = source.indexOf(
+        'Future<void> _openPayment',
+        leaveStart,
+      );
+      expect(leaveStart, isNonNegative);
+      expect(paymentStart, greaterThan(leaveStart));
+
+      final leaveSource = source.substring(leaveStart, paymentStart);
+      expect(
+        leaveSource,
+        contains(
+          'final success = await provider.leaveActivity(widget.activityId);',
+        ),
+      );
+      expect(leaveSource, contains('await _removeCachedActivityChecklist();'));
+      expect(
+        leaveSource.indexOf('await _removeCachedActivityChecklist();'),
+        greaterThan(leaveSource.indexOf('if (!success)')),
+      );
+
+      expect(
+        source,
+        contains('Future<void> _removeCachedActivityChecklist() async'),
+      );
+      expect(source, contains('_checklistCache.removeTripChecklist('));
+      expect(source, contains('_activityChecklistTripId(widget.activityId),'));
+    },
+  );
+
+  test(
+    'trip preparation cta action matches join button icon and foreground',
+    () async {
+      final source = await File(
+        'lib/shared/widgets/trip_preparation_cta.dart',
+      ).readAsString();
+
+      expect(source, contains('Icons.chevron_right_rounded'));
+      expect(source, isNot(contains('Icons.arrow_forward_rounded')));
+      expect(source, contains('foregroundColor: AppColors.textPrimary'));
+      expect(source, contains('iconAlignment: IconAlignment.end'));
+    },
+  );
+
   test('details footer hides total price block for free activities', () async {
     final source = await File(
       'lib/screens/activities/activity_details_screen.dart',

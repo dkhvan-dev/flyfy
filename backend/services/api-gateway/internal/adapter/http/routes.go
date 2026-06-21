@@ -50,6 +50,7 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 	excursionLimit := 180
 	notificationLimit := 300
 	currencyLimit := 180
+	checklistLimit := 180
 
 	return []RoutePolicy{
 		{
@@ -139,6 +140,15 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			RewritePrefix:      "/v1/admin/guides/",
 		},
 		{
+			Name:               "admin-checklists",
+			Prefix:             apiPrefix + "/admin/checklists",
+			AuthMode:           RouteAuthRoleBased,
+			RequiredRoles:      []string{"ADMIN", "MODERATOR"},
+			Upstream:           "checklist",
+			RateLimitPerMinute: &adminLimit,
+			RewritePrefix:      "/v1/admin/checklists",
+		},
+		{
 			Name:               "files",
 			Prefix:             apiPrefix + "/files/",
 			AuthMode:           RouteAuthAuthenticated,
@@ -193,6 +203,22 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			Upstream:           "activity",
 			RateLimitPerMinute: &activityLimit,
 			RewritePrefix:      "/v1/activities",
+		},
+		{
+			Name:               "checklist-carry-items",
+			Prefix:             apiPrefix + "/checklists/carry-items/search",
+			AuthMode:           RouteAuthPublic,
+			Upstream:           "checklist",
+			RateLimitPerMinute: &checklistLimit,
+			RewritePrefix:      "/v1/checklists/carry-items/search",
+		},
+		{
+			Name:               "checklists",
+			Prefix:             apiPrefix + "/checklists",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "checklist",
+			RateLimitPerMinute: &checklistLimit,
+			RewritePrefix:      "/v1/checklists",
 		},
 		{
 			Name:               "my-excursion-bookings",

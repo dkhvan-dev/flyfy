@@ -435,6 +435,34 @@ func TestCombinedRouteMigrationAddsRouteMetadata(t *testing.T) {
 	}
 }
 
+func TestCombinedRouteRepairMigrationRestoresMissingRouteMetadataColumns(t *testing.T) {
+	migration := readMigration(t, "026_repair_excursion_product_route_metadata_columns.up.sql")
+	required := []string{
+		"ADD COLUMN IF NOT EXISTS route_fingerprint TEXT NULL",
+		"ADD COLUMN IF NOT EXISTS place_ids UUID[] NULL",
+		"ADD COLUMN IF NOT EXISTS place_names TEXT[] NULL",
+		"ADD COLUMN IF NOT EXISTS stop_count INT NOT NULL DEFAULT 0",
+		"ADD COLUMN IF NOT EXISTS route_theme TEXT NULL",
+		"ADD COLUMN IF NOT EXISTS duration_bucket TEXT NULL",
+		"ADD COLUMN IF NOT EXISTS place_id UUID NULL",
+		"ADD COLUMN IF NOT EXISTS travel_from_previous_minutes INT NULL",
+		"place_ids = CASE",
+		"THEN ARRAY[landmark_id]::UUID[]",
+		"chk_excursion_products_place_ids_cardinality",
+		"idx_excursion_products_place_ids",
+	}
+	for _, fragment := range required {
+		if !strings.Contains(migration, fragment) {
+			t.Fatalf("repair migration missing %q\n%s", fragment, migration)
+		}
+	}
+
+	downMigration := readMigration(t, "026_repair_excursion_product_route_metadata_columns.down.sql")
+	if !strings.Contains(downMigration, "intentionally irreversible") {
+		t.Fatalf("repair migration down should be intentionally irreversible:\n%s", downMigration)
+	}
+}
+
 func TestProductLocationBackfillMigrationUsesLinkedOfferLocation(t *testing.T) {
 	migration := readMigration(t, "024_backfill_excursion_product_location_from_offers.up.sql")
 	required := []string{

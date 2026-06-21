@@ -60,6 +60,7 @@ class ExcursionProvider extends ChangeNotifier {
   ExcursionActionState _actionState = ExcursionActionState.idle;
   String? _actionErrorMessage;
   ExcursionVm? _lastCreatedExcursion;
+  ExcursionBookingVm? _lastCreatedExcursionBooking;
 
   ExcursionListState _bookingListState = ExcursionListState.initial;
   List<ExcursionBookingVm> _myExcursionBookings = const [];
@@ -113,6 +114,8 @@ class ExcursionProvider extends ChangeNotifier {
   ExcursionActionState get actionState => _actionState;
   String? get actionErrorMessage => _actionErrorMessage;
   ExcursionVm? get lastCreatedExcursion => _lastCreatedExcursion;
+  ExcursionBookingVm? get lastCreatedExcursionBooking =>
+      _lastCreatedExcursionBooking;
 
   ExcursionListState get bookingListState => _bookingListState;
   List<ExcursionBookingVm> get myExcursionBookings => _myExcursionBookings;
@@ -720,10 +723,12 @@ class ExcursionProvider extends ChangeNotifier {
   ) async {
     _actionState = ExcursionActionState.loading;
     _actionErrorMessage = null;
+    _lastCreatedExcursionBooking = null;
     notifyListeners();
 
     try {
       final booking = await _excursionApi.createExcursionBooking(request);
+      _lastCreatedExcursionBooking = booking;
       _upsertMyExcursionBooking(booking);
       _actionState = ExcursionActionState.success;
       return true;

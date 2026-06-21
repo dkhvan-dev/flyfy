@@ -9,6 +9,7 @@ enum AppDrawerActiveItem {
   none,
   myActivities,
   myExcursions,
+  myChecklists,
   myStories,
   myStoryArchive,
 }
@@ -74,6 +75,7 @@ class AppSideDrawer extends StatelessWidget {
     required this.onHomeTap,
     required this.onMyActivitiesTap,
     required this.onMyExcursionsTap,
+    this.onMyChecklistsTap,
     required this.onMyStoriesTap,
     required this.onMyStoryArchiveTap,
     required this.onActivitiesTap,
@@ -93,6 +95,7 @@ class AppSideDrawer extends StatelessWidget {
   final VoidCallback onHomeTap;
   final VoidCallback onMyActivitiesTap;
   final VoidCallback onMyExcursionsTap;
+  final VoidCallback? onMyChecklistsTap;
   final VoidCallback onMyStoriesTap;
   final VoidCallback onMyStoryArchiveTap;
   final VoidCallback onActivitiesTap;
@@ -444,6 +447,19 @@ class AppSideDrawer extends StatelessWidget {
                               usePreferencePalette: true,
                               onTap: onMyExcursionsTap,
                             ),
+                            if (onMyChecklistsTap != null) ...[
+                              SizedBox(height: layout.menuGap),
+                              _DrawerMenuItem(
+                                layout: layout,
+                                label: l10n.travelChecklistRecentTitle,
+                                icon: Icons.checklist_rtl_rounded,
+                                isActive:
+                                    activeItem ==
+                                    AppDrawerActiveItem.myChecklists,
+                                usePreferencePalette: true,
+                                onTap: onMyChecklistsTap!,
+                              ),
+                            ],
                             SizedBox(height: layout.menuGap),
                             _DrawerMenuItem(
                               layout: layout,

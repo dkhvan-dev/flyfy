@@ -517,6 +517,11 @@ class _NotificationBannerVisual {
         color: AppColors.accent,
         label: 'Activity',
       ),
+      PushNotificationChannel.checklists => const _NotificationBannerVisual(
+        icon: Icons.checklist_rounded,
+        color: AppColors.accent,
+        label: 'Checklist',
+      ),
       PushNotificationChannel.messages => const _NotificationBannerVisual(
         icon: Icons.chat_bubble_rounded,
         color: AppColors.accent,

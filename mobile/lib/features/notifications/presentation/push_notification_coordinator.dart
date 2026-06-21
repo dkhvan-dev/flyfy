@@ -41,6 +41,11 @@ enum PushNotificationChannel {
     name: 'Activity updates',
     description: 'Trips, excursions, bookings, and attendance updates',
   ),
+  checklists(
+    id: 'inflap_checklists',
+    name: 'Checklist reminders',
+    description: 'Trip readiness, packing, documents, and baggage reminders',
+  ),
   messages(
     id: 'inflap_messages',
     name: 'Messages',
@@ -179,6 +184,10 @@ class PushNotificationCoordinator {
         _value(data, 'storyId').isNotEmpty ||
         _value(data, 'postId').isNotEmpty) {
       return PushNotificationChannel.content;
+    }
+    if (category.contains('checklist') ||
+        _value(data, 'checklistTripId').isNotEmpty) {
+      return PushNotificationChannel.checklists;
     }
     if (category.contains('activity') ||
         category.contains('excursion') ||
@@ -330,6 +339,7 @@ class LocalPushNotificationPresenter implements PushNotificationPresenter {
       PushNotificationChannel.messages => AndroidNotificationCategory.message,
       PushNotificationChannel.content => AndroidNotificationCategory.social,
       PushNotificationChannel.activity => AndroidNotificationCategory.event,
+      PushNotificationChannel.checklists => AndroidNotificationCategory.status,
       PushNotificationChannel.system => AndroidNotificationCategory.status,
     };
   }
@@ -388,6 +398,11 @@ class PushNotificationDeepLinkResolver {
       return '/posts/${Uri.encodeComponent(storySlug)}';
     }
 
+    final checklistTripId = _value(data, 'checklistTripId');
+    if (checklistTripId.isNotEmpty) {
+      return _checklistRouteFromData(data, checklistTripId) ?? '/me/checklists';
+    }
+
     return fallbackRoute;
   }
 
@@ -417,6 +432,38 @@ class PushNotificationDeepLinkResolver {
 
   String _query(Uri uri) {
     return uri.hasQuery ? '?${uri.query}' : '';
+  }
+
+  String? _checklistRouteFromData(
+    Map<String, Object?> data,
+    String checklistTripId,
+  ) {
+    final countryCode = _value(data, 'countryCode');
+    final cityName = _value(data, 'cityName');
+    final startAt = _value(data, 'startAt');
+    final endAt = _value(data, 'endAt');
+    if (countryCode.isEmpty ||
+        cityName.isEmpty ||
+        startAt.isEmpty ||
+        endAt.isEmpty) {
+      return null;
+    }
+
+    final params = <String, String>{
+      'tripId': checklistTripId,
+      'countryCode': countryCode,
+      'cityName': cityName,
+      'startAt': startAt,
+      'endAt': endAt,
+      if (_value(data, 'cityId').isNotEmpty) 'cityId': _value(data, 'cityId'),
+      if (_value(data, 'countryName').isNotEmpty)
+        'countryName': _value(data, 'countryName'),
+      if (_value(data, 'transportModes').isNotEmpty)
+        'transportModes': _value(data, 'transportModes'),
+      if (_value(data, 'activitySlugs').isNotEmpty)
+        'activitySlugs': _value(data, 'activitySlugs'),
+    };
+    return '/travel-checklist?${Uri(queryParameters: params).query}';
   }
 }
 

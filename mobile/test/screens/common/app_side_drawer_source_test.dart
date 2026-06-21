@@ -163,6 +163,25 @@ void main() {
     expect(itemSource, contains('ExcludeSemantics('));
   });
 
+  test('drawer exposes optional my checklists menu entry', () async {
+    final source = await File(
+      'lib/screens/common/app_side_drawer.dart',
+    ).readAsString();
+
+    final drawerStart = source.indexOf('class AppSideDrawer');
+    final helpersStart = source.indexOf('class _DrawerPinnedFooter');
+
+    expect(drawerStart, isNonNegative);
+    expect(helpersStart, greaterThan(drawerStart));
+
+    final drawerSource = source.substring(drawerStart, helpersStart);
+
+    expect(source, contains('AppDrawerActiveItem.myChecklists'));
+    expect(drawerSource, contains('onMyChecklistsTap'));
+    expect(drawerSource, contains('l10n.travelChecklistRecentTitle'));
+    expect(drawerSource, contains('Icons.checklist_rtl_rounded'));
+  });
+
   test('drawer footer action exposes localized semantic labels', () async {
     final source = await File(
       'lib/screens/common/app_side_drawer.dart',

@@ -44,6 +44,81 @@ func TestStickerCatalogRouteProxiesToStickerService(t *testing.T) {
 	}
 }
 
+func TestChecklistRoutesProxyToChecklistService(t *testing.T) {
+	policy := matchRoutePolicyForMethod("POST", "/api/v1/checklists/trip-preview", "/api/v1")
+	if policy == nil {
+		t.Fatal("expected checklist route policy")
+	}
+	if policy.Upstream != "checklist" {
+		t.Fatalf("upstream = %q, want checklist", policy.Upstream)
+	}
+	if policy.AuthMode != RouteAuthAuthenticated {
+		t.Fatalf("auth mode = %q, want authenticated", policy.AuthMode)
+	}
+	if policy.RewritePrefix != "/v1/checklists" {
+		t.Fatalf("rewrite prefix = %q, want /v1/checklists", policy.RewritePrefix)
+	}
+	assertRouteLimit(t, policy, 180)
+}
+
+func TestChecklistFeedbackRouteRequiresAuthentication(t *testing.T) {
+	policy := matchRoutePolicyForMethod(
+		"POST",
+		"/api/v1/checklists/trips/trip-1/items/documents.passport_id/feedback",
+		"/api/v1",
+	)
+	if policy == nil {
+		t.Fatal("expected checklist feedback route policy")
+	}
+	if policy.Upstream != "checklist" {
+		t.Fatalf("upstream = %q, want checklist", policy.Upstream)
+	}
+	if policy.AuthMode != RouteAuthAuthenticated {
+		t.Fatalf("auth mode = %q, want authenticated", policy.AuthMode)
+	}
+	if policy.RewritePrefix != "/v1/checklists" {
+		t.Fatalf("rewrite prefix = %q, want /v1/checklists", policy.RewritePrefix)
+	}
+	assertRouteLimit(t, policy, 180)
+}
+
+func TestAdminChecklistFeedbackRouteRequiresModeratorRole(t *testing.T) {
+	policy := matchRoutePolicyForMethod("GET", "/api/v1/admin/checklists/feedback", "/api/v1")
+	if policy == nil {
+		t.Fatal("expected admin checklist route policy")
+	}
+	if policy.Upstream != "checklist" {
+		t.Fatalf("upstream = %q, want checklist", policy.Upstream)
+	}
+	if policy.AuthMode != RouteAuthRoleBased {
+		t.Fatalf("auth mode = %q, want role based", policy.AuthMode)
+	}
+	if policy.RewritePrefix != "/v1/admin/checklists" {
+		t.Fatalf("rewrite prefix = %q, want /v1/admin/checklists", policy.RewritePrefix)
+	}
+	if len(policy.RequiredRoles) != 2 || policy.RequiredRoles[0] != "ADMIN" || policy.RequiredRoles[1] != "MODERATOR" {
+		t.Fatalf("required roles = %#v, want ADMIN/MODERATOR", policy.RequiredRoles)
+	}
+	assertRouteLimit(t, policy, 60)
+}
+
+func TestChecklistCarryItemsSearchIsPublic(t *testing.T) {
+	policy := matchRoutePolicyForMethod("GET", "/api/v1/checklists/carry-items/search?q=power", "/api/v1")
+	if policy == nil {
+		t.Fatal("expected checklist carry item search route policy")
+	}
+	if policy.Upstream != "checklist" {
+		t.Fatalf("upstream = %q, want checklist", policy.Upstream)
+	}
+	if policy.AuthMode != RouteAuthPublic {
+		t.Fatalf("auth mode = %q, want public", policy.AuthMode)
+	}
+	if policy.RewritePrefix != "/v1/checklists/carry-items/search" {
+		t.Fatalf("rewrite prefix = %q, want /v1/checklists/carry-items/search", policy.RewritePrefix)
+	}
+	assertRouteLimit(t, policy, 180)
+}
+
 func TestContentFeedRoutesProxyToFeedServicePublicly(t *testing.T) {
 	feedPolicy := matchRoutePolicyForMethod("GET", "/api/v1/feed?surface=home", "/api/v1")
 	if feedPolicy == nil {
