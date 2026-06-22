@@ -94,6 +94,7 @@ class StoryContentBlockDto {
     this.image,
     this.gallery,
     this.place,
+    this.route,
   });
 
   factory StoryContentBlockDto.fromBlock(StoryBlock block) {
@@ -114,6 +115,9 @@ class StoryContentBlockDto {
       place: block.place == null
           ? null
           : StoryPlaceReferenceDto.fromReference(block.place!),
+      route: block.route == null
+          ? null
+          : StoryRouteReferenceDto.fromReference(block.route!),
     );
   }
 
@@ -125,6 +129,7 @@ class StoryContentBlockDto {
   final StoryImagePayloadDto? image;
   final StoryGalleryPayloadDto? gallery;
   final StoryPlaceReferenceDto? place;
+  final StoryRouteReferenceDto? route;
 
   Map<String, dynamic>? toJsonOrNull() {
     final base = <String, dynamic>{'id': id, 'type': type};
@@ -160,6 +165,9 @@ class StoryContentBlockDto {
         return payload == null ? null : {...base, ...payload};
       case 'place_reference':
         final payload = place?.toBackendJson();
+        return payload == null ? null : {...base, ...payload};
+      case 'route_reference':
+        final payload = route?.toBackendJson();
         return payload == null ? null : {...base, ...payload};
       case 'divider':
         return base;
@@ -321,6 +329,72 @@ class StoryPlaceReferenceDto {
   }
 }
 
+class StoryRouteReferenceDto {
+  const StoryRouteReferenceDto({
+    required this.routeId,
+    required this.title,
+    this.description,
+    this.profile,
+    this.distanceMeters,
+    this.durationSeconds,
+    this.stopsCount,
+    this.shareUrl,
+  });
+
+  factory StoryRouteReferenceDto.fromReference(StoryRouteReference reference) {
+    return StoryRouteReferenceDto(
+      routeId: reference.routeId.trim(),
+      title: reference.title.trim(),
+      description: _nullableTrim(reference.description),
+      profile: _nullableTrim(reference.profile),
+      distanceMeters: reference.distanceMeters,
+      durationSeconds: reference.durationSeconds,
+      stopsCount: reference.stopsCount,
+      shareUrl: _nullableTrim(reference.shareUrl),
+    );
+  }
+
+  final String routeId;
+  final String title;
+  final String? description;
+  final String? profile;
+  final int? distanceMeters;
+  final int? durationSeconds;
+  final int? stopsCount;
+  final String? shareUrl;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'routeId': routeId,
+      'routeTitle': title,
+      if (description != null) 'routeDescription': description,
+      if (profile != null) 'routeProfile': profile,
+      if (distanceMeters != null) 'distanceMeters': distanceMeters,
+      if (durationSeconds != null) 'durationSeconds': durationSeconds,
+      if (stopsCount != null) 'stopsCount': stopsCount,
+      if (shareUrl != null) 'shareUrl': shareUrl,
+    };
+  }
+
+  Map<String, dynamic>? toBackendJson() {
+    final normalizedRouteId = _nullableTrim(routeId);
+    final normalizedTitle = _nullableTrim(title);
+    if (normalizedRouteId == null || normalizedTitle == null) {
+      return null;
+    }
+    return {
+      'routeId': normalizedRouteId,
+      'routeTitle': normalizedTitle,
+      if (description != null) 'routeDescription': description,
+      if (profile != null) 'routeProfile': profile,
+      if (distanceMeters != null) 'distanceMeters': distanceMeters,
+      if (durationSeconds != null) 'durationSeconds': durationSeconds,
+      if (stopsCount != null) 'stopsCount': stopsCount,
+      if (shareUrl != null) 'shareUrl': shareUrl,
+    };
+  }
+}
+
 class StoryEditorFieldError {
   const StoryEditorFieldError({
     required this.field,
@@ -433,6 +507,7 @@ String _blockTypeToJson(StoryBlockType type) {
     StoryBlockType.gallery => 'gallery',
     StoryBlockType.divider => 'divider',
     StoryBlockType.placeReference => 'place_reference',
+    StoryBlockType.routeReference => 'route_reference',
   };
 }
 

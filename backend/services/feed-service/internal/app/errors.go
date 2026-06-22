@@ -40,6 +40,7 @@ var (
 	ErrInvalidPostPlace             = errors.New("post place is invalid")
 	ErrInvalidPostCover             = errors.New("post cover is required for published posts")
 	ErrInvalidPostMedia             = errors.New("post media is invalid")
+	ErrInvalidPostRouteReference    = errors.New("post route reference is invalid")
 	ErrPostValidationFailed         = errors.New("post validation failed")
 	ErrPostRevisionConflict         = errors.New("post revision conflict")
 	ErrInvalidCommentBody           = errors.New("comment body is required and must be 800 characters or fewer")

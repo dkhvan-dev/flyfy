@@ -68,6 +68,11 @@ type UserAdminClient interface {
 	GetAdminUserDetail(ctx context.Context, userID uuid.UUID) (model.AdminUserDetail, error)
 }
 
+type UserRouteAdminClient interface {
+	ListUserRoutes(ctx context.Context, input model.AdminUserRouteAdminListRequest) ([]model.AdminUserRoute, error)
+	ReviewUserRoute(ctx context.Context, input model.AdminUserRouteAdminReviewRequest) (*model.AdminUserRoute, error)
+}
+
 type UserModerationRepository interface {
 	CreateUserModerationCase(ctx context.Context, params model.CreateUserModerationCaseParams) (model.UserModerationCase, error)
 	GetUserModerationCase(ctx context.Context, id uuid.UUID) (model.UserModerationCase, error)

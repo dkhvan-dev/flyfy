@@ -11,6 +11,7 @@ class TravelChecklistRouteArgs {
     this.destinationCountryName,
     this.transportModes = const [],
     this.activitySlugs = const [],
+    this.routeStops = const [],
     this.hasChildren = false,
     this.isPreview = false,
   });
@@ -22,6 +23,7 @@ class TravelChecklistRouteArgs {
   final DateTime endAt;
   final List<String> transportModes;
   final List<String> activitySlugs;
+  final List<TravelChecklistRouteStop> routeStops;
   final bool hasChildren;
   final bool isPreview;
 
@@ -41,6 +43,7 @@ class TravelChecklistRouteArgs {
       endAt: _dateTimeFromJson(json['endAt']),
       transportModes: _stringListFromJson(json['transportModes']),
       activitySlugs: _stringListFromJson(json['activitySlugs']),
+      routeStops: _routeStopsFromJson(json['routeStops']),
       hasChildren: json['hasChildren'] == true,
       isPreview: json['isPreview'] == true,
     );
@@ -114,6 +117,9 @@ class TravelChecklistRouteArgs {
         ...?excursion?.tags,
         excursion?.categorySlug,
       ]),
+      routeStops: _routeStopsFromExcursion(
+        _bookingExcursionRoute(excursion, booking.offerId),
+      ),
       hasChildren: booking.children > 0,
     );
   }
@@ -159,6 +165,7 @@ class TravelChecklistRouteArgs {
         previewExcursion.transportMode,
         ...previewExcursion.tags,
       ]),
+      routeStops: _routeStopsFromExcursion(previewExcursion),
       isPreview: true,
     );
   }
@@ -195,6 +202,10 @@ class TravelChecklistRouteArgs {
       'endAt': safeEndAt.toUtc().toIso8601String(),
       'transportModes': normalizedTokens(transportModes),
       'activitySlugs': normalizedTokens(activitySlugs),
+      if (routeStops.isNotEmpty)
+        'routeStops': routeStops
+            .map((stop) => stop.toJson())
+            .toList(growable: false),
       'hasChildren': hasChildren,
       if (isPreview) 'isPreview': true,
     };
@@ -323,4 +334,118 @@ class TravelChecklistRouteArgs {
     final trimmed = value?.trim();
     return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
+}
+
+class TravelChecklistRouteStop {
+  const TravelChecklistRouteStop({
+    required this.latitude,
+    required this.longitude,
+    this.name,
+    this.sourceId,
+  });
+
+  final double latitude;
+  final double longitude;
+  final String? name;
+  final String? sourceId;
+
+  factory TravelChecklistRouteStop.fromJson(Map<String, dynamic> json) {
+    return TravelChecklistRouteStop(
+      latitude: _doubleFromMap(json, 'latitude'),
+      longitude: _doubleFromMap(json, 'longitude'),
+      name: _blankToNullValue(json['name']?.toString()),
+      sourceId: _blankToNullValue(json['sourceId']?.toString()),
+    );
+  }
+
+  Map<String, Object?> toJson() {
+    return {
+      'latitude': latitude,
+      'longitude': longitude,
+      if ((name ?? '').trim().isNotEmpty) 'name': name!.trim(),
+      if ((sourceId ?? '').trim().isNotEmpty) 'sourceId': sourceId!.trim(),
+    };
+  }
+}
+
+ExcursionVm? _bookingExcursionRoute(ExcursionVm? excursion, String offerId) {
+  if (excursion == null) return null;
+  final normalizedOfferId = offerId.trim();
+  if (normalizedOfferId.isEmpty) return excursion;
+
+  for (final offer in excursion.offers) {
+    if (offer.id == normalizedOfferId && offer.itinerary.isNotEmpty) {
+      return excursion.withPrimaryOffer(offer);
+    }
+  }
+  return excursion;
+}
+
+List<TravelChecklistRouteStop> _routeStopsFromExcursion(
+  ExcursionVm? excursion,
+) {
+  if (excursion == null) return const [];
+
+  final stops = <TravelChecklistRouteStop>[];
+  for (final item in excursion.itinerary) {
+    final latitude = item.latitude;
+    final longitude = item.longitude;
+    if (latitude == null ||
+        longitude == null ||
+        !_isValidCoordinate(latitude, longitude)) {
+      continue;
+    }
+
+    stops.add(
+      TravelChecklistRouteStop(
+        latitude: latitude,
+        longitude: longitude,
+        name: _firstNonBlankValue([item.placeName, item.title]),
+        sourceId: _firstNonBlankValue([item.placeId, item.id]),
+      ),
+    );
+  }
+  return List.unmodifiable(stops);
+}
+
+List<TravelChecklistRouteStop> _routeStopsFromJson(Object? value) {
+  if (value is! List) return const [];
+
+  final stops = <TravelChecklistRouteStop>[];
+  for (final item in value) {
+    if (item is! Map) continue;
+    final stop = TravelChecklistRouteStop.fromJson(
+      item.cast<String, dynamic>(),
+    );
+    if (!_isValidCoordinate(stop.latitude, stop.longitude)) continue;
+    stops.add(stop);
+  }
+  return List.unmodifiable(stops);
+}
+
+bool _isValidCoordinate(double latitude, double longitude) {
+  return latitude >= -90 &&
+      latitude <= 90 &&
+      longitude >= -180 &&
+      longitude <= 180;
+}
+
+double _doubleFromMap(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value) ?? 0;
+  return 0;
+}
+
+String? _firstNonBlankValue(Iterable<String?> values) {
+  for (final value in values) {
+    final trimmed = value?.trim();
+    if (trimmed != null && trimmed.isNotEmpty) return trimmed;
+  }
+  return null;
+}
+
+String? _blankToNullValue(String? value) {
+  final trimmed = value?.trim();
+  return trimmed == null || trimmed.isEmpty ? null : trimmed;
 }

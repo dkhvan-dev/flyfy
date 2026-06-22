@@ -69,10 +69,22 @@ void main() {
         'placeCountryCode': 'KZ',
         'placeCityId': 'almaty',
       });
+      expect(blocks[6], {
+        'id': 'route-1',
+        'type': 'route_reference',
+        'routeId': 'route-1',
+        'routeTitle': 'Panfilov morning walk',
+        'routeDescription': 'Coffee, park, and bazaar stops',
+        'routeProfile': 'pedestrian',
+        'distanceMeters': 1800,
+        'durationSeconds': 1320,
+        'stopsCount': 3,
+        'shareUrl': 'https://inflap.app/user-routes/route-1',
+      });
 
       expect(story.format, 'GUIDE');
       expect(story.contentSchemaVersion, 1);
-      expect(story.contentBlocks, hasLength(6));
+      expect(story.contentBlocks, hasLength(7));
       expect(story.revision, 8);
       expect(story.lastAutosavedAt, DateTime.parse('2026-06-01T10:00:00Z'));
       expect(story.archivedAt, DateTime.parse('2026-06-02T10:00:00Z'));
@@ -282,6 +294,19 @@ StoryEditorWriteRequest _editorRequest() {
           cityId: ' almaty ',
           latitude: 43.2389,
           longitude: 76.8897,
+        ),
+      ),
+      StoryBlock.routeReference(
+        id: 'route-1',
+        route: const StoryRouteReference(
+          routeId: ' route-1 ',
+          title: ' Panfilov morning walk ',
+          description: ' Coffee, park, and bazaar stops ',
+          profile: ' pedestrian ',
+          distanceMeters: 1800,
+          durationSeconds: 1320,
+          stopsCount: 3,
+          shareUrl: ' https://inflap.app/user-routes/route-1 ',
         ),
       ),
     ],

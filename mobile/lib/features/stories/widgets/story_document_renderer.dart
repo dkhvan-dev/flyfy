@@ -4,12 +4,14 @@ import 'package:flutter/material.dart';
 
 import '../../../core/network/file_api.dart';
 import '../../../core/ui/app_colors.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../editor/domain/story_document.dart';
 import '../models/post_vm.dart';
 import '../story_ui.dart';
 
 typedef StoryImageOpenCallback =
     void Function(List<StoryImagePayload> images, int initialIndex);
+typedef StoryRouteOpenCallback = void Function(String routeId);
 
 class StoryDocumentRenderer extends StatelessWidget {
   const StoryDocumentRenderer({
@@ -18,19 +20,24 @@ class StoryDocumentRenderer extends StatelessWidget {
     this.document,
     this.fallbackContent,
     this.onOpenImages,
+    this.onOpenRoute,
   });
 
   final PostVm? story;
   final StoryDocument? document;
   final String? fallbackContent;
   final StoryImageOpenCallback? onOpenImages;
+  final StoryRouteOpenCallback? onOpenRoute;
 
   @override
   Widget build(BuildContext context) {
     final blocks = _resolveDocument().blocks
         .map(
-          (block) =>
-              _StoryRenderedBlock(block: block, onOpenImages: onOpenImages),
+          (block) => _StoryRenderedBlock(
+            block: block,
+            onOpenImages: onOpenImages,
+            onOpenRoute: onOpenRoute,
+          ),
         )
         .where((block) => block.visible)
         .toList(growable: false);
@@ -98,10 +105,15 @@ class StoryDocumentRenderer extends StatelessWidget {
 }
 
 class _StoryRenderedBlock extends StatelessWidget {
-  const _StoryRenderedBlock({required this.block, required this.onOpenImages});
+  const _StoryRenderedBlock({
+    required this.block,
+    required this.onOpenImages,
+    required this.onOpenRoute,
+  });
 
   final StoryBlock block;
   final StoryImageOpenCallback? onOpenImages;
+  final StoryRouteOpenCallback? onOpenRoute;
 
   StoryBlockType get type => block.type;
 
@@ -117,6 +129,8 @@ class _StoryRenderedBlock extends StatelessWidget {
       StoryBlockType.gallery => _validGalleryImages(block.gallery).isNotEmpty,
       StoryBlockType.placeReference =>
         (block.place?.isMeaningful ?? false) && _placeTitle(block).isNotEmpty,
+      StoryBlockType.routeReference =>
+        (block.route?.isMeaningful ?? false) && _routeTitle(block).isNotEmpty,
       StoryBlockType.divider => true,
     };
   }
@@ -140,6 +154,10 @@ class _StoryRenderedBlock extends StatelessWidget {
       ),
       StoryBlockType.divider => const _DividerBlock(),
       StoryBlockType.placeReference => _PlaceReferenceBlock(block: block),
+      StoryBlockType.routeReference => _RouteReferenceBlock(
+        block: block,
+        onOpenRoute: onOpenRoute,
+      ),
     };
   }
 }
@@ -580,6 +598,201 @@ class _PlaceReferenceBlock extends StatelessWidget {
   }
 }
 
+class _RouteReferenceBlock extends StatelessWidget {
+  const _RouteReferenceBlock({required this.block, required this.onOpenRoute});
+
+  final StoryBlock block;
+  final StoryRouteOpenCallback? onOpenRoute;
+
+  @override
+  Widget build(BuildContext context) {
+    final adaptive = StoryAdaptive.of(context);
+    final l10n = AppLocalizations.of(context);
+    final route = block.route!;
+    final title = _routeTitle(block);
+    final description = (route.description ?? '').trim();
+    final routeId = route.routeId.trim();
+    final metrics = <_RouteReferenceMetric>[
+      if ((route.durationSeconds ?? 0) > 0)
+        _RouteReferenceMetric(
+          icon: Icons.schedule_rounded,
+          value: _formatRouteDuration(route.durationSeconds!, l10n),
+        ),
+      if ((route.distanceMeters ?? 0) > 0)
+        _RouteReferenceMetric(
+          icon: Icons.straighten_rounded,
+          value: _formatRouteDistance(route.distanceMeters!, l10n),
+        ),
+      if ((route.stopsCount ?? 0) > 0)
+        _RouteReferenceMetric(
+          icon: Icons.pin_drop_outlined,
+          value:
+              l10n?.userRoutesStopsCount(route.stopsCount!) ??
+              '${route.stopsCount} stops',
+        ),
+    ];
+
+    final content = Container(
+      key: ValueKey('story-document-route-$routeId'),
+      width: double.infinity,
+      padding: EdgeInsets.all(adaptive.scale(13)),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(adaptive.radius(18)),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF3A2108), Color(0xFF241406)],
+        ),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.34)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: adaptive.scale(18),
+            offset: Offset(0, adaptive.scale(8)),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: adaptive.scale(42),
+            height: adaptive.scale(42),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(adaptive.radius(12)),
+              color: AppColors.accent.withValues(alpha: 0.16),
+              border: Border.all(
+                color: AppColors.accent.withValues(alpha: 0.28),
+              ),
+            ),
+            child: Icon(
+              Icons.route_rounded,
+              color: AppColors.accent,
+              size: adaptive.scale(22),
+            ),
+          ),
+          SizedBox(width: adaptive.scale(11)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: StoryPalette.text,
+                    fontSize: adaptive.scale(14.5),
+                    height: 1.24,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                  ),
+                ),
+                if (description.isNotEmpty) ...[
+                  SizedBox(height: adaptive.scale(4)),
+                  Text(
+                    description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: StoryPalette.textSoft.withValues(alpha: 0.84),
+                      fontSize: adaptive.scale(12),
+                      height: 1.35,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                ],
+                if (metrics.isNotEmpty) ...[
+                  SizedBox(height: adaptive.scale(10)),
+                  Wrap(
+                    spacing: adaptive.scale(8),
+                    runSpacing: adaptive.scale(8),
+                    children: [
+                      for (final metric in metrics)
+                        _RouteReferenceMetricChip(metric: metric),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+
+    final openRoute = onOpenRoute;
+    if (openRoute == null || routeId.isEmpty) {
+      return content;
+    }
+
+    return Semantics(
+      button: true,
+      label: title,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(adaptive.radius(18)),
+          onTap: () => openRoute(routeId),
+          child: content,
+        ),
+      ),
+    );
+  }
+}
+
+class _RouteReferenceMetric {
+  const _RouteReferenceMetric({required this.icon, required this.value});
+
+  final IconData icon;
+  final String value;
+}
+
+class _RouteReferenceMetricChip extends StatelessWidget {
+  const _RouteReferenceMetricChip({required this.metric});
+
+  final _RouteReferenceMetric metric;
+
+  @override
+  Widget build(BuildContext context) {
+    final adaptive = StoryAdaptive.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.accent.withValues(alpha: 0.13),
+        borderRadius: BorderRadius.circular(adaptive.radius(999)),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.18)),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: adaptive.scale(9),
+          vertical: adaptive.scale(6),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              metric.icon,
+              color: AppColors.accent,
+              size: adaptive.scale(14),
+            ),
+            SizedBox(width: adaptive.scale(5)),
+            Text(
+              metric.value,
+              style: TextStyle(
+                color: const Color(0xFFFFE6B4),
+                fontSize: adaptive.scale(11),
+                height: 1.1,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _MarkedText extends StatelessWidget {
   const _MarkedText({
     required this.text,
@@ -713,6 +926,10 @@ StoryBlock? _blockFromJson(Map<String, dynamic> json) {
       id: normalizedId,
       place: _placeFromJson(json['place'] ?? json),
     ),
+    'route_reference' => StoryBlock.routeReference(
+      id: normalizedId,
+      route: _routeFromJson(json['route'] ?? json),
+    ),
     'paragraph' ||
     _ => StoryBlock.paragraph(id: normalizedId, text: text, marks: marks),
   };
@@ -791,6 +1008,24 @@ StoryPlaceReference _placeFromJson(Object? raw) {
   );
 }
 
+StoryRouteReference _routeFromJson(Object? raw) {
+  final json = raw is Map ? raw : const <String, Object?>{};
+  return StoryRouteReference(
+    routeId: json['routeId']?.toString() ?? '',
+    title: json['title']?.toString() ?? json['routeTitle']?.toString() ?? '',
+    description: _normalizeNullable(
+      json['description']?.toString() ?? json['routeDescription']?.toString(),
+    ),
+    profile: _normalizeNullable(
+      json['profile']?.toString() ?? json['routeProfile']?.toString(),
+    ),
+    distanceMeters: int.tryParse(json['distanceMeters']?.toString() ?? ''),
+    durationSeconds: int.tryParse(json['durationSeconds']?.toString() ?? ''),
+    stopsCount: int.tryParse(json['stopsCount']?.toString() ?? ''),
+    shareUrl: _normalizeNullable(json['shareUrl']?.toString()),
+  );
+}
+
 String _normalizeBlockType(Object? raw) {
   final value = raw?.toString().trim() ?? '';
   if (value.isEmpty) {
@@ -844,4 +1079,30 @@ String _placeTitle(StoryBlock block) {
     return name;
   }
   return (place.placeId ?? '').trim();
+}
+
+String _routeTitle(StoryBlock block) {
+  final route = block.route;
+  if (route == null) {
+    return '';
+  }
+  final title = route.title.trim();
+  if (title.isNotEmpty) {
+    return title;
+  }
+  return route.routeId.trim();
+}
+
+String _formatRouteDuration(int seconds, AppLocalizations? l10n) {
+  final minutes = (seconds / 60).round().clamp(1, 1440);
+  return l10n?.routeDurationMinutesShort(minutes) ?? '$minutes min';
+}
+
+String _formatRouteDistance(int meters, AppLocalizations? l10n) {
+  if (meters >= 1000) {
+    final kilometers = meters / 1000;
+    final value = kilometers.toStringAsFixed(kilometers >= 10 ? 0 : 1);
+    return l10n?.routeDistanceKilometersShort(value) ?? '$value km';
+  }
+  return l10n?.routeDistanceMetersShort(meters) ?? '$meters m';
 }

@@ -21,6 +21,8 @@ import 'providers/auth_provider.dart';
 import 'providers/home_location_provider.dart';
 import 'providers/session_provider.dart';
 import 'providers/locale_provider.dart';
+import 'providers/routing_provider.dart';
+import 'providers/user_routes_provider.dart';
 import 'core/router/app_router.dart';
 import 'core/ui/keyboard_dismiss_on_scroll.dart';
 import 'l10n/generated/app_localizations.dart';
@@ -137,6 +139,8 @@ class _SuperAppState extends State<SuperApp> {
         ChangeNotifierProvider(create: (_) => ActivityProvider()),
         ChangeNotifierProvider(create: (_) => ExcursionProvider()),
         ChangeNotifierProvider(create: (_) => ExcursionScheduleProvider()),
+        ChangeNotifierProvider(create: (_) => RoutingProvider()),
+        ChangeNotifierProvider(create: (_) => UserRoutesProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => StickerCatalogProvider()),
       ],

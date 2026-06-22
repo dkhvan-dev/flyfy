@@ -24,6 +24,7 @@ import '../../features/profile/models/guide_profile_vm.dart';
 import '../../features/profile/models/profile_follower_vm.dart';
 import '../../features/profile/models/user_profile_vm.dart';
 import '../../features/stories/models/post_vm.dart';
+import '../../features/user_routes/user_route_feature_flags.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/session_provider.dart';
 import 'edit_profile_screen.dart';
@@ -2473,6 +2474,13 @@ class _OwnProfileSections extends StatelessWidget {
       children: [
         ProfileSectionHeading(title: l10n.profileJourneyTitle),
         SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
+        if (UserRouteFeatureFlags.customRoutesEnabled)
+          _ProfileMenuTile(
+            icon: Icons.route_outlined,
+            title: l10n.profileUserRoutesTitle,
+            subtitle: l10n.profileUserRoutesSubtitle,
+            onTap: () => context.push('/user-routes'),
+          ),
         _ProfileMenuTile(
           icon: Icons.bookmark_border_rounded,
           title: l10n.profileSavedItemsTitle,

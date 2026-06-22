@@ -20,6 +20,7 @@ type Config struct {
 	Guide        GuideServiceConfig
 	Chat         ChatServiceConfig
 	FeedService  FeedServiceConfig
+	UserRoute    UserRouteServiceConfig
 	User         UserServiceConfig
 	Trust        TrustServiceConfig
 	AntiFraud    AntiFraudServiceConfig
@@ -135,6 +136,11 @@ type ChatServiceConfig struct {
 type FeedServiceConfig struct {
 	BaseURL string        `env:"FEED_SERVICE_URL, default=http://feed-service:8087"`
 	Timeout time.Duration `env:"FEED_SERVICE_TIMEOUT, default=5s"`
+}
+
+type UserRouteServiceConfig struct {
+	BaseURL string        `env:"USER_ROUTE_SERVICE_HTTP_URL, default=http://user-route-service:8096"`
+	Timeout time.Duration `env:"USER_ROUTE_SERVICE_REQUEST_TIMEOUT, default=3s"`
 }
 
 type UserServiceConfig struct {

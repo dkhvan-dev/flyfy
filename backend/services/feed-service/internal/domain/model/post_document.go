@@ -20,6 +20,10 @@ const (
 	PostDocumentMaxPlaceNameLength         = 300
 	PostDocumentMaxPlaceCountryCodeLength  = 8
 	PostDocumentMaxPlaceCityIDLength       = 128
+	PostDocumentMaxRouteIDLength           = 128
+	PostDocumentMaxRouteTitleLength        = 160
+	PostDocumentMaxRouteDescriptionLength  = 500
+	PostDocumentMaxRouteProfileLength      = 32
 	PostDocumentMaxFileIDLength            = 256
 	PostDocumentMaxURLLength               = 2_048
 )
@@ -37,6 +41,7 @@ const (
 	PostBlockTypeGallery        PostBlockType = "gallery"
 	PostBlockTypeDivider        PostBlockType = "divider"
 	PostBlockTypePlaceReference PostBlockType = "place_reference"
+	PostBlockTypeRouteReference PostBlockType = "route_reference"
 )
 
 type PostInlineMarkType string
@@ -55,18 +60,26 @@ type PostDocument struct {
 }
 
 type PostBlock struct {
-	ID               string             `json:"id"`
-	Type             PostBlockType      `json:"type"`
-	Text             string             `json:"text,omitempty"`
-	Level            int                `json:"level,omitempty"`
-	Marks            []PostInlineMark   `json:"marks,omitempty"`
-	Items            []PostListItem     `json:"items,omitempty"`
-	FileID           string             `json:"fileId,omitempty"`
-	Images           []PostGalleryImage `json:"images,omitempty"`
-	PlaceID          string             `json:"placeId,omitempty"`
-	PlaceName        string             `json:"placeName,omitempty"`
-	PlaceCountryCode string             `json:"placeCountryCode,omitempty"`
-	PlaceCityID      string             `json:"placeCityId,omitempty"`
+	ID                   string             `json:"id"`
+	Type                 PostBlockType      `json:"type"`
+	Text                 string             `json:"text,omitempty"`
+	Level                int                `json:"level,omitempty"`
+	Marks                []PostInlineMark   `json:"marks,omitempty"`
+	Items                []PostListItem     `json:"items,omitempty"`
+	FileID               string             `json:"fileId,omitempty"`
+	Images               []PostGalleryImage `json:"images,omitempty"`
+	PlaceID              string             `json:"placeId,omitempty"`
+	PlaceName            string             `json:"placeName,omitempty"`
+	PlaceCountryCode     string             `json:"placeCountryCode,omitempty"`
+	PlaceCityID          string             `json:"placeCityId,omitempty"`
+	RouteID              string             `json:"routeId,omitempty"`
+	RouteTitle           string             `json:"routeTitle,omitempty"`
+	RouteDescription     string             `json:"routeDescription,omitempty"`
+	RouteProfile         string             `json:"routeProfile,omitempty"`
+	RouteDistanceMeters  int                `json:"distanceMeters,omitempty"`
+	RouteDurationSeconds int                `json:"durationSeconds,omitempty"`
+	RouteStopsCount      int                `json:"stopsCount,omitempty"`
+	RouteShareURL        string             `json:"shareUrl,omitempty"`
 }
 
 type PostListItem struct {
@@ -85,7 +98,7 @@ type PostInlineMark struct {
 	URL   string             `json:"url,omitempty"`
 }
 
-type postBlockField uint16
+type postBlockField uint32
 
 const (
 	blockFieldText postBlockField = 1 << iota
@@ -98,6 +111,14 @@ const (
 	blockFieldPlaceName
 	blockFieldPlaceCountryCode
 	blockFieldPlaceCityID
+	blockFieldRouteID
+	blockFieldRouteTitle
+	blockFieldRouteDescription
+	blockFieldRouteProfile
+	blockFieldRouteDistanceMeters
+	blockFieldRouteDurationSeconds
+	blockFieldRouteStopsCount
+	blockFieldRouteShareURL
 )
 
 func (d PostDocument) Validate() error {
@@ -139,6 +160,8 @@ func (d PostDocument) PlainText() string {
 			}
 		case PostBlockTypePlaceReference:
 			appendVisibleText(&parts, block.PlaceName)
+		case PostBlockTypeRouteReference:
+			appendVisibleText(&parts, block.RouteTitle)
 		}
 	}
 
@@ -167,6 +190,8 @@ func (d PostDocument) LegacyContent() string {
 			}
 		case PostBlockTypePlaceReference:
 			appendLegacySection(&sections, block.PlaceName)
+		case PostBlockTypeRouteReference:
+			appendLegacySection(&sections, block.RouteTitle)
 		}
 	}
 
@@ -261,6 +286,11 @@ func validatePostBlock(block PostBlock) error {
 			return err
 		}
 		return validatePostPlaceReference(block)
+	case PostBlockTypeRouteReference:
+		if err := rejectInactivePostBlockFields(block, blockFieldRouteID|blockFieldRouteTitle|blockFieldRouteDescription|blockFieldRouteProfile|blockFieldRouteDistanceMeters|blockFieldRouteDurationSeconds|blockFieldRouteStopsCount|blockFieldRouteShareURL); err != nil {
+			return err
+		}
+		return validatePostRouteReference(block)
 	default:
 		return fmt.Errorf("unsupported block type %q", block.Type)
 	}
@@ -317,6 +347,30 @@ func rejectInactivePostBlockFields(block PostBlock, allowed postBlockField) erro
 	}
 	if allowed&blockFieldPlaceCityID == 0 && block.PlaceCityID != "" {
 		return fmt.Errorf("%s block must not include placeCityId", block.Type)
+	}
+	if allowed&blockFieldRouteID == 0 && block.RouteID != "" {
+		return fmt.Errorf("%s block must not include routeId", block.Type)
+	}
+	if allowed&blockFieldRouteTitle == 0 && block.RouteTitle != "" {
+		return fmt.Errorf("%s block must not include routeTitle", block.Type)
+	}
+	if allowed&blockFieldRouteDescription == 0 && block.RouteDescription != "" {
+		return fmt.Errorf("%s block must not include routeDescription", block.Type)
+	}
+	if allowed&blockFieldRouteProfile == 0 && block.RouteProfile != "" {
+		return fmt.Errorf("%s block must not include routeProfile", block.Type)
+	}
+	if allowed&blockFieldRouteDistanceMeters == 0 && block.RouteDistanceMeters != 0 {
+		return fmt.Errorf("%s block must not include distanceMeters", block.Type)
+	}
+	if allowed&blockFieldRouteDurationSeconds == 0 && block.RouteDurationSeconds != 0 {
+		return fmt.Errorf("%s block must not include durationSeconds", block.Type)
+	}
+	if allowed&blockFieldRouteStopsCount == 0 && block.RouteStopsCount != 0 {
+		return fmt.Errorf("%s block must not include stopsCount", block.Type)
+	}
+	if allowed&blockFieldRouteShareURL == 0 && block.RouteShareURL != "" {
+		return fmt.Errorf("%s block must not include shareUrl", block.Type)
 	}
 	return nil
 }
@@ -406,6 +460,40 @@ func validatePostPlaceReference(block PostBlock) error {
 	}
 	if exceedsRuneLimit(strings.TrimSpace(block.PlaceCityID), PostDocumentMaxPlaceCityIDLength) {
 		return fmt.Errorf("place city id length must be at most %d characters", PostDocumentMaxPlaceCityIDLength)
+	}
+	return nil
+}
+
+func validatePostRouteReference(block PostBlock) error {
+	routeID := strings.TrimSpace(block.RouteID)
+	routeTitle := strings.TrimSpace(block.RouteTitle)
+	if routeID == "" || routeTitle == "" {
+		return fmt.Errorf("route reference requires route id and title")
+	}
+	if exceedsRuneLimit(routeID, PostDocumentMaxRouteIDLength) {
+		return fmt.Errorf("route id length must be at most %d characters", PostDocumentMaxRouteIDLength)
+	}
+	if exceedsRuneLimit(routeTitle, PostDocumentMaxRouteTitleLength) {
+		return fmt.Errorf("route title length must be at most %d characters", PostDocumentMaxRouteTitleLength)
+	}
+	if exceedsRuneLimit(strings.TrimSpace(block.RouteDescription), PostDocumentMaxRouteDescriptionLength) {
+		return fmt.Errorf("route description length must be at most %d characters", PostDocumentMaxRouteDescriptionLength)
+	}
+	if exceedsRuneLimit(strings.TrimSpace(block.RouteProfile), PostDocumentMaxRouteProfileLength) {
+		return fmt.Errorf("route profile length must be at most %d characters", PostDocumentMaxRouteProfileLength)
+	}
+	if block.RouteDistanceMeters < 0 {
+		return fmt.Errorf("route distance must be non-negative")
+	}
+	if block.RouteDurationSeconds < 0 {
+		return fmt.Errorf("route duration must be non-negative")
+	}
+	if block.RouteStopsCount < 0 {
+		return fmt.Errorf("route stops count must be non-negative")
+	}
+	shareURL := strings.TrimSpace(block.RouteShareURL)
+	if shareURL != "" && !isSafePostLinkURL(shareURL) {
+		return fmt.Errorf("route share url must use http or https")
 	}
 	return nil
 }

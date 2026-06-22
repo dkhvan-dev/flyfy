@@ -86,6 +86,16 @@
   "serviceTravelChecklist": "Travel checklist",
   "travelChecklistTitle": "Trip preparation",
   "travelChecklistSubtitle": "",
+  "travelChecklistOptimizeRouteTitle": "Optimize day route",
+  "travelChecklistOptimizeRouteSubtitle": "Order {count} stops by route time before you start the day.",
+  "@travelChecklistOptimizeRouteSubtitle": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "travelChecklistOptimizeRouteButton": "Optimize",
+  "travelChecklistOptimizeRouteRetry": "Recalculate",
+  "travelChecklistOptimizeFailed": "Could not optimize the route right now.",
   "travelChecklistCtaTitle": "Prepare for this trip",
   "travelChecklistCtaSubtitle": "Readiness, season and baggage rules",
   "travelChecklistOpen": "Open checklist",
@@ -540,6 +550,8 @@
   "profileConnectionsFriendRequestsEmptyTitle": "No friend requests",
   "profileConnectionsFriendRequestsEmptySubtitle": "New incoming friend requests will appear here.",
   "profileJourneyTitle": "My journey",
+  "profileUserRoutesTitle": "My routes",
+  "profileUserRoutesSubtitle": "Saved walks, city plans and routes shared by travelers",
   "profileSavedItemsTitle": "Saved items",
   "profileSavedItemsSubtitle": "Saved activities, places, and collections will appear here later.",
   "profileBookingsTitle": "My bookings",
@@ -723,6 +735,7 @@
   "locationServicesDisabled": "Location services are disabled on this device",
   "locationPermissionDenied": "Location permission was not granted",
   "locationPermissionDeniedForever": "Location access is blocked. Please enable it in device settings",
+  "locationDetectionTimedOut": "Could not determine your location quickly. Try again or open the map.",
   "cancelButton": "Cancel",
   "useButton": "Use",
   "activitiesTitle": "Activities",
@@ -999,6 +1012,13 @@
   "feedNavLabel": "Feed",
   "homeNavQr": "QR",
   "homeNavMap": "Map",
+  "mapAttributionSheetTitle": "Map data sources",
+  "mapAttributionSheetSubtitle": "Inflap shows map tiles built from open map data. Attribution and license details are available below.",
+  "mapAttributionStyleLabel": "Map style",
+  "mapAttributionTilesLabel": "Tiles and schema",
+  "mapAttributionDataLabel": "Map data",
+  "mapAttributionLicenseLabel": "License",
+  "mapAttributionOpenLink": "Open details",
   "homeNavChats": "Chats",
   "homeNavMy": "My",
   "feedTitle": "Feed",
@@ -1294,6 +1314,136 @@
     }
   },
   "mapTapActivityHint": "Tap an activity marker to preview it and open details.",
+  "mapExternalOpenFailed": "Could not open the route in an external map app.",
+  "routeSummaryTitle": "Travel time",
+  "routeSummaryDuration": "Time",
+  "routeSummaryDistance": "Distance",
+  "routeDurationMinutesShort": "{minutes} min",
+  "@routeDurationMinutesShort": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "routeDistanceMetersShort": "{meters} m",
+  "@routeDistanceMetersShort": {
+    "placeholders": {
+      "meters": {
+        "type": "int"
+      }
+    }
+  },
+  "routeDistanceKilometersShort": "{kilometers} km",
+  "@routeDistanceKilometersShort": {
+    "placeholders": {
+      "kilometers": {
+        "type": "String"
+      }
+    }
+  },
+  "routeTravelTimeDistanceShort": "{duration} · {distance}",
+  "@routeTravelTimeDistanceShort": {
+    "placeholders": {
+      "duration": {},
+      "distance": {}
+    }
+  },
+  "routeStopSemantic": "Route stop {order}",
+  "@routeStopSemantic": {
+    "placeholders": {
+      "order": {
+        "type": "int"
+      }
+    }
+  },
+  "userRoutesSaveRoute": "Save route",
+  "userRoutesRouteSaved": "Saved",
+  "userRoutesSaveSuccess": "Route saved",
+  "userRoutesSaveFailed": "Could not save route",
+  "userRoutesDefaultTitle": "Saved route",
+  "userRoutesDefaultTitleTo": "Route to {destination}",
+  "@userRoutesDefaultTitleTo": {
+    "placeholders": {
+      "destination": {}
+    }
+  },
+  "mapRouteBuilderTitle": "Create route",
+  "mapRouteBuilderHint": "Tap the map to add stops in order.",
+  "mapRouteBuilderBuildRoute": "Build route",
+  "mapRouteBuilderMinPoints": "Add at least two points to build a route.",
+  "mapRouteBuilderClear": "Clear",
+  "mapRouteBuilderRemoveLast": "Remove last",
+  "mapRouteBuilderPointName": "Point {order}",
+  "@mapRouteBuilderPointName": {
+    "placeholders": {
+      "order": {
+        "type": "int"
+      }
+    }
+  },
+  "userRoutesTitle": "Routes",
+  "userRoutesPublicTab": "Public",
+  "userRoutesMineTab": "Mine",
+  "userRoutesSavedTab": "Saved",
+  "userRoutesPublicEmptyTitle": "No public routes yet",
+  "userRoutesPublicEmptySubtitle": "Saved public walks and city plans will appear here.",
+  "userRoutesMineEmptyTitle": "No routes yet",
+  "userRoutesMineEmptySubtitle": "Build a route on the map and save it to keep your own collection.",
+  "userRoutesSavedEmptyTitle": "No saved routes",
+  "userRoutesSavedEmptySubtitle": "Bookmark routes from other travelers to find them here.",
+  "userRoutesLoginRequiredTitle": "Sign in to use your routes",
+  "userRoutesLoginRequiredSubtitle": "Your private and saved routes are linked to your Inflap account.",
+  "userRoutesLoginRequiredButton": "Sign in",
+  "userRoutesStopsCount": "{count} stops",
+  "@userRoutesStopsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "userRoutesVisibilityPrivate": "Private",
+  "userRoutesVisibilityUnlisted": "Link only",
+  "userRoutesVisibilityPublic": "Public",
+  "userRoutesOpenOnMap": "Open on map",
+  "userRoutesCopyRoute": "Copy route",
+  "userRoutesCopied": "Route copied to your routes",
+  "userRoutesEditRoute": "Edit route",
+  "userRoutesEditTitleLabel": "Route title",
+  "userRoutesEditDescriptionLabel": "Description",
+  "userRoutesEditVisibilityLabel": "Visibility",
+  "userRoutesEditSave": "Save changes",
+  "userRoutesUpdateSuccess": "Route updated",
+  "userRoutesUpdateFailed": "Could not update route",
+  "userRoutesShareRoute": "Share route",
+  "userRoutesShareCopied": "Route link copied",
+  "userRoutesEditStops": "Edit stops",
+  "userRoutesEditStopsHint": "Reorder stops or rename them. Inflap will rebuild the route before saving.",
+  "userRoutesEditStopNameLabel": "Stop name",
+  "userRoutesEditStopNoteLabel": "Note",
+  "userRoutesMoveStopUp": "Move up",
+  "userRoutesMoveStopDown": "Move down",
+  "userRoutesRebuildAndSave": "Rebuild and save",
+  "userRoutesEditPointsMinStops": "Keep at least two stops in the route.",
+  "userRoutesRebuildFailed": "Could not rebuild route",
+  "userRoutesStopsUpdateSuccess": "Route stops updated",
+  "userRoutesUnsaveRoute": "Remove from saved",
+  "userRoutesStopsTitle": "Stops",
+  "routeProfileTouristWalk": "Tourist walk",
+  "routeProfileFastWalk": "Fast walk",
+  "routeProfileBikeCity": "City bike",
+  "routeProfileCarStandard": "Car route",
+  "routeProfileGuideRoute": "Guide route",
+  "routeProfileDayPlan": "Day plan",
+  "routeProfileTransit": "Public transport",
+  "routeProfileTouristWalkShort": "Walk",
+  "routeProfileFastWalkShort": "Fast",
+  "routeProfileBikeCityShort": "Bike",
+  "routeProfileCarStandardShort": "Car",
+  "routeProfileGuideRouteShort": "Guide",
+  "routeProfileDayPlanShort": "Day",
+  "routeProfileTransitShort": "Transit",
   "placesTitle": "Discover places",
   "placesSearchHint": "Where to next?",
   "placesLoadFailed": "Failed to load places",
@@ -2393,6 +2543,24 @@
   "activityUnlimitedSpots": "Unlimited",
   "activityMeetingPoint": "Meeting Point",
   "activityGetDirections": "Get Directions",
+  "activityReachabilityTitle": "Can I make it?",
+  "activityReachabilitySubtitle": "Check walking ETA from your current location before you head out.",
+  "activityReachabilityCheckButton": "Check ETA",
+  "activityReachabilityRetryButton": "Retry",
+  "activityReachabilityOnTime": "On time",
+  "activityReachabilityLate": "Late risk",
+  "activityReachabilityArriveBeforeStart": "Arrive about {minutes} min before start",
+  "@activityReachabilityArriveBeforeStart": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
+  "activityReachabilityArriveAfterStart": "Route arrives about {minutes} min after start",
+  "@activityReachabilityArriveAfterStart": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
   "activityHostSection": "Host",
   "activityTotalCapacity": "Total Capacity",
   "activityPricing": "Pricing",
@@ -2768,10 +2936,16 @@
   "storyEditorBlockDividerDescription": "Visual section break",
   "storyEditorBlockPlaceReference": "Place reference",
   "storyEditorBlockPlaceReferenceDescription": "Link a place to the story",
+  "storyEditorBlockRouteReference": "Route",
+  "storyEditorBlockRouteReferenceDescription": "Share one of your routes in the post",
   "storyEditorBlockNumberedList": "Numbered list",
   "storyEditorStartWithBlockTitle": "Start with a block",
   "storyEditorStartWithBlockSubtitle": "Add text, media, places, callouts, or dividers to shape the story.",
   "storyEditorPlaceNameHint": "Place name",
+  "storyEditorRouteReferencePickerTitle": "Add route",
+  "storyEditorRouteReferenceEmptyState": "Publish or unlist a route first, then add it to a post.",
+  "storyEditorRouteReferenceLoadError": "Could not load your routes.",
+  "storyEditorRouteReferenceEmpty": "Route is not selected",
   "storyEditorTextHintHeading": "Write a clear section heading",
   "storyEditorTextHintBulletedList": "Add list items, one per line",
   "storyEditorTextHintNumberedList": "Add ordered steps, one per line",

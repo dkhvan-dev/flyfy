@@ -25,6 +25,7 @@ var flashTranslationKeys = map[string]string{
 	"users.caseResolved":              "flash.userCaseResolved",
 	"users.restrictionCreated":        "flash.userRestrictionCreated",
 	"users.restrictionLifted":         "flash.userRestrictionLifted",
+	"userRoutes.reviewed":             "flash.userRouteReviewed",
 	"trust.appealDecided":             "flash.trustAppealDecided",
 	"operations.domainSaved":          "flash.operationsDomainSaved",
 	"operations.featureFlagSaved":     "flash.operationsFeatureFlagSaved",

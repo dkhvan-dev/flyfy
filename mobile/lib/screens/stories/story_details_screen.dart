@@ -2046,7 +2046,12 @@ class _StoryArticle extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        StoryDocumentRenderer(story: story, onOpenImages: onOpenImages),
+        StoryDocumentRenderer(
+          story: story,
+          onOpenImages: onOpenImages,
+          onOpenRoute: (routeId) =>
+              context.push('/user-routes/${Uri.encodeComponent(routeId)}'),
+        ),
         if (story.tags.isNotEmpty) ...[
           SizedBox(height: adaptive.scale(24)),
           Text(

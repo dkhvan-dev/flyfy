@@ -19,6 +19,7 @@ import (
 	httpadapter "kz/inflap/backend/services/feed-service/internal/adapter/http"
 	notificationadapter "kz/inflap/backend/services/feed-service/internal/adapter/notification"
 	"kz/inflap/backend/services/feed-service/internal/adapter/repository"
+	userrouteadapter "kz/inflap/backend/services/feed-service/internal/adapter/userroute"
 	uservicadapter "kz/inflap/backend/services/feed-service/internal/adapter/userservice"
 	"kz/inflap/backend/services/feed-service/internal/app"
 	"kz/inflap/backend/services/feed-service/internal/config"
@@ -79,10 +80,15 @@ func main() {
 		"feed-service",
 		cfg.Activity.RequestTimeout,
 	)
+	userRouteClient := userrouteadapter.New(
+		cfg.UserRoute.HTTPURL,
+		cfg.UserRoute.RequestTimeout,
+	)
 	postFeedCache, closePostFeedCache := newPostFeedCache(ctx, cfg)
 	defer closePostFeedCache()
 	useCase := app.NewPostUseCase(repo, userClient, cfg.Public.PostShareBaseURL).
 		WithPostMediaBinder(fileManagerClient).
+		WithRouteReferenceValidator(userRouteClient).
 		WithPostNotificationGateway(notificationClient).
 		WithFeedCuratedBlockPolicy(feedCuratedBlockPolicy).
 		WithFeedExperimentAssignment(feedRankingPolicy.ExperimentKey).

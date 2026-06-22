@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +14,34 @@ import 'package:inflap/l10n/generated/app_localizations.dart';
 import 'package:inflap/screens/checklists/travel_checklist_screen.dart';
 
 void main() {
+  test(
+    'travel checklist optimizes day route through routing provider',
+    () async {
+      final source = await File(
+        'lib/screens/checklists/travel_checklist_screen.dart',
+      ).readAsString();
+
+      expect(
+        source,
+        contains("import '../../features/routing/models/routing_models.dart';"),
+      );
+      expect(
+        source,
+        contains("import '../../providers/routing_provider.dart';"),
+      );
+      expect(
+        source,
+        contains('ItineraryOptimizationResponseVm? _optimizedItinerary;'),
+      );
+      expect(source, contains('Future<void> _optimizeDayRoute('));
+      expect(source, contains('context.read<RoutingProvider>()'));
+      expect(source, contains('routingProvider.optimizeItinerary('));
+      expect(source, contains('ItineraryOptimizationRequestVm('));
+      expect(source, contains('_OptimizedItineraryCard('));
+      expect(source, contains('travelChecklistOptimizeRouteTitle'));
+    },
+  );
+
   testWidgets(
     'shows setup state instead of sample checklist when route args are missing',
     (tester) async {

@@ -259,6 +259,24 @@ class AppLocalizationsRu extends AppLocalizations {
   String get travelChecklistSubtitle => '';
 
   @override
+  String get travelChecklistOptimizeRouteTitle => 'Оптимизировать маршрут дня';
+
+  @override
+  String travelChecklistOptimizeRouteSubtitle(Object count) {
+    return 'Упорядочим $count остановки по времени в пути перед началом дня.';
+  }
+
+  @override
+  String get travelChecklistOptimizeRouteButton => 'Оптимизировать';
+
+  @override
+  String get travelChecklistOptimizeRouteRetry => 'Пересчитать';
+
+  @override
+  String get travelChecklistOptimizeFailed =>
+      'Не удалось оптимизировать маршрут сейчас.';
+
+  @override
   String get travelChecklistCtaTitle => 'Подготовиться к поездке';
 
   @override
@@ -1504,6 +1522,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileJourneyTitle => 'Мой путь';
 
   @override
+  String get profileUserRoutesTitle => 'Мои маршруты';
+
+  @override
+  String get profileUserRoutesSubtitle =>
+      'Сохранённые прогулки, планы города и маршруты путешественников';
+
+  @override
   String get profileSavedItemsTitle => 'Сохраненное';
 
   @override
@@ -2046,6 +2071,10 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get locationPermissionDeniedForever =>
       'Доступ к геолокации запрещён. Разрешите его в настройках устройства';
+
+  @override
+  String get locationDetectionTimedOut =>
+      'Не удалось быстро определить вашу геолокацию. Попробуйте ещё раз или откройте карту.';
 
   @override
   String get cancelButton => 'Отмена';
@@ -2795,6 +2824,28 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get homeNavMap => 'Карта';
+
+  @override
+  String get mapAttributionSheetTitle => 'Источники карты';
+
+  @override
+  String get mapAttributionSheetSubtitle =>
+      'Inflap показывает картографические тайлы на основе открытых картографических данных. Атрибуция и детали лицензии доступны ниже.';
+
+  @override
+  String get mapAttributionStyleLabel => 'Стиль карты';
+
+  @override
+  String get mapAttributionTilesLabel => 'Тайлы и схема';
+
+  @override
+  String get mapAttributionDataLabel => 'Данные карты';
+
+  @override
+  String get mapAttributionLicenseLabel => 'Лицензия';
+
+  @override
+  String get mapAttributionOpenLink => 'Открыть детали';
 
   @override
   String get homeNavChats => 'Чаты';
@@ -3592,6 +3643,263 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get mapTapActivityHint =>
       'Нажмите на маркер активности, чтобы посмотреть краткую информацию и открыть детали.';
+
+  @override
+  String get mapExternalOpenFailed =>
+      'Не удалось открыть маршрут во внешнем приложении карт.';
+
+  @override
+  String get routeSummaryTitle => 'Время в пути';
+
+  @override
+  String get routeSummaryDuration => 'Время';
+
+  @override
+  String get routeSummaryDistance => 'Расстояние';
+
+  @override
+  String routeDurationMinutesShort(int minutes) {
+    return '$minutes мин';
+  }
+
+  @override
+  String routeDistanceMetersShort(int meters) {
+    return '$meters м';
+  }
+
+  @override
+  String routeDistanceKilometersShort(String kilometers) {
+    return '$kilometers км';
+  }
+
+  @override
+  String routeTravelTimeDistanceShort(Object duration, Object distance) {
+    return '$duration · $distance';
+  }
+
+  @override
+  String routeStopSemantic(int order) {
+    return 'Точка маршрута $order';
+  }
+
+  @override
+  String get userRoutesSaveRoute => 'Сохранить маршрут';
+
+  @override
+  String get userRoutesRouteSaved => 'Сохранено';
+
+  @override
+  String get userRoutesSaveSuccess => 'Маршрут сохранён';
+
+  @override
+  String get userRoutesSaveFailed => 'Не удалось сохранить маршрут';
+
+  @override
+  String get userRoutesDefaultTitle => 'Сохранённый маршрут';
+
+  @override
+  String userRoutesDefaultTitleTo(Object destination) {
+    return 'Маршрут до $destination';
+  }
+
+  @override
+  String get mapRouteBuilderTitle => 'Создать маршрут';
+
+  @override
+  String get mapRouteBuilderHint =>
+      'Нажимайте на карту, чтобы добавлять остановки по порядку.';
+
+  @override
+  String get mapRouteBuilderBuildRoute => 'Построить маршрут';
+
+  @override
+  String get mapRouteBuilderMinPoints =>
+      'Добавьте минимум две точки, чтобы построить маршрут.';
+
+  @override
+  String get mapRouteBuilderClear => 'Очистить';
+
+  @override
+  String get mapRouteBuilderRemoveLast => 'Удалить последнюю';
+
+  @override
+  String mapRouteBuilderPointName(int order) {
+    return 'Точка $order';
+  }
+
+  @override
+  String get userRoutesTitle => 'Маршруты';
+
+  @override
+  String get userRoutesPublicTab => 'Публичные';
+
+  @override
+  String get userRoutesMineTab => 'Мои';
+
+  @override
+  String get userRoutesSavedTab => 'Сохранённые';
+
+  @override
+  String get userRoutesPublicEmptyTitle => 'Публичных маршрутов пока нет';
+
+  @override
+  String get userRoutesPublicEmptySubtitle =>
+      'Здесь появятся прогулки и городские планы, которыми поделились путешественники.';
+
+  @override
+  String get userRoutesMineEmptyTitle => 'Маршрутов пока нет';
+
+  @override
+  String get userRoutesMineEmptySubtitle =>
+      'Постройте маршрут на карте и сохраните его в свою коллекцию.';
+
+  @override
+  String get userRoutesSavedEmptyTitle => 'Сохранённых маршрутов нет';
+
+  @override
+  String get userRoutesSavedEmptySubtitle =>
+      'Добавляйте маршруты других путешественников, чтобы быстро находить их здесь.';
+
+  @override
+  String get userRoutesLoginRequiredTitle =>
+      'Войдите, чтобы использовать свои маршруты';
+
+  @override
+  String get userRoutesLoginRequiredSubtitle =>
+      'Личные и сохранённые маршруты привязаны к вашему аккаунту Inflap.';
+
+  @override
+  String get userRoutesLoginRequiredButton => 'Войти';
+
+  @override
+  String userRoutesStopsCount(int count) {
+    return '$count остановок';
+  }
+
+  @override
+  String get userRoutesVisibilityPrivate => 'Личный';
+
+  @override
+  String get userRoutesVisibilityUnlisted => 'По ссылке';
+
+  @override
+  String get userRoutesVisibilityPublic => 'Публичный';
+
+  @override
+  String get userRoutesOpenOnMap => 'Открыть на карте';
+
+  @override
+  String get userRoutesCopyRoute => 'Скопировать маршрут';
+
+  @override
+  String get userRoutesCopied => 'Маршрут скопирован в ваши маршруты';
+
+  @override
+  String get userRoutesEditRoute => 'Редактировать маршрут';
+
+  @override
+  String get userRoutesEditTitleLabel => 'Название маршрута';
+
+  @override
+  String get userRoutesEditDescriptionLabel => 'Описание';
+
+  @override
+  String get userRoutesEditVisibilityLabel => 'Доступ';
+
+  @override
+  String get userRoutesEditSave => 'Сохранить изменения';
+
+  @override
+  String get userRoutesUpdateSuccess => 'Маршрут обновлён';
+
+  @override
+  String get userRoutesUpdateFailed => 'Не удалось обновить маршрут';
+
+  @override
+  String get userRoutesShareRoute => 'Поделиться маршрутом';
+
+  @override
+  String get userRoutesShareCopied => 'Ссылка на маршрут скопирована';
+
+  @override
+  String get userRoutesEditStops => 'Редактировать точки';
+
+  @override
+  String get userRoutesEditStopsHint =>
+      'Меняйте порядок точек или названия. Inflap пересчитает маршрут перед сохранением.';
+
+  @override
+  String get userRoutesEditStopNameLabel => 'Название точки';
+
+  @override
+  String get userRoutesEditStopNoteLabel => 'Заметка';
+
+  @override
+  String get userRoutesMoveStopUp => 'Переместить выше';
+
+  @override
+  String get userRoutesMoveStopDown => 'Переместить ниже';
+
+  @override
+  String get userRoutesRebuildAndSave => 'Пересчитать и сохранить';
+
+  @override
+  String get userRoutesEditPointsMinStops =>
+      'В маршруте должно быть минимум две точки.';
+
+  @override
+  String get userRoutesRebuildFailed => 'Не удалось пересчитать маршрут';
+
+  @override
+  String get userRoutesStopsUpdateSuccess => 'Точки маршрута обновлены';
+
+  @override
+  String get userRoutesUnsaveRoute => 'Убрать из сохранённых';
+
+  @override
+  String get userRoutesStopsTitle => 'Остановки';
+
+  @override
+  String get routeProfileTouristWalk => 'Туристическая прогулка';
+
+  @override
+  String get routeProfileFastWalk => 'Быстрая прогулка';
+
+  @override
+  String get routeProfileBikeCity => 'Веломаршрут';
+
+  @override
+  String get routeProfileCarStandard => 'Автомаршрут';
+
+  @override
+  String get routeProfileGuideRoute => 'Маршрут гида';
+
+  @override
+  String get routeProfileDayPlan => 'План на день';
+
+  @override
+  String get routeProfileTransit => 'Общественный транспорт';
+
+  @override
+  String get routeProfileTouristWalkShort => 'Пешком';
+
+  @override
+  String get routeProfileFastWalkShort => 'Быстро';
+
+  @override
+  String get routeProfileBikeCityShort => 'Вело';
+
+  @override
+  String get routeProfileCarStandardShort => 'Авто';
+
+  @override
+  String get routeProfileGuideRouteShort => 'Гид';
+
+  @override
+  String get routeProfileDayPlanShort => 'День';
+
+  @override
+  String get routeProfileTransitShort => 'Транспорт';
 
   @override
   String get placesTitle => 'Места';
@@ -6381,6 +6689,35 @@ class AppLocalizationsRu extends AppLocalizations {
   String get activityGetDirections => 'Как добраться';
 
   @override
+  String get activityReachabilityTitle => 'Успею ли я?';
+
+  @override
+  String get activityReachabilitySubtitle =>
+      'Проверьте пешее ETA от текущей локации перед выходом.';
+
+  @override
+  String get activityReachabilityCheckButton => 'Проверить ETA';
+
+  @override
+  String get activityReachabilityRetryButton => 'Повторить';
+
+  @override
+  String get activityReachabilityOnTime => 'Успеваете';
+
+  @override
+  String get activityReachabilityLate => 'Риск опоздать';
+
+  @override
+  String activityReachabilityArriveBeforeStart(Object minutes) {
+    return 'Прибытие примерно за $minutes мин до начала';
+  }
+
+  @override
+  String activityReachabilityArriveAfterStart(Object minutes) {
+    return 'Маршрут приведет примерно на $minutes мин позже начала';
+  }
+
+  @override
   String get activityHostSection => 'Организатор';
 
   @override
@@ -7465,6 +7802,13 @@ class AppLocalizationsRu extends AppLocalizations {
       'Связать место с историей';
 
   @override
+  String get storyEditorBlockRouteReference => 'Маршрут';
+
+  @override
+  String get storyEditorBlockRouteReferenceDescription =>
+      'Поделиться своим маршрутом в посте';
+
+  @override
   String get storyEditorBlockNumberedList => 'Нумерованный список';
 
   @override
@@ -7476,6 +7820,20 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get storyEditorPlaceNameHint => 'Название места';
+
+  @override
+  String get storyEditorRouteReferencePickerTitle => 'Добавить маршрут';
+
+  @override
+  String get storyEditorRouteReferenceEmptyState =>
+      'Сначала опубликуйте маршрут или сделайте его доступным по ссылке, затем добавьте его в пост.';
+
+  @override
+  String get storyEditorRouteReferenceLoadError =>
+      'Не удалось загрузить ваши маршруты.';
+
+  @override
+  String get storyEditorRouteReferenceEmpty => 'Маршрут не выбран';
 
   @override
   String get storyEditorTextHintHeading =>

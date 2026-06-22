@@ -71,6 +71,8 @@ type DownstreamsConfig struct {
 	ChecklistService    string `env:"CHECKLIST_SERVICE_HTTP_URL, default=http://checklist-service:8099"`
 	CurrencyService     string `env:"CURRENCY_SERVICE_HTTP_URL, default=http://currency-service:8098"`
 	PlaceService        string `env:"PLACE_SERVICE_HTTP_URL, default=http://place-service:8090"`
+	RoutingService      string `env:"ROUTING_SERVICE_HTTP_URL, default=http://routing-service:8094"`
+	UserRouteService    string `env:"USER_ROUTE_SERVICE_HTTP_URL, default=http://user-route-service:8096"`
 	PaymentService      string `env:"PAYMENT_SERVICE_HTTP_URL, default=http://payment-service:8091"`
 	StickerService      string `env:"STICKER_SERVICE_HTTP_URL, default=http://sticker-service:8092"`
 	NotificationService string `env:"NOTIFICATION_SERVICE_HTTP_URL, default=http://notification-service:8097"`

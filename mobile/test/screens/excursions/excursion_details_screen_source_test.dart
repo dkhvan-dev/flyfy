@@ -515,6 +515,74 @@ void main() {
   );
 
   test(
+    'excursion details meeting map disables native preview on mobile',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursion_details_screen.dart',
+      ).readAsString();
+
+      final helperStart = source.indexOf(
+        'bool _shouldUseNativeReadOnlyExcursionMap',
+      );
+      expect(helperStart, isNonNegative);
+      final helperEnd = source.indexOf('class ', helperStart);
+      expect(helperEnd, greaterThan(helperStart));
+
+      final helperSource = source.substring(helperStart, helperEnd);
+      expect(helperSource, contains('TargetPlatform.iOS'));
+      expect(helperSource, contains('TargetPlatform.android'));
+      expect(helperSource, contains('Theme.of(context).platform'));
+
+      final mapPreviewStart = source.indexOf('class _ExcursionMapPreview');
+      final nextClassStart = source.indexOf('class ', mapPreviewStart + 1);
+      expect(mapPreviewStart, isNonNegative);
+      expect(nextClassStart, greaterThan(mapPreviewStart));
+
+      final mapPreviewSource = source.substring(
+        mapPreviewStart,
+        nextClassStart,
+      );
+      expect(mapPreviewSource, contains('nativeMapEnabled:'));
+      expect(
+        mapPreviewSource,
+        contains('_shouldUseNativeReadOnlyExcursionMap(context)'),
+      );
+    },
+  );
+
+  test(
+    'excursion details keeps itinerary textual but routes to meeting point',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursion_details_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('_ExcursionMapPreview('));
+      expect(source, contains('_ExcursionItinerarySection('));
+      expect(source, contains('title: l10n.excursionDetailsItinerary'));
+      expect(
+        source,
+        contains("import '../../features/routing/models/routing_models.dart';"),
+      );
+      expect(
+        source,
+        contains("import '../../providers/routing_provider.dart';"),
+      );
+      expect(source, contains("import '../map/map_screen.dart';"));
+      expect(source, contains('bool _isBuildingExcursionRoute'));
+      expect(source, contains('Future<void> _openExcursionRoutePreview'));
+      expect(source, contains('context.read<RoutingProvider>()'));
+      expect(source, contains('RouteRequestVm('));
+      expect(source, contains('RouteProfile.touristWalk'));
+      expect(source, contains('MapRoutePreview('));
+      expect(source, isNot(contains('routePoints: routePoints')));
+      expect(source, contains("context.push('/map', extra: routePreview)"));
+      expect(source, contains('onRoutePreviewTap'));
+      expect(source, contains('isBuildingRoute'));
+    },
+  );
+
+  test(
     'excursion details resolves localized place text for landmark excursions',
     () async {
       final source = await File(

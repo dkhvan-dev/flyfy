@@ -253,6 +253,30 @@ void main() {
       );
     });
 
+    test('route reference requires a route id and publishable title', () {
+      final document = StoryDocument(
+        blocks: [
+          StoryBlock.routeReference(
+            id: 'route',
+            route: const StoryRouteReference(
+              routeId: '',
+              title: '  ',
+              profile: 'pedestrian',
+              distanceMeters: 1800,
+              durationSeconds: 1320,
+              stopsCount: 3,
+              shareUrl: 'https://inflap.app/user-routes/route-1',
+            ),
+          ),
+        ],
+      );
+
+      expect(
+        document.validateForDraft().codes,
+        contains('route_reference_required'),
+      );
+    });
+
     test('heading level must stay within supported range', () {
       final document = StoryDocument(
         blocks: [StoryBlock.heading(id: 'heading', text: 'Too deep', level: 4)],
@@ -319,28 +343,43 @@ void main() {
       );
     });
 
-    test('plain text includes place references and ignores media', () {
-      final document = StoryDocument(
-        blocks: [
-          StoryBlock.image(
-            id: 'image',
-            image: const StoryImagePayload(fileId: 'file-1'),
-          ),
-          StoryBlock.gallery(
-            id: 'gallery',
-            gallery: StoryGalleryPayload(
-              images: const [StoryImagePayload(fileId: 'file-2')],
+    test(
+      'plain text includes place and route references and ignores media',
+      () {
+        final document = StoryDocument(
+          blocks: [
+            StoryBlock.image(
+              id: 'image',
+              image: const StoryImagePayload(fileId: 'file-1'),
             ),
-          ),
-          StoryBlock.placeReference(
-            id: 'place',
-            place: const StoryPlaceReference(name: 'Almaty'),
-          ),
-        ],
-      );
+            StoryBlock.gallery(
+              id: 'gallery',
+              gallery: StoryGalleryPayload(
+                images: const [StoryImagePayload(fileId: 'file-2')],
+              ),
+            ),
+            StoryBlock.placeReference(
+              id: 'place',
+              place: const StoryPlaceReference(name: 'Almaty'),
+            ),
+            StoryBlock.routeReference(
+              id: 'route',
+              route: const StoryRouteReference(
+                routeId: 'route-1',
+                title: 'Panfilov morning walk',
+                profile: 'pedestrian',
+                distanceMeters: 1800,
+                durationSeconds: 1320,
+                stopsCount: 3,
+                shareUrl: 'https://inflap.app/user-routes/route-1',
+              ),
+            ),
+          ],
+        );
 
-      expect(document.plainText, 'Almaty');
-    });
+        expect(document.plainText, 'Almaty\n\nPanfilov morning walk');
+      },
+    );
 
     test('unsafe link marks are rejected for drafts and publishing', () {
       final document = StoryDocument(

@@ -56,6 +56,10 @@ import '../../features/feed/presentation/community_profile_screen.dart';
 import '../../features/feed/presentation/feed_screen.dart';
 import '../../features/feed/models/feed_block_vm.dart';
 import '../../features/notifications/data/notification_api.dart';
+import '../../features/user_routes/user_route_feature_flags.dart';
+import '../../features/user_routes/presentation/user_route_details_screen.dart';
+import '../../features/user_routes/presentation/user_routes_screen.dart';
+import '../../features/user_routes/models/user_route_models.dart';
 import '../../shared/map/app_map_links.dart';
 import '../../screens/common/feature_stub_screen.dart';
 import '../../screens/checklists/travel_checklist_screen.dart';
@@ -608,9 +612,16 @@ class AppRouter {
         GoRoute(
           path: '/map',
           builder: (context, state) {
+            final mode = state.uri.queryParameters['mode'];
+            final routeBuilderEnabled =
+                UserRouteFeatureFlags.customRoutesEnabled &&
+                mode == 'route-builder';
+            final routePreview = state.extra is MapRoutePreview
+                ? state.extra! as MapRoutePreview
+                : null;
             final initialTarget = state.extra is MapTarget
                 ? state.extra! as MapTarget
-                : _mapTargetFromQuery(state);
+                : routePreview?.destination ?? _mapTargetFromQuery(state);
             final activityCollection = state.extra is MapActivityCollection
                 ? state.extra! as MapActivityCollection
                 : null;
@@ -618,6 +629,32 @@ class AppRouter {
               MapScreen(
                 initialTarget: initialTarget,
                 activityCollection: activityCollection,
+                routePreview: routePreview,
+                routeBuilderEnabled: routeBuilderEnabled,
+              ),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/user-routes',
+          redirect: (context, state) =>
+              UserRouteFeatureFlags.customRoutesEnabled ? null : '/',
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const UserRoutesScreen()),
+        ),
+        GoRoute(
+          path: '/user-routes/:routeId',
+          redirect: (context, state) =>
+              UserRouteFeatureFlags.customRoutesEnabled ? null : '/',
+          builder: (context, state) {
+            final routeId = state.pathParameters['routeId'] ?? '';
+            final initialRoute = state.extra is UserRouteVm
+                ? state.extra! as UserRouteVm
+                : null;
+            return _withAndroidBackSwipe(
+              UserRouteDetailsScreen(
+                routeId: routeId,
+                initialRoute: initialRoute,
               ),
             );
           },
@@ -797,6 +834,10 @@ class AppRouter {
     }
 
     if (location.startsWith('/posts/')) {
+      return true;
+    }
+
+    if (location.startsWith('/user-routes')) {
       return true;
     }
 

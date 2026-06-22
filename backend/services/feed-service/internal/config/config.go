@@ -20,6 +20,7 @@ type Config struct {
 	FileManager  FileManagerConfig
 	Notification NotificationServiceConfig
 	Activity     ActivityServiceConfig
+	UserRoute    UserRouteServiceConfig
 	Switches     SwitchesServiceConfig
 	Public       PublicConfig
 	Feed         FeedConfig
@@ -124,6 +125,11 @@ type NotificationServiceConfig struct {
 type ActivityServiceConfig struct {
 	HTTPURL        string        `env:"ACTIVITY_SERVICE_HTTP_URL, default=http://activity-service:8086"`
 	RequestTimeout time.Duration `env:"ACTIVITY_SERVICE_REQUEST_TIMEOUT, default=5s"`
+}
+
+type UserRouteServiceConfig struct {
+	HTTPURL        string        `env:"USER_ROUTE_SERVICE_HTTP_URL, default=http://user-route-service:8096"`
+	RequestTimeout time.Duration `env:"USER_ROUTE_SERVICE_REQUEST_TIMEOUT, default=3s"`
 }
 
 type SwitchesServiceConfig struct {

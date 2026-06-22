@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import 'package:provider/provider.dart';
 
+import '../../core/device/device_context_service.dart';
 import '../../core/network/chat_api.dart';
 import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
@@ -23,6 +24,7 @@ import '../../features/checklists/models/travel_checklist_route_args.dart';
 import '../../features/places/models/place_vm.dart';
 import '../../features/profile/data/profile_api.dart';
 import '../../features/profile/models/user_profile_vm.dart';
+import '../../features/routing/models/routing_models.dart';
 import '../../features/excursions/models/excursion_booking_vm.dart';
 import '../../features/excursions/models/excursion_vm.dart';
 import '../../features/excursions/excursion_cover_url.dart';
@@ -31,8 +33,10 @@ import '../../features/excursions/excursion_search.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/excursion_provider.dart';
+import '../../providers/routing_provider.dart';
 import '../../shared/widgets/app_map_card.dart';
 import '../../shared/widgets/trip_preparation_cta.dart';
+import '../map/map_screen.dart';
 import 'excursion_booking_screen.dart';
 import 'widgets/excursion_review_management_sheet.dart';
 
@@ -51,6 +55,8 @@ class ExcursionDetailsScreen extends StatefulWidget {
 }
 
 class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
+  final DeviceContextService _deviceContextService =
+      const DeviceContextService();
   final PlaceApi _placeApi = PlaceApi();
   final ProfileApi _profileApi = ProfileApi();
   final ChatApi _chatApi = ChatApi();
@@ -66,6 +72,7 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
   final Map<String, bool> _offerScheduleAvailability = <String, bool>{};
   final Set<String> _loadingOfferScheduleAvailability = <String>{};
   bool _isMessageGuideLoading = false;
+  bool _isBuildingExcursionRoute = false;
   String? _scheduledMyBookingsUserId;
 
   @override
@@ -255,6 +262,101 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
         excursion: excursion,
         selectedOffer: selectedOffer,
       ),
+    );
+  }
+
+  Future<void> _openExcursionRoutePreview(ExcursionVm excursion) async {
+    if (_isBuildingExcursionRoute) {
+      return;
+    }
+
+    final destination = _excursionMapTarget(excursion);
+    if (destination == null) {
+      context.push('/map');
+      return;
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    final routingProvider = context.read<RoutingProvider>();
+
+    setState(() => _isBuildingExcursionRoute = true);
+    try {
+      final coordinates = await _deviceContextService.detectCoordinates(
+        requestPermission: true,
+      );
+      if (!mounted) return;
+
+      if (coordinates == null) {
+        _showInfoSnack(l10n.locationPermissionDenied);
+        context.push('/map', extra: destination);
+        return;
+      }
+
+      final origin = RoutePointVm(
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+        name: l10n.homeNavMap,
+      );
+
+      final route = await routingProvider.buildRoute(
+        RouteRequestVm(
+          profile: RouteProfile.touristWalk,
+          points: [
+            origin,
+            RoutePointVm(
+              latitude: destination.latitude,
+              longitude: destination.longitude,
+              name: destination.title,
+            ),
+          ],
+        ),
+      );
+      if (!mounted) return;
+
+      if (route == null) {
+        _showInfoSnack(
+          routingProvider.errorMessage ?? l10n.mapUsingFallbackLocation,
+        );
+        context.push('/map', extra: destination);
+        return;
+      }
+
+      final routePreview = MapRoutePreview(
+        route: route,
+        origin: origin,
+        destination: destination,
+      );
+      context.push('/map', extra: routePreview);
+    } catch (_) {
+      if (!mounted) return;
+      _showInfoSnack(l10n.mapUsingFallbackLocation);
+      context.push('/map', extra: destination);
+    } finally {
+      if (mounted) {
+        setState(() => _isBuildingExcursionRoute = false);
+      }
+    }
+  }
+
+  MapTarget? _excursionMapTarget(ExcursionVm excursion) {
+    final latitude = excursion.latitude;
+    final longitude = excursion.longitude;
+    if (latitude == null || longitude == null) {
+      return null;
+    }
+
+    final meetingPoint = excursion.meetingPoint.trim();
+    final cityName = excursion.cityName?.trim();
+    return MapTarget(
+      title: excursion.title,
+      subtitle: meetingPoint.isNotEmpty
+          ? meetingPoint
+          : cityName?.isNotEmpty == true
+          ? cityName
+          : null,
+      latitude: latitude,
+      longitude: longitude,
+      sourceUrl: excursion.mapUrl,
     );
   }
 
@@ -634,6 +736,7 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
             enableRemoteOffers: true,
             offerProfiles: offerProfiles,
             activeChecklistBooking: activeChecklistBooking,
+            isBuildingRoute: _isBuildingExcursionRoute,
             showMessageGuide: !isAuthor && guideUserId.isNotEmpty,
             showBookingAction: showBookingAction,
             showCheckoutPrice: showCheckoutPrice,
@@ -663,6 +766,8 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
               excursion: excursion,
               selectedOffer: selectedOffer,
             ),
+            onRoutePreviewTap: () =>
+                unawaited(_openExcursionRoutePreview(excursion)),
             onMessageGuideTap: () => _openGuideChat(guideUserId),
             onOfferSelected: _selectOffer,
             onOffersChanged: (offers) =>
@@ -685,6 +790,8 @@ class ExcursionDetailsContent extends StatelessWidget {
     required this.onEditOfferTap,
     required this.onMessageGuideTap,
     required this.onOfferSelected,
+    required this.isBuildingRoute,
+    required this.onRoutePreviewTap,
     this.offers,
     this.excursionReviews = const [],
     this.onOfferProfileTap,
@@ -718,6 +825,8 @@ class ExcursionDetailsContent extends StatelessWidget {
   final VoidCallback onEditOfferTap;
   final VoidCallback onMessageGuideTap;
   final ValueChanged<ExcursionOfferVm> onOfferSelected;
+  final bool isBuildingRoute;
+  final VoidCallback onRoutePreviewTap;
   final ValueChanged<ExcursionOfferVm>? onOfferProfileTap;
   final String currentUserId;
   final bool isCurrentUserGuide;
@@ -841,7 +950,11 @@ class ExcursionDetailsContent extends StatelessWidget {
                           ),
                         ],
                         const SizedBox(height: 44),
-                        _ExcursionMapPreview(excursion: excursion),
+                        _ExcursionMapPreview(
+                          excursion: excursion,
+                          isBuildingRoute: isBuildingRoute,
+                          onRoutePreviewTap: onRoutePreviewTap,
+                        ),
                         const SizedBox(height: 44),
                         _ExcursionItinerarySection(
                           excursion: excursion,
@@ -3517,9 +3630,15 @@ class _GuideAvatar extends StatelessWidget {
 }
 
 class _ExcursionMapPreview extends StatelessWidget {
-  const _ExcursionMapPreview({required this.excursion});
+  const _ExcursionMapPreview({
+    required this.excursion,
+    required this.isBuildingRoute,
+    required this.onRoutePreviewTap,
+  });
 
   final ExcursionVm excursion;
+  final bool isBuildingRoute;
+  final VoidCallback onRoutePreviewTap;
 
   @override
   Widget build(BuildContext context) {
@@ -3547,6 +3666,10 @@ class _ExcursionMapPreview extends StatelessWidget {
               height: 190,
               initialZoom: 14.8,
               borderRadius: 24,
+              // Read-only native MapLibre platform views can crash on iOS
+              // while style callbacks arrive during details-page lifecycle
+              // changes. Keep compact preview cards static on mobile.
+              nativeMapEnabled: _shouldUseNativeReadOnlyExcursionMap(context),
             ),
             Positioned.fill(
               child: IgnorePointer(
@@ -3565,6 +3688,25 @@ class _ExcursionMapPreview extends StatelessWidget {
                 ),
               ),
             ),
+            Positioned.fill(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: isBuildingRoute ? null : onRoutePreviewTap,
+                ),
+              ),
+            ),
+            if (isBuildingRoute)
+              const Positioned(
+                left: 0,
+                right: 0,
+                top: 0,
+                child: LinearProgressIndicator(
+                  minHeight: 3,
+                  color: AppColors.accent,
+                  backgroundColor: Colors.transparent,
+                ),
+              ),
             Positioned(
               left: 10,
               bottom: 10,
@@ -3600,6 +3742,11 @@ class _ExcursionMapPreview extends StatelessWidget {
       ),
     );
   }
+}
+
+bool _shouldUseNativeReadOnlyExcursionMap(BuildContext context) {
+  final platform = Theme.of(context).platform;
+  return platform != TargetPlatform.iOS && platform != TargetPlatform.android;
 }
 
 class _ExcursionItinerarySection extends StatelessWidget {

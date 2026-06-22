@@ -46,6 +46,7 @@ func adminNavigationSections(staff *model.StaffUser) []AdminNavigationSectionVie
 				{Key: "guides", LabelKey: "nav.guides", URL: "/admin/moderation/guides"},
 				{Key: "chats", LabelKey: "nav.chats", URL: "/admin/moderation/chats"},
 				{Key: "posts", LabelKey: "nav.posts", URL: "/admin/moderation/posts"},
+				{Key: "user_routes", LabelKey: "nav.userRoutes", URL: "/admin/moderation/user-routes"},
 			},
 		},
 	}

@@ -32,14 +32,17 @@ import '../../features/profile/profile_guard_result.dart';
 import '../../features/profile/data/profile_api.dart';
 import '../../features/profile/models/profile_follower_vm.dart';
 import '../../features/profile/models/user_profile_vm.dart';
+import '../../features/routing/models/routing_models.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/routing_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../shared/map/app_map_links.dart';
 import '../../shared/widgets/app_localized_location_text.dart';
 import '../../shared/widgets/app_map_card.dart';
 import '../../shared/widgets/trip_preparation_cta.dart';
+import '../map/map_screen.dart';
 import 'activity_payment_screen.dart';
 import 'widgets/activity_review_sheet.dart';
 
@@ -70,6 +73,7 @@ enum _FooterAction {
 class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   static const double _backSwipeMinDistance = 56;
   static const double _backSwipeMinVelocity = 700;
+  static const Duration _meetingLocationTimeout = Duration(seconds: 8);
 
   final ActivityApi _activityApi = ActivityApi();
   final ChecklistOfflineCache _checklistCache = ChecklistOfflineCache();
@@ -88,6 +92,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   _FooterAction? _pendingAction;
   bool _isPaymentSuccessful = false;
   bool _isSavingReviews = false;
+  bool _isBuildingMeetingRoute = false;
   bool _isTrackingBackSwipe = false;
   bool _isInitialLoadPending = true;
   double _backSwipeDistance = 0;
@@ -933,6 +938,155 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  Future<void> _handleMeetingAction(
+    ActivityListItemVm activity, {
+    required bool canUseMeetingLink,
+  }) async {
+    final meetingUrl = (activity.meetingUrl ?? '').trim();
+    if (canUseMeetingLink && meetingUrl.isNotEmpty) {
+      await _copyValue(
+        meetingUrl,
+        AppLocalizations.of(context)!.activityDetailsLinkCopied,
+      );
+      return;
+    }
+
+    await _openMeetingRoute(activity);
+  }
+
+  Future<void> _openMeetingRoute(ActivityListItemVm activity) async {
+    if (_isBuildingMeetingRoute) {
+      return;
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    final meetingPoint = _resolveMeetingPoint(activity);
+    if (meetingPoint == null) {
+      await _copyMeetingFallback(activity, l10n);
+      return;
+    }
+
+    if (context.read<AuthProvider>().state != AuthState.authenticated) {
+      context.push(
+        Uri(
+          path: '/login',
+          queryParameters: {'from': '/activities/${widget.activityId}'},
+        ).toString(),
+      );
+      return;
+    }
+
+    final destination = _activityMeetingMapTarget(activity, meetingPoint);
+    final routingProvider = context.read<RoutingProvider>();
+
+    setState(() => _isBuildingMeetingRoute = true);
+    try {
+      final coordinates = await _detectMeetingCoordinates();
+      if (!mounted) return;
+
+      if (coordinates == null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.locationPermissionDenied)));
+        context.push('/map', extra: destination);
+        return;
+      }
+
+      final origin = RoutePointVm(
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+        name: l10n.homeNavMap,
+      );
+
+      final route = await routingProvider.buildRoute(
+        RouteRequestVm(
+          profile: RouteProfile.touristWalk,
+          points: [
+            origin,
+            RoutePointVm(
+              latitude: meetingPoint.latitude,
+              longitude: meetingPoint.longitude,
+              name: activity.title,
+            ),
+          ],
+        ),
+      );
+      if (!mounted) return;
+
+      if (route == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              routingProvider.errorMessage ?? l10n.mapUsingFallbackLocation,
+            ),
+          ),
+        );
+        context.push('/map', extra: destination);
+        return;
+      }
+
+      final routePreview = MapRoutePreview(
+        route: route,
+        origin: origin,
+        destination: destination,
+      );
+      context.push('/map', extra: routePreview);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_resolveLocationErrorMessage(error, l10n))),
+      );
+      context.push('/map', extra: destination);
+    } finally {
+      if (mounted) {
+        setState(() => _isBuildingMeetingRoute = false);
+      }
+    }
+  }
+
+  Future<DeviceCoordinates?> _detectMeetingCoordinates() {
+    return _deviceContextService
+        .detectCoordinates(requestPermission: true)
+        .timeout(
+          _meetingLocationTimeout,
+          onTimeout: () => throw TimeoutException('meeting_location_timeout'),
+        );
+  }
+
+  String _resolveLocationErrorMessage(Object error, AppLocalizations l10n) {
+    final code = error.toString();
+    if (code.contains('meeting_location_timeout') ||
+        code.contains('TimeoutException')) {
+      return l10n.locationDetectionTimedOut;
+    }
+    if (code.contains('location_services_disabled')) {
+      return l10n.locationServicesDisabled;
+    }
+    if (code.contains('location_permission_denied_forever')) {
+      return l10n.locationPermissionDeniedForever;
+    }
+    if (code.contains('location_permission_denied')) {
+      return l10n.locationPermissionDenied;
+    }
+    return l10n.mapUsingFallbackLocation;
+  }
+
+  Future<void> _copyMeetingFallback(
+    ActivityListItemVm activity,
+    AppLocalizations l10n,
+  ) async {
+    final copyValue = _resolveMeetingActionCopyValue(activity);
+    if (copyValue == null || copyValue.isEmpty) {
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.notSpecified,
+      );
+      return;
+    }
+    await _copyValue(copyValue, l10n.activityDetailsLinkCopied);
+  }
+
   Future<void> _showParticipantsSheet(
     List<ActivityParticipantVm> participants,
     AppLocalizations l10n,
@@ -1639,6 +1793,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                               provider.actionState ==
                                   ActivityActionState.loading &&
                               _pendingAction == _FooterAction.cancel,
+                          isBuildingRoute: _isBuildingMeetingRoute,
                           onLeaveTap: _handleLeave,
                           onExtend30Tap: () => _handleExtend(30),
                           onExtend60Tap: () => _handleExtend(60),
@@ -1649,25 +1804,12 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                               '/activities/${activity.id}/attendance-qr',
                             );
                           },
-                          onActionTap: () {
-                            final copyValue = _resolveMeetingActionCopyValue(
+                          onActionTap: () => unawaited(
+                            _handleMeetingAction(
                               activity,
-                            );
-                            if (copyValue == null || copyValue.isEmpty) {
-                              unawaited(
-                                showErrorDialog(
-                                  context,
-                                  title: l10n.error,
-                                  message: l10n.notSpecified,
-                                ),
-                              );
-                              return;
-                            }
-                            _copyValue(
-                              copyValue,
-                              l10n.activityDetailsLinkCopied,
-                            );
-                          },
+                              canUseMeetingLink: isJoined || isOwner,
+                            ),
+                          ),
                         ),
                         if (showReviewsSection) ...[
                           const SizedBox(height: 22),
@@ -3865,6 +4007,7 @@ class _MeetingSection extends StatelessWidget {
     required this.isExtending60,
     required this.isCompleting,
     required this.isCancelling,
+    required this.isBuildingRoute,
     required this.onLeaveTap,
     required this.onExtend30Tap,
     required this.onExtend60Tap,
@@ -3888,6 +4031,7 @@ class _MeetingSection extends StatelessWidget {
   final bool isExtending60;
   final bool isCompleting;
   final bool isCancelling;
+  final bool isBuildingRoute;
   final VoidCallback onLeaveTap;
   final VoidCallback onExtend30Tap;
   final VoidCallback onExtend60Tap;
@@ -3938,20 +4082,29 @@ class _MeetingSection extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   TextButton(
-                    onPressed: onActionTap,
+                    onPressed: isBuildingRoute ? null : onActionTap,
                     style: TextButton.styleFrom(
                       padding: EdgeInsets.zero,
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: Text(
-                      actionLabel,
-                      style: const TextStyle(
-                        color: AppColors.accent,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                    child: isBuildingRoute
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.accent,
+                            ),
+                          )
+                        : Text(
+                            actionLabel,
+                            style: const TextStyle(
+                              color: AppColors.accent,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                   ),
                 ],
               );
@@ -3971,15 +4124,24 @@ class _MeetingSection extends StatelessWidget {
                   ),
                 ),
                 TextButton(
-                  onPressed: onActionTap,
-                  child: Text(
-                    actionLabel,
-                    style: const TextStyle(
-                      color: AppColors.accent,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                  onPressed: isBuildingRoute ? null : onActionTap,
+                  child: isBuildingRoute
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.accent,
+                          ),
+                        )
+                      : Text(
+                          actionLabel,
+                          style: const TextStyle(
+                            color: AppColors.accent,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                 ),
               ],
             );
@@ -6751,6 +6913,28 @@ String? _resolveMeetingActionCopyValue(ActivityListItemVm activity) {
   return null;
 }
 
+MapTarget _activityMeetingMapTarget(
+  ActivityListItemVm activity,
+  LatLng meetingPoint,
+) {
+  final subtitle = (activity.addressText ?? '').trim().isNotEmpty
+      ? activity.addressText!.trim()
+      : activity.shortLocation;
+
+  return MapTarget(
+    title: activity.title,
+    subtitle: subtitle,
+    latitude: meetingPoint.latitude,
+    longitude: meetingPoint.longitude,
+    sourceUrl: AppMapLinks.buildUrl(
+      latitude: meetingPoint.latitude,
+      longitude: meetingPoint.longitude,
+      title: activity.title,
+      subtitle: subtitle,
+    ),
+  );
+}
+
 TravelChecklistRouteArgs _activityChecklistRouteArgs(
   ActivityListItemVm activity,
 ) {
@@ -6758,6 +6942,7 @@ TravelChecklistRouteArgs _activityChecklistRouteArgs(
   final endAt = activity.endAt.toUtc().isAfter(startAt)
       ? activity.endAt.toUtc()
       : startAt.add(const Duration(hours: 2));
+  final meetingPoint = _resolveMeetingPoint(activity);
 
   return TravelChecklistRouteArgs(
     tripId: _activityChecklistTripId(activity.id),
@@ -6770,6 +6955,15 @@ TravelChecklistRouteArgs _activityChecklistRouteArgs(
     endAt: endAt,
     transportModes: const ['flight'],
     activitySlugs: _activityChecklistSlugs(activity),
+    routeStops: [
+      if (meetingPoint != null)
+        TravelChecklistRouteStop(
+          latitude: meetingPoint.latitude,
+          longitude: meetingPoint.longitude,
+          name: activity.title,
+          sourceId: activity.id,
+        ),
+    ],
   );
 }
 

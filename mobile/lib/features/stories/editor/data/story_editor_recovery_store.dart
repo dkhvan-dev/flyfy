@@ -470,6 +470,7 @@ Map<String, dynamic> _blockToJson(StoryBlock block) {
             .toList(growable: false),
       },
     if (block.place != null) 'place': _placeToJson(block.place!),
+    if (block.route != null) 'route': _routeToJson(block.route!),
   };
 }
 
@@ -516,6 +517,10 @@ StoryBlock _blockFromJson(Map<String, dynamic> json) {
     'place_reference' => StoryBlock.placeReference(
       id: id,
       place: _placeFromJson(_mapFromJson(json['place'])),
+    ),
+    'route_reference' => StoryBlock.routeReference(
+      id: id,
+      route: _routeFromJson(_mapFromJson(json['route'])),
     ),
     _ => throw FormatException('Unsupported story block type: ${json['type']}'),
   };
@@ -583,6 +588,35 @@ StoryPlaceReference _placeFromJson(Map<String, dynamic> json) {
   );
 }
 
+Map<String, dynamic> _routeToJson(StoryRouteReference route) {
+  return {
+    'routeId': route.routeId.trim(),
+    'title': route.title.trim(),
+    if (_normalizeNullable(route.description) != null)
+      'description': route.description!.trim(),
+    if (_normalizeNullable(route.profile) != null)
+      'profile': route.profile!.trim(),
+    if (route.distanceMeters != null) 'distanceMeters': route.distanceMeters,
+    if (route.durationSeconds != null) 'durationSeconds': route.durationSeconds,
+    if (route.stopsCount != null) 'stopsCount': route.stopsCount,
+    if (_normalizeNullable(route.shareUrl) != null)
+      'shareUrl': route.shareUrl!.trim(),
+  };
+}
+
+StoryRouteReference _routeFromJson(Map<String, dynamic> json) {
+  return StoryRouteReference(
+    routeId: _requiredStringFromJson(json['routeId'], 'route.routeId'),
+    title: _requiredStringFromJson(json['title'], 'route.title'),
+    description: _nullableStringFromJson(json['description']),
+    profile: _nullableStringFromJson(json['profile']),
+    distanceMeters: _nullableIntFromJson(json['distanceMeters']),
+    durationSeconds: _nullableIntFromJson(json['durationSeconds']),
+    stopsCount: _nullableIntFromJson(json['stopsCount']),
+    shareUrl: _nullableStringFromJson(json['shareUrl']),
+  );
+}
+
 String _blockTypeToJson(StoryBlockType type) {
   return switch (type) {
     StoryBlockType.paragraph => 'paragraph',
@@ -595,6 +629,7 @@ String _blockTypeToJson(StoryBlockType type) {
     StoryBlockType.gallery => 'gallery',
     StoryBlockType.divider => 'divider',
     StoryBlockType.placeReference => 'place_reference',
+    StoryBlockType.routeReference => 'route_reference',
   };
 }
 

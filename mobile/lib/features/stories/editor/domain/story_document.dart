@@ -9,6 +9,7 @@ enum StoryBlockType {
   gallery,
   divider,
   placeReference,
+  routeReference,
 }
 
 enum StoryInlineMarkType { bold, italic, underline, strikethrough, link }
@@ -153,6 +154,62 @@ class StoryPlaceReference {
   }
 }
 
+class StoryRouteReference {
+  const StoryRouteReference({
+    required this.routeId,
+    required this.title,
+    this.description,
+    this.profile,
+    this.distanceMeters,
+    this.durationSeconds,
+    this.stopsCount,
+    this.shareUrl,
+  });
+
+  final String routeId;
+  final String title;
+  final String? description;
+  final String? profile;
+  final int? distanceMeters;
+  final int? durationSeconds;
+  final int? stopsCount;
+  final String? shareUrl;
+
+  bool get isMeaningful => routeId.trim().isNotEmpty && title.trim().isNotEmpty;
+
+  StoryRouteReference copyWith({
+    String? routeId,
+    String? title,
+    String? description,
+    String? profile,
+    int? distanceMeters,
+    int? durationSeconds,
+    int? stopsCount,
+    String? shareUrl,
+    bool clearDescription = false,
+    bool clearProfile = false,
+    bool clearDistanceMeters = false,
+    bool clearDurationSeconds = false,
+    bool clearStopsCount = false,
+    bool clearShareUrl = false,
+  }) {
+    return StoryRouteReference(
+      routeId: routeId ?? this.routeId,
+      title: title ?? this.title,
+      description: clearDescription ? null : description ?? this.description,
+      profile: clearProfile ? null : profile ?? this.profile,
+      distanceMeters: clearDistanceMeters
+          ? null
+          : distanceMeters ?? this.distanceMeters,
+      durationSeconds: clearDurationSeconds
+          ? null
+          : durationSeconds ?? this.durationSeconds,
+      stopsCount: clearStopsCount ? null : stopsCount ?? this.stopsCount,
+      shareUrl: clearShareUrl ? null : shareUrl ?? this.shareUrl,
+    );
+  }
+}
+
 class StoryBlock {
   StoryBlock._({
     required this.id,
@@ -163,6 +220,7 @@ class StoryBlock {
     this.image,
     this.gallery,
     this.place,
+    this.route,
   }) : _marks = List.unmodifiable(marks);
 
   factory StoryBlock.paragraph({
@@ -274,6 +332,17 @@ class StoryBlock {
     );
   }
 
+  factory StoryBlock.routeReference({
+    required String id,
+    required StoryRouteReference route,
+  }) {
+    return StoryBlock._(
+      id: id,
+      type: StoryBlockType.routeReference,
+      route: route,
+    );
+  }
+
   final String id;
   final StoryBlockType type;
   final String? text;
@@ -282,6 +351,7 @@ class StoryBlock {
   final StoryImagePayload? image;
   final StoryGalleryPayload? gallery;
   final StoryPlaceReference? place;
+  final StoryRouteReference? route;
 
   List<StoryInlineMark> get marks => _marks;
 
@@ -296,7 +366,8 @@ class StoryBlock {
       StoryBlockType.image ||
       StoryBlockType.gallery ||
       StoryBlockType.divider ||
-      StoryBlockType.placeReference => false,
+      StoryBlockType.placeReference ||
+      StoryBlockType.routeReference => false,
     };
   }
 
@@ -308,6 +379,7 @@ class StoryBlock {
     StoryImagePayload? image,
     StoryGalleryPayload? gallery,
     StoryPlaceReference? place,
+    StoryRouteReference? route,
     bool clearText = false,
   }) {
     final nextId = id ?? this.id;
@@ -357,6 +429,10 @@ class StoryBlock {
       StoryBlockType.placeReference => StoryBlock.placeReference(
         id: nextId,
         place: place ?? this.place!,
+      ),
+      StoryBlockType.routeReference => StoryBlock.routeReference(
+        id: nextId,
+        route: route ?? this.route!,
       ),
     };
   }
@@ -429,6 +505,11 @@ class StoryDocument {
         final name = (block.place?.name ?? '').trim();
         if (name.isNotEmpty) {
           parts.add(name);
+        }
+      } else if (block.type == StoryBlockType.routeReference) {
+        final title = (block.route?.title ?? '').trim();
+        if (title.isNotEmpty) {
+          parts.add(title);
         }
       }
     }
@@ -652,6 +733,19 @@ class StoryDocument {
             ),
           );
         }
+      case StoryBlockType.routeReference:
+        final route = block.route;
+        if (!(route?.isMeaningful ?? false)) {
+          issues.add(
+            StoryValidationIssue(
+              code: 'route_reference_required',
+              message: 'Route reference block requires a route.',
+              blockId: block.id,
+            ),
+          );
+        } else {
+          _validateRouteReference(route!, issues, block.id);
+        }
       case StoryBlockType.divider:
         break;
       case StoryBlockType.paragraph:
@@ -661,6 +755,50 @@ class StoryDocument {
       case StoryBlockType.quote:
       case StoryBlockType.callout:
         break;
+    }
+  }
+
+  void _validateRouteReference(
+    StoryRouteReference route,
+    List<StoryValidationIssue> issues,
+    String blockId,
+  ) {
+    if (route.distanceMeters != null && route.distanceMeters! < 0) {
+      issues.add(
+        StoryValidationIssue(
+          code: 'route_reference_distance_invalid',
+          message: 'Route reference distance must be non-negative.',
+          blockId: blockId,
+        ),
+      );
+    }
+    if (route.durationSeconds != null && route.durationSeconds! < 0) {
+      issues.add(
+        StoryValidationIssue(
+          code: 'route_reference_duration_invalid',
+          message: 'Route reference duration must be non-negative.',
+          blockId: blockId,
+        ),
+      );
+    }
+    if (route.stopsCount != null && route.stopsCount! < 0) {
+      issues.add(
+        StoryValidationIssue(
+          code: 'route_reference_stops_invalid',
+          message: 'Route reference stops count must be non-negative.',
+          blockId: blockId,
+        ),
+      );
+    }
+    final shareUrl = route.shareUrl?.trim() ?? '';
+    if (shareUrl.isNotEmpty && !_isSafeLinkUrl(shareUrl)) {
+      issues.add(
+        StoryValidationIssue(
+          code: 'route_reference_share_url_invalid',
+          message: 'Route reference share URL must use http or https.',
+          blockId: blockId,
+        ),
+      );
     }
   }
 
@@ -758,6 +896,10 @@ class StoryDocument {
       }
       if (block.type == StoryBlockType.placeReference &&
           (block.place?.isMeaningful ?? false)) {
+        return true;
+      }
+      if (block.type == StoryBlockType.routeReference &&
+          (block.route?.isMeaningful ?? false)) {
         return true;
       }
     }

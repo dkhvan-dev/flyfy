@@ -38,6 +38,7 @@ go.work.sum
 links.txt
 CLAUDE.md
 docs/
+deploy/data/routing/
 .claude.json
 AGENTS.md
 graphify-out/

@@ -20,6 +20,7 @@ func TestPostDocumentValidateAcceptsSupportedBlocks(t *testing.T) {
 			{ID: "gallery-1", Type: PostBlockTypeGallery, Images: []PostGalleryImage{{FileID: "file-1"}, {FileID: "file-2"}}},
 			{ID: "divider-1", Type: PostBlockTypeDivider},
 			{ID: "place-1", Type: PostBlockTypePlaceReference, PlaceID: "place-123", PlaceName: "Kok-Tobe"},
+			{ID: "route-1", Type: PostBlockTypeRouteReference, RouteID: "route-123", RouteTitle: "Panfilov morning walk", RouteDescription: "Coffee, park, and bazaar stops", RouteProfile: "pedestrian", RouteDistanceMeters: 1800, RouteDurationSeconds: 1320, RouteStopsCount: 3, RouteShareURL: "https://inflap.app/user-routes/route-123"},
 			{ID: "link-1", Type: PostBlockTypeParagraph, Text: "Official route", Marks: []PostInlineMark{{Type: PostInlineMarkTypeLink, URL: "https://example.com/route"}}},
 		},
 	}
@@ -140,6 +141,18 @@ func TestPostDocumentValidateRejectsInvalidBlocks(t *testing.T) {
 		"place city too long": {
 			Version: PostDocumentVersion,
 			Blocks:  []PostBlock{{ID: "place-1", Type: PostBlockTypePlaceReference, PlaceID: "place-1", PlaceCityID: strings.Repeat("c", PostDocumentMaxPlaceCityIDLength+1)}},
+		},
+		"route reference without id": {
+			Version: PostDocumentVersion,
+			Blocks:  []PostBlock{{ID: "route-1", Type: PostBlockTypeRouteReference, RouteTitle: "Panfilov morning walk"}},
+		},
+		"route reference without title": {
+			Version: PostDocumentVersion,
+			Blocks:  []PostBlock{{ID: "route-1", Type: PostBlockTypeRouteReference, RouteID: "route-123"}},
+		},
+		"route reference with unsafe share url": {
+			Version: PostDocumentVersion,
+			Blocks:  []PostBlock{{ID: "route-1", Type: PostBlockTypeRouteReference, RouteID: "route-123", RouteTitle: "Panfilov morning walk", RouteShareURL: "javascript:alert(1)"}},
 		},
 		"bold mark with url": {
 			Version: PostDocumentVersion,
@@ -344,10 +357,11 @@ func TestPostDocumentPlainText(t *testing.T) {
 			{ID: "gallery-1", Type: PostBlockTypeGallery, Images: []PostGalleryImage{{FileID: "file-2"}, {FileID: "file-3"}}},
 			{ID: "divider-1", Type: PostBlockTypeDivider},
 			{ID: "place-1", Type: PostBlockTypePlaceReference, PlaceName: "Kok-Tobe"},
+			{ID: "route-1", Type: PostBlockTypeRouteReference, RouteID: "route-123", RouteTitle: "Panfilov morning walk"},
 		},
 	}
 
-	const expected = "Weekend in Almaty\nStart near Panfilov Park.\nCoffee\nMuseum\nKok-Tobe"
+	const expected = "Weekend in Almaty\nStart near Panfilov Park.\nCoffee\nMuseum\nKok-Tobe\nPanfilov morning walk"
 
 	if got := document.PlainText(); got != expected {
 		t.Fatalf("PlainText() = %q, want %q", got, expected)

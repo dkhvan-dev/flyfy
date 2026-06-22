@@ -262,6 +262,24 @@ class AppLocalizationsKk extends AppLocalizations {
   String get travelChecklistSubtitle => '';
 
   @override
+  String get travelChecklistOptimizeRouteTitle => 'Күн маршрутын оңтайландыру';
+
+  @override
+  String travelChecklistOptimizeRouteSubtitle(Object count) {
+    return 'Күнді бастамас бұрын $count аялдаманы жол уақыты бойынша реттейміз.';
+  }
+
+  @override
+  String get travelChecklistOptimizeRouteButton => 'Оңтайландыру';
+
+  @override
+  String get travelChecklistOptimizeRouteRetry => 'Қайта есептеу';
+
+  @override
+  String get travelChecklistOptimizeFailed =>
+      'Маршрутты қазір оңтайландыру мүмкін болмады.';
+
+  @override
   String get travelChecklistCtaTitle => 'Сапарға дайындалу';
 
   @override
@@ -1504,6 +1522,13 @@ class AppLocalizationsKk extends AppLocalizations {
   String get profileJourneyTitle => 'Менің жолым';
 
   @override
+  String get profileUserRoutesTitle => 'Менің маршруттарым';
+
+  @override
+  String get profileUserRoutesSubtitle =>
+      'Сақталған серуендер, қала жоспарлары және саяхатшылар маршруттары';
+
+  @override
   String get profileSavedItemsTitle => 'Сақталғандар';
 
   @override
@@ -2051,6 +2076,10 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get locationPermissionDeniedForever =>
       'Геолокацияға қолжетімсіз. Құрылғы баптауларында рұқсат беріңіз';
+
+  @override
+  String get locationDetectionTimedOut =>
+      'Геолокацияңызды жылдам анықтау мүмкін болмады. Қайталап көріңіз немесе картаны ашыңыз.';
 
   @override
   String get cancelButton => 'Бас тарту';
@@ -2808,6 +2837,28 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get homeNavMap => 'Карта';
+
+  @override
+  String get mapAttributionSheetTitle => 'Карта дереккөздері';
+
+  @override
+  String get mapAttributionSheetSubtitle =>
+      'Inflap ашық карта деректері негізінде жасалған карта тайлдарын көрсетеді. Атрибуция мен лицензия мәліметтері төменде берілген.';
+
+  @override
+  String get mapAttributionStyleLabel => 'Карта стилі';
+
+  @override
+  String get mapAttributionTilesLabel => 'Тайлдар және схема';
+
+  @override
+  String get mapAttributionDataLabel => 'Карта деректері';
+
+  @override
+  String get mapAttributionLicenseLabel => 'Лицензия';
+
+  @override
+  String get mapAttributionOpenLink => 'Мәліметтерді ашу';
 
   @override
   String get homeNavChats => 'Чаттар';
@@ -3596,6 +3647,264 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get mapTapActivityHint =>
       'Қысқаша ақпаратты көріп, мәліметтерін ашу үшін белсенділік маркерін басыңыз.';
+
+  @override
+  String get mapExternalOpenFailed =>
+      'Маршрутты сыртқы карта қолданбасында ашу мүмкін болмады.';
+
+  @override
+  String get routeSummaryTitle => 'Жол уақыты';
+
+  @override
+  String get routeSummaryDuration => 'Уақыт';
+
+  @override
+  String get routeSummaryDistance => 'Қашықтық';
+
+  @override
+  String routeDurationMinutesShort(int minutes) {
+    return '$minutes мин';
+  }
+
+  @override
+  String routeDistanceMetersShort(int meters) {
+    return '$meters м';
+  }
+
+  @override
+  String routeDistanceKilometersShort(String kilometers) {
+    return '$kilometers км';
+  }
+
+  @override
+  String routeTravelTimeDistanceShort(Object duration, Object distance) {
+    return '$duration · $distance';
+  }
+
+  @override
+  String routeStopSemantic(int order) {
+    return 'Маршрут нүктесі $order';
+  }
+
+  @override
+  String get userRoutesSaveRoute => 'Маршрутты сақтау';
+
+  @override
+  String get userRoutesRouteSaved => 'Сақталды';
+
+  @override
+  String get userRoutesSaveSuccess => 'Маршрут сақталды';
+
+  @override
+  String get userRoutesSaveFailed => 'Маршрутты сақтау мүмкін болмады';
+
+  @override
+  String get userRoutesDefaultTitle => 'Сақталған маршрут';
+
+  @override
+  String userRoutesDefaultTitleTo(Object destination) {
+    return '$destination бағыты';
+  }
+
+  @override
+  String get mapRouteBuilderTitle => 'Маршрут құру';
+
+  @override
+  String get mapRouteBuilderHint =>
+      'Аялдамаларды ретімен қосу үшін картаны басыңыз.';
+
+  @override
+  String get mapRouteBuilderBuildRoute => 'Маршрут құру';
+
+  @override
+  String get mapRouteBuilderMinPoints =>
+      'Маршрут құру үшін кемінде екі нүкте қосыңыз.';
+
+  @override
+  String get mapRouteBuilderClear => 'Тазалау';
+
+  @override
+  String get mapRouteBuilderRemoveLast => 'Соңғысын өшіру';
+
+  @override
+  String mapRouteBuilderPointName(int order) {
+    return '$order-нүкте';
+  }
+
+  @override
+  String get userRoutesTitle => 'Маршруттар';
+
+  @override
+  String get userRoutesPublicTab => 'Ашық';
+
+  @override
+  String get userRoutesMineTab => 'Менің';
+
+  @override
+  String get userRoutesSavedTab => 'Сақталған';
+
+  @override
+  String get userRoutesPublicEmptyTitle => 'Әзірге ашық маршруттар жоқ';
+
+  @override
+  String get userRoutesPublicEmptySubtitle =>
+      'Саяхатшылар бөліскен серуендер мен қала жоспарлары осында шығады.';
+
+  @override
+  String get userRoutesMineEmptyTitle => 'Әзірге маршрут жоқ';
+
+  @override
+  String get userRoutesMineEmptySubtitle =>
+      'Картада маршрут құрып, өз коллекцияңызға сақтаңыз.';
+
+  @override
+  String get userRoutesSavedEmptyTitle => 'Сақталған маршрут жоқ';
+
+  @override
+  String get userRoutesSavedEmptySubtitle =>
+      'Басқа саяхатшылардың маршруттарын белгілеп, оларды осы жерден тез табыңыз.';
+
+  @override
+  String get userRoutesLoginRequiredTitle =>
+      'Маршруттарыңызды пайдалану үшін кіріңіз';
+
+  @override
+  String get userRoutesLoginRequiredSubtitle =>
+      'Жеке және сақталған маршруттар Inflap аккаунтыңызға байланысады.';
+
+  @override
+  String get userRoutesLoginRequiredButton => 'Кіру';
+
+  @override
+  String userRoutesStopsCount(int count) {
+    return '$count аялдама';
+  }
+
+  @override
+  String get userRoutesVisibilityPrivate => 'Жеке';
+
+  @override
+  String get userRoutesVisibilityUnlisted => 'Сілтеме арқылы';
+
+  @override
+  String get userRoutesVisibilityPublic => 'Ашық';
+
+  @override
+  String get userRoutesOpenOnMap => 'Картада ашу';
+
+  @override
+  String get userRoutesCopyRoute => 'Маршрутты көшіру';
+
+  @override
+  String get userRoutesCopied => 'Маршрут сіздің маршруттарыңызға көшірілді';
+
+  @override
+  String get userRoutesEditRoute => 'Маршрутты өңдеу';
+
+  @override
+  String get userRoutesEditTitleLabel => 'Маршрут атауы';
+
+  @override
+  String get userRoutesEditDescriptionLabel => 'Сипаттама';
+
+  @override
+  String get userRoutesEditVisibilityLabel => 'Қолжетімділік';
+
+  @override
+  String get userRoutesEditSave => 'Өзгерістерді сақтау';
+
+  @override
+  String get userRoutesUpdateSuccess => 'Маршрут жаңартылды';
+
+  @override
+  String get userRoutesUpdateFailed => 'Маршрутты жаңарту мүмкін болмады';
+
+  @override
+  String get userRoutesShareRoute => 'Маршрутпен бөлісу';
+
+  @override
+  String get userRoutesShareCopied => 'Маршрут сілтемесі көшірілді';
+
+  @override
+  String get userRoutesEditStops => 'Нүктелерді өңдеу';
+
+  @override
+  String get userRoutesEditStopsHint =>
+      'Нүктелердің ретін немесе атауын өзгертіңіз. Inflap сақтамас бұрын маршрутты қайта есептейді.';
+
+  @override
+  String get userRoutesEditStopNameLabel => 'Нүкте атауы';
+
+  @override
+  String get userRoutesEditStopNoteLabel => 'Ескертпе';
+
+  @override
+  String get userRoutesMoveStopUp => 'Жоғары жылжыту';
+
+  @override
+  String get userRoutesMoveStopDown => 'Төмен жылжыту';
+
+  @override
+  String get userRoutesRebuildAndSave => 'Қайта есептеп сақтау';
+
+  @override
+  String get userRoutesEditPointsMinStops =>
+      'Маршрутта кемінде екі нүкте болуы керек.';
+
+  @override
+  String get userRoutesRebuildFailed =>
+      'Маршрутты қайта есептеу мүмкін болмады';
+
+  @override
+  String get userRoutesStopsUpdateSuccess => 'Маршрут нүктелері жаңартылды';
+
+  @override
+  String get userRoutesUnsaveRoute => 'Сақталғандардан алып тастау';
+
+  @override
+  String get userRoutesStopsTitle => 'Аялдамалар';
+
+  @override
+  String get routeProfileTouristWalk => 'Туристік серуен';
+
+  @override
+  String get routeProfileFastWalk => 'Жылдам серуен';
+
+  @override
+  String get routeProfileBikeCity => 'Қалалық веломаршрут';
+
+  @override
+  String get routeProfileCarStandard => 'Автомаршрут';
+
+  @override
+  String get routeProfileGuideRoute => 'Гид маршруты';
+
+  @override
+  String get routeProfileDayPlan => 'Күндік жоспар';
+
+  @override
+  String get routeProfileTransit => 'Қоғамдық көлік';
+
+  @override
+  String get routeProfileTouristWalkShort => 'Жаяу';
+
+  @override
+  String get routeProfileFastWalkShort => 'Жылдам';
+
+  @override
+  String get routeProfileBikeCityShort => 'Вело';
+
+  @override
+  String get routeProfileCarStandardShort => 'Авто';
+
+  @override
+  String get routeProfileGuideRouteShort => 'Гид';
+
+  @override
+  String get routeProfileDayPlanShort => 'Күн';
+
+  @override
+  String get routeProfileTransitShort => 'Көлік';
 
   @override
   String get placesTitle => 'Орындар';
@@ -6385,6 +6694,35 @@ class AppLocalizationsKk extends AppLocalizations {
   String get activityGetDirections => 'Жол көрсету';
 
   @override
+  String get activityReachabilityTitle => 'Үлгеремін бе?';
+
+  @override
+  String get activityReachabilitySubtitle =>
+      'Жолға шықпас бұрын ағымдағы орныңыздан жаяу ETA тексеріңіз.';
+
+  @override
+  String get activityReachabilityCheckButton => 'ETA тексеру';
+
+  @override
+  String get activityReachabilityRetryButton => 'Қайталау';
+
+  @override
+  String get activityReachabilityOnTime => 'Үлгересіз';
+
+  @override
+  String get activityReachabilityLate => 'Кешігу қаупі';
+
+  @override
+  String activityReachabilityArriveBeforeStart(Object minutes) {
+    return 'Басталуына шамамен $minutes мин қалғанда жетесіз';
+  }
+
+  @override
+  String activityReachabilityArriveAfterStart(Object minutes) {
+    return 'Маршрут басталғаннан кейін шамамен $minutes мин кешіктіреді';
+  }
+
+  @override
   String get activityHostSection => 'Ұйымдастырушы';
 
   @override
@@ -7468,6 +7806,13 @@ class AppLocalizationsKk extends AppLocalizations {
       'Орынды хикаямен байланыстыру';
 
   @override
+  String get storyEditorBlockRouteReference => 'Бағыт';
+
+  @override
+  String get storyEditorBlockRouteReferenceDescription =>
+      'Постта өз бағытыңызбен бөлісу';
+
+  @override
   String get storyEditorBlockNumberedList => 'Нөмірленген тізім';
 
   @override
@@ -7479,6 +7824,20 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get storyEditorPlaceNameHint => 'Орын атауы';
+
+  @override
+  String get storyEditorRouteReferencePickerTitle => 'Бағыт қосу';
+
+  @override
+  String get storyEditorRouteReferenceEmptyState =>
+      'Алдымен бағытты жариялаңыз немесе сілтеме арқылы қолжетімді етіңіз, содан кейін оны постқа қосыңыз.';
+
+  @override
+  String get storyEditorRouteReferenceLoadError =>
+      'Бағыттарыңызды жүктеу мүмкін болмады.';
+
+  @override
+  String get storyEditorRouteReferenceEmpty => 'Бағыт таңдалмаған';
 
   @override
   String get storyEditorTextHintHeading => 'Түсінікті бөлім тақырыбын жазыңыз';

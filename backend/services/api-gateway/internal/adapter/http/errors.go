@@ -22,13 +22,14 @@ const (
 	errorCodeUserResolution      = "gateway.user_resolution_failed"
 	errorCodeTechnical           = "gateway.technical"
 
-	downstreamCodeAuthRequired   = "auth_required"
-	downstreamCodeInvalidRequest = "invalid_request_body"
-	downstreamCodeForbidden      = "forbidden"
-	downstreamCodeNotFound       = "not_found"
-	downstreamCodeRateLimited    = "rate_limited"
-	downstreamCodeConflict       = "conflict"
-	downstreamCodeMaintenance    = "technical_maintenance"
+	downstreamCodeAuthRequired       = "auth_required"
+	downstreamCodeInvalidRequest     = "invalid_request_body"
+	downstreamCodeForbidden          = "forbidden"
+	downstreamCodeNotFound           = "not_found"
+	downstreamCodeRateLimited        = "rate_limited"
+	downstreamCodeConflict           = "conflict"
+	downstreamCodeMaintenance        = "technical_maintenance"
+	downstreamCodeTransitUnavailable = "routing.transit_unavailable"
 )
 
 type errorResponse struct {
@@ -202,6 +203,10 @@ var localizedDownstreamErrors = map[string]map[string]localizedError{
 			title:   "Технические работы",
 			message: "Сейчас проводятся технические работы. Попробуйте позже.",
 		},
+		downstreamCodeTransitUnavailable: {
+			title:   "Маршрут недоступен",
+			message: "Маршруты на общественном транспорте пока недоступны.",
+		},
 	},
 	"en": {
 		downstreamCodeAuthRequired: {
@@ -232,6 +237,10 @@ var localizedDownstreamErrors = map[string]map[string]localizedError{
 			title:   "Maintenance",
 			message: "Maintenance is in progress. Please try again later.",
 		},
+		downstreamCodeTransitUnavailable: {
+			title:   "Route unavailable",
+			message: "Transit routing is not available yet.",
+		},
 	},
 	"kk": {
 		downstreamCodeAuthRequired: {
@@ -261,6 +270,10 @@ var localizedDownstreamErrors = map[string]map[string]localizedError{
 		downstreamCodeMaintenance: {
 			title:   "Техникалық жұмыстар",
 			message: "Қазір техникалық жұмыстар жүріп жатыр. Кейінірек қайталап көріңіз.",
+		},
+		downstreamCodeTransitUnavailable: {
+			title:   "Бағыт қолжетімсіз",
+			message: "Қоғамдық көлік бағыттары әзірге қолжетімсіз.",
 		},
 	},
 }
@@ -305,6 +318,9 @@ var downstreamErrorAliases = map[string]string{
 
 	"technical_maintenance":          downstreamCodeMaintenance,
 	"activity.technical_maintenance": downstreamCodeMaintenance,
+
+	"routing.transit_unavailable": downstreamCodeTransitUnavailable,
+	"transit_unavailable":         downstreamCodeTransitUnavailable,
 }
 
 func writeBusinessError(w http.ResponseWriter, r *http.Request, status int, code string) {

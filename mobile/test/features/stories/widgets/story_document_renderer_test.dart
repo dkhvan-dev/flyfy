@@ -75,6 +75,20 @@ void main() {
             'type': 'place_reference',
             'place': {'name': 'Kok Tobe', 'countryCode': 'KZ'},
           },
+          {
+            'id': 'route-1',
+            'type': 'route_reference',
+            'route': {
+              'routeId': 'route-1',
+              'routeTitle': 'Panfilov morning walk',
+              'routeDescription': 'Coffee, park, and bazaar stops',
+              'routeProfile': 'pedestrian',
+              'distanceMeters': 1800,
+              'durationSeconds': 1320,
+              'stopsCount': 3,
+              'shareUrl': 'https://inflap.app/user-routes/route-1',
+            },
+          },
         ],
       );
 
@@ -103,7 +117,46 @@ void main() {
       expect(find.byType(Divider), findsOneWidget);
       expect(find.text('Kok Tobe'), findsOneWidget);
       expect(find.textContaining('KZ'), findsOneWidget);
+      expect(find.text('Panfilov morning walk'), findsOneWidget);
+      expect(find.text('Coffee, park, and bazaar stops'), findsOneWidget);
+      expect(find.textContaining('3'), findsWidgets);
       expect(find.text('Stale text should not win'), findsNothing);
+    });
+
+    testWidgets('opens a route reference card from rendered document', (
+      tester,
+    ) async {
+      String? openedRouteId;
+      final document = StoryDocument(
+        blocks: [
+          StoryBlock.routeReference(
+            id: 'route-1',
+            route: const StoryRouteReference(
+              routeId: 'route-1',
+              title: 'Panfilov morning walk',
+              profile: 'pedestrian',
+              distanceMeters: 1800,
+              durationSeconds: 1320,
+              stopsCount: 3,
+              shareUrl: 'https://inflap.app/user-routes/route-1',
+            ),
+          ),
+        ],
+      );
+
+      await pumpRenderer(
+        tester,
+        StoryDocumentRenderer(
+          document: document,
+          onOpenRoute: (routeId) => openedRouteId = routeId,
+        ),
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey('story-document-route-route-1')),
+      );
+
+      expect(openedRouteId, 'route-1');
     });
 
     testWidgets('renders editor preview from structured document', (
@@ -209,6 +262,10 @@ void main() {
           StoryBlock.placeReference(
             id: 'empty-place',
             place: const StoryPlaceReference(name: ''),
+          ),
+          StoryBlock.routeReference(
+            id: 'empty-route',
+            route: const StoryRouteReference(routeId: '', title: ''),
           ),
           StoryBlock.paragraph(id: 'visible', text: 'Still visible'),
         ],

@@ -86,6 +86,16 @@
   "serviceTravelChecklist": "Сапар чек-листі",
   "travelChecklistTitle": "Сапарға дайындық",
   "travelChecklistSubtitle": "",
+  "travelChecklistOptimizeRouteTitle": "Күн маршрутын оңтайландыру",
+  "travelChecklistOptimizeRouteSubtitle": "Күнді бастамас бұрын {count} аялдаманы жол уақыты бойынша реттейміз.",
+  "@travelChecklistOptimizeRouteSubtitle": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "travelChecklistOptimizeRouteButton": "Оңтайландыру",
+  "travelChecklistOptimizeRouteRetry": "Қайта есептеу",
+  "travelChecklistOptimizeFailed": "Маршрутты қазір оңтайландыру мүмкін болмады.",
   "travelChecklistCtaTitle": "Сапарға дайындалу",
   "travelChecklistCtaSubtitle": "Дайындық, маусым және багаж ережелері",
   "travelChecklistOpen": "Чек-листі ашу",
@@ -540,6 +550,8 @@
   "profileConnectionsFriendRequestsEmptyTitle": "Сұраулар жоқ",
   "profileConnectionsFriendRequestsEmptySubtitle": "Жаңа кіріс достық сұраулары осы жерде көрсетіледі.",
   "profileJourneyTitle": "Менің жолым",
+  "profileUserRoutesTitle": "Менің маршруттарым",
+  "profileUserRoutesSubtitle": "Сақталған серуендер, қала жоспарлары және саяхатшылар маршруттары",
   "profileSavedItemsTitle": "Сақталғандар",
   "profileSavedItemsSubtitle": "Сақталған белсенділіктер, орындар мен жинақтар кейінірек осында пайда болады.",
   "profileBookingsTitle": "Менің броньдарым",
@@ -723,6 +735,7 @@
   "locationServicesDisabled": "Құрылғыда геолокация қызметтері өшірілген",
   "locationPermissionDenied": "Геолокацияға рұқсат берілмеген",
   "locationPermissionDeniedForever": "Геолокацияға қолжетімсіз. Құрылғы баптауларында рұқсат беріңіз",
+  "locationDetectionTimedOut": "Геолокацияңызды жылдам анықтау мүмкін болмады. Қайталап көріңіз немесе картаны ашыңыз.",
   "cancelButton": "Бас тарту",
   "useButton": "Қолдану",
   "activitiesTitle": "Белсенділіктер",
@@ -999,6 +1012,13 @@
   "feedNavLabel": "Лента",
   "homeNavQr": "QR",
   "homeNavMap": "Карта",
+  "mapAttributionSheetTitle": "Карта дереккөздері",
+  "mapAttributionSheetSubtitle": "Inflap ашық карта деректері негізінде жасалған карта тайлдарын көрсетеді. Атрибуция мен лицензия мәліметтері төменде берілген.",
+  "mapAttributionStyleLabel": "Карта стилі",
+  "mapAttributionTilesLabel": "Тайлдар және схема",
+  "mapAttributionDataLabel": "Карта деректері",
+  "mapAttributionLicenseLabel": "Лицензия",
+  "mapAttributionOpenLink": "Мәліметтерді ашу",
   "homeNavChats": "Чаттар",
   "homeNavMy": "Менің",
   "feedTitle": "Лента",
@@ -1294,6 +1314,136 @@
     }
   },
   "mapTapActivityHint": "Қысқаша ақпаратты көріп, мәліметтерін ашу үшін белсенділік маркерін басыңыз.",
+  "mapExternalOpenFailed": "Маршрутты сыртқы карта қолданбасында ашу мүмкін болмады.",
+  "routeSummaryTitle": "Жол уақыты",
+  "routeSummaryDuration": "Уақыт",
+  "routeSummaryDistance": "Қашықтық",
+  "routeDurationMinutesShort": "{minutes} мин",
+  "@routeDurationMinutesShort": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "routeDistanceMetersShort": "{meters} м",
+  "@routeDistanceMetersShort": {
+    "placeholders": {
+      "meters": {
+        "type": "int"
+      }
+    }
+  },
+  "routeDistanceKilometersShort": "{kilometers} км",
+  "@routeDistanceKilometersShort": {
+    "placeholders": {
+      "kilometers": {
+        "type": "String"
+      }
+    }
+  },
+  "routeTravelTimeDistanceShort": "{duration} · {distance}",
+  "@routeTravelTimeDistanceShort": {
+    "placeholders": {
+      "duration": {},
+      "distance": {}
+    }
+  },
+  "routeStopSemantic": "Маршрут нүктесі {order}",
+  "@routeStopSemantic": {
+    "placeholders": {
+      "order": {
+        "type": "int"
+      }
+    }
+  },
+  "userRoutesSaveRoute": "Маршрутты сақтау",
+  "userRoutesRouteSaved": "Сақталды",
+  "userRoutesSaveSuccess": "Маршрут сақталды",
+  "userRoutesSaveFailed": "Маршрутты сақтау мүмкін болмады",
+  "userRoutesDefaultTitle": "Сақталған маршрут",
+  "userRoutesDefaultTitleTo": "{destination} бағыты",
+  "@userRoutesDefaultTitleTo": {
+    "placeholders": {
+      "destination": {}
+    }
+  },
+  "mapRouteBuilderTitle": "Маршрут құру",
+  "mapRouteBuilderHint": "Аялдамаларды ретімен қосу үшін картаны басыңыз.",
+  "mapRouteBuilderBuildRoute": "Маршрут құру",
+  "mapRouteBuilderMinPoints": "Маршрут құру үшін кемінде екі нүкте қосыңыз.",
+  "mapRouteBuilderClear": "Тазалау",
+  "mapRouteBuilderRemoveLast": "Соңғысын өшіру",
+  "mapRouteBuilderPointName": "{order}-нүкте",
+  "@mapRouteBuilderPointName": {
+    "placeholders": {
+      "order": {
+        "type": "int"
+      }
+    }
+  },
+  "userRoutesTitle": "Маршруттар",
+  "userRoutesPublicTab": "Ашық",
+  "userRoutesMineTab": "Менің",
+  "userRoutesSavedTab": "Сақталған",
+  "userRoutesPublicEmptyTitle": "Әзірге ашық маршруттар жоқ",
+  "userRoutesPublicEmptySubtitle": "Саяхатшылар бөліскен серуендер мен қала жоспарлары осында шығады.",
+  "userRoutesMineEmptyTitle": "Әзірге маршрут жоқ",
+  "userRoutesMineEmptySubtitle": "Картада маршрут құрып, өз коллекцияңызға сақтаңыз.",
+  "userRoutesSavedEmptyTitle": "Сақталған маршрут жоқ",
+  "userRoutesSavedEmptySubtitle": "Басқа саяхатшылардың маршруттарын белгілеп, оларды осы жерден тез табыңыз.",
+  "userRoutesLoginRequiredTitle": "Маршруттарыңызды пайдалану үшін кіріңіз",
+  "userRoutesLoginRequiredSubtitle": "Жеке және сақталған маршруттар Inflap аккаунтыңызға байланысады.",
+  "userRoutesLoginRequiredButton": "Кіру",
+  "userRoutesStopsCount": "{count} аялдама",
+  "@userRoutesStopsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "userRoutesVisibilityPrivate": "Жеке",
+  "userRoutesVisibilityUnlisted": "Сілтеме арқылы",
+  "userRoutesVisibilityPublic": "Ашық",
+  "userRoutesOpenOnMap": "Картада ашу",
+  "userRoutesCopyRoute": "Маршрутты көшіру",
+  "userRoutesCopied": "Маршрут сіздің маршруттарыңызға көшірілді",
+  "userRoutesEditRoute": "Маршрутты өңдеу",
+  "userRoutesEditTitleLabel": "Маршрут атауы",
+  "userRoutesEditDescriptionLabel": "Сипаттама",
+  "userRoutesEditVisibilityLabel": "Қолжетімділік",
+  "userRoutesEditSave": "Өзгерістерді сақтау",
+  "userRoutesUpdateSuccess": "Маршрут жаңартылды",
+  "userRoutesUpdateFailed": "Маршрутты жаңарту мүмкін болмады",
+  "userRoutesShareRoute": "Маршрутпен бөлісу",
+  "userRoutesShareCopied": "Маршрут сілтемесі көшірілді",
+  "userRoutesEditStops": "Нүктелерді өңдеу",
+  "userRoutesEditStopsHint": "Нүктелердің ретін немесе атауын өзгертіңіз. Inflap сақтамас бұрын маршрутты қайта есептейді.",
+  "userRoutesEditStopNameLabel": "Нүкте атауы",
+  "userRoutesEditStopNoteLabel": "Ескертпе",
+  "userRoutesMoveStopUp": "Жоғары жылжыту",
+  "userRoutesMoveStopDown": "Төмен жылжыту",
+  "userRoutesRebuildAndSave": "Қайта есептеп сақтау",
+  "userRoutesEditPointsMinStops": "Маршрутта кемінде екі нүкте болуы керек.",
+  "userRoutesRebuildFailed": "Маршрутты қайта есептеу мүмкін болмады",
+  "userRoutesStopsUpdateSuccess": "Маршрут нүктелері жаңартылды",
+  "userRoutesUnsaveRoute": "Сақталғандардан алып тастау",
+  "userRoutesStopsTitle": "Аялдамалар",
+  "routeProfileTouristWalk": "Туристік серуен",
+  "routeProfileFastWalk": "Жылдам серуен",
+  "routeProfileBikeCity": "Қалалық веломаршрут",
+  "routeProfileCarStandard": "Автомаршрут",
+  "routeProfileGuideRoute": "Гид маршруты",
+  "routeProfileDayPlan": "Күндік жоспар",
+  "routeProfileTransit": "Қоғамдық көлік",
+  "routeProfileTouristWalkShort": "Жаяу",
+  "routeProfileFastWalkShort": "Жылдам",
+  "routeProfileBikeCityShort": "Вело",
+  "routeProfileCarStandardShort": "Авто",
+  "routeProfileGuideRouteShort": "Гид",
+  "routeProfileDayPlanShort": "Күн",
+  "routeProfileTransitShort": "Көлік",
   "placesTitle": "Орындар",
   "placesSearchHint": "Қайда барамыз?",
   "placesLoadFailed": "Орындарды жүктеу сәтсіз аяқталды",
@@ -2393,6 +2543,24 @@
   "activityUnlimitedSpots": "Шектеусіз",
   "activityMeetingPoint": "Кездесу орны",
   "activityGetDirections": "Жол көрсету",
+  "activityReachabilityTitle": "Үлгеремін бе?",
+  "activityReachabilitySubtitle": "Жолға шықпас бұрын ағымдағы орныңыздан жаяу ETA тексеріңіз.",
+  "activityReachabilityCheckButton": "ETA тексеру",
+  "activityReachabilityRetryButton": "Қайталау",
+  "activityReachabilityOnTime": "Үлгересіз",
+  "activityReachabilityLate": "Кешігу қаупі",
+  "activityReachabilityArriveBeforeStart": "Басталуына шамамен {minutes} мин қалғанда жетесіз",
+  "@activityReachabilityArriveBeforeStart": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
+  "activityReachabilityArriveAfterStart": "Маршрут басталғаннан кейін шамамен {minutes} мин кешіктіреді",
+  "@activityReachabilityArriveAfterStart": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
   "activityHostSection": "Ұйымдастырушы",
   "activityTotalCapacity": "Жалпы орын",
   "activityPricing": "Құны",
@@ -2768,10 +2936,16 @@
   "storyEditorBlockDividerDescription": "Бөлімдерді визуалды бөлу",
   "storyEditorBlockPlaceReference": "Орын сілтемесі",
   "storyEditorBlockPlaceReferenceDescription": "Орынды хикаямен байланыстыру",
+  "storyEditorBlockRouteReference": "Бағыт",
+  "storyEditorBlockRouteReferenceDescription": "Постта өз бағытыңызбен бөлісу",
   "storyEditorBlockNumberedList": "Нөмірленген тізім",
   "storyEditorStartWithBlockTitle": "Блоктан бастаңыз",
   "storyEditorStartWithBlockSubtitle": "Хикаяны құрастыру үшін мәтін, медиа, орындар, ескертулер немесе бөлгіштер қосыңыз.",
   "storyEditorPlaceNameHint": "Орын атауы",
+  "storyEditorRouteReferencePickerTitle": "Бағыт қосу",
+  "storyEditorRouteReferenceEmptyState": "Алдымен бағытты жариялаңыз немесе сілтеме арқылы қолжетімді етіңіз, содан кейін оны постқа қосыңыз.",
+  "storyEditorRouteReferenceLoadError": "Бағыттарыңызды жүктеу мүмкін болмады.",
+  "storyEditorRouteReferenceEmpty": "Бағыт таңдалмаған",
   "storyEditorTextHintHeading": "Түсінікті бөлім тақырыбын жазыңыз",
   "storyEditorTextHintBulletedList": "Тізім тармақтарын әр жолға бірден қосыңыз",
   "storyEditorTextHintNumberedList": "Қадамдарды әр жолға бірден қосыңыз",

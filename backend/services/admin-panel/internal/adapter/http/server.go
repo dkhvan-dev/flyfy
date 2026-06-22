@@ -25,6 +25,7 @@ type Server struct {
 	auth         *app.AuthUseCase
 	staff        *app.StaffUseCase
 	moderation   *app.ModerationUseCase
+	userRoutes   *app.UserRouteModerationUseCase
 	users        *app.UserModerationUseCase
 	trustAppeals *app.TrustAppealUseCase
 	audit        *app.AuditUseCase
@@ -73,6 +74,10 @@ func (s *Server) SetCommunityAdminUseCase(useCase *app.CommunityAdminUseCase) {
 
 func (s *Server) SetOperationsUseCase(useCase *app.OperationsUseCase) {
 	s.operations = useCase
+}
+
+func (s *Server) SetUserRouteModerationUseCase(useCase *app.UserRouteModerationUseCase) {
+	s.userRoutes = useCase
 }
 
 func (s *Server) Handler() http.Handler {
@@ -132,6 +137,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /admin/moderation/posts/sync", s.SyncPostReportQueue)
 	mux.HandleFunc("POST /admin/moderation/posts/{caseID}/approve", s.ApprovePostReport)
 	mux.HandleFunc("POST /admin/moderation/posts/{caseID}/reject", s.RejectPostReport)
+	mux.HandleFunc("GET /admin/moderation/user-routes", s.UserRouteQueue)
+	mux.HandleFunc("POST /admin/moderation/user-routes/{routeID}/approve", s.ApproveUserRoute)
+	mux.HandleFunc("POST /admin/moderation/user-routes/{routeID}/reject", s.RejectUserRoute)
+	mux.HandleFunc("POST /admin/moderation/user-routes/{routeID}/hide", s.HideUserRoute)
 	mux.HandleFunc("GET /admin/moderation/guides", s.GuideApplicationQueue)
 	mux.HandleFunc("GET /admin/moderation/guides/fraud-blocks", s.GuideFraudBlocks)
 	mux.HandleFunc("POST /admin/moderation/guides/fraud-blocks/{assessmentID}/confirm", s.ConfirmGuideFraudBlock)

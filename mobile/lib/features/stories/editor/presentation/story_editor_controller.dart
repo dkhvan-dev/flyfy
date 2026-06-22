@@ -2591,6 +2591,10 @@ StoryBlock _blockFromJson(Map<String, dynamic> json) {
       id: id,
       place: _placeFromJson(json['place'] ?? json),
     ),
+    'route_reference' => StoryBlock.routeReference(
+      id: id,
+      route: _routeFromJson(json['route'] ?? json),
+    ),
     _ => StoryBlock.paragraph(id: id, text: text, marks: marks),
   };
 }
@@ -2664,6 +2668,24 @@ StoryPlaceReference _placeFromJson(Object? raw) {
     ),
     latitude: double.tryParse(json['latitude']?.toString() ?? ''),
     longitude: double.tryParse(json['longitude']?.toString() ?? ''),
+  );
+}
+
+StoryRouteReference _routeFromJson(Object? raw) {
+  final json = raw is Map ? raw : const <String, Object?>{};
+  return StoryRouteReference(
+    routeId: json['routeId']?.toString() ?? '',
+    title: json['title']?.toString() ?? json['routeTitle']?.toString() ?? '',
+    description: _normalizeNullable(
+      json['description']?.toString() ?? json['routeDescription']?.toString(),
+    ),
+    profile: _normalizeNullable(
+      json['profile']?.toString() ?? json['routeProfile']?.toString(),
+    ),
+    distanceMeters: int.tryParse(json['distanceMeters']?.toString() ?? ''),
+    durationSeconds: int.tryParse(json['durationSeconds']?.toString() ?? ''),
+    stopsCount: int.tryParse(json['stopsCount']?.toString() ?? ''),
+    shareUrl: _normalizeNullable(json['shareUrl']?.toString()),
   );
 }
 
@@ -2807,6 +2829,10 @@ bool _hasDraftSaveableContent(StoryDocument document) {
     }
     if (block.type == StoryBlockType.placeReference &&
         (block.place?.isMeaningful ?? false)) {
+      return true;
+    }
+    if (block.type == StoryBlockType.routeReference &&
+        (block.route?.isMeaningful ?? false)) {
       return true;
     }
   }

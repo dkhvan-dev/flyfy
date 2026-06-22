@@ -45,6 +45,30 @@ void main() {
         tags: ['Old town', 'History'],
         countryCode: 'TR',
         cityName: 'Istanbul',
+        itinerary: [
+          ExcursionItineraryItemVm(
+            id: 'stop-1',
+            sortOrder: 0,
+            startOffsetMinutes: 0,
+            durationMinutes: 45,
+            title: 'Galata',
+            description: 'Start here',
+            placeName: 'Galata Tower',
+            latitude: 41.0256,
+            longitude: 28.9742,
+          ),
+          ExcursionItineraryItemVm(
+            id: 'stop-2',
+            sortOrder: 1,
+            startOffsetMinutes: 60,
+            durationMinutes: 45,
+            title: 'Pier',
+            description: 'Continue here',
+            placeName: 'Karakoy Pier',
+            latitude: 41.0221,
+            longitude: 28.9784,
+          ),
+        ],
       ),
     );
 
@@ -65,6 +89,9 @@ void main() {
       'old_town',
       'city_walk',
     ]);
+    expect(args.routeStops, hasLength(2));
+    expect(args.routeStops.first.name, 'Galata Tower');
+    expect(args.routeStops.first.latitude, 41.0256);
   });
 
   test('builds read-only preview checklist context from excursion details', () {
@@ -85,6 +112,19 @@ void main() {
         tags: ['Old town', 'History'],
         countryCode: 'TR',
         cityName: 'Istanbul',
+        itinerary: [
+          ExcursionItineraryItemVm(
+            id: 'stop-1',
+            sortOrder: 0,
+            startOffsetMinutes: 0,
+            durationMinutes: 45,
+            title: 'Galata',
+            description: 'Start here',
+            placeName: 'Galata Tower',
+            latitude: 41.0256,
+            longitude: 28.9742,
+          ),
+        ],
       ),
       selectedOffer: const ExcursionOfferVm(
         id: 'offer-1',
@@ -98,6 +138,19 @@ void main() {
         meetingPoint: 'Pier',
         priceAmount: 30000,
         currency: 'KZT',
+        itinerary: [
+          ExcursionItineraryItemVm(
+            id: 'offer-stop-1',
+            sortOrder: 0,
+            startOffsetMinutes: 0,
+            durationMinutes: 45,
+            title: 'Pier',
+            description: 'Start at the pier',
+            placeName: 'Karakoy Pier',
+            latitude: 41.0221,
+            longitude: 28.9784,
+          ),
+        ],
       ),
       now: DateTime.utc(2026, 6, 21, 8),
     );
@@ -119,9 +172,11 @@ void main() {
       'walking',
       'old_town',
     ]);
+    expect(args.routeStops, hasLength(1));
+    expect(args.routeStops.single.name, 'Karakoy Pier');
   });
 
-  test('preserves localized country name for checklist UI only', () {
+  test('preserves localized country name and route stops for checklist UI', () {
     final args = TravelChecklistRouteArgs(
       tripId: 'quick-prep:tr:istanbul:2026-07-10',
       destination: const TripChecklistDestinationRequest(
@@ -132,12 +187,20 @@ void main() {
       destinationCountryName: 'Турция',
       startAt: DateTime.utc(2026, 7, 10, 9),
       endAt: DateTime.utc(2026, 7, 17, 18),
+      routeStops: const [
+        TravelChecklistRouteStop(
+          latitude: 41.0256,
+          longitude: 28.9742,
+          name: 'Galata Tower',
+        ),
+      ],
     );
 
     final restored = TravelChecklistRouteArgs.fromJson(args.toJson());
     final request = restored.toRequest(preferredLanguage: 'ru');
 
     expect(restored.destinationCountryName, 'Турция');
+    expect(restored.routeStops.single.name, 'Galata Tower');
     expect(request.destination.countryCode, 'TR');
     expect(request.destination.cityName, 'Стамбул');
   });

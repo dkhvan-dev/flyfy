@@ -257,6 +257,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get travelChecklistSubtitle => '';
 
   @override
+  String get travelChecklistOptimizeRouteTitle => 'Optimize day route';
+
+  @override
+  String travelChecklistOptimizeRouteSubtitle(Object count) {
+    return 'Order $count stops by route time before you start the day.';
+  }
+
+  @override
+  String get travelChecklistOptimizeRouteButton => 'Optimize';
+
+  @override
+  String get travelChecklistOptimizeRouteRetry => 'Recalculate';
+
+  @override
+  String get travelChecklistOptimizeFailed =>
+      'Could not optimize the route right now.';
+
+  @override
   String get travelChecklistCtaTitle => 'Prepare for this trip';
 
   @override
@@ -1497,6 +1515,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileJourneyTitle => 'My journey';
 
   @override
+  String get profileUserRoutesTitle => 'My routes';
+
+  @override
+  String get profileUserRoutesSubtitle =>
+      'Saved walks, city plans and routes shared by travelers';
+
+  @override
   String get profileSavedItemsTitle => 'Saved items';
 
   @override
@@ -2039,6 +2064,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get locationPermissionDeniedForever =>
       'Location access is blocked. Please enable it in device settings';
+
+  @override
+  String get locationDetectionTimedOut =>
+      'Could not determine your location quickly. Try again or open the map.';
 
   @override
   String get cancelButton => 'Cancel';
@@ -2789,6 +2818,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeNavMap => 'Map';
+
+  @override
+  String get mapAttributionSheetTitle => 'Map data sources';
+
+  @override
+  String get mapAttributionSheetSubtitle =>
+      'Inflap shows map tiles built from open map data. Attribution and license details are available below.';
+
+  @override
+  String get mapAttributionStyleLabel => 'Map style';
+
+  @override
+  String get mapAttributionTilesLabel => 'Tiles and schema';
+
+  @override
+  String get mapAttributionDataLabel => 'Map data';
+
+  @override
+  String get mapAttributionLicenseLabel => 'License';
+
+  @override
+  String get mapAttributionOpenLink => 'Open details';
 
   @override
   String get homeNavChats => 'Chats';
@@ -3569,6 +3620,261 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get mapTapActivityHint =>
       'Tap an activity marker to preview it and open details.';
+
+  @override
+  String get mapExternalOpenFailed =>
+      'Could not open the route in an external map app.';
+
+  @override
+  String get routeSummaryTitle => 'Travel time';
+
+  @override
+  String get routeSummaryDuration => 'Time';
+
+  @override
+  String get routeSummaryDistance => 'Distance';
+
+  @override
+  String routeDurationMinutesShort(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String routeDistanceMetersShort(int meters) {
+    return '$meters m';
+  }
+
+  @override
+  String routeDistanceKilometersShort(String kilometers) {
+    return '$kilometers km';
+  }
+
+  @override
+  String routeTravelTimeDistanceShort(Object duration, Object distance) {
+    return '$duration · $distance';
+  }
+
+  @override
+  String routeStopSemantic(int order) {
+    return 'Route stop $order';
+  }
+
+  @override
+  String get userRoutesSaveRoute => 'Save route';
+
+  @override
+  String get userRoutesRouteSaved => 'Saved';
+
+  @override
+  String get userRoutesSaveSuccess => 'Route saved';
+
+  @override
+  String get userRoutesSaveFailed => 'Could not save route';
+
+  @override
+  String get userRoutesDefaultTitle => 'Saved route';
+
+  @override
+  String userRoutesDefaultTitleTo(Object destination) {
+    return 'Route to $destination';
+  }
+
+  @override
+  String get mapRouteBuilderTitle => 'Create route';
+
+  @override
+  String get mapRouteBuilderHint => 'Tap the map to add stops in order.';
+
+  @override
+  String get mapRouteBuilderBuildRoute => 'Build route';
+
+  @override
+  String get mapRouteBuilderMinPoints =>
+      'Add at least two points to build a route.';
+
+  @override
+  String get mapRouteBuilderClear => 'Clear';
+
+  @override
+  String get mapRouteBuilderRemoveLast => 'Remove last';
+
+  @override
+  String mapRouteBuilderPointName(int order) {
+    return 'Point $order';
+  }
+
+  @override
+  String get userRoutesTitle => 'Routes';
+
+  @override
+  String get userRoutesPublicTab => 'Public';
+
+  @override
+  String get userRoutesMineTab => 'Mine';
+
+  @override
+  String get userRoutesSavedTab => 'Saved';
+
+  @override
+  String get userRoutesPublicEmptyTitle => 'No public routes yet';
+
+  @override
+  String get userRoutesPublicEmptySubtitle =>
+      'Saved public walks and city plans will appear here.';
+
+  @override
+  String get userRoutesMineEmptyTitle => 'No routes yet';
+
+  @override
+  String get userRoutesMineEmptySubtitle =>
+      'Build a route on the map and save it to keep your own collection.';
+
+  @override
+  String get userRoutesSavedEmptyTitle => 'No saved routes';
+
+  @override
+  String get userRoutesSavedEmptySubtitle =>
+      'Bookmark routes from other travelers to find them here.';
+
+  @override
+  String get userRoutesLoginRequiredTitle => 'Sign in to use your routes';
+
+  @override
+  String get userRoutesLoginRequiredSubtitle =>
+      'Your private and saved routes are linked to your Inflap account.';
+
+  @override
+  String get userRoutesLoginRequiredButton => 'Sign in';
+
+  @override
+  String userRoutesStopsCount(int count) {
+    return '$count stops';
+  }
+
+  @override
+  String get userRoutesVisibilityPrivate => 'Private';
+
+  @override
+  String get userRoutesVisibilityUnlisted => 'Link only';
+
+  @override
+  String get userRoutesVisibilityPublic => 'Public';
+
+  @override
+  String get userRoutesOpenOnMap => 'Open on map';
+
+  @override
+  String get userRoutesCopyRoute => 'Copy route';
+
+  @override
+  String get userRoutesCopied => 'Route copied to your routes';
+
+  @override
+  String get userRoutesEditRoute => 'Edit route';
+
+  @override
+  String get userRoutesEditTitleLabel => 'Route title';
+
+  @override
+  String get userRoutesEditDescriptionLabel => 'Description';
+
+  @override
+  String get userRoutesEditVisibilityLabel => 'Visibility';
+
+  @override
+  String get userRoutesEditSave => 'Save changes';
+
+  @override
+  String get userRoutesUpdateSuccess => 'Route updated';
+
+  @override
+  String get userRoutesUpdateFailed => 'Could not update route';
+
+  @override
+  String get userRoutesShareRoute => 'Share route';
+
+  @override
+  String get userRoutesShareCopied => 'Route link copied';
+
+  @override
+  String get userRoutesEditStops => 'Edit stops';
+
+  @override
+  String get userRoutesEditStopsHint =>
+      'Reorder stops or rename them. Inflap will rebuild the route before saving.';
+
+  @override
+  String get userRoutesEditStopNameLabel => 'Stop name';
+
+  @override
+  String get userRoutesEditStopNoteLabel => 'Note';
+
+  @override
+  String get userRoutesMoveStopUp => 'Move up';
+
+  @override
+  String get userRoutesMoveStopDown => 'Move down';
+
+  @override
+  String get userRoutesRebuildAndSave => 'Rebuild and save';
+
+  @override
+  String get userRoutesEditPointsMinStops =>
+      'Keep at least two stops in the route.';
+
+  @override
+  String get userRoutesRebuildFailed => 'Could not rebuild route';
+
+  @override
+  String get userRoutesStopsUpdateSuccess => 'Route stops updated';
+
+  @override
+  String get userRoutesUnsaveRoute => 'Remove from saved';
+
+  @override
+  String get userRoutesStopsTitle => 'Stops';
+
+  @override
+  String get routeProfileTouristWalk => 'Tourist walk';
+
+  @override
+  String get routeProfileFastWalk => 'Fast walk';
+
+  @override
+  String get routeProfileBikeCity => 'City bike';
+
+  @override
+  String get routeProfileCarStandard => 'Car route';
+
+  @override
+  String get routeProfileGuideRoute => 'Guide route';
+
+  @override
+  String get routeProfileDayPlan => 'Day plan';
+
+  @override
+  String get routeProfileTransit => 'Public transport';
+
+  @override
+  String get routeProfileTouristWalkShort => 'Walk';
+
+  @override
+  String get routeProfileFastWalkShort => 'Fast';
+
+  @override
+  String get routeProfileBikeCityShort => 'Bike';
+
+  @override
+  String get routeProfileCarStandardShort => 'Car';
+
+  @override
+  String get routeProfileGuideRouteShort => 'Guide';
+
+  @override
+  String get routeProfileDayPlanShort => 'Day';
+
+  @override
+  String get routeProfileTransitShort => 'Transit';
 
   @override
   String get placesTitle => 'Discover places';
@@ -6340,6 +6646,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityGetDirections => 'Get Directions';
 
   @override
+  String get activityReachabilityTitle => 'Can I make it?';
+
+  @override
+  String get activityReachabilitySubtitle =>
+      'Check walking ETA from your current location before you head out.';
+
+  @override
+  String get activityReachabilityCheckButton => 'Check ETA';
+
+  @override
+  String get activityReachabilityRetryButton => 'Retry';
+
+  @override
+  String get activityReachabilityOnTime => 'On time';
+
+  @override
+  String get activityReachabilityLate => 'Late risk';
+
+  @override
+  String activityReachabilityArriveBeforeStart(Object minutes) {
+    return 'Arrive about $minutes min before start';
+  }
+
+  @override
+  String activityReachabilityArriveAfterStart(Object minutes) {
+    return 'Route arrives about $minutes min after start';
+  }
+
+  @override
   String get activityHostSection => 'Host';
 
   @override
@@ -7414,6 +7749,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Link a place to the story';
 
   @override
+  String get storyEditorBlockRouteReference => 'Route';
+
+  @override
+  String get storyEditorBlockRouteReferenceDescription =>
+      'Share one of your routes in the post';
+
+  @override
   String get storyEditorBlockNumberedList => 'Numbered list';
 
   @override
@@ -7425,6 +7767,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storyEditorPlaceNameHint => 'Place name';
+
+  @override
+  String get storyEditorRouteReferencePickerTitle => 'Add route';
+
+  @override
+  String get storyEditorRouteReferenceEmptyState =>
+      'Publish or unlist a route first, then add it to a post.';
+
+  @override
+  String get storyEditorRouteReferenceLoadError =>
+      'Could not load your routes.';
+
+  @override
+  String get storyEditorRouteReferenceEmpty => 'Route is not selected';
 
   @override
   String get storyEditorTextHintHeading => 'Write a clear section heading';

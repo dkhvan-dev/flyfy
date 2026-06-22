@@ -606,6 +606,50 @@ services:
       - inflap-network
 
   # ============================================
+  # User Route Service PostgreSQL
+  # ============================================
+  user-route-postgres:
+    image: postgres:17-alpine
+    container_name: user-route-postgres
+    environment:
+      POSTGRES_DB: user_route_service_db
+      POSTGRES_USER: user_route_service
+      POSTGRES_PASSWORD: user_route_secret_dev
+    ports:
+      - "5453:5432"
+    volumes:
+      - user_route_postgres_data:/var/lib/postgresql/data
+      - ../backend/services/user-route-service/migrations:/migrations/user-route-service:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user_route_service -d user_route_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - inflap-network
+
+  user-route-postgres-migrator:
+    image: postgres:17-alpine
+    container_name: user-route-postgres-migrator
+    environment:
+      PGHOST: user-route-postgres
+      PGPORT: 5432
+      POSTGRES_DB: user_route_service_db
+      POSTGRES_USER: user_route_service
+      POSTGRES_PASSWORD: user_route_secret_dev
+    volumes:
+      - ./init-scripts/021_user_route_service_migrate.sh:/usr/local/bin/021_user_route_service_migrate.sh:ro
+      - ../backend/services/user-route-service/migrations:/migrations/user-route-service:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/021_user_route_service_migrate.sh"]
+    depends_on:
+      user-route-postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - inflap-network
+
+  # ============================================
   # NATS
   # ============================================
   nats:
@@ -1230,6 +1274,8 @@ services:
         condition: service_started
       feed-service:
         condition: service_started
+      user-route-service:
+        condition: service_healthy
       anti-fraud-service:
         condition: service_started
       trust-service:
@@ -1257,6 +1303,8 @@ services:
       ACTIVITY_SERVICE_URL: http://activity-service:8086
       GUIDE_SERVICE_URL: http://guide-service:8085
       FEED_SERVICE_URL: http://feed-service:8087
+      USER_ROUTE_SERVICE_HTTP_URL: http://user-route-service:8096
+      USER_ROUTE_SERVICE_REQUEST_TIMEOUT: 3s
       CHAT_SERVICE_URL: http://chat-service:8088
       TRUST_SERVICE_GRPC_TARGET: dns:///trust-service:9096
       TRUST_SERVICE_TIMEOUT: 3s
@@ -1299,6 +1347,8 @@ services:
         condition: service_started
       activity-service:
         condition: service_started
+      user-route-service:
+        condition: service_healthy
       switches-service:
         condition: service_healthy
     ports:
@@ -1333,6 +1383,8 @@ services:
       USER_SERVICE_GRPC_TARGET: dns:///user-service:9094
       ACTIVITY_SERVICE_HTTP_URL: http://activity-service:8086
       ACTIVITY_SERVICE_REQUEST_TIMEOUT: 5s
+      USER_ROUTE_SERVICE_HTTP_URL: http://user-route-service:8096
+      USER_ROUTE_SERVICE_REQUEST_TIMEOUT: 3s
       SWITCHES_SERVICE_URL: http://switches-service:8096
       SWITCHES_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       SWITCHES_SERVICE_TIMEOUT: 800ms
@@ -2151,6 +2203,142 @@ services:
       - inflap-network
 
   # ============================================
+  # User Route Service
+  # ============================================
+  user-route-service:
+    build:
+      context: ..
+      dockerfile: ./backend/services/user-route-service/Dockerfile
+    container_name: user-route-service
+    depends_on:
+      user-route-postgres-migrator:
+        condition: service_completed_successfully
+    ports:
+      - "8106:8096"
+    environment:
+      APP_NAME: user-route-service
+      APP_ENV: development
+
+      HTTP_PORT: 8096
+      HTTP_READ_TIMEOUT: 10s
+      HTTP_WRITE_TIMEOUT: 10s
+      HTTP_IDLE_TIMEOUT: 60s
+
+      POSTGRES_HOST: user-route-postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: user_route_service_db
+      POSTGRES_USER: user_route_service
+      POSTGRES_PASSWORD: user_route_secret_dev
+      POSTGRES_SSLMODE: disable
+      POSTGRES_MAX_CONNS: 10
+      POSTGRES_MIN_CONNS: 2
+      POSTGRES_MAX_CONN_IDLE_TIME: 5m
+      POSTGRES_MAX_CONN_LIFETIME: 1h
+
+      LOG_LEVEL: info
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8096/health >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - inflap-network
+
+  # ============================================
+  # Routing Service
+  # ============================================
+  valhalla:
+    image: ghcr.io/gis-ops/docker-valhalla/valhalla:latest
+    container_name: valhalla
+    profiles:
+      - routing-engines
+    entrypoint: ["/bin/sh"]
+    command: ["-lc", "valhalla_service /data/valhalla/valhalla.json 1"]
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./data/routing/${ROUTING_DATA_REGION:-kazakhstan}/valhalla:/data/valhalla:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8002/status >/dev/null || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - inflap-network
+
+  osrm:
+    image: osrm/osrm-backend:v5.25.0
+    container_name: osrm
+    profiles:
+      - routing-engines
+    command: ["osrm-routed", "--algorithm", "mld", "/data/extract.osrm"]
+    ports:
+      - "${OSRM_HOST_PORT:-5001}:5000"
+    volumes:
+      - ./data/routing/${ROUTING_DATA_REGION:-kazakhstan}/osrm:/data:ro
+    healthcheck:
+      test: ["CMD-SHELL", "bash -lc 'exec 3<>/dev/tcp/127.0.0.1/5000 && printf \"GET /route/v1/driving/76.889709,43.238949;76.912628,43.255058?overview=false HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n\" >&3 && head -n 1 <&3 | grep -q \" 200 \"'"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - inflap-network
+
+  routing-service:
+    build:
+      context: ..
+      dockerfile: ./backend/services/routing-service/Dockerfile
+    container_name: routing-service
+    ports:
+      - "8104:8094"
+    environment:
+      APP_NAME: routing-service
+      APP_ENV: development
+
+      HTTP_PORT: 8094
+      HTTP_READ_TIMEOUT: 10s
+      HTTP_WRITE_TIMEOUT: 20s
+      HTTP_IDLE_TIMEOUT: 60s
+
+      LOG_LEVEL: info
+
+      VALHALLA_URL: http://valhalla:8002
+      OSRM_URL: http://osrm:5000
+      OTP_URL: ""
+      ROUTING_ENGINE_TIMEOUT: 5s
+      ROUTING_ENABLE_OSRM: "true"
+      ROUTING_ENABLE_OTP: "false"
+      ROUTING_TRANSIT_ENABLED: "false"
+      ROUTING_TRANSIT_CITY_CODE: ""
+      ROUTING_TRANSIT_GTFS_VERSION: ""
+      REDIS_URL: redis://redis:6379/5
+      ROUTING_CACHE_KEY_PREFIX: "routing-service:cache:"
+      ROUTING_CACHE_TTL: 15m
+      ROUTING_DATA_REGION: "${ROUTING_DATA_REGION:-kazakhstan}"
+      ROUTING_OSM_SOURCE: "${ROUTING_OSM_SOURCE:-geofabrik:kazakhstan}"
+      ROUTING_OSM_DATA_VERSION: "${ROUTING_OSM_DATA_VERSION:-dev}"
+      ROUTING_DATA_GENERATED_AT: "${ROUTING_DATA_GENERATED_AT:-}"
+      ROUTING_ATTRIBUTION_REQUIRED: "${ROUTING_ATTRIBUTION_REQUIRED:-true}"
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8094/health >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - inflap-network
+
+  # ============================================
   # API Gateway
   # ============================================
   api-gateway:
@@ -2189,6 +2377,10 @@ services:
         condition: service_started
       place-service:
         condition: service_started
+      routing-service:
+        condition: service_healthy
+      user-route-service:
+        condition: service_healthy
       payment-service:
         condition: service_started
       redis:
@@ -2227,6 +2419,8 @@ services:
       CHECKLIST_SERVICE_HTTP_URL: http://checklist-service:8099
       CURRENCY_SERVICE_HTTP_URL: http://currency-service:8098
       PLACE_SERVICE_HTTP_URL: http://place-service:8090
+      ROUTING_SERVICE_HTTP_URL: http://routing-service:8094
+      USER_ROUTE_SERVICE_HTTP_URL: http://user-route-service:8096
       PAYMENT_SERVICE_HTTP_URL: http://payment-service:8091
       ADMIN_PANEL_SERVICE_HTTP_URL: http://admin-panel:8095
 
@@ -2273,6 +2467,7 @@ volumes:
   notification_postgres_data:
   switches_postgres_data:
   checklist_postgres_data:
+  user_route_postgres_data:
   nats_data:
   place_postgres_data:
   payment_postgres_data:

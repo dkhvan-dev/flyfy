@@ -417,6 +417,171 @@ func TestCurrencyRoutesProxyToCurrencyServicePublicly(t *testing.T) {
 	}
 }
 
+func TestRoutingRoutesProxyToRoutingService(t *testing.T) {
+	tests := map[string]struct {
+		method string
+		path   string
+	}{
+		"route preview": {
+			method: "POST",
+			path:   "/api/v1/routing/routes",
+		},
+		"eta": {
+			method: "POST",
+			path:   "/api/v1/routing/eta",
+		},
+		"matrix": {
+			method: "POST",
+			path:   "/api/v1/routing/matrix",
+		},
+		"isochrones": {
+			method: "POST",
+			path:   "/api/v1/routing/isochrones",
+		},
+		"route profiles": {
+			method: "GET",
+			path:   "/api/v1/routing/route-profiles",
+		},
+		"status": {
+			method: "GET",
+			path:   "/api/v1/routing/status",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			policy := matchRoutePolicyForMethod(tc.method, tc.path, "/api/v1")
+			if policy == nil {
+				t.Fatal("expected routing route policy")
+			}
+			if policy.Upstream != "routing" {
+				t.Fatalf("upstream = %q, want routing", policy.Upstream)
+			}
+			if policy.AuthMode != RouteAuthAuthenticated {
+				t.Fatalf("auth mode = %q, want authenticated", policy.AuthMode)
+			}
+			if policy.RewritePrefix != "/v1" {
+				t.Fatalf("rewrite prefix = %q, want /v1", policy.RewritePrefix)
+			}
+			assertRouteLimit(t, policy, 240)
+		})
+	}
+}
+
+func TestUserRouteRoutesProxyToUserRouteService(t *testing.T) {
+	publicTests := map[string]struct {
+		method string
+		path   string
+	}{
+		"public list": {
+			method: "GET",
+			path:   "/api/v1/user-routes",
+		},
+		"public detail": {
+			method: "GET",
+			path:   "/api/v1/user-routes/route-1",
+		},
+	}
+	for name, tc := range publicTests {
+		t.Run(name, func(t *testing.T) {
+			policy := matchRoutePolicyForMethod(tc.method, tc.path, "/api/v1")
+			if policy == nil {
+				t.Fatal("expected user route policy")
+			}
+			if policy.Upstream != "user-route" {
+				t.Fatalf("upstream = %q, want user-route", policy.Upstream)
+			}
+			if policy.AuthMode != RouteAuthPublic {
+				t.Fatalf("auth mode = %q, want public", policy.AuthMode)
+			}
+			if policy.RewritePrefix != "/v1/user-routes" {
+				t.Fatalf("rewrite prefix = %q, want /v1/user-routes", policy.RewritePrefix)
+			}
+			assertRouteLimit(t, policy, 180)
+		})
+	}
+
+	authTests := map[string]struct {
+		method string
+		path   string
+	}{
+		"create": {
+			method: "POST",
+			path:   "/api/v1/user-routes",
+		},
+		"save": {
+			method: "POST",
+			path:   "/api/v1/user-routes/route-1/save",
+		},
+		"unsave": {
+			method: "DELETE",
+			path:   "/api/v1/user-routes/route-1/save",
+		},
+		"copy": {
+			method: "POST",
+			path:   "/api/v1/user-routes/route-1/copy",
+		},
+		"update": {
+			method: "PATCH",
+			path:   "/api/v1/user-routes/route-1",
+		},
+	}
+	for name, tc := range authTests {
+		t.Run(name, func(t *testing.T) {
+			policy := matchRoutePolicyForMethod(tc.method, tc.path, "/api/v1")
+			if policy == nil {
+				t.Fatal("expected user route policy")
+			}
+			if policy.Upstream != "user-route" {
+				t.Fatalf("upstream = %q, want user-route", policy.Upstream)
+			}
+			if policy.AuthMode != RouteAuthAuthenticated {
+				t.Fatalf("auth mode = %q, want authenticated", policy.AuthMode)
+			}
+			if policy.RewritePrefix != "/v1/user-routes" {
+				t.Fatalf("rewrite prefix = %q, want /v1/user-routes", policy.RewritePrefix)
+			}
+			assertRouteLimit(t, policy, 180)
+		})
+	}
+}
+
+func TestAdminUserRouteRoutesRequireModeratorRole(t *testing.T) {
+	tests := map[string]struct {
+		method string
+		path   string
+	}{
+		"list": {
+			method: "GET",
+			path:   "/api/v1/admin/user-routes",
+		},
+		"review": {
+			method: "POST",
+			path:   "/api/v1/admin/user-routes/route-1/review",
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			policy := matchRoutePolicyForMethod(tc.method, tc.path, "/api/v1")
+			if policy == nil {
+				t.Fatal("expected admin user route policy")
+			}
+			if policy.Upstream != "user-route" {
+				t.Fatalf("upstream = %q, want user-route", policy.Upstream)
+			}
+			if policy.AuthMode != RouteAuthRoleBased {
+				t.Fatalf("auth mode = %q, want role based", policy.AuthMode)
+			}
+			if policy.RewritePrefix != "/v1/admin/user-routes" {
+				t.Fatalf("rewrite prefix = %q, want /v1/admin/user-routes", policy.RewritePrefix)
+			}
+			if len(policy.RequiredRoles) != 2 || policy.RequiredRoles[0] != "ADMIN" || policy.RequiredRoles[1] != "MODERATOR" {
+				t.Fatalf("required roles = %#v, want ADMIN/MODERATOR", policy.RequiredRoles)
+			}
+		})
+	}
+}
+
 func TestExcursionRoutesProxyToExcursionService(t *testing.T) {
 	publicPolicy := matchRoutePolicy("/api/v1/excursions/123", "/api/v1")
 	if publicPolicy == nil {

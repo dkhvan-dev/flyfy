@@ -1,0 +1,107 @@
+{{define "user_routes/index"}}
+{{template "pageStart" .}}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "userRoute.eyebrow"}}</p>
+      <h1>{{t .Locale "userRoute.title"}}</h1>
+    </div>
+  </div>
+
+  <form class="filter-bar" method="get" action="{{.Data.FilterAction}}">
+    <div class="filter-grid">
+      <label>
+        <span>{{t .Locale "field.status"}}</span>
+        <select name="status">
+          {{range .Data.StatusOptions}}
+            <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{t $.Locale .LabelKey}}</option>
+          {{end}}
+        </select>
+      </label>
+      <label>
+        <span>{{t .Locale "userRoute.ownerUserId"}}</span>
+        <input type="search" name="ownerUserId" value="{{.Data.Filters.OwnerUserID}}" placeholder="{{t .Locale "userRoute.ownerPlaceholder"}}">
+      </label>
+      <label>
+        <span>{{t .Locale "field.city"}}</span>
+        <input type="search" name="cityCode" value="{{.Data.Filters.CityCode}}" placeholder="{{t .Locale "placeholder.city"}}">
+      </label>
+    </div>
+    <div class="filter-actions">
+      <button class="primary" type="submit">{{t .Locale "action.applyFilters"}}</button>
+      <a class="button" href="{{.Data.ResetURL}}">{{t .Locale "action.resetFilters"}}</a>
+    </div>
+  </form>
+
+  {{if .Data.Items}}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>{{t .Locale "userRoute.route"}}</th>
+            <th>{{t .Locale "userRoute.owner"}}</th>
+            <th>{{t .Locale "table.status"}}</th>
+            <th>{{t .Locale "userRoute.metrics"}}</th>
+            <th>{{t .Locale "userRoute.points"}}</th>
+            <th>{{t .Locale "table.opened"}}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .Data.Items}}
+            <tr>
+              <td>
+                <strong>{{.Item.Title}}</strong>
+                {{if .Item.Description}}<span class="muted block">{{.Item.Description}}</span>{{end}}
+                <span class="muted block"><code>{{shortID .Item.ID}}</code> · {{.Item.Visibility}} · {{.Item.CityCode}}</span>
+              </td>
+              <td><code>{{.Item.OwnerUserID}}</code></td>
+              <td>
+                <span class="{{.BadgeClass}}">{{t $.Locale (printf "userRoute.status.%s" .Item.ModerationStatus)}}</span>
+                {{if .Item.ModerationReason}}<span class="muted block">{{.Item.ModerationReason}}</span>{{end}}
+              </td>
+              <td>
+                <strong>{{.DistanceText}}</strong>
+                <span class="muted block">{{.DurationText}}</span>
+              </td>
+              <td>{{.PointsSummary}}</td>
+              <td>{{formatTime .Item.CreatedAt (staffTimezone $.Staff)}}</td>
+              <td class="right">
+                {{if $.Data.CanReview}}
+                  <div class="route-actions">
+                    <form method="post" action="{{.ApproveURL}}">
+                      {{csrfField $.CSRFToken}}
+                      <button class="primary" type="submit">{{t $.Locale "action.approve"}}</button>
+                    </form>
+                    <details>
+                      <summary class="button">{{t $.Locale "action.reject"}}</summary>
+                      <form class="inline-decision-form" method="post" action="{{.RejectURL}}">
+                        {{csrfField $.CSRFToken}}
+                        <textarea name="reason" rows="2" required placeholder="{{t $.Locale "userRoute.reasonPlaceholder"}}"></textarea>
+                        <button class="danger" type="submit">{{t $.Locale "action.reject"}}</button>
+                      </form>
+                    </details>
+                    <details>
+                      <summary class="button">{{t $.Locale "action.hide"}}</summary>
+                      <form class="inline-decision-form" method="post" action="{{.HideURL}}">
+                        {{csrfField $.CSRFToken}}
+                        <textarea name="reason" rows="2" required placeholder="{{t $.Locale "userRoute.reasonPlaceholder"}}"></textarea>
+                        <button class="danger" type="submit">{{t $.Locale "action.hide"}}</button>
+                      </form>
+                    </details>
+                  </div>
+                {{else}}
+                  <span class="muted">{{t $.Locale "userRoute.readOnly"}}</span>
+                {{end}}
+              </td>
+            </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  {{else}}
+    <div class="empty card">{{t .Locale "userRoute.empty"}}</div>
+  {{end}}
+</section>
+{{template "pageEnd" .}}
+{{end}}

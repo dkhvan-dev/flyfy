@@ -35,6 +35,8 @@ void main() {
         ruArb['storyEditorValidationMediaPending'],
         'Дождитесь завершения загрузки медиа.',
       );
+      expect(ruArb['storyEditorBlockRouteReference'], 'Маршрут');
+      expect(ruArb['storyEditorRouteReferencePickerTitle'], 'Добавить маршрут');
       expect(ruArb['myStoriesDraftsTab'], 'Черновики');
       expect(ruArb['myStoriesArchivedTab'], 'Архив');
     },

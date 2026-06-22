@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../../core/ui/app_colors.dart';
 import '../../../../../core/ui/filter_sheet_chrome.dart';
 import '../../../../../l10n/generated/app_localizations.dart';
+import '../../../../user_routes/user_route_feature_flags.dart';
 import '../../../story_ui.dart';
 import '../../domain/story_document.dart';
 import 'story_editor_style.dart';
@@ -75,6 +76,13 @@ class StoryAddBlockSheet extends StatelessWidget {
         l10n.storyEditorBlockPlaceReferenceDescription,
         Icons.place_outlined,
       ),
+      if (UserRouteFeatureFlags.customRoutesEnabled)
+        _BlockOption(
+          StoryBlockType.routeReference,
+          storyBlockTypeLabel(l10n, StoryBlockType.routeReference),
+          l10n.storyEditorBlockRouteReferenceDescription,
+          Icons.route_rounded,
+        ),
     ];
 
     return AnimatedPadding(

@@ -130,3 +130,23 @@ func TestLoadParsesFeedRankingPolicyEnvOverrides(t *testing.T) {
 		t.Fatalf("Feed ranking env overrides were not parsed: %+v", cfg.Feed)
 	}
 }
+
+func TestLoadIncludesUserRouteDownstreamDefault(t *testing.T) {
+	t.Setenv("POSTGRES_HOST", "localhost")
+	t.Setenv("POSTGRES_USER", "feed")
+	t.Setenv("POSTGRES_PASSWORD", "secret")
+	t.Setenv("POSTGRES_DB", "feed_service")
+	t.Setenv("INTERNAL_SERVICE_TOKEN", "internal-token")
+
+	cfg, err := Load(context.Background())
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	if cfg.UserRoute.HTTPURL != "http://user-route-service:8096" {
+		t.Fatalf("user route downstream = %q, want http://user-route-service:8096", cfg.UserRoute.HTTPURL)
+	}
+	if cfg.UserRoute.RequestTimeout != 3*time.Second {
+		t.Fatalf("user route timeout = %v, want 3s", cfg.UserRoute.RequestTimeout)
+	}
+}

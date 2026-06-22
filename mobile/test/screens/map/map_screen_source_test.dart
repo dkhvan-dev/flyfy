@@ -121,6 +121,295 @@ void main() {
     expect(mapSource, contains('_selectedPlace = targetPlace;'));
   });
 
+  test(
+    'route preview uses dedicated map args without overloading target',
+    () async {
+      final mapSource = await File(
+        'lib/screens/map/map_screen.dart',
+      ).readAsString();
+      final routerSource = await File(
+        'lib/core/router/app_router.dart',
+      ).readAsString();
+
+      expect(mapSource, contains('class MapRoutePreview'));
+      expect(mapSource, contains('final MapRoutePreview? routePreview;'));
+      expect(mapSource, contains('final RoutePointVm? origin;'));
+      expect(mapSource, contains('RouteSummaryCard('));
+      expect(mapSource, contains('PolylineLayer('));
+      expect(mapSource, contains('_routePolylineFeature('));
+      expect(mapSource, contains('LineString.from('));
+      expect(mapSource, contains('route.displayPoints'));
+      expect(mapSource, contains('RouteModeSelector('));
+      expect(mapSource, contains('Future<void> _switchRouteProfile('));
+      expect(mapSource, contains('context.read<RoutingProvider>()'));
+      expect(mapSource, contains('profile: profile'));
+      expect(routerSource, contains('state.extra is MapRoutePreview'));
+      expect(routerSource, contains('routePreview: routePreview'));
+    },
+  );
+
+  test('route preview keeps map focused on route only', () async {
+    final mapSource = await File(
+      'lib/screens/map/map_screen.dart',
+    ).readAsString();
+
+    expect(mapSource, contains('bool get _isRoutePreviewMode'));
+    expect(mapSource, contains('bool get _hidesNearbyPlaces'));
+    expect(mapSource, contains('Future<void> _bootstrapRoutePreview('));
+    expect(mapSource, contains('_hidesNearbyPlaces || _showsActivityMarkers'));
+    expect(mapSource, contains('if (_isRoutePreviewMode) return;'));
+    expect(mapSource, contains('if (!_hidesNearbyPlaces &&'));
+    expect(mapSource, contains('_places.isNotEmpty'));
+    expect(mapSource, contains('if (!_hidesNearbyPlaces)'));
+  });
+
+  test('route preview fits the whole route after map style loads', () async {
+    final mapSource = await File(
+      'lib/screens/map/map_screen.dart',
+    ).readAsString();
+
+    expect(mapSource, contains('void _focusRoutePreviewCamera('));
+    expect(mapSource, contains('LngLatBounds? _routePreviewBounds('));
+    expect(mapSource, contains('LngLatBounds.fromPoints('));
+    expect(mapSource, contains('mapController.fitBounds('));
+    expect(mapSource, contains('padding: EdgeInsets.all('));
+    expect(mapSource, contains('_focusRoutePreviewCamera(preview);'));
+    expect(
+      mapSource,
+      contains('_focusRoutePreviewCamera(preview, animate: true);'),
+    );
+    expect(mapSource, contains('final styleRoutePreview ='));
+    expect(mapSource, contains('styleRoutePreview'));
+    expect(mapSource, isNot(contains('zoom: _routePreviewZoom(preview)')));
+  });
+
+  test('route preview camera fit is retried after native map layout', () async {
+    final mapSource = await File(
+      'lib/screens/map/map_screen.dart',
+    ).readAsString();
+
+    expect(mapSource, contains('static const double _routePreviewInitialZoom'));
+    expect(mapSource, contains('_initialMapZoom'));
+    expect(mapSource, contains('initZoom: _initialMapZoom,'));
+    expect(mapSource, contains('void _scheduleRoutePreviewCameraFit('));
+    expect(mapSource, contains('WidgetsBinding.instance.addPostFrameCallback'));
+    expect(mapSource, contains('_routePreviewCameraFitRetry'));
+    expect(mapSource, contains('_routePreviewCameraFitLateRetry'));
+    expect(mapSource, contains('const Duration(milliseconds: 180)'));
+    expect(mapSource, contains('const Duration(milliseconds: 650)'));
+    expect(mapSource, contains('_cancelRoutePreviewCameraFitRetry();'));
+    expect(mapSource, contains('final styleRoutePreview ='));
+    expect(
+      mapSource,
+      matches(
+        RegExp(
+          r'if \(styleRoutePreview != null\) \{\s+'
+          r'_scheduleRoutePreviewCameraFit\(\s+styleRoutePreview,',
+        ),
+      ),
+    );
+  });
+
+  test(
+    'route preview camera bounds always include origin and destination',
+    () async {
+      final mapSource = await File(
+        'lib/screens/map/map_screen.dart',
+      ).readAsString();
+
+      expect(mapSource, contains('void _addRoutePreviewBoundPoint('));
+      expect(
+        mapSource,
+        contains('for (final stop in _routePreviewStops(preview))'),
+      );
+      expect(
+        mapSource,
+        contains('_addRoutePreviewBoundPoint(points, stop.point);'),
+      );
+      expect(
+        mapSource,
+        isNot(
+          contains(
+            'if (points.length < 2) {\n'
+            '      points\n'
+            '        ..clear()',
+          ),
+        ),
+      );
+    },
+  );
+
+  test('route preview keeps current user location visible', () async {
+    final mapSource = await File(
+      'lib/screens/map/map_screen.dart',
+    ).readAsString();
+
+    expect(mapSource, contains('Future<void> _loadRoutePreviewUserLocation('));
+    expect(
+      mapSource,
+      contains('_loadRoutePreviewUserLocation(requestPermission: true)'),
+    );
+    expect(mapSource, contains('_userLocation = userPoint;'));
+    expect(mapSource, contains("_pointFeature('user-location', userLocation)"));
+    expect(
+      mapSource,
+      isNot(contains('if (userLocation != null && !_isRoutePreviewMode)')),
+    );
+    expect(
+      mapSource,
+      isNot(
+        contains(
+          '_userLocation != null &&\n                                                          !_isRoutePreviewMode',
+        ),
+      ),
+    );
+  });
+
+  test(
+    'route preview info panel is below the map and has no external maps CTA',
+    () async {
+      final mapSource = await File(
+        'lib/screens/map/map_screen.dart',
+      ).readAsString();
+
+      expect(
+        mapSource,
+        isNot(contains("import 'package:url_launcher/url_launcher.dart';")),
+      );
+      expect(
+        mapSource,
+        isNot(contains('Future<void> _openRoutePreviewExternally(')),
+      );
+      expect(mapSource, isNot(contains('LaunchMode.externalApplication')));
+      expect(mapSource, isNot(contains('onOpenExternalMap:')));
+      expect(
+        mapSource,
+        contains('routePreview == null || _isRouteBuilderMode'),
+      );
+      expect(mapSource, contains('routeBuilderPanel != null'));
+      expect(mapSource, contains('routePreviewPanel,'));
+      expect(
+        mapSource,
+        isNot(
+          contains(
+            'bottom: _mapScaled(\n'
+            '                                          context,\n'
+            '                                          14,',
+          ),
+        ),
+      );
+    },
+  );
+
+  test('route preview profile switching preserves multi stop routes', () async {
+    final mapSource = await File(
+      'lib/screens/map/map_screen.dart',
+    ).readAsString();
+
+    expect(mapSource, contains('this.routePoints = const [],'));
+    expect(mapSource, contains('final List<RoutePointVm> routePoints;'));
+    expect(
+      mapSource,
+      contains('final routePoints = preview.routePoints.isNotEmpty'),
+    );
+    expect(mapSource, contains('points: routePoints'));
+    expect(mapSource, contains('routePoints: routePoints,'));
+  });
+
+  test('route preview save CTA is gated behind custom routes flag', () async {
+    final mapSource = await File(
+      'lib/screens/map/map_screen.dart',
+    ).readAsString();
+
+    expect(
+      mapSource,
+      contains("features/user_routes/user_route_feature_flags.dart"),
+    );
+    expect(mapSource, contains('showSaveRoute:'));
+    expect(mapSource, contains('UserRouteFeatureFlags.customRoutesEnabled'));
+    expect(mapSource, contains('final bool showSaveRoute;'));
+    expect(mapSource, contains('if (showSaveRoute)'));
+  });
+
+  test('map save route buttons use primary text color', () async {
+    final mapSource = await File(
+      'lib/screens/map/map_screen.dart',
+    ).readAsString();
+    final saveButtonSections = <String>[];
+    var searchOffset = 0;
+    while (true) {
+      final labelIndex = mapSource.indexOf(
+        'l10n.userRoutesSaveRoute',
+        searchOffset,
+      );
+      if (labelIndex < 0) {
+        break;
+      }
+      final buttonStart = mapSource.lastIndexOf(
+        'FilledButton.icon(',
+        labelIndex,
+      );
+      expect(buttonStart, isNonNegative);
+      saveButtonSections.add(mapSource.substring(buttonStart, labelIndex));
+      searchOffset = labelIndex + 1;
+    }
+
+    expect(saveButtonSections.length, greaterThanOrEqualTo(1));
+    for (final section in saveButtonSections) {
+      expect(section, contains('foregroundColor: AppColors.textPrimary'));
+      expect(
+        section,
+        isNot(contains('foregroundColor: const Color(0xFF241100)')),
+      );
+    }
+  });
+
+  test(
+    'custom route builder is gated while point to destination routes remain',
+    () async {
+      final mapSource = await File(
+        'lib/screens/map/map_screen.dart',
+      ).readAsString();
+      final routerSource = await File(
+        'lib/core/router/app_router.dart',
+      ).readAsString();
+      final userRoutesSource = await File(
+        'lib/features/user_routes/presentation/user_routes_screen.dart',
+      ).readAsString();
+
+      expect(mapSource, contains('routeBuilderEnabled'));
+      expect(
+        mapSource,
+        contains(
+          'bool get _isRouteBuilderMode =>\n'
+          '      UserRouteFeatureFlags.customRoutesEnabled && widget.routeBuilderEnabled;',
+        ),
+      );
+      expect(mapSource, contains('_routeBuilderPoints'));
+      expect(mapSource, contains('_handleRouteBuilderMapTap('));
+      expect(mapSource, contains('MapEventClick(point: final point'));
+      expect(mapSource, contains('_buildCustomRoutePreview('));
+      expect(mapSource, contains('context.read<RoutingProvider>()'));
+      expect(mapSource, contains('RouteRequestVm('));
+      expect(mapSource, contains('class _RouteBuilderPanel'));
+      expect(mapSource, contains('mapRouteBuilderBuildRoute'));
+      expect(mapSource, contains('mapRouteBuilderClear'));
+      expect(
+        routerSource,
+        contains('UserRouteFeatureFlags.customRoutesEnabled &&'),
+      );
+      expect(routerSource, contains("mode == 'route-builder'"));
+      expect(
+        routerSource,
+        contains('routeBuilderEnabled: routeBuilderEnabled'),
+      );
+      expect(
+        userRoutesSource,
+        contains('if (UserRouteFeatureFlags.customRoutesEnabled)'),
+      );
+    },
+  );
+
   test('nearby places map is not capped at forty POI', () async {
     final mapSource = await File(
       'lib/screens/map/map_screen.dart',

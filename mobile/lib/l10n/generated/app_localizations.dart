@@ -568,6 +568,36 @@ abstract class AppLocalizations {
   /// **''**
   String get travelChecklistSubtitle;
 
+  /// No description provided for @travelChecklistOptimizeRouteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Optimize day route'**
+  String get travelChecklistOptimizeRouteTitle;
+
+  /// No description provided for @travelChecklistOptimizeRouteSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Order {count} stops by route time before you start the day.'**
+  String travelChecklistOptimizeRouteSubtitle(Object count);
+
+  /// No description provided for @travelChecklistOptimizeRouteButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Optimize'**
+  String get travelChecklistOptimizeRouteButton;
+
+  /// No description provided for @travelChecklistOptimizeRouteRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Recalculate'**
+  String get travelChecklistOptimizeRouteRetry;
+
+  /// No description provided for @travelChecklistOptimizeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not optimize the route right now.'**
+  String get travelChecklistOptimizeFailed;
+
   /// No description provided for @travelChecklistCtaTitle.
   ///
   /// In en, this message translates to:
@@ -2818,6 +2848,18 @@ abstract class AppLocalizations {
   /// **'My journey'**
   String get profileJourneyTitle;
 
+  /// No description provided for @profileUserRoutesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My routes'**
+  String get profileUserRoutesTitle;
+
+  /// No description provided for @profileUserRoutesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved walks, city plans and routes shared by travelers'**
+  String get profileUserRoutesSubtitle;
+
   /// No description provided for @profileSavedItemsTitle.
   ///
   /// In en, this message translates to:
@@ -3777,6 +3819,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Location access is blocked. Please enable it in device settings'**
   String get locationPermissionDeniedForever;
+
+  /// No description provided for @locationDetectionTimedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not determine your location quickly. Try again or open the map.'**
+  String get locationDetectionTimedOut;
 
   /// No description provided for @cancelButton.
   ///
@@ -5169,6 +5217,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Map'**
   String get homeNavMap;
+
+  /// No description provided for @mapAttributionSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Map data sources'**
+  String get mapAttributionSheetTitle;
+
+  /// No description provided for @mapAttributionSheetSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Inflap shows map tiles built from open map data. Attribution and license details are available below.'**
+  String get mapAttributionSheetSubtitle;
+
+  /// No description provided for @mapAttributionStyleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Map style'**
+  String get mapAttributionStyleLabel;
+
+  /// No description provided for @mapAttributionTilesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tiles and schema'**
+  String get mapAttributionTilesLabel;
+
+  /// No description provided for @mapAttributionDataLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Map data'**
+  String get mapAttributionDataLabel;
+
+  /// No description provided for @mapAttributionLicenseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'License'**
+  String get mapAttributionLicenseLabel;
+
+  /// No description provided for @mapAttributionOpenLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Open details'**
+  String get mapAttributionOpenLink;
 
   /// No description provided for @homeNavChats.
   ///
@@ -6579,6 +6669,468 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tap an activity marker to preview it and open details.'**
   String get mapTapActivityHint;
+
+  /// No description provided for @mapExternalOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the route in an external map app.'**
+  String get mapExternalOpenFailed;
+
+  /// No description provided for @routeSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Travel time'**
+  String get routeSummaryTitle;
+
+  /// No description provided for @routeSummaryDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get routeSummaryDuration;
+
+  /// No description provided for @routeSummaryDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance'**
+  String get routeSummaryDistance;
+
+  /// No description provided for @routeDurationMinutesShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String routeDurationMinutesShort(int minutes);
+
+  /// No description provided for @routeDistanceMetersShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{meters} m'**
+  String routeDistanceMetersShort(int meters);
+
+  /// No description provided for @routeDistanceKilometersShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{kilometers} km'**
+  String routeDistanceKilometersShort(String kilometers);
+
+  /// No description provided for @routeTravelTimeDistanceShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{duration} · {distance}'**
+  String routeTravelTimeDistanceShort(Object duration, Object distance);
+
+  /// No description provided for @routeStopSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'Route stop {order}'**
+  String routeStopSemantic(int order);
+
+  /// No description provided for @userRoutesSaveRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Save route'**
+  String get userRoutesSaveRoute;
+
+  /// No description provided for @userRoutesRouteSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get userRoutesRouteSaved;
+
+  /// No description provided for @userRoutesSaveSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Route saved'**
+  String get userRoutesSaveSuccess;
+
+  /// No description provided for @userRoutesSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save route'**
+  String get userRoutesSaveFailed;
+
+  /// No description provided for @userRoutesDefaultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved route'**
+  String get userRoutesDefaultTitle;
+
+  /// No description provided for @userRoutesDefaultTitleTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Route to {destination}'**
+  String userRoutesDefaultTitleTo(Object destination);
+
+  /// No description provided for @mapRouteBuilderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create route'**
+  String get mapRouteBuilderTitle;
+
+  /// No description provided for @mapRouteBuilderHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the map to add stops in order.'**
+  String get mapRouteBuilderHint;
+
+  /// No description provided for @mapRouteBuilderBuildRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Build route'**
+  String get mapRouteBuilderBuildRoute;
+
+  /// No description provided for @mapRouteBuilderMinPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least two points to build a route.'**
+  String get mapRouteBuilderMinPoints;
+
+  /// No description provided for @mapRouteBuilderClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get mapRouteBuilderClear;
+
+  /// No description provided for @mapRouteBuilderRemoveLast.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove last'**
+  String get mapRouteBuilderRemoveLast;
+
+  /// No description provided for @mapRouteBuilderPointName.
+  ///
+  /// In en, this message translates to:
+  /// **'Point {order}'**
+  String mapRouteBuilderPointName(int order);
+
+  /// No description provided for @userRoutesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Routes'**
+  String get userRoutesTitle;
+
+  /// No description provided for @userRoutesPublicTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Public'**
+  String get userRoutesPublicTab;
+
+  /// No description provided for @userRoutesMineTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Mine'**
+  String get userRoutesMineTab;
+
+  /// No description provided for @userRoutesSavedTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get userRoutesSavedTab;
+
+  /// No description provided for @userRoutesPublicEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No public routes yet'**
+  String get userRoutesPublicEmptyTitle;
+
+  /// No description provided for @userRoutesPublicEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved public walks and city plans will appear here.'**
+  String get userRoutesPublicEmptySubtitle;
+
+  /// No description provided for @userRoutesMineEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No routes yet'**
+  String get userRoutesMineEmptyTitle;
+
+  /// No description provided for @userRoutesMineEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Build a route on the map and save it to keep your own collection.'**
+  String get userRoutesMineEmptySubtitle;
+
+  /// No description provided for @userRoutesSavedEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved routes'**
+  String get userRoutesSavedEmptyTitle;
+
+  /// No description provided for @userRoutesSavedEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookmark routes from other travelers to find them here.'**
+  String get userRoutesSavedEmptySubtitle;
+
+  /// No description provided for @userRoutesLoginRequiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to use your routes'**
+  String get userRoutesLoginRequiredTitle;
+
+  /// No description provided for @userRoutesLoginRequiredSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your private and saved routes are linked to your Inflap account.'**
+  String get userRoutesLoginRequiredSubtitle;
+
+  /// No description provided for @userRoutesLoginRequiredButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get userRoutesLoginRequiredButton;
+
+  /// No description provided for @userRoutesStopsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} stops'**
+  String userRoutesStopsCount(int count);
+
+  /// No description provided for @userRoutesVisibilityPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Private'**
+  String get userRoutesVisibilityPrivate;
+
+  /// No description provided for @userRoutesVisibilityUnlisted.
+  ///
+  /// In en, this message translates to:
+  /// **'Link only'**
+  String get userRoutesVisibilityUnlisted;
+
+  /// No description provided for @userRoutesVisibilityPublic.
+  ///
+  /// In en, this message translates to:
+  /// **'Public'**
+  String get userRoutesVisibilityPublic;
+
+  /// No description provided for @userRoutesOpenOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Open on map'**
+  String get userRoutesOpenOnMap;
+
+  /// No description provided for @userRoutesCopyRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy route'**
+  String get userRoutesCopyRoute;
+
+  /// No description provided for @userRoutesCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Route copied to your routes'**
+  String get userRoutesCopied;
+
+  /// No description provided for @userRoutesEditRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit route'**
+  String get userRoutesEditRoute;
+
+  /// No description provided for @userRoutesEditTitleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Route title'**
+  String get userRoutesEditTitleLabel;
+
+  /// No description provided for @userRoutesEditDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get userRoutesEditDescriptionLabel;
+
+  /// No description provided for @userRoutesEditVisibilityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Visibility'**
+  String get userRoutesEditVisibilityLabel;
+
+  /// No description provided for @userRoutesEditSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save changes'**
+  String get userRoutesEditSave;
+
+  /// No description provided for @userRoutesUpdateSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Route updated'**
+  String get userRoutesUpdateSuccess;
+
+  /// No description provided for @userRoutesUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update route'**
+  String get userRoutesUpdateFailed;
+
+  /// No description provided for @userRoutesShareRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Share route'**
+  String get userRoutesShareRoute;
+
+  /// No description provided for @userRoutesShareCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Route link copied'**
+  String get userRoutesShareCopied;
+
+  /// No description provided for @userRoutesEditStops.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit stops'**
+  String get userRoutesEditStops;
+
+  /// No description provided for @userRoutesEditStopsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Reorder stops or rename them. Inflap will rebuild the route before saving.'**
+  String get userRoutesEditStopsHint;
+
+  /// No description provided for @userRoutesEditStopNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop name'**
+  String get userRoutesEditStopNameLabel;
+
+  /// No description provided for @userRoutesEditStopNoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get userRoutesEditStopNoteLabel;
+
+  /// No description provided for @userRoutesMoveStopUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Move up'**
+  String get userRoutesMoveStopUp;
+
+  /// No description provided for @userRoutesMoveStopDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Move down'**
+  String get userRoutesMoveStopDown;
+
+  /// No description provided for @userRoutesRebuildAndSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Rebuild and save'**
+  String get userRoutesRebuildAndSave;
+
+  /// No description provided for @userRoutesEditPointsMinStops.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep at least two stops in the route.'**
+  String get userRoutesEditPointsMinStops;
+
+  /// No description provided for @userRoutesRebuildFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not rebuild route'**
+  String get userRoutesRebuildFailed;
+
+  /// No description provided for @userRoutesStopsUpdateSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Route stops updated'**
+  String get userRoutesStopsUpdateSuccess;
+
+  /// No description provided for @userRoutesUnsaveRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from saved'**
+  String get userRoutesUnsaveRoute;
+
+  /// No description provided for @userRoutesStopsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stops'**
+  String get userRoutesStopsTitle;
+
+  /// No description provided for @routeProfileTouristWalk.
+  ///
+  /// In en, this message translates to:
+  /// **'Tourist walk'**
+  String get routeProfileTouristWalk;
+
+  /// No description provided for @routeProfileFastWalk.
+  ///
+  /// In en, this message translates to:
+  /// **'Fast walk'**
+  String get routeProfileFastWalk;
+
+  /// No description provided for @routeProfileBikeCity.
+  ///
+  /// In en, this message translates to:
+  /// **'City bike'**
+  String get routeProfileBikeCity;
+
+  /// No description provided for @routeProfileCarStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Car route'**
+  String get routeProfileCarStandard;
+
+  /// No description provided for @routeProfileGuideRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide route'**
+  String get routeProfileGuideRoute;
+
+  /// No description provided for @routeProfileDayPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Day plan'**
+  String get routeProfileDayPlan;
+
+  /// No description provided for @routeProfileTransit.
+  ///
+  /// In en, this message translates to:
+  /// **'Public transport'**
+  String get routeProfileTransit;
+
+  /// No description provided for @routeProfileTouristWalkShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Walk'**
+  String get routeProfileTouristWalkShort;
+
+  /// No description provided for @routeProfileFastWalkShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Fast'**
+  String get routeProfileFastWalkShort;
+
+  /// No description provided for @routeProfileBikeCityShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Bike'**
+  String get routeProfileBikeCityShort;
+
+  /// No description provided for @routeProfileCarStandardShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Car'**
+  String get routeProfileCarStandardShort;
+
+  /// No description provided for @routeProfileGuideRouteShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide'**
+  String get routeProfileGuideRouteShort;
+
+  /// No description provided for @routeProfileDayPlanShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get routeProfileDayPlanShort;
+
+  /// No description provided for @routeProfileTransitShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Transit'**
+  String get routeProfileTransitShort;
 
   /// No description provided for @placesTitle.
   ///
@@ -11582,6 +12134,54 @@ abstract class AppLocalizations {
   /// **'Get Directions'**
   String get activityGetDirections;
 
+  /// No description provided for @activityReachabilityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Can I make it?'**
+  String get activityReachabilityTitle;
+
+  /// No description provided for @activityReachabilitySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check walking ETA from your current location before you head out.'**
+  String get activityReachabilitySubtitle;
+
+  /// No description provided for @activityReachabilityCheckButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Check ETA'**
+  String get activityReachabilityCheckButton;
+
+  /// No description provided for @activityReachabilityRetryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get activityReachabilityRetryButton;
+
+  /// No description provided for @activityReachabilityOnTime.
+  ///
+  /// In en, this message translates to:
+  /// **'On time'**
+  String get activityReachabilityOnTime;
+
+  /// No description provided for @activityReachabilityLate.
+  ///
+  /// In en, this message translates to:
+  /// **'Late risk'**
+  String get activityReachabilityLate;
+
+  /// No description provided for @activityReachabilityArriveBeforeStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrive about {minutes} min before start'**
+  String activityReachabilityArriveBeforeStart(Object minutes);
+
+  /// No description provided for @activityReachabilityArriveAfterStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Route arrives about {minutes} min after start'**
+  String activityReachabilityArriveAfterStart(Object minutes);
+
   /// No description provided for @activityHostSection.
   ///
   /// In en, this message translates to:
@@ -13526,6 +14126,18 @@ abstract class AppLocalizations {
   /// **'Link a place to the story'**
   String get storyEditorBlockPlaceReferenceDescription;
 
+  /// No description provided for @storyEditorBlockRouteReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Route'**
+  String get storyEditorBlockRouteReference;
+
+  /// No description provided for @storyEditorBlockRouteReferenceDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Share one of your routes in the post'**
+  String get storyEditorBlockRouteReferenceDescription;
+
   /// No description provided for @storyEditorBlockNumberedList.
   ///
   /// In en, this message translates to:
@@ -13549,6 +14161,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Place name'**
   String get storyEditorPlaceNameHint;
+
+  /// No description provided for @storyEditorRouteReferencePickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add route'**
+  String get storyEditorRouteReferencePickerTitle;
+
+  /// No description provided for @storyEditorRouteReferenceEmptyState.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish or unlist a route first, then add it to a post.'**
+  String get storyEditorRouteReferenceEmptyState;
+
+  /// No description provided for @storyEditorRouteReferenceLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load your routes.'**
+  String get storyEditorRouteReferenceLoadError;
+
+  /// No description provided for @storyEditorRouteReferenceEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Route is not selected'**
+  String get storyEditorRouteReferenceEmpty;
 
   /// No description provided for @storyEditorTextHintHeading.
   ///

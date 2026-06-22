@@ -266,6 +266,7 @@ type PostUseCase struct {
 	repo                     port.PostRepository
 	users                    UserServiceClient
 	mediaBinder              PostMediaBinder
+	routeReferenceValidator  PostRouteReferenceValidator
 	postNotifications        port.PostNotificationGateway
 	postFeedCache            port.PostFeedCache
 	postFeedCacheTTL         time.Duration
@@ -498,6 +499,13 @@ func (u *PostUseCase) createPost(ctx context.Context, subject string, input Crea
 	postID := uuid.New()
 	post, err := normalizePostInputWithProfile(postID, input, profile)
 	if err != nil {
+		return nil, err
+	}
+	document, err := postDocumentFromNormalizedBlocks(post.ContentBlocks)
+	if err != nil {
+		return nil, ErrInvalidPostContent
+	}
+	if err := u.validatePostRouteReferences(ctx, authorUserID, document); err != nil {
 		return nil, err
 	}
 
@@ -2154,6 +2162,13 @@ func (u *PostUseCase) updateOwnedPost(
 	}
 	next, err := normalizePostInputWithProfile(existing.ID, mergedInput, profile)
 	if err != nil {
+		return nil, err
+	}
+	document, err := postDocumentFromNormalizedBlocks(next.ContentBlocks)
+	if err != nil {
+		return nil, ErrInvalidPostContent
+	}
+	if err := u.validatePostRouteReferences(ctx, actorUserID, document); err != nil {
 		return nil, err
 	}
 

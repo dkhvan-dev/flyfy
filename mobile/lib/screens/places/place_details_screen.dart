@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -5,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/device/device_context_service.dart';
 import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
 import '../../core/network/reference_api.dart';
@@ -15,10 +18,13 @@ import '../../features/places/place_ui.dart';
 import '../../features/places/data/place_api.dart';
 import '../../features/places/models/place_review_vm.dart';
 import '../../features/places/models/place_vm.dart';
+import '../../features/routing/models/routing_models.dart';
 import '../../features/excursions/models/excursion_booking_vm.dart';
 import '../../features/excursions/models/excursion_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/excursion_provider.dart';
+import '../../providers/routing_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../shared/map/app_map_links.dart';
 import '../excursions/excursions_screen.dart';
@@ -41,6 +47,8 @@ class PlaceDetailsScreen extends StatefulWidget {
 
 class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
   final PlaceApi _api = PlaceApi();
+  final DeviceContextService _deviceContextService =
+      const DeviceContextService();
   final FileApi _fileApi = FileApi();
   final ReferenceApi _referenceApi = ReferenceApi();
   final ScrollController _scrollController = ScrollController();
@@ -54,6 +62,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
   bool _submittingReview = false;
   bool _checkingCurrentUserReview = false;
   bool _isOpeningExcursions = false;
+  bool _isBuildingRoute = false;
   String? _error;
   String? _locationLabel;
   int _currentImageIndex = 0;
@@ -465,27 +474,101 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
   }
 
   void _openMap() {
+    unawaited(_openRouteToPlace());
+  }
+
+  Future<void> _openRouteToPlace() async {
     final place = _place;
     if (place != null && place.hasLocation) {
-      context.push(
-        '/map',
-        extra: MapTarget(
-          title: place.title,
-          subtitle: _resolvedLocationLabel(place),
-          latitude: place.latitude!,
-          longitude: place.longitude!,
-          sourceUrl: AppMapLinks.buildUrl(
-            latitude: place.latitude!,
-            longitude: place.longitude!,
-            title: place.title,
-            subtitle: _resolvedLocationLabel(place),
+      final destination = _placeMapTarget(place);
+      if (_isBuildingRoute ||
+          context.read<AuthProvider>().state != AuthState.authenticated) {
+        context.push('/map', extra: destination);
+        return;
+      }
+
+      final routingProvider = context.read<RoutingProvider>();
+      final l10n = AppLocalizations.of(context)!;
+
+      setState(() => _isBuildingRoute = true);
+      try {
+        final coordinates = await _deviceContextService.detectCoordinates(
+          requestPermission: true,
+        );
+        if (!mounted) return;
+
+        if (coordinates == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.locationPermissionDenied)),
+          );
+          context.push('/map', extra: destination);
+          return;
+        }
+
+        final origin = RoutePointVm(
+          latitude: coordinates.latitude,
+          longitude: coordinates.longitude,
+          name: l10n.homeNavMap,
+        );
+
+        final route = await routingProvider.buildRoute(
+          RouteRequestVm(
+            profile: RouteProfile.touristWalk,
+            points: [
+              origin,
+              RoutePointVm(
+                latitude: place.latitude!,
+                longitude: place.longitude!,
+                name: place.title,
+              ),
+            ],
           ),
-        ),
-      );
+        );
+        if (!mounted) return;
+
+        if (route == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                routingProvider.errorMessage ?? l10n.mapUsingFallbackLocation,
+              ),
+            ),
+          );
+          context.push('/map', extra: destination);
+          return;
+        }
+
+        final routePreview = MapRoutePreview(
+          route: route,
+          origin: origin,
+          destination: destination,
+        );
+        context.push('/map', extra: routePreview);
+      } finally {
+        if (mounted) {
+          setState(() => _isBuildingRoute = false);
+        }
+      }
       return;
     }
 
     context.push('/map');
+  }
+
+  MapTarget _placeMapTarget(PlaceVm place) {
+    final subtitle = _resolvedLocationLabel(place);
+    return MapTarget(
+      title: place.title,
+      subtitle: subtitle,
+      latitude: place.latitude!,
+      longitude: place.longitude!,
+      sourceUrl: AppMapLinks.buildUrl(
+        latitude: place.latitude!,
+        longitude: place.longitude!,
+        title: place.title,
+        subtitle: subtitle,
+      ),
+    );
   }
 
   @override
@@ -925,7 +1008,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: _openMap,
+          onTap: _isBuildingRoute ? null : _openMap,
           borderRadius: radius,
           child: Ink(
             padding: EdgeInsets.symmetric(
@@ -994,11 +1077,19 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                     color: AppColors.accent,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    Icons.map_rounded,
-                    color: Colors.white,
-                    size: a.scale(20, minFactor: 0.86),
-                  ),
+                  child: _isBuildingRoute
+                      ? Padding(
+                          padding: EdgeInsets.all(a.scale(10)),
+                          child: const CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Icon(
+                          Icons.map_rounded,
+                          color: Colors.white,
+                          size: a.scale(20, minFactor: 0.86),
+                        ),
                 ),
               ],
             ),

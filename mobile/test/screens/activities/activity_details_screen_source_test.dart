@@ -385,6 +385,95 @@ void main() {
     },
   );
 
+  test(
+    'meeting directions build internal route preview before opening map',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activity_details_screen.dart',
+      ).readAsString();
+
+      expect(
+        source,
+        contains("import '../../providers/routing_provider.dart';"),
+      );
+      expect(source, contains("import '../map/map_screen.dart';"));
+      expect(source, contains('bool _isBuildingMeetingRoute = false;'));
+      expect(source, contains('Future<void> _handleMeetingAction('));
+      expect(source, contains('Future<void> _openMeetingRoute('));
+      expect(source, contains('context.read<RoutingProvider>()'));
+      expect(source, contains('detectCoordinates('));
+      expect(source, contains('RouteRequestVm('));
+      expect(source, contains('RouteProfile.touristWalk'));
+      expect(source, contains('MapRoutePreview('));
+      expect(source, contains('final origin = RoutePointVm('));
+      expect(source, contains('origin: origin'));
+      expect(source, contains('extra: routePreview'));
+      expect(source, contains('isBuildingRoute: _isBuildingMeetingRoute'));
+      expect(source, contains('_openMeetingRoute(activity);'));
+    },
+  );
+
+  test(
+    'meeting section omits ETA reachability claims and keeps route action only',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activity_details_screen.dart',
+      ).readAsString();
+
+      expect(
+        source,
+        isNot(
+          contains(
+            "import '../../features/routing/widgets/reachability_badge.dart';",
+          ),
+        ),
+      );
+      expect(
+        source,
+        isNot(
+          contains(
+            "import '../../features/routing/widgets/travel_time_badge.dart';",
+          ),
+        ),
+      );
+      expect(source, isNot(contains('EtaResponseVm? _meetingEta;')));
+      expect(source, isNot(contains('bool _isCheckingMeetingEta = false;')));
+      expect(
+        source,
+        isNot(contains('Future<void> _checkMeetingReachability(')),
+      );
+      expect(source, isNot(contains('routingProvider.getEta(')));
+      expect(source, isNot(contains('EtaRequestVm(')));
+      expect(source, isNot(contains('_MeetingReachabilityCard(')));
+      expect(source, isNot(contains('_MeetingReachabilityAction(')));
+      expect(source, isNot(contains('activityReachabilityTitle')));
+      expect(source, isNot(contains('ReachabilityBadge(')));
+      expect(source, isNot(contains('TravelTimeBadge(')));
+      expect(source, contains('_openMeetingRoute(activity);'));
+    },
+  );
+
+  test('meeting route and ETA location lookup have timeout guard', () async {
+    final source = await File(
+      'lib/screens/activities/activity_details_screen.dart',
+    ).readAsString();
+
+    expect(
+      source,
+      contains(
+        'static const Duration _meetingLocationTimeout = Duration(seconds: 8);',
+      ),
+    );
+    expect(
+      source,
+      contains('Future<DeviceCoordinates?> _detectMeetingCoordinates()'),
+    );
+    expect(source, contains('.timeout('));
+    expect(source, contains('_meetingLocationTimeout,'));
+    expect(source, contains("TimeoutException('meeting_location_timeout')"));
+    expect(source, contains('l10n.locationDetectionTimedOut'));
+  });
+
   test('details reviews section displays organizer reviews', () async {
     final source = await File(
       'lib/screens/activities/activity_details_screen.dart',

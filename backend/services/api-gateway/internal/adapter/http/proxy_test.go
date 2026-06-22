@@ -176,6 +176,73 @@ func TestSingleHostProxyPreservesDownstreamMaintenanceError(t *testing.T) {
 	}
 }
 
+func TestSingleHostProxyPreservesKnownDownstreamBusinessErrorOnServiceUnavailable(t *testing.T) {
+	proxy, err := newSingleHostProxy("test", "http://downstream.local", "gateway-secret")
+	if err != nil {
+		t.Fatalf("newSingleHostProxy returned error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/routing/transit?lang=en", nil)
+	resp := &http.Response{
+		StatusCode: http.StatusServiceUnavailable,
+		Header:     make(http.Header),
+		Body: io.NopCloser(strings.NewReader(
+			`{"error":"Transit unavailable","message":"Transit routing is not configured.","code":"routing.transit_unavailable","kind":"business"}`,
+		)),
+		Request: req,
+	}
+
+	if err := proxy.ModifyResponse(resp); err != nil {
+		t.Fatalf("ModifyResponse returned error: %v", err)
+	}
+
+	var payload errorResponse
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		t.Fatalf("decode rewritten body: %v", err)
+	}
+	if payload.Kind != errorKindBusiness {
+		t.Fatalf("Kind = %q, want %q", payload.Kind, errorKindBusiness)
+	}
+	if payload.Code != "routing.transit_unavailable" {
+		t.Fatalf("Code = %q, want routing.transit_unavailable", payload.Code)
+	}
+	if payload.Message != "Transit routing is not available yet." {
+		t.Fatalf("Message = %q, want localized transit unavailable message", payload.Message)
+	}
+}
+
+func TestSingleHostProxyMasksUnknownDownstreamBusinessErrorOnServerError(t *testing.T) {
+	proxy, err := newSingleHostProxy("test", "http://downstream.local", "gateway-secret")
+	if err != nil {
+		t.Fatalf("newSingleHostProxy returned error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/routing/route?lang=en", nil)
+	resp := &http.Response{
+		StatusCode: http.StatusInternalServerError,
+		Header:     make(http.Header),
+		Body: io.NopCloser(strings.NewReader(
+			`{"error":"database password leaked","message":"internal stack trace","code":"routing.internal_debug","kind":"business"}`,
+		)),
+		Request: req,
+	}
+
+	if err := proxy.ModifyResponse(resp); err != nil {
+		t.Fatalf("ModifyResponse returned error: %v", err)
+	}
+
+	var payload errorResponse
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		t.Fatalf("decode rewritten body: %v", err)
+	}
+	if payload.Kind != errorKindTechnical {
+		t.Fatalf("Kind = %q, want %q", payload.Kind, errorKindTechnical)
+	}
+	if payload.Code != errorCodeUpstreamUnavailable {
+		t.Fatalf("Code = %q, want %s", payload.Code, errorCodeUpstreamUnavailable)
+	}
+}
+
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {

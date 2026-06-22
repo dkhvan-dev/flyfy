@@ -51,6 +51,8 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 	notificationLimit := 300
 	currencyLimit := 180
 	checklistLimit := 180
+	routingLimit := 240
+	userRouteLimit := 180
 
 	return []RoutePolicy{
 		{
@@ -147,6 +149,15 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			Upstream:           "checklist",
 			RateLimitPerMinute: &adminLimit,
 			RewritePrefix:      "/v1/admin/checklists",
+		},
+		{
+			Name:               "admin-user-routes",
+			Prefix:             apiPrefix + "/admin/user-routes",
+			AuthMode:           RouteAuthRoleBased,
+			RequiredRoles:      []string{"ADMIN", "MODERATOR"},
+			Upstream:           "user-route",
+			RateLimitPerMinute: &adminLimit,
+			RewritePrefix:      "/v1/admin/user-routes",
 		},
 		{
 			Name:               "files",
@@ -670,6 +681,72 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			Upstream:           "currency",
 			RateLimitPerMinute: &currencyLimit,
 			RewritePrefix:      "/v1/exchange-rates",
+		},
+		{
+			Name:               "routing",
+			Prefix:             apiPrefix + "/routing",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "routing",
+			RateLimitPerMinute: &routingLimit,
+			RewritePrefix:      "/v1",
+		},
+		{
+			Name:               "user-routes-read",
+			Method:             "GET",
+			Prefix:             apiPrefix + "/user-routes",
+			AuthMode:           RouteAuthPublic,
+			Upstream:           "user-route",
+			RateLimitPerMinute: &userRouteLimit,
+			RewritePrefix:      "/v1/user-routes",
+		},
+		{
+			Name:               "user-routes-create",
+			Method:             "POST",
+			ExactPath:          apiPrefix + "/user-routes",
+			Prefix:             apiPrefix + "/user-routes",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "user-route",
+			RateLimitPerMinute: &userRouteLimit,
+			RewritePrefix:      "/v1/user-routes",
+		},
+		{
+			Name:               "user-routes-update",
+			Method:             "PATCH",
+			Prefix:             apiPrefix + "/user-routes/",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "user-route",
+			RateLimitPerMinute: &userRouteLimit,
+			RewritePrefix:      "/v1/user-routes",
+		},
+		{
+			Name:               "user-routes-save",
+			Method:             "POST",
+			Prefix:             apiPrefix + "/user-routes/",
+			PathSuffix:         "/save",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "user-route",
+			RateLimitPerMinute: &userRouteLimit,
+			RewritePrefix:      "/v1/user-routes",
+		},
+		{
+			Name:               "user-routes-unsave",
+			Method:             "DELETE",
+			Prefix:             apiPrefix + "/user-routes/",
+			PathSuffix:         "/save",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "user-route",
+			RateLimitPerMinute: &userRouteLimit,
+			RewritePrefix:      "/v1/user-routes",
+		},
+		{
+			Name:               "user-routes-copy",
+			Method:             "POST",
+			Prefix:             apiPrefix + "/user-routes/",
+			PathSuffix:         "/copy",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "user-route",
+			RateLimitPerMinute: &userRouteLimit,
+			RewritePrefix:      "/v1/user-routes",
 		},
 		{
 			Name:               "place-reviews",

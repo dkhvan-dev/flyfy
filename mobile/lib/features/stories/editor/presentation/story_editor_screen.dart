@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 
 import '../../../../core/network/file_api.dart';
 import '../../../../core/ui/app_colors.dart';
@@ -12,11 +13,14 @@ import '../../../../core/ui/error_dialog.dart';
 import '../../../../core/ui/filter_sheet_chrome.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../trust/widgets/trust_status_banner.dart';
+import '../../../user_routes/models/user_route_models.dart';
+import '../../../user_routes/user_route_feature_flags.dart';
 import '../../models/post_profile_contract.dart';
 import '../../models/post_vm.dart';
 import '../../story_ui.dart';
 import '../../widgets/story_document_renderer.dart';
 import '../domain/story_document.dart';
+import '../../../../providers/user_routes_provider.dart';
 import 'story_editor_controller.dart';
 import 'story_editor_trust_context.dart';
 import 'widgets/story_add_block_sheet.dart';
@@ -1097,6 +1101,14 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
       unawaited(_addGalleryBlock());
       return;
     }
+    if (type == StoryBlockType.routeReference &&
+        UserRouteFeatureFlags.customRoutesEnabled) {
+      unawaited(_addRouteReferenceBlock());
+      return;
+    }
+    if (type == StoryBlockType.routeReference) {
+      return;
+    }
     _controller.addBlock(_newBlock(type));
   }
 
@@ -1131,6 +1143,39 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
           ),
       ],
     );
+  }
+
+  Future<void> _addRouteReferenceBlock() async {
+    FocusScope.of(context).unfocus();
+    final route = await showModalBottomSheet<UserRouteVm>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const _RouteReferencePickerSheet(),
+    );
+    if (route == null || !mounted) return;
+
+    final id =
+        '${_blockIdPrefix(StoryBlockType.routeReference)}-${++_blockSequence}';
+    _controller.addBlock(
+      StoryBlock.routeReference(
+        id: id,
+        route: StoryRouteReference(
+          routeId: route.id,
+          title: route.title,
+          description: route.description,
+          profile: route.profile.backendValue,
+          distanceMeters: route.snapshot.distanceMeters,
+          durationSeconds: route.snapshot.durationSeconds,
+          stopsCount: route.points.length,
+          shareUrl: _shareUrlForRoute(route.id),
+        ),
+      ),
+    );
+  }
+
+  String _shareUrlForRoute(String routeId) {
+    return 'https://inflap.app/user-routes/${Uri.encodeComponent(routeId)}';
   }
 
   Future<void> _queueCoverUpload() async {
@@ -1219,6 +1264,10 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
         id: id,
         place: const StoryPlaceReference(name: ''),
       ),
+      StoryBlockType.routeReference => StoryBlock.routeReference(
+        id: id,
+        route: const StoryRouteReference(routeId: '', title: ''),
+      ),
       StoryBlockType.image => StoryBlock.image(
         id: id,
         image: const StoryImagePayload(
@@ -1237,6 +1286,9 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
             name: text,
           ),
         );
+      }
+      if (block.type == StoryBlockType.routeReference) {
+        return block;
       }
       return block.copyWith(
         text: text,
@@ -1657,6 +1709,7 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
       StoryBlockType.gallery => 'gallery',
       StoryBlockType.divider => 'divider',
       StoryBlockType.placeReference => 'place',
+      StoryBlockType.routeReference => 'route',
     };
   }
 
@@ -1665,6 +1718,374 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
       setState(() {});
     }
   }
+}
+
+class _RouteReferencePickerSheet extends StatefulWidget {
+  const _RouteReferencePickerSheet();
+
+  @override
+  State<_RouteReferencePickerSheet> createState() =>
+      _RouteReferencePickerSheetState();
+}
+
+class _RouteReferencePickerSheetState
+    extends State<_RouteReferencePickerSheet> {
+  Future<void>? _loadFuture;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadFuture ??= context.read<UserRoutesProvider>().loadMyRoutes(limit: 50);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final adaptive = StoryAdaptive.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final safeBottomInset = MediaQuery.paddingOf(context).bottom;
+    final horizontalPadding = adaptive.scale(18);
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.86;
+
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF2B1808), Color(0xFF201208)],
+            ),
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(adaptive.radius(28)),
+            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.36),
+                blurRadius: adaptive.scale(30),
+                offset: Offset(0, adaptive.scale(-8)),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppFilterSheetHeader(
+                  title: l10n.storyEditorRouteReferencePickerTitle,
+                  clearLabel: MaterialLocalizations.of(
+                    context,
+                  ).closeButtonLabel,
+                  onClear: () => Navigator.maybePop(context),
+                  height: adaptive.scale(46),
+                  horizontalPadding: horizontalPadding,
+                  titleFontSize: adaptive.scale(16),
+                  clearFontSize: adaptive.scale(12),
+                ),
+                Flexible(
+                  child: FutureBuilder<void>(
+                    future: _loadFuture,
+                    builder: (context, snapshot) {
+                      final provider = context.watch<UserRoutesProvider>();
+                      final routes = provider.myRoutes
+                          .where(
+                            (route) =>
+                                route.visibility != UserRouteVisibility.private,
+                          )
+                          .toList(growable: false);
+                      if (snapshot.connectionState != ConnectionState.done &&
+                          routes.isEmpty) {
+                        return const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.accent,
+                          ),
+                        );
+                      }
+                      if (snapshot.hasError && routes.isEmpty) {
+                        return _RouteReferencePickerStateView(
+                          icon: Icons.error_outline_rounded,
+                          title: l10n.storyEditorRouteReferenceLoadError,
+                          actionLabel: l10n.retry,
+                          onAction: () {
+                            setState(() {
+                              _loadFuture = context
+                                  .read<UserRoutesProvider>()
+                                  .loadMyRoutes(limit: 50);
+                            });
+                          },
+                        );
+                      }
+                      if (routes.isEmpty) {
+                        return _RouteReferencePickerStateView(
+                          icon: Icons.route_rounded,
+                          title: l10n.storyEditorRouteReferenceEmptyState,
+                        );
+                      }
+                      return ListView.separated(
+                        physics: const BouncingScrollPhysics(),
+                        padding: EdgeInsets.fromLTRB(
+                          horizontalPadding,
+                          adaptive.scale(14),
+                          horizontalPadding,
+                          adaptive.scale(18) + safeBottomInset,
+                        ),
+                        itemCount: routes.length,
+                        separatorBuilder: (context, index) =>
+                            SizedBox(height: adaptive.scale(10)),
+                        itemBuilder: (context, index) {
+                          final route = routes[index];
+                          return _RouteReferencePickerTile(
+                            route: route,
+                            onTap: () => Navigator.of(context).pop(route),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RouteReferencePickerStateView extends StatelessWidget {
+  const _RouteReferencePickerStateView({
+    required this.icon,
+    required this.title,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final adaptive = StoryAdaptive.of(context);
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(adaptive.scale(24)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: AppColors.accent, size: adaptive.scale(34)),
+            SizedBox(height: adaptive.scale(12)),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: StoryPalette.textSoft,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            if (actionLabel != null && onAction != null) ...[
+              SizedBox(height: adaptive.scale(14)),
+              FilledButton(
+                onPressed: onAction,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.accent,
+                  foregroundColor: Colors.black,
+                ),
+                child: Text(actionLabel!),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RouteReferencePickerTile extends StatelessWidget {
+  const _RouteReferencePickerTile({required this.route, required this.onTap});
+
+  final UserRouteVm route;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final adaptive = StoryAdaptive.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final radius = BorderRadius.circular(adaptive.radius(18));
+    final description = (route.description ?? '').trim();
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: radius,
+        child: Ink(
+          decoration: BoxDecoration(
+            color: const Color(0xFF2C2118),
+            borderRadius: radius,
+            border: Border.all(color: AppColors.accent.withValues(alpha: 0.13)),
+          ),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: adaptive.scale(14),
+              vertical: adaptive.scale(13),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: adaptive.scale(42),
+                  height: adaptive.scale(42),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.accent.withValues(alpha: 0.13),
+                    border: Border.all(
+                      color: AppColors.accent.withValues(alpha: 0.22),
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.route_rounded,
+                    color: AppColors.accent,
+                    size: adaptive.scale(21),
+                  ),
+                ),
+                SizedBox(width: adaptive.scale(12)),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        route.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: StoryPalette.text,
+                          fontSize: adaptive.scale(15.5),
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                      if (description.isNotEmpty) ...[
+                        SizedBox(height: adaptive.scale(4)),
+                        Text(
+                          description,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: StoryPalette.textSoft.withValues(
+                              alpha: 0.82,
+                            ),
+                            fontSize: adaptive.scale(12.5),
+                            height: 1.22,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                      ],
+                      SizedBox(height: adaptive.scale(8)),
+                      Wrap(
+                        spacing: adaptive.scale(8),
+                        runSpacing: adaptive.scale(6),
+                        children: [
+                          _RoutePickerMetricChip(
+                            icon: Icons.schedule_rounded,
+                            label: _formatRouteDuration(
+                              route.snapshot.durationSeconds,
+                              l10n,
+                            ),
+                          ),
+                          _RoutePickerMetricChip(
+                            icon: Icons.straighten_rounded,
+                            label: _formatRouteDistance(
+                              route.snapshot.distanceMeters,
+                              l10n,
+                            ),
+                          ),
+                          _RoutePickerMetricChip(
+                            icon: Icons.pin_drop_outlined,
+                            label: l10n.userRoutesStopsCount(
+                              route.points.length,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: adaptive.scale(8)),
+                Icon(
+                  Icons.add_rounded,
+                  color: AppColors.accent,
+                  size: adaptive.scale(22),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RoutePickerMetricChip extends StatelessWidget {
+  const _RoutePickerMetricChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final adaptive = StoryAdaptive.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(adaptive.radius(999)),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: adaptive.scale(8),
+          vertical: adaptive.scale(5),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: AppColors.accent, size: adaptive.scale(13)),
+            SizedBox(width: adaptive.scale(5)),
+            Text(
+              label,
+              style: TextStyle(
+                color: const Color(0xFFFFE6B4),
+                fontSize: adaptive.scale(11),
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _formatRouteDuration(int seconds, AppLocalizations l10n) {
+  final minutes = (seconds / 60).round().clamp(1, 1440);
+  return l10n.routeDurationMinutesShort(minutes);
+}
+
+String _formatRouteDistance(int meters, AppLocalizations l10n) {
+  if (meters >= 1000) {
+    final kilometers = meters / 1000;
+    return l10n.routeDistanceKilometersShort(
+      kilometers.toStringAsFixed(kilometers >= 10 ? 0 : 1),
+    );
+  }
+  return l10n.routeDistanceMetersShort(meters);
 }
 
 class _StoryEditorSubmissionLockOverlay extends StatelessWidget {

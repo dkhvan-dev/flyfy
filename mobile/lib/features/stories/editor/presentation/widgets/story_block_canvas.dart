@@ -521,6 +521,13 @@ class _BlockRenderer extends StatelessWidget {
           onDelete: () => onDeleteBlock(block.id),
           onTextInputFocused: onTextInputFocused,
         );
+      case StoryBlockType.routeReference:
+        return _RouteReferenceBlock(
+          block: block,
+          selected: selected,
+          onTap: () => onSelectBlock(block.id),
+          onDelete: () => onDeleteBlock(block.id),
+        );
       case StoryBlockType.paragraph:
       case StoryBlockType.heading:
       case StoryBlockType.bulletedList:
@@ -689,6 +696,81 @@ class _PlaceReferenceBlockState extends State<_PlaceReferenceBlock> {
                   onTap: widget.onTap,
                   onChanged: widget.onChanged,
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RouteReferenceBlock extends StatelessWidget {
+  const _RouteReferenceBlock({
+    required this.block,
+    required this.selected,
+    required this.onTap,
+    required this.onDelete,
+  });
+
+  final StoryBlock block;
+  final bool selected;
+  final VoidCallback onTap;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final route = block.route;
+    final title = (route?.title ?? '').trim();
+    final description = (route?.description ?? '').trim();
+    return InkWell(
+      onTap: onTap,
+      child: DecoratedBox(
+        decoration: storyEditorPanelDecoration(context).copyWith(
+          border: Border.all(
+            color: selected ? AppColors.accent : AppColors.border,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(StoryEditorSpacing.md),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.route_rounded, size: 22),
+              const SizedBox(width: StoryEditorSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title.isEmpty
+                          ? l10n.storyEditorRouteReferenceEmpty
+                          : title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelLarge,
+                    ),
+                    if (description.isNotEmpty) ...[
+                      const SizedBox(height: StoryEditorSpacing.xs),
+                      Text(
+                        description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: StoryPalette.textMuted,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: l10n.storyEditorDeleteBlockSemantic(
+                  l10n.storyEditorBlockRouteReference.toLowerCase(),
+                ),
+                onPressed: onDelete,
+                icon: const Icon(Icons.delete_outline_rounded),
               ),
             ],
           ),

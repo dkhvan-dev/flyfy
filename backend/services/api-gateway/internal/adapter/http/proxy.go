@@ -33,6 +33,8 @@ type ProxyHandler struct {
 	checklistProxy    *httputil.ReverseProxy
 	currencyProxy     *httputil.ReverseProxy
 	placeProxy        *httputil.ReverseProxy
+	routingProxy      *httputil.ReverseProxy
+	userRouteProxy    *httputil.ReverseProxy
 	paymentProxy      *httputil.ReverseProxy
 	stickerProxy      *httputil.ReverseProxy
 	notificationProxy *httputil.ReverseProxy
@@ -102,6 +104,16 @@ func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHan
 		return nil, err
 	}
 
+	routingProxy, err := newSingleHostProxy("routing", cfg.Downstreams.RoutingService, cfg.Security.InternalServiceToken)
+	if err != nil {
+		return nil, err
+	}
+
+	userRouteProxy, err := newSingleHostProxy("user-route", cfg.Downstreams.UserRouteService, cfg.Security.InternalServiceToken)
+	if err != nil {
+		return nil, err
+	}
+
 	paymentProxy, err := newSingleHostProxy("payment", cfg.Downstreams.PaymentService, cfg.Security.InternalServiceToken)
 	if err != nil {
 		return nil, err
@@ -148,6 +160,8 @@ func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHan
 		checklistProxy:    checklistProxy,
 		currencyProxy:     currencyProxy,
 		placeProxy:        placeProxy,
+		routingProxy:      routingProxy,
+		userRouteProxy:    userRouteProxy,
 		paymentProxy:      paymentProxy,
 		stickerProxy:      stickerProxy,
 		notificationProxy: notificationProxy,
@@ -256,6 +270,10 @@ func (h *ProxyHandler) resolveProxy(upstream string) *httputil.ReverseProxy {
 		return h.currencyProxy
 	case "place":
 		return h.placeProxy
+	case "routing":
+		return h.routingProxy
+	case "user-route":
+		return h.userRouteProxy
 	case "payment":
 		return h.paymentProxy
 	case "sticker":
@@ -436,11 +454,12 @@ func rewriteDownstreamErrorResponse(resp *http.Response, maintenanceOnly bool) (
 		return false, err
 	}
 
-	rewritten, ok := buildDownstreamErrorResponse(resp.Request, resp.StatusCode, payload)
-	if !ok {
+	if maintenanceOnly && !canExposeDownstreamServerError(payload) {
 		return false, nil
 	}
-	if maintenanceOnly && rewritten.Kind != errorKindMaintenance {
+
+	rewritten, ok := buildDownstreamErrorResponse(resp.Request, resp.StatusCode, payload)
+	if !ok {
 		return false, nil
 	}
 
@@ -451,6 +470,28 @@ func rewriteDownstreamErrorResponse(resp *http.Response, maintenanceOnly bool) (
 	body = append(body, '\n')
 	replaceResponseBody(resp, body)
 	return true, nil
+}
+
+func canExposeDownstreamServerError(payload map[string]any) bool {
+	kind := strings.ToLower(strings.TrimSpace(stringPayloadField(payload, "kind")))
+	code := stringPayloadField(payload, "code")
+	if kind == errorKindMaintenance || strings.HasSuffix(strings.ToLower(strings.TrimSpace(code)), ".technical_maintenance") {
+		return true
+	}
+	if kind != errorKindBusiness {
+		return false
+	}
+
+	if _, ok := canonicalDownstreamError(code); ok {
+		return true
+	}
+	if _, ok := canonicalDownstreamError(stringPayloadField(payload, "error")); ok {
+		return true
+	}
+	if _, ok := canonicalDownstreamError(stringPayloadField(payload, "message")); ok {
+		return true
+	}
+	return false
 }
 
 func downstreamJSONPayload(resp *http.Response) (map[string]any, bool, error) {

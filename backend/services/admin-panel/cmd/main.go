@@ -30,6 +30,7 @@ import (
 	techbreakadapter "kz/inflap/backend/services/admin-panel/internal/adapter/techbreak"
 	trustadapter "kz/inflap/backend/services/admin-panel/internal/adapter/trust"
 	useradapter "kz/inflap/backend/services/admin-panel/internal/adapter/user"
+	userrouteadapter "kz/inflap/backend/services/admin-panel/internal/adapter/userroute"
 	"kz/inflap/backend/services/admin-panel/internal/app"
 	"kz/inflap/backend/services/admin-panel/internal/config"
 )
@@ -83,6 +84,11 @@ func main() {
 	postClient := postadapter.NewClient(
 		cfg.FeedService.BaseURL,
 		cfg.FeedService.Timeout,
+		cfg.Security.TrustedInternalToken,
+	)
+	userRouteClient := userrouteadapter.NewClient(
+		cfg.UserRoute.BaseURL,
+		cfg.UserRoute.Timeout,
 		cfg.Security.TrustedInternalToken,
 	)
 	userClient, err := useradapter.New(
@@ -153,6 +159,7 @@ func main() {
 	staffUC := app.NewStaffUseCase(staffRepo, auditRepo, sessionRepo)
 	moderationUC := app.NewModerationUseCase(moderationRepo, excursionClient, activityClient, guideClient, chatClient, auditRepo)
 	moderationUC.SetPostReportClient(postClient)
+	userRouteModerationUC := app.NewUserRouteModerationUseCase(userRouteClient, auditRepo)
 	userModerationUC := app.NewUserModerationUseCase(userClient, userModerationRepo, auditRepo)
 	trustAppealUC := app.NewTrustAppealUseCase(trustClient, auditRepo)
 	if notificationClient != nil {
@@ -201,6 +208,7 @@ func main() {
 	adminServer.SetTrustAppealUseCase(trustAppealUC)
 	adminServer.SetCommunityAdminUseCase(communityAdminUC)
 	adminServer.SetOperationsUseCase(operationsUC)
+	adminServer.SetUserRouteModerationUseCase(userRouteModerationUC)
 
 	go restrictionOutboxWorker.Start(ctx)
 

@@ -8,12 +8,20 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:maplibre/maplibre.dart' hide LengthUnit;
+import 'package:provider/provider.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/device/device_context_service.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
+import '../../features/routing/models/routing_models.dart';
+import '../../features/routing/widgets/route_mode_selector.dart';
+import '../../features/routing/widgets/route_summary_card.dart';
+import '../../features/user_routes/models/user_route_models.dart';
+import '../../features/user_routes/user_route_feature_flags.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../providers/routing_provider.dart';
+import '../../providers/user_routes_provider.dart';
 import '../../shared/map/app_map_gesture_recognizers.dart';
 import '../../shared/map/app_map_links.dart';
 import '../../shared/widgets/app_map_attribution.dart';
@@ -75,11 +83,39 @@ class MapActivityCollection {
   final List<MapActivityTarget> activities;
 }
 
+class MapRoutePreview {
+  const MapRoutePreview({
+    required this.route,
+    this.origin,
+    this.destination,
+    this.routePoints = const [],
+    this.enabledProfiles = const [
+      RouteProfile.touristWalk,
+      RouteProfile.bikeCity,
+      RouteProfile.carStandard,
+    ],
+  });
+
+  final RouteResponseVm route;
+  final RoutePointVm? origin;
+  final MapTarget? destination;
+  final List<RoutePointVm> routePoints;
+  final List<RouteProfile> enabledProfiles;
+}
+
 class MapScreen extends StatefulWidget {
-  const MapScreen({super.key, this.initialTarget, this.activityCollection});
+  const MapScreen({
+    super.key,
+    this.initialTarget,
+    this.activityCollection,
+    this.routePreview,
+    this.routeBuilderEnabled = false,
+  });
 
   final MapTarget? initialTarget;
   final MapActivityCollection? activityCollection;
+  final MapRoutePreview? routePreview;
+  final bool routeBuilderEnabled;
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -88,6 +124,7 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   static const LatLng _fallbackCenter = LatLng(43.238949, 76.889709);
   static const double _defaultZoom = 14.6;
+  static const double _routePreviewInitialZoom = 10.4;
   static const int _searchRadiusMeters = 1800;
 
   MapController? _mapController;
@@ -98,6 +135,8 @@ class _MapScreenState extends State<MapScreen> {
 
   Timer? _reloadDebounce;
   Timer? _placesRetryDebounce;
+  Timer? _routePreviewCameraFitRetry;
+  Timer? _routePreviewCameraFitLateRetry;
 
   bool _bootstrapping = true;
   bool _loadingPlaces = false;
@@ -109,17 +148,26 @@ class _MapScreenState extends State<MapScreen> {
   String? _locationIssueCode;
   String? _placesErrorMessage;
   String? _locationLabel;
+  String? _routePreviewError;
+  String? _savedRoutePreviewSignature;
   LatLng _mapCenter = _fallbackCenter;
   LatLng? _userLocation;
+  MapRoutePreview? _routePreview;
   _LocalPlace? _targetPlace;
   List<_LocalPlace> _places = const [];
   _LocalPlace? _selectedPlace;
+  bool _switchingRouteProfile = false;
+  bool _savingRoutePreview = false;
+  bool _buildingCustomRoute = false;
+  List<RoutePointVm> _routeBuilderPoints = const [];
+  String? _routeBuilderError;
   int _autoPlacesRetryCount = 0;
   int _mapViewGeneration = 0;
 
   @override
   void initState() {
     super.initState();
+    _routePreview = widget.routePreview;
     final activityCollection = widget.activityCollection;
     if (activityCollection != null &&
         activityCollection.activities.isNotEmpty) {
@@ -130,6 +178,17 @@ class _MapScreenState extends State<MapScreen> {
           _loadActivityUserLocation(requestPermission: true, moveCamera: true),
         );
       });
+      return;
+    }
+
+    final routePreview = _routePreview;
+    if (routePreview != null) {
+      unawaited(_bootstrapRoutePreview(routePreview));
+      return;
+    }
+
+    if (widget.routeBuilderEnabled) {
+      unawaited(_bootstrapRouteBuilder());
       return;
     }
 
@@ -144,6 +203,24 @@ class _MapScreenState extends State<MapScreen> {
   bool get _showsActivityMarkers =>
       widget.activityCollection?.activities.isNotEmpty == true;
 
+  bool get _isRoutePreviewMode => _routePreview != null;
+
+  bool get _isRouteBuilderMode =>
+      UserRouteFeatureFlags.customRoutesEnabled && widget.routeBuilderEnabled;
+
+  bool get _hidesNearbyPlaces => _isRoutePreviewMode || _isRouteBuilderMode;
+
+  double get _initialMapZoom =>
+      _isRoutePreviewMode ? _routePreviewInitialZoom : _defaultZoom;
+
+  bool get _routePreviewSaved {
+    final preview = _routePreview;
+    final savedSignature = _savedRoutePreviewSignature;
+    return preview != null &&
+        savedSignature != null &&
+        savedSignature == _routePreviewSignature(preview);
+  }
+
   void _bootstrapActivityMarkers(MapActivityCollection collection) {
     _bootstrapActivityMarkersSync(collection);
   }
@@ -152,6 +229,7 @@ class _MapScreenState extends State<MapScreen> {
   void dispose() {
     _reloadDebounce?.cancel();
     _placesRetryDebounce?.cancel();
+    _cancelRoutePreviewCameraFitRetry();
     _mapReady = false;
     _mapController = null;
     super.dispose();
@@ -196,6 +274,46 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  Future<void> _bootstrapRouteBuilder() async {
+    _autoPlacesRetryCount = 0;
+    _placesRetryDebounce?.cancel();
+    setState(() {
+      _bootstrapping = true;
+      _placesErrorMessage = null;
+      _selectedPlace = null;
+      _targetPlace = null;
+      _places = const [];
+    });
+
+    try {
+      final suggestion = await _deviceContextService.detectLocationSuggestion();
+      if (suggestion == null) {
+        throw Exception('location_unavailable');
+      }
+      if (!mounted) return;
+
+      final center = LatLng(suggestion.latitude, suggestion.longitude);
+      setState(() {
+        _mapCenter = center;
+        _userLocation = center;
+        _locationLabel = _buildLocationLabel(suggestion);
+        _locationIssueCode = null;
+        _bootstrapping = false;
+      });
+      _moveMap(center);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _mapCenter = _fallbackCenter;
+        _userLocation = null;
+        _locationLabel = null;
+        _locationIssueCode = error.toString();
+        _bootstrapping = false;
+      });
+      _moveMap(_fallbackCenter);
+    }
+  }
+
   Future<void> _bootstrapTarget(MapTarget target) async {
     _autoPlacesRetryCount = 0;
     _placesRetryDebounce?.cancel();
@@ -228,6 +346,34 @@ class _MapScreenState extends State<MapScreen> {
     _moveMap(target.point);
     unawaited(_loadTargetUserLocation(requestPermission: true));
     await _loadPlaces(target.point);
+  }
+
+  Future<void> _bootstrapRoutePreview(MapRoutePreview preview) async {
+    _autoPlacesRetryCount = 0;
+    _placesRetryDebounce?.cancel();
+    _reloadDebounce?.cancel();
+
+    final center = _centerForRoutePreview(preview);
+    final destination = preview.destination;
+    setState(() {
+      _mapCenter = center;
+      _userLocation = null;
+      _targetPlace = null;
+      _places = const [];
+      _selectedPlace = null;
+      _locationLabel = destination?.subtitle?.trim().isNotEmpty == true
+          ? destination!.subtitle!.trim()
+          : destination?.title;
+      _locationIssueCode = null;
+      _placesErrorMessage = null;
+      _bootstrapping = false;
+      _loadingPlaces = false;
+      _hideInteractiveMarkersDuringCameraMove = false;
+    });
+
+    _focusRoutePreviewCamera(preview);
+    _scheduleRoutePreviewCameraFit(preview);
+    unawaited(_loadRoutePreviewUserLocation(requestPermission: true));
   }
 
   void _bootstrapActivityMarkersSync(MapActivityCollection collection) {
@@ -273,6 +419,14 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _recenterToUser() async {
+    if (_isRoutePreviewMode) {
+      final preview = _routePreview;
+      if (preview != null) {
+        _focusRoutePreviewCamera(preview, animate: true);
+      }
+      return;
+    }
+
     if (_showsActivityMarkers) {
       await _loadActivityUserLocation(
         requestPermission: true,
@@ -416,6 +570,46 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  Future<void> _loadRoutePreviewUserLocation({
+    required bool requestPermission,
+  }) async {
+    if (!_isRoutePreviewMode) {
+      return;
+    }
+
+    setState(() {
+      _locatingUser = true;
+      _locationIssueCode = null;
+    });
+
+    try {
+      final coordinates = await _deviceContextService.detectCoordinates(
+        requestPermission: requestPermission,
+      );
+      if (coordinates == null) {
+        return;
+      }
+      if (!mounted) return;
+
+      final userPoint = LatLng(coordinates.latitude, coordinates.longitude);
+      setState(() {
+        _userLocation = userPoint;
+        _locationIssueCode = null;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _locationIssueCode = error.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _locatingUser = false;
+        });
+      }
+    }
+  }
+
   void _moveMap(
     LatLng center, {
     double zoom = _defaultZoom,
@@ -445,7 +639,76 @@ class _MapScreenState extends State<MapScreen> {
     unawaited(mapController.moveCamera(center: target, zoom: zoom));
   }
 
+  void _scheduleRoutePreviewCameraFit(
+    MapRoutePreview preview, {
+    bool animate = false,
+  }) {
+    _cancelRoutePreviewCameraFitRetry();
+
+    void fitIfCurrent({required bool animated}) {
+      if (!mounted ||
+          _mapSuspendedForNavigation ||
+          !identical(_routePreview, preview)) {
+        return;
+      }
+      _focusRoutePreviewCamera(preview, animate: animated);
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      fitIfCurrent(animated: animate);
+      _routePreviewCameraFitRetry = Timer(
+        const Duration(milliseconds: 180),
+        () => fitIfCurrent(animated: animate),
+      );
+      _routePreviewCameraFitLateRetry = Timer(
+        const Duration(milliseconds: 650),
+        () => fitIfCurrent(animated: false),
+      );
+    });
+  }
+
+  void _cancelRoutePreviewCameraFitRetry() {
+    _routePreviewCameraFitRetry?.cancel();
+    _routePreviewCameraFitRetry = null;
+    _routePreviewCameraFitLateRetry?.cancel();
+    _routePreviewCameraFitLateRetry = null;
+  }
+
+  void _focusRoutePreviewCamera(
+    MapRoutePreview preview, {
+    bool animate = false,
+  }) {
+    final bounds = _routePreviewBounds(preview);
+    if (bounds == null) {
+      _moveMap(_centerForRoutePreview(preview), animate: animate);
+      return;
+    }
+
+    final mapController = _mapController;
+    if (!mounted ||
+        _mapSuspendedForNavigation ||
+        !_mapReady ||
+        mapController == null) {
+      return;
+    }
+
+    final duration = animate
+        ? const Duration(milliseconds: 450)
+        : Duration.zero;
+    unawaited(
+      mapController.fitBounds(
+        bounds: bounds,
+        nativeDuration: duration,
+        webMaxDuration: duration,
+        webMaxZoom: 16,
+        padding: EdgeInsets.all(_mapScaled(context, 56, min: 40, max: 72)),
+      ),
+    );
+  }
+
   Future<void> _loadPlaces(LatLng center, {bool selectFirst = false}) async {
+    if (_isRoutePreviewMode) return;
+
     _placesRetryDebounce?.cancel();
     setState(() {
       _loadingPlaces = true;
@@ -529,8 +792,12 @@ class _MapScreenState extends State<MapScreen> {
         }
       case MapEventMoveCamera(camera: final camera):
         _handleMapCameraChanged(camera, hasGesture: _cameraChangeStartedByUser);
-      case MapEventClick(screenPoint: final screenPoint):
-        _selectRenderedPlaceAt(screenPoint);
+      case MapEventClick(point: final point, screenPoint: final screenPoint):
+        if (_isRouteBuilderMode) {
+          _handleRouteBuilderMapTap(point);
+        } else {
+          _selectRenderedPlaceAt(screenPoint);
+        }
       case MapEventCameraIdle():
         _cameraChangeStartedByUser = false;
         if (_hideInteractiveMarkersDuringCameraMove) {
@@ -546,7 +813,7 @@ class _MapScreenState extends State<MapScreen> {
   void _handleMapCameraChanged(MapCamera camera, {required bool hasGesture}) {
     final center = _fromGeographic(camera.center);
     _mapCenter = center;
-    if (!hasGesture || _showsActivityMarkers) {
+    if (!hasGesture || _hidesNearbyPlaces || _showsActivityMarkers) {
       return;
     }
 
@@ -556,6 +823,103 @@ class _MapScreenState extends State<MapScreen> {
       if (!mounted) return;
       unawaited(_loadPlaces(center));
     });
+  }
+
+  void _handleRouteBuilderMapTap(Geographic point) {
+    final l10n = AppLocalizations.of(context)!;
+    final nextOrder = _routeBuilderPoints.length + 1;
+    final routePoint = RoutePointVm(
+      latitude: point.lat.toDouble(),
+      longitude: point.lon.toDouble(),
+      name: l10n.mapRouteBuilderPointName(nextOrder),
+    );
+
+    setState(() {
+      _routeBuilderPoints = [..._routeBuilderPoints, routePoint];
+      _routePreview = null;
+      _routeBuilderError = null;
+      _savedRoutePreviewSignature = null;
+      _selectedPlace = null;
+    });
+  }
+
+  void _removeLastRouteBuilderPoint() {
+    if (_routeBuilderPoints.isEmpty || _buildingCustomRoute) {
+      return;
+    }
+
+    setState(() {
+      _routeBuilderPoints = _routeBuilderPoints
+          .take(_routeBuilderPoints.length - 1)
+          .toList(growable: false);
+      _routePreview = null;
+      _routeBuilderError = null;
+      _savedRoutePreviewSignature = null;
+    });
+  }
+
+  void _clearRouteBuilder() {
+    if ((_routeBuilderPoints.isEmpty && _routePreview == null) ||
+        _buildingCustomRoute) {
+      return;
+    }
+
+    setState(() {
+      _routeBuilderPoints = const [];
+      _routePreview = null;
+      _routeBuilderError = null;
+      _savedRoutePreviewSignature = null;
+    });
+  }
+
+  Future<void> _buildCustomRoutePreview() async {
+    final l10n = AppLocalizations.of(context)!;
+    if (_routeBuilderPoints.length < 2 || _buildingCustomRoute) {
+      setState(() {
+        _routeBuilderError = l10n.mapRouteBuilderMinPoints;
+      });
+      return;
+    }
+
+    setState(() {
+      _buildingCustomRoute = true;
+      _routeBuilderError = null;
+    });
+
+    final routingProvider = context.read<RoutingProvider>();
+    try {
+      final route = await routingProvider.buildRoute(
+        RouteRequestVm(
+          profile: RouteProfile.touristWalk,
+          points: _routeBuilderPoints,
+        ),
+      );
+      if (!mounted) return;
+
+      if (route == null) {
+        setState(() {
+          _routeBuilderError =
+              routingProvider.errorMessage ?? l10n.mapRouteBuilderMinPoints;
+        });
+        return;
+      }
+
+      final preview = MapRoutePreview(
+        route: route,
+        routePoints: _routeBuilderPoints,
+      );
+      setState(() {
+        _routePreview = preview;
+      });
+      _focusRoutePreviewCamera(preview, animate: true);
+      _scheduleRoutePreviewCameraFit(preview, animate: true);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _buildingCustomRoute = false;
+        });
+      }
+    }
   }
 
   void _selectRenderedPlaceAt(Offset screenPoint) {
@@ -665,6 +1029,87 @@ class _MapScreenState extends State<MapScreen> {
 
   List<Layer> _buildStableAnnotationLayers() {
     final layers = <Layer>[];
+    final routePreview = _routePreview;
+    if (routePreview != null) {
+      final routeFeature = _routePolylineFeature(routePreview.route);
+      if (routeFeature != null) {
+        layers
+          ..add(
+            PolylineLayer(
+              polylines: [routeFeature],
+              color: Colors.white.withValues(alpha: 0.78),
+              width: 8,
+            ),
+          )
+          ..add(
+            PolylineLayer(
+              polylines: [routeFeature],
+              color: AppColors.accent,
+              width: 5,
+            ),
+          );
+      }
+
+      final stops = _routePreviewStops(routePreview);
+      if (stops.isNotEmpty) {
+        layers
+          ..add(
+            CircleLayer(
+              points: [
+                for (final stop in stops) _pointFeature(stop.id, stop.point),
+              ],
+              radius: 11,
+              color: const Color(0xFFFFF7E6),
+              strokeWidth: 3,
+              strokeColor: AppColors.accent,
+            ),
+          )
+          ..add(
+            CircleLayer(
+              points: [
+                for (final stop in stops)
+                  _pointFeature('${stop.id}:core', stop.point),
+              ],
+              radius: 5,
+              color: AppColors.accent,
+              strokeWidth: 1,
+              strokeColor: const Color(0xFF3A2108),
+            ),
+          );
+      }
+    }
+
+    final routeBuilderStops = routePreview == null && _isRouteBuilderMode
+        ? _routeBuilderStops()
+        : const <_RoutePreviewStop>[];
+    if (routeBuilderStops.isNotEmpty) {
+      layers
+        ..add(
+          CircleLayer(
+            points: [
+              for (final stop in routeBuilderStops)
+                _pointFeature(stop.id, stop.point),
+            ],
+            radius: 11,
+            color: const Color(0xFFFFF7E6),
+            strokeWidth: 3,
+            strokeColor: AppColors.accent,
+          ),
+        )
+        ..add(
+          CircleLayer(
+            points: [
+              for (final stop in routeBuilderStops)
+                _pointFeature('${stop.id}:core', stop.point),
+            ],
+            radius: 5,
+            color: AppColors.accent,
+            strokeWidth: 1,
+            strokeColor: const Color(0xFF3A2108),
+          ),
+        );
+    }
+
     final userLocation = _userLocation;
     if (userLocation != null) {
       layers.add(
@@ -678,7 +1123,9 @@ class _MapScreenState extends State<MapScreen> {
       );
     }
 
-    final places = <_LocalPlace>[?_targetPlace, ..._places];
+    final places = _hidesNearbyPlaces
+        ? <_LocalPlace>[]
+        : <_LocalPlace>[?_targetPlace, ..._places];
     if (places.isNotEmpty) {
       layers.add(
         CircleLayer(
@@ -694,7 +1141,7 @@ class _MapScreenState extends State<MapScreen> {
     }
 
     final selectedPlace = _selectedPlace;
-    if (selectedPlace != null) {
+    if (selectedPlace != null && !_hidesNearbyPlaces) {
       layers.add(
         CircleLayer(
           points: [_placeFeature(selectedPlace)],
@@ -723,6 +1170,166 @@ class _MapScreenState extends State<MapScreen> {
       geometry: Point(_toGeographic(point)),
       properties: {'pointId': id},
     );
+  }
+
+  Feature<LineString>? _routePolylineFeature(RouteResponseVm route) {
+    final points = route.displayPoints;
+    if (points.length < 2) {
+      return null;
+    }
+
+    return Feature(
+      id: 'route-preview',
+      geometry: LineString.from([
+        for (final point in points)
+          Geographic(lon: point.longitude, lat: point.latitude),
+      ]),
+      properties: const {'routeId': 'route-preview'},
+    );
+  }
+
+  LatLng _centerForRoutePreview(MapRoutePreview preview) {
+    final routePoints = preview.route.displayPoints;
+    if (routePoints.isNotEmpty) {
+      return _centerForLatLngs(_routePointsToLatLngs(routePoints));
+    }
+
+    final stops = _routePreviewStops(preview);
+    if (stops.isNotEmpty) {
+      return _centerForLatLngs(stops.map((stop) => stop.point));
+    }
+
+    final destination = preview.destination;
+    if (destination != null) {
+      return destination.point;
+    }
+
+    final origin = preview.origin;
+    if (origin != null) {
+      return LatLng(origin.latitude, origin.longitude);
+    }
+
+    return _fallbackCenter;
+  }
+
+  Iterable<LatLng> _routePointsToLatLngs(Iterable<RoutePointVm> points) {
+    return points.map((point) => LatLng(point.latitude, point.longitude));
+  }
+
+  LatLng _centerForLatLngs(Iterable<LatLng> points) {
+    final iterator = points.iterator;
+    if (!iterator.moveNext()) {
+      return _fallbackCenter;
+    }
+
+    var minLat = iterator.current.latitude;
+    var maxLat = iterator.current.latitude;
+    var minLon = iterator.current.longitude;
+    var maxLon = iterator.current.longitude;
+
+    while (iterator.moveNext()) {
+      final point = iterator.current;
+      minLat = math.min(minLat, point.latitude);
+      maxLat = math.max(maxLat, point.latitude);
+      minLon = math.min(minLon, point.longitude);
+      maxLon = math.max(maxLon, point.longitude);
+    }
+
+    return LatLng((minLat + maxLat) / 2, (minLon + maxLon) / 2);
+  }
+
+  LngLatBounds? _routePreviewBounds(MapRoutePreview preview) {
+    final points = <Geographic>[];
+    for (final point in preview.route.displayPoints) {
+      _addRoutePreviewBoundPoint(
+        points,
+        LatLng(point.latitude, point.longitude),
+      );
+    }
+    for (final stop in _routePreviewStops(preview)) {
+      _addRoutePreviewBoundPoint(points, stop.point);
+    }
+    if (points.length < 2) {
+      return null;
+    }
+    return LngLatBounds.fromPoints(points);
+  }
+
+  void _addRoutePreviewBoundPoint(List<Geographic> points, LatLng point) {
+    final latitude = point.latitude;
+    final longitude = point.longitude;
+    if (!latitude.isFinite || !longitude.isFinite) {
+      return;
+    }
+
+    const duplicateTolerance = 0.0000001;
+    final alreadyIncluded = points.any(
+      (existing) =>
+          (existing.lat.toDouble() - latitude).abs() < duplicateTolerance &&
+          (existing.lon.toDouble() - longitude).abs() < duplicateTolerance,
+    );
+    if (alreadyIncluded) {
+      return;
+    }
+
+    points.add(Geographic(lon: longitude, lat: latitude));
+  }
+
+  List<_RoutePreviewStop> _routePreviewStops(MapRoutePreview preview) {
+    if (preview.routePoints.isNotEmpty) {
+      return [
+        for (var i = 0; i < preview.routePoints.length; i++)
+          _RoutePreviewStop(
+            id: 'route-stop:$i',
+            point: LatLng(
+              preview.routePoints[i].latitude,
+              preview.routePoints[i].longitude,
+            ),
+            order: i + 1,
+            title: preview.routePoints[i].name,
+          ),
+      ];
+    }
+
+    final stops = <_RoutePreviewStop>[];
+    final origin = preview.origin;
+    if (origin != null) {
+      stops.add(
+        _RoutePreviewStop(
+          id: 'route-stop:0',
+          point: LatLng(origin.latitude, origin.longitude),
+          order: 1,
+          title: origin.name,
+        ),
+      );
+    }
+    final destination = preview.destination;
+    if (destination != null) {
+      stops.add(
+        _RoutePreviewStop(
+          id: 'route-stop:${stops.length}',
+          point: destination.point,
+          order: stops.length + 1,
+          title: destination.title,
+        ),
+      );
+    }
+    return stops;
+  }
+
+  List<_RoutePreviewStop> _routeBuilderStops() {
+    return [
+      for (var i = 0; i < _routeBuilderPoints.length; i++)
+        _RoutePreviewStop(
+          id: 'route-builder-stop:$i',
+          point: LatLng(
+            _routeBuilderPoints[i].latitude,
+            _routeBuilderPoints[i].longitude,
+          ),
+          order: i + 1,
+          title: _routeBuilderPoints[i].name,
+        ),
+    ];
   }
 
   LatLng _centerForActivityMarkers(List<MapActivityTarget> activities) {
@@ -754,6 +1361,193 @@ class _MapScreenState extends State<MapScreen> {
   Future<void> _showError(String message) {
     final l10n = AppLocalizations.of(context)!;
     return showErrorDialog(context, title: l10n.error, message: message);
+  }
+
+  Future<void> _saveRoutePreview() async {
+    final preview = _routePreview;
+    if (preview == null || _savingRoutePreview) {
+      return;
+    }
+
+    final routePoints = _routePreviewSavePoints(preview);
+    final l10n = AppLocalizations.of(context)!;
+    if (routePoints.length < 2) {
+      _showSnack(l10n.userRoutesSaveFailed);
+      return;
+    }
+
+    setState(() {
+      _savingRoutePreview = true;
+    });
+
+    final userRoutesProvider = context.read<UserRoutesProvider>();
+    try {
+      final savedRoute = await userRoutesProvider.createFromBuiltRoute(
+        title: _routePreviewSaveTitle(preview, l10n),
+        route: preview.route,
+        points: routePoints,
+        visibility: UserRouteVisibility.private,
+      );
+      if (!mounted) return;
+
+      if (savedRoute == null) {
+        _showSnack(
+          userRoutesProvider.errorMessage ?? l10n.userRoutesSaveFailed,
+        );
+        return;
+      }
+
+      setState(() {
+        _savedRoutePreviewSignature = _routePreviewSignature(preview);
+      });
+      _showSnack(l10n.userRoutesSaveSuccess);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _savingRoutePreview = false;
+        });
+      }
+    }
+  }
+
+  List<RoutePointVm> _routePreviewSavePoints(MapRoutePreview preview) {
+    if (preview.routePoints.length >= 2) {
+      return preview.routePoints;
+    }
+
+    final origin = preview.origin;
+    final destination = preview.destination;
+    if (origin != null && destination != null) {
+      return [
+        origin,
+        RoutePointVm(
+          latitude: destination.latitude,
+          longitude: destination.longitude,
+          name: destination.title,
+        ),
+      ];
+    }
+
+    final displayPoints = preview.route.displayPoints;
+    if (displayPoints.length >= 2) {
+      return [displayPoints.first, displayPoints.last];
+    }
+
+    return const [];
+  }
+
+  String _routePreviewSignature(MapRoutePreview preview) {
+    final displayPoints = preview.route.displayPoints;
+    return jsonEncode({
+      'mode': preview.route.mode.backendValue,
+      'profile': preview.route.profile.backendValue,
+      'distanceMeters': preview.route.distanceMeters.round(),
+      'durationSeconds': preview.route.durationSeconds,
+      'points': [
+        for (final point in _routePreviewSavePoints(preview))
+          _routePointSignature(point),
+      ],
+      'displayPoints': [
+        for (final point in displayPoints) _routePointSignature(point),
+      ],
+    });
+  }
+
+  Map<String, Object?> _routePointSignature(RoutePointVm point) {
+    final name = point.name?.trim();
+    return {
+      'latitude': point.latitude.toStringAsFixed(6),
+      'longitude': point.longitude.toStringAsFixed(6),
+      if (name != null && name.isNotEmpty) 'name': name,
+    };
+  }
+
+  String _routePreviewSaveTitle(
+    MapRoutePreview preview,
+    AppLocalizations l10n,
+  ) {
+    final destinationTitle = preview.destination?.title.trim();
+    if (destinationTitle != null && destinationTitle.isNotEmpty) {
+      return l10n.userRoutesDefaultTitleTo(destinationTitle);
+    }
+
+    final routePoints = _routePreviewSavePoints(preview);
+    if (routePoints.isNotEmpty) {
+      final lastPointName = routePoints.last.name?.trim();
+      if (lastPointName != null && lastPointName.isNotEmpty) {
+        return l10n.userRoutesDefaultTitleTo(lastPointName);
+      }
+    }
+
+    return l10n.userRoutesDefaultTitle;
+  }
+
+  Future<void> _switchRouteProfile(RouteProfile profile) async {
+    final preview = _routePreview;
+    final origin = preview?.origin;
+    final destination = preview?.destination;
+    final routePointCount = preview?.routePoints.length ?? 0;
+    final hasSwitchableRoute =
+        routePointCount >= 2 || (origin != null && destination != null);
+    if (preview == null ||
+        !hasSwitchableRoute ||
+        profile == preview.route.profile ||
+        _switchingRouteProfile) {
+      return;
+    }
+
+    final routePoints = preview.routePoints.isNotEmpty
+        ? preview.routePoints
+        : [
+            origin!,
+            RoutePointVm(
+              latitude: destination!.latitude,
+              longitude: destination.longitude,
+              name: destination.title,
+            ),
+          ];
+    final routingProvider = context.read<RoutingProvider>();
+    final fallbackMessage = AppLocalizations.of(
+      context,
+    )!.mapUsingFallbackLocation;
+
+    setState(() {
+      _switchingRouteProfile = true;
+      _routePreviewError = null;
+    });
+
+    try {
+      final route = await routingProvider.buildRoute(
+        RouteRequestVm(profile: profile, points: routePoints),
+      );
+      if (!mounted) return;
+
+      if (route == null) {
+        setState(() {
+          _routePreviewError = routingProvider.errorMessage ?? fallbackMessage;
+        });
+        return;
+      }
+
+      final updatedPreview = MapRoutePreview(
+        route: route,
+        origin: origin,
+        destination: destination,
+        routePoints: routePoints,
+        enabledProfiles: preview.enabledProfiles,
+      );
+      setState(() {
+        _routePreview = updatedPreview;
+        _savedRoutePreviewSignature = null;
+      });
+      _scheduleRoutePreviewCameraFit(updatedPreview, animate: true);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _switchingRouteProfile = false;
+        });
+      }
+    }
   }
 
   String? _buildLocationLabel(DeviceLocationSuggestion suggestion) {
@@ -792,6 +1586,12 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final selectedPlace = _selectedPlace;
+    final mapTitle = _isRouteBuilderMode
+        ? l10n.mapRouteBuilderTitle
+        : l10n.homeNavMap;
+    final mapSubtitle = _isRouteBuilderMode
+        ? l10n.mapRouteBuilderHint
+        : _locationLabel ?? _resolveLocationIssueMessage(l10n);
     final placesCountLabel = _showsActivityMarkers
         ? l10n.mapActivitiesCount(_places.length)
         : l10n.mapPlacesCount(_places.length);
@@ -816,6 +1616,39 @@ class _MapScreenState extends State<MapScreen> {
           child: SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
+                final routePreview = _routePreview;
+                final routeBuilderPanel = _isRouteBuilderMode
+                    ? _RouteBuilderPanel(
+                        points: _routeBuilderPoints,
+                        route: routePreview?.route,
+                        building: _buildingCustomRoute,
+                        savingRoute: _savingRoutePreview,
+                        routeSaved: _routePreviewSaved,
+                        showSaveRoute:
+                            UserRouteFeatureFlags.customRoutesEnabled,
+                        errorMessage: _routeBuilderError ?? _routePreviewError,
+                        onBuildRoute: _buildCustomRoutePreview,
+                        onRemoveLast: _removeLastRouteBuilderPoint,
+                        onClear: _clearRouteBuilder,
+                        onSaveRoute: routePreview == null
+                            ? null
+                            : _saveRoutePreview,
+                      )
+                    : null;
+                final routePreviewPanel =
+                    routePreview == null || _isRouteBuilderMode
+                    ? null
+                    : _RoutePreviewPanel(
+                        preview: routePreview,
+                        switching: _switchingRouteProfile,
+                        savingRoute: _savingRoutePreview,
+                        routeSaved: _routePreviewSaved,
+                        showSaveRoute:
+                            UserRouteFeatureFlags.customRoutesEnabled,
+                        errorMessage: _routePreviewError,
+                        onProfileChanged: _switchRouteProfile,
+                        onSaveRoute: _saveRoutePreview,
+                      );
                 final screenHeight = constraints.maxHeight;
                 final screenWidth = constraints.maxWidth;
                 final textScale = MediaQuery.textScalerOf(context).scale(1);
@@ -843,9 +1676,15 @@ class _MapScreenState extends State<MapScreen> {
                   min: 112,
                   max: 138,
                 );
+                final hasRouteBottomPanel =
+                    routePreviewPanel != null || routeBuilderPanel != null;
                 final bottomPanelMaxHeight = math.min(
-                  screenHeight * (ultraCompactHeight ? 0.34 : 0.38),
-                  _mapScaled(context, 278, min: 220, max: 292),
+                  !hasRouteBottomPanel
+                      ? screenHeight * (ultraCompactHeight ? 0.34 : 0.38)
+                      : screenHeight * (ultraCompactHeight ? 0.42 : 0.46),
+                  !hasRouteBottomPanel
+                      ? _mapScaled(context, 278, min: 220, max: 292)
+                      : _mapScaled(context, 340, min: 278, max: 360),
                 );
                 final topPadding = _mapScaled(
                   context,
@@ -889,7 +1728,7 @@ class _MapScreenState extends State<MapScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  l10n.homeNavMap,
+                                  mapTitle,
                                   style: TextStyle(
                                     color: AppColors.textPrimary,
                                     fontSize: _mapScaled(
@@ -911,8 +1750,7 @@ class _MapScreenState extends State<MapScreen> {
                                   ),
                                 ),
                                 Text(
-                                  _locationLabel ??
-                                      _resolveLocationIssueMessage(l10n),
+                                  mapSubtitle,
                                   maxLines: compactHeight ? 2 : 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
@@ -941,14 +1779,28 @@ class _MapScreenState extends State<MapScreen> {
                         spacing: _mapScaled(context, 10, min: 8, max: 10),
                         runSpacing: _mapScaled(context, 10, min: 8, max: 10),
                         children: [
-                          _MapInfoChip(
-                            icon: Icons.place_outlined,
-                            label: placesCountLabel,
-                          ),
-                          _MapInfoChip(
-                            icon: Icons.storefront_outlined,
-                            label: nearbyLabel,
-                          ),
+                          if (_isRouteBuilderMode) ...[
+                            _MapInfoChip(
+                              icon: Icons.alt_route_rounded,
+                              label: l10n.mapRouteBuilderTitle,
+                              accent: true,
+                            ),
+                            _MapInfoChip(
+                              icon: Icons.route_rounded,
+                              label: l10n.userRoutesStopsCount(
+                                _routeBuilderPoints.length,
+                              ),
+                            ),
+                          ] else if (!_isRoutePreviewMode) ...[
+                            _MapInfoChip(
+                              icon: Icons.place_outlined,
+                              label: placesCountLabel,
+                            ),
+                            _MapInfoChip(
+                              icon: Icons.storefront_outlined,
+                              label: nearbyLabel,
+                            ),
+                          ],
                           if (_locationIssueCode != null)
                             _MapInfoChip(
                               icon: Icons.info_outline_rounded,
@@ -985,7 +1837,7 @@ class _MapScreenState extends State<MapScreen> {
                                                 initCenter: _toGeographic(
                                                   _mapCenter,
                                                 ),
-                                                initZoom: _defaultZoom,
+                                                initZoom: _initialMapZoom,
                                                 androidForegroundLoadColor:
                                                     const Color(0xFFB3A28D),
                                               ),
@@ -1002,7 +1854,15 @@ class _MapScreenState extends State<MapScreen> {
                                                   return;
                                                 }
                                                 _mapReady = true;
-                                                _moveMap(_mapCenter);
+                                                final styleRoutePreview =
+                                                    _routePreview;
+                                                if (styleRoutePreview != null) {
+                                                  _scheduleRoutePreviewCameraFit(
+                                                    styleRoutePreview,
+                                                  );
+                                                } else {
+                                                  _moveMap(_mapCenter);
+                                                }
                                               },
                                               onEvent: _handleMapEvent,
                                               layers:
@@ -1012,6 +1872,52 @@ class _MapScreenState extends State<MapScreen> {
                                                   WidgetLayer(
                                                     allowInteraction: true,
                                                     markers: [
+                                                      if (routePreview != null)
+                                                        for (final stop
+                                                            in _routePreviewStops(
+                                                              routePreview,
+                                                            ))
+                                                          Marker(
+                                                            point:
+                                                                _toGeographic(
+                                                                  stop.point,
+                                                                ),
+                                                            size: Size.square(
+                                                              _mapScaled(
+                                                                context,
+                                                                34,
+                                                                min: 28,
+                                                                max: 36,
+                                                              ),
+                                                            ),
+                                                            child:
+                                                                _RoutePointMarker(
+                                                                  stop: stop,
+                                                                ),
+                                                          ),
+                                                      if (routePreview ==
+                                                              null &&
+                                                          _isRouteBuilderMode)
+                                                        for (final stop
+                                                            in _routeBuilderStops())
+                                                          Marker(
+                                                            point:
+                                                                _toGeographic(
+                                                                  stop.point,
+                                                                ),
+                                                            size: Size.square(
+                                                              _mapScaled(
+                                                                context,
+                                                                34,
+                                                                min: 28,
+                                                                max: 36,
+                                                              ),
+                                                            ),
+                                                            child:
+                                                                _RoutePointMarker(
+                                                                  stop: stop,
+                                                                ),
+                                                          ),
                                                       if (_userLocation != null)
                                                         Marker(
                                                           point: _toGeographic(
@@ -1028,7 +1934,9 @@ class _MapScreenState extends State<MapScreen> {
                                                           child:
                                                               const _UserLocationMarker(),
                                                         ),
-                                                      if (_targetPlace != null)
+                                                      if (_targetPlace !=
+                                                              null &&
+                                                          !_hidesNearbyPlaces)
                                                         Marker(
                                                           point: _toGeographic(
                                                             _targetPlace!.point,
@@ -1063,40 +1971,42 @@ class _MapScreenState extends State<MapScreen> {
                                                                 ),
                                                           ),
                                                         ),
-                                                      for (final place
-                                                          in _places)
-                                                        Marker(
-                                                          point: _toGeographic(
-                                                            place.point,
-                                                          ),
-                                                          size: Size(
-                                                            _mapScaled(
-                                                              context,
-                                                              52,
-                                                              min: 42,
-                                                              max: 54,
-                                                            ),
-                                                            _mapScaled(
-                                                              context,
-                                                              62,
-                                                              min: 50,
-                                                              max: 64,
-                                                            ),
-                                                          ),
-                                                          alignment: Alignment
-                                                              .topCenter,
-                                                          child: _PlaceMarker(
-                                                            place: place,
-                                                            selected:
-                                                                selectedPlace
-                                                                    ?.id ==
-                                                                place.id,
-                                                            onTap: () =>
-                                                                _selectPlace(
-                                                                  place,
+                                                      if (!_hidesNearbyPlaces)
+                                                        for (final place
+                                                            in _places)
+                                                          Marker(
+                                                            point:
+                                                                _toGeographic(
+                                                                  place.point,
                                                                 ),
+                                                            size: Size(
+                                                              _mapScaled(
+                                                                context,
+                                                                52,
+                                                                min: 42,
+                                                                max: 54,
+                                                              ),
+                                                              _mapScaled(
+                                                                context,
+                                                                62,
+                                                                min: 50,
+                                                                max: 64,
+                                                              ),
+                                                            ),
+                                                            alignment: Alignment
+                                                                .topCenter,
+                                                            child: _PlaceMarker(
+                                                              place: place,
+                                                              selected:
+                                                                  selectedPlace
+                                                                      ?.id ==
+                                                                  place.id,
+                                                              onTap: () =>
+                                                                  _selectPlace(
+                                                                    place,
+                                                                  ),
+                                                            ),
                                                           ),
-                                                        ),
                                                     ],
                                                   ),
                                                 AppMapAttribution(
@@ -1176,7 +2086,8 @@ class _MapScreenState extends State<MapScreen> {
                                             : const SizedBox.shrink(),
                                       ),
                                     ),
-                                    if (!_bootstrapping &&
+                                    if (!_hidesNearbyPlaces &&
+                                        !_bootstrapping &&
                                         !_loadingPlaces &&
                                         _places.isEmpty &&
                                         _placesErrorMessage == null &&
@@ -1225,90 +2136,102 @@ class _MapScreenState extends State<MapScreen> {
                                       child: Column(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          if (_places.isNotEmpty) ...[
-                                            SizedBox(
-                                              height: previewRailHeight,
-                                              child: ListView.separated(
-                                                scrollDirection:
-                                                    Axis.horizontal,
-                                                physics:
-                                                    const BouncingScrollPhysics(),
-                                                itemCount: _places.length,
-                                                separatorBuilder: (_, _) =>
-                                                    SizedBox(
-                                                      width: _mapScaled(
-                                                        context,
-                                                        12,
-                                                        min: 10,
-                                                        max: 12,
+                                          if (routeBuilderPanel != null) ...[
+                                            routeBuilderPanel,
+                                          ] else if (routePreviewPanel !=
+                                              null) ...[
+                                            routePreviewPanel,
+                                          ] else ...[
+                                            if (!_hidesNearbyPlaces &&
+                                                _places.isNotEmpty) ...[
+                                              SizedBox(
+                                                height: previewRailHeight,
+                                                child: ListView.separated(
+                                                  scrollDirection:
+                                                      Axis.horizontal,
+                                                  physics:
+                                                      const BouncingScrollPhysics(),
+                                                  itemCount: _places.length,
+                                                  separatorBuilder: (_, _) =>
+                                                      SizedBox(
+                                                        width: _mapScaled(
+                                                          context,
+                                                          12,
+                                                          min: 10,
+                                                          max: 12,
+                                                        ),
                                                       ),
-                                                    ),
-                                                itemBuilder: (context, index) {
-                                                  final place = _places[index];
-                                                  return _PlacePreviewCard(
-                                                    place: place,
-                                                    selected:
-                                                        selectedPlace?.id ==
-                                                        place.id,
-                                                    distanceLabel:
-                                                        _formatDistance(
-                                                          place,
-                                                          l10n,
-                                                        ),
-                                                    onTap: () =>
-                                                        _selectPlace(place),
-                                                  );
-                                                },
-                                              ),
-                                            ),
-                                            SizedBox(height: sectionGap),
-                                          ],
-                                          AnimatedSwitcher(
-                                            duration: const Duration(
-                                              milliseconds: 200,
-                                            ),
-                                            child: selectedPlace == null
-                                                ? _MapHintCard(
-                                                    key: const ValueKey('hint'),
-                                                    label: tapHint,
-                                                  )
-                                                : _SelectedPlaceCard(
-                                                    key: ValueKey(
-                                                      selectedPlace.id,
-                                                    ),
-                                                    place: selectedPlace,
-                                                    distanceLabel:
-                                                        _formatDistance(
-                                                          selectedPlace,
-                                                          l10n,
-                                                        ),
-                                                    actionLabel:
-                                                        selectedPlace
-                                                                .detailRoute ==
-                                                            null
-                                                        ? l10n.mapCopyPlaceLink
-                                                        : l10n.activityViewDetails,
-                                                    actionIcon:
-                                                        selectedPlace
-                                                                .detailRoute ==
-                                                            null
-                                                        ? Icons.copy_rounded
-                                                        : Icons
-                                                              .arrow_forward_rounded,
-                                                    onActionTap:
-                                                        selectedPlace
-                                                                .detailRoute ==
-                                                            null
-                                                        ? () => _copyPlaceLink(
-                                                            selectedPlace,
-                                                          )
-                                                        : () => unawaited(
-                                                            _openPlaceDetails(
-                                                              selectedPlace,
-                                                            ),
+                                                  itemBuilder: (context, index) {
+                                                    final place =
+                                                        _places[index];
+                                                    return _PlacePreviewCard(
+                                                      place: place,
+                                                      selected:
+                                                          selectedPlace?.id ==
+                                                          place.id,
+                                                      distanceLabel:
+                                                          _formatDistance(
+                                                            place,
+                                                            l10n,
                                                           ),
-                                                  ),
-                                          ),
+                                                      onTap: () =>
+                                                          _selectPlace(place),
+                                                    );
+                                                  },
+                                                ),
+                                              ),
+                                              SizedBox(height: sectionGap),
+                                            ],
+                                            AnimatedSwitcher(
+                                              duration: const Duration(
+                                                milliseconds: 200,
+                                              ),
+                                              child: selectedPlace == null
+                                                  ? _MapHintCard(
+                                                      key: const ValueKey(
+                                                        'hint',
+                                                      ),
+                                                      label: tapHint,
+                                                    )
+                                                  : _SelectedPlaceCard(
+                                                      key: ValueKey(
+                                                        selectedPlace.id,
+                                                      ),
+                                                      place: selectedPlace,
+                                                      distanceLabel:
+                                                          _formatDistance(
+                                                            selectedPlace,
+                                                            l10n,
+                                                          ),
+                                                      actionLabel:
+                                                          selectedPlace
+                                                                  .detailRoute ==
+                                                              null
+                                                          ? l10n.mapCopyPlaceLink
+                                                          : l10n.activityViewDetails,
+                                                      actionIcon:
+                                                          selectedPlace
+                                                                  .detailRoute ==
+                                                              null
+                                                          ? Icons.copy_rounded
+                                                          : Icons
+                                                                .arrow_forward_rounded,
+                                                      onActionTap:
+                                                          selectedPlace
+                                                                  .detailRoute ==
+                                                              null
+                                                          ? () =>
+                                                                _copyPlaceLink(
+                                                                  selectedPlace,
+                                                                )
+                                                          : () => unawaited(
+                                                              _openPlaceDetails(
+                                                                selectedPlace,
+                                                              ),
+                                                            ),
+                                                    ),
+                                            ),
+                                          ],
                                         ],
                                       ),
                                     ),
@@ -1391,6 +2314,472 @@ class _MapNativeSuspendedPlaceholder extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [Color(0xFFB3A28D), Color(0xFFCDBEA7), Color(0xFF8FA18B)],
+        ),
+      ),
+    );
+  }
+}
+
+class _RouteBuilderPanel extends StatelessWidget {
+  const _RouteBuilderPanel({
+    required this.points,
+    required this.route,
+    required this.building,
+    required this.savingRoute,
+    required this.routeSaved,
+    required this.showSaveRoute,
+    required this.errorMessage,
+    required this.onBuildRoute,
+    required this.onRemoveLast,
+    required this.onClear,
+    required this.onSaveRoute,
+  });
+
+  final List<RoutePointVm> points;
+  final RouteResponseVm? route;
+  final bool building;
+  final bool savingRoute;
+  final bool routeSaved;
+  final bool showSaveRoute;
+  final String? errorMessage;
+  final VoidCallback onBuildRoute;
+  final VoidCallback onRemoveLast;
+  final VoidCallback onClear;
+  final VoidCallback? onSaveRoute;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final route = this.route;
+    final canRemoveLast = points.isNotEmpty && !building && !savingRoute;
+    final canClear =
+        (points.isNotEmpty || route != null) && !building && !savingRoute;
+    final message = errorMessage?.trim();
+
+    return Material(
+      color: Colors.transparent,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: const Color(0xFF25170D).withValues(alpha: 0.96),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.accent.withValues(alpha: 0.36)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.24),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(_mapScaled(context, 14, min: 12, max: 16)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: _mapScaled(context, 40, min: 36, max: 42),
+                    height: _mapScaled(context, 40, min: 36, max: 42),
+                    decoration: BoxDecoration(
+                      color: AppColors.accent.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: AppColors.accent.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.alt_route_rounded,
+                      color: AppColors.accent,
+                      size: _mapScaled(context, 21, min: 18, max: 22),
+                    ),
+                  ),
+                  SizedBox(width: _mapScaled(context, 10, min: 8, max: 12)),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.mapRouteBuilderTitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        SizedBox(
+                          height: _mapScaled(context, 3, min: 2, max: 4),
+                        ),
+                        Text(
+                          l10n.userRoutesStopsCount(points.length),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.accent,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: _mapScaled(context, 10, min: 8, max: 12)),
+              Text(
+                points.length < 2
+                    ? l10n.mapRouteBuilderMinPoints
+                    : l10n.mapRouteBuilderHint,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: const Color(0xFFF5DEC2),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (building) ...[
+                SizedBox(height: _mapScaled(context, 10, min: 8, max: 10)),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: const LinearProgressIndicator(
+                    minHeight: 3,
+                    color: AppColors.accent,
+                  ),
+                ),
+              ],
+              if (message != null && message.isNotEmpty) ...[
+                SizedBox(height: _mapScaled(context, 10, min: 8, max: 10)),
+                _RoutePreviewErrorMessage(message: message),
+              ],
+              if (route != null) ...[
+                SizedBox(height: _mapScaled(context, 10, min: 8, max: 12)),
+                RouteSummaryCard(route: route),
+              ],
+              SizedBox(height: _mapScaled(context, 12, min: 10, max: 14)),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: building || savingRoute ? null : onBuildRoute,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                    foregroundColor: const Color(0xFF241100),
+                    disabledBackgroundColor: AppColors.accent.withValues(
+                      alpha: 0.46,
+                    ),
+                    disabledForegroundColor: const Color(
+                      0xFF241100,
+                    ).withValues(alpha: 0.58),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: _mapScaled(context, 14, min: 12, max: 16),
+                      vertical: _mapScaled(context, 12, min: 10, max: 13),
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  icon: building
+                      ? SizedBox.square(
+                          dimension: _mapScaled(context, 16, min: 14, max: 16),
+                          child: const CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFF241100),
+                          ),
+                        )
+                      : const Icon(Icons.route_rounded),
+                  label: Text(
+                    l10n.mapRouteBuilderBuildRoute,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              SizedBox(height: _mapScaled(context, 8, min: 6, max: 10)),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final removeButton = OutlinedButton.icon(
+                    onPressed: canRemoveLast ? onRemoveLast : null,
+                    style: _routeBuilderSecondaryButtonStyle(context),
+                    icon: const Icon(Icons.undo_rounded),
+                    label: Text(
+                      l10n.mapRouteBuilderRemoveLast,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+                  final clearButton = OutlinedButton.icon(
+                    onPressed: canClear ? onClear : null,
+                    style: _routeBuilderSecondaryButtonStyle(context),
+                    icon: const Icon(Icons.delete_outline_rounded),
+                    label: Text(
+                      l10n.mapRouteBuilderClear,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+
+                  if (constraints.maxWidth < 360) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        removeButton,
+                        SizedBox(
+                          height: _mapScaled(context, 8, min: 6, max: 8),
+                        ),
+                        clearButton,
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    children: [
+                      Expanded(child: removeButton),
+                      SizedBox(width: _mapScaled(context, 8, min: 6, max: 10)),
+                      Expanded(child: clearButton),
+                    ],
+                  );
+                },
+              ),
+              if (showSaveRoute && route != null) ...[
+                SizedBox(height: _mapScaled(context, 8, min: 6, max: 10)),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: building || savingRoute || routeSaved
+                        ? null
+                        : onSaveRoute,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFF1D6),
+                      disabledBackgroundColor: const Color(
+                        0xFFFFF1D6,
+                      ).withValues(alpha: 0.58),
+                      foregroundColor: AppColors.textPrimary,
+                      disabledForegroundColor: AppColors.textPrimary.withValues(
+                        alpha: 0.58,
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: _mapScaled(context, 14, min: 12, max: 16),
+                        vertical: _mapScaled(context, 12, min: 10, max: 13),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    icon: savingRoute
+                        ? SizedBox.square(
+                            dimension: _mapScaled(
+                              context,
+                              16,
+                              min: 14,
+                              max: 16,
+                            ),
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.textPrimary,
+                            ),
+                          )
+                        : routeSaved
+                        ? const Icon(Icons.check_circle_rounded)
+                        : const Icon(Icons.bookmark_add_rounded),
+                    label: Text(
+                      routeSaved
+                          ? l10n.userRoutesRouteSaved
+                          : l10n.userRoutesSaveRoute,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  ButtonStyle _routeBuilderSecondaryButtonStyle(BuildContext context) {
+    return OutlinedButton.styleFrom(
+      foregroundColor: const Color(0xFFFFE1AE),
+      disabledForegroundColor: const Color(0xFFFFE1AE).withValues(alpha: 0.38),
+      side: BorderSide(color: AppColors.accent.withValues(alpha: 0.42)),
+      padding: EdgeInsets.symmetric(
+        horizontal: _mapScaled(context, 12, min: 10, max: 14),
+        vertical: _mapScaled(context, 11, min: 9, max: 12),
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    );
+  }
+}
+
+class _RoutePreviewPanel extends StatelessWidget {
+  const _RoutePreviewPanel({
+    required this.preview,
+    required this.switching,
+    required this.savingRoute,
+    required this.routeSaved,
+    required this.showSaveRoute,
+    required this.errorMessage,
+    required this.onProfileChanged,
+    required this.onSaveRoute,
+  });
+
+  final MapRoutePreview preview;
+  final bool switching;
+  final bool savingRoute;
+  final bool routeSaved;
+  final bool showSaveRoute;
+  final String? errorMessage;
+  final ValueChanged<RouteProfile> onProfileChanged;
+  final VoidCallback onSaveRoute;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final canSwitchProfiles =
+        preview.routePoints.length >= 2 ||
+        (preview.origin != null && preview.destination != null);
+    final message = errorMessage;
+
+    return Material(
+      color: Colors.transparent,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (canSwitchProfiles) ...[
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.surface.withValues(alpha: 0.92),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outlineVariant.withValues(alpha: 0.36),
+                ),
+              ),
+              child: Padding(
+                padding: EdgeInsets.all(_mapScaled(context, 6, min: 4, max: 6)),
+                child: RouteModeSelector(
+                  selected: preview.route.profile,
+                  enabledProfiles: preview.enabledProfiles,
+                  onChanged: onProfileChanged,
+                ),
+              ),
+            ),
+            SizedBox(height: _mapScaled(context, 8, min: 6, max: 8)),
+          ],
+          if (switching) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: const LinearProgressIndicator(
+                minHeight: 3,
+                color: AppColors.accent,
+              ),
+            ),
+            SizedBox(height: _mapScaled(context, 8, min: 6, max: 8)),
+          ],
+          if (message != null && message.trim().isNotEmpty) ...[
+            _RoutePreviewErrorMessage(message: message),
+            SizedBox(height: _mapScaled(context, 8, min: 6, max: 8)),
+          ],
+          RouteSummaryCard(route: preview.route),
+          if (showSaveRoute) ...[
+            SizedBox(height: _mapScaled(context, 10, min: 8, max: 12)),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: switching || savingRoute || routeSaved
+                    ? null
+                    : onSaveRoute,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.accent,
+                  foregroundColor: AppColors.textPrimary,
+                  disabledBackgroundColor: AppColors.accent.withValues(
+                    alpha: 0.46,
+                  ),
+                  disabledForegroundColor: AppColors.textPrimary.withValues(
+                    alpha: 0.58,
+                  ),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: _mapScaled(context, 14, min: 12, max: 16),
+                    vertical: _mapScaled(context, 12, min: 10, max: 13),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                icon: savingRoute
+                    ? SizedBox.square(
+                        dimension: _mapScaled(context, 16, min: 14, max: 16),
+                        child: const CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.textPrimary,
+                        ),
+                      )
+                    : routeSaved
+                    ? const Icon(Icons.check_circle_rounded)
+                    : const Icon(Icons.bookmark_add_rounded),
+                label: Text(
+                  routeSaved
+                      ? l10n.userRoutesRouteSaved
+                      : l10n.userRoutesSaveRoute,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _RoutePreviewErrorMessage extends StatelessWidget {
+  const _RoutePreviewErrorMessage({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.errorContainer.withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: _mapScaled(context, 12, min: 10, max: 12),
+          vertical: _mapScaled(context, 10, min: 8, max: 10),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.route_outlined,
+              color: theme.colorScheme.onErrorContainer,
+              size: _mapScaled(context, 18, min: 16, max: 18),
+            ),
+            SizedBox(width: _mapScaled(context, 8, min: 6, max: 8)),
+            Expanded(
+              child: Text(
+                message,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onErrorContainer,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1770,6 +3159,63 @@ class _MapEmptyState extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _RoutePreviewStop {
+  const _RoutePreviewStop({
+    required this.id,
+    required this.point,
+    required this.order,
+    this.title,
+  });
+
+  final String id;
+  final LatLng point;
+  final int order;
+  final String? title;
+}
+
+class _RoutePointMarker extends StatelessWidget {
+  const _RoutePointMarker({required this.stop});
+
+  final _RoutePreviewStop stop;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Semantics(
+      label: stop.title?.trim().isNotEmpty == true
+          ? stop.title!.trim()
+          : l10n.routeStopSemantic(stop.order),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: const Color(0xFFFFF7E6),
+          border: Border.all(color: const Color(0xFF3A2108), width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.24),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Center(
+          child: Text(
+            stop.order.toString(),
+            maxLines: 1,
+            overflow: TextOverflow.clip,
+            style: TextStyle(
+              color: AppColors.accent,
+              fontSize: _mapScaled(context, 13, min: 11, max: 13),
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -86,6 +86,16 @@
   "serviceTravelChecklist": "Чек-лист поездки",
   "travelChecklistTitle": "Подготовка к поездке",
   "travelChecklistSubtitle": "",
+  "travelChecklistOptimizeRouteTitle": "Оптимизировать маршрут дня",
+  "travelChecklistOptimizeRouteSubtitle": "Упорядочим {count} остановки по времени в пути перед началом дня.",
+  "@travelChecklistOptimizeRouteSubtitle": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "travelChecklistOptimizeRouteButton": "Оптимизировать",
+  "travelChecklistOptimizeRouteRetry": "Пересчитать",
+  "travelChecklistOptimizeFailed": "Не удалось оптимизировать маршрут сейчас.",
   "travelChecklistCtaTitle": "Подготовиться к поездке",
   "travelChecklistCtaSubtitle": "Готовность, сезон и багажные правила",
   "travelChecklistOpen": "Открыть чек-лист",
@@ -540,6 +550,8 @@
   "profileConnectionsFriendRequestsEmptyTitle": "Запросов нет",
   "profileConnectionsFriendRequestsEmptySubtitle": "Новые входящие запросы в друзья появятся здесь.",
   "profileJourneyTitle": "Мой путь",
+  "profileUserRoutesTitle": "Мои маршруты",
+  "profileUserRoutesSubtitle": "Сохранённые прогулки, планы города и маршруты путешественников",
   "profileSavedItemsTitle": "Сохраненное",
   "profileSavedItemsSubtitle": "Собранные активности, места и подборки появятся здесь позже.",
   "profileBookingsTitle": "Мои бронирования",
@@ -723,6 +735,7 @@
   "locationServicesDisabled": "Сервисы геолокации отключены на устройстве",
   "locationPermissionDenied": "Доступ к геолокации не предоставлен",
   "locationPermissionDeniedForever": "Доступ к геолокации запрещён. Разрешите его в настройках устройства",
+  "locationDetectionTimedOut": "Не удалось быстро определить вашу геолокацию. Попробуйте ещё раз или откройте карту.",
   "cancelButton": "Отмена",
   "useButton": "Использовать",
   "activitiesTitle": "Активности",
@@ -999,6 +1012,13 @@
   "feedNavLabel": "Лента",
   "homeNavQr": "QR",
   "homeNavMap": "Карта",
+  "mapAttributionSheetTitle": "Источники карты",
+  "mapAttributionSheetSubtitle": "Inflap показывает картографические тайлы на основе открытых картографических данных. Атрибуция и детали лицензии доступны ниже.",
+  "mapAttributionStyleLabel": "Стиль карты",
+  "mapAttributionTilesLabel": "Тайлы и схема",
+  "mapAttributionDataLabel": "Данные карты",
+  "mapAttributionLicenseLabel": "Лицензия",
+  "mapAttributionOpenLink": "Открыть детали",
   "homeNavChats": "Чаты",
   "homeNavMy": "Мои",
   "feedTitle": "Лента",
@@ -1294,6 +1314,136 @@
     }
   },
   "mapTapActivityHint": "Нажмите на маркер активности, чтобы посмотреть краткую информацию и открыть детали.",
+  "mapExternalOpenFailed": "Не удалось открыть маршрут во внешнем приложении карт.",
+  "routeSummaryTitle": "Время в пути",
+  "routeSummaryDuration": "Время",
+  "routeSummaryDistance": "Расстояние",
+  "routeDurationMinutesShort": "{minutes} мин",
+  "@routeDurationMinutesShort": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "routeDistanceMetersShort": "{meters} м",
+  "@routeDistanceMetersShort": {
+    "placeholders": {
+      "meters": {
+        "type": "int"
+      }
+    }
+  },
+  "routeDistanceKilometersShort": "{kilometers} км",
+  "@routeDistanceKilometersShort": {
+    "placeholders": {
+      "kilometers": {
+        "type": "String"
+      }
+    }
+  },
+  "routeTravelTimeDistanceShort": "{duration} · {distance}",
+  "@routeTravelTimeDistanceShort": {
+    "placeholders": {
+      "duration": {},
+      "distance": {}
+    }
+  },
+  "routeStopSemantic": "Точка маршрута {order}",
+  "@routeStopSemantic": {
+    "placeholders": {
+      "order": {
+        "type": "int"
+      }
+    }
+  },
+  "userRoutesSaveRoute": "Сохранить маршрут",
+  "userRoutesRouteSaved": "Сохранено",
+  "userRoutesSaveSuccess": "Маршрут сохранён",
+  "userRoutesSaveFailed": "Не удалось сохранить маршрут",
+  "userRoutesDefaultTitle": "Сохранённый маршрут",
+  "userRoutesDefaultTitleTo": "Маршрут до {destination}",
+  "@userRoutesDefaultTitleTo": {
+    "placeholders": {
+      "destination": {}
+    }
+  },
+  "mapRouteBuilderTitle": "Создать маршрут",
+  "mapRouteBuilderHint": "Нажимайте на карту, чтобы добавлять остановки по порядку.",
+  "mapRouteBuilderBuildRoute": "Построить маршрут",
+  "mapRouteBuilderMinPoints": "Добавьте минимум две точки, чтобы построить маршрут.",
+  "mapRouteBuilderClear": "Очистить",
+  "mapRouteBuilderRemoveLast": "Удалить последнюю",
+  "mapRouteBuilderPointName": "Точка {order}",
+  "@mapRouteBuilderPointName": {
+    "placeholders": {
+      "order": {
+        "type": "int"
+      }
+    }
+  },
+  "userRoutesTitle": "Маршруты",
+  "userRoutesPublicTab": "Публичные",
+  "userRoutesMineTab": "Мои",
+  "userRoutesSavedTab": "Сохранённые",
+  "userRoutesPublicEmptyTitle": "Публичных маршрутов пока нет",
+  "userRoutesPublicEmptySubtitle": "Здесь появятся прогулки и городские планы, которыми поделились путешественники.",
+  "userRoutesMineEmptyTitle": "Маршрутов пока нет",
+  "userRoutesMineEmptySubtitle": "Постройте маршрут на карте и сохраните его в свою коллекцию.",
+  "userRoutesSavedEmptyTitle": "Сохранённых маршрутов нет",
+  "userRoutesSavedEmptySubtitle": "Добавляйте маршруты других путешественников, чтобы быстро находить их здесь.",
+  "userRoutesLoginRequiredTitle": "Войдите, чтобы использовать свои маршруты",
+  "userRoutesLoginRequiredSubtitle": "Личные и сохранённые маршруты привязаны к вашему аккаунту Inflap.",
+  "userRoutesLoginRequiredButton": "Войти",
+  "userRoutesStopsCount": "{count} остановок",
+  "@userRoutesStopsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "userRoutesVisibilityPrivate": "Личный",
+  "userRoutesVisibilityUnlisted": "По ссылке",
+  "userRoutesVisibilityPublic": "Публичный",
+  "userRoutesOpenOnMap": "Открыть на карте",
+  "userRoutesCopyRoute": "Скопировать маршрут",
+  "userRoutesCopied": "Маршрут скопирован в ваши маршруты",
+  "userRoutesEditRoute": "Редактировать маршрут",
+  "userRoutesEditTitleLabel": "Название маршрута",
+  "userRoutesEditDescriptionLabel": "Описание",
+  "userRoutesEditVisibilityLabel": "Доступ",
+  "userRoutesEditSave": "Сохранить изменения",
+  "userRoutesUpdateSuccess": "Маршрут обновлён",
+  "userRoutesUpdateFailed": "Не удалось обновить маршрут",
+  "userRoutesShareRoute": "Поделиться маршрутом",
+  "userRoutesShareCopied": "Ссылка на маршрут скопирована",
+  "userRoutesEditStops": "Редактировать точки",
+  "userRoutesEditStopsHint": "Меняйте порядок точек или названия. Inflap пересчитает маршрут перед сохранением.",
+  "userRoutesEditStopNameLabel": "Название точки",
+  "userRoutesEditStopNoteLabel": "Заметка",
+  "userRoutesMoveStopUp": "Переместить выше",
+  "userRoutesMoveStopDown": "Переместить ниже",
+  "userRoutesRebuildAndSave": "Пересчитать и сохранить",
+  "userRoutesEditPointsMinStops": "В маршруте должно быть минимум две точки.",
+  "userRoutesRebuildFailed": "Не удалось пересчитать маршрут",
+  "userRoutesStopsUpdateSuccess": "Точки маршрута обновлены",
+  "userRoutesUnsaveRoute": "Убрать из сохранённых",
+  "userRoutesStopsTitle": "Остановки",
+  "routeProfileTouristWalk": "Туристическая прогулка",
+  "routeProfileFastWalk": "Быстрая прогулка",
+  "routeProfileBikeCity": "Веломаршрут",
+  "routeProfileCarStandard": "Автомаршрут",
+  "routeProfileGuideRoute": "Маршрут гида",
+  "routeProfileDayPlan": "План на день",
+  "routeProfileTransit": "Общественный транспорт",
+  "routeProfileTouristWalkShort": "Пешком",
+  "routeProfileFastWalkShort": "Быстро",
+  "routeProfileBikeCityShort": "Вело",
+  "routeProfileCarStandardShort": "Авто",
+  "routeProfileGuideRouteShort": "Гид",
+  "routeProfileDayPlanShort": "День",
+  "routeProfileTransitShort": "Транспорт",
   "placesTitle": "Места",
   "placesSearchHint": "Куда отправимся?",
   "placesLoadFailed": "Не удалось загрузить места",
@@ -2393,6 +2543,24 @@
   "activityUnlimitedSpots": "Без ограничений",
   "activityMeetingPoint": "Место встречи",
   "activityGetDirections": "Как добраться",
+  "activityReachabilityTitle": "Успею ли я?",
+  "activityReachabilitySubtitle": "Проверьте пешее ETA от текущей локации перед выходом.",
+  "activityReachabilityCheckButton": "Проверить ETA",
+  "activityReachabilityRetryButton": "Повторить",
+  "activityReachabilityOnTime": "Успеваете",
+  "activityReachabilityLate": "Риск опоздать",
+  "activityReachabilityArriveBeforeStart": "Прибытие примерно за {minutes} мин до начала",
+  "@activityReachabilityArriveBeforeStart": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
+  "activityReachabilityArriveAfterStart": "Маршрут приведет примерно на {minutes} мин позже начала",
+  "@activityReachabilityArriveAfterStart": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
   "activityHostSection": "Организатор",
   "activityTotalCapacity": "Всего мест",
   "activityPricing": "Стоимость",
@@ -2768,10 +2936,16 @@
   "storyEditorBlockDividerDescription": "Визуальный разрыв раздела",
   "storyEditorBlockPlaceReference": "Ссылка на место",
   "storyEditorBlockPlaceReferenceDescription": "Связать место с историей",
+  "storyEditorBlockRouteReference": "Маршрут",
+  "storyEditorBlockRouteReferenceDescription": "Поделиться своим маршрутом в посте",
   "storyEditorBlockNumberedList": "Нумерованный список",
   "storyEditorStartWithBlockTitle": "Начните с блока",
   "storyEditorStartWithBlockSubtitle": "Добавляйте текст, медиа, места, выноски или разделители, чтобы собрать историю.",
   "storyEditorPlaceNameHint": "Название места",
+  "storyEditorRouteReferencePickerTitle": "Добавить маршрут",
+  "storyEditorRouteReferenceEmptyState": "Сначала опубликуйте маршрут или сделайте его доступным по ссылке, затем добавьте его в пост.",
+  "storyEditorRouteReferenceLoadError": "Не удалось загрузить ваши маршруты.",
+  "storyEditorRouteReferenceEmpty": "Маршрут не выбран",
   "storyEditorTextHintHeading": "Напишите понятный заголовок раздела",
   "storyEditorTextHintBulletedList": "Добавляйте пункты списка по одному в строке",
   "storyEditorTextHintNumberedList": "Добавляйте шаги по одному в строке",

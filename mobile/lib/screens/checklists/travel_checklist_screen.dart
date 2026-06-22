@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/network/checklist_api.dart';
 import '../../core/network/reference_api.dart';
@@ -7,7 +8,9 @@ import '../../core/ui/app_colors.dart';
 import '../../features/checklists/data/checklist_offline_cache.dart';
 import '../../features/checklists/models/trip_checklist_vm.dart';
 import '../../features/checklists/models/travel_checklist_route_args.dart';
+import '../../features/routing/models/routing_models.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../providers/routing_provider.dart';
 import '../../shared/reference/app_country_names.dart';
 
 abstract final class _ChecklistAmber {
@@ -282,6 +285,9 @@ class _TravelChecklistScreenState extends State<TravelChecklistScreen> {
   final Map<String, ChecklistItemFeedbackType> _selectedFeedbackByItemId =
       <String, ChecklistItemFeedbackType>{};
   bool _isSavingCustomItem = false;
+  bool _isOptimizingDayRoute = false;
+  ItineraryOptimizationResponseVm? _optimizedItinerary;
+  String? _optimizedItineraryError;
   List<CarryItemPolicyVm> _carryResults = const [];
   String? _carrySearchError;
   String _checklistItemSearchQuery = '';
@@ -739,6 +745,55 @@ class _TravelChecklistScreenState extends State<TravelChecklistScreen> {
     });
   }
 
+  Future<void> _optimizeDayRoute() async {
+    if (_isOptimizingDayRoute) return;
+    final routeArgs = _requireRouteArgs();
+    if (routeArgs.routeStops.length < 2) return;
+
+    setState(() {
+      _isOptimizingDayRoute = true;
+      _optimizedItineraryError = null;
+    });
+
+    final routingProvider = context.read<RoutingProvider>();
+    try {
+      final result = await routingProvider.optimizeItinerary(
+        ItineraryOptimizationRequestVm(
+          profile: RouteProfile.dayPlan,
+          stops: [
+            for (final stop in routeArgs.routeStops)
+              RoutePointVm(
+                latitude: stop.latitude,
+                longitude: stop.longitude,
+                name: stop.name,
+              ),
+          ],
+        ),
+      );
+      if (!mounted) return;
+
+      setState(() {
+        _optimizedItinerary = result;
+        _optimizedItineraryError = result == null
+            ? routingProvider.errorMessage ??
+                  AppLocalizations.of(context)!.travelChecklistOptimizeFailed
+            : null;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _optimizedItinerary = null;
+        _optimizedItineraryError = AppLocalizations.of(
+          context,
+        )!.travelChecklistOptimizeFailed;
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isOptimizingDayRoute = false);
+      }
+    }
+  }
+
   void _setChecklistItemSearchQuery(String query) {
     final normalizedQuery = query.trim();
     if (_checklistItemSearchQuery == normalizedQuery) return;
@@ -836,6 +891,9 @@ class _TravelChecklistScreenState extends State<TravelChecklistScreen> {
                             carryResults: _carryResults,
                             carrySearchError: _carrySearchError,
                             isSearchingCarryItem: _isSearchingCarryItem,
+                            isOptimizingDayRoute: _isOptimizingDayRoute,
+                            optimizedItinerary: _optimizedItinerary,
+                            optimizedItineraryError: _optimizedItineraryError,
                             updatingChecklistItemIds: _updatingChecklistItemIds,
                             submittingFeedbackItemIds:
                                 _submittingFeedbackItemIds,
@@ -844,6 +902,7 @@ class _TravelChecklistScreenState extends State<TravelChecklistScreen> {
                             selectedFeedbackByItemId: _selectedFeedbackByItemId,
                             isSavingCustomItem: _isSavingCustomItem,
                             onSearchCarryItem: _searchCarryItem,
+                            onOptimizeDayRoute: _optimizeDayRoute,
                             onChecklistItemSearchChanged:
                                 _setChecklistItemSearchQuery,
                             onToggleChecklistItem: _toggleChecklistItem,
@@ -893,6 +952,9 @@ class _ChecklistContent extends StatelessWidget {
     required this.carryResults,
     required this.carrySearchError,
     required this.isSearchingCarryItem,
+    required this.isOptimizingDayRoute,
+    required this.optimizedItinerary,
+    required this.optimizedItineraryError,
     required this.updatingChecklistItemIds,
     required this.submittingFeedbackItemIds,
     required this.updatingCustomItemIds,
@@ -900,6 +962,7 @@ class _ChecklistContent extends StatelessWidget {
     required this.selectedFeedbackByItemId,
     required this.isSavingCustomItem,
     required this.onSearchCarryItem,
+    required this.onOptimizeDayRoute,
     required this.onChecklistItemSearchChanged,
     required this.onToggleChecklistItem,
     required this.onSubmitItemFeedback,
@@ -920,6 +983,9 @@ class _ChecklistContent extends StatelessWidget {
   final List<CarryItemPolicyVm> carryResults;
   final String? carrySearchError;
   final bool isSearchingCarryItem;
+  final bool isOptimizingDayRoute;
+  final ItineraryOptimizationResponseVm? optimizedItinerary;
+  final String? optimizedItineraryError;
   final Set<String> updatingChecklistItemIds;
   final Set<String> submittingFeedbackItemIds;
   final Set<String> updatingCustomItemIds;
@@ -927,6 +993,7 @@ class _ChecklistContent extends StatelessWidget {
   final Map<String, ChecklistItemFeedbackType> selectedFeedbackByItemId;
   final bool isSavingCustomItem;
   final VoidCallback onSearchCarryItem;
+  final VoidCallback onOptimizeDayRoute;
   final ValueChanged<String> onChecklistItemSearchChanged;
   final ValueChanged<ChecklistItemVm> onToggleChecklistItem;
   final void Function(ChecklistItemVm item, ChecklistItemFeedbackType type)
@@ -974,6 +1041,16 @@ class _ChecklistContent extends StatelessWidget {
                         ),
                         const SizedBox(height: 18),
                         _TripContextPanel(routeArgs: routeArgs),
+                        if (routeArgs.routeStops.length >= 2) ...[
+                          const SizedBox(height: 12),
+                          _OptimizedItineraryCard(
+                            routeArgs: routeArgs,
+                            result: optimizedItinerary,
+                            errorMessage: optimizedItineraryError,
+                            isLoading: isOptimizingDayRoute,
+                            onOptimizeTap: onOptimizeDayRoute,
+                          ),
+                        ],
                         if (isOffline) ...[
                           const SizedBox(height: 12),
                           _OfflineChecklistNotice(
@@ -2899,6 +2976,199 @@ class _TripContextPanel extends StatelessWidget {
               chips: [l10n.travelChecklistContextWithChildren],
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _OptimizedItineraryCard extends StatelessWidget {
+  const _OptimizedItineraryCard({
+    required this.routeArgs,
+    required this.result,
+    required this.errorMessage,
+    required this.isLoading,
+    required this.onOptimizeTap,
+  });
+
+  final TravelChecklistRouteArgs routeArgs;
+  final ItineraryOptimizationResponseVm? result;
+  final String? errorMessage;
+  final bool isLoading;
+  final VoidCallback onOptimizeTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final optimized = result;
+    final error = errorMessage?.trim();
+
+    return _SurfacePanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 420;
+              final title = _SectionTitle(
+                icon: Icons.alt_route_rounded,
+                title: l10n.travelChecklistOptimizeRouteTitle,
+              );
+              final action = FilledButton.icon(
+                onPressed: isLoading ? null : onOptimizeTap,
+                icon: isLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: _ChecklistAmber.backgroundBottom,
+                        ),
+                      )
+                    : const Icon(Icons.auto_awesome_motion_rounded),
+                label: Text(
+                  optimized == null
+                      ? l10n.travelChecklistOptimizeRouteButton
+                      : l10n.travelChecklistOptimizeRouteRetry,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: _ChecklistAmber.amber,
+                  foregroundColor: _ChecklistAmber.backgroundBottom,
+                  minimumSize: const Size(0, 42),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              );
+
+              if (compact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    title,
+                    const SizedBox(height: 10),
+                    Align(alignment: Alignment.centerLeft, child: action),
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: title),
+                  const SizedBox(width: 12),
+                  action,
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 10),
+          Text(
+            l10n.travelChecklistOptimizeRouteSubtitle(
+              routeArgs.routeStops.length,
+            ),
+            style: const TextStyle(
+              color: _ChecklistAmber.textSecondary,
+              fontSize: 13,
+              height: 1.35,
+              letterSpacing: 0,
+            ),
+          ),
+          if (error != null && error.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              error,
+              style: const TextStyle(
+                color: Color(0xFFFFB4AB),
+                fontSize: 13,
+                height: 1.35,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+          if (optimized != null) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _ChipLabel(
+                  label: _routingDurationLabel(optimized.durationSeconds),
+                ),
+                _ChipLabel(
+                  label: _routingDistanceLabel(optimized.distanceMeters),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Column(
+              children: [
+                for (
+                  var index = 0;
+                  index < optimized.orderedStops.length;
+                  index += 1
+                )
+                  _OptimizedStopRow(
+                    index: index + 1,
+                    label: _routePointLabel(optimized.orderedStops[index]),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _OptimizedStopRow extends StatelessWidget {
+  const _OptimizedStopRow({required this.index, required this.label});
+
+  final int index;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(top: index == 1 ? 0 : 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: _ChecklistAmber.amber.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: _ChecklistAmber.amber.withValues(alpha: 0.42),
+              ),
+            ),
+            child: Text(
+              '$index',
+              style: const TextStyle(
+                color: _ChecklistAmber.amberSoft,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: _ChecklistAmber.textPrimary,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                height: 1.28,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -5806,4 +6076,25 @@ String _humanizeCode(String value) {
     return '-';
   }
   return text[0].toUpperCase() + text.substring(1);
+}
+
+String _routePointLabel(RoutePointVm point) {
+  final name = point.name?.trim();
+  if (name != null && name.isNotEmpty) return name;
+  return '${point.latitude.toStringAsFixed(5)}, ${point.longitude.toStringAsFixed(5)}';
+}
+
+String _routingDurationLabel(int durationSeconds) {
+  final minutes = (durationSeconds / 60).round().clamp(1, 10080);
+  if (minutes < 60) return '$minutes min';
+  final hours = minutes ~/ 60;
+  final remainder = minutes % 60;
+  return remainder == 0 ? '${hours}h' : '${hours}h ${remainder}m';
+}
+
+String _routingDistanceLabel(double distanceMeters) {
+  if (distanceMeters <= 0) return '0 m';
+  if (distanceMeters < 1000) return '${distanceMeters.round()} m';
+  final kilometers = distanceMeters / 1000;
+  return '${kilometers.toStringAsFixed(kilometers >= 10 ? 0 : 1)} km';
 }

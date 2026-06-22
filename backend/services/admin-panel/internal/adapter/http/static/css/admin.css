@@ -1017,6 +1017,31 @@ tr:last-child td {
   margin: 2px 4px 2px 0;
 }
 
+.route-actions {
+  display: grid;
+  min-width: 180px;
+  gap: 8px;
+  justify-items: stretch;
+}
+
+.route-actions form,
+.inline-decision-form {
+  display: grid;
+  gap: 8px;
+}
+
+.route-actions summary.button {
+  list-style: none;
+}
+
+.route-actions summary.button::-webkit-details-marker {
+  display: none;
+}
+
+.inline-decision-form {
+  margin-top: 8px;
+}
+
 .alert {
   border-radius: 8px;
   padding: 12px 14px;

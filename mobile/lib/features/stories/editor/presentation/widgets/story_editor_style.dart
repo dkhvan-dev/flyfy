@@ -193,5 +193,6 @@ String storyBlockTypeLabel(AppLocalizations l10n, StoryBlockType type) {
     StoryBlockType.gallery => l10n.storyEditorBlockGallery,
     StoryBlockType.divider => l10n.storyEditorBlockDivider,
     StoryBlockType.placeReference => l10n.storyEditorBlockPlaceReference,
+    StoryBlockType.routeReference => l10n.storyEditorBlockRouteReference,
   };
 }

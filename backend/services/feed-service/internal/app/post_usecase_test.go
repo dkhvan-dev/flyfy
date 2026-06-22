@@ -279,6 +279,111 @@ func TestCreatePostReturnsCreatedDraftWhenAuthorProfileLookupFails(t *testing.T)
 	}
 }
 
+func TestCreatePostValidatesRouteReferenceBeforePersisting(t *testing.T) {
+	authorID := uuid.New()
+	routeID := "route-1"
+	repo := &postUseCaseRepositoryStub{}
+	validator := &postRouteReferenceValidatorStub{}
+	useCase := NewPostUseCase(
+		repo,
+		postUseCaseUserClientStub{userID: authorID},
+		"https://posts.test",
+	).WithRouteReferenceValidator(validator)
+
+	_, err := useCase.CreatePost(context.Background(), "subject-1", CreatePostInput{
+		Title:         "Route draft",
+		ContentBlocks: routeReferencePostDocumentJSON(t, routeID),
+	})
+
+	if err != nil {
+		t.Fatalf("CreatePost returned error: %v", err)
+	}
+	if repo.created == nil {
+		t.Fatal("CreatePost did not persist post")
+	}
+	if len(validator.calls) != 1 {
+		t.Fatalf("route validator calls = %d, want 1", len(validator.calls))
+	}
+	if validator.calls[0].AuthorUserID != authorID || validator.calls[0].RouteID != routeID {
+		t.Fatalf("route validator call = %+v, want author %s route %s", validator.calls[0], authorID, routeID)
+	}
+}
+
+func TestCreatePostRejectsUnsafeRouteReference(t *testing.T) {
+	authorID := uuid.New()
+	repo := &postUseCaseRepositoryStub{}
+	validator := &postRouteReferenceValidatorStub{err: ErrInvalidPostRouteReference}
+	useCase := NewPostUseCase(
+		repo,
+		postUseCaseUserClientStub{userID: authorID},
+		"https://posts.test",
+	).WithRouteReferenceValidator(validator)
+
+	_, err := useCase.CreatePost(context.Background(), "subject-1", CreatePostInput{
+		Title:         "Route draft",
+		ContentBlocks: routeReferencePostDocumentJSON(t, "private-route"),
+	})
+
+	if !errors.Is(err, ErrPostValidationFailed) || !errors.Is(err, ErrInvalidPostRouteReference) {
+		t.Fatalf("CreatePost error = %v, want route validation failure", err)
+	}
+	var validationErr *PostValidationError
+	if !errors.As(err, &validationErr) || validationErr.Fields["contentBlocks"] != "route_reference_not_shareable" {
+		t.Fatalf("validation fields = %#v, want route_reference_not_shareable", validationErr)
+	}
+	if repo.created != nil {
+		t.Fatal("CreatePost must not persist unsafe route reference")
+	}
+}
+
+func TestCreatePostRejectsRouteReferenceWithoutValidator(t *testing.T) {
+	authorID := uuid.New()
+	repo := &postUseCaseRepositoryStub{}
+	useCase := NewPostUseCase(
+		repo,
+		postUseCaseUserClientStub{userID: authorID},
+		"https://posts.test",
+	)
+
+	_, err := useCase.CreatePost(context.Background(), "subject-1", CreatePostInput{
+		Title:         "Route draft",
+		ContentBlocks: routeReferencePostDocumentJSON(t, "route-1"),
+	})
+
+	if !errors.Is(err, ErrPostValidationFailed) || !errors.Is(err, ErrInvalidPostRouteReference) {
+		t.Fatalf("CreatePost error = %v, want route validation failure", err)
+	}
+	if repo.created != nil {
+		t.Fatal("CreatePost must not persist route references without backend validator")
+	}
+}
+
+func TestCreatePostKeepsRouteReferenceValidatorFailuresTechnical(t *testing.T) {
+	authorID := uuid.New()
+	repo := &postUseCaseRepositoryStub{}
+	validator := &postRouteReferenceValidatorStub{err: errors.New("user-route-service unavailable")}
+	useCase := NewPostUseCase(
+		repo,
+		postUseCaseUserClientStub{userID: authorID},
+		"https://posts.test",
+	).WithRouteReferenceValidator(validator)
+
+	_, err := useCase.CreatePost(context.Background(), "subject-1", CreatePostInput{
+		Title:         "Route draft",
+		ContentBlocks: routeReferencePostDocumentJSON(t, "route-1"),
+	})
+
+	if err == nil {
+		t.Fatal("CreatePost returned nil, want technical validator error")
+	}
+	if errors.Is(err, ErrPostValidationFailed) || errors.Is(err, ErrInvalidPostRouteReference) {
+		t.Fatalf("CreatePost error = %v, must not be business validation", err)
+	}
+	if repo.created != nil {
+		t.Fatal("CreatePost must not persist when route validator is unavailable")
+	}
+}
+
 func TestNormalizePostInputRejectsClientArchivedStatus(t *testing.T) {
 	_, err := normalizePostInput(uuid.New(), CreatePostInput{
 		Title:  "Client archived",
@@ -555,6 +660,79 @@ func TestUpdatePostPreservesOmittedFieldsAndModeration(t *testing.T) {
 	}
 	if repo.updated.IsPubliclyVisible() {
 		t.Fatal("rejected post became publicly visible after owner update")
+	}
+}
+
+func TestUpdatePostValidatesRouteReferenceBeforePersisting(t *testing.T) {
+	authorID := uuid.New()
+	postID := uuid.New()
+	routeID := "route-1"
+	repo := &postUseCaseRepositoryStub{
+		existing: &model.Post{
+			ID:               postID,
+			AuthorUserID:     authorID,
+			Title:            "Existing",
+			Status:           enum.PostStatusDraft,
+			ModerationStatus: enum.ModerationStatusNotRequired,
+			Revision:         3,
+		},
+	}
+	validator := &postRouteReferenceValidatorStub{}
+	useCase := NewPostUseCase(
+		repo,
+		postUseCaseUserClientStub{userID: authorID},
+		"https://posts.test",
+	).WithRouteReferenceValidator(validator)
+
+	_, err := useCase.UpdatePost(context.Background(), "subject-1", postID, UpdatePostInput{
+		ContentBlocks: postRawMessagePtr(routeReferencePostDocumentJSON(t, routeID)),
+		Revision:      3,
+	})
+
+	if err != nil {
+		t.Fatalf("UpdatePost returned error: %v", err)
+	}
+	if repo.updated == nil {
+		t.Fatal("UpdatePost did not persist post")
+	}
+	if len(validator.calls) != 1 {
+		t.Fatalf("route validator calls = %d, want 1", len(validator.calls))
+	}
+	if validator.calls[0].AuthorUserID != authorID || validator.calls[0].RouteID != routeID {
+		t.Fatalf("route validator call = %+v, want author %s route %s", validator.calls[0], authorID, routeID)
+	}
+}
+
+func TestUpdatePostRejectsUnsafeRouteReference(t *testing.T) {
+	authorID := uuid.New()
+	postID := uuid.New()
+	repo := &postUseCaseRepositoryStub{
+		existing: &model.Post{
+			ID:               postID,
+			AuthorUserID:     authorID,
+			Title:            "Existing",
+			Status:           enum.PostStatusDraft,
+			ModerationStatus: enum.ModerationStatusNotRequired,
+			Revision:         3,
+		},
+	}
+	validator := &postRouteReferenceValidatorStub{err: ErrInvalidPostRouteReference}
+	useCase := NewPostUseCase(
+		repo,
+		postUseCaseUserClientStub{userID: authorID},
+		"https://posts.test",
+	).WithRouteReferenceValidator(validator)
+
+	_, err := useCase.UpdatePost(context.Background(), "subject-1", postID, UpdatePostInput{
+		ContentBlocks: postRawMessagePtr(routeReferencePostDocumentJSON(t, "private-route")),
+		Revision:      3,
+	})
+
+	if !errors.Is(err, ErrPostValidationFailed) || !errors.Is(err, ErrInvalidPostRouteReference) {
+		t.Fatalf("UpdatePost error = %v, want route validation failure", err)
+	}
+	if repo.updated != nil {
+		t.Fatal("UpdatePost must not persist unsafe route reference")
 	}
 }
 
@@ -3588,6 +3766,19 @@ func (s *postUseCaseMediaBinderStub) BindPostMedia(_ context.Context, input Post
 	return result, nil
 }
 
+type postRouteReferenceValidatorStub struct {
+	calls []PostRouteReferenceValidationInput
+	err   error
+}
+
+func (s *postRouteReferenceValidatorStub) ValidatePostRouteReference(
+	_ context.Context,
+	input PostRouteReferenceValidationInput,
+) error {
+	s.calls = append(s.calls, input)
+	return s.err
+}
+
 func postIntPtr(v int) *int {
 	if v <= 0 {
 		return nil
@@ -3643,6 +3834,25 @@ func mustPostDocumentJSON(t *testing.T, document model.PostDocument) json.RawMes
 		t.Fatalf("marshal post document: %v", err)
 	}
 	return data
+}
+
+func routeReferencePostDocumentJSON(t *testing.T, routeID string) json.RawMessage {
+	t.Helper()
+	return mustPostDocumentJSON(t, model.PostDocument{
+		Version: model.PostDocumentVersion,
+		Blocks: []model.PostBlock{{
+			ID:                   "route-1",
+			Type:                 model.PostBlockTypeRouteReference,
+			RouteID:              routeID,
+			RouteTitle:           "Almaty walking route",
+			RouteDescription:     "A calm route through city highlights",
+			RouteProfile:         "tourist_walk",
+			RouteDistanceMeters:  4200,
+			RouteDurationSeconds: 3600,
+			RouteStopsCount:      4,
+			RouteShareURL:        "https://inflap.app/user-routes/" + routeID,
+		}},
+	})
 }
 
 func postStringPtr(v string) *string {
