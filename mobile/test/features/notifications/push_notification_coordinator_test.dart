@@ -69,10 +69,15 @@ void main() {
       final source = _FakePushNotificationSource();
       final presenter = _FakePushNotificationPresenter();
       final routed = <String>[];
+      var badgeRefreshes = 0;
       final coordinator = PushNotificationCoordinator(
         source: source,
         presenter: presenter,
         routeHandler: routed.add,
+        onNotificationReceived: (envelope) {
+          expect(envelope.id, 'message-1');
+          badgeRefreshes++;
+        },
       );
 
       await coordinator.start();
@@ -88,6 +93,7 @@ void main() {
 
       expect(presenter.shown.single.title, 'Trip update');
       expect(presenter.shown.single.route, '/activities/activity-1');
+      expect(badgeRefreshes, 1);
 
       presenter.tap(presenter.shown.single.route);
       expect(routed, ['/activities/activity-1']);
@@ -169,10 +175,15 @@ void main() {
       final source = _FakePushNotificationSource();
       final presenter = _FakePushNotificationPresenter();
       final routed = <String>[];
+      var badgeRefreshes = 0;
       final coordinator = PushNotificationCoordinator(
         source: source,
         presenter: presenter,
         routeHandler: routed.add,
+        onNotificationReceived: (envelope) {
+          expect(envelope.id, 'message-2');
+          badgeRefreshes++;
+        },
       );
 
       await coordinator.start();
@@ -188,6 +199,7 @@ void main() {
 
       expect(routed, ['/chats/conversation-1']);
       expect(presenter.shown, isEmpty);
+      expect(badgeRefreshes, 1);
 
       await coordinator.dispose();
     });

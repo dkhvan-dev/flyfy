@@ -17,6 +17,8 @@ void main() {
       expect(source, contains('InAppPushNotificationPresenter'));
       expect(source, contains('FirebasePushNotificationSource'));
       expect(source, contains('LocalPushNotificationPresenter'));
+      expect(source, contains('onNotificationReceived'));
+      expect(source, contains('_refreshNotificationBadgeAfterPush'));
       expect(source, contains('_PushRegistrationBridge'));
       expect(source, contains('registerCurrentDevice'));
       expect(source, contains('registrationService.tokenRefreshes'));

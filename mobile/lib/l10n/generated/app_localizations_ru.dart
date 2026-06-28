@@ -9393,7 +9393,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get supportRequestsSubtitle =>
-      'Следите за диалогами с поддержкой Inflap и отвечайте, когда нужны детали.';
+      'Следите за диалогами с поддержкой Inflap и отвечайте, когда нужны детали';
 
   @override
   String get supportRequestsLoadFailedTitle => 'Не удалось загрузить обращения';
@@ -9479,8 +9479,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get supportStatusReopened => 'Открыто снова';
 
   @override
-  String get supportPreviewNew =>
-      'Мы получили обращение и ответим в этом чате.';
+  String get supportPreviewNew => 'Мы получили обращение и ответим в этом чате';
 
   @override
   String get supportPreviewWaitingUser =>

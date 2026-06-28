@@ -62,6 +62,7 @@ class _SuperAppState extends State<SuperApp> {
   late final AuthProvider _authProvider;
   late final SessionProvider _sessionProvider;
   late final LocaleProvider _localeProvider;
+  late final NotificationBadgeProvider _notificationBadgeProvider;
   late final PushRegistrationService _pushRegistrationService;
   late final PushNotificationBannerController _pushNotificationBannerController;
   late final PushNotificationCoordinator _pushNotificationCoordinator;
@@ -77,6 +78,7 @@ class _SuperAppState extends State<SuperApp> {
     _authProvider = AuthProvider(authSessionEvents: _authSessionEvents);
     _sessionProvider = SessionProvider(authSessionEvents: _authSessionEvents);
     _localeProvider = LocaleProvider();
+    _notificationBadgeProvider = NotificationBadgeProvider();
     _pushRegistrationService = PushRegistrationService(
       client: NotificationApi(
         apiClient: ApiClient(authSessionEvents: _authSessionEvents),
@@ -96,6 +98,7 @@ class _SuperAppState extends State<SuperApp> {
         ),
       ]),
       routeHandler: _router.go,
+      onNotificationReceived: (_) => _refreshNotificationBadgeAfterPush(),
     );
 
     _scheduleDeferredStartupWork();
@@ -106,6 +109,7 @@ class _SuperAppState extends State<SuperApp> {
     _authProvider.dispose();
     _sessionProvider.dispose();
     _localeProvider.dispose();
+    _notificationBadgeProvider.dispose();
     unawaited(_pushNotificationCoordinator.dispose());
     unawaited(_pushNotificationBannerController.dispose());
     super.dispose();
@@ -126,7 +130,9 @@ class _SuperAppState extends State<SuperApp> {
         ChangeNotifierProvider(create: (_) => RoutingProvider()),
         ChangeNotifierProvider(create: (_) => UserRoutesProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
-        ChangeNotifierProvider(create: (_) => NotificationBadgeProvider()),
+        ChangeNotifierProvider<NotificationBadgeProvider>.value(
+          value: _notificationBadgeProvider,
+        ),
         ChangeNotifierProvider(create: (_) => StickerCatalogProvider()),
       ],
       child: Consumer<LocaleProvider>(
@@ -226,6 +232,17 @@ class _SuperAppState extends State<SuperApp> {
     } catch (_) {
       // Push setup is best effort and must not delay app startup.
     }
+  }
+
+  void _refreshNotificationBadgeAfterPush() {
+    unawaited(_notificationBadgeProvider.refresh(forceRefresh: true));
+    unawaited(_refreshNotificationBadgeAfterPropagationDelay());
+  }
+
+  Future<void> _refreshNotificationBadgeAfterPropagationDelay() async {
+    await Future<void>.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
+    await _notificationBadgeProvider.refresh(forceRefresh: true);
   }
 
   Future<void> _bootstrapAuth() async {

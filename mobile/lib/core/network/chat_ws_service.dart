@@ -2,10 +2,16 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../config/app_config.dart';
 import '../storage/secure_storage.dart';
+
+typedef ChatAccessTokenReader = Future<String?> Function();
+typedef ChatApiBaseUrlReader = String Function();
+typedef ChatWebSocketConnector =
+    WebSocketChannel Function(Uri uri, {Map<String, dynamic>? headers});
 
 class ChatEvent {
   final String eventId;
@@ -37,6 +43,21 @@ class ChatEvent {
 }
 
 class ChatWsService {
+  ChatWsService({
+    ChatAccessTokenReader? accessTokenReader,
+    ChatApiBaseUrlReader? apiBaseUrlReader,
+    ChatWebSocketConnector? connector,
+  }) : _accessTokenReader =
+           accessTokenReader ?? (() => SecureStorage().getAccessToken()),
+       _apiBaseUrlReader = apiBaseUrlReader ?? (() => AppConfig.apiBaseUrl),
+       _connector =
+           connector ??
+           ((uri, {headers}) =>
+               IOWebSocketChannel.connect(uri, headers: headers));
+
+  final ChatAccessTokenReader _accessTokenReader;
+  final ChatApiBaseUrlReader _apiBaseUrlReader;
+  final ChatWebSocketConnector _connector;
   WebSocketChannel? _channel;
   Timer? _reconnectTimer;
   final _eventController = StreamController<ChatEvent>.broadcast();
@@ -51,27 +72,59 @@ class ChatWsService {
   Stream<bool> get connectionState => _connectionController.stream;
   bool get isConnected => _connected;
 
+  @visibleForTesting
+  static Uri webSocketUriForApiBaseUrl(String apiBaseUrl) {
+    final apiUri = Uri.parse(apiBaseUrl.trim());
+    final scheme = switch (apiUri.scheme.toLowerCase()) {
+      'https' => 'wss',
+      'http' => 'ws',
+      'wss' => 'wss',
+      'ws' => 'ws',
+      final unsupported => throw FormatException(
+        'Unsupported API URL scheme for chat websocket: $unsupported',
+      ),
+    };
+    final basePath = apiUri.path.replaceFirst(RegExp(r'/+$'), '');
+    final path = basePath.isEmpty ? '/chat/ws' : '$basePath/chat/ws';
+
+    return Uri(
+      scheme: scheme,
+      userInfo: apiUri.userInfo,
+      host: apiUri.host,
+      port: _webSocketPortForApiUri(apiUri),
+      path: path,
+    );
+  }
+
+  static int? _webSocketPortForApiUri(Uri apiUri) {
+    if (!apiUri.hasPort) return null;
+
+    final port = apiUri.port;
+    if (port <= 0) return null;
+
+    final scheme = apiUri.scheme.toLowerCase();
+    if ((scheme == 'https' || scheme == 'wss') && port == 443) {
+      return null;
+    }
+    if ((scheme == 'http' || scheme == 'ws') && port == 80) {
+      return null;
+    }
+
+    return port;
+  }
+
   Future<void> connect() async {
     if (_disposed) return;
 
-    final storage = SecureStorage();
-    final accessToken = await storage.getAccessToken();
+    final accessToken = await _accessTokenReader();
     if (accessToken == null || accessToken.isEmpty) return;
 
-    final apiUri = Uri.parse(AppConfig.apiBaseUrl);
-    final path = '${apiUri.path.replaceFirst(RegExp(r'/$'), '')}/chat/ws';
-    final uri = Uri(
-      scheme: apiUri.scheme == 'https' ? 'wss' : 'ws',
-      userInfo: apiUri.userInfo,
-      host: apiUri.host,
-      port: apiUri.hasPort ? apiUri.port : null,
-      path: path,
-    );
+    final uri = webSocketUriForApiBaseUrl(_apiBaseUrlReader());
 
     try {
-      _channel = WebSocketChannel.connect(
+      _channel = _connector(
         uri,
-        protocols: ['Bearer-$accessToken'],
+        headers: {'Authorization': 'Bearer $accessToken'},
       );
 
       await _channel!.ready;

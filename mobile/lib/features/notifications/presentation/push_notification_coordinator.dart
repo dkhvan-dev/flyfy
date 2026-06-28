@@ -108,18 +108,22 @@ class CompositePushNotificationPresenter implements PushNotificationPresenter {
 }
 
 typedef PushNotificationRouteHandler = void Function(String route);
+typedef PushNotificationReceivedHandler =
+    void Function(PushNotificationEnvelope envelope);
 
 class PushNotificationCoordinator {
   PushNotificationCoordinator({
     required this._source,
     required this._presenter,
     required this._routeHandler,
+    this.onNotificationReceived,
     this._resolver = const PushNotificationDeepLinkResolver(),
   });
 
   final PushNotificationSource _source;
   final PushNotificationPresenter _presenter;
   final PushNotificationRouteHandler _routeHandler;
+  final PushNotificationReceivedHandler? onNotificationReceived;
   final PushNotificationDeepLinkResolver _resolver;
 
   final List<StreamSubscription<PushNotificationEnvelope>> _subscriptions = [];
@@ -148,6 +152,7 @@ class PushNotificationCoordinator {
   }
 
   Future<void> _showForegroundMessage(PushNotificationEnvelope envelope) async {
+    _notifyNotificationReceived(envelope);
     final title = envelope.title.trim().isEmpty ? 'Inflap' : envelope.title;
     await _presenter.show(
       PushNotificationDisplay(
@@ -161,7 +166,18 @@ class PushNotificationCoordinator {
   }
 
   void _routeFromEnvelope(PushNotificationEnvelope envelope) {
+    _notifyNotificationReceived(envelope);
     _routeSafely(_resolver.resolveRoute(envelope.data));
+  }
+
+  void _notifyNotificationReceived(PushNotificationEnvelope envelope) {
+    final handler = onNotificationReceived;
+    if (handler == null) return;
+    try {
+      handler(envelope);
+    } catch (error) {
+      debugPrint('push notification received handler error: $error');
+    }
   }
 
   void _routeSafely(String route) {
