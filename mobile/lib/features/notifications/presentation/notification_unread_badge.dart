@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:provider/provider.dart';
 
-import '../../../core/ui/app_colors.dart';
 import '../../../providers/notification_badge_provider.dart';
 
 class NotificationUnreadBadge extends StatefulWidget {
@@ -86,18 +86,18 @@ class _NavBadge extends StatelessWidget {
     return ConstrainedBox(
       constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: AppColors.accent,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: const Color(0xFF21180D), width: 1.5),
+        decoration: AppBoxDecoration(
+          color: AppPalette.primary,
+          borderRadius: AppBorderRadius.circular(999),
+          border: Border.all(color: AppPalette.warmInk81, width: 1.5),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+          padding: const AppEdgeInsets.symmetric(horizontal: 5, vertical: 2),
           child: Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
+            style: const AppTextStyle(
+              color: AppPalette.textPrimary,
               fontSize: 10,
               fontWeight: FontWeight.w900,
               letterSpacing: 0,

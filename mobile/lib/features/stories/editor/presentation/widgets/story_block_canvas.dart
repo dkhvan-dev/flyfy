@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:flutter/services.dart';
 
-import '../../../../../core/ui/app_colors.dart';
 import '../../../../../l10n/generated/app_localizations.dart';
 import '../../../story_ui.dart';
 import '../../domain/story_document.dart';
@@ -53,14 +53,14 @@ class StoryBlockCanvas extends StatelessWidget {
       return DecoratedBox(
         decoration: _contentPanelDecoration(context, contentError != null),
         child: Padding(
-          padding: const EdgeInsets.all(StoryEditorSpacing.xl),
+          padding: const AppEdgeInsets.all(StoryEditorSpacing.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(
                 Icons.auto_stories_outlined,
                 size: 40,
-                color: AppColors.accent,
+                color: AppPalette.primary,
               ),
               const SizedBox(height: StoryEditorSpacing.md),
               Text(
@@ -78,7 +78,7 @@ class StoryBlockCanvas extends StatelessWidget {
                   contentError,
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.destructive),
+                  ).textTheme.bodySmall?.copyWith(color: AppPalette.danger),
                 ),
               ],
               const SizedBox(height: StoryEditorSpacing.lg),
@@ -152,10 +152,10 @@ class StoryBlockCanvas extends StatelessWidget {
     if (!hasError) {
       return storyEditorPanelDecoration(context);
     }
-    return BoxDecoration(
-      color: AppColors.surfaceLight,
-      border: Border.all(color: AppColors.destructive, width: 1.4),
-      borderRadius: BorderRadius.circular(8),
+    return AppBoxDecoration(
+      color: AppPalette.surfaceCoolLight,
+      border: Border.all(color: AppPalette.danger, width: 1.4),
+      borderRadius: AppBorderRadius.circular(8),
     );
   }
 }
@@ -227,9 +227,9 @@ class _ReorderableBlockListState extends State<_ReorderableBlockList> {
             animation: animation,
             builder: (context, child) {
               return Material(
-                color: Colors.transparent,
+                color: AppPalette.transparent,
                 elevation: 8 * animation.value,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppBorderRadius.circular(8),
                 child: child,
               );
             },
@@ -245,7 +245,7 @@ class _ReorderableBlockListState extends State<_ReorderableBlockList> {
           final blockLabel = storyBlockTypeLabel(l10n, block.type);
           return Padding(
             key: ValueKey('story-editor-block-row-${block.id}'),
-            padding: const EdgeInsets.only(bottom: StoryEditorSpacing.md),
+            padding: const AppEdgeInsets.only(bottom: StoryEditorSpacing.md),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -412,9 +412,9 @@ class _BlockDragHandle extends StatelessWidget {
             children: [
               for (var i = 0; i < 3; i++) ...[
                 DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: AppColors.accent.withValues(alpha: 0.86),
-                    borderRadius: BorderRadius.circular(999),
+                  decoration: AppBoxDecoration(
+                    color: AppPalette.primary.withValues(alpha: 0.86),
+                    borderRadius: AppBorderRadius.circular(999),
                   ),
                   child: SizedBox(width: barWidth, height: barHeight),
                 ),
@@ -579,11 +579,11 @@ class _DividerBlock extends StatelessWidget {
       child: DecoratedBox(
         decoration: storyEditorPanelDecoration(context).copyWith(
           border: Border.all(
-            color: selected ? AppColors.accent : AppColors.border,
+            color: selected ? AppPalette.primary : AppPalette.outlineOverlay,
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(StoryEditorSpacing.md),
+          padding: const AppEdgeInsets.all(StoryEditorSpacing.md),
           child: Row(
             children: [
               const Expanded(child: Divider()),
@@ -658,11 +658,13 @@ class _PlaceReferenceBlockState extends State<_PlaceReferenceBlock> {
       child: DecoratedBox(
         decoration: storyEditorPanelDecoration(context).copyWith(
           border: Border.all(
-            color: widget.selected ? AppColors.accent : AppColors.border,
+            color: widget.selected
+                ? AppPalette.primary
+                : AppPalette.outlineOverlay,
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(StoryEditorSpacing.md),
+          padding: const AppEdgeInsets.all(StoryEditorSpacing.md),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -689,7 +691,7 @@ class _PlaceReferenceBlockState extends State<_PlaceReferenceBlock> {
                 onFocus: widget.onTextInputFocused,
                 child: TextField(
                   controller: _controller,
-                  decoration: InputDecoration(
+                  decoration: AppInputDecoration(
                     hintText: l10n.storyEditorPlaceNameHint,
                     border: InputBorder.none,
                   ),
@@ -729,11 +731,11 @@ class _RouteReferenceBlock extends StatelessWidget {
       child: DecoratedBox(
         decoration: storyEditorPanelDecoration(context).copyWith(
           border: Border.all(
-            color: selected ? AppColors.accent : AppColors.border,
+            color: selected ? AppPalette.primary : AppPalette.outlineOverlay,
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(StoryEditorSpacing.md),
+          padding: const AppEdgeInsets.all(StoryEditorSpacing.md),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

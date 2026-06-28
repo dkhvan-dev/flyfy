@@ -118,7 +118,7 @@ void main() {
       'lib/screens/profile/profile_screen.dart',
     ).readAsString();
     final sectionsStart = source.indexOf('class _OwnProfileSections');
-    final sectionsEnd = source.indexOf('class _ForeignProfileSections');
+    final sectionsEnd = source.indexOf('class _OwnProfileQuickActions');
 
     expect(sectionsStart, isNonNegative);
     expect(sectionsEnd, greaterThan(sectionsStart));

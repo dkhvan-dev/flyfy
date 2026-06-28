@@ -38,7 +38,7 @@ void main() {
         'lib/features/routing/widgets/route_summary_card.dart',
       ).readAsString();
 
-      expect(summarySource, contains('AppColors.accent'));
+      expect(summarySource, contains('AppPalette.primary'));
       expect(summarySource, contains('Icons.route_rounded'));
       expect(summarySource, contains('routeSummaryTitle'));
       expect(summarySource, contains('routeSummaryDistance'));
@@ -56,7 +56,7 @@ void main() {
       ).readAsString();
 
       expect(selectorSource, contains('static const List<RouteProfile>'));
-      expect(selectorSource, contains('AppColors.accent'));
+      expect(selectorSource, contains('AppPalette.primary'));
       expect(selectorSource, contains('RouteProfile.touristWalk'));
       expect(selectorSource, contains('RouteProfile.bikeCity'));
       expect(selectorSource, contains('RouteProfile.carStandard'));

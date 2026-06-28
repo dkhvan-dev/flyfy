@@ -2,23 +2,23 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:file_selector/file_selector.dart' as file_selector;
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/network/file_api.dart';
 import '../../../core/network/chat_ws_service.dart';
-import '../../../core/ui/app_colors.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../providers/chat_provider.dart';
 import '../../../providers/session_provider.dart';
 import '../data/help_center_api.dart';
 
-const _supportBackground = Color(0xFF160D07);
-const _supportBackgroundTop = Color(0xFF2B1908);
-const _supportSurface = Color(0xFF2A1A0A);
-const _supportSurfaceHigh = Color(0xFF3A240D);
-const _supportAmberSoft = Color(0xFFFFD08A);
+const _supportBackground = AppPalette.warmInk22;
+const _supportBackgroundTop = AppPalette.warmSurface22;
+const _supportSurface = AppPalette.warmSurface12;
+const _supportSurfaceHigh = AppPalette.warmSurface55;
+const _supportAmberSoft = AppPalette.amberLight06;
 const _maxSupportAttachmentBytes = 25 * 1024 * 1024;
 const _supportTicketDetailRefreshInterval = Duration(seconds: 8);
 
@@ -723,7 +723,7 @@ class _SupportTicketDetailScreenState extends State<SupportTicketDetailScreen> {
       body: Stack(
         children: [
           DecoratedBox(
-            decoration: const BoxDecoration(
+            decoration: const AppBoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -739,7 +739,7 @@ class _SupportTicketDetailScreenState extends State<SupportTicketDetailScreen> {
                 physics: const BouncingScrollPhysics(),
                 slivers: [
                   SliverPadding(
-                    padding: EdgeInsets.fromLTRB(
+                    padding: AppEdgeInsets.fromLTRB(
                       horizontalPadding,
                       topOverlayExtent,
                       horizontalPadding,
@@ -755,7 +755,7 @@ class _SupportTicketDetailScreenState extends State<SupportTicketDetailScreen> {
                     ),
                   ),
                   SliverPadding(
-                    padding: EdgeInsets.fromLTRB(
+                    padding: AppEdgeInsets.fromLTRB(
                       horizontalPadding,
                       0,
                       horizontalPadding,
@@ -876,7 +876,7 @@ class _SupportTicketDetailScreenState extends State<SupportTicketDetailScreen> {
               )
               .map(
                 (item) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
+                  padding: const AppEdgeInsets.only(bottom: 10),
                   child: switch (item) {
                     _SupportTimelineEpisodeStart(:final createdAt) =>
                       _SupportEpisodeDivider(createdAt: createdAt),
@@ -1324,7 +1324,7 @@ class _SupportTicketDetailHeader extends StatelessWidget {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.check_circle_outline_rounded),
-              color: AppColors.accent,
+              color: AppPalette.primary,
             ),
     );
   }
@@ -1359,7 +1359,7 @@ class _HeaderShell extends StatelessWidget {
             context.go('/help');
           },
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          color: AppColors.textPrimary,
+          color: AppPalette.textPrimary,
           tooltip: MaterialLocalizations.of(context).backButtonTooltip,
           constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
         ),
@@ -1372,8 +1372,8 @@ class _HeaderShell extends StatelessWidget {
                 title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: const AppTextStyle(
+                  color: AppPalette.textPrimary,
                   fontSize: 28,
                   height: 1.1,
                   fontWeight: FontWeight.w900,
@@ -1383,8 +1383,8 @@ class _HeaderShell extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 subtitle,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
+                style: const AppTextStyle(
+                  color: AppPalette.textCoolSecondary,
                   fontSize: 14,
                   height: 1.38,
                   letterSpacing: 0,
@@ -1394,7 +1394,7 @@ class _HeaderShell extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   supportNote!,
-                  style: const TextStyle(
+                  style: const AppTextStyle(
                     color: _supportAmberSoft,
                     fontSize: 13,
                     height: 1.28,
@@ -1454,25 +1454,25 @@ class _SupportTimelineChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: AppColors.accent.withValues(alpha: 0.14),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: AppColors.accent.withValues(alpha: 0.24)),
+        decoration: AppBoxDecoration(
+          color: AppPalette.primary.withValues(alpha: 0.14),
+          borderRadius: AppBorderRadius.circular(999),
+          border: Border.all(color: AppPalette.primary.withValues(alpha: 0.24)),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          padding: const AppEdgeInsets.symmetric(horizontal: 12, vertical: 7),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: AppColors.accent, size: 15),
+              Icon(icon, color: AppPalette.primary, size: 15),
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: const AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0,
@@ -1504,46 +1504,45 @@ class _SupportEventBubble extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
         child: DecoratedBox(
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             color: isUser ? null : _supportSurface,
             gradient: isUser
                 ? const LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [AppColors.accent, Color(0xFFE56F00)],
+                    colors: [AppPalette.primary, AppPalette.warmMuted29],
                   )
                 : null,
-            borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(18),
-              topRight: const Radius.circular(18),
-              bottomLeft: Radius.circular(isUser ? 18 : 6),
-              bottomRight: Radius.circular(isUser ? 6 : 18),
+            borderRadius: AppBorderRadius.only(
+              topLeft: const AppRadiusValue.circular(18),
+              topRight: const AppRadiusValue.circular(18),
+              bottomLeft: AppRadiusValue.circular(isUser ? 18 : 6),
+              bottomRight: AppRadiusValue.circular(isUser ? 6 : 18),
             ),
             border: Border.all(
               color: isUser
-                  ? AppColors.accent.withValues(alpha: 0.48)
-                  : AppColors.accent.withValues(alpha: 0.20),
+                  ? AppPalette.primary.withValues(alpha: 0.48)
+                  : AppPalette.primary.withValues(alpha: 0.20),
             ),
             boxShadow: [
               BoxShadow(
-                color: (isUser ? AppColors.accent : Colors.black).withValues(
-                  alpha: isUser ? 0.16 : 0.22,
-                ),
+                color: (isUser ? AppPalette.primary : AppPalette.black)
+                    .withValues(alpha: isUser ? 0.16 : 0.22),
                 blurRadius: 16,
                 offset: const Offset(0, 8),
               ),
             ],
           ),
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const AppEdgeInsets.all(14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   supportEventActorLabel(l10n, event),
-                  style: TextStyle(
-                    color: isUser ? AppColors.textPrimary : _supportAmberSoft,
+                  style: AppTextStyle(
+                    color: isUser ? AppPalette.textPrimary : _supportAmberSoft,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0,
@@ -1552,8 +1551,8 @@ class _SupportEventBubble extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   message,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: const AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: 14,
                     height: 1.35,
                     letterSpacing: 0,
@@ -1590,37 +1589,39 @@ class _SupportOutboxBubble extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
         child: DecoratedBox(
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppColors.accent, Color(0xFFE56F00)],
+              colors: [AppPalette.primary, AppPalette.warmMuted29],
             ),
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(18),
-              topRight: Radius.circular(18),
-              bottomLeft: Radius.circular(18),
-              bottomRight: Radius.circular(6),
+            borderRadius: const AppBorderRadius.only(
+              topLeft: AppRadiusValue.circular(18),
+              topRight: AppRadiusValue.circular(18),
+              bottomLeft: AppRadiusValue.circular(18),
+              bottomRight: AppRadiusValue.circular(6),
             ),
-            border: Border.all(color: AppColors.accent.withValues(alpha: 0.48)),
+            border: Border.all(
+              color: AppPalette.primary.withValues(alpha: 0.48),
+            ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.accent.withValues(alpha: 0.16),
+                color: AppPalette.primary.withValues(alpha: 0.16),
                 blurRadius: 16,
                 offset: const Offset(0, 8),
               ),
             ],
           ),
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const AppEdgeInsets.all(14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   l10n.supportUserFallbackName,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: const AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0,
@@ -1629,8 +1630,8 @@ class _SupportOutboxBubble extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   message.message,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: const AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: 14,
                     height: 1.35,
                     letterSpacing: 0,
@@ -1649,14 +1650,14 @@ class _SupportOutboxBubble extends StatelessWidget {
                   children: [
                     Icon(
                       _supportOutboxStatusIcon(message.status),
-                      color: AppColors.textPrimary.withValues(alpha: 0.72),
+                      color: AppPalette.textPrimary.withValues(alpha: 0.72),
                       size: 14,
                     ),
                     const SizedBox(width: 5),
                     Text(
                       _supportOutboxStatusLabel(l10n, message.status),
-                      style: TextStyle(
-                        color: AppColors.textPrimary.withValues(alpha: 0.78),
+                      style: AppTextStyle(
+                        color: AppPalette.textPrimary.withValues(alpha: 0.78),
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0,
@@ -1668,8 +1669,8 @@ class _SupportOutboxBubble extends StatelessWidget {
                         key: ValueKey('support-ticket-retry-${message.id}'),
                         onPressed: onRetry,
                         style: TextButton.styleFrom(
-                          foregroundColor: AppColors.textPrimary,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          foregroundColor: AppPalette.textPrimary,
+                          padding: const AppEdgeInsets.symmetric(horizontal: 8),
                           minimumSize: const Size(0, 28),
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
@@ -1699,24 +1700,24 @@ class _SupportBubbleAttachmentChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (labels.isEmpty) return const SizedBox.shrink();
-    final foreground = isUser ? AppColors.textPrimary : _supportAmberSoft;
+    final foreground = isUser ? AppPalette.textPrimary : _supportAmberSoft;
     final borderColor = foreground.withValues(alpha: isUser ? 0.28 : 0.32);
     final background = isUser
-        ? AppColors.textPrimary.withValues(alpha: 0.12)
-        : AppColors.accent.withValues(alpha: 0.12);
+        ? AppPalette.textPrimary.withValues(alpha: 0.12)
+        : AppPalette.primary.withValues(alpha: 0.12);
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: labels
           .map(
             (label) => DecoratedBox(
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 color: background,
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: AppBorderRadius.circular(999),
                 border: Border.all(color: borderColor),
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(
+                padding: const AppEdgeInsets.symmetric(
                   horizontal: 10,
                   vertical: 6,
                 ),
@@ -1735,7 +1736,7 @@ class _SupportBubbleAttachmentChips extends StatelessWidget {
                         label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: AppTextStyle(
                           color: foreground,
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
@@ -1765,14 +1766,14 @@ class _SupportChatHeaderDock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         color: _supportBackground.withValues(alpha: 0.96),
         border: Border(
-          bottom: BorderSide(color: AppColors.accent.withValues(alpha: 0.16)),
+          bottom: BorderSide(color: AppPalette.primary.withValues(alpha: 0.16)),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.26),
+            color: AppPalette.black.withValues(alpha: 0.26),
             blurRadius: 22,
             offset: const Offset(0, 10),
           ),
@@ -1781,7 +1782,7 @@ class _SupportChatHeaderDock extends StatelessWidget {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: EdgeInsets.fromLTRB(
+          padding: AppEdgeInsets.fromLTRB(
             horizontalPadding,
             10,
             horizontalPadding,
@@ -1815,14 +1816,14 @@ class _SupportChatInputDock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         color: _supportBackground.withValues(alpha: 0.96),
         border: Border(
-          top: BorderSide(color: AppColors.accent.withValues(alpha: 0.16)),
+          top: BorderSide(color: AppPalette.primary.withValues(alpha: 0.16)),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.28),
+            color: AppPalette.black.withValues(alpha: 0.28),
             blurRadius: 24,
             offset: const Offset(0, -10),
           ),
@@ -1832,7 +1833,7 @@ class _SupportChatInputDock extends StatelessWidget {
         top: false,
         bottom: false,
         child: Padding(
-          padding: EdgeInsets.fromLTRB(
+          padding: AppEdgeInsets.fromLTRB(
             horizontalPadding,
             10,
             horizontalPadding,
@@ -1897,19 +1898,19 @@ class _SupportPendingAttachmentChip extends StatelessWidget {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 240),
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: AppColors.accent.withValues(alpha: 0.14),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.accent.withValues(alpha: 0.28)),
+        decoration: AppBoxDecoration(
+          color: AppPalette.primary.withValues(alpha: 0.14),
+          borderRadius: AppBorderRadius.circular(14),
+          border: Border.all(color: AppPalette.primary.withValues(alpha: 0.28)),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 7),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(
                 Icons.insert_drive_file_rounded,
-                color: AppColors.accent,
+                color: AppPalette.primary,
                 size: 18,
               ),
               const SizedBox(width: 7),
@@ -1918,8 +1919,8 @@ class _SupportPendingAttachmentChip extends StatelessWidget {
                   attachment.displayName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: const AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0,
@@ -1929,7 +1930,7 @@ class _SupportPendingAttachmentChip extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 _formatSupportAttachmentSize(attachment.bytes.lengthInBytes),
-                style: TextStyle(
+                style: AppTextStyle(
                   color: _supportAmberSoft.withValues(alpha: 0.72),
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -1938,13 +1939,13 @@ class _SupportPendingAttachmentChip extends StatelessWidget {
               ),
               const SizedBox(width: 3),
               InkWell(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppBorderRadius.circular(12),
                 onTap: onRemove,
                 child: const Padding(
-                  padding: EdgeInsets.all(3),
+                  padding: AppEdgeInsets.all(3),
                   child: Icon(
                     Icons.close_rounded,
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                     size: 16,
                   ),
                 ),
@@ -1995,20 +1996,20 @@ class _ReplyComposer extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         color: _supportSurfaceHigh,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.28)),
+        borderRadius: AppBorderRadius.circular(18),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.28)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.accent.withValues(alpha: 0.10),
+            color: AppPalette.primary.withValues(alpha: 0.10),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(10),
+        padding: const AppEdgeInsets.all(10),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -2028,8 +2029,8 @@ class _ReplyComposer extends StatelessWidget {
                       : null,
                   tooltip: l10n.chatComposerAttachButtonLabel,
                   style: IconButton.styleFrom(
-                    foregroundColor: AppColors.accent,
-                    disabledForegroundColor: AppColors.accent.withValues(
+                    foregroundColor: AppPalette.primary,
+                    disabledForegroundColor: AppPalette.primary.withValues(
                       alpha: 0.58,
                     ),
                     minimumSize: const Size(42, 42),
@@ -2050,17 +2051,19 @@ class _ReplyComposer extends StatelessWidget {
                     minLines: 1,
                     maxLines: 4,
                     textInputAction: TextInputAction.newline,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: const AppTextStyle(
+                      color: AppPalette.textPrimary,
                       letterSpacing: 0,
                     ),
-                    decoration: InputDecoration(
+                    decoration: AppInputDecoration(
                       hintText: hint,
-                      hintStyle: TextStyle(
+                      hintStyle: AppTextStyle(
                         color: _supportAmberSoft.withValues(alpha: 0.72),
                       ),
                       border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                      contentPadding: const AppEdgeInsets.symmetric(
+                        horizontal: 8,
+                      ),
                     ),
                   ),
                 ),
@@ -2069,12 +2072,12 @@ class _ReplyComposer extends StatelessWidget {
                   key: const ValueKey('support-ticket-send-reply'),
                   onPressed: enabled && !isSending ? onSend : null,
                   style: IconButton.styleFrom(
-                    backgroundColor: AppColors.accent,
-                    foregroundColor: AppColors.textPrimary,
-                    disabledBackgroundColor: AppColors.accent.withValues(
+                    backgroundColor: AppPalette.primary,
+                    foregroundColor: AppPalette.textPrimary,
+                    disabledBackgroundColor: AppPalette.primary.withValues(
                       alpha: 0.34,
                     ),
-                    disabledForegroundColor: AppColors.textPrimary.withValues(
+                    disabledForegroundColor: AppPalette.textPrimary.withValues(
                       alpha: 0.58,
                     ),
                     minimumSize: const Size(46, 46),
@@ -2117,22 +2120,22 @@ class _SupportTicketCSATPanel extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     if (submitted) {
       return DecoratedBox(
-        decoration: BoxDecoration(
-          color: AppColors.accent.withValues(alpha: 0.14),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.accent.withValues(alpha: 0.26)),
+        decoration: AppBoxDecoration(
+          color: AppPalette.primary.withValues(alpha: 0.14),
+          borderRadius: AppBorderRadius.circular(18),
+          border: Border.all(color: AppPalette.primary.withValues(alpha: 0.26)),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const AppEdgeInsets.all(16),
           child: Row(
             children: [
-              const Icon(Icons.check_circle_rounded, color: AppColors.accent),
+              const Icon(Icons.check_circle_rounded, color: AppPalette.primary),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   l10n.supportTicketCSATThanks,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: const AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0,
@@ -2146,20 +2149,20 @@ class _SupportTicketCSATPanel extends StatelessWidget {
     }
 
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         color: _supportSurface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.16)),
+        borderRadius: AppBorderRadius.circular(18),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const AppEdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               l10n.supportTicketCSATTitle,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: const AppTextStyle(
+                color: AppPalette.textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0,
@@ -2172,30 +2175,32 @@ class _SupportTicketCSATPanel extends StatelessWidget {
               enabled: !isSubmitting,
               minLines: 1,
               maxLines: 3,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: const AppTextStyle(
+                color: AppPalette.textPrimary,
                 letterSpacing: 0,
               ),
-              decoration: InputDecoration(
+              decoration: AppInputDecoration(
                 hintText: l10n.supportTicketCSATCommentHint,
-                hintStyle: const TextStyle(color: AppColors.textSecondary),
+                hintStyle: const AppTextStyle(
+                  color: AppPalette.textCoolSecondary,
+                ),
                 filled: true,
-                fillColor: Colors.white.withValues(alpha: 0.06),
+                fillColor: AppPalette.white.withValues(alpha: 0.06),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: AppBorderRadius.circular(14),
                   borderSide: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.08),
+                    color: AppPalette.white.withValues(alpha: 0.08),
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: AppBorderRadius.circular(14),
                   borderSide: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.08),
+                    color: AppPalette.white.withValues(alpha: 0.08),
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: AppColors.accent),
+                  borderRadius: AppBorderRadius.circular(14),
+                  borderSide: const BorderSide(color: AppPalette.primary),
                 ),
               ),
             ),
@@ -2207,21 +2212,33 @@ class _SupportTicketCSATPanel extends StatelessWidget {
                 final rating = index + 1;
                 final isSelected =
                     selectedRating != null && rating <= selectedRating!;
-                return IconButton.filledTonal(
+                return IconButton(
                   key: ValueKey('support-ticket-csat-$rating'),
                   onPressed: isSubmitting ? null : () => onRate(rating),
                   icon: Icon(
                     isSelected ? Icons.star_rounded : Icons.star_border_rounded,
+                    color: isSubmitting
+                        ? AppPalette.textCaption
+                        : AppPalette.primary,
+                    size: 30,
                   ),
-                  color: isSelected ? AppColors.textPrimary : AppColors.accent,
                   style: IconButton.styleFrom(
+                    fixedSize: const Size(48, 48),
+                    minimumSize: const Size(48, 48),
+                    padding: EdgeInsets.zero,
+                    foregroundColor: AppPalette.primary,
                     backgroundColor: isSelected
-                        ? AppColors.accent
-                        : AppColors.accent.withValues(alpha: 0.12),
-                    disabledBackgroundColor: Colors.white.withValues(
+                        ? AppPalette.primary.withValues(alpha: 0.16)
+                        : AppPalette.primary.withValues(alpha: 0.08),
+                    disabledBackgroundColor: AppPalette.white.withValues(
                       alpha: 0.06,
                     ),
-                    disabledForegroundColor: AppColors.textCaption,
+                    disabledForegroundColor: AppPalette.textCaption,
+                    side: BorderSide(
+                      color: isSelected
+                          ? AppPalette.primary.withValues(alpha: 0.48)
+                          : AppPalette.primary.withValues(alpha: 0.22),
+                    ),
                   ),
                   tooltip: rating.toString(),
                 );
@@ -2241,18 +2258,20 @@ class _SupportTicketCSATPanel extends StatelessWidget {
                         height: 18,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: AppColors.textPrimary,
+                          color: AppPalette.textPrimary,
                         ),
                       )
                     : const Icon(Icons.send_rounded),
                 label: Text(l10n.supportTicketCSATSubmit),
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.accent,
-                  foregroundColor: AppColors.textPrimary,
-                  disabledBackgroundColor: Colors.white.withValues(alpha: 0.08),
-                  disabledForegroundColor: AppColors.textCaption,
+                  backgroundColor: AppPalette.primary,
+                  foregroundColor: AppPalette.textPrimary,
+                  disabledBackgroundColor: AppPalette.white.withValues(
+                    alpha: 0.08,
+                  ),
+                  disabledForegroundColor: AppPalette.textCaption,
                   minimumSize: const Size(0, 44),
-                  padding: const EdgeInsets.symmetric(
+                  padding: const AppEdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 12,
                   ),
@@ -2274,17 +2293,17 @@ class _StatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.38)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.primary.withValues(alpha: 0.18),
+        borderRadius: AppBorderRadius.circular(999),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.38)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Text(
           status,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
+          style: const AppTextStyle(
+            color: AppPalette.textPrimary,
             fontSize: 12,
             fontWeight: FontWeight.w800,
             letterSpacing: 0,
@@ -2546,11 +2565,11 @@ class _SupportTicketSkeleton extends StatelessWidget {
       children: List.generate(
         4,
         (index) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
+          padding: const AppEdgeInsets.only(bottom: 12),
           child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.055),
-              borderRadius: BorderRadius.circular(14),
+            decoration: AppBoxDecoration(
+              color: AppPalette.white.withValues(alpha: 0.055),
+              borderRadius: AppBorderRadius.circular(14),
             ),
             child: const SizedBox(height: 86, width: double.infinity),
           ),
@@ -2578,22 +2597,22 @@ class _SupportTicketStateMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         color: _supportSurface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.16)),
+        borderRadius: AppBorderRadius.circular(18),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const AppEdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: AppColors.accent, size: 28),
+            Icon(icon, color: AppPalette.primary, size: 28),
             const SizedBox(height: 12),
             Text(
               title,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: const AppTextStyle(
+                color: AppPalette.textPrimary,
                 fontSize: 18,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0,
@@ -2602,8 +2621,8 @@ class _SupportTicketStateMessage extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               message,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
+              style: const AppTextStyle(
+                color: AppPalette.textCoolSecondary,
                 fontSize: 14,
                 height: 1.38,
                 letterSpacing: 0,
@@ -2615,17 +2634,17 @@ class _SupportTicketStateMessage extends StatelessWidget {
               icon: const Icon(Icons.support_agent_rounded),
               label: Text(actionLabel),
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.accent,
-                foregroundColor: AppColors.textPrimary,
-                disabledBackgroundColor: AppColors.accent.withValues(
+                backgroundColor: AppPalette.primary,
+                foregroundColor: AppPalette.textPrimary,
+                disabledBackgroundColor: AppPalette.primary.withValues(
                   alpha: 0.34,
                 ),
-                disabledForegroundColor: AppColors.textPrimary.withValues(
+                disabledForegroundColor: AppPalette.textPrimary.withValues(
                   alpha: 0.58,
                 ),
                 minimumSize: const Size(44, 44),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: AppBorderRadius.circular(14),
                 ),
               ),
             ),

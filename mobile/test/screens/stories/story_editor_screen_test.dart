@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:inflap/core/ui/app_colors.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:inflap/features/stories/editor/data/story_editor_api.dart';
 import 'package:inflap/features/stories/editor/data/story_editor_dto.dart';
 import 'package:inflap/features/stories/editor/data/story_editor_recovery_store.dart';
@@ -418,9 +418,9 @@ void main() {
 
       final theme = Theme.of(tester.element(find.byType(StoryMetadataPanel)));
 
-      expect(theme.colorScheme.primary, AppColors.accent);
-      expect(theme.colorScheme.secondary, AppColors.accent);
-      expect(theme.textSelectionTheme.cursorColor, AppColors.accent);
+      expect(theme.colorScheme.primary, AppPalette.primary);
+      expect(theme.colorScheme.secondary, AppPalette.primary);
+      expect(theme.textSelectionTheme.cursorColor, AppPalette.primary);
     });
 
     testWidgets('preview mode renders a read-only published-style story', (
@@ -821,7 +821,7 @@ void main() {
       final coverChrome = tester.widget<DecoratedBox>(coverFieldFinder);
       final decoration = coverChrome.decoration as BoxDecoration;
       final border = decoration.border! as Border;
-      expect(border.top.color, AppColors.destructive);
+      expect(border.top.color, AppPalette.danger);
       expect(tester.getTopLeft(coverFieldFinder).dy, greaterThanOrEqualTo(0));
     });
 

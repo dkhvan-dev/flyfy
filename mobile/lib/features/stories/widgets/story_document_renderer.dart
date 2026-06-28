@@ -1,9 +1,9 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
 import '../../../core/network/file_api.dart';
-import '../../../core/ui/app_colors.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../editor/domain/story_document.dart';
 import '../models/post_vm.dart';
@@ -179,7 +179,7 @@ class _HeadingBlock extends StatelessWidget {
     return _MarkedText(
       text: block.text ?? '',
       marks: block.marks,
-      style: TextStyle(
+      style: AppTextStyle(
         color: StoryPalette.text,
         fontSize: adaptive.scale(size),
         height: 1.18,
@@ -200,8 +200,8 @@ class _ParagraphBlock extends StatelessWidget {
     return _MarkedText(
       text: block.text ?? '',
       marks: block.marks,
-      style: TextStyle(
-        color: Colors.white.withValues(alpha: 0.84),
+      style: AppTextStyle(
+        color: AppPalette.white.withValues(alpha: 0.84),
         fontSize: adaptive.scale(15),
         height: 1.8,
       ),
@@ -224,7 +224,7 @@ class _ListBlock extends StatelessWidget {
       children: [
         for (var index = 0; index < items.length; index++)
           Padding(
-            padding: EdgeInsets.only(
+            padding: AppEdgeInsets.only(
               bottom: index == items.length - 1 ? 0 : adaptive.scale(8),
             ),
             child: Row(
@@ -235,19 +235,19 @@ class _ListBlock extends StatelessWidget {
                   child: ordered
                       ? Text(
                           '${index + 1}',
-                          style: TextStyle(
-                            color: AppColors.accent,
+                          style: AppTextStyle(
+                            color: AppPalette.primary,
                             fontSize: adaptive.scale(13),
                             fontWeight: FontWeight.w800,
                             height: 1.65,
                           ),
                         )
                       : Padding(
-                          padding: EdgeInsets.only(top: adaptive.scale(9)),
+                          padding: AppEdgeInsets.only(top: adaptive.scale(9)),
                           child: Icon(
                             Icons.circle,
                             size: adaptive.scale(6),
-                            color: AppColors.accent,
+                            color: AppPalette.primary,
                           ),
                         ),
                 ),
@@ -255,8 +255,8 @@ class _ListBlock extends StatelessWidget {
                   child: _MarkedText(
                     text: items[index],
                     marks: const [],
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.84),
+                    style: AppTextStyle(
+                      color: AppPalette.white.withValues(alpha: 0.84),
                       fontSize: adaptive.scale(15),
                       height: 1.65,
                     ),
@@ -279,22 +279,22 @@ class _QuoteBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         border: Border(
           left: BorderSide(
-            color: AppColors.accent.withValues(alpha: 0.75),
+            color: AppPalette.primary.withValues(alpha: 0.75),
             width: adaptive.scale(3),
           ),
         ),
       ),
       child: Padding(
-        padding: EdgeInsets.only(left: adaptive.scale(14)),
+        padding: AppEdgeInsets.only(left: adaptive.scale(14)),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(
               Icons.format_quote_rounded,
-              color: AppColors.accent.withValues(alpha: 0.7),
+              color: AppPalette.primary.withValues(alpha: 0.7),
               size: adaptive.scale(24),
             ),
             SizedBox(width: adaptive.scale(8)),
@@ -302,7 +302,7 @@ class _QuoteBlock extends StatelessWidget {
               child: _MarkedText(
                 text: block.text ?? '',
                 marks: block.marks,
-                style: TextStyle(
+                style: AppTextStyle(
                   color: StoryPalette.textSoft,
                   fontSize: adaptive.scale(17),
                   height: 1.55,
@@ -328,18 +328,18 @@ class _CalloutBlock extends StatelessWidget {
     final adaptive = StoryAdaptive.of(context);
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(adaptive.scale(14)),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(adaptive.radius(18)),
-        color: AppColors.accent.withValues(alpha: 0.10),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.22)),
+      padding: AppEdgeInsets.all(adaptive.scale(14)),
+      decoration: AppBoxDecoration(
+        borderRadius: AppBorderRadius.circular(adaptive.radius(18)),
+        color: AppPalette.primary.withValues(alpha: 0.10),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.22)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
             Icons.lightbulb_outline_rounded,
-            color: AppColors.accent,
+            color: AppPalette.primary,
             size: adaptive.scale(20),
           ),
           SizedBox(width: adaptive.scale(10)),
@@ -347,7 +347,7 @@ class _CalloutBlock extends StatelessWidget {
             child: _MarkedText(
               text: block.text ?? '',
               marks: block.marks,
-              style: TextStyle(
+              style: AppTextStyle(
                 color: StoryPalette.text,
                 fontSize: adaptive.scale(14),
                 height: 1.55,
@@ -410,7 +410,7 @@ class _GalleryBlock extends StatelessWidget {
               for (var index = 0; index < images.length; index++)
                 Container(
                   width: itemWidth,
-                  margin: EdgeInsetsDirectional.only(
+                  margin: AppEdgeInsetsDirectional.only(
                     end: index == images.length - 1 ? 0 : gap,
                   ),
                   child: _ResponsiveImage(
@@ -456,11 +456,11 @@ class _ResponsiveImage extends StatelessWidget {
     }
 
     final image = ClipRRect(
-      borderRadius: BorderRadius.circular(adaptive.radius(radius)),
+      borderRadius: AppBorderRadius.circular(adaptive.radius(radius)),
       child: AspectRatio(
         aspectRatio: aspectRatio,
         child: DecoratedBox(
-          decoration: const BoxDecoration(color: Color(0xFF2A1708)),
+          decoration: const AppBoxDecoration(color: AppPalette.warmInk113),
           child: Image.network(
             imageUrl,
             fit: BoxFit.cover,
@@ -474,7 +474,7 @@ class _ResponsiveImage extends StatelessWidget {
               return const Center(
                 child: Icon(
                   Icons.broken_image_outlined,
-                  color: Colors.white54,
+                  color: AppPalette.white54,
                   size: 30,
                 ),
               );
@@ -512,7 +512,7 @@ class _RenderedImageLoadingPlaceholder extends StatelessWidget {
         dimension: adaptive.scale(26),
         child: CircularProgressIndicator(
           strokeWidth: adaptive.scale(2),
-          color: AppColors.accent,
+          color: AppPalette.primary,
         ),
       ),
     );
@@ -549,18 +549,18 @@ class _PlaceReferenceBlock extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(adaptive.scale(13)),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(adaptive.radius(18)),
-        color: Colors.white.withValues(alpha: 0.05),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      padding: AppEdgeInsets.all(adaptive.scale(13)),
+      decoration: AppBoxDecoration(
+        borderRadius: AppBorderRadius.circular(adaptive.radius(18)),
+        color: AppPalette.white.withValues(alpha: 0.05),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
             Icons.place_outlined,
-            color: AppColors.accent,
+            color: AppPalette.primary,
             size: adaptive.scale(20),
           ),
           SizedBox(width: adaptive.scale(10)),
@@ -570,7 +570,7 @@ class _PlaceReferenceBlock extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(
+                  style: AppTextStyle(
                     color: StoryPalette.text,
                     fontSize: adaptive.scale(14),
                     height: 1.3,
@@ -581,7 +581,7 @@ class _PlaceReferenceBlock extends StatelessWidget {
                   SizedBox(height: adaptive.scale(3)),
                   Text(
                     details,
-                    style: TextStyle(
+                    style: AppTextStyle(
                       color: StoryPalette.textMuted,
                       fontSize: adaptive.scale(11),
                       height: 1.3,
@@ -635,18 +635,18 @@ class _RouteReferenceBlock extends StatelessWidget {
     final content = Container(
       key: ValueKey('story-document-route-$routeId'),
       width: double.infinity,
-      padding: EdgeInsets.all(adaptive.scale(13)),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(adaptive.radius(18)),
+      padding: AppEdgeInsets.all(adaptive.scale(13)),
+      decoration: AppBoxDecoration(
+        borderRadius: AppBorderRadius.circular(adaptive.radius(18)),
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF3A2108), Color(0xFF241406)],
+          colors: [AppPalette.warmSurface48, AppPalette.warmInk94],
         ),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.34)),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.34)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
+            color: AppPalette.black.withValues(alpha: 0.18),
             blurRadius: adaptive.scale(18),
             offset: Offset(0, adaptive.scale(8)),
           ),
@@ -658,16 +658,16 @@ class _RouteReferenceBlock extends StatelessWidget {
           Container(
             width: adaptive.scale(42),
             height: adaptive.scale(42),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(adaptive.radius(12)),
-              color: AppColors.accent.withValues(alpha: 0.16),
+            decoration: AppBoxDecoration(
+              borderRadius: AppBorderRadius.circular(adaptive.radius(12)),
+              color: AppPalette.primary.withValues(alpha: 0.16),
               border: Border.all(
-                color: AppColors.accent.withValues(alpha: 0.28),
+                color: AppPalette.primary.withValues(alpha: 0.28),
               ),
             ),
             child: Icon(
               Icons.route_rounded,
-              color: AppColors.accent,
+              color: AppPalette.primary,
               size: adaptive.scale(22),
             ),
           ),
@@ -680,7 +680,7 @@ class _RouteReferenceBlock extends StatelessWidget {
                   title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: AppTextStyle(
                     color: StoryPalette.text,
                     fontSize: adaptive.scale(14.5),
                     height: 1.24,
@@ -694,7 +694,7 @@ class _RouteReferenceBlock extends StatelessWidget {
                     description,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: AppTextStyle(
                       color: StoryPalette.textSoft.withValues(alpha: 0.84),
                       fontSize: adaptive.scale(12),
                       height: 1.35,
@@ -730,9 +730,9 @@ class _RouteReferenceBlock extends StatelessWidget {
       button: true,
       label: title,
       child: Material(
-        color: Colors.transparent,
+        color: AppPalette.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(adaptive.radius(18)),
+          borderRadius: AppBorderRadius.circular(adaptive.radius(18)),
           onTap: () => openRoute(routeId),
           child: content,
         ),
@@ -757,13 +757,13 @@ class _RouteReferenceMetricChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.13),
-        borderRadius: BorderRadius.circular(adaptive.radius(999)),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.18)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.primary.withValues(alpha: 0.13),
+        borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.18)),
       ),
       child: Padding(
-        padding: EdgeInsets.symmetric(
+        padding: AppEdgeInsets.symmetric(
           horizontal: adaptive.scale(9),
           vertical: adaptive.scale(6),
         ),
@@ -772,14 +772,14 @@ class _RouteReferenceMetricChip extends StatelessWidget {
           children: [
             Icon(
               metric.icon,
-              color: AppColors.accent,
+              color: AppPalette.primary,
               size: adaptive.scale(14),
             ),
             SizedBox(width: adaptive.scale(5)),
             Text(
               metric.value,
-              style: TextStyle(
-                color: const Color(0xFFFFE6B4),
+              style: AppTextStyle(
+                color: AppPalette.amberLight16,
                 fontSize: adaptive.scale(11),
                 height: 1.1,
                 fontWeight: FontWeight.w800,
@@ -871,7 +871,7 @@ class _MarkedText extends StatelessWidget {
         case StoryInlineMarkType.strikethrough:
           addDecoration(TextDecoration.lineThrough);
         case StoryInlineMarkType.link:
-          next = next.copyWith(color: AppColors.accent);
+          next = next.copyWith(color: AppPalette.primary);
           addDecoration(TextDecoration.underline);
       }
     }
@@ -879,7 +879,7 @@ class _MarkedText extends StatelessWidget {
       next = next.copyWith(
         decoration: TextDecoration.combine(decorations),
         decorationColor: decorations.contains(TextDecoration.underline)
-            ? AppColors.accent
+            ? AppPalette.primary
             : next.decorationColor,
       );
     }

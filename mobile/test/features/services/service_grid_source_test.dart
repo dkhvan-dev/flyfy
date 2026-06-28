@@ -14,7 +14,7 @@ void main() {
       expect(wrapStart, isNonNegative);
 
       final textStart = source.indexOf('Text(', wrapStart);
-      final textEnd = source.indexOf('style: TextStyle(', textStart);
+      final textEnd = source.indexOf('style: AppTextStyle(', textStart);
 
       expect(textStart, greaterThan(wrapStart));
       expect(textEnd, greaterThan(textStart));

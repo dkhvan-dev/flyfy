@@ -3,12 +3,12 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/network/file_api.dart';
-import '../../../../core/ui/app_colors.dart';
 import '../../../../core/ui/error_dialog.dart';
 import '../../../../core/ui/filter_sheet_chrome.dart';
 import '../../../../l10n/generated/app_localizations.dart';
@@ -419,7 +419,9 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
                     child: SafeArea(
                       child: Center(
                         child: Padding(
-                          padding: const EdgeInsets.all(StoryEditorSpacing.lg),
+                          padding: const AppEdgeInsets.all(
+                            StoryEditorSpacing.lg,
+                          ),
                           child: Text(
                             l10n.storyEditorLoadFailed,
                             textAlign: TextAlign.center,
@@ -472,7 +474,7 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
                                 controller: _scrollController,
                                 keyboardDismissBehavior:
                                     ScrollViewKeyboardDismissBehavior.onDrag,
-                                padding: EdgeInsets.fromLTRB(
+                                padding: AppEdgeInsets.fromLTRB(
                                   StoryEditorSpacing.lg,
                                   StoryEditorSpacing.md,
                                   StoryEditorSpacing.lg,
@@ -1076,7 +1078,7 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       useSafeArea: true,
       builder: (context) {
         return Theme(
@@ -1149,8 +1151,9 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
     FocusScope.of(context).unfocus();
     final route = await showModalBottomSheet<UserRouteVm>(
       context: context,
+      isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (context) => const _RouteReferencePickerSheet(),
     );
     if (route == null || !mounted) return;
@@ -1584,7 +1587,7 @@ class _StoryEditorScreenState extends State<StoryEditorScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       useSafeArea: true,
       builder: (context) {
         return Theme(
@@ -1750,23 +1753,23 @@ class _RouteReferencePickerSheetState
     return AnimatedPadding(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
-      padding: EdgeInsets.only(bottom: bottomInset),
+      padding: AppEdgeInsets.only(bottom: bottomInset),
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxHeight),
         child: DecoratedBox(
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             gradient: const LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Color(0xFF2B1808), Color(0xFF201208)],
+              colors: [AppPalette.warmSurface21, AppPalette.warmInk63],
             ),
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(adaptive.radius(28)),
+            borderRadius: AppBorderRadius.vertical(
+              top: AppRadiusValue.circular(adaptive.radius(28)),
             ),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+            border: Border.all(color: AppPalette.white.withValues(alpha: 0.04)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.36),
+                color: AppPalette.black.withValues(alpha: 0.36),
                 blurRadius: adaptive.scale(30),
                 offset: Offset(0, adaptive.scale(-8)),
               ),
@@ -1804,7 +1807,7 @@ class _RouteReferencePickerSheetState
                           routes.isEmpty) {
                         return const Center(
                           child: CircularProgressIndicator(
-                            color: AppColors.accent,
+                            color: AppPalette.primary,
                           ),
                         );
                       }
@@ -1830,7 +1833,7 @@ class _RouteReferencePickerSheetState
                       }
                       return ListView.separated(
                         physics: const BouncingScrollPhysics(),
-                        padding: EdgeInsets.fromLTRB(
+                        padding: AppEdgeInsets.fromLTRB(
                           horizontalPadding,
                           adaptive.scale(14),
                           horizontalPadding,
@@ -1877,11 +1880,11 @@ class _RouteReferencePickerStateView extends StatelessWidget {
     final adaptive = StoryAdaptive.of(context);
     return Center(
       child: Padding(
-        padding: EdgeInsets.all(adaptive.scale(24)),
+        padding: AppEdgeInsets.all(adaptive.scale(24)),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: AppColors.accent, size: adaptive.scale(34)),
+            Icon(icon, color: AppPalette.primary, size: adaptive.scale(34)),
             SizedBox(height: adaptive.scale(12)),
             Text(
               title,
@@ -1896,8 +1899,8 @@ class _RouteReferencePickerStateView extends StatelessWidget {
               FilledButton(
                 onPressed: onAction,
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.accent,
-                  foregroundColor: Colors.black,
+                  backgroundColor: AppPalette.primary,
+                  foregroundColor: AppPalette.black,
                 ),
                 child: Text(actionLabel!),
               ),
@@ -1919,21 +1922,23 @@ class _RouteReferencePickerTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
     final l10n = AppLocalizations.of(context)!;
-    final radius = BorderRadius.circular(adaptive.radius(18));
+    final radius = AppBorderRadius.circular(adaptive.radius(18));
     final description = (route.description ?? '').trim();
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: radius,
         child: Ink(
-          decoration: BoxDecoration(
-            color: const Color(0xFF2C2118),
+          decoration: AppBoxDecoration(
+            color: AppPalette.warmSurface28,
             borderRadius: radius,
-            border: Border.all(color: AppColors.accent.withValues(alpha: 0.13)),
+            border: Border.all(
+              color: AppPalette.primary.withValues(alpha: 0.13),
+            ),
           ),
           child: Padding(
-            padding: EdgeInsets.symmetric(
+            padding: AppEdgeInsets.symmetric(
               horizontal: adaptive.scale(14),
               vertical: adaptive.scale(13),
             ),
@@ -1942,16 +1947,16 @@ class _RouteReferencePickerTile extends StatelessWidget {
                 Container(
                   width: adaptive.scale(42),
                   height: adaptive.scale(42),
-                  decoration: BoxDecoration(
+                  decoration: AppBoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppColors.accent.withValues(alpha: 0.13),
+                    color: AppPalette.primary.withValues(alpha: 0.13),
                     border: Border.all(
-                      color: AppColors.accent.withValues(alpha: 0.22),
+                      color: AppPalette.primary.withValues(alpha: 0.22),
                     ),
                   ),
                   child: Icon(
                     Icons.route_rounded,
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                     size: adaptive.scale(21),
                   ),
                 ),
@@ -1964,7 +1969,7 @@ class _RouteReferencePickerTile extends StatelessWidget {
                         route.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: AppTextStyle(
                           color: StoryPalette.text,
                           fontSize: adaptive.scale(15.5),
                           fontWeight: FontWeight.w800,
@@ -1977,7 +1982,7 @@ class _RouteReferencePickerTile extends StatelessWidget {
                           description,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: AppTextStyle(
                             color: StoryPalette.textSoft.withValues(
                               alpha: 0.82,
                             ),
@@ -2021,7 +2026,7 @@ class _RouteReferencePickerTile extends StatelessWidget {
                 SizedBox(width: adaptive.scale(8)),
                 Icon(
                   Icons.add_rounded,
-                  color: AppColors.accent,
+                  color: AppPalette.primary,
                   size: adaptive.scale(22),
                 ),
               ],
@@ -2043,24 +2048,24 @@ class _RoutePickerMetricChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(adaptive.radius(999)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.primary.withValues(alpha: 0.12),
+        borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
       ),
       child: Padding(
-        padding: EdgeInsets.symmetric(
+        padding: AppEdgeInsets.symmetric(
           horizontal: adaptive.scale(8),
           vertical: adaptive.scale(5),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: AppColors.accent, size: adaptive.scale(13)),
+            Icon(icon, color: AppPalette.primary, size: adaptive.scale(13)),
             SizedBox(width: adaptive.scale(5)),
             Text(
               label,
-              style: TextStyle(
-                color: const Color(0xFFFFE6B4),
+              style: AppTextStyle(
+                color: AppPalette.amberLight16,
                 fontSize: adaptive.scale(11),
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0,
@@ -2099,29 +2104,29 @@ class _StoryEditorSubmissionLockOverlay extends StatelessWidget {
     return Positioned.fill(
       key: const ValueKey('story-editor-submission-lock'),
       child: ColoredBox(
-        color: Colors.black.withValues(alpha: 0.42),
+        color: AppPalette.black.withValues(alpha: 0.42),
         child: Center(
           child: ConstrainedBox(
             constraints: BoxConstraints(
               maxWidth: adaptive.isNarrow ? 260 : 320,
             ),
             child: DecoratedBox(
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 color: StoryPalette.surfaceRaised,
-                borderRadius: BorderRadius.circular(adaptive.radius(20)),
+                borderRadius: AppBorderRadius.circular(adaptive.radius(20)),
                 border: Border.all(
-                  color: AppColors.accent.withValues(alpha: 0.20),
+                  color: AppPalette.primary.withValues(alpha: 0.20),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.28),
+                    color: AppPalette.black.withValues(alpha: 0.28),
                     blurRadius: 24,
                     offset: const Offset(0, 12),
                   ),
                 ],
               ),
               child: Padding(
-                padding: EdgeInsets.symmetric(
+                padding: AppEdgeInsets.symmetric(
                   horizontal: adaptive.scale(20, minFactor: 0.9),
                   vertical: adaptive.scale(18, minFactor: 0.9),
                 ),
@@ -2131,7 +2136,7 @@ class _StoryEditorSubmissionLockOverlay extends StatelessWidget {
                     SizedBox.square(
                       dimension: adaptive.scale(22, minFactor: 0.9),
                       child: const CircularProgressIndicator(
-                        color: AppColors.accent,
+                        color: AppPalette.primary,
                         strokeWidth: 2.4,
                       ),
                     ),
@@ -2278,20 +2283,20 @@ class _StoryEditorPostModeSelector extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     return DecoratedBox(
       key: const ValueKey('story-editor-post-mode-selector'),
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         color: StoryPalette.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.22)),
+        borderRadius: AppBorderRadius.circular(22),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.22)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(StoryEditorSpacing.md),
+        padding: const AppEdgeInsets.all(StoryEditorSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               l10n.communityPostModeSelectorLabel,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: AppColors.accent,
+                color: AppPalette.primary,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -2310,21 +2315,21 @@ class _StoryEditorPostModeSelector extends StatelessWidget {
                     backgroundColor: StoryPalette.surfaceRaised.withValues(
                       alpha: 0.72,
                     ),
-                    selectedColor: AppColors.accent.withValues(alpha: 0.22),
+                    selectedColor: AppPalette.primary.withValues(alpha: 0.22),
                     side: BorderSide(
                       color: key == selectedPostProfileKey
-                          ? AppColors.accent
-                          : AppColors.accent.withValues(alpha: 0.16),
+                          ? AppPalette.primary
+                          : AppPalette.primary.withValues(alpha: 0.16),
                     ),
                     labelStyle: Theme.of(context).textTheme.labelLarge
                         ?.copyWith(
                           color: key == selectedPostProfileKey
-                              ? AppColors.accent
+                              ? AppPalette.primary
                               : StoryPalette.textSoft,
                           fontWeight: FontWeight.w800,
                         ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: AppBorderRadius.circular(999),
                     ),
                   ),
               ],
@@ -2352,20 +2357,20 @@ class _QuickPostComposer extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     return DecoratedBox(
       key: const ValueKey('quick-post-composer'),
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         color: StoryPalette.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.24)),
+        borderRadius: AppBorderRadius.circular(24),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.24)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
+            color: AppPalette.black.withValues(alpha: 0.18),
             blurRadius: 24,
             offset: const Offset(0, 14),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(StoryEditorSpacing.lg),
+        padding: const AppEdgeInsets.all(StoryEditorSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -2400,29 +2405,29 @@ class _QuickPostComposer extends StatelessWidget {
                 color: StoryPalette.text,
                 height: 1.35,
               ),
-              decoration: InputDecoration(
+              decoration: AppInputDecoration(
                 hintText: l10n.storyEditorQuickPostHint,
-                hintStyle: TextStyle(
+                hintStyle: AppTextStyle(
                   color: StoryPalette.textMuted.withValues(alpha: 0.82),
                 ),
                 filled: true,
                 fillColor: StoryPalette.surfaceRaised.withValues(alpha: 0.72),
-                counterStyle: TextStyle(color: StoryPalette.textMuted),
+                counterStyle: AppTextStyle(color: StoryPalette.textMuted),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: AppBorderRadius.circular(16),
                   borderSide: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.08),
+                    color: AppPalette.white.withValues(alpha: 0.08),
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: AppBorderRadius.circular(16),
                   borderSide: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.08),
+                    color: AppPalette.white.withValues(alpha: 0.08),
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: AppColors.accent),
+                  borderRadius: AppBorderRadius.circular(16),
+                  borderSide: const BorderSide(color: AppPalette.primary),
                 ),
               ),
             ),
@@ -2469,13 +2474,13 @@ class _QuickPostMediaPanel extends StatelessWidget {
 
     return DecoratedBox(
       key: const ValueKey('quick-post-media-panel'),
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         color: StoryPalette.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.22)),
+        borderRadius: AppBorderRadius.circular(24),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.22)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(StoryEditorSpacing.lg),
+        padding: const AppEdgeInsets.all(StoryEditorSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -2561,17 +2566,17 @@ class _QuickPostMediaThumbnail extends StatelessWidget {
     return SizedBox(
       width: 108,
       child: DecoratedBox(
-        decoration: BoxDecoration(
+        decoration: AppBoxDecoration(
           color: StoryPalette.surfaceRaised,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppBorderRadius.circular(8),
           border: Border.all(
             color: isCover
-                ? AppColors.accent.withValues(alpha: 0.62)
-                : Colors.white.withValues(alpha: 0.08),
+                ? AppPalette.primary.withValues(alpha: 0.62)
+                : AppPalette.white.withValues(alpha: 0.08),
           ),
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppBorderRadius.circular(8),
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -2581,18 +2586,18 @@ class _QuickPostMediaThumbnail extends StatelessWidget {
                 const Center(
                   child: Icon(
                     Icons.image_outlined,
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                     size: 30,
                   ),
                 ),
               DecoratedBox(
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.black.withValues(alpha: 0.10),
-                      Colors.black.withValues(alpha: 0.58),
+                      AppPalette.black.withValues(alpha: 0.10),
+                      AppPalette.black.withValues(alpha: 0.58),
                     ],
                   ),
                 ),
@@ -2607,10 +2612,10 @@ class _QuickPostMediaThumbnail extends StatelessWidget {
                     width: 30,
                     height: 30,
                   ),
-                  padding: EdgeInsets.zero,
+                  padding: AppEdgeInsets.zero,
                   style: IconButton.styleFrom(
-                    backgroundColor: Colors.black.withValues(alpha: 0.48),
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppPalette.black.withValues(alpha: 0.48),
+                    foregroundColor: AppPalette.white,
                   ),
                   icon: const Icon(Icons.close_rounded),
                 ),
@@ -2627,7 +2632,7 @@ class _QuickPostMediaThumbnail extends StatelessWidget {
                         height: 14,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: AppColors.accent,
+                          color: AppPalette.primary,
                         ),
                       )
                     else if (isFailed)
@@ -2636,7 +2641,7 @@ class _QuickPostMediaThumbnail extends StatelessWidget {
                         child: const Icon(
                           Icons.refresh_rounded,
                           size: 18,
-                          color: AppColors.accent,
+                          color: AppPalette.primary,
                         ),
                       )
                     else
@@ -2645,7 +2650,7 @@ class _QuickPostMediaThumbnail extends StatelessWidget {
                             ? Icons.image_rounded
                             : Icons.check_circle_rounded,
                         size: 16,
-                        color: AppColors.accent,
+                        color: AppPalette.primary,
                       ),
                     const SizedBox(width: 6),
                     Expanded(
@@ -2656,7 +2661,7 @@ class _QuickPostMediaThumbnail extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Colors.white,
+                          color: AppPalette.white,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -2702,7 +2707,7 @@ class _StoryEditorAppBar extends StatelessWidget
 
     return AppBar(
       backgroundColor: StoryPalette.backgroundTop,
-      surfaceTintColor: Colors.transparent,
+      surfaceTintColor: AppPalette.transparent,
       foregroundColor: StoryPalette.text,
       automaticallyImplyLeading: false,
       leading: IconButton(
@@ -2723,7 +2728,9 @@ class _StoryEditorAppBar extends StatelessWidget
       ),
       actions: [
         Padding(
-          padding: const EdgeInsetsDirectional.only(end: StoryEditorSpacing.sm),
+          padding: const AppEdgeInsetsDirectional.only(
+            end: StoryEditorSpacing.sm,
+          ),
           child: compact
               ? IconButton.filledTonal(
                   tooltip: previewLabel,
@@ -2901,24 +2908,24 @@ class _StoryTemplateConflictSheet extends StatelessWidget {
     return AnimatedPadding(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
-      padding: EdgeInsets.only(bottom: bottomInset),
+      padding: AppEdgeInsets.only(bottom: bottomInset),
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxHeight),
         child: DecoratedBox(
           key: const ValueKey('story-template-conflict-sheet-chrome'),
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             gradient: const LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Color(0xFF2B1808), Color(0xFF201208)],
+              colors: [AppPalette.warmSurface21, AppPalette.warmInk63],
             ),
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(adaptive.radius(28)),
+            borderRadius: AppBorderRadius.vertical(
+              top: AppRadiusValue.circular(adaptive.radius(28)),
             ),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+            border: Border.all(color: AppPalette.white.withValues(alpha: 0.04)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.36),
+                color: AppPalette.black.withValues(alpha: 0.36),
                 blurRadius: adaptive.scale(30),
                 offset: Offset(0, adaptive.scale(-8)),
               ),
@@ -2945,7 +2952,7 @@ class _StoryTemplateConflictSheet extends StatelessWidget {
                   child: ListView(
                     shrinkWrap: true,
                     physics: const BouncingScrollPhysics(),
-                    padding: EdgeInsets.fromLTRB(
+                    padding: AppEdgeInsets.fromLTRB(
                       horizontalPadding,
                       adaptive.scale(14),
                       horizontalPadding,
@@ -3018,20 +3025,22 @@ class _TemplateConflictOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
-    final radius = BorderRadius.circular(adaptive.radius(18));
+    final radius = AppBorderRadius.circular(adaptive.radius(18));
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         borderRadius: radius,
         onTap: onTap,
         child: Ink(
-          decoration: BoxDecoration(
-            color: const Color(0xFF2C2118),
+          decoration: AppBoxDecoration(
+            color: AppPalette.warmSurface28,
             borderRadius: radius,
-            border: Border.all(color: AppColors.accent.withValues(alpha: 0.13)),
+            border: Border.all(
+              color: AppPalette.primary.withValues(alpha: 0.13),
+            ),
           ),
           child: Padding(
-            padding: EdgeInsets.symmetric(
+            padding: AppEdgeInsets.symmetric(
               horizontal: adaptive.scale(14),
               vertical: adaptive.scale(13),
             ),
@@ -3040,16 +3049,16 @@ class _TemplateConflictOption extends StatelessWidget {
                 Container(
                   width: adaptive.scale(42),
                   height: adaptive.scale(42),
-                  decoration: BoxDecoration(
+                  decoration: AppBoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppColors.accent.withValues(alpha: 0.13),
+                    color: AppPalette.primary.withValues(alpha: 0.13),
                     border: Border.all(
-                      color: AppColors.accent.withValues(alpha: 0.22),
+                      color: AppPalette.primary.withValues(alpha: 0.22),
                     ),
                   ),
                   child: Icon(
                     icon,
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                     size: adaptive.scale(21),
                   ),
                 ),
@@ -3062,7 +3071,7 @@ class _TemplateConflictOption extends StatelessWidget {
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: AppTextStyle(
                           color: StoryPalette.text,
                           fontSize: adaptive.scale(15.5),
                           fontWeight: FontWeight.w800,
@@ -3074,7 +3083,7 @@ class _TemplateConflictOption extends StatelessWidget {
                         subtitle,
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: AppTextStyle(
                           color: StoryPalette.textSoft.withValues(alpha: 0.82),
                           fontSize: adaptive.scale(12.5),
                           height: 1.22,
@@ -3088,7 +3097,7 @@ class _TemplateConflictOption extends StatelessWidget {
                 SizedBox(width: adaptive.scale(8)),
                 Icon(
                   Icons.chevron_right_rounded,
-                  color: AppColors.accent,
+                  color: AppPalette.primary,
                   size: adaptive.scale(22),
                 ),
               ],
@@ -3142,20 +3151,20 @@ class _StoryEditorPreviewPage extends StatelessWidget {
       key: const ValueKey('story-editor-preview-page'),
       decoration: storyEditorPanelDecoration(context),
       child: Padding(
-        padding: EdgeInsets.all(adaptive.scale(18)),
+        padding: AppEdgeInsets.all(adaptive.scale(18)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(adaptive.radius(24)),
+              borderRadius: AppBorderRadius.circular(adaptive.radius(24)),
               child: AspectRatio(
                 aspectRatio: 16 / 10,
                 child: DecoratedBox(
                   key: const ValueKey('story-editor-preview-cover'),
-                  decoration: BoxDecoration(
+                  decoration: AppBoxDecoration(
                     color: StoryPalette.surfaceRaised,
                     border: Border.all(
-                      color: AppColors.accent.withValues(alpha: 0.14),
+                      color: AppPalette.primary.withValues(alpha: 0.14),
                     ),
                   ),
                   child: coverImage == null
@@ -3200,7 +3209,7 @@ class _StoryEditorPreviewPage extends StatelessWidget {
             SizedBox(height: adaptive.scale(14)),
             Text(
               title,
-              style: TextStyle(
+              style: AppTextStyle(
                 color: StoryPalette.text,
                 fontSize: adaptive.scale(28, minFactor: 0.78, maxFactor: 1.04),
                 height: 1.08,
@@ -3237,26 +3246,26 @@ class _PreviewMetaChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(adaptive.radius(999)),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.18)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.primary.withValues(alpha: 0.12),
+        borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.18)),
       ),
       child: Padding(
-        padding: EdgeInsets.symmetric(
+        padding: AppEdgeInsets.symmetric(
           horizontal: adaptive.scale(10),
           vertical: adaptive.scale(7),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: adaptive.scale(15), color: AppColors.accent),
+            Icon(icon, size: adaptive.scale(15), color: AppPalette.primary),
             SizedBox(width: adaptive.scale(6)),
             Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
+              style: AppTextStyle(
                 color: StoryPalette.text,
                 fontSize: adaptive.scale(12),
                 fontWeight: FontWeight.w800,
@@ -3278,19 +3287,19 @@ class _PreviewTagChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(adaptive.radius(999)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.06),
+        borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
       ),
       child: Padding(
-        padding: EdgeInsets.symmetric(
+        padding: AppEdgeInsets.symmetric(
           horizontal: adaptive.scale(10),
           vertical: adaptive.scale(6),
         ),
         child: Text(
           label,
-          style: TextStyle(
+          style: AppTextStyle(
             color: StoryPalette.textSoft,
             fontSize: adaptive.scale(12),
             fontWeight: FontWeight.w700,

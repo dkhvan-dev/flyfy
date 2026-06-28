@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../core/files/chat_file_cache.dart';
-import '../../core/ui/app_colors.dart';
 
 class ChatVideoViewerScreen extends StatefulWidget {
   const ChatVideoViewerScreen({super.key, required this.fileId})
@@ -175,7 +175,7 @@ class _ChatVideoViewerScreenState extends State<ChatVideoViewerScreen> {
     final position = initialized ? controller!.value.position : Duration.zero;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppPalette.black,
       body: SafeArea(
         child: Stack(
           children: [
@@ -186,11 +186,13 @@ class _ChatVideoViewerScreenState extends State<ChatVideoViewerScreen> {
                 onVerticalDragEnd: _dismissBySwipeDown,
                 child: Center(
                   child: _loading
-                      ? const CircularProgressIndicator(color: AppColors.accent)
+                      ? const CircularProgressIndicator(
+                          color: AppPalette.primary,
+                        )
                       : _loadFailed || !initialized
                       ? Icon(
                           Icons.movie_outlined,
-                          color: Colors.white.withValues(alpha: 0.48),
+                          color: AppPalette.white.withValues(alpha: 0.48),
                           size: 54,
                         )
                       : AspectRatio(
@@ -203,14 +205,14 @@ class _ChatVideoViewerScreenState extends State<ChatVideoViewerScreen> {
             Positioned.fill(
               child: IgnorePointer(
                 child: DecoratedBox(
-                  decoration: BoxDecoration(
+                  decoration: AppBoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.black.withValues(alpha: 0.56),
-                        Colors.transparent,
-                        Colors.black.withValues(alpha: 0.68),
+                        AppPalette.black.withValues(alpha: 0.56),
+                        AppPalette.transparent,
+                        AppPalette.black.withValues(alpha: 0.68),
                       ],
                       stops: const [0, 0.42, 1],
                     ),
@@ -279,10 +281,10 @@ class _VideoProgressBar extends StatelessWidget {
 
     return SliderTheme(
       data: SliderTheme.of(context).copyWith(
-        activeTrackColor: AppColors.accent,
-        inactiveTrackColor: Colors.white.withValues(alpha: 0.24),
-        thumbColor: Colors.white,
-        overlayColor: AppColors.accent.withValues(alpha: 0.18),
+        activeTrackColor: AppPalette.primary,
+        inactiveTrackColor: AppPalette.white.withValues(alpha: 0.24),
+        thumbColor: AppPalette.white,
+        overlayColor: AppPalette.primary.withValues(alpha: 0.18),
       ),
       child: Slider(
         min: 0,
@@ -317,12 +319,12 @@ class _ViewerIconButton extends StatelessWidget {
       child: Container(
         width: size,
         height: size,
-        decoration: BoxDecoration(
+        decoration: AppBoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.black.withValues(alpha: 0.46),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+          color: AppPalette.black.withValues(alpha: 0.46),
+          border: Border.all(color: AppPalette.white.withValues(alpha: 0.16)),
         ),
-        child: Icon(icon, color: Colors.white, size: iconSize),
+        child: Icon(icon, color: AppPalette.white, size: iconSize),
       ),
     );
   }

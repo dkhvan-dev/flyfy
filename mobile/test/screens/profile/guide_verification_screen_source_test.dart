@@ -31,10 +31,10 @@ void main() {
       final statusHeaderSource = source.substring(statusTitle, statusDivider);
       final heroSource = source.substring(heroStart, heroEnd);
 
-      expect(wizardHeaderSource, contains('color: AppColors.textPrimary'));
-      expect(statusHeaderSource, contains('color: AppColors.textPrimary'));
-      expect(wizardHeaderSource, isNot(contains('color: AppColors.accent')));
-      expect(statusHeaderSource, isNot(contains('color: AppColors.accent')));
+      expect(wizardHeaderSource, contains('color: AppPalette.textPrimary'));
+      expect(statusHeaderSource, contains('color: AppPalette.textPrimary'));
+      expect(wizardHeaderSource, isNot(contains('color: AppPalette.primary')));
+      expect(statusHeaderSource, isNot(contains('color: AppPalette.primary')));
 
       expect(heroSource, contains('_guideAmberHeroGradientColors'));
       expect(
@@ -90,12 +90,12 @@ void main() {
       expect(source, contains('_guideAmberGradientButtonDecoration('));
       expect(source, contains('_guideAmberHeroGradientColors'));
       expect(progressSource, contains('_guideAmberGlassDecoration('));
-      expect(progressSource, contains('Color(0xFFFFC56D)'));
+      expect(progressSource, contains('AppPalette.warning'));
       expect(heroSource, isNot(contains('gradientSets')));
-      expect(heroSource, isNot(contains('Color(0xFFFFD89A)')));
-      expect(heroSource, isNot(contains('Color(0xFFFFB347)')));
-      expect(heroSource, isNot(contains('Color(0xFFE98409)')));
-      expect(heroSource, isNot(contains('Color(0xFFC9EDF6)')));
+      expect(heroSource, isNot(contains('AppPalette.amberLight07')));
+      expect(heroSource, isNot(contains('AppPalette.amberSoft14')));
+      expect(heroSource, isNot(contains('AppPalette.warmMuted30')));
+      expect(heroSource, isNot(contains('AppPalette.tealLight03')));
       expect(heroSource, contains('_guideHeroAccentIcon('));
       expect(panelSource, contains('_guideAmberGlassDecoration('));
       expect(inputSource, contains('focusedBorder: OutlineInputBorder('));
@@ -144,26 +144,26 @@ void main() {
         checkoutEnd,
       );
 
-      expect(checkoutSource, contains('backgroundColor: AppColors.accent'));
+      expect(checkoutSource, contains('backgroundColor: AppPalette.primary'));
       expect(source, contains('_guideExcursionAmberStatusGradientColors'));
-      expect(source, contains('const [_guideAmberGold, AppColors.accent]'));
-      expect(source, contains('Color(0xFFFFBD5A)'));
-      expect(source, contains('Color(0xFFFFAD3F)'));
-      expect(source, contains('Color(0xFFFF9C1E)'));
+      expect(source, contains('const [_guideAmberGold, AppPalette.primary]'));
+      expect(source, contains('AppPalette.amberSoft19'));
+      expect(source, contains('AppPalette.orangeSoft46'));
+      expect(source, contains('AppPalette.orangeMuted06'));
       expect(
         source,
         isNot(
           contains(
             '_guideExcursionAmberStatusGradientColors = [\n'
             '  _guideAmberGold,\n'
-            '  AppColors.accent,\n'
+            '  AppPalette.primary,\n'
             ']',
           ),
         ),
       );
       expect(source, isNot(contains('_guideSoundCloudStatusGradientColors')));
-      expect(source, isNot(contains('Color(0xFFFE8C00)')));
-      expect(source, isNot(contains('Color(0xFFF83600)')));
+      expect(source, isNot(contains('AppPalette.warmMuted37')));
+      expect(source, isNot(contains('AppPalette.redMuted38')));
       expect(heroSource, contains('gradientColors'));
       expect(
         heroSource,
@@ -213,8 +213,8 @@ void main() {
       );
       expect(source, contains('_GuideSolidActionButton('));
       expect(source, contains('label: _ctaLabel(context, _step),'));
-      expect(actionSource, contains('backgroundColor: AppColors.accent'));
-      expect(actionSource, contains('foregroundColor: Colors.white'));
+      expect(actionSource, contains('backgroundColor: AppPalette.primary'));
+      expect(actionSource, contains('foregroundColor: AppPalette.white'));
       expect(
         actionSource,
         contains('fontSize: profileScaled(context, 15, min: 14, max: 16)'),
@@ -253,7 +253,7 @@ void main() {
       expect(source, contains('_guideAmberDropdownBorderSide'));
       expect(
         source,
-        contains('color: AppColors.accent.withValues(alpha: 0.34)'),
+        contains('color: AppPalette.primary.withValues(alpha: 0.34)'),
       );
       expect(source, contains('width: 1.6'));
       expect(

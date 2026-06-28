@@ -14,11 +14,13 @@ void main() {
         sharedSource,
         contains('constraints: const BoxConstraints(minHeight: 58)'),
       );
-      expect(sharedSource, contains('color: const Color(0xFF2B1F14)'));
-      expect(sharedSource, contains('BorderRadius.circular(21)'));
+      expect(sharedSource, contains('color: AppPalette.surfaceRaised'));
+      expect(sharedSource, contains('AppBorderRadius.circular(21)'));
       expect(
         sharedSource,
-        contains('padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 8, 0)'),
+        contains(
+          'padding: const AppEdgeInsetsDirectional.fromSTEB(16, 0, 8, 0)',
+        ),
       );
       expect(sharedSource, contains('Icons.search_rounded'));
       expect(sharedSource, contains('size: 27'));
@@ -26,9 +28,9 @@ void main() {
       expect(sharedSource, contains('IconButton.styleFrom('));
       expect(
         sharedSource,
-        contains('backgroundColor: AppColors.accent.withValues(alpha: 0.12)'),
+        contains('backgroundColor: AppPalette.primary.withValues(alpha: 0.12)'),
       );
-      expect(sharedSource, contains('foregroundColor: AppColors.accent'));
+      expect(sharedSource, contains('foregroundColor: AppPalette.primary'));
       expect(sharedSource, contains('minimumSize: const Size(43, 43)'));
       expect(sharedSource, contains('Icons.tune_rounded, size: 24'));
       expect(sharedSource, contains('activeFilterCount.toString()'));

@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:inflap/core/network/checklist_api.dart';
 import 'package:inflap/core/network/reference_api.dart';
-import 'package:inflap/core/ui/app_colors.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:inflap/features/checklists/data/checklist_offline_cache.dart';
 import 'package:inflap/features/checklists/models/trip_checklist_vm.dart';
 import 'package:inflap/features/checklists/models/travel_checklist_route_args.dart';
@@ -921,7 +921,7 @@ void main() {
           matching: find.text('Самолет'),
         ),
       );
-      expect(selectedFlightLabel.style?.color, AppColors.textPrimary);
+      expect(selectedFlightLabel.style?.color, AppPalette.textPrimary);
 
       await tester.enterText(
         find.byKey(const ValueKey('quick-prep-country-code-field')),
@@ -1180,10 +1180,10 @@ void main() {
     final datePickerTheme = theme.data.datePickerTheme;
     expect(datePickerTheme.backgroundColor, const Color(0xFF2B1D0F));
     expect(datePickerTheme.headerBackgroundColor, const Color(0xFFF98C06));
-    expect(datePickerTheme.headerForegroundColor, AppColors.textPrimary);
+    expect(datePickerTheme.headerForegroundColor, AppPalette.textPrimary);
     expect(
       datePickerTheme.dayForegroundColor?.resolve({WidgetState.selected}),
-      AppColors.textPrimary,
+      AppPalette.textPrimary,
     );
   });
 
@@ -1251,7 +1251,7 @@ void main() {
     );
     expect(
       carrySearchButton.style?.foregroundColor?.resolve({}),
-      AppColors.textPrimary,
+      AppPalette.textPrimary,
     );
     await tester.enterText(
       find.byKey(const ValueKey('carry-search-field')),
@@ -1802,7 +1802,7 @@ void main() {
       findsNothing,
     );
     final initialCheckbox = tester.widget<Checkbox>(toggleFinder);
-    expect(initialCheckbox.checkColor, AppColors.textPrimary);
+    expect(initialCheckbox.checkColor, AppPalette.textPrimary);
 
     await tester.tap(toggleFinder);
     await tester.pumpAndSettle();

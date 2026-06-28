@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
-import '../../../../../core/ui/app_colors.dart';
 import '../../../../../l10n/generated/app_localizations.dart';
 import '../../../models/post_profile_contract.dart';
 import '../../data/story_editor_dto.dart';
@@ -40,7 +40,7 @@ class StoryPublishPanel extends StatelessWidget {
     return DecoratedBox(
       decoration: storyEditorPanelDecoration(context),
       child: Padding(
-        padding: const EdgeInsets.all(StoryEditorSpacing.lg),
+        padding: const AppEdgeInsets.all(StoryEditorSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -89,7 +89,7 @@ class StoryPublishPanel extends StatelessWidget {
                 state.conflict.message ?? l10n.storyEditorConflictFallback,
                 style: Theme.of(
                   context,
-                ).textTheme.bodyMedium?.copyWith(color: AppColors.accent),
+                ).textTheme.bodyMedium?.copyWith(color: AppPalette.primary),
               ),
             ],
             if (saveStatusMessage != null) ...[
@@ -270,11 +270,11 @@ class _SaveStatusMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = switch (phase) {
-      StoryEditorSavePhase.saved => AppColors.success,
+      StoryEditorSavePhase.saved => AppPalette.success,
       StoryEditorSavePhase.failed ||
-      StoryEditorSavePhase.conflict => AppColors.accent,
-      StoryEditorSavePhase.saving => AppColors.textSecondary,
-      StoryEditorSavePhase.idle => AppColors.textSecondary,
+      StoryEditorSavePhase.conflict => AppPalette.primary,
+      StoryEditorSavePhase.saving => AppPalette.textCoolSecondary,
+      StoryEditorSavePhase.idle => AppPalette.textCoolSecondary,
     };
     final icon = switch (phase) {
       StoryEditorSavePhase.saved => Icons.check_circle_rounded,
@@ -284,13 +284,13 @@ class _SaveStatusMessage extends StatelessWidget {
       StoryEditorSavePhase.idle => Icons.info_outline_rounded,
     };
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         color: color.withValues(alpha: 0.12),
         border: Border.all(color: color.withValues(alpha: 0.32)),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppBorderRadius.circular(8),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(StoryEditorSpacing.md),
+        padding: const AppEdgeInsets.all(StoryEditorSpacing.md),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -301,7 +301,7 @@ class _SaveStatusMessage extends StatelessWidget {
                 message,
                 style: Theme.of(
                   context,
-                ).textTheme.bodyMedium?.copyWith(color: AppColors.textPrimary),
+                ).textTheme.bodyMedium?.copyWith(color: AppPalette.textPrimary),
               ),
             ),
           ],
@@ -346,7 +346,7 @@ class _PublishChecklistTile extends StatelessWidget {
         final stackAction = constraints.maxWidth < 340 || textScale > 1.25;
         final icon = Icon(
           complete ? Icons.check_circle_rounded : Icons.error_outline_rounded,
-          color: complete ? AppColors.success : AppColors.accent,
+          color: complete ? AppPalette.success : AppPalette.primary,
         );
         final copy = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -362,9 +362,9 @@ class _PublishChecklistTile extends StatelessWidget {
               status,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppPalette.textCoolSecondary,
+              ),
             ),
           ],
         );
@@ -376,7 +376,7 @@ class _PublishChecklistTile extends StatelessWidget {
               key: ValueKey('publish-check-${item.field}-open'),
               onPressed: onOpen,
               style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
+                padding: const AppEdgeInsets.symmetric(horizontal: 4),
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 visualDensity: VisualDensity.compact,
@@ -387,7 +387,9 @@ class _PublishChecklistTile extends StatelessWidget {
         );
 
         return Padding(
-          padding: const EdgeInsets.symmetric(vertical: StoryEditorSpacing.xs),
+          padding: const AppEdgeInsets.symmetric(
+            vertical: StoryEditorSpacing.xs,
+          ),
           child: stackAction
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -410,7 +412,7 @@ class _PublishChecklistTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.only(top: 8),
+                      padding: const AppEdgeInsets.only(top: 8),
                       child: icon,
                     ),
                     const SizedBox(width: StoryEditorSpacing.md),

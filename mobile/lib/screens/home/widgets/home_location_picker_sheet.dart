@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/network/reference_api.dart';
-import '../../../core/ui/app_colors.dart';
 import '../../../core/ui/filter_sheet_chrome.dart';
 import '../../../features/profile/models/user_profile_vm.dart';
 import '../../../l10n/generated/app_localizations.dart';
@@ -187,18 +187,22 @@ class _HomeLocationPickerSheetState extends State<HomeLocationPickerSheet> {
     return AnimatedPadding(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      padding: AppEdgeInsets.only(
+        bottom: MediaQuery.viewInsetsOf(context).bottom,
+      ),
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxHeight),
         child: DecoratedBox(
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             gradient: const LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Color(0xFF2B1808), Color(0xFF201208)],
+              colors: [AppPalette.warmSurface21, AppPalette.warmInk63],
             ),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+            borderRadius: const AppBorderRadius.vertical(
+              top: AppRadiusValue.circular(28),
+            ),
+            border: Border.all(color: AppPalette.white.withValues(alpha: 0.04)),
           ),
           child: SafeArea(
             top: false,
@@ -213,7 +217,7 @@ class _HomeLocationPickerSheetState extends State<HomeLocationPickerSheet> {
                 Expanded(
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+                    padding: const AppEdgeInsets.fromLTRB(20, 18, 20, 18),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -240,10 +244,10 @@ class _HomeLocationPickerSheetState extends State<HomeLocationPickerSheet> {
                         if (_isSearching ||
                             (!isSearchActive && _isLoadingInitialCities))
                           const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 18),
+                            padding: AppEdgeInsets.symmetric(vertical: 18),
                             child: Center(
                               child: CircularProgressIndicator(
-                                color: AppColors.accent,
+                                color: AppPalette.primary,
                               ),
                             ),
                           )
@@ -256,7 +260,7 @@ class _HomeLocationPickerSheetState extends State<HomeLocationPickerSheet> {
                           _LocationMessage(
                             icon: Icons.location_off_rounded,
                             message: l10n.homeLocationNoResults,
-                            color: AppColors.accent,
+                            color: AppPalette.primary,
                           )
                         else
                           for (final city in visibleCities)
@@ -269,7 +273,7 @@ class _HomeLocationPickerSheetState extends State<HomeLocationPickerSheet> {
                   ),
                 ),
                 Padding(
-                  padding: EdgeInsets.fromLTRB(20, 12, 20, 16 + bottomInset),
+                  padding: AppEdgeInsets.fromLTRB(20, 12, 20, 16 + bottomInset),
                   child: AppFilterApplyButton(
                     label: l10n.homeLocationApply,
                     icon: Icons.check_rounded,
@@ -295,24 +299,24 @@ class _CurrentLocationPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.16)),
+      padding: const AppEdgeInsets.all(16),
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.06),
+        borderRadius: AppBorderRadius.circular(18),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
       ),
       child: Row(
         children: [
           Container(
             width: 42,
             height: 42,
-            decoration: BoxDecoration(
+            decoration: AppBoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.accent.withValues(alpha: 0.12),
+              color: AppPalette.primary.withValues(alpha: 0.12),
             ),
             child: const Icon(
               Icons.location_on_rounded,
-              color: AppColors.accent,
+              color: AppPalette.primary,
             ),
           ),
           const SizedBox(width: 12),
@@ -324,8 +328,8 @@ class _CurrentLocationPreview extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: AppColors.textSecondary.withValues(alpha: 0.86),
+                  style: AppTextStyle(
+                    color: AppPalette.textCoolSecondary.withValues(alpha: 0.86),
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                   ),
@@ -338,8 +342,8 @@ class _CurrentLocationPreview extends StatelessWidget {
                   fallbackText: location.fallbackLabel,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: const AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
                   ),
@@ -376,17 +380,17 @@ class _DetectLocationButton extends StatelessWidget {
                 height: 18,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: AppColors.accent,
+                  color: AppPalette.primary,
                 ),
               )
             : const Icon(Icons.my_location_rounded),
         label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.accent,
-          side: BorderSide(color: AppColors.accent.withValues(alpha: 0.28)),
+          foregroundColor: AppPalette.primary,
+          side: BorderSide(color: AppPalette.primary.withValues(alpha: 0.28)),
           minimumSize: const Size(0, 50),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: AppBorderRadius.circular(999),
           ),
         ),
       ),
@@ -408,32 +412,36 @@ class _LocationSearchField extends StatelessWidget {
     return TextField(
       controller: controller,
       textInputAction: TextInputAction.search,
-      style: const TextStyle(
-        color: AppColors.textPrimary,
+      style: const AppTextStyle(
+        color: AppPalette.textPrimary,
         fontWeight: FontWeight.w700,
       ),
-      decoration: InputDecoration(
+      decoration: AppInputDecoration(
         hintText: hintText,
-        hintStyle: const TextStyle(color: AppColors.textCaption),
-        prefixIcon: const Icon(Icons.search_rounded, color: AppColors.accent),
+        hintStyle: const AppTextStyle(color: AppPalette.textCaption),
+        prefixIcon: const Icon(Icons.search_rounded, color: AppPalette.primary),
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.07),
-        contentPadding: const EdgeInsets.symmetric(
+        fillColor: AppPalette.white.withValues(alpha: 0.07),
+        contentPadding: const AppEdgeInsets.symmetric(
           horizontal: 14,
           vertical: 14,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+          borderRadius: AppBorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: AppPalette.white.withValues(alpha: 0.08),
+          ),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+          borderRadius: AppBorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: AppPalette.white.withValues(alpha: 0.08),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppBorderRadius.circular(16),
           borderSide: BorderSide(
-            color: AppColors.accent.withValues(alpha: 0.5),
+            color: AppPalette.primary.withValues(alpha: 0.5),
           ),
         ),
       ),
@@ -450,24 +458,29 @@ class _CityResultTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const AppEdgeInsets.only(bottom: 10),
       child: Material(
-        color: Colors.transparent,
+        color: AppPalette.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppBorderRadius.circular(16),
           child: Ink(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            padding: const AppEdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 13,
+            ),
+            decoration: AppBoxDecoration(
+              color: AppPalette.white.withValues(alpha: 0.05),
+              borderRadius: AppBorderRadius.circular(16),
+              border: Border.all(
+                color: AppPalette.white.withValues(alpha: 0.06),
+              ),
             ),
             child: Row(
               children: [
                 const Icon(
                   Icons.location_city_rounded,
-                  color: AppColors.accent,
+                  color: AppPalette.primary,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -478,8 +491,8 @@ class _CityResultTile extends StatelessWidget {
                         city.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
+                        style: const AppTextStyle(
+                          color: AppPalette.textPrimary,
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
                         ),
@@ -492,8 +505,8 @@ class _CityResultTile extends StatelessWidget {
                         fallbackText: city.countryCode,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.textCaption,
+                        style: const AppTextStyle(
+                          color: AppPalette.textCaption,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),
@@ -503,7 +516,7 @@ class _CityResultTile extends StatelessWidget {
                 ),
                 const Icon(
                   Icons.chevron_right_rounded,
-                  color: AppColors.textCaption,
+                  color: AppPalette.textCaption,
                 ),
               ],
             ),
@@ -527,10 +540,10 @@ class _LocationMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveColor = color ?? AppColors.textSecondary;
+    final effectiveColor = color ?? AppPalette.textCoolSecondary;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 18),
+      padding: const AppEdgeInsets.symmetric(vertical: 18),
       child: Row(
         children: [
           Icon(icon, color: effectiveColor),
@@ -538,7 +551,7 @@ class _LocationMessage extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: TextStyle(
+              style: AppTextStyle(
                 color: effectiveColor,
                 fontSize: 13,
                 height: 1.35,

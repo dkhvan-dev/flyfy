@@ -54,7 +54,7 @@ void main() {
 
     expect(source, contains('prefixIcon: const Icon('));
     expect(source, contains('Icons.search_rounded'));
-    expect(source, contains('color: AppColors.accent'));
+    expect(source, contains('color: AppPalette.primary'));
   });
 
   test('currency flag icon uses local vector flags instead of emoji', () async {

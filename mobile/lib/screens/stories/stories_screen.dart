@@ -2,13 +2,13 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/post_api.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
-import '../../core/ui/app_colors.dart';
 import '../../core/ui/app_list_search_field.dart';
 import '../../core/ui/app_list_screen_header.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
@@ -327,7 +327,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
     final selected = await showModalBottomSheet<_StoryFiltersResult>(
       context: context,
       isDismissible: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       isScrollControlled: true,
       useSafeArea: true,
       builder: (context) {
@@ -631,34 +631,34 @@ class _StoriesScreenState extends State<StoriesScreen> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF2A1E11),
+          backgroundColor: AppPalette.warmSurface18,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: AppBorderRadius.circular(22),
           ),
           title: Text(
             l10n.logoutDialogTitle,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
+            style: const AppTextStyle(
+              color: AppPalette.textPrimary,
               fontWeight: FontWeight.w700,
             ),
           ),
           content: Text(
             l10n.logoutDialogMessage,
-            style: const TextStyle(color: AppColors.textSecondary),
+            style: const AppTextStyle(color: AppPalette.textCoolSecondary),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
               child: Text(
                 l10n.cancel,
-                style: const TextStyle(color: AppColors.textSecondary),
+                style: const AppTextStyle(color: AppPalette.textCoolSecondary),
               ),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accent,
-                foregroundColor: AppColors.background,
+                backgroundColor: AppPalette.primary,
+                foregroundColor: AppPalette.backgroundWarm,
               ),
               child: Text(l10n.logoutConfirmButton),
             ),
@@ -714,7 +714,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
       backgroundColor: StoryPalette.backgroundDeep,
       drawerEnableOpenDragGesture: true,
       drawerEdgeDragWidth: 28,
-      drawerScrimColor: Colors.black.withValues(alpha: 0.42),
+      drawerScrimColor: AppPalette.black.withValues(alpha: 0.42),
       drawer: AppSideDrawer(
         l10n: l10n,
         isLoggedIn: isLoggedIn,
@@ -764,7 +764,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
               ),
               Expanded(
                 child: RefreshIndicator(
-                  color: AppColors.accent,
+                  color: AppPalette.primary,
                   onRefresh: _refresh,
                   child: CustomScrollView(
                     controller: _scrollController,
@@ -773,7 +773,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
                     ),
                     slivers: [
                       SliverPadding(
-                        padding: EdgeInsets.fromLTRB(
+                        padding: AppEdgeInsets.fromLTRB(
                           adaptive.scale(18),
                           adaptive.scale(18),
                           adaptive.scale(18),
@@ -828,13 +828,13 @@ class _StoriesScreenState extends State<StoriesScreen> {
                             else ...[
                               if (_isRefreshing)
                                 Padding(
-                                  padding: EdgeInsets.only(
+                                  padding: AppEdgeInsets.only(
                                     bottom: adaptive.scale(12),
                                   ),
                                   child: const LinearProgressIndicator(
                                     minHeight: 2,
-                                    color: AppColors.accent,
-                                    backgroundColor: Colors.transparent,
+                                    color: AppPalette.primary,
+                                    backgroundColor: AppPalette.transparent,
                                   ),
                                 ),
                               for (final story in _stories) ...[
@@ -953,18 +953,22 @@ class _MyStoriesStatusTabs extends StatelessWidget {
               label: Text(tab.label(l10n)),
               selected: selected == tab,
               onSelected: (_) => onSelected(tab),
-              selectedColor: AppColors.accent,
-              backgroundColor: const Color(0xFF2A1D13),
+              selectedColor: AppPalette.primary,
+              backgroundColor: AppPalette.warmSurface17,
               showCheckmark: false,
               side: BorderSide(
-                color: selected == tab ? AppColors.accent : Colors.transparent,
+                color: selected == tab
+                    ? AppPalette.primary
+                    : AppPalette.transparent,
               ),
-              labelStyle: TextStyle(
-                color: selected == tab ? Colors.white : const Color(0xFFCBB8A3),
+              labelStyle: AppTextStyle(
+                color: selected == tab
+                    ? AppPalette.white
+                    : AppPalette.orangeSoft29,
                 fontWeight: FontWeight.w800,
               ),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(adaptive.radius(999)),
+                borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
               ),
             ),
             if (tab != _MyStoryStatusTab.values.last)
@@ -1042,7 +1046,7 @@ class _StoriesSortRow extends StatelessWidget {
         children: [
           Text(
             '${l10n.storySortLabel}:',
-            style: TextStyle(
+            style: AppTextStyle(
               color: StoryPalette.textMuted,
               fontSize: adaptive.scale(12),
               fontWeight: FontWeight.w700,
@@ -1057,14 +1061,14 @@ class _StoriesSortRow extends StatelessWidget {
               label: item.$2,
               onTap: () => onSortSelected(item.$1),
               child: Material(
-                color: Colors.transparent,
+                color: AppPalette.transparent,
                 child: InkWell(
                   onTap: () => onSortSelected(item.$1),
-                  borderRadius: BorderRadius.circular(adaptive.radius(999)),
+                  borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
                   child: ConstrainedBox(
                     constraints: BoxConstraints(minHeight: adaptive.scale(40)),
                     child: Padding(
-                      padding: EdgeInsets.symmetric(
+                      padding: AppEdgeInsets.symmetric(
                         horizontal: adaptive.scale(2),
                         vertical: adaptive.scale(10),
                       ),
@@ -1073,10 +1077,10 @@ class _StoriesSortRow extends StatelessWidget {
                         children: [
                           Text(
                             item.$2,
-                            style: TextStyle(
+                            style: AppTextStyle(
                               color: selectedSort == item.$1
-                                  ? AppColors.accent
-                                  : const Color(0xFFA98D74),
+                                  ? AppPalette.primary
+                                  : AppPalette.orangeMuted04,
                               fontSize: adaptive.scale(12),
                               fontWeight: FontWeight.w700,
                               letterSpacing: 1.4,
@@ -1086,7 +1090,7 @@ class _StoriesSortRow extends StatelessWidget {
                             SizedBox(width: adaptive.scale(5, minFactor: 0.72)),
                             Icon(
                               directionIcon,
-                              color: AppColors.accent,
+                              color: AppPalette.primary,
                               size: adaptive.scale(14, minFactor: 0.82),
                             ),
                           ],
@@ -1138,11 +1142,11 @@ class _StoryListCard extends StatelessWidget {
             Container(
               height: imageHeight,
               width: double.infinity,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(adaptive.radius(42)),
+              decoration: AppBoxDecoration(
+                borderRadius: AppBorderRadius.circular(adaptive.radius(42)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.35),
+                    color: AppPalette.black.withValues(alpha: 0.35),
                     blurRadius: adaptive.scale(30),
                     offset: const Offset(0, 10),
                   ),
@@ -1156,7 +1160,7 @@ class _StoryListCard extends StatelessWidget {
                   if (state.disablesEntry)
                     Positioned.fill(
                       child: ColoredBox(
-                        color: Colors.black.withValues(alpha: 0.38),
+                        color: AppPalette.black.withValues(alpha: 0.38),
                       ),
                     ),
                   Positioned(
@@ -1188,8 +1192,8 @@ class _StoryListCard extends StatelessWidget {
               story.title,
               maxLines: adaptive.isNarrow ? 3 : 2,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: const Color(0xFFFFFAF5),
+              style: AppTextStyle(
+                color: AppPalette.orangeWash29,
                 fontSize: adaptive.scale(adaptive.isNarrow ? 23 : 26),
                 height: 1.08,
                 fontWeight: FontWeight.w800,
@@ -1233,8 +1237,8 @@ class _StoryListCard extends StatelessWidget {
                           story.author.preferredName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: const Color(0xFFD7C5B2),
+                          style: AppTextStyle(
+                            color: AppPalette.orangeLight08,
                             fontSize: adaptive.scale(15),
                             fontWeight: FontWeight.w500,
                           ),
@@ -1255,7 +1259,7 @@ class _StoryListCard extends StatelessWidget {
                     SizedBox(width: adaptive.scale(6)),
                     Text(
                       '${formatStoryCountCompact(story.stats.views)} ${l10n.storyViewsSuffix}',
-                      style: TextStyle(
+                      style: AppTextStyle(
                         color: StoryPalette.textMuted,
                         fontSize: adaptive.scale(15),
                         fontWeight: FontWeight.w500,
@@ -1284,26 +1288,26 @@ class _StoryMetaChip extends StatelessWidget {
 
     return Container(
       constraints: BoxConstraints(maxWidth: adaptive.scale(210)),
-      padding: EdgeInsets.symmetric(
+      padding: AppEdgeInsets.symmetric(
         horizontal: adaptive.scale(10),
         vertical: adaptive.scale(7),
       ),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(adaptive.radius(999)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.06),
+        borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: AppColors.accent, size: adaptive.scale(14)),
+          Icon(icon, color: AppPalette.primary, size: adaptive.scale(14)),
           SizedBox(width: adaptive.scale(6)),
           Flexible(
             child: Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
+              style: AppTextStyle(
                 color: StoryPalette.textMuted,
                 fontSize: adaptive.scale(13),
                 fontWeight: FontWeight.w700,
@@ -1327,20 +1331,20 @@ class _FormatTag extends StatelessWidget {
     final adaptive = StoryAdaptive.of(context);
     return Container(
       constraints: BoxConstraints(maxWidth: adaptive.scale(150)),
-      padding: EdgeInsets.symmetric(
+      padding: AppEdgeInsets.symmetric(
         horizontal: adaptive.scale(12),
         vertical: adaptive.scale(8),
       ),
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(adaptive.radius(999)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.primary.withValues(alpha: 0.92),
+        borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
       ),
       child: Text(
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: AppColors.textPrimary,
+        style: AppTextStyle(
+          color: AppPalette.textPrimary,
           fontSize: adaptive.scale(11),
           fontWeight: FontWeight.w900,
           letterSpacing: 0.6,
@@ -1359,28 +1363,28 @@ class _LocationTag extends StatelessWidget {
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
     return Container(
-      padding: EdgeInsets.symmetric(
+      padding: AppEdgeInsets.symmetric(
         horizontal: adaptive.scale(14),
         vertical: adaptive.scale(9),
       ),
-      decoration: BoxDecoration(
-        color: const Color(0xC428211B),
-        borderRadius: BorderRadius.circular(adaptive.radius(999)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmOverlaySurface09,
+        borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             Icons.place_outlined,
-            color: Colors.white,
+            color: AppPalette.white,
             size: adaptive.scale(13),
           ),
           SizedBox(width: adaptive.scale(7)),
           Text(
             label,
-            style: TextStyle(
-              color: Colors.white,
+            style: AppTextStyle(
+              color: AppPalette.white,
               fontSize: adaptive.scale(12),
               fontWeight: FontWeight.w800,
               letterSpacing: 1.1,
@@ -1402,12 +1406,12 @@ class _StoriesLoadingState extends StatelessWidget {
       children: List.generate(
         3,
         (index) => Padding(
-          padding: EdgeInsets.only(bottom: adaptive.scale(26)),
+          padding: AppEdgeInsets.only(bottom: adaptive.scale(26)),
           child: Container(
             height: adaptive.scale(320),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.04),
-              borderRadius: BorderRadius.circular(adaptive.radius(28)),
+            decoration: AppBoxDecoration(
+              color: AppPalette.white.withValues(alpha: 0.04),
+              borderRadius: AppBorderRadius.circular(adaptive.radius(28)),
             ),
           ),
         ),
@@ -1431,24 +1435,24 @@ class _StoriesErrorState extends StatelessWidget {
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
     return Container(
-      padding: EdgeInsets.all(adaptive.scale(22)),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(adaptive.radius(26)),
-        color: Colors.white.withValues(alpha: 0.03),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      padding: AppEdgeInsets.all(adaptive.scale(22)),
+      decoration: AppBoxDecoration(
+        borderRadius: AppBorderRadius.circular(adaptive.radius(26)),
+        color: AppPalette.white.withValues(alpha: 0.03),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         children: [
           Icon(
             Icons.cloud_off_rounded,
-            color: AppColors.accent,
+            color: AppPalette.primary,
             size: adaptive.scale(36),
           ),
           SizedBox(height: adaptive.scale(14)),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: AppTextStyle(
               color: StoryPalette.textSoft,
               fontSize: adaptive.scale(15),
               height: 1.45,
@@ -1458,14 +1462,14 @@ class _StoriesErrorState extends StatelessWidget {
           ElevatedButton(
             onPressed: () => onRetry(),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accent,
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(
+              backgroundColor: AppPalette.primary,
+              foregroundColor: AppPalette.white,
+              padding: AppEdgeInsets.symmetric(
                 horizontal: adaptive.scale(20),
                 vertical: adaptive.scale(14),
               ),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(adaptive.radius(999)),
+                borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
               ),
             ),
             child: Text(retryLabel),
@@ -1493,31 +1497,31 @@ class _StoriesEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
     return Container(
-      padding: EdgeInsets.all(adaptive.scale(24)),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(adaptive.radius(28)),
+      padding: AppEdgeInsets.all(adaptive.scale(24)),
+      decoration: AppBoxDecoration(
+        borderRadius: AppBorderRadius.circular(adaptive.radius(28)),
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Colors.white.withValues(alpha: 0.03),
-            AppColors.accent.withValues(alpha: 0.06),
+            AppPalette.white.withValues(alpha: 0.03),
+            AppPalette.primary.withValues(alpha: 0.06),
           ],
         ),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         children: [
           Icon(
             Icons.auto_stories_rounded,
-            color: AppColors.accent,
+            color: AppPalette.primary,
             size: adaptive.scale(40),
           ),
           SizedBox(height: adaptive.scale(16)),
           Text(
             title,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: AppTextStyle(
               color: StoryPalette.text,
               fontSize: adaptive.scale(20),
               fontWeight: FontWeight.w800,
@@ -1527,7 +1531,7 @@ class _StoriesEmptyState extends StatelessWidget {
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: AppTextStyle(
               color: StoryPalette.textSoft,
               fontSize: adaptive.scale(15),
               height: 1.45,
@@ -1538,14 +1542,14 @@ class _StoriesEmptyState extends StatelessWidget {
             FilledButton(
               onPressed: onAction,
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.accent,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(
+                backgroundColor: AppPalette.primary,
+                foregroundColor: AppPalette.white,
+                padding: AppEdgeInsets.symmetric(
                   horizontal: adaptive.scale(20),
                   vertical: adaptive.scale(12),
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(adaptive.radius(999)),
+                  borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
                 ),
               ),
               child: Text(actionLabel!),
@@ -1822,13 +1826,13 @@ class _ActiveFiltersSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(adaptive.radius(20)),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.16)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.primary.withValues(alpha: 0.08),
+        borderRadius: AppBorderRadius.circular(adaptive.radius(20)),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
       ),
       child: Padding(
-        padding: EdgeInsets.all(adaptive.scale(14)),
+        padding: AppEdgeInsets.all(adaptive.scale(14)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1836,7 +1840,7 @@ class _ActiveFiltersSummary extends StatelessWidget {
               children: [
                 Icon(
                   Icons.tune_rounded,
-                  color: AppColors.accent,
+                  color: AppPalette.primary,
                   size: adaptive.scale(18),
                 ),
                 SizedBox(width: adaptive.scale(8)),
@@ -1845,8 +1849,8 @@ class _ActiveFiltersSummary extends StatelessWidget {
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
+                    style: AppTextStyle(
+                      color: AppPalette.textPrimary,
                       fontSize: adaptive.scale(13),
                       fontWeight: FontWeight.w800,
                     ),
@@ -1895,27 +1899,27 @@ class _ActiveFilterChip extends StatelessWidget {
     final adaptive = StoryAdaptive.of(context);
     return Container(
       constraints: BoxConstraints(maxWidth: adaptive.scale(230)),
-      padding: EdgeInsets.symmetric(
+      padding: AppEdgeInsets.symmetric(
         horizontal: adaptive.scale(10),
         vertical: adaptive.scale(7),
       ),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(adaptive.radius(999)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.black.withValues(alpha: 0.16),
+        borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: adaptive.scale(14), color: AppColors.accent),
+          Icon(icon, size: adaptive.scale(14), color: AppPalette.primary),
           SizedBox(width: adaptive.scale(6)),
           Flexible(
             child: Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: AppColors.textPrimary,
+              style: AppTextStyle(
+                color: AppPalette.textPrimary,
                 fontSize: adaptive.scale(12),
                 fontWeight: FontWeight.w700,
               ),
@@ -1957,20 +1961,20 @@ class _FilterSheet extends StatelessWidget {
     return AnimatedPadding(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
-      padding: EdgeInsets.only(bottom: bottomInset),
+      padding: AppEdgeInsets.only(bottom: bottomInset),
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxHeight),
         child: DecoratedBox(
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             gradient: const LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Color(0xFF2B1808), Color(0xFF201208)],
+              colors: [AppPalette.warmSurface21, AppPalette.warmInk63],
             ),
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(adaptive.radius(28)),
+            borderRadius: AppBorderRadius.vertical(
+              top: AppRadiusValue.circular(adaptive.radius(28)),
             ),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+            border: Border.all(color: AppPalette.white.withValues(alpha: 0.04)),
           ),
           child: SafeArea(
             top: false,
@@ -1990,7 +1994,7 @@ class _FilterSheet extends StatelessWidget {
                 Flexible(
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
-                    padding: EdgeInsets.fromLTRB(
+                    padding: AppEdgeInsets.fromLTRB(
                       horizontalPadding,
                       adaptive.scale(14),
                       horizontalPadding,
@@ -2001,20 +2005,20 @@ class _FilterSheet extends StatelessWidget {
                 ),
                 Container(
                   width: double.infinity,
-                  margin: EdgeInsets.only(top: adaptive.scale(10)),
-                  padding: EdgeInsets.fromLTRB(
+                  margin: AppEdgeInsets.only(top: adaptive.scale(10)),
+                  padding: AppEdgeInsets.fromLTRB(
                     horizontalPadding,
                     adaptive.scale(10),
                     horizontalPadding,
                     adaptive.scale(14) + safeBottomInset,
                   ),
-                  decoration: BoxDecoration(
+                  decoration: AppBoxDecoration(
                     border: Border(
                       top: BorderSide(
-                        color: AppColors.accent.withValues(alpha: 0.09),
+                        color: AppPalette.primary.withValues(alpha: 0.09),
                       ),
                     ),
-                    color: Colors.black.withValues(alpha: 0.06),
+                    color: AppPalette.black.withValues(alpha: 0.06),
                   ),
                   child: AppFilterApplyButton(
                     label: applyLabel,
@@ -2142,21 +2146,21 @@ class _FilterOptionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(adaptive.radius(18)),
+        borderRadius: AppBorderRadius.circular(adaptive.radius(18)),
         child: Ink(
-          padding: EdgeInsets.all(adaptive.scale(12)),
-          decoration: BoxDecoration(
+          padding: AppEdgeInsets.all(adaptive.scale(12)),
+          decoration: AppBoxDecoration(
             color: selected
-                ? AppColors.accent.withValues(alpha: 0.14)
-                : Colors.white.withValues(alpha: 0.04),
-            borderRadius: BorderRadius.circular(adaptive.radius(18)),
+                ? AppPalette.primary.withValues(alpha: 0.14)
+                : AppPalette.white.withValues(alpha: 0.04),
+            borderRadius: AppBorderRadius.circular(adaptive.radius(18)),
             border: Border.all(
               color: selected
-                  ? AppColors.accent.withValues(alpha: 0.40)
-                  : Colors.white.withValues(alpha: 0.08),
+                  ? AppPalette.primary.withValues(alpha: 0.40)
+                  : AppPalette.white.withValues(alpha: 0.08),
             ),
           ),
           child: Row(
@@ -2164,15 +2168,15 @@ class _FilterOptionCard extends StatelessWidget {
               Container(
                 width: adaptive.scale(34),
                 height: adaptive.scale(34),
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   color: selected
-                      ? AppColors.accent.withValues(alpha: 0.18)
-                      : Colors.black.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(adaptive.radius(12)),
+                      ? AppPalette.primary.withValues(alpha: 0.18)
+                      : AppPalette.black.withValues(alpha: 0.12),
+                  borderRadius: AppBorderRadius.circular(adaptive.radius(12)),
                 ),
                 child: Icon(
                   icon,
-                  color: selected ? AppColors.accent : StoryPalette.textSoft,
+                  color: selected ? AppPalette.primary : StoryPalette.textSoft,
                   size: adaptive.scale(18),
                 ),
               ),
@@ -2182,9 +2186,9 @@ class _FilterOptionCard extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: AppTextStyle(
                     color: selected
-                        ? AppColors.textPrimary
+                        ? AppPalette.textPrimary
                         : StoryPalette.textSoft,
                     fontSize: adaptive.scale(14),
                     fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
@@ -2196,8 +2200,8 @@ class _FilterOptionCard extends StatelessWidget {
                     ? Icons.check_circle_rounded
                     : Icons.add_circle_outline,
                 color: selected
-                    ? AppColors.accent
-                    : Colors.white.withValues(alpha: 0.24),
+                    ? AppPalette.primary
+                    : AppPalette.white.withValues(alpha: 0.24),
                 size: adaptive.scale(19),
               ),
             ],
@@ -2241,7 +2245,7 @@ class _FilterSectionTitle extends StatelessWidget {
       label.toUpperCase(),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: TextStyle(
+      style: AppTextStyle(
         color: StoryPalette.textMuted,
         fontSize: adaptive.scale(12),
         fontWeight: FontWeight.w900,
@@ -2271,20 +2275,23 @@ class StoriesBottomNavBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        padding: EdgeInsets.fromLTRB(
+        padding: AppEdgeInsets.fromLTRB(
           adaptive.scale(10),
           adaptive.scale(12),
           adaptive.scale(10),
           adaptive.scale(10),
         ),
-        decoration: BoxDecoration(
+        decoration: AppBoxDecoration(
           gradient: const LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xF228190D), Color(0xF822150C)],
+            colors: [
+              AppPalette.warmOverlaySurface19,
+              AppPalette.warmOverlayInk14,
+            ],
           ),
           border: Border(
-            top: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+            top: BorderSide(color: AppPalette.white.withValues(alpha: 0.06)),
           ),
         ),
         child: Row(
@@ -2342,7 +2349,7 @@ class _StoriesNavButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
-    final color = active ? AppColors.accent : const Color(0xFFC7B19B);
+    final color = active ? AppPalette.primary : AppPalette.orangeSoft22;
 
     return Expanded(
       child: Semantics(
@@ -2351,11 +2358,11 @@ class _StoriesNavButton extends StatelessWidget {
         label: label,
         onTap: onTap,
         child: Material(
-          color: Colors.transparent,
+          color: AppPalette.transparent,
           child: InkWell(
             onTap: onTap,
             child: Padding(
-              padding: EdgeInsets.symmetric(vertical: adaptive.scale(8)),
+              padding: AppEdgeInsets.symmetric(vertical: adaptive.scale(8)),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -2365,7 +2372,7 @@ class _StoriesNavButton extends StatelessWidget {
                     label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: AppTextStyle(
                       color: color,
                       fontSize: adaptive.scale(11),
                       fontWeight: FontWeight.w600,

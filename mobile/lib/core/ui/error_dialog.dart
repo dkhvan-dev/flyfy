@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-import 'app_colors.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
 Future<void> showErrorDialog(
   BuildContext context, {
@@ -11,47 +10,47 @@ Future<void> showErrorDialog(
     context: context,
     barrierDismissible: true,
     barrierLabel: 'error-dialog',
-    barrierColor: Colors.black.withValues(alpha: 0.72),
+    barrierColor: AppPalette.black.withValues(alpha: 0.72),
     pageBuilder: (context, _, _) {
       final okLabel = MaterialLocalizations.of(context).okButtonLabel;
 
       return SafeArea(
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const AppEdgeInsets.symmetric(horizontal: 24),
             child: Container(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Material(
-                color: const Color(0xFF2A1E11),
-                borderRadius: BorderRadius.circular(28),
+                color: AppPalette.warmSurface18,
+                borderRadius: AppBorderRadius.circular(28),
                 clipBehavior: Clip.antiAlias,
                 child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: AppColors.borderLight),
+                  decoration: AppBoxDecoration(
+                    borderRadius: AppBorderRadius.circular(28),
+                    border: Border.all(color: AppPalette.outlineOverlayLight),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.accent.withValues(alpha: 0.12),
+                        color: AppPalette.primary.withValues(alpha: 0.12),
                         blurRadius: 30,
                         offset: const Offset(0, 18),
                       ),
                     ],
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+                    padding: const AppEdgeInsets.fromLTRB(24, 28, 24, 20),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
                           width: 72,
                           height: 72,
-                          decoration: BoxDecoration(
+                          decoration: AppBoxDecoration(
                             shape: BoxShape.circle,
-                            color: AppColors.accent.withValues(alpha: 0.14),
+                            color: AppPalette.primary.withValues(alpha: 0.14),
                           ),
                           child: const Icon(
                             Icons.warning_amber_rounded,
-                            color: AppColors.accent,
+                            color: AppPalette.primary,
                             size: 34,
                           ),
                         ),
@@ -59,8 +58,8 @@ Future<void> showErrorDialog(
                         Text(
                           title,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
+                          style: const AppTextStyle(
+                            color: AppPalette.textPrimary,
                             fontSize: 22,
                             fontWeight: FontWeight.w700,
                           ),
@@ -69,8 +68,8 @@ Future<void> showErrorDialog(
                         Text(
                           message,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
+                          style: const AppTextStyle(
+                            color: AppPalette.textCoolSecondary,
                             fontSize: 15,
                             height: 1.4,
                           ),
@@ -81,16 +80,16 @@ Future<void> showErrorDialog(
                           child: ElevatedButton(
                             onPressed: () => Navigator.of(context).pop(),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.accent,
-                              foregroundColor: AppColors.textPrimary,
+                              backgroundColor: AppPalette.primary,
+                              foregroundColor: AppPalette.textPrimary,
                               minimumSize: const Size.fromHeight(54),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(18),
+                                borderRadius: AppBorderRadius.circular(18),
                               ),
                             ),
                             child: Text(
                               okLabel,
-                              style: const TextStyle(
+                              style: const AppTextStyle(
                                 fontWeight: FontWeight.w700,
                               ),
                             ),

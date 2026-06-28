@@ -3,11 +3,11 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import 'package:maplibre/maplibre.dart' hide LengthUnit;
 
 import '../../core/config/app_config.dart';
-import '../../core/ui/app_colors.dart';
 import '../map/app_map_gesture_recognizers.dart';
 import 'app_map_attribution.dart';
 
@@ -108,12 +108,12 @@ class _AppMapCardState extends State<AppMapCard> {
     }
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(widget.borderRadius),
+      borderRadius: AppBorderRadius.circular(widget.borderRadius),
       child: SizedBox(
         height: height,
         width: double.infinity,
         child: ColoredBox(
-          color: const Color(0xFFB3A28D),
+          color: AppPalette.orangeSoft05,
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -131,7 +131,7 @@ class _AppMapCardState extends State<AppMapCard> {
                   gestures: widget.gesturesEnabled
                       ? const MapGestures.all()
                       : const MapGestures.none(),
-                  androidForegroundLoadColor: const Color(0xFFB3A28D),
+                  androidForegroundLoadColor: AppPalette.orangeSoft05,
                 ),
                 onMapCreated: (controller) {
                   if (!mounted || !widget.nativeMapEnabled) {
@@ -165,14 +165,14 @@ class _AppMapCardState extends State<AppMapCard> {
               Positioned.fill(
                 child: IgnorePointer(
                   child: DecoratedBox(
-                    decoration: BoxDecoration(
+                    decoration: AppBoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          const Color(0xFF1A1209).withValues(alpha: 0.10),
-                          Colors.transparent,
-                          const Color(0xFF1A1209).withValues(alpha: 0.18),
+                          AppPalette.warmInk37.withValues(alpha: 0.10),
+                          AppPalette.transparent,
+                          AppPalette.warmInk37.withValues(alpha: 0.18),
                         ],
                       ),
                     ),
@@ -215,7 +215,7 @@ class _AppMapFallbackCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
+      borderRadius: AppBorderRadius.circular(borderRadius),
       child: SizedBox(
         height: height,
         width: double.infinity,
@@ -223,14 +223,14 @@ class _AppMapFallbackCard extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             const DecoratedBox(
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Color(0xFFB8A68E),
-                    Color(0xFFD6C7B1),
-                    Color(0xFFA9B6A6),
+                    AppPalette.orangeSoft09,
+                    AppPalette.amberLight01,
+                    AppPalette.greenSoft07,
                   ],
                 ),
               ),
@@ -251,15 +251,15 @@ class _FallbackMapPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final roadPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.34)
+      ..color = AppPalette.white.withValues(alpha: 0.34)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.2
       ..strokeCap = StrokeCap.round;
     final parkPaint = Paint()
-      ..color = const Color(0xFF6F8A67).withValues(alpha: 0.20)
+      ..color = AppPalette.greenMuted12.withValues(alpha: 0.20)
       ..style = PaintingStyle.fill;
     final waterPaint = Paint()
-      ..color = const Color(0xFF81A7B8).withValues(alpha: 0.22)
+      ..color = AppPalette.blueSoft13.withValues(alpha: 0.22)
       ..style = PaintingStyle.fill;
 
     canvas.drawRRect(
@@ -270,7 +270,7 @@ class _FallbackMapPainter extends CustomPainter {
           size.width * 0.36,
           size.height * 0.34,
         ),
-        const Radius.circular(18),
+        const AppRadiusValue.circular(18),
       ),
       parkPaint,
     );
@@ -282,7 +282,7 @@ class _FallbackMapPainter extends CustomPainter {
           size.width * 0.30,
           size.height * 0.28,
         ),
-        const Radius.circular(16),
+        const AppRadiusValue.circular(16),
       ),
       waterPaint,
     );
@@ -328,13 +328,13 @@ class _AppMapPinMarker extends StatelessWidget {
           Container(
             width: 48,
             height: 48,
-            decoration: BoxDecoration(
+            decoration: AppBoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.accent,
-              border: Border.all(color: Colors.white, width: 3),
+              color: AppPalette.primary,
+              border: Border.all(color: AppPalette.white, width: 3),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.accent.withValues(alpha: 0.24),
+                  color: AppPalette.primary.withValues(alpha: 0.24),
                   blurRadius: 22,
                   offset: const Offset(0, 11),
                 ),
@@ -343,7 +343,7 @@ class _AppMapPinMarker extends StatelessWidget {
             child: const Center(
               child: Icon(
                 Icons.location_on_rounded,
-                color: Colors.white,
+                color: AppPalette.white,
                 size: 26,
               ),
             ),
@@ -351,9 +351,9 @@ class _AppMapPinMarker extends StatelessWidget {
           Container(
             width: 10,
             height: 10,
-            decoration: BoxDecoration(
-              color: AppColors.accent,
-              border: Border.all(color: Colors.white, width: 2),
+            decoration: AppBoxDecoration(
+              color: AppPalette.primary,
+              border: Border.all(color: AppPalette.white, width: 2),
               shape: BoxShape.circle,
             ),
           ),

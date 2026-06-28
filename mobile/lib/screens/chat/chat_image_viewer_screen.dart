@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
 class ChatImageViewerScreen extends StatelessWidget {
   const ChatImageViewerScreen({super.key, required this.imageBytes});
@@ -10,7 +11,7 @@ class ChatImageViewerScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppPalette.black,
       body: SafeArea(
         child: Stack(
           children: [
@@ -56,12 +57,12 @@ class _ViewerIconButton extends StatelessWidget {
       child: Container(
         width: 44,
         height: 44,
-        decoration: BoxDecoration(
+        decoration: AppBoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.black.withValues(alpha: 0.46),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+          color: AppPalette.black.withValues(alpha: 0.46),
+          border: Border.all(color: AppPalette.white.withValues(alpha: 0.16)),
         ),
-        child: Icon(icon, color: Colors.white, size: 24),
+        child: Icon(icon, color: AppPalette.white, size: 24),
       ),
     );
   }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/ui/app_bottom_navigation_bars.dart';
-import '../../core/ui/app_colors.dart';
 import '../../features/services/service_catalog.dart';
 import '../../features/services/widgets/service_grid.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -22,7 +22,7 @@ class ServicesScreen extends StatelessWidget {
 
     return Scaffold(
       key: const ValueKey('services-screen'),
-      backgroundColor: const Color(0xFF160D07),
+      backgroundColor: AppPalette.warmInk22,
       bottomNavigationBar: CommonBottomNavigationBar(
         activeItem: AppBottomNavItem.services,
         onHomeTap: () => context.go('/'),
@@ -32,7 +32,7 @@ class ServicesScreen extends StatelessWidget {
         onChatsTap: () => context.push('/chats'),
       ),
       body: DecoratedBox(
-        decoration: const BoxDecoration(color: Color(0xFF21180D)),
+        decoration: const AppBoxDecoration(color: AppPalette.warmInk81),
         child: SafeArea(
           bottom: false,
           child: LayoutBuilder(
@@ -44,7 +44,7 @@ class ServicesScreen extends StatelessWidget {
                 physics: const BouncingScrollPhysics(),
                 slivers: [
                   SliverPadding(
-                    padding: EdgeInsets.fromLTRB(
+                    padding: AppEdgeInsets.fromLTRB(
                       horizontalPadding,
                       isCompact ? 24 : 30,
                       horizontalPadding,
@@ -95,7 +95,7 @@ class _ServicesHeader extends StatelessWidget {
             context.go('/');
           },
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          color: AppColors.textPrimary,
+          color: AppPalette.textPrimary,
           tooltip: MaterialLocalizations.of(context).backButtonTooltip,
           constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
         ),
@@ -105,8 +105,8 @@ class _ServicesHeader extends StatelessWidget {
             title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: AppColors.textPrimary,
+            style: AppTextStyle(
+              color: AppPalette.textPrimary,
               fontSize: isCompact ? 28 : 32,
               height: 1.1,
               fontWeight: FontWeight.w900,

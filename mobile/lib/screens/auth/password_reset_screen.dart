@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/auth_provider.dart';
@@ -241,7 +241,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: AppColors.background,
+      backgroundColor: AppPalette.backgroundWarm,
       body: AuthResponsiveTextScope(
         child: SafeArea(
           child: LayoutBuilder(
@@ -260,7 +260,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
                 ),
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: EdgeInsets.fromLTRB(
+                padding: AppEdgeInsets.fromLTRB(
                   horizontalPadding,
                   verticalPadding,
                   horizontalPadding,
@@ -474,8 +474,8 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
                 icon: const Icon(Icons.refresh_rounded),
                 label: Text(resendLabel),
                 style: TextButton.styleFrom(
-                  foregroundColor: AppColors.accent,
-                  disabledForegroundColor: AppColors.textCaption,
+                  foregroundColor: AppPalette.primary,
+                  disabledForegroundColor: AppPalette.textCaption,
                 ),
               );
             },
@@ -500,7 +500,7 @@ class _PasswordResetHeader extends StatelessWidget {
         IconButton(
           onPressed: onBack,
           icon: const Icon(Icons.arrow_back_rounded),
-          color: AppColors.textPrimary,
+          color: AppPalette.textPrimary,
           tooltip: MaterialLocalizations.of(context).backButtonTooltip,
         ),
         SizedBox(width: authScaled(context, 8, min: 6, max: 8)),
@@ -509,8 +509,8 @@ class _PasswordResetHeader extends StatelessWidget {
             title,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: AppColors.textPrimary,
+            style: AppTextStyle(
+              color: AppPalette.textPrimary,
               fontSize: authScaled(context, 26, min: 22, max: 28),
               fontWeight: FontWeight.w800,
               height: 1.1,
@@ -530,11 +530,11 @@ class _PasswordResetPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(authScaled(context, 24, min: 18, max: 28)),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.07),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.14)),
-        borderRadius: BorderRadius.circular(
+      padding: AppEdgeInsets.all(authScaled(context, 24, min: 18, max: 28)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.07),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.14)),
+        borderRadius: AppBorderRadius.circular(
           authScaled(context, 24, min: 18, max: 24),
         ),
       ),
@@ -566,7 +566,7 @@ class _PasswordResetFieldsScrollView extends StatelessWidget {
           physics: const BouncingScrollPhysics(),
           clipBehavior: Clip.hardEdge,
           child: Padding(
-            padding: EdgeInsets.only(top: floatingLabelReserve),
+            padding: AppEdgeInsets.only(top: floatingLabelReserve),
             child: SizedBox(width: contentWidth, child: child),
           ),
         );
@@ -588,8 +588,8 @@ class _StepTitle extends StatelessWidget {
       children: [
         Text(
           title,
-          style: TextStyle(
-            color: AppColors.textPrimary,
+          style: AppTextStyle(
+            color: AppPalette.textPrimary,
             fontSize: authScaled(context, 20, min: 18, max: 22),
             fontWeight: FontWeight.w800,
             height: 1.15,
@@ -598,8 +598,8 @@ class _StepTitle extends StatelessWidget {
         SizedBox(height: authScaled(context, 8, min: 6, max: 8)),
         Text(
           description,
-          style: TextStyle(
-            color: AppColors.textSecondary,
+          style: AppTextStyle(
+            color: AppPalette.textCoolSecondary,
             fontSize: authScaled(context, 14, min: 13, max: 15),
             fontWeight: FontWeight.w500,
             height: 1.4,
@@ -618,20 +618,20 @@ class _NoticeText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(
+      padding: AppEdgeInsets.symmetric(
         horizontal: authScaled(context, 12, min: 10, max: 12),
         vertical: authScaled(context, 10, min: 8, max: 10),
       ),
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(
+      decoration: AppBoxDecoration(
+        color: AppPalette.primary.withValues(alpha: 0.14),
+        borderRadius: AppBorderRadius.circular(
           authScaled(context, 12, min: 10, max: 12),
         ),
       ),
       child: Text(
         text,
-        style: TextStyle(
-          color: AppColors.textPrimary,
+        style: AppTextStyle(
+          color: AppPalette.textPrimary,
           fontSize: authScaled(context, 13, min: 12, max: 14),
           fontWeight: FontWeight.w600,
           height: 1.35,
@@ -683,41 +683,45 @@ class _ResetTextField extends StatelessWidget {
       autofillHints: autofillHints,
       onSubmitted: onSubmitted,
       onTapOutside: (_) => FocusScope.of(context).unfocus(),
-      style: const TextStyle(
-        color: AppColors.textPrimary,
+      style: const AppTextStyle(
+        color: AppPalette.textPrimary,
         fontWeight: FontWeight.w600,
       ),
-      decoration: InputDecoration(
+      decoration: AppInputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: AppColors.textSecondary),
+        labelStyle: const AppTextStyle(color: AppPalette.textCoolSecondary),
         hintText: hint,
-        hintStyle: const TextStyle(color: AppColors.textCaption),
+        hintStyle: const AppTextStyle(color: AppPalette.textCaption),
         errorText: errorText,
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.05),
-        prefixIcon: Icon(icon, color: AppColors.accent),
+        fillColor: AppPalette.white.withValues(alpha: 0.05),
+        prefixIcon: Icon(icon, color: AppPalette.primary),
         suffixIcon: suffixIcon,
-        contentPadding: EdgeInsets.symmetric(
+        contentPadding: AppEdgeInsets.symmetric(
           horizontal: authScaled(context, 18, min: 14, max: 18),
           vertical: authScaled(context, 15, min: 13, max: 15),
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(
+          borderRadius: AppBorderRadius.circular(
             authScaled(context, 16, min: 14, max: 16),
           ),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+          borderSide: BorderSide(
+            color: AppPalette.white.withValues(alpha: 0.1),
+          ),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(
+          borderRadius: AppBorderRadius.circular(
             authScaled(context, 16, min: 14, max: 16),
           ),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+          borderSide: BorderSide(
+            color: AppPalette.white.withValues(alpha: 0.1),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(
+          borderRadius: AppBorderRadius.circular(
             authScaled(context, 16, min: 14, max: 16),
           ),
-          borderSide: const BorderSide(color: AppColors.accent, width: 1.4),
+          borderSide: const BorderSide(color: AppPalette.primary, width: 1.4),
         ),
       ),
     );
@@ -743,16 +747,16 @@ class _ResetPrimaryButton extends StatelessWidget {
     if (isLoading) {
       return Container(
         height: buttonHeight,
-        decoration: BoxDecoration(
-          color: AppColors.accent,
-          borderRadius: BorderRadius.circular(999),
+        decoration: AppBoxDecoration(
+          color: AppPalette.primary,
+          borderRadius: AppBorderRadius.circular(999),
         ),
         alignment: Alignment.center,
         child: const SizedBox(
           width: 24,
           height: 24,
           child: CircularProgressIndicator(
-            color: AppColors.background,
+            color: AppPalette.backgroundWarm,
             strokeWidth: 2.5,
           ),
         ),
@@ -761,26 +765,28 @@ class _ResetPrimaryButton extends StatelessWidget {
 
     return ElevatedButton.icon(
       onPressed: onPressed,
-      icon: Icon(icon, size: 20, color: AppColors.textPrimary),
+      icon: Icon(icon, size: 20, color: AppPalette.textPrimary),
       label: Text(
         label,
         overflow: TextOverflow.ellipsis,
         maxLines: 1,
-        style: TextStyle(
-          color: AppColors.textPrimary,
+        style: AppTextStyle(
+          color: AppPalette.textPrimary,
           fontSize: authScaled(context, 16, min: 14, max: 16),
           fontWeight: FontWeight.bold,
         ),
       ),
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.accent,
-        foregroundColor: AppColors.background,
-        disabledBackgroundColor: AppColors.accent.withValues(alpha: 0.45),
+        backgroundColor: AppPalette.primary,
+        foregroundColor: AppPalette.backgroundWarm,
+        disabledBackgroundColor: AppPalette.primary.withValues(alpha: 0.45),
         minimumSize: Size(double.infinity, buttonHeight),
-        padding: EdgeInsets.symmetric(
+        padding: AppEdgeInsets.symmetric(
           horizontal: authScaled(context, 16, min: 12, max: 18),
         ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+        shape: RoundedRectangleBorder(
+          borderRadius: AppBorderRadius.circular(999),
+        ),
         elevation: 0,
       ),
     );
@@ -798,7 +804,9 @@ class _BackToLoginButton extends StatelessWidget {
       onPressed: () => context.go('/login'),
       icon: const Icon(Icons.login_rounded),
       label: Text(label, overflow: TextOverflow.ellipsis),
-      style: TextButton.styleFrom(foregroundColor: AppColors.textSecondary),
+      style: TextButton.styleFrom(
+        foregroundColor: AppPalette.textCoolSecondary,
+      ),
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -8,7 +9,6 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../core/network/attendance_api.dart';
 import '../../core/time/app_time.dart';
-import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
 import '../../core/ui/app_list_search_field.dart';
@@ -142,8 +142,8 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
       isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.58),
+      backgroundColor: AppPalette.transparent,
+      barrierColor: AppPalette.black.withValues(alpha: 0.58),
       builder: (_) => _GuideDashboardStatusFiltersSheet(
         activeSection: _activeSection,
         initialOfferStatus: _offerStatusFilter,
@@ -201,7 +201,7 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (_) => _GuideBookingDetailsSheet(
         booking: booking,
         relatedBookings: relatedBookings,
@@ -230,7 +230,7 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (_) => _GuideCancelExcursionSheet(
         refundAmount: refundAmount,
         refundCurrency: refundCurrency,
@@ -295,22 +295,24 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF21170D),
-        surfaceTintColor: Colors.transparent,
+        backgroundColor: AppPalette.surface,
+        surfaceTintColor: AppPalette.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(28),
-          side: const BorderSide(color: Color(0x293A270F)),
+          borderRadius: AppBorderRadius.circular(28),
+          side: const BorderSide(color: AppPalette.border),
         ),
         icon: Container(
           width: 58,
           height: 58,
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xFF2C2118),
-            border: Border.all(color: AppColors.accent.withValues(alpha: 0.24)),
+            color: AppPalette.warmSurface28,
+            border: Border.all(
+              color: AppPalette.primary.withValues(alpha: 0.24),
+            ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.accent.withValues(alpha: 0.14),
+                color: AppPalette.primary.withValues(alpha: 0.14),
                 blurRadius: 22,
                 offset: const Offset(0, 10),
               ),
@@ -318,38 +320,41 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
           ),
           child: const Icon(
             Icons.delete_outline_rounded,
-            color: AppColors.accent,
+            color: AppPalette.primary,
             size: 27,
           ),
         ),
         title: Text(l10n.guideDashboardDeleteDraftTitle),
-        titleTextStyle: const TextStyle(
-          color: Color(0xFFFFF7EC),
+        titleTextStyle: const AppTextStyle(
+          color: AppPalette.orangeWash25,
           fontSize: 23,
           height: 1.12,
           fontWeight: FontWeight.w900,
         ),
         content: Text(l10n.guideDashboardDeleteDraftMessage),
-        contentTextStyle: TextStyle(
-          color: const Color(0xFFE0D4C6).withValues(alpha: 0.88),
+        contentTextStyle: AppTextStyle(
+          color: AppPalette.textSecondary.withValues(alpha: 0.88),
           fontSize: 15,
           height: 1.45,
           fontWeight: FontWeight.w500,
         ),
-        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+        actionsPadding: const AppEdgeInsets.fromLTRB(24, 0, 24, 24),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
             style: TextButton.styleFrom(
-              backgroundColor: const Color(0xFF2C2118),
-              foregroundColor: const Color(0xFFD8C7B7),
+              backgroundColor: AppPalette.warmSurface28,
+              foregroundColor: AppPalette.orangeLight15,
               minimumSize: const Size(0, 48),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: const BorderSide(color: Color(0xFF3B260D)),
+              padding: const AppEdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
               ),
-              textStyle: const TextStyle(
+              shape: RoundedRectangleBorder(
+                borderRadius: AppBorderRadius.circular(16),
+                side: const BorderSide(color: AppPalette.warmSurface66),
+              ),
+              textStyle: const AppTextStyle(
                 fontSize: 15,
                 height: 1.1,
                 fontWeight: FontWeight.w900,
@@ -360,14 +365,17 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.accent,
-              foregroundColor: AppColors.textPrimary,
+              backgroundColor: AppPalette.primary,
+              foregroundColor: AppPalette.textPrimary,
               minimumSize: const Size(0, 48),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+              padding: const AppEdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
               ),
-              textStyle: const TextStyle(
+              shape: RoundedRectangleBorder(
+                borderRadius: AppBorderRadius.circular(16),
+              ),
+              textStyle: const AppTextStyle(
                 fontSize: 15,
                 height: 1.1,
                 fontWeight: FontWeight.w900,
@@ -477,13 +485,13 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
         : double.infinity;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF160D07),
+      backgroundColor: AppPalette.warmInk22,
       body: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: const AppBoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF211609), Color(0xFF160D07)],
+            colors: [AppPalette.warmInk78, AppPalette.warmInk22],
           ),
         ),
         child: SafeArea(
@@ -543,8 +551,8 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
                   provider.myGuideExcursionBookings.isEmpty;
 
               return RefreshIndicator(
-                color: AppColors.accent,
-                backgroundColor: const Color(0xFF2A1D13),
+                color: AppPalette.primary,
+                backgroundColor: AppPalette.warmSurface17,
                 onRefresh: provider.refreshGuideDashboardData,
                 child: Center(
                   child: ConstrainedBox(
@@ -552,7 +560,7 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
                     child: ListView(
                       controller: _scrollController,
                       physics: const AlwaysScrollableScrollPhysics(),
-                      padding: EdgeInsets.fromLTRB(
+                      padding: AppEdgeInsets.fromLTRB(
                         horizontalPadding,
                         12,
                         horizontalPadding,
@@ -1400,11 +1408,11 @@ class _GuideStatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       constraints: const BoxConstraints(minHeight: 88),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2A1D13),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      padding: const AppEdgeInsets.all(18),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmSurface17,
+        borderRadius: AppBorderRadius.circular(18),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1414,8 +1422,8 @@ class _GuideStatCard extends StatelessWidget {
             label.toUpperCase(),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xFFD3BFA9),
+            style: const AppTextStyle(
+              color: AppPalette.orangeLight01,
               fontSize: 11,
               fontWeight: FontWeight.w900,
               letterSpacing: 1.1,
@@ -1430,8 +1438,8 @@ class _GuideStatCard extends StatelessWidget {
                   value,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: const AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: 28,
                     fontWeight: FontWeight.w900,
                     height: 1.08,
@@ -1440,7 +1448,7 @@ class _GuideStatCard extends StatelessWidget {
               ),
               if (suffix != null) ...[
                 const SizedBox(width: 4),
-                Icon(suffix, color: AppColors.accent, size: 20),
+                Icon(suffix, color: AppPalette.primary, size: 20),
               ],
             ],
           ),
@@ -1618,18 +1626,20 @@ class _GuideDashboardStatusFiltersSheetState
     return AnimatedPadding(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
-      padding: EdgeInsets.only(bottom: mediaQuery.viewInsets.bottom),
+      padding: AppEdgeInsets.only(bottom: mediaQuery.viewInsets.bottom),
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxHeight),
         child: Container(
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             gradient: const LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Color(0xFF2B1808), Color(0xFF201208)],
+              colors: [AppPalette.warmSurface21, AppPalette.warmInk63],
             ),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+            borderRadius: const AppBorderRadius.vertical(
+              top: AppRadiusValue.circular(26),
+            ),
+            border: Border.all(color: AppPalette.white.withValues(alpha: 0.04)),
           ),
           child: SafeArea(
             top: false,
@@ -1650,7 +1660,7 @@ class _GuideDashboardStatusFiltersSheetState
                     physics: const BouncingScrollPhysics(
                       parent: AlwaysScrollableScrollPhysics(),
                     ),
-                    padding: EdgeInsets.fromLTRB(
+                    padding: AppEdgeInsets.fromLTRB(
                       horizontalPadding,
                       18,
                       horizontalPadding,
@@ -1663,14 +1673,14 @@ class _GuideDashboardStatusFiltersSheetState
                           children: [
                             const Icon(
                               Icons.fact_check_outlined,
-                              color: AppColors.accent,
+                              color: AppPalette.primary,
                               size: 18,
                             ),
                             const SizedBox(width: 8),
                             Text(
                               l10n.myActivitiesFilterStatus,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
+                              style: const AppTextStyle(
+                                color: AppPalette.textPrimary,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -1714,19 +1724,19 @@ class _GuideDashboardStatusFiltersSheetState
                   ),
                 ),
                 Container(
-                  padding: EdgeInsets.fromLTRB(
+                  padding: AppEdgeInsets.fromLTRB(
                     horizontalPadding,
                     12,
                     horizontalPadding,
                     14 + mediaQuery.padding.bottom,
                   ),
-                  decoration: BoxDecoration(
+                  decoration: AppBoxDecoration(
                     border: Border(
                       top: BorderSide(
-                        color: AppColors.accent.withValues(alpha: 0.09),
+                        color: AppPalette.primary.withValues(alpha: 0.09),
                       ),
                     ),
-                    color: Colors.black.withValues(alpha: 0.06),
+                    color: AppPalette.black.withValues(alpha: 0.06),
                   ),
                   child: AppFilterApplyButton(
                     label:
@@ -1762,26 +1772,26 @@ class _GuideStatusFilterChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 360;
     final foreground = selected
-        ? const Color(0xFFFFFAF2)
-        : const Color(0xFFEAD7C0);
+        ? AppPalette.amberWash10
+        : AppPalette.orangeLight26;
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppBorderRadius.circular(18),
         onTap: onTap,
         child: Ink(
           height: compact ? 54 : 58,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
+          padding: const AppEdgeInsets.symmetric(horizontal: 12),
+          decoration: AppBoxDecoration(
             color: selected
-                ? AppColors.accent.withValues(alpha: 0.18)
-                : Colors.white.withValues(alpha: 0.025),
-            borderRadius: BorderRadius.circular(18),
+                ? AppPalette.primary.withValues(alpha: 0.18)
+                : AppPalette.white.withValues(alpha: 0.025),
+            borderRadius: AppBorderRadius.circular(18),
             border: Border.all(
               color: selected
-                  ? AppColors.accent
-                  : AppColors.accent.withValues(alpha: 0.14),
+                  ? AppPalette.primary
+                  : AppPalette.primary.withValues(alpha: 0.14),
               width: selected ? 1.4 : 1,
             ),
           ),
@@ -1790,18 +1800,18 @@ class _GuideStatusFilterChip extends StatelessWidget {
               Container(
                 width: 28,
                 height: 28,
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   shape: BoxShape.circle,
-                  color: selected ? AppColors.accent : Colors.transparent,
+                  color: selected ? AppPalette.primary : AppPalette.transparent,
                   border: Border.all(
-                    color: AppColors.accent.withValues(alpha: 0.56),
+                    color: AppPalette.primary.withValues(alpha: 0.56),
                     width: 1.5,
                   ),
                 ),
                 child: selected
                     ? const Icon(
                         Icons.check_rounded,
-                        color: Colors.white,
+                        color: AppPalette.white,
                         size: 18,
                       )
                     : null,
@@ -1812,7 +1822,7 @@ class _GuideStatusFilterChip extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: AppTextStyle(
                     color: foreground,
                     fontSize: compact ? 13 : 14,
                     fontWeight: FontWeight.w700,
@@ -1821,16 +1831,19 @@ class _GuideStatusFilterChip extends StatelessWidget {
               ),
               Container(
                 constraints: const BoxConstraints(minWidth: 30),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(999),
+                padding: const AppEdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
+                decoration: AppBoxDecoration(
+                  color: AppPalette.primary.withValues(alpha: 0.14),
+                  borderRadius: AppBorderRadius.circular(999),
                 ),
                 child: Text(
                   '$count',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: AppColors.accent,
+                  style: const AppTextStyle(
+                    color: AppPalette.primary,
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                   ),
@@ -1915,17 +1928,20 @@ class _GuideDashboardActionTile extends StatelessWidget {
       button: true,
       label: label,
       child: Material(
-        color: Colors.transparent,
+        color: AppPalette.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppBorderRadius.circular(8),
           child: Ink(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2A1D13),
-              borderRadius: BorderRadius.circular(8),
+            padding: const AppEdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
+            decoration: AppBoxDecoration(
+              color: AppPalette.warmSurface17,
+              borderRadius: AppBorderRadius.circular(8),
               border: Border.all(
-                color: AppColors.accent.withValues(alpha: 0.20),
+                color: AppPalette.primary.withValues(alpha: 0.20),
               ),
             ),
             child: ExcludeSemantics(
@@ -1934,11 +1950,11 @@ class _GuideDashboardActionTile extends StatelessWidget {
                   Container(
                     width: 38,
                     height: 38,
-                    decoration: BoxDecoration(
-                      color: AppColors.accent.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(8),
+                    decoration: AppBoxDecoration(
+                      color: AppPalette.primary.withValues(alpha: 0.14),
+                      borderRadius: AppBorderRadius.circular(8),
                     ),
-                    child: Icon(icon, color: AppColors.accent, size: 21),
+                    child: Icon(icon, color: AppPalette.primary, size: 21),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -1946,8 +1962,8 @@ class _GuideDashboardActionTile extends StatelessWidget {
                       label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: const AppTextStyle(
+                        color: AppPalette.textPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w900,
                       ),
@@ -1956,7 +1972,7 @@ class _GuideDashboardActionTile extends StatelessWidget {
                   const SizedBox(width: 8),
                   const Icon(
                     Icons.chevron_right_rounded,
-                    color: Color(0xFFD3BFA9),
+                    color: AppPalette.orangeLight01,
                     size: 20,
                   ),
                 ],
@@ -2016,13 +2032,13 @@ class _GuideDashboardSegmentedTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.16)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.07),
+        borderRadius: AppBorderRadius.circular(18),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(4),
+        padding: const AppEdgeInsets.all(4),
         child: Row(
           children: [
             Expanded(
@@ -2071,15 +2087,15 @@ class _GuideSegmentedTabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.textPrimary : const Color(0xFFFFE0B2);
+    final color = selected ? AppPalette.textPrimary : AppPalette.amberLight08;
     return Material(
-      color: selected ? AppColors.accent : Colors.transparent,
-      borderRadius: BorderRadius.circular(14),
+      color: selected ? AppPalette.primary : AppPalette.transparent,
+      borderRadius: AppBorderRadius.circular(14),
       child: InkWell(
         onTap: selected ? null : onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppBorderRadius.circular(14),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+          padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 11),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
@@ -2264,7 +2280,7 @@ class _ExcursionAttendanceQrAction extends StatelessWidget {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (_) => _ExcursionAttendanceQrSheet(
         scheduleSlotId: scheduleSlotId,
         relatedBookings: relatedBookings,
@@ -2287,13 +2303,13 @@ class _ExcursionAttendanceQrAction extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
         style: OutlinedButton.styleFrom(
-          foregroundColor: const Color(0xFFFFD6A3),
+          foregroundColor: AppPalette.orangeLight46,
           side: BorderSide(
-            color: const Color(0xFFFFD6A3).withValues(alpha: 0.38),
+            color: AppPalette.orangeLight46.withValues(alpha: 0.38),
           ),
           minimumSize: const Size(0, 48),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: AppBorderRadius.circular(999),
           ),
         ),
       ),
@@ -2446,7 +2462,7 @@ class _ExcursionAttendanceQrSheetState
       child: AnimatedPadding(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
-        padding: EdgeInsets.only(
+        padding: AppEdgeInsets.only(
           left: 12,
           right: 12,
           bottom: mediaQuery.viewInsets.bottom + bottomLift,
@@ -2457,26 +2473,31 @@ class _ExcursionAttendanceQrSheetState
             maxHeight: mediaQuery.size.height * 0.82,
           ),
           child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(28),
+            decoration: AppBoxDecoration(
+              borderRadius: const AppBorderRadius.vertical(
+                top: AppRadiusValue.circular(28),
               ),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              border: Border.all(
+                color: AppPalette.white.withValues(alpha: 0.08),
+              ),
               gradient: const LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0xF92A190D), Color(0xFA180E08)],
+                colors: [
+                  AppPalette.warmOverlaySurface20,
+                  AppPalette.warmOverlayInk16,
+                ],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.34),
+                  color: AppPalette.black.withValues(alpha: 0.34),
                   blurRadius: 36,
                   offset: const Offset(0, -18),
                 ),
               ],
             ),
             child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(
+              padding: AppEdgeInsets.fromLTRB(
                 compact ? 16 : 20,
                 14,
                 compact ? 16 : 20,
@@ -2490,9 +2511,9 @@ class _ExcursionAttendanceQrSheetState
                     child: Container(
                       width: 52,
                       height: 5,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(999),
+                      decoration: AppBoxDecoration(
+                        color: AppPalette.white.withValues(alpha: 0.18),
+                        borderRadius: AppBorderRadius.circular(999),
                       ),
                     ),
                   ),
@@ -2504,8 +2525,8 @@ class _ExcursionAttendanceQrSheetState
                           l10n.guideDashboardShowAttendanceQr,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: AppColors.textPrimary,
+                          style: AppTextStyle(
+                            color: AppPalette.textPrimary,
                             fontSize: compact ? 21 : 23,
                             fontWeight: FontWeight.w900,
                           ),
@@ -2515,7 +2536,7 @@ class _ExcursionAttendanceQrSheetState
                       IconButton(
                         onPressed: () => Navigator.maybePop(context),
                         icon: const Icon(Icons.close_rounded),
-                        color: const Color(0xFFD3BFA9),
+                        color: AppPalette.orangeLight01,
                         tooltip: MaterialLocalizations.of(
                           context,
                         ).closeButtonTooltip,
@@ -2545,7 +2566,7 @@ class _ExcursionAttendanceQrSheetState
           minHeight: _guideQrLoadingMinHeight(context),
         ),
         child: const Center(
-          child: CircularProgressIndicator(color: AppColors.accent),
+          child: CircularProgressIndicator(color: AppPalette.primary),
         ),
       );
     }
@@ -2555,15 +2576,15 @@ class _ExcursionAttendanceQrSheetState
         children: [
           const Icon(
             Icons.qr_code_2_rounded,
-            color: AppColors.accent,
+            color: AppPalette.primary,
             size: 34,
           ),
           const SizedBox(height: 10),
           Text(
             l10n.activityAttendanceQrLoadFailed,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
+            style: const AppTextStyle(
+              color: AppPalette.textPrimary,
               fontSize: 14,
               fontWeight: FontWeight.w800,
             ),
@@ -2582,20 +2603,20 @@ class _ExcursionAttendanceQrSheetState
             Container(
               width: qrSize,
               height: qrSize,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
+              padding: const AppEdgeInsets.all(12),
+              decoration: AppBoxDecoration(
+                color: AppPalette.white,
+                borderRadius: AppBorderRadius.circular(18),
               ),
               child: QrImageView(
                 data: _token!,
-                backgroundColor: Colors.white,
+                backgroundColor: AppPalette.white,
                 eyeStyle: const QrEyeStyle(
                   eyeShape: QrEyeShape.square,
-                  color: Colors.black,
+                  color: AppPalette.black,
                 ),
                 dataModuleStyle: const QrDataModuleStyle(
-                  color: Colors.black,
+                  color: AppPalette.black,
                   dataModuleShape: QrDataModuleShape.square,
                 ),
               ),
@@ -2604,8 +2625,8 @@ class _ExcursionAttendanceQrSheetState
             Text(
               _countdownLabel(l10n),
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFFD3BFA9),
+              style: const AppTextStyle(
+                color: AppPalette.orangeLight01,
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
               ),
@@ -2650,19 +2671,19 @@ class _GuideAttendanceParticipantStatusList extends StatelessWidget {
 
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          padding: const AppEdgeInsets.all(14),
+          decoration: AppBoxDecoration(
+            color: AppPalette.white.withValues(alpha: 0.05),
+            borderRadius: AppBorderRadius.circular(18),
+            border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 l10n.guideDashboardAttendanceParticipants,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: const AppTextStyle(
+                  color: AppPalette.textPrimary,
                   fontSize: 15,
                   fontWeight: FontWeight.w900,
                 ),
@@ -2698,8 +2719,8 @@ class _GuideAttendanceParticipantRow extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final checkedIn = booking.isCheckedIn;
     final statusColor = checkedIn
-        ? const Color(0xFF77D88B)
-        : const Color(0xFFFFD6A3);
+        ? AppPalette.greenSoft02
+        : AppPalette.orangeLight46;
     final statusLabel = checkedIn
         ? l10n.guideDashboardAttendanceCheckedIn
         : l10n.guideDashboardAttendanceWaiting;
@@ -2724,8 +2745,8 @@ class _GuideAttendanceParticipantRow extends StatelessWidget {
                 _guideAttendanceParticipantName(booking),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: const AppTextStyle(
+                  color: AppPalette.textPrimary,
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                 ),
@@ -2735,8 +2756,8 @@ class _GuideAttendanceParticipantRow extends StatelessWidget {
                 l10n.myExcursionsGuests(booking.totalSeats),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Color(0xFFD3BFA9),
+                style: const AppTextStyle(
+                  color: AppPalette.orangeLight01,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
@@ -2746,18 +2767,18 @@ class _GuideAttendanceParticipantRow extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         DecoratedBox(
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             color: statusColor.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: AppBorderRadius.circular(999),
             border: Border.all(color: statusColor.withValues(alpha: 0.28)),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 7),
             child: Text(
               timeLabel == null ? statusLabel : '$statusLabel · $timeLabel',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
+              style: AppTextStyle(
                 color: statusColor,
                 fontSize: 11,
                 fontWeight: FontWeight.w900,
@@ -2869,7 +2890,7 @@ class _GuideBookingDetailsSheetState extends State<_GuideBookingDetailsSheet> {
       child: AnimatedPadding(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
-        padding: EdgeInsets.only(
+        padding: AppEdgeInsets.only(
           left: 12,
           right: 12,
           bottom: mediaQuery.viewInsets.bottom,
@@ -2880,26 +2901,31 @@ class _GuideBookingDetailsSheetState extends State<_GuideBookingDetailsSheet> {
             maxHeight: mediaQuery.size.height * 0.86,
           ),
           child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(28),
+            decoration: AppBoxDecoration(
+              borderRadius: const AppBorderRadius.vertical(
+                top: AppRadiusValue.circular(28),
               ),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              border: Border.all(
+                color: AppPalette.white.withValues(alpha: 0.08),
+              ),
               gradient: const LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0xF92A190D), Color(0xFA180E08)],
+                colors: [
+                  AppPalette.warmOverlaySurface20,
+                  AppPalette.warmOverlayInk16,
+                ],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.34),
+                  color: AppPalette.black.withValues(alpha: 0.34),
                   blurRadius: 36,
                   offset: const Offset(0, -18),
                 ),
               ],
             ),
             child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(
+              padding: AppEdgeInsets.fromLTRB(
                 compact ? 16 : 20,
                 14,
                 compact ? 16 : 20,
@@ -2913,17 +2939,17 @@ class _GuideBookingDetailsSheetState extends State<_GuideBookingDetailsSheet> {
                     child: Container(
                       width: 52,
                       height: 5,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(999),
+                      decoration: AppBoxDecoration(
+                        color: AppPalette.white.withValues(alpha: 0.18),
+                        borderRadius: AppBorderRadius.circular(999),
                       ),
                     ),
                   ),
                   const SizedBox(height: 20),
                   Text(
                     l10n.guideDashboardBookingSheetTitle,
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
+                    style: AppTextStyle(
+                      color: AppPalette.textPrimary,
                       fontSize: compact ? 21 : 23,
                       fontWeight: FontWeight.w900,
                     ),
@@ -2933,8 +2959,8 @@ class _GuideBookingDetailsSheetState extends State<_GuideBookingDetailsSheet> {
                     primaryBooking.title.trim().isEmpty
                         ? l10n.myExcursionsUntitled
                         : primaryBooking.title.trim(),
-                    style: const TextStyle(
-                      color: Color(0xFFD3BFA9),
+                    style: const AppTextStyle(
+                      color: AppPalette.orangeLight01,
                       fontSize: 14,
                       height: 1.35,
                       fontWeight: FontWeight.w700,
@@ -3001,11 +3027,11 @@ class _GuideBookingGuestBreakdown extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      padding: const AppEdgeInsets.all(16),
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.05),
+        borderRadius: AppBorderRadius.circular(18),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
       ),
       child: Column(
         children: [
@@ -3019,8 +3045,8 @@ class _GuideBookingGuestBreakdown extends StatelessWidget {
             value: '$children',
           ),
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Divider(height: 1, color: Color(0x33FFFFFF)),
+            padding: AppEdgeInsets.symmetric(vertical: 12),
+            child: Divider(height: 1, color: AppPalette.neutralOverlayWash02),
           ),
           _GuideBookingBreakdownRow(
             label: l10n.guideDashboardTotalGuests,
@@ -3053,8 +3079,8 @@ class _GuideBookingAuthorsList extends StatelessWidget {
           children: [
             Text(
               l10n.guideDashboardBookingAuthorsTitle,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: const AppTextStyle(
+                color: AppPalette.textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.w900,
               ),
@@ -3097,12 +3123,12 @@ class _GuideBookingCancellationPanel extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFB49A).withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(18),
+      padding: const AppEdgeInsets.all(16),
+      decoration: AppBoxDecoration(
+        color: AppPalette.orangeLight39.withValues(alpha: 0.1),
+        borderRadius: AppBorderRadius.circular(18),
         border: Border.all(
-          color: const Color(0xFFFFB49A).withValues(alpha: 0.22),
+          color: AppPalette.orangeLight39.withValues(alpha: 0.22),
         ),
       ),
       child: Column(
@@ -3112,15 +3138,15 @@ class _GuideBookingCancellationPanel extends StatelessWidget {
             children: [
               const Icon(
                 Icons.event_busy_rounded,
-                color: Color(0xFFFFB49A),
+                color: AppPalette.orangeLight39,
                 size: 20,
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: const AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -3135,8 +3161,8 @@ class _GuideBookingCancellationPanel extends StatelessWidget {
                     booking.refundPercent,
                   )
                 : l10n.myExcursionsCancelledWithoutRefund,
-            style: const TextStyle(
-              color: Color(0xFFFFD0C1),
+            style: const AppTextStyle(
+              color: AppPalette.redLight07,
               fontWeight: FontWeight.w800,
               height: 1.3,
             ),
@@ -3145,8 +3171,8 @@ class _GuideBookingCancellationPanel extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               l10n.guideDashboardCancellationReason(reason),
-              style: const TextStyle(
-                color: Color(0xFFD3BFA9),
+              style: const AppTextStyle(
+                color: AppPalette.orangeLight01,
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 height: 1.35,
@@ -3217,7 +3243,7 @@ class _GuideCancelExcursionSheetState
       child: AnimatedPadding(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
-        padding: EdgeInsets.only(
+        padding: AppEdgeInsets.only(
           left: 12,
           right: 12,
           bottom: mediaQuery.viewInsets.bottom,
@@ -3228,26 +3254,31 @@ class _GuideCancelExcursionSheetState
             maxHeight: mediaQuery.size.height * 0.88,
           ),
           child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(28),
+            decoration: AppBoxDecoration(
+              borderRadius: const AppBorderRadius.vertical(
+                top: AppRadiusValue.circular(28),
               ),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              border: Border.all(
+                color: AppPalette.white.withValues(alpha: 0.08),
+              ),
               gradient: const LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0xF92A190D), Color(0xFA180E08)],
+                colors: [
+                  AppPalette.warmOverlaySurface20,
+                  AppPalette.warmOverlayInk16,
+                ],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.34),
+                  color: AppPalette.black.withValues(alpha: 0.34),
                   blurRadius: 36,
                   offset: const Offset(0, -18),
                 ),
               ],
             ),
             child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(
+              padding: AppEdgeInsets.fromLTRB(
                 compact ? 16 : 20,
                 14,
                 compact ? 16 : 20,
@@ -3261,17 +3292,17 @@ class _GuideCancelExcursionSheetState
                     child: Container(
                       width: 52,
                       height: 5,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(999),
+                      decoration: AppBoxDecoration(
+                        color: AppPalette.white.withValues(alpha: 0.18),
+                        borderRadius: AppBorderRadius.circular(999),
                       ),
                     ),
                   ),
                   const SizedBox(height: 20),
                   Text(
                     l10n.guideDashboardCancelTitle,
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
+                    style: AppTextStyle(
+                      color: AppPalette.textPrimary,
                       fontSize: compact ? 21 : 23,
                       fontWeight: FontWeight.w900,
                     ),
@@ -3279,8 +3310,8 @@ class _GuideCancelExcursionSheetState
                   const SizedBox(height: 10),
                   Text(
                     l10n.guideDashboardCancelDescription,
-                    style: const TextStyle(
-                      color: Color(0xFFD3BFA9),
+                    style: const AppTextStyle(
+                      color: AppPalette.orangeLight01,
                       fontSize: 14,
                       height: 1.42,
                       fontWeight: FontWeight.w600,
@@ -3289,18 +3320,18 @@ class _GuideCancelExcursionSheetState
                   const SizedBox(height: 16),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: AppColors.accent.withValues(alpha: 0.11),
-                      borderRadius: BorderRadius.circular(16),
+                    padding: const AppEdgeInsets.all(14),
+                    decoration: AppBoxDecoration(
+                      color: AppPalette.primary.withValues(alpha: 0.11),
+                      borderRadius: AppBorderRadius.circular(16),
                       border: Border.all(
-                        color: AppColors.accent.withValues(alpha: 0.22),
+                        color: AppPalette.primary.withValues(alpha: 0.22),
                       ),
                     ),
                     child: Text(
                       l10n.guideDashboardRefundAmount(refund),
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: const AppTextStyle(
+                        color: AppPalette.textPrimary,
                         fontSize: 15,
                         fontWeight: FontWeight.w900,
                       ),
@@ -3309,21 +3340,21 @@ class _GuideCancelExcursionSheetState
                   const SizedBox(height: 18),
                   Text(
                     l10n.guideDashboardCancelReasonLabel,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: const AppTextStyle(
+                      color: AppPalette.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: 10),
                   DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(18),
+                    decoration: AppBoxDecoration(
+                      color: AppPalette.white.withValues(alpha: 0.05),
+                      borderRadius: AppBorderRadius.circular(18),
                       border: Border.all(
                         color: _errorText == null
-                            ? Colors.white.withValues(alpha: 0.08)
-                            : const Color(0x88FF8A65),
+                            ? AppPalette.white.withValues(alpha: 0.08)
+                            : AppPalette.redOverlaySoft02,
                       ),
                     ),
                     child: TextField(
@@ -3333,25 +3364,25 @@ class _GuideCancelExcursionSheetState
                       minLines: 3,
                       maxLength: 160,
                       textCapitalization: TextCapitalization.sentences,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: const AppTextStyle(
+                        color: AppPalette.textPrimary,
                         fontSize: 14,
                         height: 1.4,
                       ),
-                      decoration: InputDecoration(
+                      decoration: AppInputDecoration(
                         hintText: l10n.guideDashboardCancelReasonPlaceholder,
-                        hintStyle: TextStyle(
-                          color: const Color(
-                            0xFFD3BFA9,
-                          ).withValues(alpha: 0.72),
+                        hintStyle: AppTextStyle(
+                          color: AppPalette.orangeLight01.withValues(
+                            alpha: 0.72,
+                          ),
                           fontSize: 14,
                         ),
                         border: InputBorder.none,
-                        counterStyle: const TextStyle(
-                          color: Color(0xFFD3BFA9),
+                        counterStyle: const AppTextStyle(
+                          color: AppPalette.orangeLight01,
                           fontSize: 12,
                         ),
-                        contentPadding: const EdgeInsets.fromLTRB(
+                        contentPadding: const AppEdgeInsets.fromLTRB(
                           14,
                           12,
                           14,
@@ -3371,8 +3402,8 @@ class _GuideCancelExcursionSheetState
                     const SizedBox(height: 8),
                     Text(
                       _errorText!,
-                      style: const TextStyle(
-                        color: Color(0xFFFF8A65),
+                      style: const AppTextStyle(
+                        color: AppPalette.redSoft11,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                       ),
@@ -3385,9 +3416,9 @@ class _GuideCancelExcursionSheetState
                       final keep = OutlinedButton(
                         onPressed: () => Navigator.of(context).pop(),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.textPrimary,
+                          foregroundColor: AppPalette.textPrimary,
                           side: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.12),
+                            color: AppPalette.white.withValues(alpha: 0.12),
                           ),
                           minimumSize: const Size(0, 50),
                         ),
@@ -3398,8 +3429,8 @@ class _GuideCancelExcursionSheetState
                         icon: const Icon(Icons.event_busy_rounded),
                         label: Text(l10n.guideDashboardCancelConfirm),
                         style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.accent,
-                          foregroundColor: Colors.white,
+                          backgroundColor: AppPalette.primary,
+                          foregroundColor: AppPalette.white,
                           minimumSize: const Size(0, 50),
                         ),
                       );
@@ -3449,21 +3480,21 @@ class _GuideBookingAuthorRow extends StatelessWidget {
         : nickname.trim().characters.first.toUpperCase();
 
     return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+      padding: const AppEdgeInsets.all(12),
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.04),
+        borderRadius: AppBorderRadius.circular(16),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.07)),
       ),
       child: Row(
         children: [
           CircleAvatar(
             radius: 21,
-            backgroundColor: AppColors.accent.withValues(alpha: 0.16),
+            backgroundColor: AppPalette.primary.withValues(alpha: 0.16),
             child: Text(
               initial,
-              style: const TextStyle(
-                color: AppColors.accent,
+              style: const AppTextStyle(
+                color: AppPalette.primary,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -3477,8 +3508,8 @@ class _GuideBookingAuthorRow extends StatelessWidget {
                   nickname,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: const AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w900,
                   ),
@@ -3516,8 +3547,8 @@ class _GuideBookingAuthorGuestsText extends StatelessWidget {
       ),
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
-      style: const TextStyle(
-        color: Color(0xFFD3BFA9),
+      style: const AppTextStyle(
+        color: AppPalette.orangeLight01,
         fontSize: 12,
         height: 1.25,
         fontWeight: FontWeight.w700,
@@ -3540,8 +3571,8 @@ class _GuideBookingAttendanceStatusPill extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final checkedIn = booking.isCheckedIn;
     final statusColor = checkedIn
-        ? const Color(0xFF77D88B)
-        : const Color(0xFFFFD6A3);
+        ? AppPalette.greenSoft02
+        : AppPalette.orangeLight46;
     final statusLabel = checkedIn
         ? l10n.guideDashboardAttendanceCheckedIn
         : l10n.guideDashboardAttendanceWaiting;
@@ -3553,13 +3584,13 @@ class _GuideBookingAttendanceStatusPill extends StatelessWidget {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 178),
       child: DecoratedBox(
-        decoration: BoxDecoration(
+        decoration: AppBoxDecoration(
           color: statusColor.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: AppBorderRadius.circular(999),
           border: Border.all(color: statusColor.withValues(alpha: 0.28)),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+          padding: const AppEdgeInsets.symmetric(horizontal: 9, vertical: 7),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -3574,7 +3605,7 @@ class _GuideBookingAttendanceStatusPill extends StatelessWidget {
                   timeLabel == null ? statusLabel : '$statusLabel · $timeLabel',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: AppTextStyle(
                     color: statusColor,
                     fontSize: 11,
                     fontWeight: FontWeight.w900,
@@ -3598,20 +3629,20 @@ class _GuideBookingInfoPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(999),
+      padding: const AppEdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.06),
+        borderRadius: AppBorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: AppColors.accent, size: 16),
+          Icon(icon, color: AppPalette.primary, size: 16),
           const SizedBox(width: 6),
           Text(
             label,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
+            style: const AppTextStyle(
+              color: AppPalette.textPrimary,
               fontSize: 12,
               fontWeight: FontWeight.w800,
             ),
@@ -3640,10 +3671,10 @@ class _GuideBookingBreakdownRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: TextStyle(
+            style: AppTextStyle(
               color: emphasized
-                  ? AppColors.textPrimary
-                  : const Color(0xFFD3BFA9),
+                  ? AppPalette.textPrimary
+                  : AppPalette.orangeLight01,
               fontSize: emphasized ? 15 : 14,
               fontWeight: emphasized ? FontWeight.w900 : FontWeight.w700,
             ),
@@ -3651,8 +3682,8 @@ class _GuideBookingBreakdownRow extends StatelessWidget {
         ),
         Text(
           value,
-          style: TextStyle(
-            color: AppColors.textPrimary,
+          style: AppTextStyle(
+            color: AppPalette.textPrimary,
             fontSize: emphasized ? 18 : 15,
             fontWeight: FontWeight.w900,
           ),
@@ -3713,25 +3744,25 @@ class _GuideJourneyCard extends StatelessWidget {
       label: semanticLabel,
       onTap: onTap,
       child: Material(
-        color: Colors.transparent,
+        color: AppPalette.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: AppBorderRadius.circular(22),
           child: Ink(
-            decoration: BoxDecoration(
+            decoration: AppBoxDecoration(
               color: muted
-                  ? const Color(0xFF2A1D13).withValues(alpha: 0.72)
-                  : const Color(0xFF2A1D13),
-              borderRadius: BorderRadius.circular(22),
+                  ? AppPalette.warmSurface17.withValues(alpha: 0.72)
+                  : AppPalette.warmSurface17,
+              borderRadius: AppBorderRadius.circular(22),
               border: Border.all(
                 color: muted
-                    ? Colors.white.withValues(alpha: 0.10)
-                    : Colors.white.withValues(alpha: 0.05),
+                    ? AppPalette.white.withValues(alpha: 0.10)
+                    : AppPalette.white.withValues(alpha: 0.05),
                 style: muted ? BorderStyle.solid : BorderStyle.solid,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.14),
+                  color: AppPalette.black.withValues(alpha: 0.14),
                   blurRadius: 22,
                   offset: const Offset(0, 14),
                 ),
@@ -3741,8 +3772,8 @@ class _GuideJourneyCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(22),
+                  borderRadius: const AppBorderRadius.vertical(
+                    top: AppRadiusValue.circular(22),
                   ),
                   child: AspectRatio(
                     aspectRatio: 2.04,
@@ -3768,7 +3799,7 @@ class _GuideJourneyCard extends StatelessWidget {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(22, 22, 22, 20),
+                  padding: const AppEdgeInsets.fromLTRB(22, 22, 22, 20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -3776,8 +3807,8 @@ class _GuideJourneyCard extends StatelessWidget {
                         title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
+                        style: const AppTextStyle(
+                          color: AppPalette.textPrimary,
                           fontSize: 23,
                           height: 1.08,
                           fontWeight: FontWeight.w900,
@@ -3789,8 +3820,8 @@ class _GuideJourneyCard extends StatelessWidget {
                           subtitle.trim(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFFD3BFA9),
+                          style: const AppTextStyle(
+                            color: AppPalette.orangeLight01,
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
                           ),
@@ -3824,18 +3855,20 @@ class _GuideJourneyCard extends StatelessWidget {
                               ? FilledButton(
                                   onPressed: onTap,
                                   style: FilledButton.styleFrom(
-                                    backgroundColor: AppColors.accent,
-                                    foregroundColor: Colors.white,
+                                    backgroundColor: AppPalette.primary,
+                                    foregroundColor: AppPalette.white,
                                     minimumSize: const Size(0, 48),
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(999),
+                                      borderRadius: AppBorderRadius.circular(
+                                        999,
+                                      ),
                                     ),
                                   ),
                                   child: Text(
                                     primary.toUpperCase(),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
+                                    style: const AppTextStyle(
                                       fontWeight: FontWeight.w900,
                                       letterSpacing: 1.1,
                                     ),
@@ -3849,22 +3882,22 @@ class _GuideJourneyCard extends StatelessWidget {
                           final secondaryButton = OutlinedButton(
                             onPressed: onSecondaryActionTap,
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFFFFD6A3),
+                              foregroundColor: AppPalette.orangeLight46,
                               side: BorderSide(
-                                color: const Color(
-                                  0xFFFFD6A3,
-                                ).withValues(alpha: 0.38),
+                                color: AppPalette.orangeLight46.withValues(
+                                  alpha: 0.38,
+                                ),
                               ),
                               minimumSize: const Size(0, 48),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(999),
+                                borderRadius: AppBorderRadius.circular(999),
                               ),
                             ),
                             child: Text(
                               secondary.toUpperCase(),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: const AppTextStyle(
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 1.1,
                               ),
@@ -3875,22 +3908,22 @@ class _GuideJourneyCard extends StatelessWidget {
                             onPressed: onDestructiveActionTap,
                             icon: const Icon(Icons.delete_outline_rounded),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFFFFB4AB),
+                              foregroundColor: AppPalette.redLight04,
                               side: BorderSide(
-                                color: const Color(
-                                  0xFFFFB4AB,
-                                ).withValues(alpha: 0.46),
+                                color: AppPalette.redLight04.withValues(
+                                  alpha: 0.46,
+                                ),
                               ),
                               minimumSize: const Size(0, 48),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(999),
+                                borderRadius: AppBorderRadius.circular(999),
                               ),
                             ),
                             label: Text(
                               destructive.toUpperCase(),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: const AppTextStyle(
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 1.1,
                               ),
@@ -3978,16 +4011,16 @@ class _GuideStatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFF160D07).withValues(alpha: 0.88),
-        borderRadius: BorderRadius.circular(999),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmInk22.withValues(alpha: 0.88),
+        borderRadius: AppBorderRadius.circular(999),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const AppEdgeInsets.symmetric(horizontal: 14, vertical: 8),
         child: Text(
           label.toUpperCase(),
-          style: TextStyle(
-            color: muted ? const Color(0xFFD3BFA9) : AppColors.accent,
+          style: AppTextStyle(
+            color: muted ? AppPalette.orangeLight01 : AppPalette.primary,
             fontSize: 11,
             fontWeight: FontWeight.w900,
             letterSpacing: 1.2,
@@ -4009,12 +4042,12 @@ class _GuideMetaChip extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: const Color(0xFFD3BFA9), size: 16),
+        Icon(icon, color: AppPalette.orangeLight01, size: 16),
         const SizedBox(width: 5),
         Text(
           label,
-          style: const TextStyle(
-            color: Color(0xFFD3BFA9),
+          style: const AppTextStyle(
+            color: AppPalette.orangeLight01,
             fontSize: 13,
             fontWeight: FontWeight.w800,
           ),
@@ -4063,19 +4096,19 @@ class _GuideCoverArt extends StatelessWidget {
           _GeneratedGuideCover(palette: palette, seed: seed),
         if (muted)
           DecoratedBox(
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.34),
+            decoration: AppBoxDecoration(
+              color: AppPalette.black.withValues(alpha: 0.34),
               backgroundBlendMode: BlendMode.saturation,
             ),
           ),
         DecoratedBox(
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                Colors.transparent,
-                const Color(0xFF2A1D13).withValues(alpha: 0.76),
+                AppPalette.transparent,
+                AppPalette.warmSurface17.withValues(alpha: 0.76),
               ],
             ),
           ),
@@ -4097,7 +4130,7 @@ class _GeneratedGuideCover extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         DecoratedBox(
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
@@ -4121,7 +4154,7 @@ class _GuideCoverPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final ridge = Paint()..color = palette.ridge;
     final ridgeDark = Paint()..color = palette.ridgeDark;
-    final highlight = Paint()..color = Colors.white.withValues(alpha: 0.32);
+    final highlight = Paint()..color = AppPalette.white.withValues(alpha: 0.32);
     final offset = (seed.abs() % 5) * size.width * 0.04;
 
     final back = Path()
@@ -4171,35 +4204,35 @@ class _GuideCoverPalette {
     switch (categorySlug?.toLowerCase()) {
       case 'culinary':
         return const _GuideCoverPalette(
-          sky: Color(0xFFFFB13B),
-          haze: Color(0xFF8C4022),
-          ground: Color(0xFF30160C),
-          ridge: Color(0xFFE07A22),
-          ridgeDark: Color(0xFF6D2812),
+          sky: AppPalette.amberSoft13,
+          haze: AppPalette.warmSurfaceHigh31,
+          ground: AppPalette.warmSurface39,
+          ridge: AppPalette.warmMuted28,
+          ridgeDark: AppPalette.redSurfaceHigh03,
         );
       case 'wellness':
         return const _GuideCoverPalette(
-          sky: Color(0xFF7DD2C7),
-          haze: Color(0xFF4F8E65),
-          ground: Color(0xFF143B29),
-          ridge: Color(0xFF2E7D4C),
-          ridgeDark: Color(0xFF10291E),
+          sky: AppPalette.tealSoft06,
+          haze: AppPalette.greenMuted08,
+          ground: AppPalette.greenSurface05,
+          ridge: AppPalette.greenSurfaceHigh17,
+          ridgeDark: AppPalette.greenSurface03,
         );
       default:
         final variants = [
           const _GuideCoverPalette(
-            sky: Color(0xFFE7C38A),
-            haze: Color(0xFFB76821),
-            ground: Color(0xFF442512),
-            ridge: Color(0xFFD56D11),
-            ridgeDark: Color(0xFF74411A),
+            sky: AppPalette.amberSoft07,
+            haze: AppPalette.warmMuted22,
+            ground: AppPalette.warmSurface77,
+            ridge: AppPalette.warmMuted27,
+            ridgeDark: AppPalette.warmSurfaceHigh22,
           ),
           const _GuideCoverPalette(
-            sky: Color(0xFF8BD1E3),
-            haze: Color(0xFF346B73),
-            ground: Color(0xFF0F2B2B),
-            ridge: Color(0xFF1F6B5B),
-            ridgeDark: Color(0xFF12352F),
+            sky: AppPalette.tealSoft08,
+            haze: AppPalette.tealSurfaceHigh10,
+            ground: AppPalette.tealSurface04,
+            ridge: AppPalette.tealSurfaceHigh05,
+            ridgeDark: AppPalette.tealSurface05,
           ),
         ];
         return variants[seed.abs() % variants.length];
@@ -4226,21 +4259,21 @@ class _GuideDashboardInfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2A1D13),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      padding: const AppEdgeInsets.all(22),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmSurface17,
+        borderRadius: AppBorderRadius.circular(20),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
       ),
       child: Column(
         children: [
-          Icon(icon, color: AppColors.accent, size: 34),
+          Icon(icon, color: AppPalette.primary, size: 34),
           const SizedBox(height: 12),
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
+            style: const AppTextStyle(
+              color: AppPalette.textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.w900,
             ),
@@ -4249,15 +4282,18 @@ class _GuideDashboardInfoCard extends StatelessWidget {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xFFD3BFA9), height: 1.4),
+            style: const AppTextStyle(
+              color: AppPalette.orangeLight01,
+              height: 1.4,
+            ),
           ),
           if (actionLabel != null && onActionTap != null) ...[
             const SizedBox(height: 14),
             FilledButton(
               onPressed: onActionTap,
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.accent,
-                foregroundColor: Colors.white,
+                backgroundColor: AppPalette.primary,
+                foregroundColor: AppPalette.white,
               ),
               child: Text(actionLabel!),
             ),
@@ -4277,9 +4313,9 @@ class _GuideDashboardSkeletonCard extends StatelessWidget {
       constraints: BoxConstraints(
         minHeight: _guideDashboardSkeletonMinHeight(context),
       ),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2A1D13),
-        borderRadius: BorderRadius.circular(22),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmSurface17,
+        borderRadius: AppBorderRadius.circular(22),
       ),
     );
   }

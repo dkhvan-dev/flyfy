@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
-import '../../core/ui/app_colors.dart';
 import '../../features/chat/utils/chat_presence_status.dart';
 import '../../features/profile/data/profile_api.dart';
 import '../../features/profile/models/profile_follower_vm.dart';
@@ -174,7 +174,7 @@ class _ProfileFollowersScreenState extends State<ProfileFollowersScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       body: ProfileResponsiveScope(
         child: ProfileGlassBackground(
           child: SafeArea(
@@ -192,7 +192,7 @@ class _ProfileFollowersScreenState extends State<ProfileFollowersScreen> {
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 460),
                     child: RefreshIndicator(
-                      color: AppColors.accent,
+                      color: AppPalette.primary,
                       backgroundColor: profileSurface,
                       onRefresh: _reloadFollowers,
                       child: CustomScrollView(
@@ -203,7 +203,7 @@ class _ProfileFollowersScreenState extends State<ProfileFollowersScreen> {
                         slivers: [
                           SliverToBoxAdapter(
                             child: Padding(
-                              padding: EdgeInsets.fromLTRB(
+                              padding: AppEdgeInsets.fromLTRB(
                                 horizontalPadding,
                                 profileScaled(context, 10, min: 8, max: 14),
                                 horizontalPadding,
@@ -216,7 +216,7 @@ class _ProfileFollowersScreenState extends State<ProfileFollowersScreen> {
                           ),
                           SliverToBoxAdapter(
                             child: Padding(
-                              padding: EdgeInsets.fromLTRB(
+                              padding: AppEdgeInsets.fromLTRB(
                                 horizontalPadding,
                                 profileScaled(context, 20, min: 16, max: 24),
                                 horizontalPadding,
@@ -257,7 +257,7 @@ class _ProfileFollowersScreenState extends State<ProfileFollowersScreen> {
                             )
                           else
                             SliverPadding(
-                              padding: EdgeInsets.fromLTRB(
+                              padding: AppEdgeInsets.fromLTRB(
                                 horizontalPadding,
                                 0,
                                 horizontalPadding,
@@ -269,7 +269,7 @@ class _ProfileFollowersScreenState extends State<ProfileFollowersScreen> {
                                 itemBuilder: (context, index) {
                                   if (index >= _followers.length) {
                                     return const Padding(
-                                      padding: EdgeInsets.only(
+                                      padding: AppEdgeInsets.only(
                                         top: 8,
                                         bottom: 12,
                                       ),
@@ -279,7 +279,7 @@ class _ProfileFollowersScreenState extends State<ProfileFollowersScreen> {
                                           height: 24,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2.4,
-                                            color: AppColors.accent,
+                                            color: AppPalette.primary,
                                           ),
                                         ),
                                       ),
@@ -335,8 +335,8 @@ class _FollowersHeader extends StatelessWidget {
             title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: AppColors.textPrimary,
+            style: AppTextStyle(
+              color: AppPalette.textPrimary,
               fontSize: profileScaled(context, 24, min: 20, max: 28),
               fontWeight: FontWeight.w900,
               letterSpacing: -0.8,
@@ -369,12 +369,12 @@ class _FollowersSearchField extends StatelessWidget {
         child: TextField(
           controller: controller,
           textInputAction: TextInputAction.search,
-          style: TextStyle(
-            color: AppColors.textPrimary,
+          style: AppTextStyle(
+            color: AppPalette.textPrimary,
             fontSize: profileScaled(context, 15, min: 14, max: 16),
             fontWeight: FontWeight.w600,
           ),
-          decoration: InputDecoration(
+          decoration: AppInputDecoration(
             border: InputBorder.none,
             prefixIcon: Icon(
               Icons.search_rounded,
@@ -392,12 +392,12 @@ class _FollowersSearchField extends StatelessWidget {
                     ),
                   ),
             hintText: hintText,
-            hintStyle: TextStyle(
+            hintStyle: AppTextStyle(
               color: profileTextMuted,
               fontSize: profileScaled(context, 15, min: 14, max: 16),
               fontWeight: FontWeight.w500,
             ),
-            contentPadding: EdgeInsets.symmetric(
+            contentPadding: AppEdgeInsets.symmetric(
               horizontal: profileScaled(context, 18, min: 16, max: 20),
               vertical: profileScaled(context, 16, min: 14, max: 18),
             ),
@@ -425,14 +425,16 @@ class _FollowerRow extends StatelessWidget {
     final nickname = follower.nicknameOrFallback(l10n.chatUserFallbackName);
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(
+        borderRadius: AppBorderRadius.circular(
           profileScaled(context, 22, min: 18, max: 24),
         ),
         child: Ink(
-          padding: EdgeInsets.all(profileScaled(context, 14, min: 12, max: 16)),
+          padding: AppEdgeInsets.all(
+            profileScaled(context, 14, min: 12, max: 16),
+          ),
           decoration: profileCardDecoration(
             context,
             radius: profileScaled(context, 22, min: 18, max: 24),
@@ -449,8 +451,8 @@ class _FollowerRow extends StatelessWidget {
                       nickname,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
+                      style: AppTextStyle(
+                        color: AppPalette.textPrimary,
                         fontSize: profileScaled(context, 18, min: 16, max: 20),
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.4,
@@ -463,9 +465,9 @@ class _FollowerRow extends StatelessWidget {
                           Container(
                             width: 8,
                             height: 8,
-                            decoration: const BoxDecoration(
+                            decoration: const AppBoxDecoration(
                               shape: BoxShape.circle,
-                              color: AppColors.accent,
+                              color: AppPalette.primary,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -475,9 +477,9 @@ class _FollowerRow extends StatelessWidget {
                             status,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
+                            style: AppTextStyle(
                               color: follower.isOnline
-                                  ? AppColors.accent
+                                  ? AppPalette.primary
                                   : profileTextMuted,
                               fontSize: profileScaled(
                                 context,
@@ -521,13 +523,13 @@ class _FollowerAvatar extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(color: profileBorder),
       ),
       child: ClipOval(
         child: Container(
-          color: const Color(0xFF101010),
+          color: AppPalette.neutralInk01,
           child: imageUrl == null
               ? _FollowerAvatarFallback(initials: follower.initials)
               : Image.network(
@@ -550,20 +552,23 @@ class _FollowerAvatarFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: const AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF444444), Color(0xFF1c1c1c)],
+          colors: [
+            AppPalette.neutralSurfaceHigh01,
+            AppPalette.neutralSurface01,
+          ],
         ),
       ),
       child: Center(
         child: Text(
           initials,
-          style: TextStyle(
+          style: AppTextStyle(
             fontSize: profileScaled(context, 20, min: 18, max: 22),
             fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary,
+            color: AppPalette.textPrimary,
           ),
         ),
       ),
@@ -582,7 +587,7 @@ class _FollowersLoadingState extends StatelessWidget {
         height: 28,
         child: CircularProgressIndicator(
           strokeWidth: 2.6,
-          color: AppColors.accent,
+          color: AppPalette.primary,
         ),
       ),
     );
@@ -598,7 +603,7 @@ class _FollowersEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(
+      padding: AppEdgeInsets.symmetric(
         horizontal: profileScaled(context, 24, min: 20, max: 28),
       ),
       child: Center(
@@ -614,8 +619,8 @@ class _FollowersEmptyState extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.textPrimary,
+              style: AppTextStyle(
+                color: AppPalette.textPrimary,
                 fontSize: profileScaled(context, 20, min: 18, max: 22),
                 fontWeight: FontWeight.w800,
               ),
@@ -624,7 +629,7 @@ class _FollowersEmptyState extends StatelessWidget {
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: AppTextStyle(
                 color: profileTextMuted,
                 fontSize: profileScaled(context, 14, min: 13, max: 15),
                 height: 1.45,
@@ -653,7 +658,7 @@ class _FollowersErrorState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(
+      padding: AppEdgeInsets.symmetric(
         horizontal: profileScaled(context, 24, min: 20, max: 28),
       ),
       child: Center(
@@ -669,8 +674,8 @@ class _FollowersErrorState extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.textPrimary,
+              style: AppTextStyle(
+                color: AppPalette.textPrimary,
                 fontSize: profileScaled(context, 20, min: 18, max: 22),
                 fontWeight: FontWeight.w800,
               ),
@@ -679,7 +684,7 @@ class _FollowersErrorState extends StatelessWidget {
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: AppTextStyle(
                 color: profileTextMuted,
                 fontSize: profileScaled(context, 14, min: 13, max: 15),
                 height: 1.45,
@@ -689,8 +694,8 @@ class _FollowersErrorState extends StatelessWidget {
             FilledButton(
               onPressed: onRetry,
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.accent,
-                foregroundColor: Colors.white,
+                backgroundColor: AppPalette.primary,
+                foregroundColor: AppPalette.white,
               ),
               child: Text(retryLabel),
             ),

@@ -2,13 +2,13 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/network/chat_api.dart';
 import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
-import '../../core/ui/app_colors.dart';
 import '../../core/ui/app_inline_sort_row.dart';
 import '../../core/ui/app_list_search_field.dart';
 import '../../core/ui/error_dialog.dart';
@@ -274,7 +274,7 @@ class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (context) => _ConnectionFiltersSheet(initialFilters: _filters),
     );
 
@@ -313,9 +313,9 @@ class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
     final action = await showMenu<_ConnectionAction>(
       context: context,
       position: position,
-      color: const Color(0xFF2B1F14),
+      color: AppPalette.surfaceRaised,
       elevation: 18,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      shape: RoundedRectangleBorder(borderRadius: AppBorderRadius.circular(18)),
       items: [
         PopupMenuItem(
           value: tab == _ConnectionTab.friends
@@ -368,9 +368,9 @@ class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
     final action = await showMenu<_ConnectionAction>(
       context: context,
       position: position,
-      color: const Color(0xFF2B1F14),
+      color: AppPalette.surfaceRaised,
       elevation: 18,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      shape: RoundedRectangleBorder(borderRadius: AppBorderRadius.circular(18)),
       items: [
         PopupMenuItem(
           value: _ConnectionAction.acceptFriendRequest,
@@ -446,7 +446,7 @@ class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (context) => _FriendRequestsSheet(
         profileApi: _profileApi,
         onOpenProfile: _openProfile,
@@ -519,7 +519,7 @@ class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppPalette.backgroundWarm,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
@@ -528,11 +528,11 @@ class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
+                  padding: const AppEdgeInsets.fromLTRB(18, 10, 18, 0),
                   child: _ConnectionHeader(title: l10n.profileConnectionsTitle),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 20, 18, 0),
+                  padding: const AppEdgeInsets.fromLTRB(18, 20, 18, 0),
                   child: AppListSearchField(
                     controller: _searchController,
                     hintText: l10n.profileConnectionsSearchHint,
@@ -543,7 +543,7 @@ class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 12, 0, 0),
+                  padding: const AppEdgeInsets.fromLTRB(18, 12, 0, 0),
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: AppInlineSortRow<_ConnectionSortMode>(
@@ -570,7 +570,7 @@ class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
                   onActionsTap: _showFriendRequestActions,
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+                  padding: const AppEdgeInsets.fromLTRB(18, 12, 18, 0),
                   child: _ConnectionTabBar(
                     controller: _tabController,
                     friendsLabel: l10n.profileConnectionsFriendsTab,
@@ -691,8 +691,8 @@ class _ConnectionHeader extends StatelessWidget {
         IconButton(
           onPressed: () => context.pop(),
           style: IconButton.styleFrom(
-            backgroundColor: const Color(0xFF2B1F14),
-            foregroundColor: AppColors.textPrimary,
+            backgroundColor: AppPalette.surfaceRaised,
+            foregroundColor: AppPalette.textPrimary,
             minimumSize: const Size(44, 44),
           ),
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 19),
@@ -703,8 +703,8 @@ class _ConnectionHeader extends StatelessWidget {
             title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
+            style: const AppTextStyle(
+              color: AppPalette.textPrimary,
               fontSize: 25,
               fontWeight: FontWeight.w900,
             ),
@@ -729,26 +729,29 @@ class _ConnectionTabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFF2B1F14),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.surfaceRaised,
+        borderRadius: AppBorderRadius.circular(18),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
       ),
       child: TabBar(
         controller: controller,
         indicatorSize: TabBarIndicatorSize.tab,
-        dividerColor: Colors.transparent,
-        labelColor: AppColors.textPrimary,
-        unselectedLabelColor: const Color(0xFFA98D74),
-        labelStyle: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
-        unselectedLabelStyle: const TextStyle(
+        dividerColor: AppPalette.transparent,
+        labelColor: AppPalette.textPrimary,
+        unselectedLabelColor: AppPalette.orangeMuted04,
+        labelStyle: const AppTextStyle(
+          fontWeight: FontWeight.w900,
+          fontSize: 14,
+        ),
+        unselectedLabelStyle: const AppTextStyle(
           fontWeight: FontWeight.w800,
           fontSize: 14,
         ),
-        indicator: BoxDecoration(
-          color: AppColors.accent,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.accent),
+        indicator: AppBoxDecoration(
+          color: AppPalette.primary,
+          borderRadius: AppBorderRadius.circular(16),
+          border: Border.all(color: AppPalette.primary),
         ),
         tabs: [
           Tab(text: friendsLabel),
@@ -785,8 +788,8 @@ class _ConnectionListView extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return RefreshIndicator(
-      color: AppColors.accent,
-      backgroundColor: const Color(0xFF2B1F14),
+      color: AppPalette.primary,
+      backgroundColor: AppPalette.surfaceRaised,
       onRefresh: onRefresh,
       child: Builder(
         builder: (context) {
@@ -804,7 +807,7 @@ class _ConnectionListView extends StatelessWidget {
                     height: 28,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.6,
-                      color: AppColors.accent,
+                      color: AppPalette.primary,
                     ),
                   ),
                 ),
@@ -818,7 +821,7 @@ class _ConnectionListView extends StatelessWidget {
               physics: const AlwaysScrollableScrollPhysics(
                 parent: BouncingScrollPhysics(),
               ),
-              padding: const EdgeInsets.fromLTRB(24, 110, 24, 24),
+              padding: const AppEdgeInsets.fromLTRB(24, 110, 24, 24),
               children: [
                 _ConnectionStateMessage(
                   icon: Icons.wifi_off_rounded,
@@ -835,7 +838,7 @@ class _ConnectionListView extends StatelessWidget {
               physics: const AlwaysScrollableScrollPhysics(
                 parent: BouncingScrollPhysics(),
               ),
-              padding: const EdgeInsets.fromLTRB(24, 110, 24, 24),
+              padding: const AppEdgeInsets.fromLTRB(24, 110, 24, 24),
               children: [
                 _ConnectionStateMessage(
                   icon: Icons.people_outline_rounded,
@@ -855,20 +858,20 @@ class _ConnectionListView extends StatelessWidget {
             physics: const AlwaysScrollableScrollPhysics(
               parent: BouncingScrollPhysics(),
             ),
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
+            padding: const AppEdgeInsets.fromLTRB(18, 18, 18, 28),
             itemCount: data.items.length + (data.loadingMore ? 1 : 0),
             separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               if (index >= data.items.length) {
                 return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
+                  padding: AppEdgeInsets.symmetric(vertical: 12),
                   child: Center(
                     child: SizedBox(
                       width: 24,
                       height: 24,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.4,
-                        color: AppColors.accent,
+                        color: AppPalette.primary,
                       ),
                     ),
                   ),
@@ -922,7 +925,7 @@ class _FriendRequestsPreviewSection extends StatelessWidget {
     final user = data.items.first;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+      padding: const AppEdgeInsets.fromLTRB(18, 14, 18, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -933,8 +936,8 @@ class _FriendRequestsPreviewSection extends StatelessWidget {
                   l10n.profileConnectionsFriendRequestsTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: const AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: 17,
                     fontWeight: FontWeight.w900,
                   ),
@@ -944,8 +947,8 @@ class _FriendRequestsPreviewSection extends StatelessWidget {
                 TextButton(
                   onPressed: onViewAll,
                   style: TextButton.styleFrom(
-                    foregroundColor: AppColors.accent,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    foregroundColor: AppPalette.primary,
+                    padding: const AppEdgeInsets.symmetric(horizontal: 8),
                     minimumSize: const Size(0, 34),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
@@ -953,7 +956,7 @@ class _FriendRequestsPreviewSection extends StatelessWidget {
                     l10n.profileConnectionsFriendRequestsViewAll,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: const AppTextStyle(
                       fontWeight: FontWeight.w900,
                       letterSpacing: 0,
                     ),
@@ -1103,9 +1106,9 @@ class _FriendRequestsSheetState extends State<_FriendRequestsSheet> {
     final action = await showMenu<_ConnectionAction>(
       context: context,
       position: position,
-      color: const Color(0xFF2B1F14),
+      color: AppPalette.surfaceRaised,
       elevation: 18,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      shape: RoundedRectangleBorder(borderRadius: AppBorderRadius.circular(18)),
       items: [
         PopupMenuItem(
           value: _ConnectionAction.acceptFriendRequest,
@@ -1177,10 +1180,12 @@ class _FriendRequestsSheetState extends State<_FriendRequestsSheet> {
           maxWidth: 520,
         ),
         child: DecoratedBox(
-          decoration: const BoxDecoration(
-            color: Color(0xFF21170D),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border(top: BorderSide(color: Color(0x293A270F))),
+          decoration: const AppBoxDecoration(
+            color: AppPalette.surface,
+            borderRadius: AppBorderRadius.vertical(
+              top: AppRadiusValue.circular(24),
+            ),
+            border: Border(top: BorderSide(color: AppPalette.border)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1216,7 +1221,7 @@ class _FriendRequestsSheetState extends State<_FriendRequestsSheet> {
               height: 28,
               child: CircularProgressIndicator(
                 strokeWidth: 2.6,
-                color: AppColors.accent,
+                color: AppPalette.primary,
               ),
             ),
           ),
@@ -1231,7 +1236,7 @@ class _FriendRequestsSheetState extends State<_FriendRequestsSheet> {
         physics: const AlwaysScrollableScrollPhysics(
           parent: BouncingScrollPhysics(),
         ),
-        padding: const EdgeInsets.fromLTRB(24, 84, 24, 24),
+        padding: const AppEdgeInsets.fromLTRB(24, 84, 24, 24),
         children: [
           _ConnectionStateMessage(
             icon: Icons.wifi_off_rounded,
@@ -1248,7 +1253,7 @@ class _FriendRequestsSheetState extends State<_FriendRequestsSheet> {
         physics: const AlwaysScrollableScrollPhysics(
           parent: BouncingScrollPhysics(),
         ),
-        padding: const EdgeInsets.fromLTRB(24, 84, 24, 24),
+        padding: const AppEdgeInsets.fromLTRB(24, 84, 24, 24),
         children: [
           _ConnectionStateMessage(
             icon: Icons.person_add_alt_1_rounded,
@@ -1264,7 +1269,7 @@ class _FriendRequestsSheetState extends State<_FriendRequestsSheet> {
       physics: const AlwaysScrollableScrollPhysics(
         parent: BouncingScrollPhysics(),
       ),
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
+      padding: const AppEdgeInsets.fromLTRB(18, 18, 18, 28),
       itemCount:
           _requestsSheetData.items.length +
           (_requestsSheetData.loadingMore ? 1 : 0),
@@ -1272,14 +1277,14 @@ class _FriendRequestsSheetState extends State<_FriendRequestsSheet> {
       itemBuilder: (context, index) {
         if (index >= _requestsSheetData.items.length) {
           return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
+            padding: AppEdgeInsets.symmetric(vertical: 12),
             child: Center(
               child: SizedBox(
                 width: 24,
                 height: 24,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.4,
-                  color: AppColors.accent,
+                  color: AppPalette.primary,
                 ),
               ),
             ),
@@ -1323,16 +1328,16 @@ class _ConnectionUserRow extends StatelessWidget {
     );
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppBorderRadius.circular(18),
         child: Ink(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: const Color(0xFF2B1F14),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+          padding: const AppEdgeInsets.all(14),
+          decoration: AppBoxDecoration(
+            color: AppPalette.surfaceRaised,
+            borderRadius: AppBorderRadius.circular(18),
+            border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
           ),
           child: Row(
             children: [
@@ -1346,8 +1351,8 @@ class _ConnectionUserRow extends StatelessWidget {
                       nickname,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: const AppTextStyle(
+                        color: AppPalette.textPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
                       ),
@@ -1359,9 +1364,9 @@ class _ConnectionUserRow extends StatelessWidget {
                           Container(
                             width: 8,
                             height: 8,
-                            decoration: const BoxDecoration(
+                            decoration: const AppBoxDecoration(
                               shape: BoxShape.circle,
-                              color: AppColors.accent,
+                              color: AppPalette.primary,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -1371,10 +1376,10 @@ class _ConnectionUserRow extends StatelessWidget {
                             presence,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
+                            style: AppTextStyle(
                               color: user.isOnline
-                                  ? AppColors.accent
-                                  : const Color(0xFFA98D74),
+                                  ? AppPalette.primary
+                                  : AppPalette.orangeMuted04,
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
                             ),
@@ -1392,7 +1397,7 @@ class _ConnectionUserRow extends StatelessWidget {
                   height: 22,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.2,
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                   ),
                 )
               else
@@ -1401,7 +1406,7 @@ class _ConnectionUserRow extends StatelessWidget {
                     tooltip: MaterialLocalizations.of(context).showMenuTooltip,
                     onPressed: () => unawaited(onActionsTap(buttonContext)),
                     style: IconButton.styleFrom(
-                      foregroundColor: AppColors.accent,
+                      foregroundColor: AppPalette.primary,
                       minimumSize: const Size(42, 42),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
@@ -1427,13 +1432,13 @@ class _ConnectionAvatar extends StatelessWidget {
     return Container(
       width: 54,
       height: 54,
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
       ),
       child: ClipOval(
         child: ColoredBox(
-          color: const Color(0xFF171009),
+          color: AppPalette.warmInk27,
           child: imageUrl == null
               ? _ConnectionAvatarFallback(initials: user.initials)
               : Image.network(
@@ -1456,18 +1461,18 @@ class _ConnectionAvatarFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(
+      decoration: const AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF44301F), Color(0xFF171009)],
+          colors: [AppPalette.warmSurface78, AppPalette.warmInk27],
         ),
       ),
       child: Center(
         child: Text(
           initials,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
+          style: const AppTextStyle(
+            color: AppPalette.textPrimary,
             fontSize: 18,
             fontWeight: FontWeight.w900,
           ),
@@ -1493,13 +1498,13 @@ class _ConnectionStateMessage extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: const Color(0xFFA98D74), size: 42),
+        Icon(icon, color: AppPalette.orangeMuted04, size: 42),
         const SizedBox(height: 16),
         Text(
           title,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
+          style: const AppTextStyle(
+            color: AppPalette.textPrimary,
             fontSize: 20,
             fontWeight: FontWeight.w900,
           ),
@@ -1508,8 +1513,8 @@ class _ConnectionStateMessage extends StatelessWidget {
         Text(
           subtitle,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Color(0xFFA98D74),
+          style: const AppTextStyle(
+            color: AppPalette.orangeMuted04,
             fontSize: 14,
             height: 1.42,
             fontWeight: FontWeight.w600,
@@ -1533,7 +1538,7 @@ class _ConnectionPopupActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = destructive ? AppColors.destruct : AppColors.textPrimary;
+    final color = destructive ? AppPalette.danger : AppPalette.textPrimary;
     return Row(
       children: [
         Icon(icon, color: color, size: 20),
@@ -1543,7 +1548,7 @@ class _ConnectionPopupActionRow extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
+            style: AppTextStyle(
               color: color,
               fontSize: 14,
               fontWeight: FontWeight.w800,
@@ -1590,10 +1595,12 @@ class _ConnectionFiltersSheetState extends State<_ConnectionFiltersSheet> {
           maxWidth: 520,
         ),
         child: DecoratedBox(
-          decoration: const BoxDecoration(
-            color: Color(0xFF21170D),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border(top: BorderSide(color: Color(0x293A270F))),
+          decoration: const AppBoxDecoration(
+            color: AppPalette.surface,
+            borderRadius: AppBorderRadius.vertical(
+              top: AppRadiusValue.circular(24),
+            ),
+            border: Border(top: BorderSide(color: AppPalette.border)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1609,7 +1616,7 @@ class _ConnectionFiltersSheetState extends State<_ConnectionFiltersSheet> {
               Flexible(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(22, 26, 22, 24),
+                  padding: const AppEdgeInsets.fromLTRB(22, 26, 22, 24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -1630,7 +1637,7 @@ class _ConnectionFiltersSheetState extends State<_ConnectionFiltersSheet> {
                 ),
               ),
               Padding(
-                padding: EdgeInsets.fromLTRB(22, 0, 22, bottomInset + 18),
+                padding: AppEdgeInsets.fromLTRB(22, 0, 22, bottomInset + 18),
                 child: AppFilterApplyButton(
                   label: l10n.profileConnectionsFiltersShowResults,
                   onTap: () => Navigator.of(context).pop(_filters),
@@ -1665,18 +1672,18 @@ class _ConnectionFilterToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () => onChanged(!value),
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: AppBorderRadius.circular(18),
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: const Color(0xFF2C2118),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        decoration: AppBoxDecoration(
+          color: AppPalette.warmSurface28,
+          borderRadius: AppBorderRadius.circular(18),
+          border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          padding: const AppEdgeInsets.symmetric(horizontal: 14, vertical: 13),
           child: Row(
             children: [
-              Icon(icon, color: AppColors.accent, size: 20),
+              Icon(icon, color: AppPalette.primary, size: 20),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -1686,8 +1693,8 @@ class _ConnectionFilterToggle extends StatelessWidget {
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: const AppTextStyle(
+                        color: AppPalette.textPrimary,
                         fontSize: 15,
                         fontWeight: FontWeight.w900,
                       ),
@@ -1697,8 +1704,8 @@ class _ConnectionFilterToggle extends StatelessWidget {
                       subtitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFFBDAA98),
+                      style: const AppTextStyle(
+                        color: AppPalette.orangeSoft17,
                         fontSize: 13,
                         height: 1.35,
                         fontWeight: FontWeight.w600,
@@ -1710,8 +1717,8 @@ class _ConnectionFilterToggle extends StatelessWidget {
               const SizedBox(width: 12),
               Switch.adaptive(
                 value: value,
-                activeThumbColor: AppColors.accent,
-                activeTrackColor: AppColors.accent.withValues(alpha: 0.32),
+                activeThumbColor: AppPalette.primary,
+                activeTrackColor: AppPalette.primary.withValues(alpha: 0.32),
                 onChanged: onChanged,
               ),
             ],

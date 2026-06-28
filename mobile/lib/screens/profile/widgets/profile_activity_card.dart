@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
 import '../../../core/time/app_time.dart';
-import '../../../core/ui/app_colors.dart';
 import '../../../features/activities/activity_category_art.dart';
 import '../../../features/activities/activity_cover_url.dart';
 import '../../../features/activities/activity_formatters.dart';
@@ -36,10 +36,10 @@ class ProfileActivityCard extends StatelessWidget {
         : item.formattedPriceLabel(localeName);
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(
+        borderRadius: AppBorderRadius.circular(
           profileScaled(context, 22, min: 18, max: 22),
         ),
         child: Ink(
@@ -48,8 +48,8 @@ class ProfileActivityCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(
+                borderRadius: AppBorderRadius.vertical(
+                  top: AppRadiusValue.circular(
                     profileScaled(context, 22, min: 18, max: 22),
                   ),
                 ),
@@ -59,7 +59,7 @@ class ProfileActivityCard extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: EdgeInsets.all(
+                padding: AppEdgeInsets.all(
                   profileScaled(context, 16, min: 14, max: 18),
                 ),
                 child: Column(
@@ -88,8 +88,8 @@ class ProfileActivityCard extends StatelessWidget {
                       item.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
+                      style: AppTextStyle(
+                        color: AppPalette.textPrimary,
                         fontSize: profileScaled(context, 16, min: 14, max: 17),
                         fontWeight: FontWeight.w900,
                       ),
@@ -136,10 +136,10 @@ class ProfileCompactActivityCard extends StatelessWidget {
     final locationFallbackText = activityLocationFallbackText(item, l10n);
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(
+        borderRadius: AppBorderRadius.circular(
           profileScaled(context, 22, min: 18, max: 22),
         ),
         child: Ink(
@@ -154,7 +154,7 @@ class ProfileCompactActivityCard extends StatelessWidget {
               final coverSize = (availableWidth * 0.36).clamp(58.0, 108.0);
 
               return Padding(
-                padding: EdgeInsets.all(padding),
+                padding: AppEdgeInsets.all(padding),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -166,7 +166,7 @@ class ProfileCompactActivityCard extends StatelessWidget {
                           height: coverSize,
                         ),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(
+                          borderRadius: AppBorderRadius.circular(
                             profileScaled(context, 18, min: 14, max: 20),
                           ),
                           child: _ProfileActivityCover(item: item),
@@ -182,8 +182,8 @@ class ProfileCompactActivityCard extends StatelessWidget {
                             metaText,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
+                            style: AppTextStyle(
+                              color: AppPalette.textCoolSecondary,
                               fontSize: profileScaled(
                                 context,
                                 12,
@@ -198,8 +198,8 @@ class ProfileCompactActivityCard extends StatelessWidget {
                             item.title,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
+                            style: AppTextStyle(
+                              color: AppPalette.textPrimary,
                               fontSize: profileScaled(
                                 context,
                                 15,
@@ -290,13 +290,13 @@ class _ProfileActivityCover extends StatelessWidget {
       children: [
         cover,
         DecoratedBox(
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                Colors.transparent,
-                Colors.black.withValues(alpha: 0.18),
+                AppPalette.transparent,
+                AppPalette.black.withValues(alpha: 0.18),
               ],
             ),
           ),
@@ -316,14 +316,14 @@ class _ProfileActivityChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       constraints: const BoxConstraints(minHeight: 30),
-      padding: EdgeInsets.symmetric(
+      padding: AppEdgeInsets.symmetric(
         horizontal: profileScaled(context, 10, min: 8, max: 10),
         vertical: profileScaled(context, 6, min: 5, max: 6),
       ),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.06),
+        borderRadius: AppBorderRadius.circular(999),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -331,7 +331,7 @@ class _ProfileActivityChip extends StatelessWidget {
           Icon(
             icon,
             size: profileScaled(context, 14, min: 13, max: 14),
-            color: AppColors.accent,
+            color: AppPalette.primary,
           ),
           SizedBox(width: profileScaled(context, 5, min: 4, max: 6)),
           ConstrainedBox(
@@ -342,7 +342,7 @@ class _ProfileActivityChip extends StatelessWidget {
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
+              style: AppTextStyle(
                 color: profileTextSoft,
                 fontSize: profileScaled(context, 11, min: 10, max: 11),
                 fontWeight: FontWeight.w800,
@@ -368,7 +368,7 @@ class _ProfileActivityMetaLine extends StatelessWidget {
         Icon(
           icon,
           size: profileScaled(context, 17, min: 15, max: 17),
-          color: AppColors.accent.withValues(alpha: 0.82),
+          color: AppPalette.primary.withValues(alpha: 0.82),
         ),
         SizedBox(width: profileScaled(context, 8, min: 6, max: 8)),
         Expanded(
@@ -376,7 +376,7 @@ class _ProfileActivityMetaLine extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
+            style: AppTextStyle(
               color: profileTextMuted,
               fontSize: profileScaled(context, 13, min: 12, max: 13),
               fontWeight: FontWeight.w700,
@@ -401,7 +401,7 @@ class _ProfileActivityLocationLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = TextStyle(
+    final style = AppTextStyle(
       color: profileTextMuted,
       fontSize: profileScaled(
         context,
@@ -416,11 +416,11 @@ class _ProfileActivityLocationLine extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: EdgeInsets.only(top: profileScaled(context, 1, min: 0)),
+          padding: AppEdgeInsets.only(top: profileScaled(context, 1, min: 0)),
           child: Icon(
             Icons.place_outlined,
             size: profileScaled(context, compact ? 15 : 17, min: 14, max: 17),
-            color: AppColors.accent.withValues(alpha: 0.82),
+            color: AppPalette.primary.withValues(alpha: 0.82),
           ),
         ),
         SizedBox(width: profileScaled(context, 8, min: 6, max: 8)),
@@ -454,7 +454,7 @@ class _ProfileActivityTinyBadge extends StatelessWidget {
         Icon(
           icon,
           size: profileScaled(context, 14, min: 13, max: 15),
-          color: AppColors.accent.withValues(alpha: 0.78),
+          color: AppPalette.primary.withValues(alpha: 0.78),
         ),
         SizedBox(width: profileScaled(context, 5, min: 4)),
         Flexible(
@@ -462,8 +462,8 @@ class _ProfileActivityTinyBadge extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: AppColors.textSecondary,
+            style: AppTextStyle(
+              color: AppPalette.textCoolSecondary,
               fontSize: profileScaled(context, 12, min: 11, max: 13),
               fontWeight: FontWeight.w700,
             ),

@@ -3,8 +3,8 @@ import 'dart:math' as math;
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
-import '../../core/ui/app_colors.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'chat_recorded_video_review_screen.dart';
 
@@ -575,7 +575,7 @@ class _ChatCameraScreenState extends State<ChatCameraScreen>
         !_busy;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppPalette.black,
       body: Stack(
         children: [
           Positioned.fill(
@@ -584,7 +584,7 @@ class _ChatCameraScreenState extends State<ChatCameraScreen>
                     _loading ||
                     !controller.value.isInitialized
                 ? const Center(
-                    child: CircularProgressIndicator(color: AppColors.accent),
+                    child: CircularProgressIndicator(color: AppPalette.primary),
                   )
                 : LayoutBuilder(
                     builder: (context, constraints) {
@@ -620,14 +620,14 @@ class _ChatCameraScreenState extends State<ChatCameraScreen>
           Positioned.fill(
             child: IgnorePointer(
               child: DecoratedBox(
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.black.withValues(alpha: 0.52),
-                      Colors.transparent,
-                      Colors.black.withValues(alpha: 0.68),
+                      AppPalette.black.withValues(alpha: 0.52),
+                      AppPalette.transparent,
+                      AppPalette.black.withValues(alpha: 0.68),
                     ],
                     stops: const [0, 0.45, 1],
                   ),
@@ -637,7 +637,7 @@ class _ChatCameraScreenState extends State<ChatCameraScreen>
           ),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 10, 14, 18),
+              padding: const AppEdgeInsets.fromLTRB(14, 10, 14, 18),
               child: Column(
                 children: [
                   Row(
@@ -767,19 +767,19 @@ class _CameraIconButton extends StatelessWidget {
       label: label,
       enabled: !disabled,
       child: InkWell(
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppBorderRadius.circular(999),
         onTap: onPressed,
         child: Container(
           width: 42,
           height: 42,
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.black.withValues(alpha: 0.34),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+            color: AppPalette.black.withValues(alpha: 0.34),
+            border: Border.all(color: AppPalette.white.withValues(alpha: 0.12)),
           ),
           child: Icon(
             icon,
-            color: Colors.white.withValues(alpha: disabled ? 0.36 : 0.95),
+            color: AppPalette.white.withValues(alpha: disabled ? 0.36 : 0.95),
             size: 22,
           ),
         ),
@@ -797,25 +797,25 @@ class _RecordingBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.red.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(999),
+      decoration: AppBoxDecoration(
+        color: AppPalette.materialDanger.withValues(alpha: 0.9),
+        borderRadius: AppBorderRadius.circular(999),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const AppEdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(
               Icons.fiber_manual_record,
-              color: Colors.white,
+              color: AppPalette.white,
               size: 12,
             ),
             const SizedBox(width: 6),
             Text(
               '$label ${_formatRecordingDuration(duration)}',
-              style: const TextStyle(
-                color: Colors.white,
+              style: const AppTextStyle(
+                color: AppPalette.white,
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0,
@@ -844,13 +844,13 @@ class _ZoomLevelSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.48),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.black.withValues(alpha: 0.48),
+        borderRadius: AppBorderRadius.circular(999),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.12)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(4),
+        padding: const AppEdgeInsets.all(4),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -892,20 +892,20 @@ class _ZoomLevelChip extends StatelessWidget {
       onTap: enabled ? onTap : null,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 140),
-        margin: const EdgeInsets.symmetric(horizontal: 2),
+        margin: const AppEdgeInsets.symmetric(horizontal: 2),
         width: 42,
         height: 34,
         alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: selected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(999),
+        decoration: AppBoxDecoration(
+          color: selected ? AppPalette.white : AppPalette.transparent,
+          borderRadius: AppBorderRadius.circular(999),
         ),
         child: Text(
           '${label}x',
-          style: TextStyle(
+          style: AppTextStyle(
             color: selected
-                ? Colors.black
-                : Colors.white.withValues(alpha: enabled ? 0.78 : 0.34),
+                ? AppPalette.black
+                : AppPalette.white.withValues(alpha: enabled ? 0.78 : 0.34),
             fontSize: 13,
             fontWeight: FontWeight.w800,
             letterSpacing: 0,
@@ -926,17 +926,17 @@ class _FocusReticle extends StatelessWidget {
         duration: const Duration(milliseconds: 140),
         width: 76,
         height: 76,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white, width: 1.5),
+        decoration: AppBoxDecoration(
+          borderRadius: AppBorderRadius.circular(18),
+          border: Border.all(color: AppPalette.white, width: 1.5),
         ),
         child: Center(
           child: Container(
             width: 7,
             height: 7,
-            decoration: const BoxDecoration(
+            decoration: const AppBoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white,
+              color: AppPalette.white,
             ),
           ),
         ),
@@ -963,13 +963,13 @@ class _CameraModeSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.36),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.black.withValues(alpha: 0.36),
+        borderRadius: AppBorderRadius.circular(999),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.12)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(4),
+        padding: const AppEdgeInsets.all(4),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1008,21 +1008,21 @@ class _ModeChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: AppBorderRadius.circular(999),
       onTap: enabled ? onTap : null,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(999),
+        padding: const AppEdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: AppBoxDecoration(
+          color: selected ? AppPalette.white : AppPalette.transparent,
+          borderRadius: AppBorderRadius.circular(999),
         ),
         child: Text(
           label,
-          style: TextStyle(
+          style: AppTextStyle(
             color: selected
-                ? Colors.black
-                : Colors.white.withValues(alpha: enabled ? 0.78 : 0.36),
+                ? AppPalette.black
+                : AppPalette.white.withValues(alpha: enabled ? 0.78 : 0.36),
             fontSize: 14,
             fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
             letterSpacing: 0,
@@ -1070,12 +1070,14 @@ class _CaptureButton extends StatelessWidget {
           duration: const Duration(milliseconds: 160),
           width: 76,
           height: 76,
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 5),
+            border: Border.all(color: AppPalette.white, width: 5),
             color: videoMode
-                ? Colors.red.withValues(alpha: recording ? 0.18 : 0.95)
-                : Colors.white.withValues(alpha: 0.18),
+                ? AppPalette.materialDanger.withValues(
+                    alpha: recording ? 0.18 : 0.95,
+                  )
+                : AppPalette.white.withValues(alpha: 0.18),
           ),
           child: Center(
             child: busy
@@ -1084,16 +1086,20 @@ class _CaptureButton extends StatelessWidget {
                     height: 28,
                     child: CircularProgressIndicator(
                       strokeWidth: 3,
-                      color: Colors.white,
+                      color: AppPalette.white,
                     ),
                   )
                 : AnimatedContainer(
                     duration: const Duration(milliseconds: 160),
                     width: recording ? 28 : 52,
                     height: recording ? 28 : 52,
-                    decoration: BoxDecoration(
-                      color: videoMode ? Colors.red : Colors.white,
-                      borderRadius: BorderRadius.circular(recording ? 8 : 999),
+                    decoration: AppBoxDecoration(
+                      color: videoMode
+                          ? AppPalette.materialDanger
+                          : AppPalette.white,
+                      borderRadius: AppBorderRadius.circular(
+                        recording ? 8 : 999,
+                      ),
                     ),
                   ),
           ),
@@ -1111,18 +1117,18 @@ class _CameraErrorBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.62),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.black.withValues(alpha: 0.62),
+        borderRadius: AppBorderRadius.circular(14),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.12)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const AppEdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Text(
           message,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Colors.white,
+          style: const AppTextStyle(
+            color: AppPalette.white,
             fontSize: 14,
             fontWeight: FontWeight.w600,
             letterSpacing: 0,

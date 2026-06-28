@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/file_api.dart';
@@ -19,7 +20,7 @@ class SurfaceStoryTray extends StatefulWidget {
     this.viewerAvatarFileId,
     this.viewerInitials = 'F',
     this.viewerUserId,
-    this.padding = EdgeInsets.zero,
+    this.padding = AppEdgeInsets.zero,
     this.limit = 10,
   });
 

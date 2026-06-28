@@ -3,13 +3,13 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:file_selector/file_selector.dart' as file_selector;
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/network/file_api.dart';
 import '../../core/network/reference_api.dart';
-import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/profile/data/guide_api.dart';
 import '../../features/profile/data/profile_api.dart';
@@ -25,20 +25,20 @@ enum _GuideVerificationStep { identity, identityDocument, professional, review }
 
 enum _GuideDocumentKind { identity, professional, firstAid, language }
 
-const Color _guideAmberGold = Color(0xFFFFC56D);
-const Color _guideAmberInk = Color(0xFF241407);
-const Color _guideExcursionAmberStatusAccent = AppColors.accent;
-const Color _guideExcursionAmberStatusInk = Color(0xFF7A3602);
+const Color _guideAmberGold = AppPalette.warning;
+const Color _guideAmberInk = AppPalette.textOnInverse;
+const Color _guideExcursionAmberStatusAccent = AppPalette.primary;
+const Color _guideExcursionAmberStatusInk = AppPalette.warmSurfaceHigh23;
 const List<Color> _guideAmberHeroGradientColors = [
-  Color(0xFFFFC56D),
-  AppColors.accent,
-  Color(0xFF4A2305),
+  AppPalette.warning,
+  AppPalette.primary,
+  AppPalette.warmSurface80,
 ];
 const List<Color> _guideExcursionAmberStatusGradientColors = [
-  Color(0xFFFFBD5A),
-  Color(0xFFFFAD3F),
-  Color(0xFFFF9C1E),
-  AppColors.accent,
+  AppPalette.amberSoft19,
+  AppPalette.orangeSoft46,
+  AppPalette.orangeMuted06,
+  AppPalette.primary,
 ];
 
 class GuideVerificationScreen extends StatefulWidget {
@@ -577,7 +577,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
 
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppPalette.transparent,
         body: ProfileResponsiveScope(
           child: ProfileGlassBackground(
             child: const SafeArea(
@@ -594,7 +594,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
     final isRevoked = application?.profile.isRevoked == true;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       body: ProfileResponsiveScope(
         child: ProfileGlassBackground(
           child: SafeArea(
@@ -644,7 +644,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
     return Column(
       children: [
         Padding(
-          padding: EdgeInsets.fromLTRB(
+          padding: AppEdgeInsets.fromLTRB(
             padding,
             profileScaled(context, 12, min: 10, max: 16),
             padding,
@@ -668,8 +668,8 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
               Expanded(
                 child: Text(
                   l10n.guideVerificationTitle,
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
+                  style: AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: profileScaled(context, 22, min: 18, max: 24),
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.6,
@@ -679,13 +679,13 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
             ],
           ),
         ),
-        Divider(color: Colors.white.withValues(alpha: 0.06), height: 1),
+        Divider(color: AppPalette.white.withValues(alpha: 0.06), height: 1),
         Expanded(
           child: ListView(
             physics: const BouncingScrollPhysics(
               parent: AlwaysScrollableScrollPhysics(),
             ),
-            padding: EdgeInsets.fromLTRB(
+            padding: AppEdgeInsets.fromLTRB(
               padding,
               profileScaled(context, 22, min: 18, max: 24),
               padding,
@@ -715,7 +715,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
         ),
         AnimatedPadding(
           duration: const Duration(milliseconds: 180),
-          padding: EdgeInsets.fromLTRB(
+          padding: AppEdgeInsets.fromLTRB(
             padding,
             profileScaled(context, 12, min: 10, max: 14),
             padding,
@@ -1333,32 +1333,32 @@ BoxDecoration _guideAmberGlassDecoration(
 }) {
   final effectiveRadius =
       radius ?? profileScaled(context, 22, min: 18, max: 28);
-  return BoxDecoration(
+  return AppBoxDecoration(
     gradient: LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       colors: strong
           ? [
-              const Color(0xFF3A210C).withValues(alpha: 0.96),
-              const Color(0xFF241307).withValues(alpha: 0.98),
+              AppPalette.warmSurface49.withValues(alpha: 0.96),
+              AppPalette.warmInk91.withValues(alpha: 0.98),
             ]
           : [
-              AppColors.accent.withValues(alpha: 0.08),
-              Colors.white.withValues(alpha: 0.018),
+              AppPalette.primary.withValues(alpha: 0.08),
+              AppPalette.white.withValues(alpha: 0.018),
             ],
     ),
-    borderRadius: BorderRadius.circular(effectiveRadius),
+    borderRadius: AppBorderRadius.circular(effectiveRadius),
     border: Border.all(
-      color: AppColors.accent.withValues(alpha: strong ? 0.28 : 0.18),
+      color: AppPalette.primary.withValues(alpha: strong ? 0.28 : 0.18),
     ),
     boxShadow: [
       BoxShadow(
-        color: Colors.black.withValues(alpha: 0.26),
+        color: AppPalette.black.withValues(alpha: 0.26),
         blurRadius: profileScaled(context, 26, min: 18, max: 32),
         offset: Offset(0, profileScaled(context, 12, min: 8, max: 14)),
       ),
       BoxShadow(
-        color: AppColors.accent.withValues(alpha: strong ? 0.18 : 0.1),
+        color: AppPalette.primary.withValues(alpha: strong ? 0.18 : 0.1),
         blurRadius: profileScaled(context, 24, min: 14, max: 30),
         offset: Offset(0, profileScaled(context, 8, min: 4, max: 10)),
       ),
@@ -1370,14 +1370,14 @@ BoxDecoration _guideAmberGradientButtonDecoration(
   BuildContext context, {
   required bool enabled,
 }) {
-  final radius = BorderRadius.circular(999);
-  return BoxDecoration(
+  final radius = AppBorderRadius.circular(999);
+  return AppBoxDecoration(
     borderRadius: radius,
     gradient: LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       colors: enabled
-          ? const [_guideAmberGold, AppColors.accent]
+          ? const [_guideAmberGold, AppPalette.primary]
           : [
               profileSurfaceMuted.withValues(alpha: 0.84),
               profileSurface.withValues(alpha: 0.84),
@@ -1391,7 +1391,7 @@ BoxDecoration _guideAmberGradientButtonDecoration(
     boxShadow: enabled
         ? [
             BoxShadow(
-              color: AppColors.accent.withValues(alpha: 0.3),
+              color: AppPalette.primary.withValues(alpha: 0.3),
               blurRadius: profileScaled(context, 28, min: 18, max: 34),
               offset: Offset(0, profileScaled(context, 12, min: 8, max: 14)),
             ),
@@ -1418,16 +1418,16 @@ Widget _guideHeroAccentIcon(BuildContext context, IconData icon) {
   return Container(
     width: profileScaled(context, 58, min: 48, max: 64),
     height: profileScaled(context, 58, min: 48, max: 64),
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(
+    decoration: AppBoxDecoration(
+      borderRadius: AppBorderRadius.circular(
         profileScaled(context, 18, min: 16, max: 20),
       ),
-      color: Colors.white.withValues(alpha: 0.13),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+      color: AppPalette.white.withValues(alpha: 0.13),
+      border: Border.all(color: AppPalette.white.withValues(alpha: 0.22)),
     ),
     child: Icon(
       icon,
-      color: const Color(0xFFFFF4DE),
+      color: AppPalette.amberWash06,
       size: profileScaled(context, 28, min: 24, max: 32),
     ),
   );
@@ -1447,27 +1447,27 @@ class _ProgressMeta extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(profileScaled(context, 14, min: 12, max: 16)),
+      padding: AppEdgeInsets.all(profileScaled(context, 14, min: 12, max: 16)),
       decoration: _guideAmberGlassDecoration(context, strong: true),
       child: Column(
         children: [
           Row(
             children: [
               Container(
-                padding: EdgeInsets.symmetric(
+                padding: AppEdgeInsets.symmetric(
                   horizontal: profileScaled(context, 10, min: 8, max: 12),
                   vertical: profileScaled(context, 6, min: 5, max: 7),
                 ),
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   color: _guideAmberGold.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: AppBorderRadius.circular(999),
                   border: Border.all(
                     color: _guideAmberGold.withValues(alpha: 0.24),
                   ),
                 ),
                 child: Text(
                   stepLabel,
-                  style: TextStyle(
+                  style: AppTextStyle(
                     color: _guideAmberGold,
                     fontSize: profileScaled(context, 12, min: 11, max: 12),
                     fontWeight: FontWeight.w900,
@@ -1482,7 +1482,7 @@ class _ProgressMeta extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.right,
-                  style: TextStyle(
+                  style: AppTextStyle(
                     color: profileTextSoft,
                     fontSize: profileScaled(context, 12, min: 11, max: 12),
                     fontWeight: FontWeight.w800,
@@ -1494,13 +1494,13 @@ class _ProgressMeta extends StatelessWidget {
           ),
           SizedBox(height: profileScaled(context, 14, min: 12, max: 16)),
           ClipRRect(
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: AppBorderRadius.circular(999),
             child: LinearProgressIndicator(
               value: progress,
               minHeight: profileScaled(context, 8, min: 6, max: 9),
-              backgroundColor: AppColors.accent.withValues(alpha: 0.14),
+              backgroundColor: AppPalette.primary.withValues(alpha: 0.14),
               valueColor: const AlwaysStoppedAnimation<Color>(
-                Color(0xFFFFC56D),
+                AppPalette.warning,
               ),
             ),
           ),
@@ -1539,17 +1539,17 @@ class _HeroBanner extends StatelessWidget {
         ? profileScaled(context, 150, min: 120, max: 170)
         : profileScaled(context, 190, min: 150, max: 230);
 
-    final borderRadius = BorderRadius.circular(
+    final borderRadius = AppBorderRadius.circular(
       profileScaled(context, 24, min: 18, max: 28),
     );
-    final effectiveAccentColor = accentColor ?? AppColors.accent;
+    final effectiveAccentColor = accentColor ?? AppPalette.primary;
     final effectiveOverlayInkColor = overlayInkColor ?? _guideAmberInk;
     final effectiveOverlayMidAlpha = overlayMidAlpha ?? 0.16;
     final effectiveOverlayEndAlpha = overlayEndAlpha ?? 0.52;
 
     return Container(
       constraints: BoxConstraints(minHeight: minHeight),
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         borderRadius: borderRadius,
         border: Border.all(color: effectiveAccentColor.withValues(alpha: 0.34)),
         boxShadow: [
@@ -1559,7 +1559,7 @@ class _HeroBanner extends StatelessWidget {
             offset: const Offset(0, 16),
           ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.22),
+            color: AppPalette.black.withValues(alpha: 0.22),
             blurRadius: 34,
             offset: const Offset(0, 20),
           ),
@@ -1591,12 +1591,12 @@ class _HeroBanner extends StatelessWidget {
                 child: Container(
                   width: profileScaled(context, 154, min: 120, max: 176),
                   height: profileScaled(context, 214, min: 172, max: 236),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(
+                  decoration: AppBoxDecoration(
+                    borderRadius: AppBorderRadius.circular(
                       profileScaled(context, 42, min: 32, max: 48),
                     ),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.13),
+                      color: AppPalette.white.withValues(alpha: 0.13),
                     ),
                   ),
                 ),
@@ -1608,12 +1608,12 @@ class _HeroBanner extends StatelessWidget {
                 child: FractionallySizedBox(
                   heightFactor: compact ? 0.42 : 0.48,
                   child: Container(
-                    decoration: BoxDecoration(
+                    decoration: AppBoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.transparent,
+                          AppPalette.transparent,
                           effectiveOverlayInkColor.withValues(
                             alpha: effectiveOverlayMidAlpha,
                           ),
@@ -1628,7 +1628,7 @@ class _HeroBanner extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: EdgeInsets.all(
+              padding: AppEdgeInsets.all(
                 profileScaled(context, 18, min: 14, max: 20),
               ),
               child: Column(
@@ -1640,8 +1640,8 @@ class _HeroBanner extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
-                      color: Colors.white,
+                    style: AppTextStyle(
+                      color: AppPalette.white,
                       fontSize: compact
                           ? profileScaled(context, 28, min: 22, max: 32)
                           : profileScaled(context, 32, min: 24, max: 38),
@@ -1653,8 +1653,8 @@ class _HeroBanner extends StatelessWidget {
                   SizedBox(height: profileScaled(context, 8, min: 6, max: 10)),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.78),
+                    style: AppTextStyle(
+                      color: AppPalette.white.withValues(alpha: 0.78),
                       fontSize: profileScaled(context, 14, min: 12, max: 15),
                       height: 1.35,
                       fontWeight: FontWeight.w600,
@@ -1683,8 +1683,8 @@ class _SectionTitle extends StatelessWidget {
         Container(
           width: profileScaled(context, 42, min: 36, max: 46),
           height: profileScaled(context, 42, min: 36, max: 46),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(
+          decoration: AppBoxDecoration(
+            borderRadius: AppBorderRadius.circular(
               profileScaled(context, 14, min: 12, max: 16),
             ),
             gradient: LinearGradient(
@@ -1692,10 +1692,12 @@ class _SectionTitle extends StatelessWidget {
               end: Alignment.bottomRight,
               colors: [
                 _guideAmberGold.withValues(alpha: 0.18),
-                AppColors.accent.withValues(alpha: 0.06),
+                AppPalette.primary.withValues(alpha: 0.06),
               ],
             ),
-            border: Border.all(color: AppColors.accent.withValues(alpha: 0.18)),
+            border: Border.all(
+              color: AppPalette.primary.withValues(alpha: 0.18),
+            ),
           ),
           child: Icon(
             icon,
@@ -1707,8 +1709,8 @@ class _SectionTitle extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: TextStyle(
-              color: AppColors.textPrimary,
+            style: AppTextStyle(
+              color: AppPalette.textPrimary,
               fontSize: profileScaled(context, 20, min: 18, max: 22),
               fontWeight: FontWeight.w900,
               letterSpacing: -0.6,
@@ -1738,13 +1740,13 @@ class _ProgressTitle extends StatelessWidget {
       children: [
         if ((eyebrow ?? '').trim().isNotEmpty)
           Padding(
-            padding: EdgeInsets.only(
+            padding: AppEdgeInsets.only(
               bottom: profileScaled(context, 10, min: 8, max: 12),
             ),
             child: Text(
               eyebrow!,
-              style: TextStyle(
-                color: AppColors.accent,
+              style: AppTextStyle(
+                color: AppPalette.primary,
                 fontSize: profileScaled(context, 12, min: 11, max: 12),
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.4,
@@ -1753,8 +1755,8 @@ class _ProgressTitle extends StatelessWidget {
           ),
         Text(
           title,
-          style: TextStyle(
-            color: AppColors.textPrimary,
+          style: AppTextStyle(
+            color: AppPalette.textPrimary,
             fontSize: profileScaled(context, 30, min: 24, max: 34),
             fontWeight: FontWeight.w900,
             letterSpacing: -1.1,
@@ -1764,7 +1766,7 @@ class _ProgressTitle extends StatelessWidget {
         SizedBox(height: profileScaled(context, 10, min: 8, max: 12)),
         Text(
           subtitle,
-          style: TextStyle(
+          style: AppTextStyle(
             color: profileTextSoft,
             fontSize: profileScaled(context, 15, min: 14, max: 16),
             height: 1.45,
@@ -1783,7 +1785,7 @@ class _PanelCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(profileScaled(context, 16, min: 14, max: 18)),
+      padding: AppEdgeInsets.all(profileScaled(context, 16, min: 14, max: 18)),
       decoration: _guideAmberGlassDecoration(context, strong: true),
       child: child,
     );
@@ -1809,7 +1811,7 @@ class _FieldBlock extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(
+          style: AppTextStyle(
             color: profileTextSoft,
             fontSize: profileScaled(context, 12, min: 11, max: 12),
             fontWeight: FontWeight.w800,
@@ -1820,13 +1822,13 @@ class _FieldBlock extends StatelessWidget {
         child,
         if ((errorText ?? '').trim().isNotEmpty)
           Padding(
-            padding: EdgeInsets.only(
+            padding: AppEdgeInsets.only(
               top: profileScaled(context, 8, min: 6, max: 8),
             ),
             child: Text(
               errorText!,
-              style: TextStyle(
-                color: const Color(0xFFFFC09A),
+              style: AppTextStyle(
+                color: AppPalette.orangeLight40,
                 fontSize: profileScaled(context, 12, min: 11, max: 12),
                 fontWeight: FontWeight.w700,
               ),
@@ -1861,14 +1863,14 @@ class _DarkInput extends StatelessWidget {
       textCapitalization: textCapitalization,
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,
-      style: TextStyle(
-        color: AppColors.textPrimary,
+      style: AppTextStyle(
+        color: AppPalette.textPrimary,
         fontSize: profileScaled(context, 16, min: 15, max: 17),
         fontWeight: FontWeight.w600,
       ),
-      decoration: InputDecoration(
+      decoration: AppInputDecoration(
         hintText: hintText,
-        hintStyle: TextStyle(
+        hintStyle: AppTextStyle(
           color: profileTextMuted.withValues(alpha: 0.72),
           fontSize: profileScaled(context, 15, min: 14, max: 16),
         ),
@@ -1886,7 +1888,7 @@ class _DarkInput extends StatelessWidget {
           borderRadius: borderRadius,
           borderSide: _guideAmberDropdownBorderSide(),
         ),
-        contentPadding: EdgeInsets.symmetric(
+        contentPadding: AppEdgeInsets.symmetric(
           horizontal: profileScaled(context, 18, min: 16, max: 20),
           vertical: profileScaled(context, 18, min: 16, max: 18),
         ),
@@ -1896,12 +1898,12 @@ class _DarkInput extends StatelessWidget {
 }
 
 BorderRadius _guideDropdownBorderRadius(BuildContext context) {
-  return BorderRadius.circular(profileScaled(context, 18, min: 16, max: 20));
+  return AppBorderRadius.circular(profileScaled(context, 18, min: 16, max: 20));
 }
 
 BorderSide _guideAmberDropdownBorderSide() {
   return BorderSide(
-    color: AppColors.accent.withValues(alpha: 0.34),
+    color: AppPalette.primary.withValues(alpha: 0.34),
     width: 1.6,
   );
 }
@@ -2133,23 +2135,23 @@ class _GuideCountrySearchFieldState extends State<_GuideCountrySearchField> {
         TextField(
           controller: _controller,
           focusNode: _focusNode,
-          cursorColor: AppColors.accent,
+          cursorColor: AppPalette.primary,
           textInputAction: TextInputAction.search,
-          style: TextStyle(
-            color: AppColors.textPrimary,
+          style: AppTextStyle(
+            color: AppPalette.textPrimary,
             fontSize: profileScaled(context, 16, min: 15, max: 17),
             fontWeight: FontWeight.w700,
           ),
-          decoration: InputDecoration(
+          decoration: AppInputDecoration(
             hintText: widget.searchHint,
-            hintStyle: TextStyle(
+            hintStyle: AppTextStyle(
               color: profileTextMuted.withValues(alpha: 0.72),
               fontSize: profileScaled(context, 15, min: 14, max: 16),
               fontWeight: FontWeight.w600,
             ),
             prefixIcon: const Icon(
               Icons.search_rounded,
-              color: AppColors.accent,
+              color: AppPalette.primary,
             ),
             suffixIcon: Icon(
               _isOpen
@@ -2171,7 +2173,7 @@ class _GuideCountrySearchFieldState extends State<_GuideCountrySearchField> {
               borderRadius: borderRadius,
               borderSide: _guideAmberDropdownBorderSide(),
             ),
-            contentPadding: EdgeInsets.symmetric(
+            contentPadding: AppEdgeInsets.symmetric(
               horizontal: profileScaled(context, 18, min: 16, max: 20),
               vertical: profileScaled(context, 18, min: 16, max: 18),
             ),
@@ -2183,16 +2185,16 @@ class _GuideCountrySearchFieldState extends State<_GuideCountrySearchField> {
             constraints: BoxConstraints(
               maxHeight: profileScaled(context, 224, min: 176, max: 260),
             ),
-            decoration: BoxDecoration(
+            decoration: AppBoxDecoration(
               color: _guideAmberInk,
               borderRadius: borderRadius,
               border: Border.all(
-                color: AppColors.accent.withValues(alpha: 0.34),
+                color: AppPalette.primary.withValues(alpha: 0.34),
                 width: 1.6,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.22),
+                  color: AppPalette.black.withValues(alpha: 0.22),
                   blurRadius: profileScaled(context, 18, min: 12, max: 24),
                   offset: Offset(
                     0,
@@ -2203,7 +2205,7 @@ class _GuideCountrySearchFieldState extends State<_GuideCountrySearchField> {
             ),
             child: _isSearching
                 ? Padding(
-                    padding: EdgeInsets.all(
+                    padding: AppEdgeInsets.all(
                       profileScaled(context, 16, min: 14, max: 18),
                     ),
                     child: const Align(
@@ -2213,21 +2215,21 @@ class _GuideCountrySearchFieldState extends State<_GuideCountrySearchField> {
                         height: 24,
                         child: CircularProgressIndicator(
                           strokeWidth: 2.4,
-                          color: AppColors.accent,
+                          color: AppPalette.primary,
                         ),
                       ),
                     ),
                   )
                 : displayCountries.isEmpty
                 ? Padding(
-                    padding: EdgeInsets.all(
+                    padding: AppEdgeInsets.all(
                       profileScaled(context, 16, min: 14, max: 18),
                     ),
                     child: Row(
                       children: [
                         const Icon(
                           Icons.flag_circle_rounded,
-                          color: AppColors.accent,
+                          color: AppPalette.primary,
                           size: 18,
                         ),
                         SizedBox(
@@ -2236,8 +2238,8 @@ class _GuideCountrySearchFieldState extends State<_GuideCountrySearchField> {
                         Expanded(
                           child: Text(
                             widget.noResultsText,
-                            style: TextStyle(
-                              color: AppColors.accent,
+                            style: AppTextStyle(
+                              color: AppPalette.primary,
                               fontSize: profileScaled(
                                 context,
                                 13,
@@ -2252,14 +2254,14 @@ class _GuideCountrySearchFieldState extends State<_GuideCountrySearchField> {
                     ),
                   )
                 : ListView.separated(
-                    padding: EdgeInsets.symmetric(
+                    padding: AppEdgeInsets.symmetric(
                       vertical: profileScaled(context, 6, min: 4, max: 8),
                     ),
                     shrinkWrap: true,
                     itemCount: displayCountries.length,
                     separatorBuilder: (_, _) => Divider(
                       height: 1,
-                      color: AppColors.accent.withValues(alpha: 0.08),
+                      color: AppPalette.primary.withValues(alpha: 0.08),
                     ),
                     itemBuilder: (context, index) {
                       final country = displayCountries[index];
@@ -2268,7 +2270,7 @@ class _GuideCountrySearchFieldState extends State<_GuideCountrySearchField> {
                       return InkWell(
                         onTap: () => _selectCountry(country),
                         child: Padding(
-                          padding: EdgeInsets.symmetric(
+                          padding: AppEdgeInsets.symmetric(
                             horizontal: profileScaled(
                               context,
                               16,
@@ -2291,8 +2293,8 @@ class _GuideCountrySearchFieldState extends State<_GuideCountrySearchField> {
                                       : country.code.trim().toUpperCase(),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: AppColors.textPrimary,
+                                  style: AppTextStyle(
+                                    color: AppPalette.textPrimary,
                                     fontSize: profileScaled(
                                       context,
                                       15,
@@ -2308,7 +2310,7 @@ class _GuideCountrySearchFieldState extends State<_GuideCountrySearchField> {
                               if (isSelected)
                                 const Icon(
                                   Icons.check_circle_rounded,
-                                  color: AppColors.accent,
+                                  color: AppPalette.primary,
                                   size: 20,
                                 ),
                             ],
@@ -2333,20 +2335,20 @@ class _NoticeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(profileScaled(context, 16, min: 14, max: 18)),
-      decoration: BoxDecoration(
+      padding: AppEdgeInsets.all(profileScaled(context, 16, min: 14, max: 18)),
+      decoration: AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.accent.withValues(alpha: 0.14),
-            AppColors.accent.withValues(alpha: 0.04),
+            AppPalette.primary.withValues(alpha: 0.14),
+            AppPalette.primary.withValues(alpha: 0.04),
           ],
         ),
-        borderRadius: BorderRadius.circular(
+        borderRadius: AppBorderRadius.circular(
           profileScaled(context, 20, min: 18, max: 24),
         ),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.24)),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.24)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2354,9 +2356,9 @@ class _NoticeCard extends StatelessWidget {
           Container(
             width: profileScaled(context, 40, min: 36, max: 44),
             height: profileScaled(context, 40, min: 36, max: 44),
-            decoration: BoxDecoration(
+            decoration: AppBoxDecoration(
               color: _guideAmberGold.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: AppBorderRadius.circular(14),
               border: Border.all(color: _guideAmberGold.withValues(alpha: 0.2)),
             ),
             child: Icon(icon, color: _guideAmberGold),
@@ -2365,7 +2367,7 @@ class _NoticeCard extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: TextStyle(
+              style: AppTextStyle(
                 color: profileTextSoft,
                 fontSize: profileScaled(context, 14, min: 13, max: 15),
                 height: 1.45,
@@ -2408,12 +2410,12 @@ class _DarkDropdown extends StatelessWidget {
         initialValue: value,
         icon: const Icon(Icons.expand_more_rounded, color: profileTextSoft),
         dropdownColor: profileSurfaceSoft,
-        style: TextStyle(
-          color: AppColors.textPrimary,
+        style: AppTextStyle(
+          color: AppPalette.textPrimary,
           fontSize: profileScaled(context, 17, min: 15, max: 18),
           fontWeight: FontWeight.w600,
         ),
-        decoration: InputDecoration(
+        decoration: AppInputDecoration(
           filled: true,
           fillColor: _guideAmberInk,
           border: OutlineInputBorder(
@@ -2428,7 +2430,7 @@ class _DarkDropdown extends StatelessWidget {
             borderRadius: borderRadius,
             borderSide: _guideAmberDropdownBorderSide(),
           ),
-          contentPadding: EdgeInsets.symmetric(
+          contentPadding: AppEdgeInsets.symmetric(
             horizontal: profileScaled(context, 18, min: 16, max: 20),
             vertical: profileScaled(context, 18, min: 16, max: 18),
           ),
@@ -2504,7 +2506,7 @@ class _TipCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(profileScaled(context, 16, min: 14, max: 18)),
+      padding: AppEdgeInsets.all(profileScaled(context, 16, min: 14, max: 18)),
       decoration: _guideAmberGlassDecoration(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2512,17 +2514,17 @@ class _TipCard extends StatelessWidget {
           Container(
             width: profileScaled(context, 48, min: 42, max: 52),
             height: profileScaled(context, 48, min: 42, max: 52),
-            decoration: BoxDecoration(
-              color: AppColors.accent.withValues(alpha: 0.12),
+            decoration: AppBoxDecoration(
+              color: AppPalette.primary.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: AppColors.accent),
+            child: Icon(icon, color: AppPalette.primary),
           ),
           SizedBox(height: profileScaled(context, 16, min: 14, max: 18)),
           Text(
             title,
-            style: TextStyle(
-              color: AppColors.textPrimary,
+            style: AppTextStyle(
+              color: AppPalette.textPrimary,
               fontSize: profileScaled(context, 15, min: 14, max: 16),
               fontWeight: FontWeight.w800,
             ),
@@ -2530,7 +2532,7 @@ class _TipCard extends StatelessWidget {
           SizedBox(height: profileScaled(context, 8, min: 6, max: 8)),
           Text(
             subtitle,
-            style: TextStyle(
+            style: AppTextStyle(
               color: profileTextSoft,
               fontSize: profileScaled(context, 13, min: 12, max: 14),
               height: 1.4,
@@ -2568,31 +2570,31 @@ class _UploadCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Material(
-          color: Colors.transparent,
+          color: AppPalette.transparent,
           child: InkWell(
             onTap: isUploading ? null : onTap,
-            borderRadius: BorderRadius.circular(
+            borderRadius: AppBorderRadius.circular(
               profileScaled(context, 26, min: 22, max: 28),
             ),
             child: Container(
               width: double.infinity,
-              padding: EdgeInsets.all(
+              padding: AppEdgeInsets.all(
                 profileScaled(context, 24, min: 20, max: 28),
               ),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(
+              decoration: AppBoxDecoration(
+                borderRadius: AppBorderRadius.circular(
                   profileScaled(context, 26, min: 22, max: 28),
                 ),
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppColors.accent.withValues(alpha: 0.12),
-                    Colors.white.withValues(alpha: 0.018),
+                    AppPalette.primary.withValues(alpha: 0.12),
+                    AppPalette.white.withValues(alpha: 0.018),
                   ],
                 ),
                 border: Border.all(
-                  color: AppColors.accent.withValues(alpha: 0.34),
+                  color: AppPalette.primary.withValues(alpha: 0.34),
                   width: 1.6,
                   strokeAlign: BorderSide.strokeAlignInside,
                 ),
@@ -2602,23 +2604,23 @@ class _UploadCard extends StatelessWidget {
                   Container(
                     width: profileScaled(context, 80, min: 60, max: 96),
                     height: profileScaled(context, 80, min: 60, max: 96),
-                    decoration: BoxDecoration(
-                      color: AppColors.accent.withValues(alpha: 0.12),
+                    decoration: AppBoxDecoration(
+                      color: AppPalette.primary.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
                     child: isUploading
                         ? Padding(
-                            padding: EdgeInsets.all(
+                            padding: AppEdgeInsets.all(
                               profileScaled(context, 26, min: 20, max: 28),
                             ),
                             child: const CircularProgressIndicator(
                               strokeWidth: 2.2,
-                              color: AppColors.accent,
+                              color: AppPalette.primary,
                             ),
                           )
                         : Icon(
                             icon,
-                            color: AppColors.accent,
+                            color: AppPalette.primary,
                             size: profileScaled(context, 32, min: 24, max: 36),
                           ),
                   ),
@@ -2628,8 +2630,8 @@ class _UploadCard extends StatelessWidget {
                   Text(
                     title,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
+                    style: AppTextStyle(
+                      color: AppPalette.textPrimary,
                       fontSize: profileScaled(context, 20, min: 17, max: 22),
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.4,
@@ -2639,7 +2641,7 @@ class _UploadCard extends StatelessWidget {
                   Text(
                     subtitle,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: AppTextStyle(
                       color: profileTextMuted,
                       fontSize: profileScaled(context, 12, min: 11, max: 12),
                       fontWeight: FontWeight.w700,
@@ -2652,9 +2654,9 @@ class _UploadCard extends StatelessWidget {
                   FilledButton(
                     onPressed: isUploading ? null : onTap,
                     style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.accent,
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(
+                      backgroundColor: AppPalette.primary,
+                      foregroundColor: AppPalette.white,
+                      padding: AppEdgeInsets.symmetric(
                         horizontal: profileScaled(
                           context,
                           28,
@@ -2673,13 +2675,13 @@ class _UploadCard extends StatelessWidget {
         ),
         if ((errorText ?? '').trim().isNotEmpty)
           Padding(
-            padding: EdgeInsets.only(
+            padding: AppEdgeInsets.only(
               top: profileScaled(context, 8, min: 6, max: 8),
             ),
             child: Text(
               errorText!,
-              style: TextStyle(
-                color: const Color(0xFFFFC09A),
+              style: AppTextStyle(
+                color: AppPalette.orangeLight40,
                 fontSize: profileScaled(context, 12, min: 11, max: 12),
                 fontWeight: FontWeight.w700,
               ),
@@ -2707,7 +2709,7 @@ class _ConfirmCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasError = (errorText ?? '').trim().isNotEmpty;
-    final borderRadius = BorderRadius.circular(
+    final borderRadius = AppBorderRadius.circular(
       profileScaled(context, 20, min: 18, max: 24),
     );
 
@@ -2715,29 +2717,32 @@ class _ConfirmCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Material(
-          color: Colors.transparent,
+          color: AppPalette.transparent,
           child: InkWell(
             onTap: () => onChanged(!value),
             borderRadius: borderRadius,
             child: Container(
-              padding: EdgeInsets.all(
+              padding: AppEdgeInsets.all(
                 profileScaled(context, 18, min: 16, max: 20),
               ),
               decoration: hasError
-                  ? BoxDecoration(
+                  ? AppBoxDecoration(
                       gradient: const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [Color(0xFF40201A), Color(0xFF2A1512)],
+                        colors: [
+                          AppPalette.redSurface03,
+                          AppPalette.redSurface01,
+                        ],
                       ),
                       borderRadius: borderRadius,
                       border: Border.all(
-                        color: const Color(0xFFD97A6A),
+                        color: AppPalette.redSoft03,
                         width: 1.2,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.22),
+                          color: AppPalette.black.withValues(alpha: 0.22),
                           blurRadius: profileScaled(
                             context,
                             24,
@@ -2750,7 +2755,7 @@ class _ConfirmCard extends StatelessWidget {
                           ),
                         ),
                         BoxShadow(
-                          color: const Color(0x66B9584B),
+                          color: AppPalette.redOverlayMuted01,
                           blurRadius: profileScaled(
                             context,
                             20,
@@ -2771,20 +2776,20 @@ class _ConfirmCard extends StatelessWidget {
                   Checkbox(
                     value: value,
                     onChanged: (next) => onChanged(next ?? false),
-                    activeColor: AppColors.accent,
+                    activeColor: AppPalette.primary,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppBorderRadius.circular(8),
                     ),
                   ),
                   Expanded(
                     child: Padding(
-                      padding: EdgeInsets.only(
+                      padding: AppEdgeInsets.only(
                         top: profileScaled(context, 6, min: 4, max: 6),
                       ),
                       child: Text(
                         text,
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
+                        style: AppTextStyle(
+                          color: AppPalette.textPrimary,
                           fontSize: profileScaled(
                             context,
                             14,
@@ -2804,13 +2809,13 @@ class _ConfirmCard extends StatelessWidget {
         ),
         if ((errorText ?? '').trim().isNotEmpty)
           Padding(
-            padding: EdgeInsets.only(
+            padding: AppEdgeInsets.only(
               top: profileScaled(context, 8, min: 6, max: 8),
             ),
             child: Text(
               errorText!,
-              style: TextStyle(
-                color: const Color(0xFFFFC09A),
+              style: AppTextStyle(
+                color: AppPalette.orangeLight40,
                 fontSize: profileScaled(context, 12, min: 11, max: 12),
                 fontWeight: FontWeight.w700,
               ),
@@ -2839,8 +2844,8 @@ class _SectionHeaderRow extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: TextStyle(
-              color: AppColors.textPrimary,
+            style: AppTextStyle(
+              color: AppPalette.textPrimary,
               fontSize: profileScaled(context, 24, min: 20, max: 28),
               fontWeight: FontWeight.w900,
               letterSpacing: -0.8,
@@ -2851,8 +2856,8 @@ class _SectionHeaderRow extends StatelessWidget {
           TextButton(
             onPressed: onActionTap,
             style: TextButton.styleFrom(
-              foregroundColor: AppColors.accent,
-              textStyle: TextStyle(
+              foregroundColor: AppPalette.primary,
+              textStyle: AppTextStyle(
                 fontSize: profileScaled(context, 14, min: 13, max: 15),
                 fontWeight: FontWeight.w800,
               ),
@@ -2884,30 +2889,32 @@ class _OptionalCertificateCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final borderRadius = BorderRadius.circular(
+    final borderRadius = AppBorderRadius.circular(
       profileScaled(context, 18, min: 16, max: 20),
     );
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: borderRadius,
         child: Container(
-          padding: EdgeInsets.all(profileScaled(context, 16, min: 14, max: 18)),
+          padding: AppEdgeInsets.all(
+            profileScaled(context, 16, min: 14, max: 18),
+          ),
           decoration: _guideAmberGlassDecoration(context),
           child: Row(
             children: [
               Container(
                 width: profileScaled(context, 42, min: 38, max: 46),
                 height: profileScaled(context, 42, min: 38, max: 46),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(
+                decoration: AppBoxDecoration(
+                  color: AppPalette.white.withValues(alpha: 0.06),
+                  borderRadius: AppBorderRadius.circular(
                     profileScaled(context, 12, min: 10, max: 12),
                   ),
                 ),
-                child: Icon(icon, color: AppColors.accent),
+                child: Icon(icon, color: AppPalette.primary),
               ),
               SizedBox(width: profileScaled(context, 14, min: 12, max: 16)),
               Expanded(
@@ -2916,8 +2923,8 @@ class _OptionalCertificateCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
+                      style: AppTextStyle(
+                        color: AppPalette.textPrimary,
                         fontSize: profileScaled(context, 15, min: 14, max: 16),
                         fontWeight: FontWeight.w800,
                       ),
@@ -2925,7 +2932,7 @@ class _OptionalCertificateCard extends StatelessWidget {
                     SizedBox(height: profileScaled(context, 4, min: 3, max: 4)),
                     Text(
                       subtitle,
-                      style: TextStyle(
+                      style: AppTextStyle(
                         color: profileTextMuted,
                         fontSize: profileScaled(context, 12, min: 11, max: 12),
                         height: 1.4,
@@ -2937,8 +2944,8 @@ class _OptionalCertificateCard extends StatelessWidget {
                       ),
                       Text(
                         l10n.guideVerificationVerifiedUpload,
-                        style: TextStyle(
-                          color: AppColors.accent,
+                        style: AppTextStyle(
+                          color: AppPalette.primary,
                           fontSize: profileScaled(
                             context,
                             12,
@@ -2956,7 +2963,7 @@ class _OptionalCertificateCard extends StatelessWidget {
                 isExpanded
                     ? Icons.keyboard_arrow_up_rounded
                     : Icons.keyboard_arrow_down_rounded,
-                color: isUploaded ? AppColors.accent : profileTextSoft,
+                color: isUploaded ? AppPalette.primary : profileTextSoft,
                 size: profileScaled(context, 24, min: 22, max: 26),
               ),
             ],
@@ -2976,12 +2983,12 @@ class _TimelineCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(profileScaled(context, 18, min: 16, max: 20)),
+      padding: AppEdgeInsets.all(profileScaled(context, 18, min: 16, max: 20)),
       decoration: _guideAmberGlassDecoration(context, strong: true),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.schedule_outlined, color: AppColors.accent),
+          Icon(Icons.schedule_outlined, color: AppPalette.primary),
           SizedBox(width: profileScaled(context, 14, min: 12, max: 16)),
           Expanded(
             child: Column(
@@ -2989,8 +2996,8 @@ class _TimelineCard extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
+                  style: AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: profileScaled(context, 18, min: 16, max: 20),
                     fontWeight: FontWeight.w800,
                   ),
@@ -2998,7 +3005,7 @@ class _TimelineCard extends StatelessWidget {
                 SizedBox(height: profileScaled(context, 8, min: 6, max: 8)),
                 Text(
                   text,
-                  style: TextStyle(
+                  style: AppTextStyle(
                     color: profileTextSoft,
                     fontSize: profileScaled(context, 14, min: 13, max: 15),
                     height: 1.45,
@@ -3022,29 +3029,29 @@ class _ReviewDocumentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(profileScaled(context, 14, min: 12, max: 16)),
+      padding: AppEdgeInsets.all(profileScaled(context, 14, min: 12, max: 16)),
       decoration: _guideAmberGlassDecoration(context),
       child: Row(
         children: [
           Container(
             width: profileScaled(context, 72, min: 56, max: 86),
             height: profileScaled(context, 72, min: 56, max: 86),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(
+            decoration: AppBoxDecoration(
+              borderRadius: AppBorderRadius.circular(
                 profileScaled(context, 16, min: 14, max: 18),
               ),
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.white.withValues(alpha: 0.09),
-                  Colors.white.withValues(alpha: 0.02),
+                  AppPalette.white.withValues(alpha: 0.09),
+                  AppPalette.white.withValues(alpha: 0.02),
                 ],
               ),
             ),
             child: const Icon(
               Icons.description_outlined,
-              color: AppColors.accent,
+              color: AppPalette.primary,
             ),
           ),
           SizedBox(width: profileScaled(context, 14, min: 12, max: 16)),
@@ -3054,8 +3061,8 @@ class _ReviewDocumentCard extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: TextStyle(
-                    color: AppColors.accent,
+                  style: AppTextStyle(
+                    color: AppPalette.primary,
                     fontSize: profileScaled(context, 12, min: 11, max: 12),
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.2,
@@ -3064,8 +3071,8 @@ class _ReviewDocumentCard extends StatelessWidget {
                 SizedBox(height: profileScaled(context, 8, min: 6, max: 8)),
                 Text(
                   title,
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
+                  style: AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: profileScaled(context, 17, min: 15, max: 18),
                     fontWeight: FontWeight.w800,
                     height: 1.2,
@@ -3077,14 +3084,14 @@ class _ReviewDocumentCard extends StatelessWidget {
                     Container(
                       width: profileScaled(context, 18, min: 16, max: 18),
                       height: profileScaled(context, 18, min: 16, max: 18),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF18D26E),
+                      decoration: const AppBoxDecoration(
+                        color: AppPalette.greenMuted02,
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.check,
                         size: 12,
-                        color: Color(0xFF0D2417),
+                        color: AppPalette.greenInk03,
                       ),
                     ),
                     SizedBox(width: profileScaled(context, 8, min: 6, max: 8)),
@@ -3092,7 +3099,7 @@ class _ReviewDocumentCard extends StatelessWidget {
                       AppLocalizations.of(
                         context,
                       )!.guideVerificationVerifiedUpload,
-                      style: TextStyle(
+                      style: AppTextStyle(
                         color: profileTextMuted,
                         fontSize: profileScaled(context, 12, min: 11, max: 12),
                         fontWeight: FontWeight.w800,
@@ -3135,7 +3142,7 @@ class _BottomActionBar extends StatelessWidget {
         _GuideSolidActionButton(label: label, onPressed: onPressed, busy: busy),
         if ((note ?? '').trim().isNotEmpty)
           Padding(
-            padding: EdgeInsets.only(
+            padding: AppEdgeInsets.only(
               top: profileScaled(context, 12, min: 10, max: 14),
             ),
             child: Row(
@@ -3150,7 +3157,7 @@ class _BottomActionBar extends StatelessWidget {
                 Expanded(
                   child: Text(
                     note!,
-                    style: TextStyle(
+                    style: AppTextStyle(
                       color: profileDisabled,
                       fontSize: profileScaled(context, 13, min: 12, max: 14),
                       fontWeight: FontWeight.w800,
@@ -3182,14 +3189,14 @@ class _GuideSolidActionButton extends StatelessWidget {
     return FilledButton(
       onPressed: busy ? null : onPressed,
       style: FilledButton.styleFrom(
-        backgroundColor: AppColors.accent,
-        foregroundColor: Colors.white,
+        backgroundColor: AppPalette.primary,
+        foregroundColor: AppPalette.white,
         minimumSize: Size(
           double.infinity,
           profileScaled(context, 56, min: 50, max: 58),
         ),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
+          borderRadius: AppBorderRadius.circular(
             profileScaled(context, 18, min: 16, max: 20),
           ),
         ),
@@ -3200,7 +3207,7 @@ class _GuideSolidActionButton extends StatelessWidget {
               height: profileScaled(context, 18, min: 16, max: 18),
               child: const CircularProgressIndicator(
                 strokeWidth: 2,
-                color: Colors.white,
+                color: AppPalette.white,
               ),
             )
           : Text(
@@ -3208,7 +3215,7 @@ class _GuideSolidActionButton extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: AppTextStyle(
                 fontSize: profileScaled(context, 15, min: 14, max: 16),
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.4,
@@ -3246,15 +3253,15 @@ class _AmberGradientButton extends StatelessWidget {
             enabled: enabled,
           ),
           child: Material(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(999),
+            color: AppPalette.transparent,
+            borderRadius: AppBorderRadius.circular(999),
             child: InkWell(
               onTap: enabled ? onPressed : null,
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: AppBorderRadius.circular(999),
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: height),
                 child: Padding(
-                  padding: EdgeInsets.symmetric(
+                  padding: AppEdgeInsets.symmetric(
                     horizontal: profileScaled(context, 18, min: 16, max: 20),
                     vertical: profileScaled(context, 14, min: 12, max: 16),
                   ),
@@ -3267,7 +3274,7 @@ class _AmberGradientButton extends StatelessWidget {
                           height: profileScaled(context, 22, min: 20, max: 24),
                           child: const CircularProgressIndicator(
                             strokeWidth: 2.2,
-                            color: Colors.white,
+                            color: AppPalette.white,
                           ),
                         )
                       else ...[
@@ -3277,8 +3284,8 @@ class _AmberGradientButton extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.white,
+                            style: AppTextStyle(
+                              color: AppPalette.white,
                               fontSize: profileScaled(
                                 context,
                                 15,
@@ -3295,7 +3302,7 @@ class _AmberGradientButton extends StatelessWidget {
                         ),
                         const Icon(
                           Icons.arrow_forward_rounded,
-                          color: Colors.white,
+                          color: AppPalette.white,
                         ),
                       ],
                     ],
@@ -3328,7 +3335,7 @@ class _StatusScreen extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: EdgeInsets.fromLTRB(
+          padding: AppEdgeInsets.fromLTRB(
             padding,
             profileScaled(context, 12, min: 10, max: 16),
             padding,
@@ -3344,8 +3351,8 @@ class _StatusScreen extends StatelessWidget {
               Expanded(
                 child: Text(
                   AppLocalizations.of(context)!.guideVerificationTitle,
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
+                  style: AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: profileScaled(context, 22, min: 18, max: 24),
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.6,
@@ -3355,10 +3362,10 @@ class _StatusScreen extends StatelessWidget {
             ],
           ),
         ),
-        Divider(color: Colors.white.withValues(alpha: 0.06), height: 1),
+        Divider(color: AppPalette.white.withValues(alpha: 0.06), height: 1),
         Expanded(
           child: Padding(
-            padding: EdgeInsets.all(padding),
+            padding: AppEdgeInsets.all(padding),
             child: Column(
               children: [
                 _HeroBanner(

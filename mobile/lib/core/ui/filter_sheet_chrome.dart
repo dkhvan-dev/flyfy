@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-import 'app_colors.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
 class AppDismissibleModalSheet extends StatelessWidget {
   const AppDismissibleModalSheet({
@@ -71,23 +70,23 @@ class AppFilterPaletteDialog extends StatelessWidget {
             .toDouble();
 
     return Dialog(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       elevation: 0,
-      insetPadding: EdgeInsets.symmetric(
+      insetPadding: AppEdgeInsets.symmetric(
         horizontal: isCompact ? 16 : 24,
         vertical: 24,
       ),
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: 386, maxHeight: maxDialogHeight),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: AppBorderRadius.circular(28),
           child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: const Color(0xFF21170D),
-              border: Border.all(color: const Color(0x293A270F)),
+            decoration: AppBoxDecoration(
+              color: AppPalette.surface,
+              border: Border.all(color: AppPalette.border),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.34),
+                  color: AppPalette.black.withValues(alpha: 0.34),
                   blurRadius: 34,
                   offset: const Offset(0, 18),
                 ),
@@ -96,7 +95,7 @@ class AppFilterPaletteDialog extends StatelessWidget {
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               child: Padding(
-                padding: EdgeInsets.fromLTRB(
+                padding: AppEdgeInsets.fromLTRB(
                   isCompact ? 22 : 26,
                   isCompact ? 22 : 26,
                   isCompact ? 22 : 26,
@@ -109,15 +108,15 @@ class AppFilterPaletteDialog extends StatelessWidget {
                     Container(
                       width: isCompact ? 54 : 58,
                       height: isCompact ? 54 : 58,
-                      decoration: BoxDecoration(
+                      decoration: AppBoxDecoration(
                         shape: BoxShape.circle,
-                        color: const Color(0xFF2C2118),
+                        color: AppPalette.warmSurface28,
                         border: Border.all(
-                          color: AppColors.accent.withValues(alpha: 0.24),
+                          color: AppPalette.primary.withValues(alpha: 0.24),
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.accent.withValues(alpha: 0.14),
+                            color: AppPalette.primary.withValues(alpha: 0.14),
                             blurRadius: 22,
                             offset: const Offset(0, 10),
                           ),
@@ -125,7 +124,7 @@ class AppFilterPaletteDialog extends StatelessWidget {
                       ),
                       child: Icon(
                         icon,
-                        color: AppColors.accent,
+                        color: AppPalette.primary,
                         size: isCompact ? 25 : 27,
                       ),
                     ),
@@ -134,8 +133,8 @@ class AppFilterPaletteDialog extends StatelessWidget {
                       title,
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: const Color(0xFFFFF7EC),
+                      style: AppTextStyle(
+                        color: AppPalette.orangeWash25,
                         fontSize: isCompact ? 21 : 23,
                         height: 1.12,
                         fontWeight: FontWeight.w900,
@@ -145,8 +144,8 @@ class AppFilterPaletteDialog extends StatelessWidget {
                     const SizedBox(height: 10),
                     Text(
                       message,
-                      style: TextStyle(
-                        color: const Color(0xFFE0D4C6).withValues(alpha: 0.88),
+                      style: AppTextStyle(
+                        color: AppPalette.textSecondary.withValues(alpha: 0.88),
                         fontSize: isCompact ? 14 : 15,
                         height: 1.45,
                         fontWeight: FontWeight.w500,
@@ -212,27 +211,29 @@ class _AppFilterPaletteDialogActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foregroundColor = isPrimary
-        ? AppColors.textPrimary
-        : const Color(0xFFD8C7B7);
+        ? AppPalette.textPrimary
+        : AppPalette.orangeLight15;
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppBorderRadius.circular(16),
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 48),
           child: Ink(
-            decoration: BoxDecoration(
-              color: isPrimary ? AppColors.accent : const Color(0xFF2C2118),
-              borderRadius: BorderRadius.circular(16),
+            decoration: AppBoxDecoration(
+              color: isPrimary ? AppPalette.primary : AppPalette.warmSurface28,
+              borderRadius: AppBorderRadius.circular(16),
               border: Border.all(
-                color: isPrimary ? AppColors.accent : const Color(0xFF3B260D),
+                color: isPrimary
+                    ? AppPalette.primary
+                    : AppPalette.warmSurface66,
               ),
             ),
             child: Center(
               child: Padding(
-                padding: const EdgeInsets.symmetric(
+                padding: const AppEdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 12,
                 ),
@@ -241,7 +242,7 @@ class _AppFilterPaletteDialogActionButton extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: AppTextStyle(
                     color: foregroundColor,
                     fontSize: 15,
                     height: 1.1,
@@ -289,22 +290,22 @@ class AppFilterSheetHeader extends StatelessWidget {
 
     return Container(
       height: effectiveHeight,
-      padding: EdgeInsets.symmetric(horizontal: effectiveHorizontalPadding),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFF3B260D))),
+      padding: AppEdgeInsets.symmetric(horizontal: effectiveHorizontalPadding),
+      decoration: const AppBoxDecoration(
+        border: Border(bottom: BorderSide(color: AppPalette.warmSurface66)),
       ),
       child: Stack(
         alignment: Alignment.center,
         children: [
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: reservedActionWidth),
+            padding: AppEdgeInsets.symmetric(horizontal: reservedActionWidth),
             child: Text(
               title.toUpperCase(),
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: AppColors.textPrimary,
+              style: AppTextStyle(
+                color: AppPalette.textPrimary,
                 fontSize: effectiveTitleSize,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0,
@@ -316,8 +317,8 @@ class AppFilterSheetHeader extends StatelessWidget {
             child: TextButton(
               onPressed: onClear,
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.accent,
-                padding: EdgeInsets.zero,
+                foregroundColor: AppPalette.primary,
+                padding: AppEdgeInsets.zero,
                 minimumSize: const Size(0, 32),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
@@ -325,7 +326,7 @@ class AppFilterSheetHeader extends StatelessWidget {
                 clearLabel.toUpperCase(),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: AppTextStyle(
                   fontSize: effectiveClearSize,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 0,
@@ -369,18 +370,18 @@ class AppFilterApplyButton extends StatelessWidget {
       child: FilledButton(
         onPressed: isLoading ? null : onTap,
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.accent,
-          disabledBackgroundColor: AppColors.accent.withValues(alpha: 0.72),
-          foregroundColor: AppColors.textPrimary,
-          disabledForegroundColor: AppColors.textPrimary.withValues(
+          backgroundColor: AppPalette.primary,
+          disabledBackgroundColor: AppPalette.primary.withValues(alpha: 0.72),
+          foregroundColor: AppPalette.textPrimary,
+          disabledForegroundColor: AppPalette.textPrimary.withValues(
             alpha: 0.82,
           ),
           minimumSize: Size(0, minHeight),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const AppEdgeInsets.symmetric(horizontal: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(borderRadius ?? 999),
+            borderRadius: AppBorderRadius.circular(borderRadius ?? 999),
           ),
-          textStyle: TextStyle(
+          textStyle: AppTextStyle(
             fontSize: effectiveFontSize,
             fontWeight: FontWeight.w800,
           ),
@@ -391,7 +392,7 @@ class AppFilterApplyButton extends StatelessWidget {
                 height: effectiveIconSize,
                 child: const CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: AppColors.textPrimary,
+                  color: AppPalette.textPrimary,
                 ),
               )
             : Row(

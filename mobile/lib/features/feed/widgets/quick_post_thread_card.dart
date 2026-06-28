@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
 import '../../../core/network/file_api.dart';
 import '../../../core/network/post_api.dart';
-import '../../../core/ui/app_colors.dart';
 import '../../../core/ui/error_dialog.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../data/feed_api.dart';
@@ -234,34 +234,34 @@ class _QuickPostThreadCardState extends State<QuickPostThreadCard> {
 
     return DecoratedBox(
       key: ValueKey('quick-post-thread-${widget.post.id}'),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.30)),
+      decoration: AppBoxDecoration(
+        borderRadius: AppBorderRadius.circular(8),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.30)),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF3A220E).withValues(alpha: 0.96),
-            const Color(0xFF241308),
-            const Color(0xFF140B06),
+            AppPalette.warmSurface52.withValues(alpha: 0.96),
+            AppPalette.warmInk92,
+            AppPalette.warmInk16,
           ],
           stops: const [0, 0.54, 1],
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.24),
+            color: AppPalette.black.withValues(alpha: 0.24),
             blurRadius: 18,
             offset: const Offset(0, 10),
           ),
           BoxShadow(
-            color: AppColors.accent.withValues(alpha: 0.06),
+            color: AppPalette.primary.withValues(alpha: 0.06),
             blurRadius: 26,
             offset: const Offset(0, 14),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const AppEdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -278,7 +278,7 @@ class _QuickPostThreadCardState extends State<QuickPostThreadCard> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: textTheme.bodyMedium?.copyWith(
-                          color: const Color(0xFFFFF7ED),
+                          color: AppPalette.surfaceInverse,
                           fontWeight: FontWeight.w900,
                           height: 1.12,
                         ),
@@ -289,7 +289,7 @@ class _QuickPostThreadCardState extends State<QuickPostThreadCard> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFFBFA78E),
+                          color: AppPalette.orangeSoft18,
                           fontWeight: FontWeight.w700,
                           height: 1.12,
                         ),
@@ -301,7 +301,7 @@ class _QuickPostThreadCardState extends State<QuickPostThreadCard> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFF9D846B),
+                            color: AppPalette.warmMuted17,
                             fontWeight: FontWeight.w700,
                             height: 1.12,
                           ),
@@ -326,7 +326,7 @@ class _QuickPostThreadCardState extends State<QuickPostThreadCard> {
               Text(
                 body,
                 style: textTheme.titleMedium?.copyWith(
-                  color: const Color(0xFFFFF7ED),
+                  color: AppPalette.surfaceInverse,
                   height: 1.30,
                   fontWeight: FontWeight.w800,
                 ),
@@ -339,7 +339,7 @@ class _QuickPostThreadCardState extends State<QuickPostThreadCard> {
                 maxLines: 4,
                 overflow: TextOverflow.ellipsis,
                 style: textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFFDCC7AF),
+                  color: AppPalette.orangeLight19,
                   height: 1.35,
                   fontWeight: FontWeight.w500,
                 ),
@@ -403,34 +403,38 @@ class _QuickPostThreadCardState extends State<QuickPostThreadCard> {
                       maxLines: 4,
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _submitComment(),
-                      style: const TextStyle(color: Color(0xFFFFF7ED)),
-                      decoration: InputDecoration(
+                      style: const AppTextStyle(
+                        color: AppPalette.surfaceInverse,
+                      ),
+                      decoration: AppInputDecoration(
                         hintText: l10n.storyCommentHint,
-                        hintStyle: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.42),
+                        hintStyle: AppTextStyle(
+                          color: AppPalette.white.withValues(alpha: 0.42),
                         ),
                         isDense: true,
                         filled: true,
-                        fillColor: Colors.black.withValues(alpha: 0.20),
-                        contentPadding: const EdgeInsets.symmetric(
+                        fillColor: AppPalette.black.withValues(alpha: 0.20),
+                        contentPadding: const AppEdgeInsets.symmetric(
                           horizontal: 13,
                           vertical: 12,
                         ),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: AppBorderRadius.circular(8),
                           borderSide: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.08),
+                            color: AppPalette.white.withValues(alpha: 0.08),
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: AppBorderRadius.circular(8),
                           borderSide: BorderSide(
-                            color: AppColors.accent.withValues(alpha: 0.12),
+                            color: AppPalette.primary.withValues(alpha: 0.12),
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: AppColors.accent),
+                          borderRadius: AppBorderRadius.circular(8),
+                          borderSide: const BorderSide(
+                            color: AppPalette.primary,
+                          ),
                         ),
                       ),
                     ),
@@ -440,12 +444,12 @@ class _QuickPostThreadCardState extends State<QuickPostThreadCard> {
                     key: ValueKey('quick-post-comment-send-${widget.post.id}'),
                     onPressed: canSubmit ? _submitComment : null,
                     style: IconButton.styleFrom(
-                      backgroundColor: AppColors.accent,
-                      disabledBackgroundColor: AppColors.accent.withValues(
+                      backgroundColor: AppPalette.primary,
+                      disabledBackgroundColor: AppPalette.primary.withValues(
                         alpha: 0.20,
                       ),
-                      foregroundColor: Colors.black,
-                      disabledForegroundColor: Colors.white.withValues(
+                      foregroundColor: AppPalette.black,
+                      disabledForegroundColor: AppPalette.white.withValues(
                         alpha: 0.42,
                       ),
                     ),
@@ -456,7 +460,7 @@ class _QuickPostThreadCardState extends State<QuickPostThreadCard> {
                             height: 18,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.black,
+                              color: AppPalette.black,
                             ),
                           )
                         : const Icon(Icons.arrow_upward_rounded),
@@ -480,12 +484,12 @@ class _QuickPostImages extends StatelessWidget {
   Widget build(BuildContext context) {
     if (imageUrls.length == 1) {
       return DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.accent.withValues(alpha: 0.16)),
+        decoration: AppBoxDecoration(
+          borderRadius: AppBorderRadius.circular(8),
+          border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppBorderRadius.circular(8),
           child: AspectRatio(
             aspectRatio: 4 / 3,
             child: StoryCoverImage(url: imageUrls.first),
@@ -508,14 +512,14 @@ class _QuickPostImages extends StatelessWidget {
             separatorBuilder: (context, index) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
               return DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
+                decoration: AppBoxDecoration(
+                  borderRadius: AppBorderRadius.circular(8),
                   border: Border.all(
-                    color: AppColors.accent.withValues(alpha: 0.16),
+                    color: AppPalette.primary.withValues(alpha: 0.16),
                   ),
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppBorderRadius.circular(8),
                   child: AspectRatio(
                     aspectRatio: 1,
                     child: StoryCoverImage(url: imageUrls[index]),
@@ -547,11 +551,11 @@ class _QuickPostCommentsPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     if (isLoading) {
       return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 4),
+        padding: AppEdgeInsets.symmetric(vertical: 4),
         child: LinearProgressIndicator(
           minHeight: 2,
-          color: AppColors.accent,
-          backgroundColor: Color(0x332B1A0D),
+          color: AppPalette.primary,
+          backgroundColor: AppPalette.warmOverlaySurface02,
         ),
       );
     }
@@ -575,7 +579,7 @@ class _QuickPostCommentsPreview extends StatelessWidget {
       children: [
         for (final comment in comments)
           Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const AppEdgeInsets.only(bottom: 8),
             child: _QuickPostCommentRow(comment: comment),
           ),
       ],
@@ -596,11 +600,11 @@ class _QuickPostCommentRow extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 13,
-          backgroundColor: AppColors.accent.withValues(alpha: 0.20),
+          backgroundColor: AppPalette.primary.withValues(alpha: 0.20),
           child: Text(
             comment.author.initials,
             style: textTheme.labelSmall?.copyWith(
-              color: AppColors.accent,
+              color: AppPalette.primary,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -608,15 +612,18 @@ class _QuickPostCommentRow extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(8),
+            decoration: AppBoxDecoration(
+              color: AppPalette.black.withValues(alpha: 0.18),
+              borderRadius: AppBorderRadius.circular(8),
               border: Border.all(
-                color: AppColors.accent.withValues(alpha: 0.10),
+                color: AppPalette.primary.withValues(alpha: 0.10),
               ),
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              padding: const AppEdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 8,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -625,7 +632,7 @@ class _QuickPostCommentRow extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: textTheme.labelMedium?.copyWith(
-                      color: const Color(0xFFFFF7ED),
+                      color: AppPalette.surfaceInverse,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -633,7 +640,7 @@ class _QuickPostCommentRow extends StatelessWidget {
                   Text(
                     comment.body,
                     style: textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFFEAD8C2),
+                      color: AppPalette.orangeLight27,
                       height: 1.25,
                     ),
                   ),
@@ -656,17 +663,17 @@ class _QuickPostMetric extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.13),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.16)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.primary.withValues(alpha: 0.13),
+        borderRadius: AppBorderRadius.circular(999),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+        padding: const AppEdgeInsets.symmetric(horizontal: 9, vertical: 6),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 15, color: AppColors.accent),
+            Icon(icon, size: 15, color: AppPalette.primary),
             const SizedBox(width: 4),
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 120),
@@ -675,7 +682,7 @@ class _QuickPostMetric extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: const Color(0xFFFFE2B8),
+                  color: AppPalette.amberLight12,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -704,27 +711,27 @@ class _QuickPostLikeButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foreground = likedByViewer
-        ? const Color(0xFFFFD29A)
-        : AppColors.accent;
+        ? AppPalette.orangeLight44
+        : AppPalette.primary;
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: isLoading ? null : onPressed,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppBorderRadius.circular(999),
         child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: AppColors.accent.withValues(
+          decoration: AppBoxDecoration(
+            color: AppPalette.primary.withValues(
               alpha: likedByViewer ? 0.22 : 0.13,
             ),
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: AppBorderRadius.circular(999),
             border: Border.all(
-              color: AppColors.accent.withValues(
+              color: AppPalette.primary.withValues(
                 alpha: likedByViewer ? 0.34 : 0.16,
               ),
             ),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+            padding: const AppEdgeInsets.symmetric(horizontal: 9, vertical: 6),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -753,7 +760,7 @@ class _QuickPostLikeButton extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: const Color(0xFFFFE2B8),
+                      color: AppPalette.amberLight12,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -779,14 +786,14 @@ class _QuickPostActionsMenu extends StatelessWidget {
     return PopupMenuButton<_QuickPostAction>(
       tooltip: l10n.storyEditAction,
       position: PopupMenuPosition.under,
-      color: const Color(0xFF2A190C),
-      surfaceTintColor: Colors.transparent,
+      color: AppPalette.warmSurface10,
+      surfaceTintColor: AppPalette.transparent,
       elevation: 14,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: AppColors.accent.withValues(alpha: 0.24)),
+        borderRadius: AppBorderRadius.circular(8),
+        side: BorderSide(color: AppPalette.primary.withValues(alpha: 0.24)),
       ),
-      icon: const Icon(Icons.more_horiz_rounded, color: Color(0xFFFFC46B)),
+      icon: const Icon(Icons.more_horiz_rounded, color: AppPalette.amberSoft22),
       onSelected: (action) {
         switch (action) {
           case _QuickPostAction.edit:
@@ -803,7 +810,7 @@ class _QuickPostActionsMenu extends StatelessWidget {
                 const Icon(
                   Icons.edit_outlined,
                   size: 18,
-                  color: AppColors.accent,
+                  color: AppPalette.primary,
                 ),
                 const SizedBox(width: 8),
                 Text(l10n.storyEditAction),
@@ -829,12 +836,12 @@ class _QuickPostAvatar extends StatelessWidget {
     return Container(
       width: 42,
       height: 42,
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.38)),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.38)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.accent.withValues(alpha: 0.10),
+            color: AppPalette.primary.withValues(alpha: 0.10),
             blurRadius: 14,
             offset: const Offset(0, 5),
           ),
@@ -842,13 +849,13 @@ class _QuickPostAvatar extends StatelessWidget {
       ),
       child: CircleAvatar(
         radius: 19,
-        backgroundColor: AppColors.accent.withValues(alpha: 0.18),
+        backgroundColor: AppPalette.primary.withValues(alpha: 0.18),
         backgroundImage: avatarUrl == null ? null : NetworkImage(avatarUrl),
         child: avatarUrl == null
             ? Text(
                 author.initials,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: AppColors.accent,
+                  color: AppPalette.primary,
                   fontWeight: FontWeight.w900,
                 ),
               )

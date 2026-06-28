@@ -331,7 +331,7 @@ void main() {
 
       expect(source, contains('Icons.chevron_right_rounded'));
       expect(source, isNot(contains('Icons.arrow_forward_rounded')));
-      expect(source, contains('foregroundColor: AppColors.textPrimary'));
+      expect(source, contains('foregroundColor: AppPalette.textPrimary'));
       expect(source, contains('iconAlignment: IconAlignment.end'));
     },
   );

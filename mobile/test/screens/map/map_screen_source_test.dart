@@ -172,7 +172,7 @@ void main() {
     expect(mapSource, contains('LngLatBounds? _routePreviewBounds('));
     expect(mapSource, contains('LngLatBounds.fromPoints('));
     expect(mapSource, contains('mapController.fitBounds('));
-    expect(mapSource, contains('padding: EdgeInsets.all('));
+    expect(mapSource, contains('padding: AppEdgeInsets.all('));
     expect(mapSource, contains('_focusRoutePreviewCamera(preview);'));
     expect(
       mapSource,
@@ -356,11 +356,8 @@ void main() {
 
     expect(saveButtonSections.length, greaterThanOrEqualTo(1));
     for (final section in saveButtonSections) {
-      expect(section, contains('foregroundColor: AppColors.textPrimary'));
-      expect(
-        section,
-        isNot(contains('foregroundColor: const Color(0xFF241100)')),
-      );
+      expect(section, contains('foregroundColor: AppPalette.textPrimary'));
+      expect(section, isNot(contains('foregroundColor: AppPalette.warmInk90')));
     }
   });
 

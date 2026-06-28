@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../../core/ui/app_colors.dart';
 import '../../../core/ui/error_view.dart';
 import '../../../features/user_routes/models/user_route_models.dart';
 import '../../../features/user_routes/user_route_feature_flags.dart';
@@ -93,11 +93,11 @@ class _UserRoutesScreenState extends State<UserRoutesScreen>
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppPalette.backgroundWarm,
       appBar: AppBar(
         title: Text(l10n.userRoutesTitle),
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: AppPalette.backgroundWarm,
+        foregroundColor: AppPalette.textPrimary,
         actions: [
           if (UserRouteFeatureFlags.customRoutesEnabled)
             IconButton(
@@ -108,9 +108,9 @@ class _UserRoutesScreenState extends State<UserRoutesScreen>
         ],
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: AppColors.accent,
-          labelColor: AppColors.accent,
-          unselectedLabelColor: AppColors.textSecondary,
+          indicatorColor: AppPalette.primary,
+          labelColor: AppPalette.primary,
+          unselectedLabelColor: AppPalette.textCoolSecondary,
           tabs: [
             Tab(text: l10n.userRoutesPublicTab),
             Tab(text: l10n.userRoutesMineTab),
@@ -139,7 +139,7 @@ class _UserRoutesScreenState extends State<UserRoutesScreen>
 
             if (isInitialLoading) {
               return const Center(
-                child: CircularProgressIndicator(color: AppColors.accent),
+                child: CircularProgressIndicator(color: AppPalette.primary),
               );
             }
 
@@ -151,13 +151,13 @@ class _UserRoutesScreenState extends State<UserRoutesScreen>
             }
 
             return RefreshIndicator(
-              color: AppColors.accent,
+              color: AppPalette.primary,
               onRefresh: () => _loadCurrentTab(force: true),
               child: routes.isEmpty
                   ? _UserRoutesEmptyState(tab: tab)
                   : ListView.separated(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+                      padding: const AppEdgeInsets.fromLTRB(16, 16, 16, 28),
                       itemCount: routes.length,
                       separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
@@ -191,24 +191,24 @@ class _UserRouteCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Card(
-      color: const Color(0xFF21140C),
+      color: AppPalette.warmInk75,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: AppColors.accent.withValues(alpha: 0.28)),
+        borderRadius: AppBorderRadius.circular(8),
+        side: BorderSide(color: AppPalette.primary.withValues(alpha: 0.28)),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppBorderRadius.circular(8),
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const AppEdgeInsets.all(14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.route_rounded, color: AppColors.accent),
+                  const Icon(Icons.route_rounded, color: AppPalette.primary),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -216,7 +216,7 @@ class _UserRouteCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: AppColors.textPrimary,
+                        color: AppPalette.textPrimary,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -232,7 +232,7 @@ class _UserRouteCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppPalette.textCoolSecondary,
                   ),
                 ),
               ],
@@ -293,20 +293,20 @@ class _UserRoutesEmptyState extends StatelessWidget {
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(24),
+      padding: const AppEdgeInsets.all(24),
       children: [
         const SizedBox(height: 96),
         Icon(
           Icons.route_outlined,
           size: 64,
-          color: AppColors.accent.withValues(alpha: 0.82),
+          color: AppPalette.primary.withValues(alpha: 0.82),
         ),
         const SizedBox(height: 18),
         Text(
           title,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: AppColors.textPrimary,
+            color: AppPalette.textPrimary,
             fontWeight: FontWeight.w900,
           ),
         ),
@@ -315,7 +315,7 @@ class _UserRoutesEmptyState extends StatelessWidget {
           subtitle,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: AppColors.textSecondary,
+            color: AppPalette.textCoolSecondary,
             height: 1.4,
           ),
         ),
@@ -335,7 +335,7 @@ class _UserRoutesAuthPrompt extends StatelessWidget {
 
     return Center(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const AppEdgeInsets.all(24),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420),
           child: Column(
@@ -344,14 +344,14 @@ class _UserRoutesAuthPrompt extends StatelessWidget {
               const Icon(
                 Icons.lock_outline_rounded,
                 size: 60,
-                color: AppColors.accent,
+                color: AppPalette.primary,
               ),
               const SizedBox(height: 18),
               Text(
                 l10n.userRoutesLoginRequiredTitle,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppColors.textPrimary,
+                  color: AppPalette.textPrimary,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -360,7 +360,7 @@ class _UserRoutesAuthPrompt extends StatelessWidget {
                 l10n.userRoutesLoginRequiredSubtitle,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppPalette.textCoolSecondary,
                   height: 1.4,
                 ),
               ),
@@ -370,10 +370,10 @@ class _UserRoutesAuthPrompt extends StatelessWidget {
                 child: FilledButton(
                   onPressed: onLogin,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.accent,
-                    foregroundColor: const Color(0xFF241100),
+                    backgroundColor: AppPalette.primary,
+                    foregroundColor: AppPalette.warmInk90,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppBorderRadius.circular(8),
                     ),
                   ),
                   child: Text(l10n.userRoutesLoginRequiredButton),
@@ -402,18 +402,18 @@ class _VisibilityBadge extends StatelessWidget {
     };
 
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.13),
-        borderRadius: BorderRadius.circular(999),
+      decoration: AppBoxDecoration(
+        color: AppPalette.primary.withValues(alpha: 0.13),
+        borderRadius: AppBorderRadius.circular(999),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+        padding: const AppEdgeInsets.symmetric(horizontal: 9, vertical: 5),
         child: Text(
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: AppColors.accent,
+            color: AppPalette.primary,
             fontWeight: FontWeight.w900,
           ),
         ),
@@ -431,23 +431,23 @@ class _RouteMetaChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(999),
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.06),
+        borderRadius: AppBorderRadius.circular(999),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 15, color: AppColors.accent),
+            Icon(icon, size: 15, color: AppPalette.primary),
             const SizedBox(width: 5),
             Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: AppColors.textSecondary,
+                color: AppPalette.textCoolSecondary,
                 fontWeight: FontWeight.w700,
               ),
             ),

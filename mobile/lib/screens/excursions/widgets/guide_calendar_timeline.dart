@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
-import '../../../core/ui/app_colors.dart';
 import '../../../features/excursions/models/excursion_schedule_vm.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import 'guide_schedule_slot_card.dart';
@@ -25,7 +25,7 @@ class GuideCalendarTimeline extends StatelessWidget {
         itemCount: 4,
         separatorBuilder: (_, _) => const SizedBox(height: 10),
         itemBuilder: (context, index) => const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20),
+          padding: AppEdgeInsets.symmetric(horizontal: 20),
           child: _TimelineSkeleton(),
         ),
       );
@@ -34,26 +34,26 @@ class GuideCalendarTimeline extends StatelessWidget {
     if (slots.isEmpty) {
       return SliverToBoxAdapter(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
+          padding: const AppEdgeInsets.fromLTRB(20, 28, 20, 0),
           child: Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2A2118),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.border),
+            padding: const AppEdgeInsets.all(18),
+            decoration: AppBoxDecoration(
+              color: AppPalette.warmSurface20,
+              borderRadius: AppBorderRadius.circular(8),
+              border: Border.all(color: AppPalette.outlineOverlay),
             ),
             child: Row(
               children: [
                 const Icon(
                   Icons.event_available_rounded,
-                  color: AppColors.accent,
+                  color: AppPalette.primary,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     l10n.guideCalendarEmptyDay,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: const AppTextStyle(
+                      color: AppPalette.textPrimary,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -71,7 +71,7 @@ class GuideCalendarTimeline extends StatelessWidget {
       itemBuilder: (context, index) {
         final slot = slots[index];
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const AppEdgeInsets.symmetric(horizontal: 20),
           child: GuideScheduleSlotCard(
             slot: slot,
             onTap: onSlotTap == null ? null : () => onSlotTap!(slot),
@@ -92,9 +92,9 @@ class _TimelineSkeleton extends StatelessWidget {
         minHeight: _guideTimelineSkeletonMinHeight(context),
       ),
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: const Color(0xFF2A2118).withValues(alpha: 0.68),
-          borderRadius: BorderRadius.circular(8),
+        decoration: AppBoxDecoration(
+          color: AppPalette.warmSurface20.withValues(alpha: 0.68),
+          borderRadius: AppBorderRadius.circular(8),
         ),
       ),
     );

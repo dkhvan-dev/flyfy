@@ -204,7 +204,7 @@ void main() {
 
     expect(heroSource, contains('storyDeleteAction'));
     expect(heroSource, contains('TextButton.styleFrom('));
-    expect(heroSource, contains('foregroundColor: AppColors.destructive'));
+    expect(heroSource, contains('foregroundColor: AppPalette.danger'));
   });
 
   test('story list filter sheet uses summary chips and card-like options', () {
@@ -235,9 +235,9 @@ void main() {
     expect(locationStart, greaterThan(tagStart));
     final tagSource = storiesSource.substring(tagStart, locationStart);
 
-    expect(tagSource, contains('color: AppColors.accent'));
-    expect(tagSource, contains('color: AppColors.textPrimary'));
-    expect(tagSource, isNot(contains('Color(0xFF211306)')));
+    expect(tagSource, contains('color: AppPalette.primary'));
+    expect(tagSource, contains('color: AppPalette.textPrimary'));
+    expect(tagSource, isNot(contains('AppPalette.warmInk72')));
   });
 
   test('story related view all action uses accent color token', () {
@@ -252,8 +252,8 @@ void main() {
     final sectionSource = detailSource.substring(sectionStart, errorStart);
 
     expect(sectionSource, contains('l10n.storyViewAll'));
-    expect(sectionSource, contains('color: AppColors.accent'));
-    expect(sectionSource, isNot(contains('Color(0xFFFFBD55)')));
+    expect(sectionSource, contains('color: AppPalette.primary'));
+    expect(sectionSource, isNot(contains('AppPalette.amberSoft18')));
   });
 
   test('legacy story entry points use shared state affordances', () {
@@ -322,7 +322,7 @@ void main() {
     final openSource = detailSource.substring(openStart, startComment);
 
     expect(openSource, contains('showGeneralDialog<int>('));
-    expect(openSource, contains('barrierColor: Colors.black'));
+    expect(openSource, contains('barrierColor: AppPalette.black'));
     expect(openSource, contains('FadeTransition('));
     expect(openSource, isNot(contains('PageRouteBuilder<int>(')));
   });
@@ -464,16 +464,16 @@ void main() {
     expect(searchStart, greaterThan(tabsStart));
     final tabsSource = source.substring(tabsStart, searchStart);
 
-    expect(tabsSource, contains('selectedColor: AppColors.accent'));
-    expect(tabsSource, contains('backgroundColor: const Color(0xFF2A1D13)'));
+    expect(tabsSource, contains('selectedColor: AppPalette.primary'));
+    expect(tabsSource, contains('backgroundColor: AppPalette.warmSurface17'));
     expect(tabsSource, contains('showCheckmark: false'));
     expect(tabsSource, contains('SingleChildScrollView('));
     expect(tabsSource, contains('scrollDirection: Axis.horizontal'));
     expect(tabsSource, contains('Row('));
     expect(tabsSource, isNot(contains('Wrap(')));
-    expect(tabsSource, contains('Colors.white'));
-    expect(tabsSource, contains('const Color(0xFFCBB8A3)'));
-    expect(tabsSource, isNot(contains('const Color(0xFF211306)')));
+    expect(tabsSource, contains('AppPalette.white'));
+    expect(tabsSource, contains('AppPalette.orangeSoft29'));
+    expect(tabsSource, isNot(contains('AppPalette.warmInk72')));
     expect(tabsSource, isNot(contains('StoryPalette.textSoft')));
   });
 

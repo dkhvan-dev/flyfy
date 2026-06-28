@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-
-import 'app_colors.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
 class AppInlineFieldError extends StatelessWidget {
   const AppInlineFieldError({
     super.key,
     required this.message,
-    this.padding = const EdgeInsets.only(top: 8),
+    this.padding = const AppEdgeInsets.only(top: 8),
   });
 
   final String message;
@@ -25,7 +24,7 @@ class AppInlineFieldError extends StatelessWidget {
           children: [
             const Icon(
               Icons.error_outline_rounded,
-              color: AppColors.destructive,
+              color: AppPalette.danger,
               size: 16,
             ),
             const SizedBox(width: 6),
@@ -34,8 +33,8 @@ class AppInlineFieldError extends StatelessWidget {
                 message,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.destructive,
+                style: const AppTextStyle(
+                  color: AppPalette.danger,
                   fontSize: 12,
                   height: 1.3,
                   fontWeight: FontWeight.w700,

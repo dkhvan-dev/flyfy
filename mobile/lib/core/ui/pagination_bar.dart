@@ -1,9 +1,9 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
 import '../../l10n/generated/app_localizations.dart';
-import 'app_colors.dart';
 
 class InflapPaginationBar extends StatelessWidget {
   const InflapPaginationBar({
@@ -11,7 +11,7 @@ class InflapPaginationBar extends StatelessWidget {
     required this.currentPage,
     required this.totalPages,
     required this.onPageChanged,
-    this.padding = EdgeInsets.zero,
+    this.padding = AppEdgeInsets.zero,
     this.showLabel = true,
   });
 
@@ -324,8 +324,8 @@ class _PaginationSlotWidget extends StatelessWidget {
         child: Center(
           child: Text(
             '...',
-            style: TextStyle(
-              color: const Color(0xFF6D5141),
+            style: AppTextStyle(
+              color: AppPalette.warmSurfaceHigh16,
               fontSize: metrics.dotsFontSize,
               fontWeight: FontWeight.w900,
               height: 1,
@@ -352,13 +352,13 @@ class _PaginationSlotWidget extends StatelessWidget {
 
     return _RoundPaginationButton(
       size: metrics.pageSize,
-      background: const Color(0xFF2B2119),
-      border: const Color(0xFF5A493B),
+      background: AppPalette.warmSurface25,
+      border: AppPalette.warmSurfaceHigh07,
       semanticLabel: label,
       onTap: onPageChanged == null ? null : () => onPageChanged!(page),
       child: _PaginationNumber(
         page: page,
-        color: const Color(0xFFE7C9AD),
+        color: AppPalette.orangeLight23,
         fontSize: metrics.numberFontSize,
       ),
     );
@@ -396,36 +396,36 @@ class _ActivePageButton extends StatelessWidget {
               width: metrics.activeSize,
               height: metrics.activeSize,
               alignment: Alignment.center,
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 shape: BoxShape.circle,
                 gradient: const RadialGradient(
                   center: Alignment(0, -0.24),
                   radius: 0.82,
                   colors: [
-                    Color(0xFFFF9B0D),
-                    Color(0xFFFF8908),
-                    Color(0xFFFF7600),
+                    AppPalette.warmMuted47,
+                    AppPalette.warmMuted43,
+                    AppPalette.warmMuted41,
                   ],
                   stops: [0.0, 0.64, 1.0],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFFF8908).withValues(alpha: 0.92),
+                    color: AppPalette.warmMuted43.withValues(alpha: 0.92),
                     blurRadius: metrics.activeSize * 0.3,
                   ),
                   BoxShadow(
-                    color: const Color(0xFFFF4A00).withValues(alpha: 0.72),
+                    color: AppPalette.warmMuted39.withValues(alpha: 0.72),
                     blurRadius: metrics.activeSize * 0.52,
                   ),
                   BoxShadow(
-                    color: Colors.white.withValues(alpha: 0.30),
+                    color: AppPalette.white.withValues(alpha: 0.30),
                     blurRadius: metrics.activeSize * 0.74,
                   ),
                 ],
               ),
               child: _PaginationNumber(
                 page: page,
-                color: Colors.white,
+                color: AppPalette.white,
                 fontSize: metrics.activeNumberFontSize,
               ),
             ),
@@ -461,12 +461,12 @@ class _PaginationArrowButton extends StatelessWidget {
       opacity: enabled ? 1 : 0.42,
       child: _RoundPaginationButton(
         size: metrics.arrowSize,
-        background: const Color(0xFF2B2119),
+        background: AppPalette.warmSurface25,
         semanticLabel: tooltip,
         onTap: enabled ? onTap : null,
         child: Icon(
           icon,
-          color: const Color(0xFFE7C9AD),
+          color: AppPalette.orangeLight23,
           size: metrics.arrowIconSize,
         ),
       ),
@@ -499,7 +499,7 @@ class _RoundPaginationButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final hitTargetSize = math.max(size, _minTouchTargetSize);
     final button = Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: onTap,
         customBorder: const CircleBorder(),
@@ -509,7 +509,7 @@ class _RoundPaginationButton extends StatelessWidget {
             child: Ink(
               width: size,
               height: size,
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 color: background,
                 shape: BoxShape.circle,
                 border: border == null
@@ -519,7 +519,7 @@ class _RoundPaginationButton extends StatelessWidget {
                     ? null
                     : [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.35),
+                          color: AppPalette.black.withValues(alpha: 0.35),
                           blurRadius: 0,
                           spreadRadius: size * 0.018,
                         ),
@@ -560,14 +560,14 @@ class _PaginationNumber extends StatelessWidget {
     final effectiveFontSize = page >= 100 ? fontSize * 0.82 : fontSize;
 
     return Padding(
-      padding: EdgeInsets.all(fontSize * 0.08),
+      padding: AppEdgeInsets.all(fontSize * 0.08),
       child: FittedBox(
         fit: BoxFit.scaleDown,
         child: Text(
           '$page',
           maxLines: 1,
           overflow: TextOverflow.visible,
-          style: TextStyle(
+          style: AppTextStyle(
             color: color,
             fontSize: effectiveFontSize,
             fontWeight: FontWeight.w900,
@@ -593,13 +593,13 @@ class _PaginationLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locale = AppLocalizations.of(context)?.localeName.split('_').first;
-    final baseStyle = TextStyle(
-      color: const Color(0xFF6D5141),
+    final baseStyle = AppTextStyle(
+      color: AppPalette.warmSurfaceHigh16,
       fontSize: metrics.labelFontSize,
       fontWeight: FontWeight.w900,
       height: 1.2,
     );
-    final accentStyle = baseStyle.copyWith(color: AppColors.accent);
+    final accentStyle = baseStyle.copyWith(color: AppPalette.primary);
 
     final spans = switch (locale) {
       'ru' => <InlineSpan>[
@@ -640,9 +640,9 @@ class _ActivePageGlowPainter extends CustomPainter {
     final glowPaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          Colors.white.withValues(alpha: 0.55),
-          const Color(0xFFFF5C00).withValues(alpha: 0.35),
-          Colors.transparent,
+          AppPalette.white.withValues(alpha: 0.55),
+          AppPalette.warmMuted40.withValues(alpha: 0.35),
+          AppPalette.transparent,
         ],
         stops: const [0.0, 0.48, 1.0],
       ).createShader(Offset.zero & size);
@@ -659,8 +659,8 @@ class _ActivePageGlowPainter extends CustomPainter {
       );
       final isWarm = i.isEven;
       dotPaint.color = isWarm
-          ? const Color(0xFFFF5C00).withValues(alpha: 0.72)
-          : Colors.white.withValues(alpha: 0.62);
+          ? AppPalette.warmMuted40.withValues(alpha: 0.72)
+          : AppPalette.white.withValues(alpha: 0.62);
       canvas.drawCircle(
         point,
         size.shortestSide * (i % 3 == 0 ? 0.018 : 0.013),

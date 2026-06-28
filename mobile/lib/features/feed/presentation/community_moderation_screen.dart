@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/ui/app_colors.dart';
 import '../../../core/ui/error_dialog.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../stories/models/post_vm.dart';
@@ -203,14 +203,14 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppPalette.surfaceCool,
       builder: (sheetContext) {
         final l10n = AppLocalizations.of(sheetContext)!;
         final reasonController = TextEditingController();
 
         return SafeArea(
           child: Padding(
-            padding: EdgeInsets.fromLTRB(
+            padding: AppEdgeInsets.fromLTRB(
               20,
               20,
               20,
@@ -225,7 +225,7 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(sheetContext).textTheme.titleMedium?.copyWith(
-                    color: AppColors.textPrimary,
+                    color: AppPalette.textPrimary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -235,7 +235,7 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppPalette.textCoolSecondary,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -244,17 +244,19 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
                   controller: reasonController,
                   maxLines: 3,
                   minLines: 2,
-                  style: const TextStyle(color: AppColors.textPrimary),
-                  decoration: InputDecoration(
+                  style: const AppTextStyle(color: AppPalette.textPrimary),
+                  decoration: AppInputDecoration(
                     labelText: l10n.communityModerationRejectReasonLabel,
-                    labelStyle: const TextStyle(color: AppColors.textSecondary),
+                    labelStyle: const AppTextStyle(
+                      color: AppPalette.textCoolSecondary,
+                    ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: AppColors.border),
+                      borderRadius: AppBorderRadius.circular(8),
+                      borderSide: BorderSide(color: AppPalette.outlineOverlay),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.accent),
+                      borderRadius: AppBorderRadius.circular(8),
+                      borderSide: const BorderSide(color: AppPalette.primary),
                     ),
                   ),
                 ),
@@ -273,8 +275,8 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
                       onPressed: () =>
                           Navigator.of(sheetContext).pop(reasonController.text),
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.destructive,
-                        foregroundColor: AppColors.textPrimary,
+                        backgroundColor: AppPalette.danger,
+                        foregroundColor: AppPalette.textPrimary,
                       ),
                       child: Text(
                         l10n.communityModerationRejectConfirmAction,
@@ -304,7 +306,7 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppPalette.surfaceCool,
       builder: (sheetContext) {
         final l10n = AppLocalizations.of(sheetContext)!;
 
@@ -314,7 +316,7 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
               maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.78,
             ),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+              padding: const AppEdgeInsets.fromLTRB(20, 20, 20, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -324,7 +326,7 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(sheetContext).textTheme.titleMedium
                         ?.copyWith(
-                          color: AppColors.textPrimary,
+                          color: AppPalette.textPrimary,
                           fontWeight: FontWeight.w700,
                         ),
                   ),
@@ -336,7 +338,7 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
                         if (snapshot.connectionState != ConnectionState.done) {
                           return const Center(
                             child: CircularProgressIndicator(
-                              color: AppColors.accent,
+                              color: AppPalette.primary,
                             ),
                           );
                         }
@@ -386,10 +388,10 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
     final communityTitle = (widget.communityTitle ?? '').trim();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppPalette.backgroundWarm,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: AppPalette.backgroundWarm,
+        foregroundColor: AppPalette.textPrimary,
         elevation: 0,
         actions: [
           IconButton(
@@ -413,7 +415,7 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(34),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            padding: const AppEdgeInsets.fromLTRB(16, 0, 16, 12),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -423,7 +425,7 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppPalette.textCoolSecondary,
                 ),
               ),
             ),
@@ -433,8 +435,8 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
       body: SafeArea(
         top: false,
         child: RefreshIndicator(
-          color: AppColors.accent,
-          backgroundColor: AppColors.surface,
+          color: AppPalette.primary,
+          backgroundColor: AppPalette.surfaceCool,
           onRefresh: () => _loadQueue(),
           child: _buildBody(context),
         ),
@@ -448,7 +450,7 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
     if (_isLoading && _stories.isEmpty) {
       return const _ModerationStateList(
         child: Center(
-          child: CircularProgressIndicator(color: AppColors.accent),
+          child: CircularProgressIndicator(color: AppPalette.primary),
         ),
       );
     }
@@ -462,8 +464,8 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
           action: FilledButton(
             onPressed: () => _loadQueue(),
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.accent,
-              foregroundColor: AppColors.background,
+              backgroundColor: AppPalette.primary,
+              foregroundColor: AppPalette.backgroundWarm,
             ),
             child: Text(l10n.feedRetryAction),
           ),
@@ -488,7 +490,7 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
         return ListView.builder(
           controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.fromLTRB(
+          padding: AppEdgeInsets.fromLTRB(
             horizontalPadding,
             12,
             horizontalPadding,
@@ -498,15 +500,15 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
           itemBuilder: (context, index) {
             if (index >= _stories.length) {
               return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
+                padding: AppEdgeInsets.symmetric(vertical: 16),
                 child: Center(
-                  child: CircularProgressIndicator(color: AppColors.accent),
+                  child: CircularProgressIndicator(color: AppPalette.primary),
                 ),
               );
             }
             final story = _stories[index];
             return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: const AppEdgeInsets.only(bottom: 12),
               child: _ModerationPostCard(
                 post: story,
                 isReviewing: _reviewingPostIds.contains(story.id),
@@ -546,13 +548,13 @@ class _ModerationPostCard extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 640),
         child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: AppColors.surfaceLight,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.border),
+          decoration: AppBoxDecoration(
+            color: AppPalette.surfaceCoolLight,
+            borderRadius: AppBorderRadius.circular(8),
+            border: Border.all(color: AppPalette.outlineOverlay),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const AppEdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -561,7 +563,7 @@ class _ModerationPostCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: textTheme.titleMedium?.copyWith(
-                    color: AppColors.textPrimary,
+                    color: AppPalette.textPrimary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -571,7 +573,7 @@ class _ModerationPostCard extends StatelessWidget {
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   style: textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppPalette.textCoolSecondary,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -592,8 +594,8 @@ class _ModerationPostCard extends StatelessWidget {
                       key: ValueKey('approve-${post.id}'),
                       onPressed: isReviewing ? null : onApprove,
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.success,
-                        foregroundColor: AppColors.background,
+                        backgroundColor: AppPalette.success,
+                        foregroundColor: AppPalette.backgroundWarm,
                       ),
                       icon: isReviewing
                           ? const SizedBox(
@@ -608,8 +610,8 @@ class _ModerationPostCard extends StatelessWidget {
                       key: ValueKey('reject-${post.id}'),
                       onPressed: isReviewing ? null : onReject,
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.destructive,
-                        side: const BorderSide(color: AppColors.destructive),
+                        foregroundColor: AppPalette.danger,
+                        side: const BorderSide(color: AppPalette.danger),
                       ),
                       icon: const Icon(Icons.close_rounded, size: 18),
                       label: Text(l10n.communityModerationRejectAction),
@@ -618,7 +620,7 @@ class _ModerationPostCard extends StatelessWidget {
                       key: ValueKey('history-${post.id}'),
                       onPressed: onHistory,
                       style: TextButton.styleFrom(
-                        foregroundColor: AppColors.textSecondary,
+                        foregroundColor: AppPalette.textCoolSecondary,
                       ),
                       icon: const Icon(Icons.history_rounded, size: 18),
                       label: Text(l10n.communityModerationHistoryAction),
@@ -645,13 +647,13 @@ class _DecisionHistoryTile extends StatelessWidget {
     final reason = decision.reason.trim();
 
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border),
+      decoration: AppBoxDecoration(
+        color: AppPalette.surfaceCoolLight,
+        borderRadius: AppBorderRadius.circular(8),
+        border: Border.all(color: AppPalette.outlineOverlay),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const AppEdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -660,7 +662,7 @@ class _DecisionHistoryTile extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: textTheme.titleSmall?.copyWith(
-                color: AppColors.textPrimary,
+                color: AppPalette.textPrimary,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -670,7 +672,7 @@ class _DecisionHistoryTile extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
+                color: AppPalette.textCoolSecondary,
               ),
             ),
             if (reason.isNotEmpty) ...[
@@ -680,7 +682,7 @@ class _DecisionHistoryTile extends StatelessWidget {
                 maxLines: 4,
                 overflow: TextOverflow.ellipsis,
                 style: textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textPrimary,
+                  color: AppPalette.textPrimary,
                 ),
               ),
             ],
@@ -699,18 +701,18 @@ class _StatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.tagBackground,
-        borderRadius: BorderRadius.circular(999),
+      decoration: AppBoxDecoration(
+        color: AppPalette.tagBackground,
+        borderRadius: AppBorderRadius.circular(999),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Text(
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: AppColors.textPrimary,
+            color: AppPalette.textPrimary,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -732,7 +734,7 @@ class _ModerationStateList extends StatelessWidget {
 
         return ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.fromLTRB(
+          padding: AppEdgeInsets.fromLTRB(
             horizontalPadding,
             48,
             horizontalPadding,
@@ -771,17 +773,17 @@ class _ModerationMessage extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border),
+      decoration: AppBoxDecoration(
+        color: AppPalette.surfaceCoolLight,
+        borderRadius: AppBorderRadius.circular(8),
+        border: Border.all(color: AppPalette.outlineOverlay),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const AppEdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: AppColors.accent, size: 34),
+            Icon(icon, color: AppPalette.primary, size: 34),
             const SizedBox(height: 14),
             Text(
               title,
@@ -789,7 +791,7 @@ class _ModerationMessage extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: textTheme.titleMedium?.copyWith(
-                color: AppColors.textPrimary,
+                color: AppPalette.textPrimary,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -800,7 +802,7 @@ class _ModerationMessage extends StatelessWidget {
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
               style: textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
+                color: AppPalette.textCoolSecondary,
               ),
             ),
             if (action != null) ...[const SizedBox(height: 18), action!],

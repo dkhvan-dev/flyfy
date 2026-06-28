@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
-import '../../../core/ui/app_colors.dart';
 import '../models/feed_block_vm.dart';
 
 class FeedConversionCard extends StatelessWidget {
@@ -22,30 +22,30 @@ class FeedConversionCard extends StatelessWidget {
     };
 
     return Material(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(8),
+      color: AppPalette.surfaceCool,
+      borderRadius: AppBorderRadius.circular(8),
       child: InkWell(
         key: ValueKey('open-feed-conversion-${block.id}'),
         onTap: onOpen,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppBorderRadius.circular(8),
         child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.border),
+          decoration: AppBoxDecoration(
+            borderRadius: AppBorderRadius.circular(8),
+            border: Border.all(color: AppPalette.outlineOverlay),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const AppEdgeInsets.all(16),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceLight,
-                    borderRadius: BorderRadius.circular(8),
+                  decoration: AppBoxDecoration(
+                    color: AppPalette.surfaceCoolLight,
+                    borderRadius: AppBorderRadius.circular(8),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: Icon(icon, color: AppColors.accent, size: 22),
+                    padding: const AppEdgeInsets.all(10),
+                    child: Icon(icon, color: AppPalette.primary, size: 22),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -58,7 +58,7 @@ class FeedConversionCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: textTheme.titleMedium?.copyWith(
-                          color: AppColors.textPrimary,
+                          color: AppPalette.textPrimary,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -69,7 +69,7 @@ class FeedConversionCard extends StatelessWidget {
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
                           style: textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textSecondary,
+                            color: AppPalette.textCoolSecondary,
                           ),
                         ),
                       ],

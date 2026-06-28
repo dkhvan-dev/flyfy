@@ -44,10 +44,10 @@ void main() {
 
       final submitSource = source.substring(submitStart, buildStart);
       expect(submitSource, contains('LinearGradient('));
-      expect(submitSource, contains('Color(0xFF2B1808)'));
-      expect(submitSource, contains('Color(0xFF201208)'));
-      expect(submitSource, contains('Color(0xFF3B260D)'));
-      expect(submitSource, contains('AppColors.accent'));
+      expect(submitSource, contains('AppPalette.warmSurface21'));
+      expect(submitSource, contains('AppPalette.warmInk63'));
+      expect(submitSource, contains('AppPalette.warmSurface66'));
+      expect(submitSource, contains('AppPalette.primary'));
       expect(submitSource, contains('Wrap('));
     },
   );
@@ -68,7 +68,7 @@ void main() {
       expect(materialStart, isNonNegative);
       expect(switchStart, isNonNegative);
       expect(materialStart, lessThan(switchStart));
-      expect(editorSource, contains('color: Colors.transparent'));
+      expect(editorSource, contains('color: AppPalette.transparent'));
     },
   );
 }

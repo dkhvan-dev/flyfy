@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
 import '../../../../../core/network/file_api.dart';
-import '../../../../../core/ui/app_colors.dart';
 import '../../../../../l10n/generated/app_localizations.dart';
 import '../../../../../shared/widgets/app_city_filter_section.dart';
 import '../../../story_ui.dart';
@@ -148,7 +148,7 @@ class _StoryMetadataPanelState extends State<StoryMetadataPanel> {
     return DecoratedBox(
       decoration: storyEditorPanelDecoration(context),
       child: Padding(
-        padding: const EdgeInsets.all(StoryEditorSpacing.lg),
+        padding: const AppEdgeInsets.all(StoryEditorSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -369,20 +369,20 @@ class _StoryMetadataPanelState extends State<StoryMetadataPanel> {
                         : null;
                     final borderColor = coverError == null
                         ? Theme.of(context).dividerColor
-                        : AppColors.destructive;
+                        : AppPalette.danger;
                     final coverImage = _coverImageProvider(
                       coverUpload,
                       metadata.coverFileId,
                     );
                     return DecoratedBox(
                       key: const ValueKey('story-editor-cover-field'),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.04),
-                        borderRadius: BorderRadius.circular(8),
+                      decoration: AppBoxDecoration(
+                        color: AppPalette.white.withValues(alpha: 0.04),
+                        borderRadius: AppBorderRadius.circular(8),
                         border: Border.all(color: borderColor, width: 1.4),
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.all(StoryEditorSpacing.md),
+                        padding: const AppEdgeInsets.all(StoryEditorSpacing.md),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -399,7 +399,7 @@ class _StoryMetadataPanelState extends State<StoryMetadataPanel> {
                                     key: const ValueKey(
                                       'story-editor-cover-thumbnail',
                                     ),
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: AppBorderRadius.circular(8),
                                     child: AspectRatio(
                                       aspectRatio: 16 / 9,
                                       child: Stack(
@@ -410,19 +410,20 @@ class _StoryMetadataPanelState extends State<StoryMetadataPanel> {
                                             fit: BoxFit.cover,
                                             errorBuilder: (_, _, _) =>
                                                 DecoratedBox(
-                                                  decoration: BoxDecoration(
+                                                  decoration: AppBoxDecoration(
                                                     color: StoryPalette
                                                         .surfaceRaised,
                                                     border: Border.all(
-                                                      color: AppColors.border,
+                                                      color: AppPalette
+                                                          .outlineOverlay,
                                                     ),
                                                   ),
                                                   child: const Center(
                                                     child: Icon(
                                                       Icons
                                                           .broken_image_outlined,
-                                                      color:
-                                                          AppColors.textCaption,
+                                                      color: AppPalette
+                                                          .textCaption,
                                                     ),
                                                   ),
                                                 ),
@@ -445,16 +446,15 @@ class _StoryMetadataPanelState extends State<StoryMetadataPanel> {
                                                         minHeight: 40,
                                                       ),
                                                   style: IconButton.styleFrom(
-                                                    backgroundColor: AppColors
-                                                        .surface
+                                                    backgroundColor: AppPalette
+                                                        .surfaceCool
                                                         .withValues(
                                                           alpha: 0.86,
                                                         ),
                                                     foregroundColor:
-                                                        AppColors.destructive,
+                                                        AppPalette.danger,
                                                     side: BorderSide(
-                                                      color: AppColors
-                                                          .destructive
+                                                      color: AppPalette.danger
                                                           .withValues(
                                                             alpha: 0.45,
                                                           ),
@@ -490,7 +490,7 @@ class _StoryMetadataPanelState extends State<StoryMetadataPanel> {
                                     dimension: 24,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2.4,
-                                      color: AppColors.accent,
+                                      color: AppPalette.primary,
                                     ),
                                   )
                                 else
@@ -520,7 +520,7 @@ class _StoryMetadataPanelState extends State<StoryMetadataPanel> {
                                         : Theme.of(
                                             context,
                                           ).textTheme.bodyMedium?.copyWith(
-                                            color: AppColors.destructive,
+                                            color: AppPalette.danger,
                                           ),
                                   ),
                                 ),
@@ -545,7 +545,7 @@ class _StoryMetadataPanelState extends State<StoryMetadataPanel> {
                               Text(
                                 coverError,
                                 style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(color: AppColors.destructive),
+                                    ?.copyWith(color: AppPalette.danger),
                               ),
                             ],
                           ],
@@ -731,7 +731,7 @@ class _TagsEditor extends StatelessWidget {
                 Expanded(child: input),
                 const SizedBox(width: StoryEditorSpacing.sm),
                 Padding(
-                  padding: const EdgeInsets.only(top: StoryEditorSpacing.xs),
+                  padding: const AppEdgeInsets.only(top: StoryEditorSpacing.xs),
                   child: addButton,
                 ),
               ],
@@ -748,13 +748,13 @@ class _TagsEditor extends StatelessWidget {
                 InputChip(
                   label: Text(tag),
                   onDeleted: () => _removeTag(tag),
-                  backgroundColor: AppColors.accent.withValues(alpha: 0.12),
-                  deleteIconColor: AppColors.accent,
+                  backgroundColor: AppPalette.primary.withValues(alpha: 0.12),
+                  deleteIconColor: AppPalette.primary,
                   side: BorderSide(
-                    color: AppColors.accent.withValues(alpha: 0.22),
+                    color: AppPalette.primary.withValues(alpha: 0.22),
                   ),
                   labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: AppColors.textPrimary,
+                    color: AppPalette.textPrimary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -766,7 +766,7 @@ class _TagsEditor extends StatelessWidget {
           l10n.storyTagsLimit,
           style: Theme.of(
             context,
-          ).textTheme.bodySmall?.copyWith(color: AppColors.textCaption),
+          ).textTheme.bodySmall?.copyWith(color: AppPalette.textCaption),
         ),
       ],
     );
@@ -896,25 +896,25 @@ class _StoryTemplatePickerField extends StatelessWidget {
             : 280.0;
         return PopupMenuButton<StoryEditorTemplatePreset>(
           position: PopupMenuPosition.under,
-          padding: EdgeInsets.zero,
+          padding: AppEdgeInsets.zero,
           offset: const Offset(0, 8),
           constraints: BoxConstraints(
             minWidth: fieldWidth,
             maxWidth: fieldWidth,
           ),
           color: StoryPalette.surfaceRaised,
-          surfaceTintColor: Colors.transparent,
+          surfaceTintColor: AppPalette.transparent,
           elevation: 14,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: AppColors.accent.withValues(alpha: 0.14)),
+            borderRadius: AppBorderRadius.circular(16),
+            side: BorderSide(color: AppPalette.primary.withValues(alpha: 0.14)),
           ),
           onSelected: onSelected,
           itemBuilder: (context) => _templatePresetValues
               .map(
                 (preset) => PopupMenuItem<StoryEditorTemplatePreset>(
                   value: preset,
-                  padding: EdgeInsets.zero,
+                  padding: AppEdgeInsets.zero,
                   child: _StoryTemplateMenuItem(
                     title: _templatePresetTitle(l10n, preset),
                     subtitle:
@@ -938,7 +938,7 @@ class _StoryTemplatePickerField extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.dashboard_customize_outlined,
-                      color: AppColors.accent,
+                      color: AppPalette.primary,
                       size: 20,
                     ),
                     const SizedBox(width: StoryEditorSpacing.sm),
@@ -949,8 +949,8 @@ class _StoryTemplatePickerField extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: selectedPreset == null
-                              ? AppColors.textSecondary
-                              : AppColors.textPrimary,
+                              ? AppPalette.textCoolSecondary
+                              : AppPalette.textPrimary,
                           fontWeight: selectedPreset == null
                               ? FontWeight.w500
                               : FontWeight.w700,
@@ -960,7 +960,7 @@ class _StoryTemplatePickerField extends StatelessWidget {
                     const SizedBox(width: StoryEditorSpacing.sm),
                     const Icon(
                       Icons.expand_more_rounded,
-                      color: AppColors.accent,
+                      color: AppPalette.primary,
                     ),
                   ],
                 ),
@@ -989,34 +989,34 @@ class _StoryTemplateMenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
+      padding: const AppEdgeInsets.symmetric(
         horizontal: StoryEditorSpacing.sm,
         vertical: StoryEditorSpacing.xs,
       ),
       child: DecoratedBox(
-        decoration: BoxDecoration(
+        decoration: AppBoxDecoration(
           color: selected
-              ? AppColors.accent.withValues(alpha: 0.16)
-              : Colors.white.withValues(alpha: 0.035),
-          borderRadius: BorderRadius.circular(14),
+              ? AppPalette.primary.withValues(alpha: 0.16)
+              : AppPalette.white.withValues(alpha: 0.035),
+          borderRadius: AppBorderRadius.circular(14),
           border: Border.all(
             color: selected
-                ? AppColors.accent.withValues(alpha: 0.36)
-                : Colors.white.withValues(alpha: 0.07),
+                ? AppPalette.primary.withValues(alpha: 0.36)
+                : AppPalette.white.withValues(alpha: 0.07),
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(StoryEditorSpacing.md),
+          padding: const AppEdgeInsets.all(StoryEditorSpacing.md),
           child: Row(
             children: [
               Container(
                 width: 38,
                 height: 38,
-                decoration: BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(12),
+                decoration: AppBoxDecoration(
+                  color: AppPalette.primary.withValues(alpha: 0.14),
+                  borderRadius: AppBorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: AppColors.accent, size: 20),
+                child: Icon(icon, color: AppPalette.primary, size: 20),
               ),
               const SizedBox(width: StoryEditorSpacing.md),
               Expanded(
@@ -1029,7 +1029,7 @@ class _StoryTemplateMenuItem extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textPrimary,
+                        color: AppPalette.textPrimary,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -1039,7 +1039,7 @@ class _StoryTemplateMenuItem extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: AppPalette.textCoolSecondary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -1052,7 +1052,7 @@ class _StoryTemplateMenuItem extends StatelessWidget {
                 duration: const Duration(milliseconds: 120),
                 child: const Icon(
                   Icons.check_circle_rounded,
-                  color: AppColors.accent,
+                  color: AppPalette.primary,
                   size: 20,
                 ),
               ),
@@ -1191,24 +1191,24 @@ class _MetadataPopupField extends StatelessWidget {
             : 280.0;
         return PopupMenuButton<String>(
           position: PopupMenuPosition.under,
-          padding: EdgeInsets.zero,
+          padding: AppEdgeInsets.zero,
           constraints: BoxConstraints(
             minWidth: fieldWidth,
             maxWidth: fieldWidth,
           ),
           color: StoryPalette.surfaceRaised,
-          surfaceTintColor: Colors.transparent,
+          surfaceTintColor: AppPalette.transparent,
           elevation: 14,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: AppColors.accent.withValues(alpha: 0.14)),
+            borderRadius: AppBorderRadius.circular(16),
+            side: BorderSide(color: AppPalette.primary.withValues(alpha: 0.14)),
           ),
           onSelected: onChanged,
           itemBuilder: (context) => values
               .map(
                 (item) => PopupMenuItem<String>(
                   value: item,
-                  padding: EdgeInsets.zero,
+                  padding: AppEdgeInsets.zero,
                   child: _StoryMetadataMenuItem(
                     title: displayValue(item),
                     icon: iconFor(item),
@@ -1228,7 +1228,7 @@ class _MetadataPopupField extends StatelessWidget {
               isEmpty: selectedLabel.trim().isEmpty,
               child: Row(
                 children: [
-                  Icon(leadingIcon, color: AppColors.accent, size: 20),
+                  Icon(leadingIcon, color: AppPalette.primary, size: 20),
                   const SizedBox(width: StoryEditorSpacing.sm),
                   Expanded(
                     child: Text(
@@ -1236,14 +1236,14 @@ class _MetadataPopupField extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppColors.textPrimary,
+                        color: AppPalette.textPrimary,
                       ),
                     ),
                   ),
                   const SizedBox(width: StoryEditorSpacing.sm),
                   const Icon(
                     Icons.expand_more_rounded,
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                   ),
                 ],
               ),
@@ -1271,34 +1271,34 @@ class _StoryMetadataMenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
+      padding: const AppEdgeInsets.symmetric(
         horizontal: StoryEditorSpacing.sm,
         vertical: StoryEditorSpacing.xs,
       ),
       child: DecoratedBox(
-        decoration: BoxDecoration(
+        decoration: AppBoxDecoration(
           color: selected
-              ? AppColors.accent.withValues(alpha: 0.16)
-              : Colors.white.withValues(alpha: 0.035),
-          borderRadius: BorderRadius.circular(14),
+              ? AppPalette.primary.withValues(alpha: 0.16)
+              : AppPalette.white.withValues(alpha: 0.035),
+          borderRadius: AppBorderRadius.circular(14),
           border: Border.all(
             color: selected
-                ? AppColors.accent.withValues(alpha: 0.36)
-                : Colors.white.withValues(alpha: 0.07),
+                ? AppPalette.primary.withValues(alpha: 0.36)
+                : AppPalette.white.withValues(alpha: 0.07),
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(StoryEditorSpacing.md),
+          padding: const AppEdgeInsets.all(StoryEditorSpacing.md),
           child: Row(
             children: [
               Container(
                 width: 38,
                 height: 38,
-                decoration: BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(12),
+                decoration: AppBoxDecoration(
+                  color: AppPalette.primary.withValues(alpha: 0.14),
+                  borderRadius: AppBorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: AppColors.accent, size: 20),
+                child: Icon(icon, color: AppPalette.primary, size: 20),
               ),
               const SizedBox(width: StoryEditorSpacing.md),
               Expanded(
@@ -1307,7 +1307,7 @@ class _StoryMetadataMenuItem extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textPrimary,
+                    color: AppPalette.textPrimary,
                     fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                   ),
                 ),
@@ -1316,7 +1316,7 @@ class _StoryMetadataMenuItem extends StatelessWidget {
               AnimatedOpacity(
                 opacity: selected ? 1 : 0,
                 duration: const Duration(milliseconds: 120),
-                child: Icon(selectedIcon, color: AppColors.accent, size: 20),
+                child: Icon(selectedIcon, color: AppPalette.primary, size: 20),
               ),
             ],
           ),

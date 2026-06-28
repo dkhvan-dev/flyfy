@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
 import '../../../core/time/app_time.dart';
-import '../../../core/ui/app_colors.dart';
 import '../../../features/excursions/models/excursion_schedule_vm.dart';
 import '../../../l10n/generated/app_localizations.dart';
 
 Color guideScheduleStatusColor(ExcursionScheduleSlotVm slot) {
   switch (slot.status) {
     case ExcursionScheduleSlotStatus.available:
-      return const Color(0xFF25B67A);
+      return AppPalette.tealMuted06;
     case ExcursionScheduleSlotStatus.booked:
     case ExcursionScheduleSlotStatus.full:
-      return AppColors.accent;
+      return AppPalette.primary;
     case ExcursionScheduleSlotStatus.closed:
-      return const Color(0xFF7A88FF);
+      return AppPalette.blueSoft10;
     case ExcursionScheduleSlotStatus.cancelled:
-      return const Color(0xFF8B8178);
+      return AppPalette.neutralMuted01;
     case ExcursionScheduleSlotStatus.completed:
-      return const Color(0xFF6F8F7B);
+      return AppPalette.greenMuted14;
   }
 }
 
@@ -56,22 +56,22 @@ class GuideScheduleSlotCard extends StatelessWidget {
       onTap: onTap,
       child: ExcludeSemantics(
         child: Material(
-          color: const Color(0xFF2A2118),
-          borderRadius: BorderRadius.circular(8),
+          color: AppPalette.warmSurface20,
+          borderRadius: AppBorderRadius.circular(8),
           child: InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppBorderRadius.circular(8),
             child: Padding(
-              padding: const EdgeInsets.all(14),
+              padding: const AppEdgeInsets.all(14),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
                     width: 5,
                     height: 64,
-                    decoration: BoxDecoration(
+                    decoration: AppBoxDecoration(
                       color: color,
-                      borderRadius: BorderRadius.circular(99),
+                      borderRadius: AppBorderRadius.circular(99),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -86,8 +86,8 @@ class GuideScheduleSlotCard extends StatelessWidget {
                           children: [
                             Text(
                               timeLabel,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
+                              style: const AppTextStyle(
+                                color: AppPalette.textPrimary,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -103,8 +103,8 @@ class GuideScheduleSlotCard extends StatelessWidget {
                           title,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFFEFDCC8),
+                          style: const AppTextStyle(
+                            color: AppPalette.orangeLight30,
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
                           ),
@@ -112,8 +112,8 @@ class GuideScheduleSlotCard extends StatelessWidget {
                         const SizedBox(height: 10),
                         Text(
                           '${slot.bookedSeats}/${slot.capacity}',
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
+                          style: const AppTextStyle(
+                            color: AppPalette.textCoolSecondary,
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
                           ),
@@ -124,8 +124,8 @@ class GuideScheduleSlotCard extends StatelessWidget {
                             l10n.guideCalendarCancelReason(cancelReason),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
+                            style: const AppTextStyle(
+                              color: AppPalette.textCoolSecondary,
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                               height: 1.2,
@@ -138,7 +138,7 @@ class GuideScheduleSlotCard extends StatelessWidget {
                   const SizedBox(width: 10),
                   Icon(
                     Icons.chevron_right_rounded,
-                    color: Colors.white.withValues(alpha: 0.45),
+                    color: AppPalette.white.withValues(alpha: 0.45),
                   ),
                 ],
               ),
@@ -176,17 +176,17 @@ class _StatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
+      padding: const AppEdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: AppBoxDecoration(
         color: color.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppBorderRadius.circular(999),
         border: Border.all(color: color.withValues(alpha: 0.36)),
       ),
       child: Text(
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(
+        style: AppTextStyle(
           color: color,
           fontSize: 12,
           fontWeight: FontWeight.w900,

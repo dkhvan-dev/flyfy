@@ -1,21 +1,21 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/ui/app_bottom_navigation_bars.dart';
-import '../../../core/ui/app_colors.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../data/help_center_api.dart';
 import '../widgets/help_article_tile.dart';
 
-const _helpCenterBackground = Color(0xFF160D07);
-const _helpCenterBackgroundTop = Color(0xFF2B1908);
-const _helpCenterSurface = Color(0xFF2A1A0A);
-const _helpCenterSurfaceHigh = Color(0xFF3A240D);
-const _helpCenterHeroStart = Color(0xFF5C330B);
-const _helpCenterHeroEnd = Color(0xFF231407);
-const _helpCenterAmberSoft = Color(0xFFFFD08A);
+const _helpCenterBackground = AppPalette.warmInk22;
+const _helpCenterBackgroundTop = AppPalette.warmSurface22;
+const _helpCenterSurface = AppPalette.warmSurface12;
+const _helpCenterSurfaceHigh = AppPalette.warmSurface55;
+const _helpCenterHeroStart = AppPalette.warmSurface97;
+const _helpCenterHeroEnd = AppPalette.warmInk88;
+const _helpCenterAmberSoft = AppPalette.amberLight06;
 const _helpCenterPageSize = 20;
 const _helpCenterSearchDebounce = Duration(milliseconds: 450);
 const _helpCenterCompactCategoryLimit = 5;
@@ -214,7 +214,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
         onChatsTap: () => context.push('/chats'),
       ),
       body: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: const AppBoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -232,7 +232,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
             physics: const BouncingScrollPhysics(),
             slivers: [
               SliverPadding(
-                padding: EdgeInsets.fromLTRB(
+                padding: AppEdgeInsets.fromLTRB(
                   horizontalPadding,
                   isCompact ? 16 : 24,
                   horizontalPadding,
@@ -297,7 +297,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                 ),
               ),
               SliverPadding(
-                padding: EdgeInsets.fromLTRB(
+                padding: AppEdgeInsets.fromLTRB(
                   horizontalPadding,
                   0,
                   horizontalPadding,
@@ -326,9 +326,10 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
     if (categories.length <= _helpCenterCompactCategoryLimit) return;
     final selectedCategoryId = await showModalBottomSheet<String>(
       context: context,
+      isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (context) => _HelpCenterCategorySheet(
         title: l10n.helpCenterCategoriesTitle,
         categories: categories,
@@ -368,7 +369,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
       children: [
         ..._articles.map(
           (article) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: const AppEdgeInsets.only(bottom: 12),
             child: HelpArticleTile(
               article: _articleWithoutSupportAction(article),
               initiallyExpanded: _articles.length == 1,
@@ -384,7 +385,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
         ),
         if (!_isSearchMode && _hasMore)
           Padding(
-            padding: const EdgeInsets.only(top: 4),
+            padding: const AppEdgeInsets.only(top: 4),
             child: SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
@@ -399,8 +400,8 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                     : const Icon(Icons.expand_more_rounded),
                 label: Text(l10n.helpCenterLoadMore),
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.accent,
-                  foregroundColor: AppColors.textPrimary,
+                  backgroundColor: AppPalette.primary,
+                  foregroundColor: AppPalette.textPrimary,
                 ),
               ),
             ),
@@ -511,10 +512,12 @@ class _HelpCenterSectionHeading extends StatelessWidget {
     return Row(
       children: [
         DecoratedBox(
-          decoration: BoxDecoration(
-            color: AppColors.accent.withValues(alpha: 0.16),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.accent.withValues(alpha: 0.28)),
+          decoration: AppBoxDecoration(
+            color: AppPalette.primary.withValues(alpha: 0.16),
+            borderRadius: AppBorderRadius.circular(12),
+            border: Border.all(
+              color: AppPalette.primary.withValues(alpha: 0.28),
+            ),
           ),
           child: const SizedBox(
             width: 38,
@@ -532,8 +535,8 @@ class _HelpCenterSectionHeading extends StatelessWidget {
             title,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
+            style: const AppTextStyle(
+              color: AppPalette.textPrimary,
               fontSize: 20,
               fontWeight: FontWeight.w900,
               height: 1.12,
@@ -713,19 +716,19 @@ class _HelpCenterCategoryChip extends StatelessWidget {
       label: Text(category.label, maxLines: 1, overflow: TextOverflow.ellipsis),
       selected: selected,
       onSelected: (_) => onSelected(category.id),
-      selectedColor: AppColors.accent,
+      selectedColor: AppPalette.primary,
       backgroundColor: _helpCenterSurfaceHigh.withValues(alpha: 0.76),
-      labelStyle: TextStyle(
-        color: AppColors.textPrimary,
+      labelStyle: AppTextStyle(
+        color: AppPalette.textPrimary,
         fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
         letterSpacing: 0,
       ),
       side: BorderSide(
         color: selected
-            ? AppColors.accent
-            : AppColors.accent.withValues(alpha: 0.18),
+            ? AppPalette.primary
+            : AppPalette.primary.withValues(alpha: 0.18),
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      shape: RoundedRectangleBorder(borderRadius: AppBorderRadius.circular(18)),
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
   }
@@ -747,18 +750,18 @@ class _HelpCenterMoreCategoriesChip extends StatelessWidget {
       avatar: const Icon(
         Icons.tune_rounded,
         size: 18,
-        color: AppColors.textPrimary,
+        color: AppPalette.textPrimary,
       ),
       label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
       onPressed: onPressed,
-      backgroundColor: AppColors.accent,
-      labelStyle: const TextStyle(
-        color: AppColors.textPrimary,
+      backgroundColor: AppPalette.primary,
+      labelStyle: const AppTextStyle(
+        color: AppPalette.textPrimary,
         fontWeight: FontWeight.w900,
         letterSpacing: 0,
       ),
-      side: const BorderSide(color: AppColors.accent),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      side: const BorderSide(color: AppPalette.primary),
+      shape: RoundedRectangleBorder(borderRadius: AppBorderRadius.circular(18)),
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
   }
@@ -816,9 +819,11 @@ class _HelpCenterCategorySheet extends StatelessWidget {
         ),
         child: DecoratedBox(
           key: const ValueKey('help-center-category-sheet'),
-          decoration: const BoxDecoration(
+          decoration: const AppBoxDecoration(
             color: _helpCenterSurface,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+            borderRadius: AppBorderRadius.vertical(
+              top: AppRadiusValue.circular(26),
+            ),
           ),
           child: SafeArea(
             top: false,
@@ -826,7 +831,7 @@ class _HelpCenterCategorySheet extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 12, 8, 10),
+                  padding: const AppEdgeInsets.fromLTRB(18, 12, 8, 10),
                   child: Row(
                     children: [
                       Expanded(
@@ -834,8 +839,8 @@ class _HelpCenterCategorySheet extends StatelessWidget {
                           title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
+                          style: const AppTextStyle(
+                            color: AppPalette.textPrimary,
                             fontSize: 20,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 0,
@@ -845,7 +850,7 @@ class _HelpCenterCategorySheet extends StatelessWidget {
                       IconButton(
                         onPressed: () => Navigator.of(context).pop(),
                         icon: const Icon(Icons.close_rounded),
-                        color: AppColors.accent,
+                        color: AppPalette.primary,
                         tooltip: MaterialLocalizations.of(
                           context,
                         ).closeButtonTooltip,
@@ -855,7 +860,7 @@ class _HelpCenterCategorySheet extends StatelessWidget {
                 ),
                 Flexible(
                   child: ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+                    padding: const AppEdgeInsets.fromLTRB(12, 0, 12, 16),
                     shrinkWrap: true,
                     itemCount: categories.length,
                     separatorBuilder: (_, _) => const SizedBox(height: 8),
@@ -893,14 +898,14 @@ class _HelpCenterCategorySheetItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: selected
-          ? AppColors.accent.withValues(alpha: 0.16)
+          ? AppPalette.primary.withValues(alpha: 0.16)
           : _helpCenterSurfaceHigh.withValues(alpha: 0.74),
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: AppBorderRadius.circular(16),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppBorderRadius.circular(16),
         onTap: () => Navigator.of(context).pop(category.id),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          padding: const AppEdgeInsets.symmetric(horizontal: 14, vertical: 13),
           child: Row(
             children: [
               Expanded(
@@ -908,8 +913,8 @@ class _HelpCenterCategorySheetItem extends StatelessWidget {
                   category.label,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
+                  style: AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: 15,
                     height: 1.2,
                     fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
@@ -922,7 +927,7 @@ class _HelpCenterCategorySheetItem extends StatelessWidget {
                 selected
                     ? Icons.check_circle_rounded
                     : Icons.chevron_right_rounded,
-                color: selected ? AppColors.accent : _helpCenterAmberSoft,
+                color: selected ? AppPalette.primary : _helpCenterAmberSoft,
                 size: selected ? 22 : 20,
               ),
             ],
@@ -949,7 +954,7 @@ class _HelpCenterHeader extends StatelessWidget {
     final textScale = MediaQuery.textScalerOf(context);
 
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -959,18 +964,18 @@ class _HelpCenterHeader extends StatelessWidget {
             _helpCenterHeroEnd,
           ],
         ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.24)),
+        borderRadius: AppBorderRadius.circular(24),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.24)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.accent.withValues(alpha: 0.10),
+            color: AppPalette.primary.withValues(alpha: 0.10),
             blurRadius: 28,
             offset: const Offset(0, 16),
           ),
         ],
       ),
       child: Padding(
-        padding: EdgeInsets.all(isCompact ? 14 : 16),
+        padding: AppEdgeInsets.all(isCompact ? 14 : 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -987,8 +992,8 @@ class _HelpCenterHeader extends StatelessWidget {
                   icon: const Icon(Icons.arrow_back_ios_new_rounded),
                   tooltip: MaterialLocalizations.of(context).backButtonTooltip,
                   style: IconButton.styleFrom(
-                    backgroundColor: Colors.white.withValues(alpha: 0.10),
-                    foregroundColor: AppColors.textPrimary,
+                    backgroundColor: AppPalette.white.withValues(alpha: 0.10),
+                    foregroundColor: AppPalette.textPrimary,
                     minimumSize: const Size(44, 44),
                   ),
                 ),
@@ -1005,14 +1010,14 @@ class _HelpCenterHeader extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.accent,
-                        foregroundColor: AppColors.textPrimary,
+                        backgroundColor: AppPalette.primary,
+                        foregroundColor: AppPalette.textPrimary,
                         minimumSize: const Size(44, 44),
-                        padding: EdgeInsets.symmetric(
+                        padding: AppEdgeInsets.symmetric(
                           horizontal: isCompact ? 12 : 14,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: AppBorderRadius.circular(14),
                         ),
                       ),
                     ),
@@ -1025,15 +1030,15 @@ class _HelpCenterHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: AppColors.accent.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(16),
+                  decoration: AppBoxDecoration(
+                    color: AppPalette.primary.withValues(alpha: 0.15),
+                    borderRadius: AppBorderRadius.circular(16),
                     border: Border.all(
-                      color: AppColors.accent.withValues(alpha: 0.28),
+                      color: AppPalette.primary.withValues(alpha: 0.28),
                     ),
                   ),
                   child: const Padding(
-                    padding: EdgeInsets.all(10),
+                    padding: AppEdgeInsets.all(10),
                     child: Icon(
                       Icons.tips_and_updates_rounded,
                       color: _helpCenterAmberSoft,
@@ -1051,8 +1056,8 @@ class _HelpCenterHeader extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         textScaler: textScale.clamp(maxScaleFactor: 1.18),
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
+                        style: AppTextStyle(
+                          color: AppPalette.textPrimary,
                           fontSize: isCompact ? 27 : 30,
                           height: 1.06,
                           fontWeight: FontWeight.w900,
@@ -1063,7 +1068,7 @@ class _HelpCenterHeader extends StatelessWidget {
                       Text(
                         l10n.helpCenterSubtitle,
                         textScaler: textScale.clamp(maxScaleFactor: 1.18),
-                        style: const TextStyle(
+                        style: const AppTextStyle(
                           color: _helpCenterAmberSoft,
                           fontSize: 14,
                           height: 1.38,
@@ -1103,38 +1108,41 @@ class _HelpCenterSearchField extends StatelessWidget {
       key: const ValueKey('help-center-search-field'),
       controller: controller,
       textInputAction: TextInputAction.search,
-      style: const TextStyle(color: AppColors.textPrimary, letterSpacing: 0),
-      decoration: InputDecoration(
+      style: const AppTextStyle(
+        color: AppPalette.textPrimary,
+        letterSpacing: 0,
+      ),
+      decoration: AppInputDecoration(
         filled: true,
         fillColor: _helpCenterSurface,
         hintText: hint,
-        hintStyle: const TextStyle(color: AppColors.textSecondary),
-        prefixIcon: const Icon(Icons.search_rounded, color: AppColors.accent),
+        hintStyle: const AppTextStyle(color: AppPalette.textCoolSecondary),
+        prefixIcon: const Icon(Icons.search_rounded, color: AppPalette.primary),
         suffixIcon: IconButton(
           onPressed: onClear,
           tooltip: MaterialLocalizations.of(context).deleteButtonTooltip,
-          color: AppColors.accent,
+          color: AppPalette.primary,
           icon: const Icon(Icons.close_rounded),
         ),
-        contentPadding: const EdgeInsets.symmetric(
+        contentPadding: const AppEdgeInsets.symmetric(
           horizontal: 16,
           vertical: 16,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: AppBorderRadius.circular(18),
           borderSide: BorderSide(
-            color: AppColors.accent.withValues(alpha: 0.18),
+            color: AppPalette.primary.withValues(alpha: 0.18),
           ),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: AppBorderRadius.circular(18),
           borderSide: BorderSide(
-            color: AppColors.accent.withValues(alpha: 0.18),
+            color: AppPalette.primary.withValues(alpha: 0.18),
           ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: AppColors.accent, width: 1.4),
+          borderRadius: AppBorderRadius.circular(18),
+          borderSide: const BorderSide(color: AppPalette.primary, width: 1.4),
         ),
       ),
       onChanged: onChanged,
@@ -1152,13 +1160,13 @@ class _HelpCenterSkeleton extends StatelessWidget {
       children: List.generate(
         4,
         (index) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
+          padding: const AppEdgeInsets.only(bottom: 12),
           child: DecoratedBox(
-            decoration: BoxDecoration(
+            decoration: AppBoxDecoration(
               color: _helpCenterSurfaceHigh.withValues(alpha: 0.68),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AppBorderRadius.circular(16),
               border: Border.all(
-                color: AppColors.accent.withValues(alpha: 0.10),
+                color: AppPalette.primary.withValues(alpha: 0.10),
               ),
             ),
             child: const SizedBox(height: 96, width: double.infinity),
@@ -1189,31 +1197,31 @@ class _HelpCenterStateMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         color: _helpCenterSurface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.18)),
+        borderRadius: AppBorderRadius.circular(18),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.18)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const AppEdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             DecoratedBox(
-              decoration: BoxDecoration(
-                color: AppColors.accent.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(14),
+              decoration: AppBoxDecoration(
+                color: AppPalette.primary.withValues(alpha: 0.14),
+                borderRadius: AppBorderRadius.circular(14),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(10),
+                padding: const AppEdgeInsets.all(10),
                 child: Icon(icon, color: _helpCenterAmberSoft, size: 28),
               ),
             ),
             const SizedBox(height: 12),
             Text(
               title,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: const AppTextStyle(
+                color: AppPalette.textPrimary,
                 fontSize: 18,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0,
@@ -1222,8 +1230,8 @@ class _HelpCenterStateMessage extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               message,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
+              style: const AppTextStyle(
+                color: AppPalette.textCoolSecondary,
                 fontSize: 14,
                 height: 1.38,
                 letterSpacing: 0,
@@ -1236,10 +1244,10 @@ class _HelpCenterStateMessage extends StatelessWidget {
                 icon: Icon(actionIcon),
                 label: Text(actionLabel!),
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.accent,
-                  foregroundColor: AppColors.textPrimary,
+                  backgroundColor: AppPalette.primary,
+                  foregroundColor: AppPalette.textPrimary,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: AppBorderRadius.circular(14),
                   ),
                 ),
               ),

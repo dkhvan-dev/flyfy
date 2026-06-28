@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
-import '../../../core/ui/app_colors.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../stories/models/post_vm.dart';
 
@@ -29,13 +29,13 @@ class FeedSystemPostsBlock extends StatelessWidget {
 
     return DecoratedBox(
       key: const ValueKey('feed-system-posts-block'),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.18)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.surfaceCoolLight,
+        borderRadius: AppBorderRadius.circular(8),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.18)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const AppEdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -47,7 +47,7 @@ class FeedSystemPostsBlock extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.textPrimary,
+                      color: AppPalette.textPrimary,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -55,8 +55,8 @@ class FeedSystemPostsBlock extends StatelessWidget {
                 TextButton(
                   onPressed: onOpenAll == null ? null : () => onOpenAll!(posts),
                   style: TextButton.styleFrom(
-                    foregroundColor: AppColors.accent,
-                    textStyle: const TextStyle(fontWeight: FontWeight.w900),
+                    foregroundColor: AppPalette.primary,
+                    textStyle: const AppTextStyle(fontWeight: FontWeight.w900),
                   ),
                   child: Text(l10n.feedSystemPostsViewAll),
                 ),
@@ -90,26 +90,26 @@ class _SystemPostPreviewCard extends StatelessWidget {
     final author = post.author.nickname?.trim() ?? '';
 
     return Material(
-      color: const Color(0xFF21170D),
-      borderRadius: BorderRadius.circular(8),
+      color: AppPalette.surface,
+      borderRadius: AppBorderRadius.circular(8),
       child: InkWell(
         onTap: onOpen == null ? null : () => onOpen!(post),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppBorderRadius.circular(8),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const AppEdgeInsets.all(12),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 width: 38,
                 height: 38,
-                decoration: BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.18),
+                decoration: AppBoxDecoration(
+                  color: AppPalette.primary.withValues(alpha: 0.18),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.verified_rounded,
-                  color: AppColors.accent,
+                  color: AppPalette.primary,
                   size: 20,
                 ),
               ),
@@ -123,7 +123,7 @@ class _SystemPostPreviewCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: AppColors.textPrimary,
+                        color: AppPalette.textPrimary,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -134,7 +134,7 @@ class _SystemPostPreviewCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
+                          color: AppPalette.textCoolSecondary,
                           height: 1.25,
                         ),
                       ),
@@ -146,7 +146,7 @@ class _SystemPostPreviewCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: AppColors.accent,
+                          color: AppPalette.primary,
                           fontWeight: FontWeight.w800,
                         ),
                       ),

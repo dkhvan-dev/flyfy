@@ -1,23 +1,23 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:provider/provider.dart';
 
 import '../../features/chat/models/conversation_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/chat_provider.dart';
-import 'app_colors.dart';
 
 enum AppBottomNavItem { home, feed, qr, map, services, chats }
 
 enum AppBottomNavCreateBackgroundStyle { elevated, flat }
 
-const _commonBottomNavBackground = Color(0xFF3B2818);
-const _createBottomNavFlatBackground = Color(0xFF3A2818);
+const _commonBottomNavBackground = AppPalette.warmSurface68;
+const _createBottomNavFlatBackground = AppPalette.warmSurface59;
 const _createBottomNavGradient = LinearGradient(
   begin: Alignment.topCenter,
   end: Alignment.bottomCenter,
-  colors: [Color(0xFF422D1B), _createBottomNavFlatBackground],
+  colors: [AppPalette.warmSurface73, _createBottomNavFlatBackground],
 );
 
 class CommonBottomNavigationBar extends StatelessWidget {
@@ -59,14 +59,14 @@ class CommonBottomNavigationBar extends StatelessWidget {
     return _BottomNavPaintedSafeArea(
       barHeight: layout.barHeight,
       safeBottom: safeBottom,
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         color: _commonBottomNavBackground,
         border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+          top: BorderSide(color: AppPalette.white.withValues(alpha: 0.06)),
         ),
       ),
       child: Padding(
-        padding: EdgeInsets.fromLTRB(
+        padding: AppEdgeInsets.fromLTRB(
           layout.horizontalPadding,
           layout.topPadding,
           layout.horizontalPadding,
@@ -177,24 +177,24 @@ class CreateActionBottomNavigationBar extends StatelessWidget {
     return _BottomNavPaintedSafeArea(
       barHeight: layout.barHeight,
       safeBottom: safeBottom,
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         color: useFlatBackground ? _createBottomNavFlatBackground : null,
         gradient: useFlatBackground ? null : _createBottomNavGradient,
         border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+          top: BorderSide(color: AppPalette.white.withValues(alpha: 0.06)),
         ),
         boxShadow: useFlatBackground
             ? null
             : [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.28),
+                  color: AppPalette.black.withValues(alpha: 0.28),
                   blurRadius: 20,
                   offset: const Offset(0, -4),
                 ),
               ],
       ),
       child: Padding(
-        padding: EdgeInsets.fromLTRB(
+        padding: AppEdgeInsets.fromLTRB(
           layout.horizontalPadding,
           layout.topPadding,
           layout.horizontalPadding,
@@ -276,7 +276,7 @@ class _BottomNavPaintedSafeArea extends StatelessWidget {
       child: SizedBox(
         height: barHeight + safeBottom,
         child: Padding(
-          padding: EdgeInsets.only(bottom: safeBottom),
+          padding: AppEdgeInsets.only(bottom: safeBottom),
           child: child,
         ),
       ),
@@ -305,20 +305,20 @@ class _BottomNavButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = active ? AppColors.accent : const Color(0xFFD8C0A2);
+    final color = active ? AppPalette.primary : AppPalette.orangeLight10;
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(layout.itemRadius),
-        splashColor: AppColors.accent.withValues(alpha: 0.1),
-        highlightColor: Colors.transparent,
+        borderRadius: AppBorderRadius.circular(layout.itemRadius),
+        splashColor: AppPalette.primary.withValues(alpha: 0.1),
+        highlightColor: AppPalette.transparent,
         child: SizedBox(
           height: layout.itemHeight,
           child: Center(
             child: Padding(
-              padding: EdgeInsets.symmetric(
+              padding: AppEdgeInsets.symmetric(
                 horizontal: layout.itemHorizontalInset,
               ),
               child: Column(
@@ -354,7 +354,7 @@ class _BottomNavButton extends StatelessWidget {
                         label,
                         maxLines: 1,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: AppTextStyle(
                           color: color,
                           fontSize: layout.labelSize,
                           fontWeight: FontWeight.w600,
@@ -440,18 +440,18 @@ class _BottomNavBadge extends StatelessWidget {
     return ConstrainedBox(
       constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: AppColors.accent,
-          borderRadius: BorderRadius.circular(999),
+        decoration: AppBoxDecoration(
+          color: AppPalette.primary,
+          borderRadius: AppBorderRadius.circular(999),
           border: Border.all(color: _commonBottomNavBackground, width: 1.5),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+          padding: const AppEdgeInsets.symmetric(horizontal: 5, vertical: 2),
           child: Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
+            style: const AppTextStyle(
+              color: AppPalette.textPrimary,
               fontSize: 10,
               fontWeight: FontWeight.w900,
               letterSpacing: 0,
@@ -511,12 +511,12 @@ class _CreateBottomNavFab extends StatelessWidget {
       button: true,
       label: semanticsLabel,
       child: Material(
-        color: Colors.transparent,
+        color: AppPalette.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(layout.itemRadius),
-          splashColor: Colors.white.withValues(alpha: 0.08),
-          highlightColor: Colors.transparent,
+          borderRadius: AppBorderRadius.circular(layout.itemRadius),
+          splashColor: AppPalette.white.withValues(alpha: 0.08),
+          highlightColor: AppPalette.transparent,
           child: SizedBox(
             height: layout.itemHeight,
             child: Center(
@@ -526,16 +526,16 @@ class _CreateBottomNavFab extends StatelessWidget {
                   Ink(
                     width: layout.fabSize,
                     height: layout.fabSize,
-                    decoration: BoxDecoration(
+                    decoration: AppBoxDecoration(
                       shape: BoxShape.circle,
-                      color: const Color(0xFFFF9F05),
+                      color: AppPalette.warmMuted49,
                       border: Border.all(
-                        color: const Color(0xFF25170C),
+                        color: AppPalette.warmInk103,
                         width: layout.fabBorderWidth,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.24),
+                          color: AppPalette.black.withValues(alpha: 0.24),
                           blurRadius: layout.fabShadowBlur,
                           offset: Offset(0, layout.fabShadowOffsetY),
                         ),
@@ -543,7 +543,7 @@ class _CreateBottomNavFab extends StatelessWidget {
                     ),
                     child: Icon(
                       Icons.add_rounded,
-                      color: const Color(0xFFFFF6EA),
+                      color: AppPalette.orangeWash24,
                       size: layout.fabIconSize,
                     ),
                   ),

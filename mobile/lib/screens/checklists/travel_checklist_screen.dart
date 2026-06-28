@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/network/checklist_api.dart';
 import '../../core/network/reference_api.dart';
-import '../../core/ui/app_colors.dart';
 import '../../features/checklists/data/checklist_offline_cache.dart';
 import '../../features/checklists/models/trip_checklist_vm.dart';
 import '../../features/checklists/models/travel_checklist_route_args.dart';
@@ -15,18 +15,18 @@ import '../../providers/routing_provider.dart';
 import '../../shared/reference/app_country_names.dart';
 
 abstract final class _ChecklistAmber {
-  static const backgroundTop = Color(0xFF33210C);
-  static const backgroundBottom = Color(0xFF120D07);
-  static const surface = Color(0xFF2B1D0F);
-  static const surfaceElevated = Color(0xFF3A2814);
-  static const surfacePressed = Color(0xFF24170B);
-  static const itemSurface = Color(0xFF25190D);
-  static const border = Color(0xFF8C5A16);
-  static const amber = Color(0xFFF98C06);
-  static const amberSoft = Color(0xFFFFB547);
-  static const textPrimary = Color(0xFFFFF7EA);
-  static const textSecondary = Color(0xFFE3CBA5);
-  static const textMuted = Color(0xFFB99562);
+  static const backgroundTop = AppPalette.warmSurface43;
+  static const backgroundBottom = AppPalette.warmInk10;
+  static const surface = AppPalette.warmSurface24;
+  static const surfaceElevated = AppPalette.warmSurface58;
+  static const surfacePressed = AppPalette.warmInk98;
+  static const itemSurface = AppPalette.warmInk106;
+  static const border = AppPalette.warmSurfaceHigh33;
+  static const amber = AppPalette.primary;
+  static const amberSoft = AppPalette.amberSoft15;
+  static const textPrimary = AppPalette.amberWash08;
+  static const textSecondary = AppPalette.amberLight02;
+  static const textMuted = AppPalette.amberMuted02;
 }
 
 enum _ChecklistListFilter { all, upcoming, manual, activities, excursions }
@@ -125,18 +125,20 @@ class _TravelChecklistListScreenState extends State<TravelChecklistListScreen> {
         onPressed: _createPreparation,
         tooltip: l10n.travelChecklistQuickPrepSubmit,
         backgroundColor: _ChecklistAmber.amber,
-        foregroundColor: AppColors.textPrimary,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        foregroundColor: AppPalette.textPrimary,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppBorderRadius.circular(16),
+        ),
         child: const Icon(Icons.add_rounded),
       ),
       body: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: const AppBoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
               _ChecklistAmber.backgroundTop,
-              AppColors.background,
+              AppPalette.backgroundWarm,
               _ChecklistAmber.backgroundBottom,
             ],
           ),
@@ -156,7 +158,7 @@ class _TravelChecklistListScreenState extends State<TravelChecklistListScreen> {
                     ScrollViewKeyboardDismissBehavior.onDrag,
                 slivers: [
                   SliverPadding(
-                    padding: EdgeInsets.fromLTRB(
+                    padding: AppEdgeInsets.fromLTRB(
                       horizontalPadding,
                       constraints.maxWidth < 390 ? 18 : 24,
                       horizontalPadding,
@@ -701,8 +703,9 @@ class _TravelChecklistScreenState extends State<TravelChecklistScreen> {
     if (_requireRouteArgs().isPreview) return;
     final draft = await showModalBottomSheet<_CustomChecklistItemDraft>(
       context: context,
+      isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (context) => const _CustomChecklistItemSheet(),
     );
     if (draft == null || !mounted) return;
@@ -713,8 +716,9 @@ class _TravelChecklistScreenState extends State<TravelChecklistScreen> {
     if (_requireRouteArgs().isPreview) return;
     final draft = await showModalBottomSheet<_CustomChecklistItemDraft>(
       context: context,
+      isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (context) => _CustomChecklistItemSheet(item: item),
     );
     if (draft == null || !mounted) return;
@@ -824,7 +828,7 @@ class _TravelChecklistScreenState extends State<TravelChecklistScreen> {
         ? Icons.error_outline_rounded
         : Icons.check_circle_rounded;
     final accentColor = isError
-        ? const Color(0xFFFF8A65)
+        ? AppPalette.redSoft11
         : _ChecklistAmber.amberSoft;
 
     ScaffoldMessenger.of(context)
@@ -834,9 +838,9 @@ class _TravelChecklistScreenState extends State<TravelChecklistScreen> {
           behavior: SnackBarBehavior.floating,
           backgroundColor: _ChecklistAmber.surfaceElevated,
           elevation: 12,
-          margin: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+          margin: const AppEdgeInsets.fromLTRB(16, 0, 16, 18),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppBorderRadius.circular(8),
             side: BorderSide(
               color: _ChecklistAmber.amber.withValues(alpha: 0.42),
             ),
@@ -848,7 +852,7 @@ class _TravelChecklistScreenState extends State<TravelChecklistScreen> {
               Expanded(
                 child: Text(
                   message,
-                  style: const TextStyle(
+                  style: const AppTextStyle(
                     color: _ChecklistAmber.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
@@ -871,13 +875,13 @@ class _TravelChecklistScreenState extends State<TravelChecklistScreen> {
     return Scaffold(
       backgroundColor: _ChecklistAmber.backgroundBottom,
       body: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: const AppBoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
               _ChecklistAmber.backgroundTop,
-              AppColors.background,
+              AppPalette.backgroundWarm,
               _ChecklistAmber.backgroundBottom,
             ],
           ),
@@ -1038,7 +1042,7 @@ class _ChecklistContent extends StatelessWidget {
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           slivers: [
             SliverPadding(
-              padding: EdgeInsets.fromLTRB(
+              padding: AppEdgeInsets.fromLTRB(
                 horizontalPadding,
                 isCompact ? 18 : 24,
                 horizontalPadding,
@@ -1162,7 +1166,7 @@ class _Header extends StatelessWidget {
                 title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: AppTextStyle(
                   color: _ChecklistAmber.textPrimary,
                   fontSize: 30,
                   fontWeight: FontWeight.w900,
@@ -1177,7 +1181,7 @@ class _Header extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             subtitle,
-            style: const TextStyle(
+            style: const AppTextStyle(
               color: _ChecklistAmber.textSecondary,
               fontSize: 14,
               height: 1.35,
@@ -1430,7 +1434,7 @@ class _MissingChecklistContextViewState
         return CustomScrollView(
           slivers: [
             SliverPadding(
-              padding: EdgeInsets.fromLTRB(
+              padding: AppEdgeInsets.fromLTRB(
                 horizontalPadding,
                 constraints.maxWidth < 390 ? 18 : 24,
                 horizontalPadding,
@@ -1462,7 +1466,7 @@ class _MissingChecklistContextViewState
                                 const SizedBox(height: 8),
                                 Text(
                                   l10n.travelChecklistMissingContextMessage,
-                                  style: const TextStyle(
+                                  style: const AppTextStyle(
                                     color: _ChecklistAmber.textSecondary,
                                     fontSize: 14,
                                     height: 1.35,
@@ -1472,7 +1476,7 @@ class _MissingChecklistContextViewState
                                 const SizedBox(height: 16),
                                 Text(
                                   l10n.travelChecklistQuickPrepTitle,
-                                  style: const TextStyle(
+                                  style: const AppTextStyle(
                                     color: _ChecklistAmber.textPrimary,
                                     fontSize: 20,
                                     fontWeight: FontWeight.w900,
@@ -1483,7 +1487,7 @@ class _MissingChecklistContextViewState
                                 const SizedBox(height: 8),
                                 Text(
                                   l10n.travelChecklistQuickPrepMessage,
-                                  style: const TextStyle(
+                                  style: const AppTextStyle(
                                     color: _ChecklistAmber.textSecondary,
                                     fontSize: 14,
                                     height: 1.35,
@@ -1731,7 +1735,7 @@ class _MissingChecklistContextViewState
                                   key: const ValueKey(
                                     'quick-prep-has-children',
                                   ),
-                                  contentPadding: EdgeInsets.zero,
+                                  contentPadding: AppEdgeInsets.zero,
                                   value: _hasChildren,
                                   onChanged: (value) => setState(() {
                                     _hasChildren = value;
@@ -1739,7 +1743,7 @@ class _MissingChecklistContextViewState
                                   activeThumbColor: _ChecklistAmber.amber,
                                   title: Text(
                                     l10n.travelChecklistQuickPrepWithChildren,
-                                    style: const TextStyle(
+                                    style: const AppTextStyle(
                                       color: _ChecklistAmber.textPrimary,
                                       fontSize: 14,
                                       fontWeight: FontWeight.w800,
@@ -1758,17 +1762,17 @@ class _MissingChecklistContextViewState
                                   ),
                                   style: FilledButton.styleFrom(
                                     backgroundColor: _ChecklistAmber.amber,
-                                    foregroundColor: AppColors.textPrimary,
+                                    foregroundColor: AppPalette.textPrimary,
                                     minimumSize: const Size.fromHeight(48),
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: AppBorderRadius.circular(8),
                                     ),
                                   ),
                                 ),
                                 const SizedBox(height: 18),
                                 Text(
                                   l10n.travelChecklistQuickPrepAlternativeTitle,
-                                  style: const TextStyle(
+                                  style: const AppTextStyle(
                                     color: _ChecklistAmber.textMuted,
                                     fontSize: 12,
                                     fontWeight: FontWeight.w800,
@@ -1920,7 +1924,7 @@ class _ChecklistListLoadingPanel extends StatelessWidget {
     return const _SurfacePanel(
       prominent: true,
       child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 20),
+        padding: AppEdgeInsets.symmetric(vertical: 20),
         child: Center(
           child: CircularProgressIndicator(color: _ChecklistAmber.amber),
         ),
@@ -1950,7 +1954,7 @@ class _ChecklistListEmptyPanel extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             l10n.travelChecklistRecentEmptyMessage,
-            style: const TextStyle(
+            style: const AppTextStyle(
               color: _ChecklistAmber.textSecondary,
               fontSize: 13,
               height: 1.35,
@@ -1968,10 +1972,10 @@ class _ChecklistListEmptyPanel extends StatelessWidget {
             ),
             style: FilledButton.styleFrom(
               backgroundColor: _ChecklistAmber.amber,
-              foregroundColor: AppColors.textPrimary,
+              foregroundColor: AppPalette.textPrimary,
               minimumSize: const Size(0, 46),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppBorderRadius.circular(8),
               ),
             ),
           ),
@@ -2016,7 +2020,7 @@ class _SavedChecklistsPanel extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             l10n.travelChecklistRecentMessage,
-            style: const TextStyle(
+            style: const AppTextStyle(
               color: _ChecklistAmber.textSecondary,
               fontSize: 13,
               height: 1.35,
@@ -2137,9 +2141,9 @@ class _ChecklistListFilterChip extends StatelessWidget {
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(
+        style: AppTextStyle(
           color: selected
-              ? AppColors.textPrimary
+              ? AppPalette.textPrimary
               : _ChecklistAmber.textSecondary,
           fontWeight: FontWeight.w900,
           fontSize: 12.5,
@@ -2153,10 +2157,10 @@ class _ChecklistListFilterChip extends StatelessWidget {
             ? _ChecklistAmber.amberSoft
             : _ChecklistAmber.border.withValues(alpha: 0.48),
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      shape: RoundedRectangleBorder(borderRadius: AppBorderRadius.circular(8)),
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       visualDensity: VisualDensity.compact,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const AppEdgeInsets.symmetric(horizontal: 8, vertical: 4),
     );
   }
 }
@@ -2169,21 +2173,21 @@ class _ChecklistFilterEmptyPanel extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         color: _ChecklistAmber.itemSurface.withValues(alpha: 0.56),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppBorderRadius.circular(8),
         border: Border.all(
           color: _ChecklistAmber.border.withValues(alpha: 0.28),
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const AppEdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               l10n.travelChecklistFilterEmptyTitle,
-              style: const TextStyle(
+              style: const AppTextStyle(
                 color: _ChecklistAmber.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w900,
@@ -2193,7 +2197,7 @@ class _ChecklistFilterEmptyPanel extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               l10n.travelChecklistFilterEmptyMessage,
-              style: const TextStyle(
+              style: const AppTextStyle(
                 color: _ChecklistAmber.textSecondary,
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,
@@ -2230,22 +2234,22 @@ class _RecentChecklistTile extends StatelessWidget {
 
     return Material(
       color: _ChecklistAmber.itemSurface.withValues(alpha: 0.72),
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: AppBorderRadius.circular(8),
       child: InkWell(
         key: ValueKey('travel-checklist-recent-${routeArgs.normalizedTripId}'),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppBorderRadius.circular(8),
         onTap: () => onOpen(routeArgs),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const AppEdgeInsets.all(12),
           child: Row(
             children: [
               DecoratedBox(
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   color: _ChecklistAmber.amber.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppBorderRadius.circular(8),
                 ),
                 child: const Padding(
-                  padding: EdgeInsets.all(9),
+                  padding: AppEdgeInsets.all(9),
                   child: Icon(
                     Icons.luggage_rounded,
                     color: _ChecklistAmber.amberSoft,
@@ -2262,7 +2266,7 @@ class _RecentChecklistTile extends StatelessWidget {
                       destination,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: const AppTextStyle(
                         color: _ChecklistAmber.textPrimary,
                         fontSize: 15,
                         fontWeight: FontWeight.w900,
@@ -2284,7 +2288,7 @@ class _RecentChecklistTile extends StatelessWidget {
                       '$dates · ${l10n.travelChecklistReadiness} $readiness%',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: const AppTextStyle(
                         color: _ChecklistAmber.textSecondary,
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -2355,19 +2359,19 @@ class _QuickPrepAutocompleteField<T extends Object> extends StatelessWidget {
               onChanged: onChanged,
               textCapitalization: textCapitalization,
               autocorrect: false,
-              style: const TextStyle(
+              style: const AppTextStyle(
                 color: _ChecklistAmber.textPrimary,
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0,
               ),
-              decoration: InputDecoration(
+              decoration: AppInputDecoration(
                 labelText: label,
                 hintText: hint,
-                labelStyle: const TextStyle(
+                labelStyle: const AppTextStyle(
                   color: _ChecklistAmber.textSecondary,
                 ),
-                hintStyle: TextStyle(
+                hintStyle: AppTextStyle(
                   color: _ChecklistAmber.textMuted.withValues(alpha: 0.8),
                 ),
                 filled: true,
@@ -2380,24 +2384,24 @@ class _QuickPrepAutocompleteField<T extends Object> extends StatelessWidget {
                 ),
                 errorMaxLines: 3,
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppBorderRadius.circular(8),
                   borderSide: BorderSide(
                     color: _ChecklistAmber.border.withValues(alpha: 0.5),
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppBorderRadius.circular(8),
                   borderSide: const BorderSide(
                     color: _ChecklistAmber.amberSoft,
                   ),
                 ),
                 errorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFFFF7A70)),
+                  borderRadius: AppBorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppPalette.redSoft09),
                 ),
                 focusedErrorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFFFF7A70)),
+                  borderRadius: AppBorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppPalette.redSoft09),
                 ),
               ),
             );
@@ -2406,26 +2410,26 @@ class _QuickPrepAutocompleteField<T extends Object> extends StatelessWidget {
         return Align(
           alignment: Alignment.topLeft,
           child: Material(
-            color: Colors.transparent,
+            color: AppPalette.transparent,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 720, maxHeight: 240),
               child: DecoratedBox(
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   color: _ChecklistAmber.surfaceElevated,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppBorderRadius.circular(8),
                   border: Border.all(
                     color: _ChecklistAmber.amber.withValues(alpha: 0.36),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.32),
+                      color: AppPalette.black.withValues(alpha: 0.32),
                       blurRadius: 18,
                       offset: const Offset(0, 10),
                     ),
                   ],
                 ),
                 child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  padding: const AppEdgeInsets.symmetric(vertical: 6),
                   shrinkWrap: true,
                   itemCount: options.length,
                   itemBuilder: (context, index) {
@@ -2437,8 +2441,8 @@ class _QuickPrepAutocompleteField<T extends Object> extends StatelessWidget {
                       child: Container(
                         color: isHighlighted
                             ? _ChecklistAmber.amber.withValues(alpha: 0.16)
-                            : Colors.transparent,
-                        padding: const EdgeInsets.symmetric(
+                            : AppPalette.transparent,
+                        padding: const AppEdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 11,
                         ),
@@ -2446,7 +2450,7 @@ class _QuickPrepAutocompleteField<T extends Object> extends StatelessWidget {
                           displayStringForOption(option),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: const AppTextStyle(
                             color: _ChecklistAmber.textPrimary,
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
@@ -2801,7 +2805,7 @@ class _QuickPrepDateButton extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: const AppTextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
               height: 1.1,
@@ -2812,7 +2816,7 @@ class _QuickPrepDateButton extends StatelessWidget {
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: const AppTextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w900,
               height: 1.2,
@@ -2824,9 +2828,11 @@ class _QuickPrepDateButton extends StatelessWidget {
       style: OutlinedButton.styleFrom(
         foregroundColor: _ChecklistAmber.amberSoft,
         minimumSize: const Size(136, 48),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const AppEdgeInsets.symmetric(horizontal: 12, vertical: 8),
         side: BorderSide(color: _ChecklistAmber.amber.withValues(alpha: 0.45)),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(
+          borderRadius: AppBorderRadius.circular(8),
+        ),
       ),
     );
   }
@@ -2884,7 +2890,7 @@ class _QuickPrepChoiceChip extends StatelessWidget {
                 ? const Icon(
                     Icons.check_rounded,
                     size: 16,
-                    color: AppColors.textPrimary,
+                    color: AppPalette.textPrimary,
                   )
                 : null,
           ),
@@ -2894,9 +2900,9 @@ class _QuickPrepChoiceChip extends StatelessWidget {
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
+              style: AppTextStyle(
                 color: selected
-                    ? AppColors.textPrimary
+                    ? AppPalette.textPrimary
                     : _ChecklistAmber.textSecondary,
                 fontWeight: FontWeight.w900,
                 fontSize: 13,
@@ -2914,7 +2920,7 @@ class _QuickPrepChoiceChip extends StatelessWidget {
             : _ChecklistAmber.border.withValues(alpha: 0.48),
       ),
       visualDensity: VisualDensity.compact,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      shape: RoundedRectangleBorder(borderRadius: AppBorderRadius.circular(8)),
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
   }
@@ -2945,7 +2951,7 @@ class _MissingContextAlternativeActions extends StatelessWidget {
             foregroundColor: _ChecklistAmber.amberSoft,
             minimumSize: const Size(0, 44),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppBorderRadius.circular(8),
             ),
           ),
         ),
@@ -2965,7 +2971,7 @@ class _MissingContextAlternativeActions extends StatelessWidget {
               color: _ChecklistAmber.amber.withValues(alpha: 0.45),
             ),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppBorderRadius.circular(8),
             ),
           ),
         ),
@@ -3100,7 +3106,7 @@ class _OptimizedItineraryCard extends StatelessWidget {
                   foregroundColor: _ChecklistAmber.backgroundBottom,
                   minimumSize: const Size(0, 42),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppBorderRadius.circular(8),
                   ),
                 ),
               );
@@ -3130,7 +3136,7 @@ class _OptimizedItineraryCard extends StatelessWidget {
             l10n.travelChecklistOptimizeRouteSubtitle(
               routeArgs.routeStops.length,
             ),
-            style: const TextStyle(
+            style: const AppTextStyle(
               color: _ChecklistAmber.textSecondary,
               fontSize: 13,
               height: 1.35,
@@ -3141,8 +3147,8 @@ class _OptimizedItineraryCard extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               error,
-              style: const TextStyle(
-                color: Color(0xFFFFB4AB),
+              style: const AppTextStyle(
+                color: AppPalette.redLight04,
                 fontSize: 13,
                 height: 1.35,
                 fontWeight: FontWeight.w700,
@@ -3193,7 +3199,7 @@ class _OptimizedStopRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(top: index == 1 ? 0 : 8),
+      padding: AppEdgeInsets.only(top: index == 1 ? 0 : 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -3201,16 +3207,16 @@ class _OptimizedStopRow extends StatelessWidget {
             width: 24,
             height: 24,
             alignment: Alignment.center,
-            decoration: BoxDecoration(
+            decoration: AppBoxDecoration(
               color: _ChecklistAmber.amber.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppBorderRadius.circular(8),
               border: Border.all(
                 color: _ChecklistAmber.amber.withValues(alpha: 0.42),
               ),
             ),
             child: Text(
               '$index',
-              style: const TextStyle(
+              style: const AppTextStyle(
                 color: _ChecklistAmber.amberSoft,
                 fontSize: 12,
                 fontWeight: FontWeight.w900,
@@ -3223,7 +3229,7 @@ class _OptimizedStopRow extends StatelessWidget {
               label,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: const AppTextStyle(
                 color: _ChecklistAmber.textPrimary,
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
@@ -3257,7 +3263,7 @@ class _ContextTextLine extends StatelessWidget {
         value,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
+        style: const AppTextStyle(
           color: _ChecklistAmber.textPrimary,
           fontSize: 13,
           fontWeight: FontWeight.w800,
@@ -3311,7 +3317,7 @@ class _ContextLineShell extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(top: 2),
+          padding: const AppEdgeInsets.only(top: 2),
           child: Icon(icon, color: _ChecklistAmber.textMuted, size: 18),
         ),
         const SizedBox(width: 8),
@@ -3321,7 +3327,7 @@ class _ContextLineShell extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: const TextStyle(
+                style: const AppTextStyle(
                   color: _ChecklistAmber.textMuted,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
@@ -3348,15 +3354,15 @@ class _OfflineChecklistNotice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         color: _ChecklistAmber.amber.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppBorderRadius.circular(8),
         border: Border.all(
           color: _ChecklistAmber.amberSoft.withValues(alpha: 0.28),
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const AppEdgeInsets.all(14),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -3374,7 +3380,7 @@ class _OfflineChecklistNotice extends StatelessWidget {
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: const AppTextStyle(
                       color: _ChecklistAmber.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w900,
@@ -3386,7 +3392,7 @@ class _OfflineChecklistNotice extends StatelessWidget {
                     message,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: const AppTextStyle(
                       color: _ChecklistAmber.textSecondary,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -3417,15 +3423,15 @@ class _ChecklistNotice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         color: _ChecklistAmber.amber.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppBorderRadius.circular(8),
         border: Border.all(
           color: _ChecklistAmber.amberSoft.withValues(alpha: 0.28),
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const AppEdgeInsets.all(14),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -3439,7 +3445,7 @@ class _ChecklistNotice extends StatelessWidget {
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: const AppTextStyle(
                       color: _ChecklistAmber.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w900,
@@ -3452,7 +3458,7 @@ class _ChecklistNotice extends StatelessWidget {
                     message,
                     maxLines: 4,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: const AppTextStyle(
                       color: _ChecklistAmber.textSecondary,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -3494,7 +3500,7 @@ class _ReadinessPanel extends StatelessWidget {
             children: [
               Text(
                 l10n.travelChecklistSystemReadiness,
-                style: const TextStyle(
+                style: const AppTextStyle(
                   color: _ChecklistAmber.textSecondary,
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -3510,7 +3516,7 @@ class _ReadinessPanel extends StatelessWidget {
             children: [
               Text(
                 '$score%',
-                style: const TextStyle(
+                style: const AppTextStyle(
                   color: _ChecklistAmber.textPrimary,
                   fontSize: 42,
                   height: 0.95,
@@ -3521,11 +3527,11 @@ class _ReadinessPanel extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: AppBorderRadius.circular(999),
                   child: LinearProgressIndicator(
                     minHeight: 9,
                     value: score / 100,
-                    backgroundColor: Colors.white.withValues(alpha: 0.1),
+                    backgroundColor: AppPalette.white.withValues(alpha: 0.1),
                     valueColor: const AlwaysStoppedAnimation<Color>(
                       _ChecklistAmber.amber,
                     ),
@@ -3541,7 +3547,7 @@ class _ReadinessPanel extends StatelessWidget {
                 personalProgress.done,
                 personalProgress.total,
               ),
-              style: const TextStyle(
+              style: const AppTextStyle(
                 color: _ChecklistAmber.textSecondary,
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
@@ -3553,11 +3559,11 @@ class _ReadinessPanel extends StatelessWidget {
               children: [
                 Expanded(
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: AppBorderRadius.circular(999),
                     child: LinearProgressIndicator(
                       minHeight: 7,
                       value: personalPercent / 100,
-                      backgroundColor: Colors.white.withValues(alpha: 0.1),
+                      backgroundColor: AppPalette.white.withValues(alpha: 0.1),
                       valueColor: const AlwaysStoppedAnimation<Color>(
                         _ChecklistAmber.amberSoft,
                       ),
@@ -3567,7 +3573,7 @@ class _ReadinessPanel extends StatelessWidget {
                 const SizedBox(width: 10),
                 Text(
                   '$personalPercent%',
-                  style: const TextStyle(
+                  style: const AppTextStyle(
                     color: _ChecklistAmber.textPrimary,
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
@@ -3593,18 +3599,18 @@ class _StatusPill extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         color: _ChecklistAmber.amber.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppBorderRadius.circular(999),
         border: Border.all(
           color: _ChecklistAmber.amberSoft.withValues(alpha: 0.44),
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Text(
           _readinessStatusLabel(status, l10n),
-          style: const TextStyle(
+          style: const AppTextStyle(
             color: _ChecklistAmber.amberSoft,
             fontSize: 12,
             fontWeight: FontWeight.w800,
@@ -3638,7 +3644,7 @@ class _TrustNoticePanel extends StatelessWidget {
               children: [
                 Text(
                   notice.title,
-                  style: const TextStyle(
+                  style: const AppTextStyle(
                     color: _ChecklistAmber.textPrimary,
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
@@ -3648,7 +3654,7 @@ class _TrustNoticePanel extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   notice.message,
-                  style: const TextStyle(
+                  style: const AppTextStyle(
                     color: _ChecklistAmber.textSecondary,
                     fontSize: 13,
                     height: 1.35,
@@ -3750,10 +3756,10 @@ class _CarrySearchPanel extends StatelessWidget {
                   controller: controller,
                   textInputAction: TextInputAction.search,
                   onSubmitted: (_) => onSearch(),
-                  style: const TextStyle(color: _ChecklistAmber.textPrimary),
-                  decoration: InputDecoration(
+                  style: const AppTextStyle(color: _ChecklistAmber.textPrimary),
+                  decoration: AppInputDecoration(
                     hintText: l10n.travelChecklistCarrySearchHint,
-                    hintStyle: const TextStyle(
+                    hintStyle: const AppTextStyle(
                       color: _ChecklistAmber.textMuted,
                     ),
                     filled: true,
@@ -3761,19 +3767,21 @@ class _CarrySearchPanel extends StatelessWidget {
                       alpha: 0.82,
                     ),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppBorderRadius.circular(8),
                       borderSide: BorderSide(
                         color: _ChecklistAmber.border.withValues(alpha: 0.42),
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppBorderRadius.circular(8),
                       borderSide: BorderSide(
                         color: _ChecklistAmber.border.withValues(alpha: 0.42),
                       ),
                     ),
                     focusedBorder: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(8)),
+                      borderRadius: AppBorderRadius.all(
+                        AppRadiusValue.circular(8),
+                      ),
                       borderSide: BorderSide(color: _ChecklistAmber.amber),
                     ),
                   ),
@@ -3792,7 +3800,7 @@ class _CarrySearchPanel extends StatelessWidget {
                     : const Icon(Icons.search_rounded),
                 style: IconButton.styleFrom(
                   backgroundColor: _ChecklistAmber.amber,
-                  foregroundColor: AppColors.textPrimary,
+                  foregroundColor: AppPalette.textPrimary,
                   disabledBackgroundColor: _ChecklistAmber.amber.withValues(
                     alpha: 0.28,
                   ),
@@ -3803,7 +3811,7 @@ class _CarrySearchPanel extends StatelessWidget {
           ),
           if ((error ?? '').isNotEmpty) ...[
             const SizedBox(height: 10),
-            Text(error!, style: const TextStyle(color: AppColors.destructive)),
+            Text(error!, style: const AppTextStyle(color: AppPalette.danger)),
           ],
           if (results.isNotEmpty) ...[
             const SizedBox(height: 12),
@@ -3824,23 +3832,23 @@ class _CarryResultTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const AppEdgeInsets.only(bottom: 10),
       child: DecoratedBox(
-        decoration: BoxDecoration(
+        decoration: AppBoxDecoration(
           color: _ChecklistAmber.itemSurface,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppBorderRadius.circular(8),
           border: Border.all(
             color: _ChecklistAmber.border.withValues(alpha: 0.36),
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const AppEdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 _carryItemLabel(result.itemSlug, l10n),
-                style: const TextStyle(
+                style: const AppTextStyle(
                   color: _ChecklistAmber.textPrimary,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0,
@@ -3867,7 +3875,7 @@ class _CarryResultTile extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   result.conditionSummary,
-                  style: const TextStyle(
+                  style: const AppTextStyle(
                     color: _ChecklistAmber.textSecondary,
                     fontSize: 13,
                     height: 1.35,
@@ -3951,15 +3959,15 @@ class _ChecklistItemsPanel extends StatelessWidget {
             controller: searchController,
             onChanged: onSearchChanged,
             textInputAction: TextInputAction.search,
-            style: const TextStyle(
+            style: const AppTextStyle(
               color: _ChecklistAmber.textPrimary,
               fontSize: 14,
               fontWeight: FontWeight.w700,
               letterSpacing: 0,
             ),
-            decoration: InputDecoration(
+            decoration: AppInputDecoration(
               hintText: l10n.travelChecklistItemsSearchHint,
-              hintStyle: const TextStyle(color: _ChecklistAmber.textMuted),
+              hintStyle: const AppTextStyle(color: _ChecklistAmber.textMuted),
               prefixIcon: const Icon(
                 Icons.search_rounded,
                 color: _ChecklistAmber.amberSoft,
@@ -3979,24 +3987,24 @@ class _ChecklistItemsPanel extends StatelessWidget {
                     ),
               filled: true,
               fillColor: _ChecklistAmber.surfacePressed.withValues(alpha: 0.82),
-              contentPadding: const EdgeInsets.symmetric(
+              contentPadding: const AppEdgeInsets.symmetric(
                 horizontal: 14,
                 vertical: 14,
               ),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppBorderRadius.circular(8),
                 borderSide: BorderSide(
                   color: _ChecklistAmber.border.withValues(alpha: 0.42),
                 ),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppBorderRadius.circular(8),
                 borderSide: BorderSide(
                   color: _ChecklistAmber.border.withValues(alpha: 0.42),
                 ),
               ),
               focusedBorder: const OutlineInputBorder(
-                borderRadius: BorderRadius.all(Radius.circular(8)),
+                borderRadius: AppBorderRadius.all(AppRadiusValue.circular(8)),
                 borderSide: BorderSide(color: _ChecklistAmber.amber),
               ),
             ),
@@ -4021,10 +4029,10 @@ class _ChecklistItemsPanel extends StatelessWidget {
                 ),
                 style: FilledButton.styleFrom(
                   backgroundColor: _ChecklistAmber.amber,
-                  foregroundColor: AppColors.textPrimary,
+                  foregroundColor: AppPalette.textPrimary,
                   minimumSize: const Size(0, 42),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppBorderRadius.circular(8),
                   ),
                 ),
               ),
@@ -4033,10 +4041,10 @@ class _ChecklistItemsPanel extends StatelessWidget {
           ],
           if (!hasVisibleItems)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 14),
+              padding: const AppEdgeInsets.symmetric(vertical: 14),
               child: Text(
                 l10n.travelChecklistItemsSearchEmpty,
-                style: const TextStyle(
+                style: const AppTextStyle(
                   color: _ChecklistAmber.textSecondary,
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -4100,17 +4108,17 @@ class _ChecklistItemTile extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const AppEdgeInsets.symmetric(vertical: 6),
       child: DecoratedBox(
-        decoration: BoxDecoration(
+        decoration: AppBoxDecoration(
           color: _ChecklistAmber.itemSurface,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppBorderRadius.circular(8),
           border: Border.all(
             color: _ChecklistAmber.border.withValues(alpha: 0.32),
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(10),
+          padding: const AppEdgeInsets.all(10),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -4127,7 +4135,7 @@ class _ChecklistItemTile extends StatelessWidget {
                         value: item.isDone,
                         onChanged: isReadOnly ? null : (_) => onToggle(),
                         activeColor: _ChecklistAmber.amber,
-                        checkColor: AppColors.textPrimary,
+                        checkColor: AppPalette.textPrimary,
                         side: BorderSide(
                           color: item.isCritical
                               ? _ChecklistAmber.amber
@@ -4135,7 +4143,7 @@ class _ChecklistItemTile extends StatelessWidget {
                           width: 1.6,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(5),
+                          borderRadius: AppBorderRadius.circular(5),
                         ),
                       ),
                     ),
@@ -4171,7 +4179,7 @@ class _ChecklistItemTile extends StatelessWidget {
                                 item.title,
                                 maxLines: 3,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: const AppTextStyle(
                                   color: _ChecklistAmber.textPrimary,
                                   fontWeight: FontWeight.w800,
                                   fontSize: 15,
@@ -4188,7 +4196,7 @@ class _ChecklistItemTile extends StatelessWidget {
                           const SizedBox(height: 5),
                           Text(
                             item.reason,
-                            style: const TextStyle(
+                            style: const AppTextStyle(
                               color: _ChecklistAmber.textSecondary,
                               fontSize: 13,
                               height: 1.35,
@@ -4242,17 +4250,17 @@ class _CustomChecklistItemTile extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const AppEdgeInsets.symmetric(vertical: 6),
       child: DecoratedBox(
-        decoration: BoxDecoration(
+        decoration: AppBoxDecoration(
           color: _ChecklistAmber.itemSurface.withValues(alpha: 0.92),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppBorderRadius.circular(8),
           border: Border.all(
             color: _ChecklistAmber.amberSoft.withValues(alpha: 0.30),
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(10),
+          padding: const AppEdgeInsets.all(10),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -4271,13 +4279,13 @@ class _CustomChecklistItemTile extends StatelessWidget {
                         value: item.isDone,
                         onChanged: isReadOnly ? null : (_) => onToggle(),
                         activeColor: _ChecklistAmber.amber,
-                        checkColor: AppColors.textPrimary,
+                        checkColor: AppPalette.textPrimary,
                         side: const BorderSide(
                           color: _ChecklistAmber.amberSoft,
                           width: 1.6,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(5),
+                          borderRadius: AppBorderRadius.circular(5),
                         ),
                       ),
                     ),
@@ -4306,7 +4314,7 @@ class _CustomChecklistItemTile extends StatelessWidget {
                           item.title,
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: const AppTextStyle(
                             color: _ChecklistAmber.textPrimary,
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
@@ -4323,7 +4331,7 @@ class _CustomChecklistItemTile extends StatelessWidget {
                         item.note,
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: const AppTextStyle(
                           color: _ChecklistAmber.textSecondary,
                           fontSize: 13,
                           height: 1.35,
@@ -4359,7 +4367,7 @@ class _CustomChecklistItemTile extends StatelessWidget {
                             ),
                             label: Text(l10n.travelChecklistCustomItemDelete),
                             style: _smallAmberOutlinedButtonStyle(
-                              foregroundColor: AppColors.destructive,
+                              foregroundColor: AppPalette.danger,
                             ),
                           ),
                         ],
@@ -4381,12 +4389,12 @@ ButtonStyle _smallAmberOutlinedButtonStyle({Color? foregroundColor}) {
   return OutlinedButton.styleFrom(
     foregroundColor: color,
     minimumSize: const Size(0, 34),
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+    padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 8),
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     visualDensity: VisualDensity.compact,
     side: BorderSide(color: color.withValues(alpha: 0.45)),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    textStyle: const TextStyle(
+    shape: RoundedRectangleBorder(borderRadius: AppBorderRadius.circular(8)),
+    textStyle: const AppTextStyle(
       fontSize: 12,
       fontWeight: FontWeight.w700,
       letterSpacing: 0,
@@ -4520,9 +4528,9 @@ class _CustomItemPriorityChip extends StatelessWidget {
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(
+        style: AppTextStyle(
           color: selected
-              ? AppColors.textPrimary
+              ? AppPalette.textPrimary
               : _ChecklistAmber.textSecondary,
           fontSize: 13,
           fontWeight: FontWeight.w900,
@@ -4532,7 +4540,7 @@ class _CustomItemPriorityChip extends StatelessWidget {
       avatar: Icon(
         Icons.check_rounded,
         size: 16,
-        color: selected ? AppColors.textPrimary : Colors.transparent,
+        color: selected ? AppPalette.textPrimary : AppPalette.transparent,
       ),
       backgroundColor: _ChecklistAmber.surfacePressed,
       selectedColor: _ChecklistAmber.amber,
@@ -4541,7 +4549,7 @@ class _CustomItemPriorityChip extends StatelessWidget {
             ? _ChecklistAmber.amber
             : _ChecklistAmber.amberSoft.withValues(alpha: 0.34),
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      shape: RoundedRectangleBorder(borderRadius: AppBorderRadius.circular(8)),
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
   }
@@ -4629,13 +4637,15 @@ class _CustomChecklistItemSheetState extends State<_CustomChecklistItemSheet> {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: EdgeInsets.only(bottom: bottomInset),
+        padding: AppEdgeInsets.only(bottom: bottomInset),
         child: Material(
           color: _ChecklistAmber.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+          borderRadius: const AppBorderRadius.vertical(
+            top: AppRadiusValue.circular(18),
+          ),
           clipBehavior: Clip.antiAlias,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
+            padding: const AppEdgeInsets.fromLTRB(18, 18, 18, 24),
             child: Form(
               key: _formKey,
               child: Column(
@@ -4653,7 +4663,7 @@ class _CustomChecklistItemSheetState extends State<_CustomChecklistItemSheet> {
                     key: const ValueKey('custom-checklist-item-title-field'),
                     controller: _titleController,
                     textInputAction: TextInputAction.done,
-                    style: const TextStyle(
+                    style: const AppTextStyle(
                       color: _ChecklistAmber.textPrimary,
                       letterSpacing: 0,
                     ),
@@ -4668,7 +4678,7 @@ class _CustomChecklistItemSheetState extends State<_CustomChecklistItemSheet> {
                   const SizedBox(height: 12),
                   Theme(
                     data: Theme.of(context).copyWith(
-                      dividerColor: Colors.transparent,
+                      dividerColor: AppPalette.transparent,
                       splashColor: _ChecklistAmber.amber.withValues(
                         alpha: 0.10,
                       ),
@@ -4677,12 +4687,12 @@ class _CustomChecklistItemSheetState extends State<_CustomChecklistItemSheet> {
                       key: const ValueKey(
                         'custom-checklist-item-additional-toggle',
                       ),
-                      tilePadding: EdgeInsets.zero,
+                      tilePadding: AppEdgeInsets.zero,
                       collapsedIconColor: _ChecklistAmber.amberSoft,
                       iconColor: _ChecklistAmber.amberSoft,
                       title: Text(
                         l10n.travelChecklistCustomItemAdditional,
-                        style: const TextStyle(
+                        style: const AppTextStyle(
                           color: _ChecklistAmber.textPrimary,
                           fontSize: 14,
                           fontWeight: FontWeight.w900,
@@ -4697,7 +4707,7 @@ class _CustomChecklistItemSheetState extends State<_CustomChecklistItemSheet> {
                           controller: _noteController,
                           minLines: 1,
                           maxLines: 3,
-                          style: const TextStyle(
+                          style: const AppTextStyle(
                             color: _ChecklistAmber.textPrimary,
                             letterSpacing: 0,
                           ),
@@ -4739,10 +4749,10 @@ class _CustomChecklistItemSheetState extends State<_CustomChecklistItemSheet> {
                             });
                           },
                           activeThumbColor: _ChecklistAmber.amber,
-                          contentPadding: EdgeInsets.zero,
+                          contentPadding: AppEdgeInsets.zero,
                           title: Text(
                             l10n.travelChecklistCustomItemReuse,
-                            style: const TextStyle(
+                            style: const AppTextStyle(
                               color: _ChecklistAmber.textPrimary,
                               fontSize: 14,
                               fontWeight: FontWeight.w800,
@@ -4763,10 +4773,10 @@ class _CustomChecklistItemSheetState extends State<_CustomChecklistItemSheet> {
                       label: Text(l10n.travelChecklistCustomItemSave),
                       style: FilledButton.styleFrom(
                         backgroundColor: _ChecklistAmber.amber,
-                        foregroundColor: AppColors.textPrimary,
+                        foregroundColor: AppPalette.textPrimary,
                         minimumSize: const Size(0, 48),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: AppBorderRadius.circular(8),
                         ),
                       ),
                     ),
@@ -4786,41 +4796,41 @@ InputDecoration _customItemInputDecoration({
   String? hint,
   bool multiline = false,
 }) {
-  return InputDecoration(
+  return AppInputDecoration(
     labelText: label,
     hintText: hint,
-    labelStyle: const TextStyle(color: _ChecklistAmber.textSecondary),
-    floatingLabelStyle: const TextStyle(
+    labelStyle: const AppTextStyle(color: _ChecklistAmber.textSecondary),
+    floatingLabelStyle: const AppTextStyle(
       color: _ChecklistAmber.amberSoft,
       fontSize: 13,
       fontWeight: FontWeight.w800,
       letterSpacing: 0,
     ),
-    hintStyle: const TextStyle(color: _ChecklistAmber.textMuted),
+    hintStyle: const AppTextStyle(color: _ChecklistAmber.textMuted),
     floatingLabelBehavior: multiline
         ? FloatingLabelBehavior.always
         : FloatingLabelBehavior.auto,
     alignLabelWithHint: true,
     contentPadding: multiline
-        ? const EdgeInsets.fromLTRB(14, 24, 14, 18)
-        : const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
+        ? const AppEdgeInsets.fromLTRB(14, 24, 14, 18)
+        : const AppEdgeInsets.symmetric(horizontal: 14, vertical: 18),
     errorMaxLines: 3,
     filled: true,
     fillColor: _ChecklistAmber.surfacePressed.withValues(alpha: 0.82),
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: AppBorderRadius.circular(8),
       borderSide: BorderSide(
         color: _ChecklistAmber.border.withValues(alpha: 0.42),
       ),
     ),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: AppBorderRadius.circular(8),
       borderSide: BorderSide(
         color: _ChecklistAmber.border.withValues(alpha: 0.42),
       ),
     ),
     focusedBorder: const OutlineInputBorder(
-      borderRadius: BorderRadius.all(Radius.circular(8)),
+      borderRadius: AppBorderRadius.all(AppRadiusValue.circular(8)),
       borderSide: BorderSide(color: _ChecklistAmber.amber),
     ),
   );
@@ -4852,7 +4862,7 @@ class _ChecklistFeedbackActions extends StatelessWidget {
           icon: Icons.thumb_up_alt_outlined,
           label: l10n.travelChecklistFeedbackHelpful,
           tooltip: l10n.travelChecklistFeedbackHelpful,
-          color: AppColors.success,
+          color: AppPalette.success,
           isSubmitting: isSubmitting,
           isSelected: selectedFeedback == ChecklistItemFeedbackType.helpful,
           onPressed: () => onSubmit(ChecklistItemFeedbackType.helpful),
@@ -4862,7 +4872,7 @@ class _ChecklistFeedbackActions extends StatelessWidget {
           icon: Icons.thumb_down_alt_outlined,
           label: l10n.travelChecklistFeedbackNotHelpful,
           tooltip: l10n.travelChecklistFeedbackNotHelpful,
-          color: AppColors.destructive,
+          color: AppPalette.danger,
           isSubmitting: isSubmitting,
           isSelected: selectedFeedback == ChecklistItemFeedbackType.notHelpful,
           onPressed: () => onSubmit(ChecklistItemFeedbackType.notHelpful),
@@ -4937,13 +4947,13 @@ class _FeedbackButton extends StatelessWidget {
               width: isSelected ? 1.4 : 1,
             ),
             minimumSize: const Size(0, 34),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 8),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             visualDensity: VisualDensity.compact,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppBorderRadius.circular(8),
             ),
-            textStyle: const TextStyle(
+            textStyle: const AppTextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
               letterSpacing: 0,
@@ -4967,15 +4977,15 @@ class _SectionTitle extends StatelessWidget {
     return Row(
       children: [
         DecoratedBox(
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             color: _ChecklistAmber.amber.withValues(alpha: 0.16),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppBorderRadius.circular(8),
             border: Border.all(
               color: _ChecklistAmber.amberSoft.withValues(alpha: 0.24),
             ),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(7),
+            padding: const AppEdgeInsets.all(7),
             child: Icon(icon, color: _ChecklistAmber.amberSoft, size: 18),
           ),
         ),
@@ -4983,7 +4993,7 @@ class _SectionTitle extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(
+            style: const AppTextStyle(
               color: _ChecklistAmber.textPrimary,
               fontWeight: FontWeight.w900,
               fontSize: 16,
@@ -5004,16 +5014,16 @@ class _InlineBullet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 6),
+      padding: const AppEdgeInsets.only(top: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Padding(
-            padding: EdgeInsets.only(top: 7),
+            padding: AppEdgeInsets.only(top: 7),
             child: SizedBox.square(
               dimension: 5,
               child: DecoratedBox(
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   color: _ChecklistAmber.amber,
                   shape: BoxShape.circle,
                 ),
@@ -5024,7 +5034,7 @@ class _InlineBullet extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
+              style: const AppTextStyle(
                 color: _ChecklistAmber.textSecondary,
                 fontSize: 13,
                 height: 1.35,
@@ -5046,20 +5056,20 @@ class _ChipLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         color: _ChecklistAmber.amber.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppBorderRadius.circular(8),
         border: Border.all(
           color: _ChecklistAmber.amberSoft.withValues(alpha: 0.28),
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        padding: const AppEdgeInsets.symmetric(horizontal: 8, vertical: 5),
         child: Text(
           label,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
+          style: const AppTextStyle(
             color: _ChecklistAmber.textPrimary,
             fontSize: 12,
             fontWeight: FontWeight.w700,
@@ -5080,7 +5090,7 @@ class _SurfacePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -5088,7 +5098,7 @@ class _SurfacePanel extends StatelessWidget {
               ? const [_ChecklistAmber.surfaceElevated, _ChecklistAmber.surface]
               : const [_ChecklistAmber.surface, _ChecklistAmber.surfacePressed],
         ),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppBorderRadius.circular(8),
         border: Border.all(
           color: _ChecklistAmber.border.withValues(
             alpha: prominent ? 0.62 : 0.42,
@@ -5096,7 +5106,7 @@ class _SurfacePanel extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: EdgeInsets.all(
+        padding: AppEdgeInsets.all(
           MediaQuery.sizeOf(context).width < 340 ? 12 : 14,
         ),
         child: child,
@@ -5129,20 +5139,20 @@ class _ChecklistErrorView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const AppEdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(
               Icons.error_outline_rounded,
-              color: AppColors.destructive,
+              color: AppPalette.danger,
               size: 42,
             ),
             const SizedBox(height: 12),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: _ChecklistAmber.textPrimary),
+              style: const AppTextStyle(color: _ChecklistAmber.textPrimary),
             ),
             const SizedBox(height: 14),
             FilledButton.icon(
@@ -5161,28 +5171,28 @@ ThemeData _quickPrepDatePickerTheme(BuildContext context) {
   final base = Theme.of(context);
   final colorScheme = ColorScheme.dark(
     primary: _ChecklistAmber.amber,
-    onPrimary: AppColors.textPrimary,
+    onPrimary: AppPalette.textPrimary,
     surface: _ChecklistAmber.surface,
     onSurface: _ChecklistAmber.textPrimary,
     secondary: _ChecklistAmber.amberSoft,
-    onSecondary: AppColors.textPrimary,
+    onSecondary: AppPalette.textPrimary,
   );
 
   return base.copyWith(
     colorScheme: colorScheme,
     dialogTheme: DialogThemeData(
       backgroundColor: _ChecklistAmber.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: AppBorderRadius.circular(12)),
     ),
     datePickerTheme: DatePickerThemeData(
       backgroundColor: _ChecklistAmber.surface,
       headerBackgroundColor: _ChecklistAmber.amber,
-      headerForegroundColor: AppColors.textPrimary,
+      headerForegroundColor: AppPalette.textPrimary,
       dividerColor: _ChecklistAmber.border.withValues(alpha: 0.55),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: AppBorderRadius.circular(12)),
       dayForegroundColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return AppColors.textPrimary;
+          return AppPalette.textPrimary;
         }
         if (states.contains(WidgetState.disabled)) {
           return _ChecklistAmber.textMuted.withValues(alpha: 0.52);
@@ -5199,7 +5209,7 @@ ThemeData _quickPrepDatePickerTheme(BuildContext context) {
       todayBorder: BorderSide(color: _ChecklistAmber.amberSoft),
       yearForegroundColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return AppColors.textPrimary;
+          return AppPalette.textPrimary;
         }
         return _ChecklistAmber.textPrimary;
       }),
@@ -5213,7 +5223,7 @@ ThemeData _quickPrepDatePickerTheme(BuildContext context) {
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: _ChecklistAmber.amberSoft,
-        textStyle: const TextStyle(
+        textStyle: const AppTextStyle(
           fontWeight: FontWeight.w900,
           letterSpacing: 0,
         ),

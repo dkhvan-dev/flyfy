@@ -42,7 +42,7 @@ void main() {
       expect(inlineSortRowSource, contains('Icons.arrow_downward_rounded'));
       expect(sortBarSource, isNot(contains('_PlaceSortChip(')));
       expect(sortBarSource, isNot(contains('Wrap(')));
-      expect(sortBarSource, isNot(contains('BoxDecoration(')));
+      expect(sortBarSource, isNot(contains('AppBoxDecoration(')));
       expect(source, isNot(contains('class _PlaceSortChip')));
     },
   );
@@ -82,7 +82,7 @@ void main() {
       );
       expect(searchSource, contains('AppListSearchField('));
       expect(searchSource, contains('activeFilterCount: activeFilterCount'));
-      expect(searchSource, contains('onSubmitted: (_) => _loadPlaces'));
+      expect(searchSource, contains('_loadPlaces(page: 1);'));
       expect(searchSource, isNot(contains('size: a.scale(28)')));
       expect(searchSource, isNot(contains('fontSize: a.scale(21')));
     },

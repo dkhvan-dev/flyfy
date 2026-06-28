@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
-import '../../../core/ui/app_colors.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../shared/reference/app_location_label_resolver.dart';
 import '../models/feed_block_vm.dart';
@@ -41,20 +41,20 @@ class SuggestedCommunitiesBlock extends StatelessWidget {
 
     return DecoratedBox(
       key: const ValueKey('suggested-communities-block'),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2A1A0E),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.22)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmSurface13,
+        borderRadius: AppBorderRadius.circular(8),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.22)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
+            color: AppPalette.black.withValues(alpha: 0.18),
             blurRadius: 18,
             offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const AppEdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -66,7 +66,7 @@ class SuggestedCommunitiesBlock extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.textPrimary,
+                      color: AppPalette.textPrimary,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -76,8 +76,8 @@ class SuggestedCommunitiesBlock extends StatelessWidget {
                   onPressed: onOpenAll,
                   tooltip: l10n.communityDiscoveryTitle,
                   style: IconButton.styleFrom(
-                    backgroundColor: AppColors.accent.withValues(alpha: 0.16),
-                    foregroundColor: AppColors.accent,
+                    backgroundColor: AppPalette.primary.withValues(alpha: 0.16),
+                    foregroundColor: AppPalette.primary,
                     minimumSize: const Size.square(40),
                   ),
                   icon: const Icon(Icons.chevron_right_rounded),
@@ -215,13 +215,13 @@ class _SuggestedCommunityPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.14)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.08),
+        borderRadius: AppBorderRadius.circular(8),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.14)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 8),
         child: CommunityListItem(
           community: community,
           isUpdating: isUpdating,
@@ -235,7 +235,7 @@ class _SuggestedCommunityPill extends StatelessWidget {
             community: community,
             resolver: locationLabelResolver,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: const Color(0xFFFFE0B2),
+              color: AppPalette.amberLight08,
               height: 1.12,
             ),
           ),
@@ -244,7 +244,7 @@ class _SuggestedCommunityPill extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: const Color(0xFFFFE0B2).withValues(alpha: 0.86),
+              color: AppPalette.amberLight08.withValues(alpha: 0.86),
               height: 1.12,
             ),
           ),

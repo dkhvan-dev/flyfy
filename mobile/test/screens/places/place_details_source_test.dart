@@ -28,8 +28,8 @@ void main() {
         'ExpansionTile(',
         'initiallyExpanded: false',
         'maintainState: true',
-        'tilePadding: EdgeInsets.fromLTRB',
-        'childrenPadding: EdgeInsets.fromLTRB',
+        'tilePadding: AppEdgeInsets.fromLTRB',
+        'childrenPadding: AppEdgeInsets.fromLTRB',
       ]) {
         expect(feeSource, contains(fragment));
         expect(visitSource, contains(fragment));
@@ -106,7 +106,7 @@ void main() {
         'Wrap(',
         'Icons.water_drop_rounded',
         'Icons.hiking_rounded',
-        'AppColors.accent',
+        'AppPalette.primary',
       ]) {
         expect(source, contains(fragment));
       }

@@ -86,8 +86,8 @@ void main() {
       ).readAsString();
 
       expect(source, contains('isDone'));
-      expect(source, contains('? AppColors.success'));
-      expect(source, contains('AppColors.success.withValues'));
+      expect(source, contains('? AppPalette.success'));
+      expect(source, contains('AppPalette.success.withValues'));
       expect(source, contains('onStepTap'));
       expect(
         source,
@@ -107,12 +107,12 @@ void main() {
       expect(
         source,
         contains(
-          'color: selected ? AppColors.accent : const Color(0xFF3A2108)',
+          'color: selected ? AppPalette.primary : AppPalette.warmSurface48',
         ),
       );
       expect(
         source,
-        contains('selected ? Colors.white : const Color(0xFFFFDEB6)'),
+        contains('selected ? AppPalette.white : AppPalette.primary'),
       );
     },
   );
@@ -130,7 +130,7 @@ void main() {
         contains('floatingLabelBehavior: FloatingLabelBehavior.never'),
       );
       expect(source, contains('Text(label,'));
-      expect(source, contains('fillColor: const Color(0xFF2D2115)'));
+      expect(source, contains('fillColor: AppPalette.warmSurface35'));
     },
   );
 
@@ -297,9 +297,9 @@ void main() {
       ).readAsString();
 
       expect(source, contains('final effectiveIconColor'));
-      expect(source, contains('iconColor: AppColors.accent'));
+      expect(source, contains('iconColor: AppPalette.primary'));
       expect(
-        RegExp('iconColor: AppColors\\.accent').allMatches(source).length,
+        RegExp('iconColor: AppPalette\\.primary').allMatches(source).length,
         greaterThanOrEqualTo(3),
       );
       expect(source, contains('label: l10n.createMeetingPointLocationLabel'));
@@ -343,25 +343,25 @@ void main() {
       expect(source, contains('icon: Icons.group_outlined'));
       expect(
         RegExp(
-          r'Icons\.schedule_rounded,[\s\S]*?iconColor: AppColors\.accent',
+          r'Icons\.schedule_rounded,[\s\S]*?iconColor: AppPalette\.primary',
         ).hasMatch(source),
         isTrue,
       );
       expect(
         RegExp(
-          r'Icons\.group_outlined,[\s\S]*?iconColor: AppColors\.accent',
+          r'Icons\.group_outlined,[\s\S]*?iconColor: AppPalette\.primary',
         ).hasMatch(source),
         isTrue,
       );
       expect(
         RegExp(
-          r'Icons\.timelapse_rounded,[\s\S]*?color: AppColors\.accent',
+          r'Icons\.timelapse_rounded,[\s\S]*?color: AppPalette\.primary',
         ).hasMatch(source),
         isTrue,
       );
       expect(
         RegExp(
-          r'Icons\.keyboard_arrow_down_rounded,[\s\S]*?color: AppColors\.accent',
+          r'Icons\.keyboard_arrow_down_rounded,[\s\S]*?color: AppPalette\.primary',
         ).hasMatch(source),
         isTrue,
       );
@@ -706,8 +706,8 @@ void main() {
       ).readAsString();
 
       expect(source, contains('class _ItinerarySlotCard'));
-      expect(source, contains('color: const Color(0xFF4A321D)'));
-      expect(source, isNot(contains('color: const Color(0xFFF1E4D3)')));
+      expect(source, contains('color: AppPalette.warmSurface85'));
+      expect(source, isNot(contains('color: AppPalette.orangeLight32')));
     },
   );
 
@@ -981,7 +981,7 @@ void main() {
       expect(source, contains('Icons.warning_amber_rounded'));
       expect(source, contains('l10n.createExcursionDiscardTitle'));
       expect(source, contains('l10n.createExcursionDiscardConfirm'));
-      expect(source, contains('AppColors.accent'));
+      expect(source, contains('AppPalette.primary'));
       expect(enSource, contains('"createExcursionDiscardTitle"'));
       expect(ruSource, contains('"createExcursionDiscardTitle"'));
       expect(kkSource, contains('"createExcursionDiscardTitle"'));

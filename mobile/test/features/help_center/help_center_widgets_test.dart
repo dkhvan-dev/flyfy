@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:inflap/core/ui/app_colors.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:inflap/features/help_center/data/help_center_api.dart';
 import 'package:inflap/features/help_center/presentation/help_center_screen.dart';
 import 'package:inflap/features/help_center/widgets/contextual_help_section.dart';
@@ -333,10 +333,10 @@ void main() {
       );
       final prefixIcon = textField.decoration?.prefixIcon;
       expect(prefixIcon, isA<Icon>());
-      expect((prefixIcon! as Icon).color, AppColors.accent);
+      expect((prefixIcon! as Icon).color, AppPalette.primary);
       final suffixIcon = textField.decoration?.suffixIcon;
       expect(suffixIcon, isA<IconButton>());
-      expect((suffixIcon! as IconButton).color, AppColors.accent);
+      expect((suffixIcon! as IconButton).color, AppPalette.primary);
       expect(find.text('Chat'), findsOneWidget);
       expect(find.text('Support requests'), findsNothing);
 
@@ -346,8 +346,8 @@ void main() {
       final flightsChip = tester.widget<ChoiceChip>(
         find.byKey(const ValueKey('help-center-category-flights')),
       );
-      expect(allChip.labelStyle?.color, AppColors.textPrimary);
-      expect(flightsChip.labelStyle?.color, AppColors.textPrimary);
+      expect(allChip.labelStyle?.color, AppPalette.textPrimary);
+      expect(flightsChip.labelStyle?.color, AppPalette.textPrimary);
     },
   );
 

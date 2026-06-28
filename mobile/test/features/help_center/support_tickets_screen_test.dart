@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inflap/core/network/chat_api.dart';
 import 'package:inflap/core/network/chat_ws_service.dart';
 import 'package:inflap/core/network/file_api.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 import 'package:inflap/features/chat/models/conversation_vm.dart';
 import 'package:inflap/features/help_center/data/help_center_api.dart';
@@ -1024,6 +1025,13 @@ void main() {
 
     expect(find.text('Resolved'), findsOneWidget);
     expect(find.byKey(const ValueKey('support-ticket-csat-5')), findsOneWidget);
+    final initialStar = tester.widget<Icon>(
+      find.descendant(
+        of: find.byKey(const ValueKey('support-ticket-csat-5')),
+        matching: find.byIcon(Icons.star_border_rounded),
+      ),
+    );
+    expect(initialStar.color, AppPalette.primary);
 
     await tester.enterText(
       find.byKey(const ValueKey('support-ticket-csat-comment')),
@@ -1032,6 +1040,20 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('support-ticket-csat-5')));
     await tester.pumpAndSettle();
 
+    final selectedStar = tester.widget<Icon>(
+      find.descendant(
+        of: find.byKey(const ValueKey('support-ticket-csat-5')),
+        matching: find.byIcon(Icons.star_rounded),
+      ),
+    );
+    final selectedStarButton = tester.widget<IconButton>(
+      find.byKey(const ValueKey('support-ticket-csat-5')),
+    );
+    expect(selectedStar.color, AppPalette.primary);
+    expect(
+      selectedStarButton.style?.backgroundColor?.resolve(<WidgetState>{}),
+      isNot(AppPalette.primary),
+    );
     expect(api.lastCSATTicketId, isNull);
     expect(api.lastCSATRating, isNull);
     expect(find.text('Thanks for rating support.'), findsNothing);

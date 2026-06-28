@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inflap/core/ui/app_inline_field_error.dart';
-import 'package:inflap/core/ui/app_colors.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
 void main() {
   testWidgets('inline field error uses icon, red text, and semantics', (
@@ -19,7 +19,7 @@ void main() {
     expect(find.text('Choose at least one option'), findsOneWidget);
 
     final text = tester.widget<Text>(find.text('Choose at least one option'));
-    expect(text.style?.color, AppColors.destructive);
+    expect(text.style?.color, AppPalette.danger);
     expect(text.maxLines, 3);
     expect(text.overflow, TextOverflow.ellipsis);
 

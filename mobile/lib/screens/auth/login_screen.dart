@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/auth_provider.dart';
@@ -185,16 +185,17 @@ class _LoginScreenState extends State<LoginScreen> {
             Image.network(
               'https://lh3.googleusercontent.com/aida-public/AB6AXuBduazwzIicGU9fDEXAz9OgOyFeni4k4elOe6XduNdQoG3iY1-qa2p2g8PvzmXdNrTJctUljZlDddvYm99io6whN9d3A0r8s6v6c-1W2giZFcC3P3wiIhlpfiKdGpC0fK8sY4vBFTQDRjqXUHRHyTgxLx5_rxq0mI11TkZ2NTQ_Kmi8c9Sb7EtHqmi-DOVm2ZpH5eFB89IKkMgkReWTlea9VKkr7SlVd8mHVoYpo5204yiI4tQxuNcUlQrjU2R2epHWOD9Ij-h0bTHM',
               fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => Container(color: AppColors.background),
+              errorBuilder: (_, _, _) =>
+                  Container(color: AppPalette.backgroundWarm),
             ),
             Container(
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    AppColors.background.withValues(alpha: 0.15),
-                    AppColors.background.withValues(alpha: 0.92),
+                    AppPalette.backgroundWarm.withValues(alpha: 0.15),
+                    AppPalette.backgroundWarm.withValues(alpha: 0.92),
                   ],
                 ),
               ),
@@ -235,14 +236,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   return AnimatedPadding(
                     duration: const Duration(milliseconds: 220),
                     curve: Curves.easeOut,
-                    padding: EdgeInsets.only(bottom: bottomInset),
+                    padding: AppEdgeInsets.only(bottom: bottomInset),
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(
                         parent: AlwaysScrollableScrollPhysics(),
                       ),
                       keyboardDismissBehavior:
                           ScrollViewKeyboardDismissBehavior.onDrag,
-                      padding: EdgeInsets.symmetric(
+                      padding: AppEdgeInsets.symmetric(
                         horizontal: horizontalPadding,
                       ),
                       child: ConstrainedBox(
@@ -254,7 +255,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Padding(
-                              padding: EdgeInsets.symmetric(
+                              padding: AppEdgeInsets.symmetric(
                                 vertical: authScaled(
                                   context,
                                   isCompact ? 18 : 24,
@@ -268,7 +269,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 children: [
                                   InkWell(
                                     onTap: () => context.go('/'),
-                                    borderRadius: BorderRadius.circular(999),
+                                    borderRadius: AppBorderRadius.circular(999),
                                     child: Row(
                                       children: [
                                         ClipOval(
@@ -289,7 +290,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         ),
                                         Text(
                                           'Inflap',
-                                          style: TextStyle(
+                                          style: AppTextStyle(
                                             fontSize: authScaled(
                                               context,
                                               24,
@@ -297,7 +298,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                               max: 24,
                                             ),
                                             fontWeight: FontWeight.w800,
-                                            color: AppColors.textPrimary,
+                                            color: AppPalette.textPrimary,
                                           ),
                                         ),
                                       ],
@@ -307,10 +308,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                     onPressed: () => context.go('/'),
                                     child: Text(
                                       l10n.skip,
-                                      style: TextStyle(
-                                        color: AppColors.textPrimary.withValues(
-                                          alpha: 0.8,
-                                        ),
+                                      style: AppTextStyle(
+                                        color: AppPalette.textPrimary
+                                            .withValues(alpha: 0.8),
                                         fontSize: authScaled(
                                           context,
                                           14,
@@ -325,21 +325,21 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                             Padding(
-                              padding: EdgeInsets.only(
+                              padding: AppEdgeInsets.only(
                                 bottom: bottomPanelPadding,
                               ),
                               child: Container(
-                                padding: EdgeInsets.all(panelPadding),
-                                decoration: BoxDecoration(
-                                  color: AppColors.background.withValues(
+                                padding: AppEdgeInsets.all(panelPadding),
+                                decoration: AppBoxDecoration(
+                                  color: AppPalette.backgroundWarm.withValues(
                                     alpha: 0.72,
                                   ),
                                   border: Border.all(
-                                    color: AppColors.accent.withValues(
+                                    color: AppPalette.primary.withValues(
                                       alpha: 0.12,
                                     ),
                                   ),
-                                  borderRadius: BorderRadius.circular(
+                                  borderRadius: AppBorderRadius.circular(
                                     authScaled(context, 24, min: 18, max: 24),
                                   ),
                                 ),
@@ -352,10 +352,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                       _mode == _AuthEntryMode.login
                                           ? l10n.authLoginTitle
                                           : l10n.authRegisterTitle,
-                                      style: TextStyle(
+                                      style: AppTextStyle(
                                         fontSize: titleSize,
                                         fontWeight: FontWeight.bold,
-                                        color: AppColors.textPrimary,
+                                        color: AppPalette.textPrimary,
                                         height: 1.1,
                                       ),
                                     ),
@@ -516,12 +516,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 overflow: TextOverflow.ellipsis,
               ),
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.accent,
-                padding: EdgeInsets.symmetric(
+                foregroundColor: AppPalette.primary,
+                padding: AppEdgeInsets.symmetric(
                   horizontal: authScaled(context, 10, min: 8, max: 10),
                   vertical: authScaled(context, 6, min: 4, max: 6),
                 ),
-                textStyle: TextStyle(
+                textStyle: AppTextStyle(
                   fontSize: authScaled(context, 14, min: 12, max: 14),
                   fontWeight: FontWeight.w700,
                 ),
@@ -830,7 +830,7 @@ class _AuthFieldsScrollView extends StatelessWidget {
         final floatingLabelReserve = authScaled(context, 8, min: 6, max: 8);
 
         return Padding(
-          padding: EdgeInsets.only(top: floatingLabelReserve),
+          padding: AppEdgeInsets.only(top: floatingLabelReserve),
           child: SizedBox(width: availableWidth, child: child),
         );
       },
@@ -864,15 +864,15 @@ class _AuthModeSwitch extends StatelessWidget {
       showSelectedIcon: false,
       onSelectionChanged: (selection) => onChanged(selection.first),
       style: ButtonStyle(
-        foregroundColor: WidgetStateProperty.all(AppColors.textPrimary),
-        iconColor: WidgetStateProperty.all(AppColors.textPrimary),
+        foregroundColor: WidgetStateProperty.all(AppPalette.textPrimary),
+        iconColor: WidgetStateProperty.all(AppPalette.textPrimary),
         backgroundColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.selected)
-              ? AppColors.accent
-              : Colors.white.withValues(alpha: 0.06),
+              ? AppPalette.primary
+              : AppPalette.white.withValues(alpha: 0.06),
         ),
         side: WidgetStateProperty.all(
-          BorderSide(color: AppColors.accent.withValues(alpha: 0.18)),
+          BorderSide(color: AppPalette.primary.withValues(alpha: 0.18)),
         ),
       ),
     );
@@ -921,41 +921,45 @@ class _AuthTextField extends StatelessWidget {
       autofillHints: autofillHints,
       onSubmitted: onSubmitted,
       onTapOutside: (_) => FocusScope.of(context).unfocus(),
-      style: const TextStyle(
-        color: AppColors.textPrimary,
+      style: const AppTextStyle(
+        color: AppPalette.textPrimary,
         fontWeight: FontWeight.w600,
       ),
-      decoration: InputDecoration(
+      decoration: AppInputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: AppColors.textSecondary),
+        labelStyle: const AppTextStyle(color: AppPalette.textCoolSecondary),
         hintText: hint,
-        hintStyle: const TextStyle(color: AppColors.textCaption),
+        hintStyle: const AppTextStyle(color: AppPalette.textCaption),
         errorText: errorText,
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.05),
-        prefixIcon: Icon(icon, color: AppColors.accent),
+        fillColor: AppPalette.white.withValues(alpha: 0.05),
+        prefixIcon: Icon(icon, color: AppPalette.primary),
         suffixIcon: suffixIcon,
-        contentPadding: EdgeInsets.symmetric(
+        contentPadding: AppEdgeInsets.symmetric(
           horizontal: authScaled(context, 18, min: 14, max: 18),
           vertical: authScaled(context, 15, min: 13, max: 15),
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(
+          borderRadius: AppBorderRadius.circular(
             authScaled(context, 16, min: 14, max: 16),
           ),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+          borderSide: BorderSide(
+            color: AppPalette.white.withValues(alpha: 0.1),
+          ),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(
+          borderRadius: AppBorderRadius.circular(
             authScaled(context, 16, min: 14, max: 16),
           ),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+          borderSide: BorderSide(
+            color: AppPalette.white.withValues(alpha: 0.1),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(
+          borderRadius: AppBorderRadius.circular(
             authScaled(context, 16, min: 14, max: 16),
           ),
-          borderSide: const BorderSide(color: AppColors.accent, width: 1.4),
+          borderSide: const BorderSide(color: AppPalette.primary, width: 1.4),
         ),
       ),
     );
@@ -981,16 +985,16 @@ class _PrimaryAuthButton extends StatelessWidget {
     if (isLoading) {
       return Container(
         height: buttonHeight,
-        decoration: BoxDecoration(
-          color: AppColors.accent,
-          borderRadius: BorderRadius.circular(999),
+        decoration: AppBoxDecoration(
+          color: AppPalette.primary,
+          borderRadius: AppBorderRadius.circular(999),
         ),
         alignment: Alignment.center,
         child: const SizedBox(
           width: 24,
           height: 24,
           child: CircularProgressIndicator(
-            color: AppColors.background,
+            color: AppPalette.backgroundWarm,
             strokeWidth: 2.5,
           ),
         ),
@@ -999,26 +1003,28 @@ class _PrimaryAuthButton extends StatelessWidget {
 
     return ElevatedButton.icon(
       onPressed: onPressed,
-      icon: Icon(icon, size: 20, color: AppColors.textPrimary),
+      icon: Icon(icon, size: 20, color: AppPalette.textPrimary),
       label: Text(
         label,
         overflow: TextOverflow.ellipsis,
         maxLines: 1,
-        style: TextStyle(
-          color: AppColors.textPrimary,
+        style: AppTextStyle(
+          color: AppPalette.textPrimary,
           fontSize: authScaled(context, 16, min: 14, max: 16),
           fontWeight: FontWeight.bold,
         ),
       ),
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.accent,
-        foregroundColor: AppColors.background,
-        disabledBackgroundColor: AppColors.accent.withValues(alpha: 0.45),
+        backgroundColor: AppPalette.primary,
+        foregroundColor: AppPalette.backgroundWarm,
+        disabledBackgroundColor: AppPalette.primary.withValues(alpha: 0.45),
         minimumSize: Size(double.infinity, buttonHeight),
-        padding: EdgeInsets.symmetric(
+        padding: AppEdgeInsets.symmetric(
           horizontal: authScaled(context, 16, min: 12, max: 18),
         ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+        shape: RoundedRectangleBorder(
+          borderRadius: AppBorderRadius.circular(999),
+        ),
         elevation: 0,
       ),
     );
@@ -1050,16 +1056,18 @@ class _OAuthButton extends StatelessWidget {
       label: label,
       child: ExcludeSemantics(
         child: Material(
-          color: Colors.white.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(999),
+          color: AppPalette.white.withValues(alpha: 0.1),
+          borderRadius: AppBorderRadius.circular(999),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: onPressed,
             child: Container(
               height: buttonHeight,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-                borderRadius: BorderRadius.circular(999),
+              decoration: AppBoxDecoration(
+                border: Border.all(
+                  color: AppPalette.white.withValues(alpha: 0.1),
+                ),
+                borderRadius: AppBorderRadius.circular(999),
               ),
               alignment: Alignment.center,
               child: isLoading
@@ -1068,19 +1076,21 @@ class _OAuthButton extends StatelessWidget {
                       height: 24,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppPalette.white,
+                        ),
                       ),
                     )
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(icon, color: Colors.white, size: iconSize),
+                        Icon(icon, color: AppPalette.white, size: iconSize),
                         SizedBox(width: authScaled(context, 8, min: 6, max: 8)),
                         Flexible(
                           child: Text(
                             label,
-                            style: TextStyle(
-                              color: Colors.white,
+                            style: AppTextStyle(
+                              color: AppPalette.white,
                               fontSize: labelSize,
                               fontWeight: FontWeight.bold,
                             ),

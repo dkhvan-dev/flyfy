@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/ui/app_colors.dart';
 import '../../features/excursions/models/excursion_schedule_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/excursion_provider.dart';
@@ -45,15 +45,15 @@ class _GuideCalendarScreenState extends State<GuideCalendarScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppPalette.backgroundWarm,
       body: SafeArea(
         child: Consumer<ExcursionScheduleProvider>(
           builder: (context, provider, _) {
             final selectedDate = provider.selectedDate ?? DateTime.now();
             final selectedSlots = provider.slotsForDay(selectedDate);
             return RefreshIndicator(
-              color: AppColors.accent,
-              backgroundColor: const Color(0xFF2A2118),
+              color: AppPalette.primary,
+              backgroundColor: AppPalette.warmSurface20,
               onRefresh: () => provider.loadWeek(
                 selectedDate,
                 guideUserId: widget.guideUserId,
@@ -62,7 +62,7 @@ class _GuideCalendarScreenState extends State<GuideCalendarScreen> {
                 slivers: [
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                      padding: const AppEdgeInsets.fromLTRB(20, 12, 20, 16),
                       child: Row(
                         children: [
                           IconButton(
@@ -71,7 +71,7 @@ class _GuideCalendarScreenState extends State<GuideCalendarScreen> {
                             ).backButtonTooltip,
                             onPressed: () => context.pop(),
                             icon: const Icon(Icons.arrow_back_rounded),
-                            color: AppColors.textPrimary,
+                            color: AppPalette.textPrimary,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -79,10 +79,10 @@ class _GuideCalendarScreenState extends State<GuideCalendarScreen> {
                               l10n.guideCalendarTitle,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: const AppTextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.w900,
-                                color: AppColors.textPrimary,
+                                color: AppPalette.textPrimary,
                               ),
                             ),
                           ),
@@ -93,8 +93,8 @@ class _GuideCalendarScreenState extends State<GuideCalendarScreen> {
                               icon: const Icon(Icons.add_rounded),
                               label: Text(l10n.guideCalendarAddSlot),
                               style: FilledButton.styleFrom(
-                                backgroundColor: AppColors.accent,
-                                foregroundColor: AppColors.textPrimary,
+                                backgroundColor: AppPalette.primary,
+                                foregroundColor: AppPalette.textPrimary,
                               ),
                             ),
                         ],
@@ -148,7 +148,7 @@ class _GuideCalendarScreenState extends State<GuideCalendarScreen> {
       isDismissible: true,
       enableDrag: true,
       useSafeArea: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (_) =>
           GuideScheduleSlotSheet(slot: slot, initialDate: selectedDate),
     );

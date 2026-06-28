@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:dio/dio.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -16,7 +17,6 @@ import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
 import '../../core/network/reference_api.dart';
 import '../../core/time/app_time.dart';
-import '../../core/ui/app_colors.dart';
 import '../../core/ui/app_inline_field_error.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/activities/activity_cover_url.dart';
@@ -38,7 +38,7 @@ import '../../shared/reference/app_location_label_resolver.dart';
 import '../../shared/widgets/app_currency_picker_field.dart';
 import '../../shared/widgets/app_map_card.dart';
 
-const _inlineValidationColor = Color(0xFFFF8A65);
+const _inlineValidationColor = AppPalette.redSoft11;
 final _activityPasswordInputFormatter = FilteringTextInputFormatter.allow(
   RegExp(r'[\x20-\x7E]'),
 );
@@ -1238,14 +1238,14 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: AppColors.surface,
+          backgroundColor: AppPalette.surfaceCool,
           title: Text(
             l10n.createActivityDiscardTitle,
-            style: const TextStyle(color: AppColors.textPrimary),
+            style: const AppTextStyle(color: AppPalette.textPrimary),
           ),
           content: Text(
             l10n.createActivityDiscardDescription,
-            style: const TextStyle(color: AppColors.textSecondary),
+            style: const AppTextStyle(color: AppPalette.textCoolSecondary),
           ),
           actions: [
             TextButton(
@@ -1256,7 +1256,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
               onPressed: () => Navigator.of(dialogContext).pop(true),
               child: Text(
                 l10n.createActivityDiscardConfirm,
-                style: const TextStyle(color: _inlineValidationColor),
+                style: const AppTextStyle(color: _inlineValidationColor),
               ),
             ),
           ],
@@ -1784,7 +1784,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     final selected = await showModalBottomSheet<String>(
       context: context,
       isDismissible: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       isScrollControlled: true,
       builder: (context) {
         return _CategoryPickerSheet(
@@ -1815,7 +1815,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     final selected = await showModalBottomSheet<String>(
       context: context,
       isDismissible: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       isScrollControlled: true,
       builder: (context) {
         return _CategoryPickerSheet(
@@ -1838,7 +1838,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     final selected = await showModalBottomSheet<String>(
       context: context,
       isDismissible: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       isScrollControlled: true,
       builder: (context) {
         return _CategoryPickerSheet(
@@ -2122,11 +2122,15 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       canPop: false,
       onPopInvokedWithResult: (didPop, _) => _handleRoutePopInvoked(didPop),
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: AppPalette.backgroundWarm,
         body: DecoratedBox(
-          decoration: const BoxDecoration(
+          decoration: const AppBoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFF231A0F), Color(0xFF2A1F12), Color(0xFF231A0F)],
+              colors: [
+                AppPalette.backgroundWarm,
+                AppPalette.warmSurface19,
+                AppPalette.backgroundWarm,
+              ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
@@ -2247,7 +2251,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     final descriptionHeight = isCompact ? 140.0 : 150.0;
 
     return ListView(
-      padding: EdgeInsets.fromLTRB(
+      padding: AppEdgeInsets.fromLTRB(
         horizontalPadding,
         0,
         horizontalPadding,
@@ -2320,7 +2324,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.2,
-                      color: AppColors.accent,
+                      color: AppPalette.primary,
                     ),
                   ),
                 );
@@ -2446,7 +2450,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     final locationLocked = showOffline && !_canEditMeetingAddress;
 
     return ListView(
-      padding: EdgeInsets.fromLTRB(
+      padding: AppEdgeInsets.fromLTRB(
         horizontalPadding,
         0,
         horizontalPadding,
@@ -2485,7 +2489,10 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
           const SizedBox(height: 6),
           Text(
             l10n.editFormatLocked,
-            style: const TextStyle(color: AppColors.textCaption, fontSize: 12),
+            style: const AppTextStyle(
+              color: AppPalette.textCaption,
+              fontSize: 12,
+            ),
           ),
         ],
         const SizedBox(height: 18),
@@ -2530,8 +2537,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
           const SizedBox(height: 18),
           Text(
             l10n.createMapEarlyStageNotice,
-            style: const TextStyle(
-              color: Color(0xFFD4BEA8),
+            style: const AppTextStyle(
+              color: AppPalette.orangeLight02,
               fontSize: 12,
               height: 1.35,
             ),
@@ -2556,7 +2563,10 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                 : (_isResolvingMapSelection
                       ? l10n.createMapResolvingHint
                       : l10n.createMapTapHint),
-            style: const TextStyle(color: Color(0xFFD4BEA8), fontSize: 12),
+            style: const AppTextStyle(
+              color: AppPalette.orangeLight02,
+              fontSize: 12,
+            ),
           ),
 
           if (_meetingLocationDiffersFromAuthorLocation) ...[
@@ -2622,7 +2632,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     final priceChipGap = width <= 393 ? 6.0 : 8.0;
     final isUnlimited = _capacityType == 'UNLIMITED';
     return ListView(
-      padding: EdgeInsets.fromLTRB(
+      padding: AppEdgeInsets.fromLTRB(
         horizontalPadding,
         6,
         horizontalPadding,
@@ -2652,8 +2662,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
               'UNLISTED' => l10n.createVisibilityUnlistedDescription,
               _ => l10n.createVisibilityPublicDescription,
             },
-            style: const TextStyle(
-              color: AppColors.textCaption,
+            style: const AppTextStyle(
+              color: AppPalette.textCaption,
               fontSize: 12,
               height: 1.35,
             ),
@@ -2674,8 +2684,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
             const SizedBox(height: 8),
             Text(
               l10n.createVisibilityPasswordEditHint,
-              style: const TextStyle(
-                color: AppColors.textCaption,
+              style: const AppTextStyle(
+                color: AppPalette.textCaption,
                 fontSize: 12,
                 height: 1.35,
               ),
@@ -2729,7 +2739,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                     AppCurrencyPickerField(
                       label: l10n.createCurrencyLabel,
                       selectedCode: _selectedCurrencyCode,
-                      surfaceColor: const Color(0xFF3A2108),
+                      surfaceColor: AppPalette.warmSurface48,
                       onChanged: _setSelectedCurrencyCode,
                     ),
                   ],
@@ -2739,8 +2749,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                 const SizedBox(height: 8),
                 Text(
                   l10n.editPriceRestrictionHint,
-                  style: const TextStyle(
-                    color: AppColors.textCaption,
+                  style: const AppTextStyle(
+                    color: AppPalette.textCaption,
                     fontSize: 12,
                   ),
                 ),
@@ -2769,8 +2779,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
               const SizedBox(height: 8),
               Text(
                 l10n.createAllowParticipantInvitesHint,
-                style: const TextStyle(
-                  color: AppColors.textCaption,
+                style: const AppTextStyle(
+                  color: AppPalette.textCaption,
                   fontSize: 12,
                   height: 1.35,
                 ),
@@ -2858,7 +2868,7 @@ class _CreateTopBar extends StatelessWidget {
     final titleSize = compact ? 18.0 : (width >= 394 ? 22.0 : 20.0);
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(10, compact ? 6 : 8, 10, compact ? 2 : 4),
+      padding: AppEdgeInsets.fromLTRB(10, compact ? 6 : 8, 10, compact ? 2 : 4),
       child: SizedBox(
         height: 40,
         child: Row(
@@ -2872,7 +2882,7 @@ class _CreateTopBar extends StatelessWidget {
                       splashRadius: 20,
                       icon: const Icon(
                         Icons.arrow_back_ios_new_rounded,
-                        color: AppColors.textPrimary,
+                        color: AppPalette.textPrimary,
                         size: 18,
                       ),
                     ),
@@ -2884,8 +2894,8 @@ class _CreateTopBar extends StatelessWidget {
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
+                  style: AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: titleSize,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.5,
@@ -2930,7 +2940,7 @@ class _StepIndicator extends StatelessWidget {
       final bottomPadding = height <= 780 || textScale > 1.05 ? 22.0 : 34.0;
 
       return Padding(
-        padding: EdgeInsets.fromLTRB(
+        padding: AppEdgeInsets.fromLTRB(
           isCompact ? 22 : 28,
           topPadding,
           isCompact ? 22 : 28,
@@ -2944,12 +2954,12 @@ class _StepIndicator extends StatelessWidget {
               return Expanded(
                 child: Container(
                   height: 3,
-                  margin: const EdgeInsets.symmetric(horizontal: 10),
-                  decoration: BoxDecoration(
+                  margin: const AppEdgeInsets.symmetric(horizontal: 10),
+                  decoration: AppBoxDecoration(
                     color: isDone
-                        ? AppColors.success
-                        : AppColors.accent.withValues(alpha: 0.32),
-                    borderRadius: BorderRadius.circular(999),
+                        ? AppPalette.success
+                        : AppPalette.primary.withValues(alpha: 0.32),
+                    borderRadius: AppBorderRadius.circular(999),
                   ),
                 ),
               );
@@ -2961,18 +2971,20 @@ class _StepIndicator extends StatelessWidget {
             final isStepTappable = onStepTap != null && stepIndex < currentStep;
             final stepSize = isActive ? 48.0 : (isDone ? 40.0 : 34.0);
             final stepChild = isDone
-                ? const Icon(Icons.check_rounded, color: Colors.white)
+                ? const Icon(Icons.check_rounded, color: AppPalette.white)
                 : Text(
                     '${stepIndex + 1}',
-                    style: TextStyle(
-                      color: isActive ? Colors.white : const Color(0xFFF6DEC2),
+                    style: AppTextStyle(
+                      color: isActive
+                          ? AppPalette.white
+                          : AppPalette.orangeLight37,
                       fontSize: isActive ? 20 : 15,
                       fontWeight: FontWeight.w900,
                     ),
                   );
 
             return Material(
-              color: Colors.transparent,
+              color: AppPalette.transparent,
               shape: const CircleBorder(),
               child: InkWell(
                 onTap: isStepTappable ? () => onStepTap!(stepIndex) : null,
@@ -2981,17 +2993,17 @@ class _StepIndicator extends StatelessWidget {
                   duration: const Duration(milliseconds: 180),
                   width: stepSize,
                   height: stepSize,
-                  decoration: BoxDecoration(
+                  decoration: AppBoxDecoration(
                     shape: BoxShape.circle,
                     color: isDone
-                        ? AppColors.success
+                        ? AppPalette.success
                         : isActive
-                        ? AppColors.accent
-                        : const Color(0xFF5A370D),
+                        ? AppPalette.primary
+                        : AppPalette.warmSurface96,
                     boxShadow: isDone
                         ? [
                             BoxShadow(
-                              color: AppColors.success.withValues(alpha: 0.22),
+                              color: AppPalette.success.withValues(alpha: 0.22),
                               blurRadius: 22,
                               offset: const Offset(0, 12),
                             ),
@@ -2999,14 +3011,14 @@ class _StepIndicator extends StatelessWidget {
                         : isActive
                         ? [
                             BoxShadow(
-                              color: AppColors.accent.withValues(alpha: 0.24),
+                              color: AppPalette.primary.withValues(alpha: 0.24),
                               blurRadius: 22,
                               offset: const Offset(0, 10),
                             ),
                           ]
                         : null,
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.08),
+                      color: AppPalette.white.withValues(alpha: 0.08),
                     ),
                   ),
                   child: Center(child: stepChild),
@@ -3019,7 +3031,7 @@ class _StepIndicator extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+      padding: const AppEdgeInsets.fromLTRB(24, 8, 24, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -3028,8 +3040,8 @@ class _StepIndicator extends StatelessWidget {
               Expanded(
                 child: Text(
                   titles[currentStep],
-                  style: const TextStyle(
-                    color: AppColors.accent,
+                  style: const AppTextStyle(
+                    color: AppPalette.primary,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.4,
@@ -3038,8 +3050,8 @@ class _StepIndicator extends StatelessWidget {
               ),
               Text(
                 counterLabel,
-                style: const TextStyle(
-                  color: AppColors.textCaption,
+                style: const AppTextStyle(
+                  color: AppPalette.textCaption,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -3048,19 +3060,21 @@ class _StepIndicator extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           ClipRRect(
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: AppBorderRadius.circular(999),
             child: LinearProgressIndicator(
               value: (currentStep + 1) / totalSteps,
               minHeight: 5,
-              backgroundColor: Colors.white.withValues(alpha: 0.08),
-              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accent),
+              backgroundColor: AppPalette.white.withValues(alpha: 0.08),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                AppPalette.primary,
+              ),
             ),
           ),
           const SizedBox(height: 16),
           Text(
             titles[currentStep],
-            style: const TextStyle(
-              color: AppColors.textPrimary,
+            style: const AppTextStyle(
+              color: AppPalette.textPrimary,
               fontSize: 22,
               fontWeight: FontWeight.w700,
             ),
@@ -3099,34 +3113,36 @@ class _BottomNavBar extends StatelessWidget {
       return SafeArea(
         top: false,
         child: Container(
-          padding: EdgeInsets.fromLTRB(
+          padding: AppEdgeInsets.fromLTRB(
             horizontalPadding,
             14,
             horizontalPadding,
             16,
           ),
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                const Color(0xFF1D1208).withValues(alpha: 0),
-                const Color(0xFF1D1208).withValues(alpha: 0.9),
-                const Color(0xFF1D1208),
+                AppPalette.warmInk54.withValues(alpha: 0),
+                AppPalette.warmInk54.withValues(alpha: 0.9),
+                AppPalette.warmInk54,
               ],
             ),
             border: Border(
-              top: BorderSide(color: AppColors.accent.withValues(alpha: 0.18)),
+              top: BorderSide(
+                color: AppPalette.primary.withValues(alpha: 0.18),
+              ),
             ),
           ),
           child: ElevatedButton(
             onPressed: isSubmitting ? null : onNext,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accent,
-              foregroundColor: Colors.white,
+              backgroundColor: AppPalette.primary,
+              foregroundColor: AppPalette.white,
               minimumSize: Size.fromHeight(buttonHeight),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: AppBorderRadius.circular(999),
               ),
               elevation: 0,
             ),
@@ -3136,7 +3152,7 @@ class _BottomNavBar extends StatelessWidget {
                     width: 22,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
-                      color: Colors.white,
+                      color: AppPalette.white,
                     ),
                   )
                 : FittedBox(
@@ -3147,7 +3163,7 @@ class _BottomNavBar extends StatelessWidget {
                       children: [
                         Text(
                           nextLabel,
-                          style: TextStyle(
+                          style: AppTextStyle(
                             fontSize: fontSize,
                             fontWeight: FontWeight.w700,
                             letterSpacing: -0.8,
@@ -3166,19 +3182,21 @@ class _BottomNavBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-        decoration: BoxDecoration(
-          color: const Color(0xB6231A0F),
-          border: Border(top: BorderSide(color: AppColors.borderLight)),
+        padding: const AppEdgeInsets.fromLTRB(20, 12, 20, 20),
+        decoration: AppBoxDecoration(
+          color: AppPalette.warmOverlayInk04,
+          border: Border(
+            top: BorderSide(color: AppPalette.outlineOverlayLight),
+          ),
         ),
         child: ElevatedButton(
           onPressed: isSubmitting ? null : onNext,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.accent,
-            foregroundColor: AppColors.background,
+            backgroundColor: AppPalette.primary,
+            foregroundColor: AppPalette.backgroundWarm,
             minimumSize: const Size.fromHeight(56),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: AppBorderRadius.circular(18),
             ),
           ),
           child: isSubmitting
@@ -3187,12 +3205,12 @@ class _BottomNavBar extends StatelessWidget {
                   width: 22,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.5,
-                    color: AppColors.background,
+                    color: AppPalette.backgroundWarm,
                   ),
                 )
               : Text(
                   nextLabel,
-                  style: const TextStyle(
+                  style: const AppTextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                   ),
@@ -3224,10 +3242,12 @@ class _Step2NavBar extends StatelessWidget {
       onPressed: isSubmitting ? null : onNext,
       style: ElevatedButton.styleFrom(
         minimumSize: const Size.fromHeight(60),
-        foregroundColor: Colors.white,
-        backgroundColor: AppColors.accent,
+        foregroundColor: AppPalette.white,
+        backgroundColor: AppPalette.primary,
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+        shape: RoundedRectangleBorder(
+          borderRadius: AppBorderRadius.circular(999),
+        ),
       ),
       child: isSubmitting
           ? const SizedBox(
@@ -3235,7 +3255,7 @@ class _Step2NavBar extends StatelessWidget {
               width: 22,
               child: CircularProgressIndicator(
                 strokeWidth: 2.5,
-                color: Colors.white,
+                color: AppPalette.white,
               ),
             )
           : FittedBox(
@@ -3246,7 +3266,7 @@ class _Step2NavBar extends StatelessWidget {
                 children: [
                   Text(
                     nextLabel,
-                    style: const TextStyle(
+                    style: const AppTextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.4,
@@ -3262,25 +3282,25 @@ class _Step2NavBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        padding: EdgeInsets.fromLTRB(
+        padding: AppEdgeInsets.fromLTRB(
           horizontalPadding,
           14,
           horizontalPadding,
           14,
         ),
-        decoration: BoxDecoration(
+        decoration: AppBoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              const Color(0xFF1D1208).withValues(alpha: 0),
-              const Color(0xFF1D1208).withValues(alpha: 0.88),
-              const Color(0xFF1D1208),
+              AppPalette.warmInk54.withValues(alpha: 0),
+              AppPalette.warmInk54.withValues(alpha: 0.88),
+              AppPalette.warmInk54,
             ],
           ),
           border: Border(
             top: BorderSide(
-              color: const Color(0xFF5F86B3).withValues(alpha: 0.16),
+              color: AppPalette.blueMuted24.withValues(alpha: 0.16),
             ),
           ),
         ),
@@ -3306,8 +3326,8 @@ class _Step1FieldSection extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(
-            color: AppColors.textPrimary,
+          style: AppTextStyle(
+            color: AppPalette.textPrimary,
             fontSize: labelSize,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.8,
@@ -3333,8 +3353,8 @@ class _Step2FieldSection extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: Color(0xFFEFE7DF),
+          style: const AppTextStyle(
+            color: AppPalette.orangeWash01,
             fontSize: 17,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.5,
@@ -3356,12 +3376,12 @@ class _Step2LocationMismatchNotice extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF3B2A0E),
-        borderRadius: BorderRadius.circular(18),
+      padding: const AppEdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmSurface69,
+        borderRadius: AppBorderRadius.circular(18),
         border: Border.all(
-          color: const Color(0xFFFFC857).withValues(alpha: 0.28),
+          color: AppPalette.amberSoft24.withValues(alpha: 0.28),
         ),
       ),
       child: Row(
@@ -3369,15 +3389,15 @@ class _Step2LocationMismatchNotice extends StatelessWidget {
         children: [
           const Icon(
             Icons.info_outline_rounded,
-            color: Color(0xFFFFC857),
+            color: AppPalette.amberSoft24,
             size: 20,
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: const AppTextStyle(
+                color: AppPalette.textPrimary,
                 fontSize: 12.5,
                 height: 1.35,
                 fontWeight: FontWeight.w600,
@@ -3414,11 +3434,13 @@ class _Step2FormatSegmented extends StatelessWidget {
     final spacing = width <= 360 ? 6.0 : 8.0;
 
     return Container(
-      padding: const EdgeInsets.all(6),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2F1A06),
-        borderRadius: BorderRadius.circular(999),
-        boxShadow: const [BoxShadow(color: Color(0x08000000), blurRadius: 1)],
+      padding: const AppEdgeInsets.all(6),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmSurface37,
+        borderRadius: AppBorderRadius.circular(999),
+        boxShadow: const [
+          BoxShadow(color: AppPalette.neutralOverlayInk01, blurRadius: 1),
+        ],
       ),
       child: Row(
         children: entries.map((entry) {
@@ -3428,13 +3450,13 @@ class _Step2FormatSegmented extends StatelessWidget {
               onTap: () => onChanged(entry.key),
               child: Container(
                 constraints: BoxConstraints(minHeight: segmentHeight),
-                decoration: BoxDecoration(
-                  color: isActive ? AppColors.accent : Colors.transparent,
-                  borderRadius: BorderRadius.circular(999),
+                decoration: AppBoxDecoration(
+                  color: isActive ? AppPalette.primary : AppPalette.transparent,
+                  borderRadius: AppBorderRadius.circular(999),
                   boxShadow: isActive
                       ? [
                           BoxShadow(
-                            color: AppColors.accent.withValues(alpha: 0.22),
+                            color: AppPalette.primary.withValues(alpha: 0.22),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -3442,7 +3464,7 @@ class _Step2FormatSegmented extends StatelessWidget {
                       : null,
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
+                  padding: const AppEdgeInsets.symmetric(
                     horizontal: 8,
                     vertical: 10,
                   ),
@@ -3452,7 +3474,7 @@ class _Step2FormatSegmented extends StatelessWidget {
                       Icon(
                         icons[entry.key],
                         size: iconSize,
-                        color: Colors.white,
+                        color: AppPalette.white,
                       ),
                       SizedBox(width: spacing),
                       Flexible(
@@ -3460,8 +3482,8 @@ class _Step2FormatSegmented extends StatelessWidget {
                           entry.value,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white,
+                          style: AppTextStyle(
+                            color: AppPalette.white,
                             fontSize: fontSize,
                             fontWeight: FontWeight.w700,
                           ),
@@ -3507,12 +3529,12 @@ class _Step2PillTextField extends StatelessWidget {
       children: [
         Container(
           constraints: const BoxConstraints(minHeight: fieldHeight),
-          decoration: BoxDecoration(
-            color: const Color(0xFF3A2107),
-            borderRadius: BorderRadius.circular(999),
+          decoration: AppBoxDecoration(
+            color: AppPalette.warmSurface47,
+            borderRadius: AppBorderRadius.circular(999),
             border: Border.all(
               color: errorText == null
-                  ? Colors.white.withValues(alpha: 0.03)
+                  ? AppPalette.white.withValues(alpha: 0.03)
                   : _inlineValidationColor,
             ),
           ),
@@ -3524,30 +3546,30 @@ class _Step2PillTextField extends StatelessWidget {
             maxLines: 1,
             scrollPhysics: const BouncingScrollPhysics(),
             textAlignVertical: TextAlignVertical.center,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
+            style: const AppTextStyle(
+              color: AppPalette.textPrimary,
               fontSize: 16,
               height: 1.2,
               letterSpacing: -0.2,
             ),
-            decoration: InputDecoration(
+            decoration: AppInputDecoration(
               hintText: hint,
-              hintStyle: const TextStyle(
-                color: Color(0xFFB8AB9D),
+              hintStyle: const AppTextStyle(
+                color: AppPalette.orangeSoft11,
                 fontSize: 16,
                 height: 1.2,
                 letterSpacing: -0.2,
               ),
               isDense: true,
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.fromLTRB(0, 18, 20, 18),
+              contentPadding: const AppEdgeInsets.fromLTRB(0, 18, 20, 18),
               prefixIcon: SizedBox(
                 width: 56,
                 height: fieldHeight,
                 child: Center(
                   child: Padding(
-                    padding: const EdgeInsets.only(left: 18, right: 12),
-                    child: Icon(icon, color: AppColors.accent, size: 22),
+                    padding: const AppEdgeInsets.only(left: 18, right: 12),
+                    child: Icon(icon, color: AppPalette.primary, size: 22),
                   ),
                 ),
               ),
@@ -3561,7 +3583,7 @@ class _Step2PillTextField extends StatelessWidget {
         if (errorText != null)
           AppInlineFieldError(
             message: errorText!,
-            padding: const EdgeInsets.only(top: 8, left: 6, right: 6),
+            padding: const AppEdgeInsets.only(top: 8, left: 6, right: 6),
           ),
       ],
     );
@@ -3596,8 +3618,8 @@ class _Step2PickerField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: Color(0xFFEFE7DF),
+          style: const AppTextStyle(
+            color: AppPalette.orangeWash01,
             fontSize: 15,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.4,
@@ -3606,12 +3628,12 @@ class _Step2PickerField extends StatelessWidget {
         const SizedBox(height: 8),
         Container(
           constraints: const BoxConstraints(minHeight: 64),
-          decoration: BoxDecoration(
-            color: const Color(0xFF3A2107),
-            borderRadius: BorderRadius.circular(999),
+          decoration: AppBoxDecoration(
+            color: AppPalette.warmSurface47,
+            borderRadius: AppBorderRadius.circular(999),
             border: Border.all(
               color: errorText == null
-                  ? Colors.white.withValues(alpha: 0.03)
+                  ? AppPalette.white.withValues(alpha: 0.03)
                   : _inlineValidationColor,
             ),
           ),
@@ -3621,24 +3643,24 @@ class _Step2PickerField extends StatelessWidget {
             keyboardType: keyboardType,
             inputFormatters: inputFormatters,
             textAlignVertical: TextAlignVertical.center,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
+            style: const AppTextStyle(
+              color: AppPalette.textPrimary,
               fontSize: 16,
               height: 1.2,
               letterSpacing: -0.2,
             ),
-            decoration: InputDecoration(
+            decoration: AppInputDecoration(
               hintText: hint,
-              hintStyle: const TextStyle(
-                color: Color(0xFFB8AB9D),
+              hintStyle: const AppTextStyle(
+                color: AppPalette.orangeSoft11,
                 fontSize: 16,
                 height: 1.2,
                 letterSpacing: -0.2,
               ),
               isDense: true,
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.fromLTRB(18, 17, 8, 17),
-              suffixIcon: Icon(icon, color: const Color(0xFFB8AB9D), size: 20),
+              contentPadding: const AppEdgeInsets.fromLTRB(18, 17, 8, 17),
+              suffixIcon: Icon(icon, color: AppPalette.orangeSoft11, size: 20),
               suffixIconConstraints: const BoxConstraints(
                 minWidth: 44,
                 minHeight: 64,
@@ -3649,7 +3671,7 @@ class _Step2PickerField extends StatelessWidget {
         if (errorText != null)
           AppInlineFieldError(
             message: errorText!,
-            padding: const EdgeInsets.only(top: 8, left: 6, right: 6),
+            padding: const AppEdgeInsets.only(top: 8, left: 6, right: 6),
           ),
       ],
     );
@@ -3775,13 +3797,13 @@ class _Step3Section extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(icon, color: AppColors.accent, size: 22),
+            Icon(icon, color: AppPalette.primary, size: 22),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: const AppTextStyle(
+                  color: AppPalette.textPrimary,
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.8,
@@ -3816,20 +3838,20 @@ class _Step3ChoiceChip extends StatelessWidget {
     final fontSize = width <= 360 || textScale > 1.05 ? 12.0 : 15.0;
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppBorderRadius.circular(999),
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           constraints: const BoxConstraints(minHeight: 50),
-          padding: EdgeInsets.symmetric(
+          padding: AppEdgeInsets.symmetric(
             horizontal: horizontalPadding,
             vertical: 10,
           ),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.accent : const Color(0xFF3A2108),
-            borderRadius: BorderRadius.circular(999),
+          decoration: AppBoxDecoration(
+            color: isSelected ? AppPalette.primary : AppPalette.warmSurface48,
+            borderRadius: AppBorderRadius.circular(999),
           ),
           alignment: Alignment.center,
           child: FittedBox(
@@ -3837,8 +3859,8 @@ class _Step3ChoiceChip extends StatelessWidget {
             child: Text(
               label,
               maxLines: 1,
-              style: TextStyle(
-                color: Colors.white,
+              style: AppTextStyle(
+                color: AppPalette.white,
                 fontSize: fontSize,
                 fontWeight: FontWeight.w700,
                 letterSpacing: -0.4,
@@ -3877,8 +3899,8 @@ class _Step3PriceField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: Color(0xFFF3E8DC),
+          style: const AppTextStyle(
+            color: AppPalette.orangeWash05,
             fontSize: 14,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.2,
@@ -3887,12 +3909,12 @@ class _Step3PriceField extends StatelessWidget {
         const SizedBox(height: 10),
         Container(
           constraints: const BoxConstraints(minHeight: 68),
-          decoration: BoxDecoration(
-            color: const Color(0xFF3A2108),
-            borderRadius: BorderRadius.circular(999),
+          decoration: AppBoxDecoration(
+            color: AppPalette.warmSurface48,
+            borderRadius: AppBorderRadius.circular(999),
             border: Border.all(
               color: errorText == null
-                  ? Colors.white.withValues(alpha: 0.03)
+                  ? AppPalette.white.withValues(alpha: 0.03)
                   : _inlineValidationColor,
             ),
           ),
@@ -3907,34 +3929,34 @@ class _Step3PriceField extends StatelessWidget {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
-                style: TextStyle(
+                style: AppTextStyle(
                   color: enabled
-                      ? AppColors.textPrimary
-                      : AppColors.textPrimary.withValues(alpha: 0.72),
+                      ? AppPalette.textPrimary
+                      : AppPalette.textPrimary.withValues(alpha: 0.72),
                   fontSize: 20,
                   height: 1.2,
                   letterSpacing: -0.6,
                 ),
-                decoration: InputDecoration(
+                decoration: AppInputDecoration(
                   suffixText: suffixText,
-                  suffixStyle: TextStyle(
+                  suffixStyle: AppTextStyle(
                     color: enabled
-                        ? AppColors.textPrimary
-                        : AppColors.textPrimary.withValues(alpha: 0.7),
+                        ? AppPalette.textPrimary
+                        : AppPalette.textPrimary.withValues(alpha: 0.7),
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     letterSpacing: -0.2,
                   ),
                   hintText: placeholder,
-                  hintStyle: const TextStyle(
-                    color: Color(0xFF9F8D78),
+                  hintStyle: const AppTextStyle(
+                    color: AppPalette.warmMuted19,
                     fontSize: 20,
                     height: 1.2,
                     letterSpacing: -0.6,
                   ),
                   isDense: true,
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+                  contentPadding: const AppEdgeInsets.fromLTRB(20, 18, 20, 18),
                 ),
               );
             },
@@ -3943,7 +3965,7 @@ class _Step3PriceField extends StatelessWidget {
         if (errorText != null)
           AppInlineFieldError(
             message: errorText!,
-            padding: const EdgeInsets.only(top: 8, left: 6, right: 6),
+            padding: const AppEdgeInsets.only(top: 8, left: 6, right: 6),
           ),
       ],
     );
@@ -3976,8 +3998,8 @@ class _Step3TextField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: Color(0xFFF3E8DC),
+          style: const AppTextStyle(
+            color: AppPalette.orangeWash05,
             fontSize: 14,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.2,
@@ -3986,12 +4008,12 @@ class _Step3TextField extends StatelessWidget {
         const SizedBox(height: 10),
         Container(
           constraints: const BoxConstraints(minHeight: 68),
-          decoration: BoxDecoration(
-            color: const Color(0xFF3A2108),
-            borderRadius: BorderRadius.circular(999),
+          decoration: AppBoxDecoration(
+            color: AppPalette.warmSurface48,
+            borderRadius: AppBorderRadius.circular(999),
             border: Border.all(
               color: errorText == null
-                  ? Colors.white.withValues(alpha: 0.03)
+                  ? AppPalette.white.withValues(alpha: 0.03)
                   : _inlineValidationColor,
             ),
           ),
@@ -4001,30 +4023,30 @@ class _Step3TextField extends StatelessWidget {
             obscureText: obscureText,
             inputFormatters: inputFormatters,
             textAlignVertical: TextAlignVertical.center,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
+            style: const AppTextStyle(
+              color: AppPalette.textPrimary,
               fontSize: 18,
               height: 1.2,
               letterSpacing: -0.4,
             ),
-            decoration: InputDecoration(
+            decoration: AppInputDecoration(
               hintText: placeholder,
-              hintStyle: const TextStyle(
-                color: Color(0xFF9F8D78),
+              hintStyle: const AppTextStyle(
+                color: AppPalette.warmMuted19,
                 fontSize: 18,
                 height: 1.2,
                 letterSpacing: -0.4,
               ),
               isDense: true,
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+              contentPadding: const AppEdgeInsets.fromLTRB(20, 18, 20, 18),
             ),
           ),
         ),
         if (errorText != null)
           AppInlineFieldError(
             message: errorText!,
-            padding: const EdgeInsets.only(top: 8, left: 6, right: 6),
+            padding: const AppEdgeInsets.only(top: 8, left: 6, right: 6),
           ),
       ],
     );
@@ -4045,14 +4067,14 @@ class _Step3ToggleRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: AppBorderRadius.circular(999),
       onTap: () => onChanged(!value),
       child: Container(
         constraints: const BoxConstraints(minHeight: 74),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        decoration: BoxDecoration(
-          color: const Color(0xFF3A2108),
-          borderRadius: BorderRadius.circular(999),
+        padding: const AppEdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        decoration: AppBoxDecoration(
+          color: AppPalette.warmSurface48,
+          borderRadius: AppBorderRadius.circular(999),
         ),
         child: Row(
           children: [
@@ -4061,8 +4083,8 @@ class _Step3ToggleRow extends StatelessWidget {
                 label,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: const AppTextStyle(
+                  color: AppPalette.textPrimary,
                   fontSize: 17,
                   fontWeight: FontWeight.w500,
                   letterSpacing: -0.4,
@@ -4073,18 +4095,20 @@ class _Step3ToggleRow extends StatelessWidget {
               duration: const Duration(milliseconds: 180),
               width: 60,
               height: 34,
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: value ? AppColors.accent : const Color(0xFF6A410B),
-                borderRadius: BorderRadius.circular(999),
+              padding: const AppEdgeInsets.all(4),
+              decoration: AppBoxDecoration(
+                color: value
+                    ? AppPalette.primary
+                    : AppPalette.warmSurfaceHigh15,
+                borderRadius: AppBorderRadius.circular(999),
               ),
               child: Align(
                 alignment: value ? Alignment.centerRight : Alignment.centerLeft,
                 child: Container(
                   width: 26,
                   height: 26,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
+                  decoration: const AppBoxDecoration(
+                    color: AppPalette.white,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -4118,12 +4142,12 @@ class _Step3LimitField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final decoration = BoxDecoration(
-      color: const Color(0xFF3A2108),
-      borderRadius: BorderRadius.circular(999),
+    final decoration = AppBoxDecoration(
+      color: AppPalette.warmSurface48,
+      borderRadius: AppBorderRadius.circular(999),
       border: Border.all(
         color: errorText == null
-            ? Colors.white.withValues(alpha: 0.03)
+            ? AppPalette.white.withValues(alpha: 0.03)
             : _inlineValidationColor,
       ),
     );
@@ -4133,8 +4157,8 @@ class _Step3LimitField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: Color(0xFFF3E8DC),
+          style: const AppTextStyle(
+            color: AppPalette.orangeWash05,
             fontSize: 13,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.2,
@@ -4145,14 +4169,14 @@ class _Step3LimitField extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: 60),
           decoration: decoration,
           alignment: Alignment.centerLeft,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const AppEdgeInsets.symmetric(horizontal: 20),
           child: readOnly
               ? Text(
                   readOnlyValue,
-                  style: TextStyle(
+                  style: AppTextStyle(
                     color: readOnlyValue == placeholder
-                        ? const Color(0xFF9F8D78)
-                        : AppColors.textPrimary,
+                        ? AppPalette.warmMuted19
+                        : AppPalette.textPrimary,
                     fontSize: 18,
                     letterSpacing: -0.4,
                   ),
@@ -4163,15 +4187,15 @@ class _Step3LimitField extends StatelessWidget {
                   textAlignVertical: TextAlignVertical.center,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   onChanged: onChanged,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: const AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: 18,
                     letterSpacing: -0.4,
                   ),
-                  decoration: InputDecoration(
+                  decoration: AppInputDecoration(
                     hintText: placeholder,
-                    hintStyle: const TextStyle(
-                      color: Color(0xFF9F8D78),
+                    hintStyle: const AppTextStyle(
+                      color: AppPalette.warmMuted19,
                       fontSize: 18,
                       letterSpacing: -0.4,
                     ),
@@ -4183,7 +4207,7 @@ class _Step3LimitField extends StatelessWidget {
         if (errorText != null)
           AppInlineFieldError(
             message: errorText!,
-            padding: const EdgeInsets.only(top: 8, left: 6, right: 6),
+            padding: const AppEdgeInsets.only(top: 8, left: 6, right: 6),
           ),
       ],
     );
@@ -4213,10 +4237,12 @@ class _Step3ActionBar extends StatelessWidget {
       onPressed: isSubmitting ? null : onPrimaryAction,
       style: ElevatedButton.styleFrom(
         minimumSize: const Size.fromHeight(62),
-        foregroundColor: Colors.white,
-        backgroundColor: AppColors.accent,
+        foregroundColor: AppPalette.white,
+        backgroundColor: AppPalette.primary,
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+        shape: RoundedRectangleBorder(
+          borderRadius: AppBorderRadius.circular(999),
+        ),
       ),
       child: isSubmitting
           ? const SizedBox(
@@ -4224,7 +4250,7 @@ class _Step3ActionBar extends StatelessWidget {
               width: 22,
               child: CircularProgressIndicator(
                 strokeWidth: 2.5,
-                color: Colors.white,
+                color: AppPalette.white,
               ),
             )
           : FittedBox(
@@ -4235,7 +4261,7 @@ class _Step3ActionBar extends StatelessWidget {
                 children: [
                   Text(
                     primaryLabel,
-                    style: const TextStyle(
+                    style: const AppTextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.5,
@@ -4253,25 +4279,25 @@ class _Step3ActionBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        padding: EdgeInsets.fromLTRB(
+        padding: AppEdgeInsets.fromLTRB(
           horizontalPadding,
           16,
           horizontalPadding,
           18,
         ),
-        decoration: BoxDecoration(
+        decoration: AppBoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              const Color(0xFF1C1107).withValues(alpha: 0),
-              const Color(0xFF1C1107).withValues(alpha: 0.9),
-              const Color(0xFF1C1107),
+              AppPalette.warmInk48.withValues(alpha: 0),
+              AppPalette.warmInk48.withValues(alpha: 0.9),
+              AppPalette.warmInk48,
             ],
           ),
           border: Border(
             top: BorderSide(
-              color: const Color(0xFF5F86B3).withValues(alpha: 0.2),
+              color: AppPalette.blueMuted24.withValues(alpha: 0.2),
             ),
           ),
         ),
@@ -4334,7 +4360,7 @@ class _Step1TextFieldState extends State<_Step1TextField> {
     final width = MediaQuery.sizeOf(context).width;
     final isCompact = width <= 360;
     final isWide = width >= 394;
-    final radius = BorderRadius.circular(32);
+    final radius = AppBorderRadius.circular(32);
     final fieldHeight =
         widget.minHeight ?? (isCompact ? 66.0 : (isWide ? 78.0 : 72.0));
     final horizontalPadding = isCompact ? 18.0 : 22.0;
@@ -4348,15 +4374,15 @@ class _Step1TextFieldState extends State<_Step1TextField> {
         AnimatedContainer(
           duration: const Duration(milliseconds: 140),
           constraints: BoxConstraints(minHeight: fieldHeight),
-          decoration: BoxDecoration(
-            color: const Color(0xFF3A2107),
+          decoration: AppBoxDecoration(
+            color: AppPalette.warmSurface47,
             borderRadius: radius,
             border: Border.all(
               color: widget.errorText != null
                   ? _inlineValidationColor
                   : (_focusNode.hasFocus
-                        ? AppColors.accent
-                        : Colors.white.withValues(alpha: 0.02)),
+                        ? AppPalette.primary
+                        : AppPalette.white.withValues(alpha: 0.02)),
               width: widget.errorText != null
                   ? 1.3
                   : (_focusNode.hasFocus ? 1.5 : 1),
@@ -4385,24 +4411,24 @@ class _Step1TextFieldState extends State<_Step1TextField> {
             textAlignVertical: widget.isMultiline
                 ? TextAlignVertical.top
                 : TextAlignVertical.center,
-            style: TextStyle(
-              color: AppColors.textPrimary,
+            style: AppTextStyle(
+              color: AppPalette.textPrimary,
               fontSize: fieldFontSize,
               fontWeight: FontWeight.w400,
               letterSpacing: -0.8,
               height: 1.2,
             ),
-            decoration: InputDecoration(
+            decoration: AppInputDecoration(
               hintText: widget.hint,
-              hintStyle: TextStyle(
-                color: Colors.white.withValues(alpha: 0.58),
+              hintStyle: AppTextStyle(
+                color: AppPalette.white.withValues(alpha: 0.58),
                 fontSize: fieldFontSize,
                 fontWeight: FontWeight.w400,
                 letterSpacing: -0.8,
               ),
               isDense: true,
               border: InputBorder.none,
-              contentPadding: EdgeInsets.fromLTRB(
+              contentPadding: AppEdgeInsets.fromLTRB(
                 horizontalPadding,
                 widget.isMultiline ? multilineTop : singleLineVerticalPadding,
                 horizontalPadding,
@@ -4414,7 +4440,7 @@ class _Step1TextFieldState extends State<_Step1TextField> {
         if (widget.errorText != null)
           AppInlineFieldError(
             message: widget.errorText!,
-            padding: const EdgeInsets.only(top: 8, left: 6, right: 6),
+            padding: const AppEdgeInsets.only(top: 8, left: 6, right: 6),
           ),
       ],
     );
@@ -4453,23 +4479,23 @@ class _CategorySelectorField extends StatelessWidget {
           onTap: onTap,
           child: ExcludeSemantics(
             child: InkWell(
-              borderRadius: BorderRadius.circular(32),
+              borderRadius: AppBorderRadius.circular(32),
               onTap: onTap,
               child: Container(
                 constraints: BoxConstraints(minHeight: height),
-                padding: EdgeInsets.symmetric(
+                padding: AppEdgeInsets.symmetric(
                   horizontal: horizontalPadding,
                   vertical: 10,
                 ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF3A2107),
-                  borderRadius: BorderRadius.circular(32),
+                decoration: AppBoxDecoration(
+                  color: AppPalette.warmSurface47,
+                  borderRadius: AppBorderRadius.circular(32),
                   border: Border.all(
                     color: errorText != null
                         ? _inlineValidationColor
                         : (isPlaceholder
-                              ? Colors.white.withValues(alpha: 0.02)
-                              : AppColors.accent.withValues(alpha: 0.3)),
+                              ? AppPalette.white.withValues(alpha: 0.02)
+                              : AppPalette.primary.withValues(alpha: 0.3)),
                   ),
                 ),
                 child: Row(
@@ -4479,10 +4505,10 @@ class _CategorySelectorField extends StatelessWidget {
                         value,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: AppTextStyle(
                           color: isPlaceholder
-                              ? Colors.white.withValues(alpha: 0.58)
-                              : AppColors.textPrimary,
+                              ? AppPalette.white.withValues(alpha: 0.58)
+                              : AppPalette.textPrimary,
                           fontSize: fontSize,
                           fontWeight: FontWeight.w400,
                           letterSpacing: -0.8,
@@ -4491,7 +4517,7 @@ class _CategorySelectorField extends StatelessWidget {
                     ),
                     Icon(
                       Icons.expand_more_rounded,
-                      color: Colors.white.withValues(alpha: 0.78),
+                      color: AppPalette.white.withValues(alpha: 0.78),
                       size: 22,
                     ),
                   ],
@@ -4503,7 +4529,7 @@ class _CategorySelectorField extends StatelessWidget {
         if (errorText != null)
           AppInlineFieldError(
             message: errorText!,
-            padding: const EdgeInsets.only(top: 8, left: 6, right: 6),
+            padding: const AppEdgeInsets.only(top: 8, left: 6, right: 6),
           ),
       ],
     );
@@ -4540,12 +4566,12 @@ class _CoverUploadCard extends StatelessWidget {
     final hasPreview = (previewBytes?.isNotEmpty ?? false) || _hasImageUrl;
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: isUploading ? null : onTap,
-        borderRadius: BorderRadius.circular(radius),
+        borderRadius: AppBorderRadius.circular(radius),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(radius),
+          borderRadius: AppBorderRadius.circular(radius),
           child: SizedBox(
             width: double.infinity,
             height: height,
@@ -4555,18 +4581,18 @@ class _CoverUploadCard extends StatelessWidget {
                 _buildBackground(hasPreview),
                 Positioned.fill(
                   child: DecoratedBox(
-                    decoration: BoxDecoration(
+                    decoration: AppBoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withValues(
+                          AppPalette.black.withValues(
                             alpha: hasPreview ? 0.08 : 0.12,
                           ),
-                          Colors.black.withValues(
+                          AppPalette.black.withValues(
                             alpha: hasPreview ? 0.44 : 0.18,
                           ),
-                          Colors.black.withValues(alpha: 0.68),
+                          AppPalette.black.withValues(alpha: 0.68),
                         ],
                         stops: const [0, 0.52, 1],
                       ),
@@ -4588,8 +4614,8 @@ class _CoverUploadCard extends StatelessWidget {
                 if (isUploading)
                   Positioned.fill(
                     child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.42),
+                      decoration: AppBoxDecoration(
+                        color: AppPalette.black.withValues(alpha: 0.42),
                       ),
                       child: const Center(
                         child: SizedBox(
@@ -4598,7 +4624,7 @@ class _CoverUploadCard extends StatelessWidget {
                           child: CircularProgressIndicator(
                             strokeWidth: 2.4,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              AppColors.accent,
+                              AppPalette.primary,
                             ),
                           ),
                         ),
@@ -4609,8 +4635,8 @@ class _CoverUploadCard extends StatelessWidget {
                   child: CustomPaint(
                     painter: _DashedCoverBorderPainter(
                       color: hasError
-                          ? const Color(0xFFFF7B6E).withValues(alpha: 0.74)
-                          : const Color(0xFFBE965D).withValues(alpha: 0.45),
+                          ? AppPalette.redSoft10.withValues(alpha: 0.74)
+                          : AppPalette.amberMuted03.withValues(alpha: 0.45),
                       radius: radius,
                     ),
                   ),
@@ -4648,11 +4674,11 @@ class _CoverUploadCard extends StatelessWidget {
         final actionCircleSize = baseSize * 0.27;
 
         return DecoratedBox(
-          decoration: const BoxDecoration(
+          decoration: const AppBoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF3A240D), Color(0xFF181109)],
+              colors: [AppPalette.warmSurface55, AppPalette.warmInk30],
             ),
           ),
           child: Stack(
@@ -4664,9 +4690,9 @@ class _CoverUploadCard extends StatelessWidget {
                 child: Container(
                   width: accentCircleSize,
                   height: accentCircleSize,
-                  decoration: BoxDecoration(
+                  decoration: AppBoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppColors.accent.withValues(alpha: 0.17),
+                    color: AppPalette.primary.withValues(alpha: 0.17),
                   ),
                 ),
               ),
@@ -4676,9 +4702,9 @@ class _CoverUploadCard extends StatelessWidget {
                 child: Container(
                   width: glowCircleSize,
                   height: glowCircleSize,
-                  decoration: BoxDecoration(
+                  decoration: AppBoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: AppPalette.white.withValues(alpha: 0.05),
                   ),
                 ),
               ),
@@ -4687,16 +4713,16 @@ class _CoverUploadCard extends StatelessWidget {
                   child: Container(
                     width: actionCircleSize,
                     height: actionCircleSize,
-                    decoration: BoxDecoration(
+                    decoration: AppBoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.08),
+                      color: AppPalette.white.withValues(alpha: 0.08),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.14),
+                        color: AppPalette.white.withValues(alpha: 0.14),
                       ),
                     ),
                     child: Icon(
                       Icons.add_photo_alternate_rounded,
-                      color: Colors.white.withValues(alpha: 0.92),
+                      color: AppPalette.white.withValues(alpha: 0.92),
                       size: actionCircleSize * 0.47,
                     ),
                   ),
@@ -4735,15 +4761,15 @@ class _CoverCardCopy extends StatelessWidget {
             return ConstrainedBox(
               constraints: BoxConstraints(maxWidth: constraints.maxWidth),
               child: Container(
-                padding: const EdgeInsets.symmetric(
+                padding: const AppEdgeInsets.symmetric(
                   horizontal: 10,
                   vertical: 6,
                 ),
-                decoration: BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(999),
+                decoration: AppBoxDecoration(
+                  color: AppPalette.primary.withValues(alpha: 0.18),
+                  borderRadius: AppBorderRadius.circular(999),
                   border: Border.all(
-                    color: AppColors.accent.withValues(alpha: 0.26),
+                    color: AppPalette.primary.withValues(alpha: 0.26),
                   ),
                 ),
                 child: Row(
@@ -4753,7 +4779,7 @@ class _CoverCardCopy extends StatelessWidget {
                       hasPreview
                           ? Icons.refresh_rounded
                           : Icons.file_upload_outlined,
-                      color: AppColors.accent,
+                      color: AppPalette.primary,
                       size: compact ? 14 : 15,
                     ),
                     const SizedBox(width: 6),
@@ -4762,8 +4788,8 @@ class _CoverCardCopy extends StatelessWidget {
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: AppColors.accent,
+                        style: AppTextStyle(
+                          color: AppPalette.primary,
                           fontSize: compact ? 12 : 13,
                           fontWeight: FontWeight.w800,
                         ),
@@ -4780,10 +4806,10 @@ class _CoverCardCopy extends StatelessWidget {
           hint,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
+          style: AppTextStyle(
             color: hasError
-                ? const Color(0xFFFFC0B8)
-                : Colors.white.withValues(alpha: 0.88),
+                ? AppPalette.redLight06
+                : AppPalette.white.withValues(alpha: 0.88),
             fontSize: compact ? 13 : 14,
             height: 1.35,
             fontWeight: FontWeight.w600,
@@ -4805,7 +4831,7 @@ class _DashedCoverBorderPainter extends CustomPainter {
     final rect = Offset.zero & size;
     final rrect = RRect.fromRectAndRadius(
       rect.deflate(1.5),
-      Radius.circular(radius),
+      AppRadiusValue.circular(radius),
     );
     final path = ui.Path()..addRRect(rrect);
     final paint = Paint()
@@ -4851,14 +4877,14 @@ class _CategoryCatalogState extends StatelessWidget {
 
     return Container(
       constraints: BoxConstraints(minHeight: height),
-      padding: EdgeInsets.symmetric(
+      padding: AppEdgeInsets.symmetric(
         horizontal: horizontalPadding,
         vertical: 10,
       ),
-      decoration: BoxDecoration(
-        color: const Color(0xFF3A2107),
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.02)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmSurface47,
+        borderRadius: AppBorderRadius.circular(32),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.02)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -4868,8 +4894,8 @@ class _CategoryCatalogState extends StatelessWidget {
               message,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.72),
+              style: AppTextStyle(
+                color: AppPalette.white.withValues(alpha: 0.72),
                 fontSize: fontSize,
                 fontWeight: FontWeight.w400,
                 letterSpacing: -0.6,
@@ -4910,22 +4936,22 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
     final maxListHeight = MediaQuery.sizeOf(context).height * 0.42;
 
     return Padding(
-      padding: EdgeInsets.only(
+      padding: AppEdgeInsets.only(
         left: 16,
         right: 16,
         bottom: MediaQuery.of(context).viewInsets.bottom + 16,
         top: 48,
       ),
       child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF2A1E11),
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: AppColors.borderLight),
+        decoration: AppBoxDecoration(
+          color: AppPalette.warmSurface18,
+          borderRadius: AppBorderRadius.circular(28),
+          border: Border.all(color: AppPalette.outlineOverlayLight),
         ),
         child: SafeArea(
           top: false,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
+            padding: const AppEdgeInsets.fromLTRB(18, 18, 18, 20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -4934,8 +4960,8 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                     Expanded(
                       child: Text(
                         widget.title,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
+                        style: const AppTextStyle(
+                          color: AppPalette.textPrimary,
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
                         ),
@@ -4945,7 +4971,7 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                       onPressed: () => Navigator.of(context).pop(),
                       icon: const Icon(
                         Icons.close_rounded,
-                        color: AppColors.textSecondary,
+                        color: AppPalette.textCoolSecondary,
                       ),
                     ),
                   ],
@@ -4972,36 +4998,36 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                         onTap: selectItem,
                         child: ExcludeSemantics(
                           child: InkWell(
-                            borderRadius: BorderRadius.circular(18),
+                            borderRadius: AppBorderRadius.circular(18),
                             onTap: selectItem,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(
+                              padding: const AppEdgeInsets.symmetric(
                                 horizontal: 16,
                                 vertical: 14,
                               ),
-                              decoration: BoxDecoration(
+                              decoration: AppBoxDecoration(
                                 color: selected
-                                    ? AppColors.accent.withValues(alpha: 0.18)
-                                    : const Color(0xFF332416),
-                                borderRadius: BorderRadius.circular(18),
+                                    ? AppPalette.primary.withValues(alpha: 0.18)
+                                    : AppPalette.surfaceHigh,
+                                borderRadius: AppBorderRadius.circular(18),
                                 border: Border.all(
                                   color: selected
-                                      ? AppColors.accent
-                                      : AppColors.borderLight,
+                                      ? AppPalette.primary
+                                      : AppPalette.outlineOverlayLight,
                                 ),
                               ),
                               child: Row(
                                 children: [
                                   Icon(
                                     widget.iconForSlug(entry.key),
-                                    color: AppColors.accent,
+                                    color: AppPalette.primary,
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
                                       entry.value,
-                                      style: TextStyle(
-                                        color: AppColors.textPrimary,
+                                      style: AppTextStyle(
+                                        color: AppPalette.textPrimary,
                                         fontSize: 15,
                                         fontWeight: selected
                                             ? FontWeight.w700
@@ -5014,8 +5040,8 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                                         ? Icons.check_circle_rounded
                                         : Icons.chevron_right_rounded,
                                     color: selected
-                                        ? AppColors.accent
-                                        : AppColors.textCaption,
+                                        ? AppPalette.primary
+                                        : AppPalette.textCaption,
                                   ),
                                 ],
                               ),
@@ -5034,17 +5060,17 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                         ? null
                         : () => Navigator.of(context).pop(_selected),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accent,
-                      disabledBackgroundColor: AppColors.surfaceLight,
-                      foregroundColor: AppColors.textPrimary,
+                      backgroundColor: AppPalette.primary,
+                      disabledBackgroundColor: AppPalette.surfaceCoolLight,
+                      foregroundColor: AppPalette.textPrimary,
                       minimumSize: const Size.fromHeight(54),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: AppBorderRadius.circular(18),
                       ),
                     ),
                     child: Text(
                       widget.actionLabel,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
+                      style: const AppTextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
                 ),

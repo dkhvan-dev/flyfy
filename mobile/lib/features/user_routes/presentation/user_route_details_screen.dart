@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../../core/ui/app_colors.dart';
 import '../../../core/ui/error_view.dart';
 import '../../../features/routing/models/routing_models.dart';
 import '../../../features/routing/widgets/route_summary_card.dart';
@@ -139,9 +139,10 @@ class _UserRouteDetailsScreenState extends State<UserRouteDetailsScreen> {
 
     final result = await showModalBottomSheet<_RouteEditResult>(
       context: context,
+      isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (context) => _EditRouteSheet(route: route),
     );
     if (result == null || !mounted) {
@@ -181,9 +182,10 @@ class _UserRouteDetailsScreenState extends State<UserRouteDetailsScreen> {
 
     final result = await showModalBottomSheet<_RoutePointsEditResult>(
       context: context,
+      isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (context) => _EditRoutePointsSheet(route: route),
     );
     if (result == null || !mounted) {
@@ -284,11 +286,11 @@ class _UserRouteDetailsScreenState extends State<UserRouteDetailsScreen> {
     );
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppPalette.backgroundWarm,
       appBar: AppBar(
         title: Text(l10n.userRoutesTitle),
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: AppPalette.backgroundWarm,
+        foregroundColor: AppPalette.textPrimary,
       ),
       body: SafeArea(
         top: false,
@@ -302,7 +304,7 @@ class _UserRouteDetailsScreenState extends State<UserRouteDetailsScreen> {
 
             if (loading) {
               return const Center(
-                child: CircularProgressIndicator(color: AppColors.accent),
+                child: CircularProgressIndicator(color: AppPalette.primary),
               );
             }
 
@@ -326,11 +328,11 @@ class _UserRouteDetailsScreenState extends State<UserRouteDetailsScreen> {
             final canShare = route.visibility != UserRouteVisibility.private;
 
             return RefreshIndicator(
-              color: AppColors.accent,
+              color: AppPalette.primary,
               onRefresh: _loadRoute,
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+                padding: const AppEdgeInsets.fromLTRB(16, 12, 16, 28),
                 children: [
                   _RouteHeader(route: route),
                   const SizedBox(height: 14),
@@ -427,7 +429,7 @@ class _EditRouteSheetState extends State<_EditRouteSheet> {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
     return Padding(
-      padding: EdgeInsets.only(bottom: bottomInset),
+      padding: AppEdgeInsets.only(bottom: bottomInset),
       child: DraggableScrollableSheet(
         initialChildSize: 0.56,
         minChildSize: 0.36,
@@ -435,23 +437,25 @@ class _EditRouteSheetState extends State<_EditRouteSheet> {
         expand: false,
         builder: (context, scrollController) {
           return DecoratedBox(
-            decoration: const BoxDecoration(
-              color: Color(0xFF1B1009),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            decoration: const AppBoxDecoration(
+              color: AppPalette.warmInk41,
+              borderRadius: AppBorderRadius.vertical(
+                top: AppRadiusValue.circular(20),
+              ),
             ),
             child: SafeArea(
               top: false,
               child: ListView(
                 controller: scrollController,
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
+                padding: const AppEdgeInsets.fromLTRB(16, 14, 16, 18),
                 children: [
                   Center(
                     child: Container(
                       width: 44,
                       height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.22),
-                        borderRadius: BorderRadius.circular(999),
+                      decoration: AppBoxDecoration(
+                        color: AppPalette.white.withValues(alpha: 0.22),
+                        borderRadius: AppBorderRadius.circular(999),
                       ),
                     ),
                   ),
@@ -459,7 +463,7 @@ class _EditRouteSheetState extends State<_EditRouteSheet> {
                   Text(
                     l10n.userRoutesEditRoute,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppColors.textPrimary,
+                      color: AppPalette.textPrimary,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -468,7 +472,7 @@ class _EditRouteSheetState extends State<_EditRouteSheet> {
                     controller: _titleController,
                     textInputAction: TextInputAction.next,
                     maxLength: 120,
-                    style: const TextStyle(color: AppColors.textPrimary),
+                    style: const AppTextStyle(color: AppPalette.textPrimary),
                     decoration: _routeEditInputDecoration(
                       context,
                       label: l10n.userRoutesEditTitleLabel,
@@ -480,7 +484,7 @@ class _EditRouteSheetState extends State<_EditRouteSheet> {
                     minLines: 3,
                     maxLines: 5,
                     maxLength: 2000,
-                    style: const TextStyle(color: AppColors.textPrimary),
+                    style: const AppTextStyle(color: AppPalette.textPrimary),
                     decoration: _routeEditInputDecoration(
                       context,
                       label: l10n.userRoutesEditDescriptionLabel,
@@ -490,7 +494,7 @@ class _EditRouteSheetState extends State<_EditRouteSheet> {
                   Text(
                     l10n.userRoutesEditVisibilityLabel,
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: AppColors.textPrimary,
+                      color: AppPalette.textPrimary,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -512,22 +516,24 @@ class _EditRouteSheetState extends State<_EditRouteSheet> {
                                     states,
                                   ) {
                                     if (states.contains(WidgetState.selected)) {
-                                      return const Color(0xFF241100);
+                                      return AppPalette.warmInk90;
                                     }
-                                    return AppColors.textPrimary;
+                                    return AppPalette.textPrimary;
                                   }),
                               backgroundColor:
                                   WidgetStateProperty.resolveWith<Color>((
                                     states,
                                   ) {
                                     if (states.contains(WidgetState.selected)) {
-                                      return AppColors.accent;
+                                      return AppPalette.primary;
                                     }
-                                    return Colors.white.withValues(alpha: 0.04);
+                                    return AppPalette.white.withValues(
+                                      alpha: 0.04,
+                                    );
                                   }),
                               side: WidgetStatePropertyAll(
                                 BorderSide(
-                                  color: AppColors.accent.withValues(
+                                  color: AppPalette.primary.withValues(
                                     alpha: 0.45,
                                   ),
                                 ),
@@ -559,11 +565,11 @@ class _EditRouteSheetState extends State<_EditRouteSheet> {
                   FilledButton.icon(
                     onPressed: _submit,
                     style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.accent,
-                      foregroundColor: const Color(0xFF241100),
-                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      backgroundColor: AppPalette.primary,
+                      foregroundColor: AppPalette.warmInk90,
+                      padding: const AppEdgeInsets.symmetric(vertical: 13),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppBorderRadius.circular(8),
                       ),
                     ),
                     icon: const Icon(Icons.check_rounded),
@@ -582,19 +588,19 @@ class _EditRouteSheetState extends State<_EditRouteSheet> {
     BuildContext context, {
     required String label,
   }) {
-    return InputDecoration(
+    return AppInputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: AppColors.textSecondary),
-      counterStyle: const TextStyle(color: AppColors.textSecondary),
+      labelStyle: const AppTextStyle(color: AppPalette.textCoolSecondary),
+      counterStyle: const AppTextStyle(color: AppPalette.textCoolSecondary),
       filled: true,
-      fillColor: Colors.white.withValues(alpha: 0.05),
+      fillColor: AppPalette.white.withValues(alpha: 0.05),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+        borderRadius: AppBorderRadius.circular(8),
+        borderSide: BorderSide(color: AppPalette.white.withValues(alpha: 0.12)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.accent),
+        borderRadius: AppBorderRadius.circular(8),
+        borderSide: const BorderSide(color: AppPalette.primary),
       ),
     );
   }
@@ -690,7 +696,7 @@ class _EditRoutePointsSheetState extends State<_EditRoutePointsSheet> {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
     return Padding(
-      padding: EdgeInsets.only(bottom: bottomInset),
+      padding: AppEdgeInsets.only(bottom: bottomInset),
       child: DraggableScrollableSheet(
         initialChildSize: 0.7,
         minChildSize: 0.42,
@@ -698,23 +704,25 @@ class _EditRoutePointsSheetState extends State<_EditRoutePointsSheet> {
         expand: false,
         builder: (context, scrollController) {
           return DecoratedBox(
-            decoration: const BoxDecoration(
-              color: Color(0xFF1B1009),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            decoration: const AppBoxDecoration(
+              color: AppPalette.warmInk41,
+              borderRadius: AppBorderRadius.vertical(
+                top: AppRadiusValue.circular(20),
+              ),
             ),
             child: SafeArea(
               top: false,
               child: ListView(
                 controller: scrollController,
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
+                padding: const AppEdgeInsets.fromLTRB(16, 14, 16, 18),
                 children: [
                   Center(
                     child: Container(
                       width: 44,
                       height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.22),
-                        borderRadius: BorderRadius.circular(999),
+                      decoration: AppBoxDecoration(
+                        color: AppPalette.white.withValues(alpha: 0.22),
+                        borderRadius: AppBorderRadius.circular(999),
                       ),
                     ),
                   ),
@@ -722,7 +730,7 @@ class _EditRoutePointsSheetState extends State<_EditRoutePointsSheet> {
                   Text(
                     l10n.userRoutesEditStops,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppColors.textPrimary,
+                      color: AppPalette.textPrimary,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -730,7 +738,7 @@ class _EditRoutePointsSheetState extends State<_EditRoutePointsSheet> {
                   Text(
                     l10n.userRoutesEditStopsHint,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: AppPalette.textCoolSecondary,
                       height: 1.35,
                     ),
                   ),
@@ -750,17 +758,17 @@ class _EditRoutePointsSheetState extends State<_EditRoutePointsSheet> {
                   FilledButton.icon(
                     onPressed: _stops.length < 2 ? null : _submit,
                     style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.accent,
-                      foregroundColor: const Color(0xFF241100),
-                      disabledBackgroundColor: AppColors.accent.withValues(
+                      backgroundColor: AppPalette.primary,
+                      foregroundColor: AppPalette.warmInk90,
+                      disabledBackgroundColor: AppPalette.primary.withValues(
                         alpha: 0.4,
                       ),
-                      disabledForegroundColor: const Color(
-                        0xFF241100,
-                      ).withValues(alpha: 0.56),
-                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      disabledForegroundColor: AppPalette.warmInk90.withValues(
+                        alpha: 0.56,
+                      ),
+                      padding: const AppEdgeInsets.symmetric(vertical: 13),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppBorderRadius.circular(8),
                       ),
                     ),
                     icon: const Icon(Icons.route_rounded),
@@ -798,24 +806,24 @@ class _EditableRouteStopCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFF21140C),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmInk75,
+        borderRadius: AppBorderRadius.circular(8),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const AppEdgeInsets.all(12),
         child: Column(
           children: [
             Row(
               children: [
                 CircleAvatar(
                   radius: 16,
-                  backgroundColor: AppColors.accent,
+                  backgroundColor: AppPalette.primary,
                   child: Text(
                     order.toString(),
-                    style: const TextStyle(
-                      color: Color(0xFF241100),
+                    style: const AppTextStyle(
+                      color: AppPalette.warmInk90,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -825,13 +833,13 @@ class _EditableRouteStopCard extends StatelessWidget {
                   tooltip: l10n.userRoutesMoveStopUp,
                   onPressed: canMoveUp ? onMoveUp : null,
                   icon: const Icon(Icons.keyboard_arrow_up_rounded),
-                  color: AppColors.accent,
+                  color: AppPalette.primary,
                 ),
                 IconButton(
                   tooltip: l10n.userRoutesMoveStopDown,
                   onPressed: canMoveDown ? onMoveDown : null,
                   icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                  color: AppColors.accent,
+                  color: AppPalette.primary,
                 ),
               ],
             ),
@@ -840,7 +848,7 @@ class _EditableRouteStopCard extends StatelessWidget {
               controller: stop.nameController,
               textInputAction: TextInputAction.next,
               maxLength: 120,
-              style: const TextStyle(color: AppColors.textPrimary),
+              style: const AppTextStyle(color: AppPalette.textPrimary),
               decoration: _routePointInputDecoration(
                 context,
                 label: l10n.userRoutesEditStopNameLabel,
@@ -852,7 +860,7 @@ class _EditableRouteStopCard extends StatelessWidget {
               minLines: 2,
               maxLines: 3,
               maxLength: 500,
-              style: const TextStyle(color: AppColors.textPrimary),
+              style: const AppTextStyle(color: AppPalette.textPrimary),
               decoration: _routePointInputDecoration(
                 context,
                 label: l10n.userRoutesEditStopNoteLabel,
@@ -869,19 +877,19 @@ InputDecoration _routePointInputDecoration(
   BuildContext context, {
   required String label,
 }) {
-  return InputDecoration(
+  return AppInputDecoration(
     labelText: label,
-    labelStyle: const TextStyle(color: AppColors.textSecondary),
-    counterStyle: const TextStyle(color: AppColors.textSecondary),
+    labelStyle: const AppTextStyle(color: AppPalette.textCoolSecondary),
+    counterStyle: const AppTextStyle(color: AppPalette.textCoolSecondary),
     filled: true,
-    fillColor: Colors.white.withValues(alpha: 0.05),
+    fillColor: AppPalette.white.withValues(alpha: 0.05),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
-      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+      borderRadius: AppBorderRadius.circular(8),
+      borderSide: BorderSide(color: AppPalette.white.withValues(alpha: 0.12)),
     ),
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
-      borderSide: const BorderSide(color: AppColors.accent),
+      borderRadius: AppBorderRadius.circular(8),
+      borderSide: const BorderSide(color: AppPalette.primary),
     ),
   );
 }
@@ -915,7 +923,7 @@ class _RouteHeader extends StatelessWidget {
         Text(
           route.title,
           style: theme.textTheme.headlineSmall?.copyWith(
-            color: AppColors.textPrimary,
+            color: AppPalette.textPrimary,
             fontWeight: FontWeight.w900,
           ),
         ),
@@ -924,7 +932,7 @@ class _RouteHeader extends StatelessWidget {
           Text(
             description,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: AppColors.textSecondary,
+              color: AppPalette.textCoolSecondary,
               height: 1.42,
             ),
           ),
@@ -968,10 +976,10 @@ class _RouteActions extends StatelessWidget {
         FilledButton.icon(
           onPressed: loading ? null : onOpenMap,
           style: FilledButton.styleFrom(
-            backgroundColor: AppColors.accent,
-            foregroundColor: const Color(0xFF241100),
+            backgroundColor: AppPalette.primary,
+            foregroundColor: AppPalette.warmInk90,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppBorderRadius.circular(8),
             ),
           ),
           icon: const Icon(Icons.map_rounded),
@@ -980,10 +988,10 @@ class _RouteActions extends StatelessWidget {
         OutlinedButton.icon(
           onPressed: loading ? null : onToggleSaved,
           style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.accent,
-            side: BorderSide(color: AppColors.accent.withValues(alpha: 0.7)),
+            foregroundColor: AppPalette.primary,
+            side: BorderSide(color: AppPalette.primary.withValues(alpha: 0.7)),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppBorderRadius.circular(8),
             ),
           ),
           icon: Icon(
@@ -1000,10 +1008,10 @@ class _RouteActions extends StatelessWidget {
         OutlinedButton.icon(
           onPressed: loading ? null : onCopy,
           style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.textPrimary,
-            side: BorderSide(color: Colors.white.withValues(alpha: 0.22)),
+            foregroundColor: AppPalette.textPrimary,
+            side: BorderSide(color: AppPalette.white.withValues(alpha: 0.22)),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppBorderRadius.circular(8),
             ),
           ),
           icon: const Icon(Icons.copy_rounded),
@@ -1013,10 +1021,10 @@ class _RouteActions extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: loading ? null : onShare,
             style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.textPrimary,
-              side: BorderSide(color: Colors.white.withValues(alpha: 0.22)),
+              foregroundColor: AppPalette.textPrimary,
+              side: BorderSide(color: AppPalette.white.withValues(alpha: 0.22)),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppBorderRadius.circular(8),
               ),
             ),
             icon: const Icon(Icons.ios_share_rounded),
@@ -1026,10 +1034,12 @@ class _RouteActions extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: loading ? null : onEdit,
             style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.accent,
-              side: BorderSide(color: AppColors.accent.withValues(alpha: 0.7)),
+              foregroundColor: AppPalette.primary,
+              side: BorderSide(
+                color: AppPalette.primary.withValues(alpha: 0.7),
+              ),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppBorderRadius.circular(8),
               ),
             ),
             icon: const Icon(Icons.edit_rounded),
@@ -1067,7 +1077,7 @@ class _RouteStopsSection extends StatelessWidget {
               child: Text(
                 l10n.userRoutesStopsTitle,
                 style: theme.textTheme.titleMedium?.copyWith(
-                  color: AppColors.textPrimary,
+                  color: AppPalette.textPrimary,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -1082,8 +1092,8 @@ class _RouteStopsSection extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 style: TextButton.styleFrom(
-                  foregroundColor: AppColors.accent,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  foregroundColor: AppPalette.primary,
+                  padding: const AppEdgeInsets.symmetric(horizontal: 8),
                 ),
               ),
           ],
@@ -1110,23 +1120,23 @@ class _RouteStopTile extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFF21140C),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmInk75,
+        borderRadius: AppBorderRadius.circular(8),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const AppEdgeInsets.all(12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
               radius: 15,
-              backgroundColor: AppColors.accent,
+              backgroundColor: AppPalette.primary,
               child: Text(
                 order.toString(),
-                style: const TextStyle(
-                  color: Color(0xFF241100),
+                style: const AppTextStyle(
+                  color: AppPalette.warmInk90,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -1143,7 +1153,7 @@ class _RouteStopTile extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppColors.textPrimary,
+                      color: AppPalette.textPrimary,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -1153,7 +1163,7 @@ class _RouteStopTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: AppPalette.textCoolSecondary,
                     ),
                   ),
                 ],
@@ -1192,21 +1202,21 @@ class _SmallAmberChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(999),
+      decoration: AppBoxDecoration(
+        color: AppPalette.primary.withValues(alpha: 0.14),
+        borderRadius: AppBorderRadius.circular(999),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: AppColors.accent),
+            Icon(icon, size: 14, color: AppPalette.primary),
             const SizedBox(width: 5),
             Text(
               label,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: AppColors.accent,
+                color: AppPalette.primary,
                 fontWeight: FontWeight.w900,
               ),
             ),

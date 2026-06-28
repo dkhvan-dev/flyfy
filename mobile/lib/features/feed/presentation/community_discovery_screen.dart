@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/ui/app_colors.dart';
 import '../../../core/ui/error_dialog.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../data/feed_api.dart';
@@ -222,10 +222,10 @@ class _CommunityDiscoveryScreenState extends State<CommunityDiscoveryScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppPalette.backgroundWarm,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: AppPalette.backgroundWarm,
+        foregroundColor: AppPalette.textPrimary,
         elevation: 0,
         title: Text(
           l10n.communityDiscoveryTitle,
@@ -236,8 +236,8 @@ class _CommunityDiscoveryScreenState extends State<CommunityDiscoveryScreen> {
       body: SafeArea(
         top: false,
         child: RefreshIndicator(
-          color: AppColors.accent,
-          backgroundColor: AppColors.surface,
+          color: AppPalette.primary,
+          backgroundColor: AppPalette.surfaceCool,
           onRefresh: () => _loadCommunities(showLoading: false),
           child: _buildBody(context),
         ),
@@ -251,7 +251,7 @@ class _CommunityDiscoveryScreenState extends State<CommunityDiscoveryScreen> {
     if (_isLoading && _communities.isEmpty) {
       return const _CommunityDiscoveryStateList(
         child: Center(
-          child: CircularProgressIndicator(color: AppColors.accent),
+          child: CircularProgressIndicator(color: AppPalette.primary),
         ),
       );
     }
@@ -265,8 +265,8 @@ class _CommunityDiscoveryScreenState extends State<CommunityDiscoveryScreen> {
           action: FilledButton(
             onPressed: () => _loadCommunities(),
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.accent,
-              foregroundColor: AppColors.background,
+              backgroundColor: AppPalette.primary,
+              foregroundColor: AppPalette.backgroundWarm,
             ),
             child: Text(l10n.feedRetryAction),
           ),
@@ -290,7 +290,7 @@ class _CommunityDiscoveryScreenState extends State<CommunityDiscoveryScreen> {
         return ListView.separated(
           controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.fromLTRB(
+          padding: AppEdgeInsets.fromLTRB(
             horizontalPadding,
             12,
             horizontalPadding,
@@ -301,17 +301,20 @@ class _CommunityDiscoveryScreenState extends State<CommunityDiscoveryScreen> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 640),
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Divider(height: 1, color: AppColors.borderLight),
+                padding: const AppEdgeInsets.symmetric(vertical: 12),
+                child: Divider(
+                  height: 1,
+                  color: AppPalette.outlineOverlayLight,
+                ),
               ),
             ),
           ),
           itemBuilder: (context, index) {
             if (index >= _communities.length) {
               return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
+                padding: AppEdgeInsets.symmetric(vertical: 16),
                 child: Center(
-                  child: CircularProgressIndicator(color: AppColors.accent),
+                  child: CircularProgressIndicator(color: AppPalette.primary),
                 ),
               );
             }
@@ -345,7 +348,7 @@ class _CommunityDiscoveryStateList extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(24),
+      padding: const AppEdgeInsets.all(24),
       children: [
         SizedBox(height: MediaQuery.sizeOf(context).height * 0.18),
         child,
@@ -375,13 +378,13 @@ class _CommunityDiscoveryMessage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: AppColors.textSecondary, size: 42),
+            Icon(icon, color: AppPalette.textCoolSecondary, size: 42),
             const SizedBox(height: 14),
             Text(
               title,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: AppColors.textPrimary,
+                color: AppPalette.textPrimary,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -389,9 +392,9 @@ class _CommunityDiscoveryMessage extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppPalette.textCoolSecondary,
+              ),
             ),
             if (action != null) ...[const SizedBox(height: 16), action!],
           ],

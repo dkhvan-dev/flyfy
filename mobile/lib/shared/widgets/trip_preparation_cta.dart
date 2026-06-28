@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-import '../../core/ui/app_colors.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
 class TripPreparationCta extends StatelessWidget {
   const TripPreparationCta({
@@ -22,17 +21,19 @@ class TripPreparationCta extends StatelessWidget {
     final compact = width < 380;
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppBorderRadius.circular(8),
         child: Ink(
-          decoration: BoxDecoration(
-            color: const Color(0xFF2E2114),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.accent.withValues(alpha: 0.34)),
+          decoration: AppBoxDecoration(
+            color: AppPalette.warmSurface36,
+            borderRadius: AppBorderRadius.circular(8),
+            border: Border.all(
+              color: AppPalette.primary.withValues(alpha: 0.34),
+            ),
           ),
-          padding: EdgeInsets.all(compact ? 14 : 16),
+          padding: AppEdgeInsets.all(compact ? 14 : 16),
           child: Wrap(
             spacing: 14,
             runSpacing: 14,
@@ -51,13 +52,13 @@ class TripPreparationCta extends StatelessWidget {
                       width: 42,
                       height: 42,
                       alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: AppColors.accent.withValues(alpha: 0.16),
-                        borderRadius: BorderRadius.circular(8),
+                      decoration: AppBoxDecoration(
+                        color: AppPalette.primary.withValues(alpha: 0.16),
+                        borderRadius: AppBorderRadius.circular(8),
                       ),
                       child: const Icon(
                         Icons.fact_check_rounded,
-                        color: AppColors.accent,
+                        color: AppPalette.primary,
                         size: 22,
                       ),
                     ),
@@ -71,8 +72,8 @@ class TripPreparationCta extends StatelessWidget {
                             title,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
+                            style: const AppTextStyle(
+                              color: AppPalette.textPrimary,
                               fontSize: 16,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 0,
@@ -84,8 +85,8 @@ class TripPreparationCta extends StatelessWidget {
                             subtitle,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
+                            style: const AppTextStyle(
+                              color: AppPalette.textCoolSecondary,
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 0,
@@ -108,14 +109,14 @@ class TripPreparationCta extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.accent,
-                  foregroundColor: AppColors.textPrimary,
+                  backgroundColor: AppPalette.primary,
+                  foregroundColor: AppPalette.textPrimary,
                   minimumSize: const Size(0, 44),
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  padding: const AppEdgeInsets.symmetric(horizontal: 14),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppBorderRadius.circular(8),
                   ),
-                  textStyle: const TextStyle(
+                  textStyle: const AppTextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0,

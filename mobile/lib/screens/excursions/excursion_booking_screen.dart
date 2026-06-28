@@ -1,13 +1,13 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/time/app_time.dart';
-import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../core/ui/error_view.dart';
 import '../../features/checklists/models/travel_checklist_route_args.dart';
@@ -329,9 +329,10 @@ class _ExcursionBookingScreenState extends State<ExcursionBookingScreen> {
   ) async {
     final action = await showModalBottomSheet<_BookingCompletionAction>(
       context: context,
+      isDismissible: true,
       useSafeArea: true,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (context) => const _BookingChecklistAddedSheet(),
     );
     return action ?? _BookingCompletionAction.myExcursions;
@@ -561,7 +562,7 @@ class ExcursionBookingContent extends StatelessWidget {
                     Expanded(
                       child: SingleChildScrollView(
                         physics: const BouncingScrollPhysics(),
-                        padding: EdgeInsets.fromLTRB(
+                        padding: AppEdgeInsets.fromLTRB(
                           horizontalPadding,
                           24,
                           horizontalPadding,
@@ -669,7 +670,7 @@ class _BookingTopBar extends StatelessWidget {
     return ConstrainedBox(
       constraints: BoxConstraints(minHeight: _bookingTopBarMinHeight(context)),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14),
+        padding: const AppEdgeInsets.symmetric(horizontal: 14),
         child: Row(
           children: [
             _CircleIconButton(
@@ -683,7 +684,7 @@ class _BookingTopBar extends StatelessWidget {
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: const AppTextStyle(
                   color: _BookingColors.text,
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
@@ -723,7 +724,7 @@ class _BookingExcursionCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: AppBorderRadius.circular(22),
               child: SizedBox(
                 width: imageSize,
                 height: imageSize,
@@ -749,8 +750,8 @@ class _BookingExcursionCard extends StatelessWidget {
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.accent,
+                    style: const AppTextStyle(
+                      color: AppPalette.primary,
                       fontSize: 13,
                       fontWeight: FontWeight.w900,
                       height: 1,
@@ -761,7 +762,7 @@ class _BookingExcursionCard extends StatelessWidget {
                     excursion.title,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: const AppTextStyle(
                       color: _BookingColors.text,
                       fontSize: 24,
                       fontWeight: FontWeight.w900,
@@ -773,8 +774,8 @@ class _BookingExcursionCard extends StatelessWidget {
                     price,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.accent,
+                    style: const AppTextStyle(
+                      color: AppPalette.primary,
                       fontSize: 17,
                       fontWeight: FontWeight.w900,
                     ),
@@ -817,13 +818,13 @@ class _BookingInfoPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.05),
+        borderRadius: AppBorderRadius.circular(999),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.07)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+        padding: const AppEdgeInsets.symmetric(horizontal: 9, vertical: 6),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -834,7 +835,7 @@ class _BookingInfoPill extends StatelessWidget {
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: const AppTextStyle(
                   color: _BookingColors.muted,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
@@ -940,7 +941,7 @@ class _BookingScheduleSection extends StatelessWidget {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (sheetContext) {
         return DraggableScrollableSheet(
           expand: false,
@@ -949,15 +950,17 @@ class _BookingScheduleSection extends StatelessWidget {
           maxChildSize: 0.88,
           builder: (context, scrollController) {
             return DecoratedBox(
-              decoration: const BoxDecoration(
+              decoration: const AppBoxDecoration(
                 color: _BookingColors.base,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                borderRadius: AppBorderRadius.vertical(
+                  top: AppRadiusValue.circular(28),
+                ),
               ),
               child: SafeArea(
                 top: false,
                 child: SingleChildScrollView(
                   controller: scrollController,
-                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+                  padding: const AppEdgeInsets.fromLTRB(20, 14, 20, 24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -965,9 +968,9 @@ class _BookingScheduleSection extends StatelessWidget {
                         child: Container(
                           width: 42,
                           height: 4,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.22),
-                            borderRadius: BorderRadius.circular(999),
+                          decoration: AppBoxDecoration(
+                            color: AppPalette.white.withValues(alpha: 0.22),
+                            borderRadius: AppBorderRadius.circular(999),
                           ),
                         ),
                       ),
@@ -1031,7 +1034,7 @@ class _BookingSlotSelector extends StatelessWidget {
     if (isLoading && slots.isEmpty) {
       return const _BookingScheduleStatePanel(
         child: Center(
-          child: CircularProgressIndicator(color: AppColors.accent),
+          child: CircularProgressIndicator(color: AppPalette.primary),
         ),
       );
     }
@@ -1043,7 +1046,7 @@ class _BookingSlotSelector extends StatelessWidget {
         child: Text(
           l10n.excursionBookingNoSlots,
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: const AppTextStyle(
             color: _BookingColors.muted,
             fontSize: 14,
             fontWeight: FontWeight.w700,
@@ -1068,7 +1071,7 @@ class _BookingSlotSelector extends StatelessWidget {
             DateFormat.yMMMd(locale).format(grouped[i].day),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: const AppTextStyle(
               color: _BookingColors.text,
               fontSize: 15,
               fontWeight: FontWeight.w900,
@@ -1129,12 +1132,12 @@ class _BookingSlotChip extends StatelessWidget {
       Localizations.localeOf(context).toLanguageTag(),
     ).format(eventDateTime(slot.startAt, slot.timezone));
     final background = selected
-        ? AppColors.accent
+        ? AppPalette.primary
         : enabled
         ? _BookingColors.panel
         : _BookingColors.panel.withValues(alpha: 0.52);
     final foreground = selected
-        ? AppColors.textPrimary
+        ? AppPalette.textPrimary
         : enabled
         ? _BookingColors.text
         : _BookingColors.muted.withValues(alpha: 0.58);
@@ -1149,19 +1152,22 @@ class _BookingSlotChip extends StatelessWidget {
       child: ExcludeSemantics(
         child: Material(
           color: background,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: AppBorderRadius.circular(18),
           child: InkWell(
             onTap: enabled ? onTap : null,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: AppBorderRadius.circular(18),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding: const AppEdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     timeLabel,
-                    style: TextStyle(
+                    style: AppTextStyle(
                       color: foreground,
                       fontSize: 16,
                       fontWeight: FontWeight.w900,
@@ -1171,7 +1177,7 @@ class _BookingSlotChip extends StatelessWidget {
                   const SizedBox(height: 5),
                   Text(
                     l10n.excursionBookingSeatsLeft(slot.availableSeats),
-                    style: TextStyle(
+                    style: AppTextStyle(
                       color: foreground.withValues(
                         alpha: selected ? 0.86 : 0.68,
                       ),
@@ -1201,11 +1207,11 @@ class _BookingScheduleStatePanel extends StatelessWidget {
       constraints: BoxConstraints(
         minHeight: _bookingScheduleStatePanelMinHeight(context),
       ),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
+      padding: const AppEdgeInsets.all(16),
+      decoration: AppBoxDecoration(
         color: _BookingColors.panel,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        borderRadius: AppBorderRadius.circular(22),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
       ),
       child: child,
     );
@@ -1330,8 +1336,8 @@ class _BookingSummarySection extends StatelessWidget {
           value: _formatBookingMoney(context, fee, excursion.currency),
         ),
         const Padding(
-          padding: EdgeInsets.symmetric(vertical: 26),
-          child: Divider(height: 1, color: Color(0x33F98C06)),
+          padding: AppEdgeInsets.symmetric(vertical: 26),
+          child: Divider(height: 1, color: AppPalette.warmOverlayMuted05),
         ),
         Row(
           children: [
@@ -1340,7 +1346,7 @@ class _BookingSummarySection extends StatelessWidget {
                 l10n.excursionBookingTotalPrice,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: const AppTextStyle(
                   color: _BookingColors.text,
                   fontSize: 22,
                   fontWeight: FontWeight.w900,
@@ -1355,8 +1361,8 @@ class _BookingSummarySection extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.end,
-                style: const TextStyle(
-                  color: AppColors.accent,
+                style: const AppTextStyle(
+                  color: AppPalette.primary,
                   fontSize: 30,
                   fontWeight: FontWeight.w900,
                   height: 1,
@@ -1402,16 +1408,16 @@ class _BookingFooter extends StatelessWidget {
     );
 
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFF130C06).withValues(alpha: 0.98),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmInk12.withValues(alpha: 0.98),
         border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+          top: BorderSide(color: AppPalette.white.withValues(alpha: 0.06)),
         ),
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: EdgeInsets.fromLTRB(24, 20, 24, math.max(18, safeBottom)),
+          padding: AppEdgeInsets.fromLTRB(24, 20, 24, math.max(18, safeBottom)),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1427,9 +1433,9 @@ class _BookingFooter extends StatelessWidget {
                       ? null
                       : onConfirm,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.accent,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: AppColors.accent.withValues(
+                    backgroundColor: AppPalette.primary,
+                    foregroundColor: AppPalette.white,
+                    disabledBackgroundColor: AppPalette.primary.withValues(
                       alpha: 0.45,
                     ),
                     shape: const StadiumBorder(),
@@ -1446,7 +1452,7 @@ class _BookingFooter extends StatelessWidget {
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.4,
-                              color: Colors.white,
+                              color: AppPalette.white,
                             ),
                           )
                         : Text(
@@ -1457,7 +1463,7 @@ class _BookingFooter extends StatelessWidget {
                             key: const ValueKey('booking-confirm'),
                             maxLines: 2,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: const AppTextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 0.8,
@@ -1475,8 +1481,8 @@ class _BookingFooter extends StatelessWidget {
                       ),
                 textAlign: TextAlign.center,
                 maxLines: 3,
-                style: const TextStyle(
-                  color: Color(0x99D6C1B3),
+                style: const AppTextStyle(
+                  color: AppPalette.orangeOverlayLight01,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   height: 1.2,
@@ -1516,8 +1522,8 @@ class _SectionHead extends StatelessWidget {
         TextButton(
           onPressed: onActionTap,
           style: TextButton.styleFrom(
-            foregroundColor: AppColors.accent,
-            textStyle: const TextStyle(
+            foregroundColor: AppPalette.primary,
+            textStyle: const AppTextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w900,
             ),
@@ -1552,26 +1558,26 @@ class _BookingScheduleCard extends StatelessWidget {
 
     return Material(
       color: _BookingColors.panel,
-      borderRadius: BorderRadius.circular(25),
+      borderRadius: AppBorderRadius.circular(25),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(25),
+        borderRadius: AppBorderRadius.circular(25),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          padding: const AppEdgeInsets.symmetric(horizontal: 16, vertical: 16),
           child: Row(
             children: [
               Container(
                 width: iconBoxSize,
                 height: iconBoxSize,
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   color: active
-                      ? AppColors.accent.withValues(alpha: 0.16)
-                      : Colors.white.withValues(alpha: 0.05),
+                      ? AppPalette.primary.withValues(alpha: 0.16)
+                      : AppPalette.white.withValues(alpha: 0.05),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   icon,
-                  color: active ? AppColors.accent : const Color(0xFFD6C1B3),
+                  color: active ? AppPalette.primary : AppPalette.orangeLight05,
                   size: 21,
                 ),
               ),
@@ -1584,7 +1590,7 @@ class _BookingScheduleCard extends StatelessWidget {
                       label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: const AppTextStyle(
                         color: _BookingColors.muted,
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
@@ -1596,9 +1602,9 @@ class _BookingScheduleCard extends StatelessWidget {
                       value,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: AppTextStyle(
                         color: highlightValue
-                            ? AppColors.accent
+                            ? AppPalette.primary
                             : _BookingColors.text,
                         fontSize: 17,
                         fontWeight: FontWeight.w900,
@@ -1640,10 +1646,10 @@ class _TravelerCounterRow extends StatelessWidget {
       constraints: BoxConstraints(
         minHeight: _bookingCounterRowMinHeight(context),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-      decoration: BoxDecoration(
+      padding: const AppEdgeInsets.symmetric(horizontal: 18, vertical: 12),
+      decoration: AppBoxDecoration(
         color: _BookingColors.panel,
-        borderRadius: BorderRadius.circular(25),
+        borderRadius: AppBorderRadius.circular(25),
       ),
       child: Row(
         children: [
@@ -1652,7 +1658,7 @@ class _TravelerCounterRow extends StatelessWidget {
               title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: const AppTextStyle(
                 color: _BookingColors.text,
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
@@ -1671,7 +1677,7 @@ class _TravelerCounterRow extends StatelessWidget {
             child: Text(
               '$value',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: const AppTextStyle(
                 color: _BookingColors.text,
                 fontSize: 22,
                 fontWeight: FontWeight.w900,
@@ -1714,23 +1720,23 @@ class _CounterButton extends StatelessWidget {
       child: Container(
         width: buttonSize,
         height: buttonSize,
-        decoration: BoxDecoration(
-          color: filled ? AppColors.accent : Colors.transparent,
+        decoration: AppBoxDecoration(
+          color: filled ? AppPalette.primary : AppPalette.transparent,
           shape: BoxShape.circle,
           border: Border.all(
             color: emphasized
-                ? AppColors.accent.withValues(alpha: enabled ? 1 : 0.32)
-                : const Color(0xFFD6C1B3).withValues(alpha: 0.23),
+                ? AppPalette.primary.withValues(alpha: enabled ? 1 : 0.32)
+                : AppPalette.orangeLight05.withValues(alpha: 0.23),
             width: 1.4,
           ),
         ),
         child: Icon(
           icon,
           color: filled
-              ? Colors.white
+              ? AppPalette.white
               : emphasized
-              ? AppColors.accent.withValues(alpha: enabled ? 1 : 0.34)
-              : const Color(0xFFD6C1B3).withValues(alpha: enabled ? 1 : 0.35),
+              ? AppPalette.primary.withValues(alpha: enabled ? 1 : 0.34)
+              : AppPalette.orangeLight05.withValues(alpha: enabled ? 1 : 0.35),
           size: 20,
         ),
       ),
@@ -1753,7 +1759,7 @@ class _SummaryRow extends StatelessWidget {
             label,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: const AppTextStyle(
               color: _BookingColors.muted,
               fontSize: 17,
               fontWeight: FontWeight.w600,
@@ -1768,7 +1774,7 @@ class _SummaryRow extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.end,
-            style: const TextStyle(
+            style: const AppTextStyle(
               color: _BookingColors.muted,
               fontSize: 17,
               fontWeight: FontWeight.w700,
@@ -1791,18 +1797,18 @@ class _SoftErrorBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFF4A2B13).withValues(alpha: 0.42),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.18)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmSurface82.withValues(alpha: 0.42),
+        borderRadius: AppBorderRadius.circular(18),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.18)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const AppEdgeInsets.all(14),
         child: Row(
           children: [
             const Icon(
               Icons.info_outline_rounded,
-              color: AppColors.accent,
+              color: AppPalette.primary,
               size: 20,
             ),
             const SizedBox(width: 10),
@@ -1811,7 +1817,7 @@ class _SoftErrorBanner extends StatelessWidget {
                 message,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: const AppTextStyle(
                   color: _BookingColors.text,
                   fontSize: 13,
                   height: 1.25,
@@ -1850,19 +1856,19 @@ class _AlreadyBookedNotice extends StatelessWidget {
     );
 
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.26)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.primary.withValues(alpha: 0.12),
+        borderRadius: AppBorderRadius.circular(20),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.26)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const AppEdgeInsets.all(16),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Icon(
               Icons.confirmation_number_rounded,
-              color: AppColors.accent,
+              color: AppPalette.primary,
               size: 22,
             ),
             const SizedBox(width: 12),
@@ -1872,7 +1878,7 @@ class _AlreadyBookedNotice extends StatelessWidget {
                 children: [
                   Text(
                     l10n.excursionBookingAlreadyBookedTitle,
-                    style: const TextStyle(
+                    style: const AppTextStyle(
                       color: _BookingColors.text,
                       fontSize: 15,
                       fontWeight: FontWeight.w900,
@@ -1882,7 +1888,7 @@ class _AlreadyBookedNotice extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     '$dateLabel · ${l10n.myExcursionsGuests(booking.totalSeats)}',
-                    style: const TextStyle(
+                    style: const AppTextStyle(
                       color: _BookingColors.muted,
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -1893,9 +1899,9 @@ class _AlreadyBookedNotice extends StatelessWidget {
                   TextButton(
                     onPressed: onOpenMyExcursions,
                     style: TextButton.styleFrom(
-                      foregroundColor: AppColors.accent,
+                      foregroundColor: AppPalette.primary,
                       minimumSize: const Size(0, 48),
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      padding: const AppEdgeInsets.symmetric(horizontal: 12),
                     ),
                     child: Text(l10n.excursionBookingOpenMyExcursions),
                   ),
@@ -1918,22 +1924,22 @@ class _BookingChecklistAddedSheet extends StatelessWidget {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(14, 0, 14, 14 + bottomInset),
+      padding: AppEdgeInsets.fromLTRB(14, 0, 14, 14 + bottomInset),
       child: DecoratedBox(
-        decoration: BoxDecoration(
+        decoration: AppBoxDecoration(
           color: _BookingColors.panel,
-          borderRadius: BorderRadius.circular(26),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          borderRadius: AppBorderRadius.circular(26),
+          border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x55000000),
+              color: AppPalette.neutralOverlayInk06,
               blurRadius: 28,
               offset: Offset(0, 14),
             ),
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+          padding: const AppEdgeInsets.fromLTRB(20, 18, 20, 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1942,23 +1948,23 @@ class _BookingChecklistAddedSheet extends StatelessWidget {
                 child: Container(
                   width: 42,
                   height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(999),
+                  decoration: AppBoxDecoration(
+                    color: AppPalette.white.withValues(alpha: 0.18),
+                    borderRadius: AppBorderRadius.circular(999),
                   ),
                 ),
               ),
               const SizedBox(height: 20),
               const Icon(
                 Icons.checklist_rounded,
-                color: AppColors.accent,
+                color: AppPalette.primary,
                 size: 34,
               ),
               const SizedBox(height: 14),
               Text(
                 l10n.excursionBookingChecklistAddedTitle,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: const AppTextStyle(
                   color: _BookingColors.text,
                   fontSize: 20,
                   fontWeight: FontWeight.w900,
@@ -1969,7 +1975,7 @@ class _BookingChecklistAddedSheet extends StatelessWidget {
               Text(
                 l10n.excursionBookingChecklistAddedMessage,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: const AppTextStyle(
                   color: _BookingColors.muted,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -1983,10 +1989,10 @@ class _BookingChecklistAddedSheet extends StatelessWidget {
                 ).pop(_BookingCompletionAction.openChecklist),
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(54),
-                  backgroundColor: AppColors.accent,
-                  foregroundColor: Colors.white,
+                  backgroundColor: AppPalette.primary,
+                  foregroundColor: AppPalette.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: AppBorderRadius.circular(16),
                   ),
                 ),
                 icon: const Icon(Icons.task_alt_rounded, size: 20),
@@ -2004,9 +2010,11 @@ class _BookingChecklistAddedSheet extends StatelessWidget {
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(52),
                   foregroundColor: _BookingColors.text,
-                  side: BorderSide(color: Colors.white.withValues(alpha: 0.14)),
+                  side: BorderSide(
+                    color: AppPalette.white.withValues(alpha: 0.14),
+                  ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: AppBorderRadius.circular(16),
                   ),
                 ),
                 icon: const Icon(Icons.confirmation_number_rounded, size: 19),
@@ -2030,15 +2038,15 @@ class _BookingImageFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF5A3517), Color(0xFF1B1008)],
+          colors: [AppPalette.warmSurfaceHigh05, AppPalette.warmInk40],
         ),
       ),
       child: Center(
-        child: Icon(Icons.terrain_rounded, color: AppColors.accent, size: 34),
+        child: Icon(Icons.terrain_rounded, color: AppPalette.primary, size: 34),
       ),
     );
   }
@@ -2065,10 +2073,10 @@ class _CircleIconButton extends StatelessWidget {
         child: Container(
           width: 44,
           height: 44,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.06),
+          decoration: AppBoxDecoration(
+            color: AppPalette.white.withValues(alpha: 0.06),
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
           ),
           child: Icon(icon, color: _BookingColors.text, size: 18),
         ),
@@ -2087,7 +2095,7 @@ class _BookingLoadingScaffold extends StatelessWidget {
       body: DecoratedBox(
         decoration: _BookingColors.backgroundDecoration,
         child: Center(
-          child: CircularProgressIndicator(color: AppColors.accent),
+          child: CircularProgressIndicator(color: AppPalette.primary),
         ),
       ),
     );
@@ -2108,21 +2116,25 @@ abstract final class _BookingMath {
 }
 
 abstract final class _BookingColors {
-  static const base = Color(0xFF160D05);
-  static const panel = Color(0xFF27170B);
-  static const text = Color(0xFFF4E7D8);
-  static const muted = Color(0xFFD6C1B3);
+  static const base = AppPalette.warmInk21;
+  static const panel = AppPalette.warmInk110;
+  static const text = AppPalette.orangeWash06;
+  static const muted = AppPalette.orangeLight05;
 
-  static const backgroundDecoration = BoxDecoration(
+  static const backgroundDecoration = AppBoxDecoration(
     gradient: LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
-      colors: [Color(0xFF24150A), Color(0xFF160D05), Color(0xFF130C06)],
+      colors: [
+        AppPalette.warmInk96,
+        AppPalette.warmInk21,
+        AppPalette.warmInk12,
+      ],
     ),
   );
 }
 
-const _sectionTitleStyle = TextStyle(
+const _sectionTitleStyle = AppTextStyle(
   color: _BookingColors.text,
   fontSize: 24,
   fontWeight: FontWeight.w900,

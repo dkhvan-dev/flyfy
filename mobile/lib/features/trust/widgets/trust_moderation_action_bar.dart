@@ -1,8 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-
-import '../../../core/ui/app_colors.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
 enum TrustModerationAction { report, mute, unmute, appeal }
 
@@ -183,9 +182,9 @@ class _TrustModerationActionButton extends StatelessWidget {
     return OutlinedButton(
       onPressed: isEnabled ? onPressed : null,
       style: OutlinedButton.styleFrom(
-        foregroundColor: AppColors.textPrimary,
-        side: BorderSide(color: AppColors.border),
-        padding: EdgeInsets.symmetric(
+        foregroundColor: AppPalette.textPrimary,
+        side: BorderSide(color: AppPalette.outlineOverlay),
+        padding: AppEdgeInsets.symmetric(
           horizontal: 10,
           vertical: verticalPadding,
         ),

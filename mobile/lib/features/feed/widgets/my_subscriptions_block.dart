@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
 import '../../../core/network/file_api.dart';
-import '../../../core/ui/app_colors.dart';
 import '../../../core/ui/error_dialog.dart';
 import '../../../core/ui/app_inline_sort_row.dart';
 import '../../../core/ui/app_list_search_field.dart';
@@ -44,20 +44,20 @@ class MySubscriptionsBlock extends StatelessWidget {
 
     return DecoratedBox(
       key: const ValueKey('my-subscriptions-block'),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2A1A0E),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.22)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmSurface13,
+        borderRadius: AppBorderRadius.circular(8),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.22)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
+            color: AppPalette.black.withValues(alpha: 0.18),
             blurRadius: 18,
             offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const AppEdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -73,7 +73,7 @@ class MySubscriptionsBlock extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(
-                              color: const Color(0xFFFFF7ED),
+                              color: AppPalette.surfaceInverse,
                               fontWeight: FontWeight.w900,
                             ),
                       ),
@@ -86,7 +86,7 @@ class MySubscriptionsBlock extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFFFFE0B2),
+                          color: AppPalette.amberLight08,
                         ),
                       ),
                     ],
@@ -97,8 +97,8 @@ class MySubscriptionsBlock extends StatelessWidget {
                   tooltip: l10n.feedMySubscriptionsViewAll,
                   onPressed: onOpenAll,
                   style: IconButton.styleFrom(
-                    backgroundColor: AppColors.accent.withValues(alpha: 0.18),
-                    foregroundColor: AppColors.accent,
+                    backgroundColor: AppPalette.primary.withValues(alpha: 0.18),
+                    foregroundColor: AppPalette.primary,
                     minimumSize: const Size.square(40),
                   ),
                   icon: const Icon(Icons.chevron_right_rounded),
@@ -252,8 +252,8 @@ class _MySubscriptionsSheetState extends State<MySubscriptionsSheet> {
       isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.58),
+      backgroundColor: AppPalette.transparent,
+      barrierColor: AppPalette.black.withValues(alpha: 0.58),
       builder: (context) {
         return _MySubscriptionsFiltersSheet(
           tabIndex: _tabIndex,
@@ -380,9 +380,9 @@ class _MySubscriptionsSheetState extends State<MySubscriptionsSheet> {
       child: SafeArea(
         child: DecoratedBox(
           key: const ValueKey('my-subscriptions-sheet'),
-          decoration: const BoxDecoration(color: AppColors.background),
+          decoration: const AppBoxDecoration(color: AppPalette.backgroundWarm),
           child: Padding(
-            padding: EdgeInsets.fromLTRB(
+            padding: AppEdgeInsets.fromLTRB(
               16,
               12,
               16,
@@ -393,9 +393,9 @@ class _MySubscriptionsSheetState extends State<MySubscriptionsSheet> {
                 Container(
                   width: 44,
                   height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFE0B2).withValues(alpha: 0.36),
-                    borderRadius: BorderRadius.circular(99),
+                  decoration: AppBoxDecoration(
+                    color: AppPalette.amberLight08.withValues(alpha: 0.36),
+                    borderRadius: AppBorderRadius.circular(99),
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -673,42 +673,42 @@ class _MySubscriptionsSheetSummaryCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     return DecoratedBox(
       key: const ValueKey('my-subscriptions-sheet-summary'),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
+      decoration: AppBoxDecoration(
+        borderRadius: AppBorderRadius.circular(22),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.accent.withValues(alpha: 0.24),
-            const Color(0xFF2A1A0E),
+            AppPalette.primary.withValues(alpha: 0.24),
+            AppPalette.warmSurface13,
           ],
         ),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.22)),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.22)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
+            color: AppPalette.black.withValues(alpha: 0.18),
             blurRadius: 24,
             offset: const Offset(0, 14),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const AppEdgeInsets.all(16),
         child: Row(
           children: [
             Container(
               width: 48,
               height: 48,
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.accent.withValues(alpha: 0.16),
+                color: AppPalette.primary.withValues(alpha: 0.16),
                 border: Border.all(
-                  color: AppColors.accent.withValues(alpha: 0.28),
+                  color: AppPalette.primary.withValues(alpha: 0.28),
                 ),
               ),
               child: const Icon(
                 Icons.bookmarks_rounded,
-                color: AppColors.accent,
+                color: AppPalette.primary,
               ),
             ),
             const SizedBox(width: 14),
@@ -721,7 +721,7 @@ class _MySubscriptionsSheetSummaryCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: const Color(0xFFFFF7ED),
+                      color: AppPalette.surfaceInverse,
                       fontWeight: FontWeight.w900,
                       height: 1.08,
                     ),
@@ -732,7 +732,7 @@ class _MySubscriptionsSheetSummaryCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFFFFE0B2).withValues(alpha: 0.86),
+                      color: AppPalette.amberLight08.withValues(alpha: 0.86),
                       height: 1.22,
                     ),
                   ),
@@ -777,24 +777,24 @@ class _SummaryBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.16)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.black.withValues(alpha: 0.18),
+        borderRadius: AppBorderRadius.circular(999),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+        padding: const AppEdgeInsets.symmetric(horizontal: 9, vertical: 6),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 15, color: AppColors.accent),
+            Icon(icon, size: 15, color: AppPalette.primary),
             const SizedBox(width: 5),
             Text(
               '$value $label',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: const Color(0xFFFFE0B2),
+                color: AppPalette.amberLight08,
                 fontWeight: FontWeight.w800,
                 height: 1,
               ),
@@ -821,13 +821,13 @@ class _MySubscriptionsSegmentedTabs extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.16)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.07),
+        borderRadius: AppBorderRadius.circular(18),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(4),
+        padding: const AppEdgeInsets.all(4),
         child: Row(
           children: [
             Expanded(
@@ -877,13 +877,13 @@ class _SegmentedTabButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? AppColors.accent : Colors.transparent,
-      borderRadius: BorderRadius.circular(14),
+      color: selected ? AppPalette.primary : AppPalette.transparent,
+      borderRadius: AppBorderRadius.circular(14),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppBorderRadius.circular(14),
         onTap: selected ? null : onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+          padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 11),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
@@ -892,8 +892,8 @@ class _SegmentedTabButton extends StatelessWidget {
                 icon,
                 size: 18,
                 color: selected
-                    ? AppColors.textPrimary
-                    : const Color(0xFFFFE0B2),
+                    ? AppPalette.textPrimary
+                    : AppPalette.amberLight08,
               ),
               const SizedBox(width: 7),
               Flexible(
@@ -904,8 +904,8 @@ class _SegmentedTabButton extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
                     color: selected
-                        ? AppColors.textPrimary
-                        : const Color(0xFFFFE0B2),
+                        ? AppPalette.textPrimary
+                        : AppPalette.amberLight08,
                     fontWeight: FontWeight.w900,
                     height: 1,
                   ),
@@ -935,13 +935,13 @@ class _ActiveSubscriptionFilterPill extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: Material(
-        color: AppColors.accent.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(999),
+        color: AppPalette.primary.withValues(alpha: 0.14),
+        borderRadius: AppBorderRadius.circular(999),
         child: InkWell(
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: AppBorderRadius.circular(999),
           onTap: onClear,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(10, 7, 8, 7),
+            padding: const AppEdgeInsets.fromLTRB(10, 7, 8, 7),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -952,7 +952,7 @@ class _ActiveSubscriptionFilterPill extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: const Color(0xFFFFE0B2),
+                    color: AppPalette.amberLight08,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -1090,11 +1090,11 @@ class _SubscriptionPill extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Material(
-      color: Colors.white.withValues(alpha: 0.08),
-      borderRadius: BorderRadius.circular(8),
+      color: AppPalette.white.withValues(alpha: 0.08),
+      borderRadius: AppBorderRadius.circular(8),
       child: InkWell(
         key: data.openKey,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppBorderRadius.circular(8),
         onTap: () {
           final community = data.community;
           if (community != null) {
@@ -1107,7 +1107,7 @@ class _SubscriptionPill extends StatelessWidget {
           }
         },
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Row(
             children: [
               _SubscriptionAvatar(
@@ -1127,7 +1127,7 @@ class _SubscriptionPill extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: const Color(0xFFFFF7ED),
+                        color: AppPalette.surfaceInverse,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -1137,7 +1137,7 @@ class _SubscriptionPill extends StatelessWidget {
                         community: community,
                         resolver: locationLabelResolver,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFFFFE0B2),
+                          color: AppPalette.amberLight08,
                           height: 1.14,
                         ),
                       ),
@@ -1149,9 +1149,9 @@ class _SubscriptionPill extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: const Color(
-                            0xFFFFE0B2,
-                          ).withValues(alpha: 0.82),
+                          color: AppPalette.amberLight08.withValues(
+                            alpha: 0.82,
+                          ),
                           height: 1.14,
                         ),
                       ),
@@ -1162,7 +1162,7 @@ class _SubscriptionPill extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFFFFE0B2),
+                          color: AppPalette.amberLight08,
                         ),
                       ),
                     ],
@@ -1215,7 +1215,7 @@ class _CommunitySubscriptionList extends StatelessWidget {
             includeCountry: true,
             resolver: locationLabelResolver,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: const Color(0xFFFFE0B2),
+              color: AppPalette.amberLight08,
               height: 1.14,
             ),
           ),
@@ -1292,13 +1292,13 @@ class _SheetListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white.withValues(alpha: 0.08),
-      borderRadius: BorderRadius.circular(8),
+      color: AppPalette.white.withValues(alpha: 0.08),
+      borderRadius: AppBorderRadius.circular(8),
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppBorderRadius.circular(8),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const AppEdgeInsets.all(12),
           child: Row(
             children: [
               _SubscriptionAvatar(title: title, imageUrl: imageUrl, icon: icon),
@@ -1312,7 +1312,7 @@ class _SheetListTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: const Color(0xFFFFF7ED),
+                        color: AppPalette.surfaceInverse,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -1326,7 +1326,7 @@ class _SheetListTile extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFFFFE0B2),
+                          color: AppPalette.amberLight08,
                         ),
                       ),
                     ],
@@ -1337,9 +1337,9 @@ class _SheetListTile extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: const Color(
-                            0xFFFFE0B2,
-                          ).withValues(alpha: 0.82),
+                          color: AppPalette.amberLight08.withValues(
+                            alpha: 0.82,
+                          ),
                           height: 1.14,
                         ),
                       ),
@@ -1351,7 +1351,7 @@ class _SheetListTile extends StatelessWidget {
               trailing ??
                   const Icon(
                     Icons.chevron_right_rounded,
-                    color: Color(0xFFFFE0B2),
+                    color: AppPalette.amberLight08,
                   ),
             ],
           ),
@@ -1378,8 +1378,8 @@ class _CommunitySubscriptionToggleButton extends StatelessWidget {
       key: ValueKey('my-subscriptions-sheet-toggle-${community.id}'),
       onPressed: isUpdating ? null : onPressed,
       style: IconButton.styleFrom(
-        backgroundColor: AppColors.accent.withValues(alpha: 0.14),
-        foregroundColor: AppColors.accent,
+        backgroundColor: AppPalette.primary.withValues(alpha: 0.14),
+        foregroundColor: AppPalette.primary,
         minimumSize: const Size.square(42),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
@@ -1388,7 +1388,7 @@ class _CommunitySubscriptionToggleButton extends StatelessWidget {
               dimension: 18,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: AppColors.accent,
+                color: AppPalette.primary,
               ),
             )
           : Icon(
@@ -1418,8 +1418,8 @@ class _SubscriptionAvatar extends StatelessWidget {
 
     return CircleAvatar(
       radius: 22,
-      backgroundColor: AppColors.accent.withValues(alpha: 0.18),
-      foregroundColor: AppColors.accent,
+      backgroundColor: AppPalette.primary.withValues(alpha: 0.18),
+      foregroundColor: AppPalette.primary,
       backgroundImage: url == null || url.isEmpty ? null : NetworkImage(url),
       child: url == null || url.isEmpty
           ? icon == Icons.person_rounded
@@ -1428,7 +1428,7 @@ class _SubscriptionAvatar extends StatelessWidget {
                     initial,
                     maxLines: 1,
                     overflow: TextOverflow.clip,
-                    style: const TextStyle(fontWeight: FontWeight.w900),
+                    style: const AppTextStyle(fontWeight: FontWeight.w900),
                   )
           : null,
     );
@@ -1642,15 +1642,19 @@ class _MySubscriptionsFiltersSheetState
     return AnimatedPadding(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      padding: AppEdgeInsets.only(
+        bottom: MediaQuery.viewInsetsOf(context).bottom,
+      ),
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxHeight: MediaQuery.sizeOf(context).height * 0.84,
         ),
         child: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          borderRadius: const AppBorderRadius.vertical(
+            top: AppRadiusValue.circular(28),
+          ),
           child: DecoratedBox(
-            decoration: const BoxDecoration(color: Color(0xFF20160D)),
+            decoration: const AppBoxDecoration(color: AppPalette.warmInk66),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -1662,7 +1666,7 @@ class _MySubscriptionsFiltersSheetState
                 Flexible(
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                    padding: const AppEdgeInsets.fromLTRB(20, 20, 20, 24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1695,7 +1699,7 @@ class _MySubscriptionsFiltersSheetState
                   ),
                 ),
                 Padding(
-                  padding: EdgeInsets.fromLTRB(
+                  padding: AppEdgeInsets.fromLTRB(
                     20,
                     12,
                     20,
@@ -1744,23 +1748,23 @@ class _FilterSheetIntro extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.16)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.07),
+        borderRadius: AppBorderRadius.circular(22),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const AppEdgeInsets.all(14),
         child: Row(
           children: [
             Container(
               width: 42,
               height: 42,
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.accent.withValues(alpha: 0.16),
+                color: AppPalette.primary.withValues(alpha: 0.16),
               ),
-              child: const Icon(Icons.tune_rounded, color: AppColors.accent),
+              child: const Icon(Icons.tune_rounded, color: AppPalette.primary),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -1769,7 +1773,7 @@ class _FilterSheetIntro extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.textPrimary,
+                  color: AppPalette.textPrimary,
                   fontWeight: FontWeight.w900,
                   height: 1.1,
                 ),
@@ -1777,19 +1781,19 @@ class _FilterSheetIntro extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             DecoratedBox(
-              decoration: BoxDecoration(
-                color: AppColors.accent.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(999),
+              decoration: AppBoxDecoration(
+                color: AppPalette.primary.withValues(alpha: 0.18),
+                borderRadius: AppBorderRadius.circular(999),
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(
+                padding: const AppEdgeInsets.symmetric(
                   horizontal: 10,
                   vertical: 6,
                 ),
                 child: Text(
                   resultCount.toString(),
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -1813,7 +1817,7 @@ class _FilterSectionTitle extends StatelessWidget {
       children: [
         const Icon(
           Icons.filter_list_rounded,
-          color: AppColors.accent,
+          color: AppPalette.primary,
           size: 18,
         ),
         const SizedBox(width: 7),
@@ -1823,7 +1827,7 @@ class _FilterSectionTitle extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: AppColors.textPrimary,
+              color: AppPalette.textPrimary,
               fontWeight: FontWeight.w900,
               height: 1.1,
             ),
@@ -1842,25 +1846,25 @@ class _FilterOptionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foreground = data.selected
-        ? AppColors.textPrimary
-        : const Color(0xFFFFE0B2);
+        ? AppPalette.textPrimary
+        : AppPalette.amberLight08;
     return Material(
       key: ValueKey(data.key),
       color: data.selected
-          ? AppColors.accent.withValues(alpha: 0.20)
-          : Colors.white.withValues(alpha: 0.07),
-      borderRadius: BorderRadius.circular(18),
+          ? AppPalette.primary.withValues(alpha: 0.20)
+          : AppPalette.white.withValues(alpha: 0.07),
+      borderRadius: AppBorderRadius.circular(18),
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppBorderRadius.circular(18),
         onTap: data.onSelected,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
+          padding: const AppEdgeInsets.symmetric(horizontal: 13, vertical: 12),
+          decoration: AppBoxDecoration(
+            borderRadius: AppBorderRadius.circular(18),
             border: Border.all(
               color: data.selected
-                  ? AppColors.accent
-                  : AppColors.accent.withValues(alpha: 0.16),
+                  ? AppPalette.primary
+                  : AppPalette.primary.withValues(alpha: 0.16),
             ),
           ),
           child: Row(
@@ -1868,17 +1872,17 @@ class _FilterOptionTile extends StatelessWidget {
               Container(
                 width: 36,
                 height: 36,
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   shape: BoxShape.circle,
                   color: data.selected
-                      ? AppColors.accent
-                      : AppColors.accent.withValues(alpha: 0.12),
+                      ? AppPalette.primary
+                      : AppPalette.primary.withValues(alpha: 0.12),
                 ),
                 child: Icon(
                   data.selected ? Icons.check_rounded : data.icon,
                   color: data.selected
-                      ? AppColors.textPrimary
-                      : AppColors.accent,
+                      ? AppPalette.textPrimary
+                      : AppPalette.primary,
                   size: 19,
                 ),
               ),
@@ -1898,15 +1902,15 @@ class _FilterOptionTile extends StatelessWidget {
               if (data.count != null) ...[
                 const SizedBox(width: 10),
                 DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.20),
-                    borderRadius: BorderRadius.circular(999),
+                  decoration: AppBoxDecoration(
+                    color: AppPalette.black.withValues(alpha: 0.20),
+                    borderRadius: AppBorderRadius.circular(999),
                     border: Border.all(
-                      color: AppColors.accent.withValues(alpha: 0.12),
+                      color: AppPalette.primary.withValues(alpha: 0.12),
                     ),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
+                    padding: const AppEdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 6,
                     ),
@@ -1944,7 +1948,7 @@ class _SheetEmptyState extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         style: Theme.of(
           context,
-        ).textTheme.bodyMedium?.copyWith(color: const Color(0xFFFFE0B2)),
+        ).textTheme.bodyMedium?.copyWith(color: AppPalette.amberLight08),
       ),
     );
   }

@@ -801,8 +801,8 @@ void main() {
 
     expect(source, contains('class _AmberAttachmentSheet'));
     expect(source, contains('class _AmberAttachmentActionTile'));
-    expect(source, contains('AppColors.accent'));
-    expect(source, contains('barrierColor: Colors.black.withValues'));
+    expect(source, contains('AppPalette.primary'));
+    expect(source, contains('barrierColor: AppPalette.black.withValues'));
     expect(source, contains('chatAttachmentCancel'));
     expect(source, isNot(contains('CupertinoActionSheet')));
   });

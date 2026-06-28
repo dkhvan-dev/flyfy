@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -8,7 +9,6 @@ import 'package:provider/provider.dart';
 import '../../core/config/app_config.dart';
 import '../../core/files/chat_file_cache.dart';
 import '../../core/network/file_api.dart';
-import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/chat/models/conversation_vm.dart';
 import '../../features/chat/utils/chat_message_display_text.dart';
@@ -51,13 +51,13 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFF100802),
+      backgroundColor: AppPalette.warmInk05,
       appBar: _buildAppBar(context),
       body: Consumer<ChatProvider>(
         builder: (context, chat, _) {
           if (chat.conversationsLoading && chat.conversations.isEmpty) {
             return const Center(
-              child: CircularProgressIndicator(color: AppColors.accent),
+              child: CircularProgressIndicator(color: AppPalette.primary),
             );
           }
 
@@ -83,19 +83,19 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                 _buildTabs(context),
                 Expanded(
                   child: RefreshIndicator(
-                    color: AppColors.accent,
-                    backgroundColor: const Color(0xFF1a0d03),
+                    color: AppPalette.primary,
+                    backgroundColor: AppPalette.warmInk32,
                     onRefresh: () => chat.loadConversations(forceRefresh: true),
                     child: conversations.isEmpty
                         ? _buildFilteredEmptyList(context)
                         : ListView.separated(
                             physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            padding: const AppEdgeInsets.symmetric(vertical: 8),
                             itemCount: conversations.length,
                             separatorBuilder: (_, _) => Divider(
                               height: 1,
                               indent: 86,
-                              color: Colors.white.withValues(alpha: 0.06),
+                              color: AppPalette.white.withValues(alpha: 0.06),
                             ),
                             itemBuilder: (context, index) {
                               final conversation = conversations[index];
@@ -122,20 +122,20 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return AppBar(
-      backgroundColor: const Color(0xFF1a0d03),
-      surfaceTintColor: Colors.transparent,
+      backgroundColor: AppPalette.warmInk32,
+      surfaceTintColor: AppPalette.transparent,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-        color: AppColors.textPrimary,
+        color: AppPalette.textPrimary,
         onPressed: () => _handleBack(context),
       ),
       title: Text(
         l10n.chatListTitle,
-        style: const TextStyle(
+        style: const AppTextStyle(
           fontSize: 24,
           fontWeight: FontWeight.w800,
           letterSpacing: -0.03 * 24,
-          color: AppColors.textPrimary,
+          color: AppPalette.textPrimary,
         ),
       ),
       centerTitle: true,
@@ -154,38 +154,42 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      padding: const AppEdgeInsets.fromLTRB(16, 12, 16, 8),
       child: TextField(
         textInputAction: TextInputAction.search,
-        style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
-        cursorColor: AppColors.accent,
+        style: const AppTextStyle(color: AppPalette.textPrimary, fontSize: 16),
+        cursorColor: AppPalette.primary,
         onChanged: (value) => setState(() {
           _searchQuery = value;
         }),
-        decoration: InputDecoration(
+        decoration: AppInputDecoration(
           hintText: l10n.chatListSearchHint,
-          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.38)),
+          hintStyle: AppTextStyle(
+            color: AppPalette.white.withValues(alpha: 0.38),
+          ),
           prefixIcon: Icon(
             Icons.search_rounded,
-            color: Colors.white.withValues(alpha: 0.42),
+            color: AppPalette.white.withValues(alpha: 0.42),
           ),
           filled: true,
-          fillColor: Colors.white.withValues(alpha: 0.07),
-          contentPadding: const EdgeInsets.symmetric(
+          fillColor: AppPalette.white.withValues(alpha: 0.07),
+          contentPadding: const AppEdgeInsets.symmetric(
             horizontal: 16,
             vertical: 14,
           ),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppBorderRadius.circular(16),
             borderSide: BorderSide.none,
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+            borderRadius: AppBorderRadius.circular(16),
+            borderSide: BorderSide(
+              color: AppPalette.white.withValues(alpha: 0.06),
+            ),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
+            borderRadius: AppBorderRadius.circular(16),
+            borderSide: const BorderSide(color: AppPalette.primary, width: 1.2),
           ),
         ),
       ),
@@ -200,18 +204,21 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
       child: TabBar(
         isScrollable: true,
         tabAlignment: TabAlignment.start,
-        dividerColor: Colors.transparent,
-        indicatorColor: AppColors.accent,
+        dividerColor: AppPalette.transparent,
+        indicatorColor: AppPalette.primary,
         indicatorWeight: 3,
-        labelColor: AppColors.textPrimary,
-        unselectedLabelColor: Colors.white.withValues(alpha: 0.48),
-        labelStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-        unselectedLabelStyle: const TextStyle(
+        labelColor: AppPalette.textPrimary,
+        unselectedLabelColor: AppPalette.white.withValues(alpha: 0.48),
+        labelStyle: const AppTextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w700,
+        ),
+        unselectedLabelStyle: const AppTextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w600,
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        labelPadding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const AppEdgeInsets.symmetric(horizontal: 8),
+        labelPadding: const AppEdgeInsets.symmetric(horizontal: 12),
         onTap: (index) => setState(() {
           _selectedTab = _ConversationListTab.values[index];
         }),
@@ -227,7 +234,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
   Widget _buildFilteredEmptyList(BuildContext context) {
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 32),
+      padding: const AppEdgeInsets.symmetric(horizontal: 32),
       children: [
         SizedBox(height: MediaQuery.sizeOf(context).height * 0.18),
         _buildEmpty(
@@ -245,20 +252,20 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const AppEdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(
               Icons.wifi_off_rounded,
               size: 48,
-              color: AppColors.textSecondary,
+              color: AppPalette.textCoolSecondary,
             ),
             const SizedBox(height: 16),
             Text(
               l10n.chatListLoadFailed,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
+              style: const AppTextStyle(
+                color: AppPalette.textCoolSecondary,
                 fontSize: 16,
               ),
             ),
@@ -267,7 +274,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
               onPressed: () => chat.loadConversations(),
               child: Text(
                 l10n.retryButton,
-                style: const TextStyle(color: AppColors.accent),
+                style: const AppTextStyle(color: AppPalette.primary),
               ),
             ),
           ],
@@ -286,14 +293,14 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
           Icon(
             Icons.chat_bubble_outline_rounded,
             size: 56,
-            color: Colors.white.withValues(alpha: 0.2),
+            color: AppPalette.white.withValues(alpha: 0.2),
           ),
           const SizedBox(height: 16),
           Text(
             message ?? l10n.chatListEmpty,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.4),
+            style: AppTextStyle(
+              color: AppPalette.white.withValues(alpha: 0.4),
               fontSize: 16,
               fontWeight: FontWeight.w500,
             ),
@@ -351,27 +358,29 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     final action = await showModalBottomSheet<_ConversationAction>(
       context: context,
       isDismissible: true,
-      backgroundColor: const Color(0xFF1d120b),
+      backgroundColor: AppPalette.warmInk55,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: AppBorderRadius.vertical(
+          top: AppRadiusValue.circular(24),
+        ),
       ),
       builder: (sheetContext) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const AppEdgeInsets.symmetric(vertical: 8),
             child: ListTile(
               leading: Icon(
                 isMuted
                     ? Icons.notifications_active_rounded
                     : Icons.notifications_off_rounded,
-                color: AppColors.accent,
+                color: AppPalette.primary,
               ),
               title: Text(
                 isMuted
                     ? l10n.chatUnmuteNotificationsAction
                     : l10n.chatMuteNotificationsAction,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: const AppTextStyle(
+                  color: AppPalette.textPrimary,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -420,7 +429,7 @@ class _ConversationTile extends StatelessWidget {
       onTap: onTap,
       onLongPress: onLongPress,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const AppEdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
             _buildAvatar(l10n),
@@ -443,20 +452,20 @@ class _ConversationTile extends StatelessWidget {
     return Container(
       width: 56,
       height: 56,
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         shape: BoxShape.circle,
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: conversation.isGroup
-              ? [const Color(0xFF4a2d14), const Color(0xFF2a1608)]
-              : [const Color(0xFFf3d7b3), const Color(0xFF6f3f22)],
+              ? [AppPalette.warmSurface84, AppPalette.warmInk112]
+              : [AppPalette.orangeLight34, AppPalette.warmSurfaceHigh18],
         ),
       ),
-      foregroundDecoration: BoxDecoration(
+      foregroundDecoration: AppBoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.12),
+          color: AppPalette.white.withValues(alpha: 0.12),
           width: 2,
         ),
       ),
@@ -495,10 +504,10 @@ class _ConversationTile extends StatelessWidget {
   Widget _fallbackInitial(String name) {
     return Text(
       _initials(name),
-      style: TextStyle(
+      style: AppTextStyle(
         fontSize: conversation.isActivity ? 22 : 18,
         fontWeight: FontWeight.w900,
-        color: AppColors.textPrimary,
+        color: AppPalette.textPrimary,
       ),
     );
   }
@@ -530,11 +539,11 @@ class _ConversationTile extends StatelessWidget {
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: const AppTextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.02 * 17,
-                  color: AppColors.textPrimary,
+                  color: AppPalette.textPrimary,
                 ),
               ),
             ),
@@ -543,15 +552,15 @@ class _ConversationTile extends StatelessWidget {
               Icon(
                 Icons.notifications_off_rounded,
                 size: 16,
-                color: Colors.white.withValues(alpha: 0.32),
+                color: AppPalette.white.withValues(alpha: 0.32),
               ),
               const SizedBox(width: 6),
             ],
             Text(
               _formatTime(conversation.lastActivityAt, l10n),
-              style: TextStyle(
+              style: AppTextStyle(
                 fontSize: 13,
-                color: Colors.white.withValues(alpha: 0.35),
+                color: AppPalette.white.withValues(alpha: 0.35),
               ),
             ),
           ],
@@ -560,9 +569,9 @@ class _ConversationTile extends StatelessWidget {
           const SizedBox(height: 5),
           _LastMessagePreviewLine(
             message: lastMessage,
-            textStyle: TextStyle(
+            textStyle: AppTextStyle(
               fontSize: 14,
-              color: Colors.white.withValues(alpha: 0.46),
+              color: AppPalette.white.withValues(alpha: 0.46),
               letterSpacing: -0.02 * 14,
             ),
           ),
@@ -584,17 +593,17 @@ class _ConversationTile extends StatelessWidget {
 
   Widget _buildUnreadBadge() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: AppColors.accent,
-        borderRadius: BorderRadius.circular(12),
+      padding: const AppEdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: AppBoxDecoration(
+        color: AppPalette.primary,
+        borderRadius: AppBorderRadius.circular(12),
       ),
       child: Text(
         conversation.unreadCount > 99 ? '99+' : '${conversation.unreadCount}',
-        style: const TextStyle(
+        style: const AppTextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          color: Colors.white,
+          color: AppPalette.white,
         ),
       ),
     );
@@ -746,7 +755,7 @@ class _AttachmentPreviewThumb extends StatelessWidget {
     final metadata = attachment.metadata;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: AppBorderRadius.circular(8),
       child: SizedBox(
         width: size,
         height: size,

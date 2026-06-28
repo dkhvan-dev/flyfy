@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/ui/app_bottom_navigation_bars.dart';
-import '../../core/ui/app_colors.dart';
 import '../../core/ui/app_inline_sort_row.dart';
 import '../../core/ui/app_list_search_field.dart';
 import '../../core/ui/app_list_screen_header.dart';
@@ -237,21 +237,21 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
       barrierDismissible: true,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: AppColors.surface,
+          backgroundColor: AppPalette.surfaceCool,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: AppBorderRadius.circular(20),
           ),
           title: Text(
             l10n.logoutDialogTitle,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
+            style: const AppTextStyle(
+              color: AppPalette.textPrimary,
               fontWeight: FontWeight.bold,
             ),
           ),
           content: Text(
             l10n.logoutDialogMessage,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
+            style: const AppTextStyle(
+              color: AppPalette.textCoolSecondary,
               fontSize: 16,
             ),
           ),
@@ -260,16 +260,16 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
               onPressed: () => Navigator.of(dialogContext).pop(false),
               child: Text(
                 l10n.cancel,
-                style: const TextStyle(color: AppColors.textSecondary),
+                style: const AppTextStyle(color: AppPalette.textCoolSecondary),
               ),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accent,
-                foregroundColor: AppColors.background,
+                backgroundColor: AppPalette.primary,
+                foregroundColor: AppPalette.backgroundWarm,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppBorderRadius.circular(12),
                 ),
               ),
               child: Text(l10n.logoutConfirmButton),
@@ -392,7 +392,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (sheetContext) {
         return _DiscoverFiltersSheet(
           l10n: AppLocalizations.of(sheetContext)!,
@@ -443,10 +443,10 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
 
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: const Color(0xFF1A1008),
+      backgroundColor: AppPalette.warmInk35,
       drawerEnableOpenDragGesture: true,
       drawerEdgeDragWidth: 28,
-      drawerScrimColor: Colors.black.withValues(alpha: 0.42),
+      drawerScrimColor: AppPalette.black.withValues(alpha: 0.42),
       drawer: AppSideDrawer(
         l10n: l10n,
         isLoggedIn: isLoggedIn,
@@ -528,8 +528,8 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 460),
                     child: RefreshIndicator(
-                      color: AppColors.accent,
-                      backgroundColor: const Color(0xFF201208),
+                      color: AppPalette.primary,
+                      backgroundColor: AppPalette.warmInk63,
                       onRefresh: () => _refreshActivities(currentUserId),
                       child: CustomScrollView(
                         controller: _scrollController,
@@ -538,7 +538,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                         ),
                         slivers: [
                           SliverPadding(
-                            padding: EdgeInsets.fromLTRB(
+                            padding: AppEdgeInsets.fromLTRB(
                               layout.horizontalPadding,
                               layout.topPadding,
                               layout.horizontalPadding,
@@ -611,17 +611,17 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                   ),
                                   Container(
                                     height: 1,
-                                    decoration: BoxDecoration(
+                                    decoration: AppBoxDecoration(
                                       gradient: LinearGradient(
                                         colors: [
-                                          Colors.transparent,
-                                          AppColors.accent.withValues(
+                                          AppPalette.transparent,
+                                          AppPalette.primary.withValues(
                                             alpha: 0.16,
                                           ),
-                                          AppColors.accent.withValues(
+                                          AppPalette.primary.withValues(
                                             alpha: 0.12,
                                           ),
-                                          Colors.transparent,
+                                          AppPalette.transparent,
                                         ],
                                       ),
                                     ),
@@ -639,8 +639,8 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                     ),
                                     const LinearProgressIndicator(
                                       minHeight: 2,
-                                      color: AppColors.accent,
-                                      backgroundColor: Colors.transparent,
+                                      color: AppPalette.primary,
+                                      backgroundColor: AppPalette.transparent,
                                     ),
                                   ],
                                 ],
@@ -653,7 +653,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                               hasScrollBody: false,
                               child: Center(
                                 child: CircularProgressIndicator(
-                                  color: AppColors.accent,
+                                  color: AppPalette.primary,
                                 ),
                               ),
                             )
@@ -662,7 +662,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                             SliverFillRemaining(
                               hasScrollBody: false,
                               child: Padding(
-                                padding: EdgeInsets.fromLTRB(
+                                padding: AppEdgeInsets.fromLTRB(
                                   layout.horizontalPadding,
                                   12,
                                   layout.horizontalPadding,
@@ -701,7 +701,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                             )
                           else
                             SliverPadding(
-                              padding: EdgeInsets.fromLTRB(
+                              padding: AppEdgeInsets.fromLTRB(
                                 layout.horizontalPadding,
                                 _activitiesScaled(
                                   context,
@@ -755,7 +755,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                               paginatedItems.hasMultiplePages)
                             SliverToBoxAdapter(
                               child: Padding(
-                                padding: EdgeInsets.fromLTRB(
+                                padding: AppEdgeInsets.fromLTRB(
                                   layout.horizontalPadding,
                                   0,
                                   layout.horizontalPadding,
@@ -876,11 +876,15 @@ class _DiscoverScreenBackdrop extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         const DecoratedBox(
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Color(0xFF281A10), Color(0xFF1C120A), Color(0xFF140B06)],
+              colors: [
+                AppPalette.warmSurface06,
+                AppPalette.warmInk51,
+                AppPalette.warmInk16,
+              ],
             ),
           ),
         ),
@@ -892,11 +896,14 @@ class _DiscoverScreenBackdrop extends StatelessWidget {
             child: SizedBox(
               height: topGlowHeight,
               child: DecoratedBox(
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   gradient: RadialGradient(
                     center: Alignment(0, -0.72),
                     radius: 0.94,
-                    colors: [Color(0x4FFFAD42), Color(0x00FFAD42)],
+                    colors: [
+                      AppPalette.orangeOverlaySoft05,
+                      AppPalette.clearOrangeSoft02,
+                    ],
                   ),
                 ),
               ),
@@ -911,11 +918,14 @@ class _DiscoverScreenBackdrop extends StatelessWidget {
               width: sideGlowSize,
               height: sideGlowSize,
               child: DecoratedBox(
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   gradient: RadialGradient(
                     center: Alignment.topRight,
                     radius: 1.08,
-                    colors: [Color(0x24FF9326), Color(0x00FF9326)],
+                    colors: [
+                      AppPalette.orangeOverlaySoft03,
+                      AppPalette.clearOrangeSoft01,
+                    ],
                   ),
                 ),
               ),
@@ -930,11 +940,14 @@ class _DiscoverScreenBackdrop extends StatelessWidget {
             child: SizedBox(
               height: bottomGlowHeight,
               child: DecoratedBox(
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   gradient: RadialGradient(
                     center: Alignment(0, 1.08),
                     radius: 1.04,
-                    colors: [Color(0x18FFB24B), Color(0x00FFB24B)],
+                    colors: [
+                      AppPalette.orangeOverlaySoft01,
+                      AppPalette.clearOrangeSoft03,
+                    ],
                   ),
                 ),
               ),
@@ -944,15 +957,15 @@ class _DiscoverScreenBackdrop extends StatelessWidget {
         Positioned.fill(
           child: IgnorePointer(
             child: DecoratedBox(
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   stops: const [0, 0.58, 1],
                   colors: [
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.06),
-                    Colors.black.withValues(alpha: 0.16),
+                    AppPalette.transparent,
+                    AppPalette.black.withValues(alpha: 0.06),
+                    AppPalette.black.withValues(alpha: 0.16),
                   ],
                 ),
               ),
@@ -1060,35 +1073,35 @@ class _ActivitiesNearbyMapSection extends StatelessWidget {
       children: [
         Text(
           title,
-          style: TextStyle(
-            color: AppColors.textPrimary,
+          style: AppTextStyle(
+            color: AppPalette.textPrimary,
             fontSize: _activitiesScaled(context, 18, min: 16, max: 19),
             fontWeight: FontWeight.w800,
           ),
         ),
         SizedBox(height: _activitiesScaled(context, 10, min: 8, max: 10)),
         Material(
-          color: Colors.transparent,
+          color: AppPalette.transparent,
           child: InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(radius),
+            borderRadius: AppBorderRadius.circular(radius),
             child: Ink(
               height: previewHeight,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(radius),
+              decoration: AppBoxDecoration(
+                borderRadius: AppBorderRadius.circular(radius),
                 border: Border.all(
-                  color: AppColors.accent.withValues(alpha: 0.14),
+                  color: AppPalette.primary.withValues(alpha: 0.14),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.24),
+                    color: AppPalette.black.withValues(alpha: 0.24),
                     blurRadius: 30,
                     offset: const Offset(0, 14),
                   ),
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(radius),
+                borderRadius: AppBorderRadius.circular(radius),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final size = Size(
@@ -1130,13 +1143,13 @@ class _ActivitiesNearbyMapSection extends StatelessWidget {
                         Positioned.fill(
                           child: IgnorePointer(
                             child: DecoratedBox(
-                              decoration: BoxDecoration(
+                              decoration: AppBoxDecoration(
                                 gradient: LinearGradient(
                                   begin: Alignment.topCenter,
                                   end: Alignment.bottomCenter,
                                   colors: [
-                                    Colors.transparent,
-                                    Colors.black.withValues(alpha: 0.34),
+                                    AppPalette.transparent,
+                                    AppPalette.black.withValues(alpha: 0.34),
                                   ],
                                 ),
                               ),
@@ -1175,8 +1188,8 @@ class _ActivitiesNearbyMapSection extends StatelessWidget {
                                         ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: AppColors.textPrimary,
+                                  style: AppTextStyle(
+                                    color: AppPalette.textPrimary,
                                     fontSize: _activitiesScaled(
                                       context,
                                       13,
@@ -1204,7 +1217,7 @@ class _ActivitiesNearbyMapSection extends StatelessWidget {
                                     min: 16,
                                     max: 19,
                                   ),
-                                  color: AppColors.accent,
+                                  color: AppPalette.primary,
                                 ),
                               ],
                             ],
@@ -1231,13 +1244,13 @@ class _ActivityPreviewMarker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         shape: BoxShape.circle,
         color: marker.accentColor,
-        border: Border.all(color: Colors.white, width: 1.6),
+        border: Border.all(color: AppPalette.white, width: 1.6),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.22),
+            color: AppPalette.black.withValues(alpha: 0.22),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -1248,8 +1261,8 @@ class _ActivityPreviewMarker extends StatelessWidget {
           marker.avatarLabel ?? '',
           maxLines: 1,
           overflow: TextOverflow.clip,
-          style: TextStyle(
-            color: Colors.white,
+          style: AppTextStyle(
+            color: AppPalette.white,
             fontSize: _activitiesScaled(context, 11, min: 9, max: 12),
             fontWeight: FontWeight.w900,
           ),
@@ -1266,11 +1279,15 @@ class _ActivitiesNearbyMapPainter extends CustomPainter {
       ..shader = const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [Color(0xFF2C3A2C), Color(0xFF5C5139), Color(0xFF25323B)],
+        colors: [
+          AppPalette.greenSurface09,
+          AppPalette.warmSurfaceHigh09,
+          AppPalette.blueSurface10,
+        ],
       ).createShader(Offset.zero & size);
     canvas.drawRect(Offset.zero & size, backgroundPaint);
 
-    final parkPaint = Paint()..color = const Color(0x554E8B57);
+    final parkPaint = Paint()..color = AppPalette.greenOverlayMuted01;
     canvas.drawOval(
       Rect.fromLTWH(size.width * 0.62, -size.height * 0.18, 150, 120),
       parkPaint,
@@ -1281,7 +1298,7 @@ class _ActivitiesNearbyMapPainter extends CustomPainter {
     );
 
     final roadPaint = Paint()
-      ..color = const Color(0xFFE8D3B0).withValues(alpha: 0.46)
+      ..color = AppPalette.amberLight03.withValues(alpha: 0.46)
       ..strokeWidth = math.max(5, size.shortestSide * 0.07)
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -1306,7 +1323,7 @@ class _ActivitiesNearbyMapPainter extends CustomPainter {
     canvas.drawPath(road, roadPaint);
 
     final sideRoadPaint = Paint()
-      ..color = const Color(0xFFD6BF94).withValues(alpha: 0.28)
+      ..color = AppPalette.amberSoft04.withValues(alpha: 0.28)
       ..strokeWidth = math.max(3, size.shortestSide * 0.035)
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -1393,25 +1410,27 @@ class _DiscoverActivityCard extends StatelessWidget {
     final categoryFont = _activitiesScaled(context, 11, min: 10, max: 11);
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: onOpenDetails,
-        borderRadius: BorderRadius.circular(layout.cardRadius),
+        borderRadius: AppBorderRadius.circular(layout.cardRadius),
         child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(layout.cardRadius),
+          decoration: AppBoxDecoration(
+            borderRadius: AppBorderRadius.circular(layout.cardRadius),
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                const Color(0xFF3A220F).withValues(alpha: 0.98),
-                const Color(0xFF251408).withValues(alpha: 0.99),
+                AppPalette.warmSurface53.withValues(alpha: 0.98),
+                AppPalette.warmInk100.withValues(alpha: 0.99),
               ],
             ),
-            border: Border.all(color: AppColors.accent.withValues(alpha: 0.08)),
+            border: Border.all(
+              color: AppPalette.primary.withValues(alpha: 0.08),
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.26),
+                color: AppPalette.black.withValues(alpha: 0.26),
                 blurRadius: 44,
                 offset: const Offset(0, 20),
               ),
@@ -1421,8 +1440,8 @@ class _DiscoverActivityCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(layout.cardRadius),
+                borderRadius: AppBorderRadius.vertical(
+                  top: AppRadiusValue.circular(layout.cardRadius),
                 ),
                 child: Stack(
                   children: [
@@ -1435,13 +1454,13 @@ class _DiscoverActivityCard extends StatelessWidget {
                     ),
                     Positioned.fill(
                       child: DecoratedBox(
-                        decoration: BoxDecoration(
+                        decoration: AppBoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             colors: [
-                              Colors.transparent,
-                              Colors.black.withValues(alpha: 0.20),
+                              AppPalette.transparent,
+                              AppPalette.black.withValues(alpha: 0.20),
                             ],
                           ),
                         ),
@@ -1451,13 +1470,13 @@ class _DiscoverActivityCard extends StatelessWidget {
                       top: _activitiesScaled(context, 14, min: 10, max: 14),
                       left: _activitiesScaled(context, 14, min: 10, max: 14),
                       child: Container(
-                        padding: EdgeInsets.symmetric(
+                        padding: AppEdgeInsets.symmetric(
                           horizontal: badgeHorizontal,
                           vertical: badgeVertical,
                         ),
-                        decoration: BoxDecoration(
+                        decoration: AppBoxDecoration(
                           color: visibilityBadge.background,
-                          borderRadius: BorderRadius.circular(999),
+                          borderRadius: AppBorderRadius.circular(999),
                           border: Border.all(color: visibilityBadge.border),
                         ),
                         child: Row(
@@ -1478,7 +1497,7 @@ class _DiscoverActivityCard extends StatelessWidget {
                             ),
                             Text(
                               visibilityBadge.label,
-                              style: TextStyle(
+                              style: AppTextStyle(
                                 color: visibilityBadge.foreground,
                                 fontSize: badgeFont,
                                 fontWeight: FontWeight.w800,
@@ -1493,20 +1512,20 @@ class _DiscoverActivityCard extends StatelessWidget {
                       top: _activitiesScaled(context, 14, min: 10, max: 14),
                       right: _activitiesScaled(context, 14, min: 10, max: 14),
                       child: Container(
-                        padding: EdgeInsets.symmetric(
+                        padding: AppEdgeInsets.symmetric(
                           horizontal: badgeHorizontal,
                           vertical: badgeVertical,
                         ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xCC46362A),
-                          borderRadius: BorderRadius.circular(999),
+                        decoration: AppBoxDecoration(
+                          color: AppPalette.warmOverlaySurface10,
+                          borderRadius: AppBorderRadius.circular(999),
                         ),
                         child: Text(
                           badgeText,
-                          style: TextStyle(
+                          style: AppTextStyle(
                             color: item.isFree
-                                ? AppColors.success
-                                : AppColors.accent,
+                                ? AppPalette.success
+                                : AppPalette.primary,
                             fontSize: priceFont,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.1,
@@ -1518,7 +1537,7 @@ class _DiscoverActivityCard extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: EdgeInsets.fromLTRB(
+                padding: AppEdgeInsets.fromLTRB(
                   layout.cardPadding,
                   layout.cardPadding - 2,
                   layout.cardPadding,
@@ -1532,16 +1551,16 @@ class _DiscoverActivityCard extends StatelessWidget {
                         Container(
                           width: avatarSize,
                           height: avatarSize,
-                          decoration: BoxDecoration(
+                          decoration: AppBoxDecoration(
                             shape: BoxShape.circle,
                             gradient: LinearGradient(colors: artSpec.colors),
                             border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.10),
+                              color: AppPalette.white.withValues(alpha: 0.10),
                             ),
                           ),
                           child: Icon(
                             artSpec.icon,
-                            color: Colors.white.withValues(alpha: 0.92),
+                            color: AppPalette.white.withValues(alpha: 0.92),
                             size: avatarIcon,
                           ),
                         ),
@@ -1561,8 +1580,8 @@ class _DiscoverActivityCard extends StatelessWidget {
                                 categoryLabel.toUpperCase(),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: Color(0xFFFFB64D),
+                                style: AppTextStyle(
+                                  color: AppPalette.amberSoft16,
                                   fontSize: categoryFont,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 0.4,
@@ -1580,8 +1599,8 @@ class _DiscoverActivityCard extends StatelessWidget {
                       item.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: const Color(0xFFFFFAF5),
+                      style: AppTextStyle(
+                        color: AppPalette.orangeWash29,
                         fontSize: layout.titleSize,
                         height: 1.16,
                         letterSpacing: -0.4,
@@ -1678,15 +1697,15 @@ class _CardMetaItem extends StatelessWidget {
     final iconSize = _activitiesScaled(context, 16, min: 14, max: 16);
     final gap = _activitiesScaled(context, 8, min: 6, max: 8);
     final fontSize = _activitiesScaled(context, 13, min: 12, max: 13);
-    final labelStyle = TextStyle(
-      color: Color(0xA8FFF0E0),
+    final labelStyle = AppTextStyle(
+      color: AppPalette.orangeOverlayWash07,
       fontSize: fontSize,
       height: 1.25,
     );
 
     return Row(
       children: [
-        Icon(data.icon, size: iconSize, color: const Color(0xB0FFF0E0)),
+        Icon(data.icon, size: iconSize, color: AppPalette.orangeOverlayWash08),
         SizedBox(width: gap),
         Expanded(
           child:
@@ -1723,7 +1742,7 @@ class _ActivitiesEmptyView extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: EdgeInsets.symmetric(
+        padding: AppEdgeInsets.symmetric(
           horizontal: _activitiesScaled(context, 28, min: 18, max: 30),
         ),
         child: Column(
@@ -1732,21 +1751,21 @@ class _ActivitiesEmptyView extends StatelessWidget {
             Container(
               width: iconWrap,
               height: iconWrap,
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.accent.withValues(alpha: 0.10),
+                color: AppPalette.primary.withValues(alpha: 0.10),
                 border: Border.all(
-                  color: AppColors.accent.withValues(alpha: 0.22),
+                  color: AppPalette.primary.withValues(alpha: 0.22),
                 ),
               ),
-              child: Icon(icon, size: iconSize, color: AppColors.accent),
+              child: Icon(icon, size: iconSize, color: AppPalette.primary),
             ),
             SizedBox(height: _activitiesScaled(context, 24, min: 18, max: 26)),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.textPrimary,
+              style: AppTextStyle(
+                color: AppPalette.textPrimary,
                 fontSize: titleSize,
                 fontWeight: FontWeight.w800,
               ),
@@ -1755,8 +1774,8 @@ class _ActivitiesEmptyView extends StatelessWidget {
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Color(0xB3FFF0E0),
+              style: AppTextStyle(
+                color: AppPalette.orangeOverlayWash09,
                 fontSize: bodySize,
                 height: 1.45,
               ),
@@ -1900,8 +1919,8 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
         title: widget.l10n.activitiesFilterCategory,
         child: Text(
           widget.l10n.activitiesAllCategories,
-          style: TextStyle(
-            color: const Color(0xB3FFF0E0),
+          style: AppTextStyle(
+            color: AppPalette.orangeOverlayWash09,
             fontSize: _activitiesScaled(context, 14, min: 13, max: 15),
           ),
         ),
@@ -2271,29 +2290,29 @@ class _CategoryFilterPill extends StatelessWidget {
     final titleSize = _activitiesScaled(context, 13, min: 12, max: 14);
     final countSize = _activitiesScaled(context, 11, min: 10, max: 11);
     final foreground = selected
-        ? const Color(0xFFFFFAF5)
-        : const Color(0xE6FFF0E0);
+        ? AppPalette.orangeWash29
+        : AppPalette.orangeOverlayWash11;
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppBorderRadius.circular(18),
         child: ConstrainedBox(
           constraints: BoxConstraints(
             minHeight: _activitiesScaled(context, 58, min: 52, max: 60),
           ),
           child: Ink(
-            padding: EdgeInsets.symmetric(
+            padding: AppEdgeInsets.symmetric(
               horizontal: _activitiesScaled(context, 12, min: 10, max: 12),
               vertical: _activitiesScaled(context, 10, min: 8, max: 10),
             ),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
+            decoration: AppBoxDecoration(
+              borderRadius: AppBorderRadius.circular(18),
               border: Border.all(
                 color: selected
-                    ? AppColors.accent
-                    : Colors.white.withValues(alpha: 0.08),
+                    ? AppPalette.primary
+                    : AppPalette.white.withValues(alpha: 0.08),
                 width: selected ? 1.5 : 1.0,
               ),
               gradient: LinearGradient(
@@ -2305,8 +2324,8 @@ class _CategoryFilterPill extends StatelessWidget {
                         option.colors.last.withValues(alpha: 0.24),
                       ]
                     : [
-                        Colors.white.withValues(alpha: 0.03),
-                        Colors.white.withValues(alpha: 0.015),
+                        AppPalette.white.withValues(alpha: 0.03),
+                        AppPalette.white.withValues(alpha: 0.015),
                       ],
               ),
             ),
@@ -2315,16 +2334,16 @@ class _CategoryFilterPill extends StatelessWidget {
                 Container(
                   width: iconWrap,
                   height: iconWrap,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
+                  decoration: AppBoxDecoration(
+                    borderRadius: AppBorderRadius.circular(12),
                     color: selected
-                        ? AppColors.accent.withValues(alpha: 0.16)
-                        : Colors.white.withValues(alpha: 0.04),
+                        ? AppPalette.primary.withValues(alpha: 0.16)
+                        : AppPalette.white.withValues(alpha: 0.04),
                   ),
                   child: Icon(
                     option.icon,
                     size: _activitiesScaled(context, 17, min: 15, max: 17),
-                    color: selected ? AppColors.accent : foreground,
+                    color: selected ? AppPalette.primary : foreground,
                   ),
                 ),
                 SizedBox(
@@ -2339,7 +2358,7 @@ class _CategoryFilterPill extends StatelessWidget {
                         option.label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: AppTextStyle(
                           color: foreground,
                           fontSize: titleSize,
                           height: 1.1,
@@ -2353,10 +2372,10 @@ class _CategoryFilterPill extends StatelessWidget {
                         countLabel,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: AppTextStyle(
                           color: selected
-                              ? const Color(0xFFFFC56A)
-                              : const Color(0x8FFFF7EF),
+                              ? AppPalette.amberSoft23
+                              : AppPalette.orangeOverlayWash04,
                           fontSize: countSize,
                           height: 1.1,
                           fontWeight: FontWeight.w600,
@@ -2396,42 +2415,42 @@ class _VisibilityOptionCard extends StatelessWidget {
     final bodySize = _activitiesScaled(context, 12, min: 11, max: 12);
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppBorderRadius.circular(18),
         child: ConstrainedBox(
           constraints: BoxConstraints(
             minHeight: _activitiesScaled(context, 76, min: 68, max: 78),
           ),
           child: Ink(
-            padding: EdgeInsets.symmetric(
+            padding: AppEdgeInsets.symmetric(
               horizontal: _activitiesScaled(context, 14, min: 12, max: 14),
               vertical: _activitiesScaled(context, 12, min: 10, max: 12),
             ),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
+            decoration: AppBoxDecoration(
+              borderRadius: AppBorderRadius.circular(18),
               gradient: selected
                   ? LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        AppColors.accent.withValues(alpha: 0.26),
-                        AppColors.accent.withValues(alpha: 0.12),
+                        AppPalette.primary.withValues(alpha: 0.26),
+                        AppPalette.primary.withValues(alpha: 0.12),
                       ],
                     )
                   : LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        Colors.white.withValues(alpha: 0.03),
-                        Colors.white.withValues(alpha: 0.015),
+                        AppPalette.white.withValues(alpha: 0.03),
+                        AppPalette.white.withValues(alpha: 0.015),
                       ],
                     ),
               border: Border.all(
                 color: selected
-                    ? AppColors.accent
-                    : AppColors.accent.withValues(alpha: 0.18),
+                    ? AppPalette.primary
+                    : AppPalette.primary.withValues(alpha: 0.18),
                 width: selected ? 1.5 : 1,
               ),
             ),
@@ -2441,16 +2460,16 @@ class _VisibilityOptionCard extends StatelessWidget {
                 Container(
                   width: iconWrap,
                   height: iconWrap,
-                  decoration: BoxDecoration(
+                  decoration: AppBoxDecoration(
                     shape: BoxShape.circle,
                     color: selected
-                        ? Colors.white.withValues(alpha: 0.14)
-                        : AppColors.accent.withValues(alpha: 0.08),
+                        ? AppPalette.white.withValues(alpha: 0.14)
+                        : AppPalette.primary.withValues(alpha: 0.08),
                   ),
                   child: Icon(
                     icon,
                     size: _activitiesScaled(context, 18, min: 16, max: 18),
-                    color: selected ? Colors.white : AppColors.accent,
+                    color: selected ? AppPalette.white : AppPalette.primary,
                   ),
                 ),
                 SizedBox(
@@ -2465,10 +2484,10 @@ class _VisibilityOptionCard extends StatelessWidget {
                         label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: AppTextStyle(
                           color: selected
-                              ? const Color(0xFFFFF9F0)
-                              : const Color(0xE6F0E2D2),
+                              ? AppPalette.amberWash09
+                              : AppPalette.orangeOverlayLight03,
                           fontSize: titleSize,
                           fontWeight: FontWeight.w800,
                         ),
@@ -2480,10 +2499,10 @@ class _VisibilityOptionCard extends StatelessWidget {
                         description,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: AppTextStyle(
                           color: selected
-                              ? Colors.white.withValues(alpha: 0.78)
-                              : const Color(0xA8FFF0E0),
+                              ? AppPalette.white.withValues(alpha: 0.78)
+                              : AppPalette.orangeOverlayWash07,
                           fontSize: bodySize,
                           height: 1.25,
                         ),
@@ -2524,16 +2543,16 @@ class _FilterSection extends StatelessWidget {
             Container(
               width: iconWrap,
               height: iconWrap,
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.accent.withValues(alpha: 0.10),
+                color: AppPalette.primary.withValues(alpha: 0.10),
                 border: Border.all(
-                  color: AppColors.accent.withValues(alpha: 0.18),
+                  color: AppPalette.primary.withValues(alpha: 0.18),
                 ),
               ),
               child: Icon(
                 icon,
-                color: AppColors.accent,
+                color: AppPalette.primary,
                 size: _activitiesScaled(context, 15, min: 14, max: 16),
               ),
             ),
@@ -2543,8 +2562,8 @@ class _FilterSection extends StatelessWidget {
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: AppColors.textPrimary,
+                style: AppTextStyle(
+                  color: AppPalette.textPrimary,
                   fontSize: titleSize,
                   fontWeight: FontWeight.w800,
                 ),
@@ -2565,13 +2584,13 @@ class _FilterSectionDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(
+      padding: AppEdgeInsets.symmetric(
         vertical: _activitiesScaled(context, 18, min: 14, max: 20),
       ),
       child: Divider(
         height: 1,
         thickness: 1,
-        color: Colors.white.withValues(alpha: 0.08),
+        color: AppPalette.white.withValues(alpha: 0.08),
       ),
     );
   }
@@ -2632,29 +2651,31 @@ class _RangeSheetScaffold extends StatelessWidget {
       child: AnimatedPadding(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
-        padding: EdgeInsets.only(
+        padding: AppEdgeInsets.only(
           bottom: MediaQuery.viewInsetsOf(context).bottom,
         ),
         child: DecoratedBox(
-          decoration: const BoxDecoration(color: Colors.transparent),
+          decoration: const AppBoxDecoration(color: AppPalette.transparent),
           child: ConstrainedBox(
             constraints: BoxConstraints(maxHeight: maxHeight),
             child: Container(
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    const Color(0xFF2B1808).withValues(alpha: 0.99),
-                    const Color(0xFF201208),
+                    AppPalette.warmSurface21.withValues(alpha: 0.99),
+                    AppPalette.warmInk63,
                   ],
                 ),
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(
+                borderRadius: AppBorderRadius.vertical(
+                  top: AppRadiusValue.circular(
                     _activitiesScaled(context, 28, min: 24, max: 30),
                   ),
                 ),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+                border: Border.all(
+                  color: AppPalette.white.withValues(alpha: 0.04),
+                ),
               ),
               child: SafeArea(
                 top: false,
@@ -2669,7 +2690,7 @@ class _RangeSheetScaffold extends StatelessWidget {
                     Expanded(
                       child: SingleChildScrollView(
                         physics: const BouncingScrollPhysics(),
-                        padding: EdgeInsets.fromLTRB(
+                        padding: AppEdgeInsets.fromLTRB(
                           horizontalPadding,
                           _activitiesScaled(context, 18, min: 14, max: 20),
                           horizontalPadding,
@@ -2679,22 +2700,22 @@ class _RangeSheetScaffold extends StatelessWidget {
                       ),
                     ),
                     Container(
-                      margin: EdgeInsets.only(
+                      margin: AppEdgeInsets.only(
                         top: _activitiesScaled(context, 12, min: 10, max: 14),
                       ),
-                      padding: EdgeInsets.fromLTRB(
+                      padding: AppEdgeInsets.fromLTRB(
                         horizontalPadding,
                         _activitiesScaled(context, 12, min: 10, max: 14),
                         horizontalPadding,
                         footerPadding,
                       ),
-                      decoration: BoxDecoration(
+                      decoration: AppBoxDecoration(
                         border: Border(
                           top: BorderSide(
-                            color: AppColors.accent.withValues(alpha: 0.09),
+                            color: AppPalette.primary.withValues(alpha: 0.09),
                           ),
                         ),
-                        color: Colors.black.withValues(alpha: 0.06),
+                        color: AppPalette.black.withValues(alpha: 0.06),
                       ),
                       child: AppFilterApplyButton(
                         label: applyLabel ?? l10n.myActivitiesFilterApply,
@@ -2756,8 +2777,8 @@ class _RangeTextField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(
-            color: const Color(0xA1FFF0E0),
+          style: AppTextStyle(
+            color: AppPalette.orangeOverlayWash06,
             fontSize: labelSize,
             fontWeight: FontWeight.w700,
           ),
@@ -2768,32 +2789,32 @@ class _RangeTextField extends StatelessWidget {
           keyboardType: keyboardType,
           inputFormatters: inputFormatters,
           onTapOutside: (_) => FocusScope.of(context).unfocus(),
-          cursorColor: AppColors.accent,
-          style: TextStyle(
-            color: Color(0xC2FFF0E0),
+          cursorColor: AppPalette.primary,
+          style: AppTextStyle(
+            color: AppPalette.orangeOverlayWash10,
             fontSize: fieldFontSize,
             fontWeight: FontWeight.w600,
             fontFeatures: const [FontFeature.tabularFigures()],
           ),
-          decoration: InputDecoration(
+          decoration: AppInputDecoration(
             isDense: true,
             hintText: hintText,
-            hintStyle: TextStyle(
-              color: Color(0x75FFF0E0),
+            hintStyle: AppTextStyle(
+              color: AppPalette.orangeOverlayWash01,
               fontSize: fieldFontSize,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
             errorText: errorText,
             errorMaxLines: 2,
             filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.015),
-            contentPadding: EdgeInsets.symmetric(
+            fillColor: AppPalette.white.withValues(alpha: 0.015),
+            contentPadding: AppEdgeInsets.symmetric(
               horizontal: horizontalPadding,
               vertical: verticalPadding,
             ),
             prefixIcon: showPrefix
                 ? Padding(
-                    padding: EdgeInsets.only(
+                    padding: AppEdgeInsets.only(
                       left: _activitiesScaled(context, 12, min: 10, max: 12),
                       right: _activitiesScaled(context, 2, min: 2, max: 4),
                     ),
@@ -2801,8 +2822,8 @@ class _RangeTextField extends StatelessWidget {
                       widthFactor: 1,
                       child: Text(
                         prefix,
-                        style: TextStyle(
-                          color: AppColors.accent,
+                        style: AppTextStyle(
+                          color: AppPalette.primary,
                           fontSize: fieldFontSize,
                           fontWeight: FontWeight.w800,
                         ),
@@ -2812,28 +2833,28 @@ class _RangeTextField extends StatelessWidget {
                 : null,
             prefixIconConstraints: const BoxConstraints(minWidth: 0),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AppBorderRadius.circular(16),
               borderSide: BorderSide(
-                color: AppColors.accent.withValues(alpha: 0.22),
+                color: AppPalette.primary.withValues(alpha: 0.22),
               ),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AppBorderRadius.circular(16),
               borderSide: BorderSide(
-                color: AppColors.accent.withValues(alpha: 0.22),
+                color: AppPalette.primary.withValues(alpha: 0.22),
               ),
             ),
             focusedBorder: const OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(16)),
-              borderSide: BorderSide(color: AppColors.accent, width: 1.4),
+              borderRadius: AppBorderRadius.all(AppRadiusValue.circular(16)),
+              borderSide: BorderSide(color: AppPalette.primary, width: 1.4),
             ),
             errorBorder: const OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(16)),
-              borderSide: BorderSide(color: Color(0xFFE28A7E), width: 1.2),
+              borderRadius: AppBorderRadius.all(AppRadiusValue.circular(16)),
+              borderSide: BorderSide(color: AppPalette.redSoft04, width: 1.2),
             ),
             focusedErrorBorder: const OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(16)),
-              borderSide: BorderSide(color: Color(0xFFE28A7E), width: 1.4),
+              borderRadius: AppBorderRadius.all(AppRadiusValue.circular(16)),
+              borderSide: BorderSide(color: AppPalette.redSoft04, width: 1.4),
             ),
           ),
         ),
@@ -2855,24 +2876,26 @@ class _PresetChip extends StatelessWidget {
     final fontSize = _activitiesScaled(context, 12, min: 11, max: 13);
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppBorderRadius.circular(999),
         child: Ink(
-          padding: EdgeInsets.symmetric(
+          padding: AppEdgeInsets.symmetric(
             horizontal: horizontal,
             vertical: vertical,
           ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            color: Colors.white.withValues(alpha: 0.02),
-            border: Border.all(color: AppColors.accent.withValues(alpha: 0.18)),
+          decoration: AppBoxDecoration(
+            borderRadius: AppBorderRadius.circular(999),
+            color: AppPalette.white.withValues(alpha: 0.02),
+            border: Border.all(
+              color: AppPalette.primary.withValues(alpha: 0.18),
+            ),
           ),
           child: Text(
             label,
-            style: TextStyle(
-              color: Color(0xE6F0E2D2),
+            style: AppTextStyle(
+              color: AppPalette.orangeOverlayLight03,
               fontSize: fontSize,
               fontWeight: FontWeight.w600,
             ),
@@ -2904,16 +2927,19 @@ class _PrimaryPillButton extends StatelessWidget {
     return FilledButton(
       onPressed: onTap,
       style: FilledButton.styleFrom(
-        backgroundColor: AppColors.accent,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: AppPalette.primary,
+        foregroundColor: AppPalette.textPrimary,
         minimumSize: Size(0, minHeight),
-        padding: EdgeInsets.symmetric(
+        padding: AppEdgeInsets.symmetric(
           horizontal: _activitiesScaled(context, 22, min: 16, max: 22),
         ),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(minHeight >= 70 ? 22 : 999),
+          borderRadius: AppBorderRadius.circular(minHeight >= 70 ? 22 : 999),
         ),
-        textStyle: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w800),
+        textStyle: AppTextStyle(
+          fontSize: fontSize,
+          fontWeight: FontWeight.w800,
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -3373,17 +3399,17 @@ _VisibilityBadgeStyle _visibilityBadge(
       return _VisibilityBadgeStyle(
         label: l10n.createVisibilityPrivate,
         icon: Icons.lock_rounded,
-        background: const Color(0x33271609),
-        border: AppColors.accent.withValues(alpha: 0.26),
-        foreground: const Color(0xFFFFB64D),
+        background: AppPalette.warmOverlayInk01,
+        border: AppPalette.primary.withValues(alpha: 0.26),
+        foreground: AppPalette.amberSoft16,
       );
     default:
       return _VisibilityBadgeStyle(
         label: l10n.createVisibilityPublic,
         icon: Icons.public_rounded,
-        background: Colors.white.withValues(alpha: 0.08),
-        border: Colors.white.withValues(alpha: 0.12),
-        foreground: const Color(0xFFF7EBDD),
+        background: AppPalette.white.withValues(alpha: 0.08),
+        border: AppPalette.white.withValues(alpha: 0.12),
+        foreground: AppPalette.orangeWash15,
       );
   }
 }

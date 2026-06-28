@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
 class ReachabilityBadge extends StatelessWidget {
   const ReachabilityBadge({super.key, required this.isReachable, this.label});
@@ -10,19 +11,19 @@ class ReachabilityBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final background = isReachable
-        ? const Color(0xFF1B5E20)
+        ? AppPalette.greenSurfaceHigh09
         : theme.colorScheme.errorContainer;
     final foreground = isReachable
-        ? Colors.white
+        ? AppPalette.white
         : theme.colorScheme.onErrorContainer;
 
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         color: background.withValues(alpha: 0.88),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppBorderRadius.circular(8),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Text(
           label ?? (isReachable ? 'Reachable' : 'Unavailable'),
           maxLines: 1,

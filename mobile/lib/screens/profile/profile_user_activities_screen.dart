@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/network/activity_api.dart';
-import '../../core/ui/app_colors.dart';
 import '../../core/ui/app_inline_sort_row.dart';
 import '../../core/ui/app_list_search_field.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
@@ -134,7 +134,7 @@ class _ProfileUserActivitiesScreenState
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (sheetContext) {
         return AppDismissibleModalSheet(
           safeAreaBottom: false,
@@ -336,14 +336,14 @@ class _ProfileUserActivitiesScreenState
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppPalette.transparent,
         body: ProfileResponsiveScope(
           child: ProfileGlassBackground(
             child: SafeArea(
               child: Column(
                 children: [
                   Padding(
-                    padding: EdgeInsets.fromLTRB(
+                    padding: AppEdgeInsets.fromLTRB(
                       horizontalPadding,
                       profileScaled(context, 14, min: 10, max: 18),
                       horizontalPadding,
@@ -355,7 +355,7 @@ class _ProfileUserActivitiesScreenState
                     ),
                   ),
                   Padding(
-                    padding: EdgeInsets.symmetric(
+                    padding: AppEdgeInsets.symmetric(
                       horizontal: horizontalPadding,
                     ),
                     child: AppListSearchField(
@@ -371,7 +371,7 @@ class _ProfileUserActivitiesScreenState
                   ),
                   SizedBox(height: profileScaled(context, 10, min: 8, max: 12)),
                   Padding(
-                    padding: EdgeInsets.symmetric(
+                    padding: AppEdgeInsets.symmetric(
                       horizontal: horizontalPadding,
                     ),
                     child: SizedBox(
@@ -430,7 +430,7 @@ class _ProfileUserActivitiesScreenState
                   ),
                   SizedBox(height: profileScaled(context, 8, min: 6, max: 10)),
                   Padding(
-                    padding: EdgeInsets.symmetric(
+                    padding: AppEdgeInsets.symmetric(
                       horizontal: horizontalPadding,
                     ),
                     child: _ProfileActivitiesTabs(
@@ -670,10 +670,12 @@ class _ProfileActivityFiltersSheetState
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxHeight),
       child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF1B120C),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        decoration: AppBoxDecoration(
+          color: AppPalette.warmInk44,
+          borderRadius: const AppBorderRadius.vertical(
+            top: AppRadiusValue.circular(28),
+          ),
+          border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -685,7 +687,7 @@ class _ProfileActivityFiltersSheetState
             ),
             Flexible(
               child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(
+                padding: AppEdgeInsets.fromLTRB(
                   profileScaled(context, 18, min: 14, max: 20),
                   profileScaled(context, 18, min: 14, max: 20),
                   profileScaled(context, 18, min: 14, max: 20),
@@ -700,7 +702,7 @@ class _ProfileActivityFiltersSheetState
                       child: widget.categoryOptions.isEmpty
                           ? Text(
                               l10n.activitiesAllCategories,
-                              style: TextStyle(
+                              style: AppTextStyle(
                                 color: profileTextSoft,
                                 fontSize: profileScaled(
                                   context,
@@ -771,7 +773,7 @@ class _ProfileActivityFiltersSheetState
               ),
             ),
             Padding(
-              padding: EdgeInsets.fromLTRB(
+              padding: AppEdgeInsets.fromLTRB(
                 profileScaled(context, 18, min: 14, max: 20),
                 profileScaled(context, 10, min: 8, max: 12),
                 profileScaled(context, 18, min: 14, max: 20),
@@ -809,7 +811,7 @@ class _ProfileFilterSection extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: AppColors.accent,
+              color: AppPalette.primary,
               size: profileScaled(context, 18, min: 16, max: 20),
             ),
             SizedBox(width: profileScaled(context, 8, min: 6, max: 10)),
@@ -818,8 +820,8 @@ class _ProfileFilterSection extends StatelessWidget {
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: AppColors.textPrimary,
+                style: AppTextStyle(
+                  color: AppPalette.textPrimary,
                   fontSize: profileScaled(context, 15, min: 14, max: 16),
                   fontWeight: FontWeight.w900,
                 ),
@@ -874,15 +876,15 @@ class _ProfileFilterChip extends StatelessWidget {
         selected: selected,
         onSelected: (_) => onTap(),
         showCheckmark: false,
-        selectedColor: AppColors.accent.withValues(alpha: 0.24),
+        selectedColor: AppPalette.primary.withValues(alpha: 0.24),
         backgroundColor: profileSurfaceMuted.withValues(alpha: 0.78),
         side: BorderSide(
           color: selected
-              ? AppColors.accent.withValues(alpha: 0.56)
-              : Colors.white.withValues(alpha: 0.08),
+              ? AppPalette.primary.withValues(alpha: 0.56)
+              : AppPalette.white.withValues(alpha: 0.08),
         ),
-        labelStyle: TextStyle(
-          color: selected ? AppColors.textPrimary : profileTextSoft,
+        labelStyle: AppTextStyle(
+          color: selected ? AppPalette.textPrimary : profileTextSoft,
           fontSize: profileScaled(context, 13, min: 12, max: 14),
           fontWeight: FontWeight.w800,
         ),
@@ -897,10 +899,13 @@ class _ProfileFilterDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(
+      padding: AppEdgeInsets.symmetric(
         vertical: profileScaled(context, 18, min: 14, max: 20),
       ),
-      child: Divider(color: Colors.white.withValues(alpha: 0.08), height: 1),
+      child: Divider(
+        color: AppPalette.white.withValues(alpha: 0.08),
+        height: 1,
+      ),
     );
   }
 }
@@ -919,7 +924,7 @@ class _ProfileActivitiesHeader extends StatelessWidget {
           onPressed: onBack,
           tooltip: MaterialLocalizations.of(context).backButtonTooltip,
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          color: AppColors.textPrimary,
+          color: AppPalette.textPrimary,
         ),
         SizedBox(width: profileScaled(context, 8, min: 6, max: 10)),
         Expanded(
@@ -927,8 +932,8 @@ class _ProfileActivitiesHeader extends StatelessWidget {
             title,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: AppColors.textPrimary,
+            style: AppTextStyle(
+              color: AppPalette.textPrimary,
               fontSize: profileScaled(context, 24, min: 21, max: 26),
               fontWeight: FontWeight.w900,
             ),
@@ -951,27 +956,27 @@ class _ProfileActivitiesTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
+      padding: const AppEdgeInsets.all(4),
+      decoration: AppBoxDecoration(
         color: profileSurfaceMuted.withValues(alpha: 0.68),
-        borderRadius: BorderRadius.circular(
+        borderRadius: AppBorderRadius.circular(
           profileScaled(context, 18, min: 16, max: 18),
         ),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
       ),
       child: TabBar(
-        dividerColor: Colors.transparent,
+        dividerColor: AppPalette.transparent,
         indicatorSize: TabBarIndicatorSize.tab,
-        indicator: BoxDecoration(
-          color: AppColors.accent,
-          borderRadius: BorderRadius.circular(
+        indicator: AppBoxDecoration(
+          color: AppPalette.primary,
+          borderRadius: AppBorderRadius.circular(
             profileScaled(context, 14, min: 12, max: 14),
           ),
-          border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
+          border: Border.all(color: AppPalette.primary.withValues(alpha: 0.3)),
         ),
-        labelColor: AppColors.textPrimary,
+        labelColor: AppPalette.textPrimary,
         unselectedLabelColor: profileTextMuted,
-        labelStyle: TextStyle(
+        labelStyle: AppTextStyle(
           fontSize: profileScaled(context, 13, min: 12, max: 14),
           fontWeight: FontWeight.w900,
         ),
@@ -1009,7 +1014,7 @@ class _ProfileActivitiesTabView extends StatelessWidget {
     if (state.isLoading && state.items.isEmpty) {
       return ListView.separated(
         key: ValueKey('profile-activities-loading-${state.page}'),
-        padding: EdgeInsets.fromLTRB(
+        padding: AppEdgeInsets.fromLTRB(
           padding,
           profileScaled(context, 18, min: 14, max: 20),
           padding,
@@ -1028,7 +1033,7 @@ class _ProfileActivitiesTabView extends StatelessWidget {
     if (state.hasError) {
       return ListView(
         key: ValueKey('profile-activities-error-${state.page}'),
-        padding: EdgeInsets.fromLTRB(
+        padding: AppEdgeInsets.fromLTRB(
           padding,
           profileScaled(context, 18, min: 14, max: 20),
           padding,
@@ -1048,7 +1053,7 @@ class _ProfileActivitiesTabView extends StatelessWidget {
     if (state.items.isEmpty) {
       return ListView(
         key: ValueKey('profile-activities-empty-${state.page}'),
-        padding: EdgeInsets.fromLTRB(
+        padding: AppEdgeInsets.fromLTRB(
           padding,
           profileScaled(context, 18, min: 14, max: 20),
           padding,
@@ -1068,7 +1073,7 @@ class _ProfileActivitiesTabView extends StatelessWidget {
 
     return ListView(
       key: ValueKey('profile-activities-${state.page}-$listKey'),
-      padding: EdgeInsets.fromLTRB(
+      padding: AppEdgeInsets.fromLTRB(
         padding,
         profileScaled(context, 18, min: 14, max: 20),
         padding,
@@ -1115,7 +1120,7 @@ class _ProfileActivitiesMessageCard extends StatelessWidget {
     final callback = onAction;
 
     return Container(
-      padding: EdgeInsets.all(profileScaled(context, 18, min: 14, max: 20)),
+      padding: AppEdgeInsets.all(profileScaled(context, 18, min: 14, max: 20)),
       decoration: profileCardDecoration(context, highlighted: true),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1123,13 +1128,13 @@ class _ProfileActivitiesMessageCard extends StatelessWidget {
           Icon(
             Icons.event_note_outlined,
             size: profileScaled(context, 28, min: 24, max: 30),
-            color: AppColors.accent,
+            color: AppPalette.primary,
           ),
           SizedBox(height: profileScaled(context, 14, min: 12, max: 16)),
           Text(
             title,
-            style: TextStyle(
-              color: AppColors.textPrimary,
+            style: AppTextStyle(
+              color: AppPalette.textPrimary,
               fontSize: profileScaled(context, 17, min: 15, max: 18),
               fontWeight: FontWeight.w900,
             ),
@@ -1137,7 +1142,7 @@ class _ProfileActivitiesMessageCard extends StatelessWidget {
           SizedBox(height: profileScaled(context, 8, min: 6, max: 8)),
           Text(
             subtitle,
-            style: TextStyle(
+            style: AppTextStyle(
               color: profileTextSoft,
               fontSize: profileScaled(context, 13, min: 12, max: 14),
               height: 1.45,
@@ -1150,9 +1155,9 @@ class _ProfileActivitiesMessageCard extends StatelessWidget {
               icon: const Icon(Icons.refresh_rounded),
               label: Text(label),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.accent,
+                foregroundColor: AppPalette.primary,
                 side: BorderSide(
-                  color: AppColors.accent.withValues(alpha: 0.34),
+                  color: AppPalette.primary.withValues(alpha: 0.34),
                 ),
               ),
             ),

@@ -3,7 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inflap/features/excursions/models/excursion_schedule_vm.dart';
 import 'package:inflap/features/excursions/models/excursion_vm.dart';
-import 'package:inflap/core/ui/app_colors.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:inflap/l10n/generated/app_localizations.dart';
 import 'package:inflap/screens/excursions/excursion_booking_screen.dart';
 import 'package:intl/intl.dart';
@@ -148,8 +148,8 @@ void main() {
         .widgetList<Text>(find.text('08:00'))
         .firstWhere((widget) => widget.style?.fontSize == 17);
 
-    expect(dateText.style?.color, AppColors.accent);
-    expect(timeText.style?.color, AppColors.accent);
+    expect(dateText.style?.color, AppPalette.primary);
+    expect(timeText.style?.color, AppPalette.primary);
 
     final dateIcon = tester.widget<Icon>(
       find.byIcon(Icons.calendar_month_rounded),

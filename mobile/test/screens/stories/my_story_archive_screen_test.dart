@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inflap/core/network/story_api.dart';
-import 'package:inflap/core/ui/app_colors.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:inflap/features/stories/models/story_vm.dart';
 import 'package:inflap/features/stories/story_ui.dart';
 import 'package:inflap/l10n/generated/app_localizations.dart';
@@ -112,8 +112,8 @@ void main() {
 
     final activeTab = tester.widget<Text>(find.text('Активные'));
     final archiveTab = tester.widget<Text>(find.text('Архив'));
-    expect(activeTab.style?.color, AppColors.textPrimary);
-    expect(archiveTab.style?.color, AppColors.textPrimary);
+    expect(activeTab.style?.color, AppPalette.textPrimary);
+    expect(archiveTab.style?.color, AppPalette.textPrimary);
     expect(find.text('Попробовать снова'), findsNothing);
   });
 }

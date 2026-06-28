@@ -132,14 +132,14 @@ void main() {
 
     final actionSource = source.substring(actionStart);
 
-    expect(actionSource, contains('Color(0xFF2C2118)'));
-    expect(actionSource, contains('Color(0xFF3B260D)'));
-    expect(actionSource, contains('AppColors.accent'));
+    expect(actionSource, contains('AppPalette.warmSurface28'));
+    expect(actionSource, contains('AppPalette.warmSurface66'));
+    expect(actionSource, contains('AppPalette.primary'));
     expect(actionSource, contains('isAccent'));
-    expect(actionSource, contains('? const Color(0xFF2C2118)'));
+    expect(actionSource, contains('? AppPalette.warmSurface28'));
     expect(
       actionSource,
-      isNot(contains('colors: [Color(0xFFFFB347), Color(0xFFF98C06)]')),
+      isNot(contains('colors: [AppPalette.amberSoft14, AppPalette.primary]')),
     );
   });
 

@@ -1,10 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/network/post_api.dart';
-import '../../../../core/ui/app_colors.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../providers/auth_provider.dart';
 
@@ -63,14 +63,14 @@ Future<void> _showPostRateLimitSheet(
     context: context,
     isDismissible: true,
     showDragHandle: true,
-    backgroundColor: AppColors.surface,
+    backgroundColor: AppPalette.surfaceCool,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      borderRadius: AppBorderRadius.vertical(top: AppRadiusValue.circular(28)),
     ),
     builder: (sheetContext) {
       return SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          padding: const AppEdgeInsets.fromLTRB(24, 8, 24, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,20 +78,20 @@ Future<void> _showPostRateLimitSheet(
               Container(
                 width: 48,
                 height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(16),
+                decoration: AppBoxDecoration(
+                  color: AppPalette.primary.withValues(alpha: 0.16),
+                  borderRadius: AppBorderRadius.circular(16),
                 ),
                 child: const Icon(
                   Icons.hourglass_bottom_rounded,
-                  color: AppColors.accent,
+                  color: AppPalette.primary,
                 ),
               ),
               const SizedBox(height: 16),
               Text(
                 l10n.postCreateRateLimitTitle,
                 style: Theme.of(sheetContext).textTheme.titleLarge?.copyWith(
-                  color: AppColors.textPrimary,
+                  color: AppPalette.textPrimary,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -99,7 +99,7 @@ Future<void> _showPostRateLimitSheet(
               Text(
                 l10n.postCreateRateLimitMessage(retryMinutes),
                 style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppPalette.textCoolSecondary,
                   height: 1.35,
                 ),
               ),
@@ -108,8 +108,8 @@ Future<void> _showPostRateLimitSheet(
                 width: double.infinity,
                 child: FilledButton(
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.accent,
-                    foregroundColor: AppColors.textPrimary,
+                    backgroundColor: AppPalette.primary,
+                    foregroundColor: AppPalette.textPrimary,
                     minimumSize: const Size.fromHeight(48),
                   ),
                   onPressed: () => Navigator.of(sheetContext).pop(),
@@ -131,24 +131,24 @@ void _showPreflightWarning(BuildContext context) {
     ..hideCurrentMaterialBanner()
     ..showMaterialBanner(
       MaterialBanner(
-        backgroundColor: AppColors.surface,
+        backgroundColor: AppPalette.surfaceCool,
         elevation: 1,
         leading: Container(
           width: 40,
           height: 40,
-          decoration: BoxDecoration(
-            color: AppColors.accent.withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(14),
+          decoration: AppBoxDecoration(
+            color: AppPalette.primary.withValues(alpha: 0.14),
+            borderRadius: AppBorderRadius.circular(14),
           ),
           child: const Icon(
             Icons.info_outline_rounded,
-            color: AppColors.accent,
+            color: AppPalette.primary,
           ),
         ),
         content: Text(
           l10n.postCreatePreflightFailed,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: AppColors.textPrimary,
+            color: AppPalette.textPrimary,
             height: 1.35,
           ),
         ),

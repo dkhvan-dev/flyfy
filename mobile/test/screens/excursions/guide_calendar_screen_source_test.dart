@@ -33,8 +33,8 @@ void main() {
     expect(source, contains('SafeArea'));
     expect(source, contains('RefreshIndicator'));
     expect(source, contains('CustomScrollView'));
-    expect(source, contains('backgroundColor: AppColors.accent'));
-    expect(source, contains('foregroundColor: AppColors.textPrimary'));
+    expect(source, contains('backgroundColor: AppPalette.primary'));
+    expect(source, contains('foregroundColor: AppPalette.textPrimary'));
     expect(source, contains('const GuideCalendarScreen({'));
     expect(source, contains('this.guideUserId'));
     expect(source, contains('this.readOnly = false'));
@@ -78,7 +78,7 @@ void main() {
         source,
         contains('_repeatWeekly && _weekdays.contains(day.value)'),
       );
-      expect(source, contains('const Color(0xFF3A2107)'));
+      expect(source, contains('AppPalette.warmSurface47'));
       expect(source, contains('_fallbackOptionFromExcursion'));
       expect(source, contains('menuMaxHeight:'));
       expect(source, contains('guideCalendarOfferRequired'));
@@ -116,11 +116,11 @@ void main() {
 
     expect(
       RegExp(
-        r'selected\s*\?\s*AppColors\.textPrimary\s*:\s*AppColors\.textSecondary',
+        r'selected\s*\?\s*AppPalette\.textPrimary\s*:\s*AppPalette\.textCoolSecondary',
       ).hasMatch(source),
       isTrue,
     );
-    expect(source, isNot(contains('selected ? const Color(0xFF201407)')));
+    expect(source, isNot(contains('selected ? AppPalette.warmInk64')));
   });
 
   test('guide calendar day tabs use rounded segmented radius', () async {
@@ -135,6 +135,6 @@ void main() {
       ).allMatches(source).length,
       greaterThanOrEqualTo(2),
     );
-    expect(source, isNot(contains('BorderRadius.circular(8)')));
+    expect(source, isNot(contains('AppBorderRadius.circular(8)')));
   });
 }

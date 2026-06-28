@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
-import '../../../../../core/ui/app_colors.dart';
 import '../../../../../l10n/generated/app_localizations.dart';
 import '../../../story_ui.dart';
 import 'story_editor_style.dart';
@@ -58,14 +58,16 @@ class StoryEditorToolbar extends StatelessWidget {
           child: SafeArea(
             top: false,
             child: DecoratedBox(
-              decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: AppColors.border)),
+              decoration: AppBoxDecoration(
+                border: Border(
+                  top: BorderSide(color: AppPalette.outlineOverlay),
+                ),
               ),
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: toolbarMinHeight),
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
-                  padding: EdgeInsets.symmetric(
+                  padding: AppEdgeInsets.symmetric(
                     horizontal: adaptive.scale(
                       12,
                       minFactor: 0.9,
@@ -161,12 +163,12 @@ class StoryEditorKeyboardFormattingToolbar extends StatelessWidget {
         child: SizedBox(
           width: double.infinity,
           child: DecoratedBox(
-            decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: AppColors.border)),
+            decoration: AppBoxDecoration(
+              border: Border(top: BorderSide(color: AppPalette.outlineOverlay)),
             ),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.symmetric(
+              padding: AppEdgeInsets.symmetric(
                 horizontal: adaptive.scale(12, minFactor: 0.9, maxFactor: 1.04),
                 vertical: adaptive.scale(8, minFactor: 0.9, maxFactor: 1.04),
               ),
@@ -216,19 +218,19 @@ class _InlineFormatButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
-    final borderRadius = BorderRadius.circular(14);
+    final borderRadius = AppBorderRadius.circular(14);
     return Padding(
-      padding: EdgeInsetsDirectional.only(
+      padding: AppEdgeInsetsDirectional.only(
         end: adaptive.scale(8, minFactor: 0.9, maxFactor: 1.04),
       ),
       child: Semantics(
         label: label,
         button: true,
         child: Material(
-          color: AppColors.accent.withValues(alpha: 0.18),
+          color: AppPalette.primary.withValues(alpha: 0.18),
           shape: RoundedRectangleBorder(
             borderRadius: borderRadius,
-            side: BorderSide(color: AppColors.accent.withValues(alpha: 0.24)),
+            side: BorderSide(color: AppPalette.primary.withValues(alpha: 0.24)),
           ),
           child: InkWell(
             canRequestFocus: false,
@@ -241,7 +243,7 @@ class _InlineFormatButton extends StatelessWidget {
                 minHeight: adaptive.scale(40, minFactor: 1, maxFactor: 1.08),
               ),
               child: Padding(
-                padding: EdgeInsets.symmetric(
+                padding: AppEdgeInsets.symmetric(
                   horizontal: adaptive.scale(
                     14,
                     minFactor: 0.9,
@@ -289,13 +291,13 @@ class _ToolbarButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
     final foreground = onPressed == null
-        ? AppColors.textCaption
-        : AppColors.textPrimary;
+        ? AppPalette.textCaption
+        : AppPalette.textPrimary;
     final background = emphasized
-        ? AppColors.accent
-        : AppColors.accent.withValues(alpha: onPressed == null ? 0.06 : 0.16);
+        ? AppPalette.primary
+        : AppPalette.primary.withValues(alpha: onPressed == null ? 0.06 : 0.16);
     return Padding(
-      padding: EdgeInsets.symmetric(
+      padding: AppEdgeInsets.symmetric(
         horizontal: adaptive.scale(2, minFactor: 0.86, maxFactor: 1.04),
       ),
       child: Semantics(

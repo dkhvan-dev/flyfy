@@ -2,12 +2,12 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/network/file_api.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
-import '../../core/ui/app_colors.dart';
 import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/activity_taxonomy_resolver.dart';
 import '../../features/activities/models/activity_category_vm.dart';
@@ -446,8 +446,8 @@ class _HomeScreenState extends State<HomeScreen> {
       isScrollControlled: true,
       isDismissible: true,
       enableDrag: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.58),
+      backgroundColor: AppPalette.transparent,
+      barrierColor: AppPalette.black.withValues(alpha: 0.58),
       builder: (_) => HomeLocationPickerSheet(
         profile: context.read<SessionProvider>().profile,
       ),
@@ -700,7 +700,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF160D07),
+      backgroundColor: AppPalette.warmInk22,
       bottomNavigationBar: CommonBottomNavigationBar(
         activeItem: AppBottomNavItem.home,
         onHomeTap: _handleHomeNavTap,
@@ -710,17 +710,17 @@ class _HomeScreenState extends State<HomeScreen> {
         onChatsTap: () => context.push('/chats'),
       ),
       body: DecoratedBox(
-        decoration: const BoxDecoration(color: Color(0xFF21180D)),
+        decoration: const AppBoxDecoration(color: AppPalette.warmInk81),
         child: Stack(
           children: [
             Positioned.fill(
               child: IgnorePointer(
                 child: DecoratedBox(
-                  decoration: const BoxDecoration(
+                  decoration: const AppBoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Color(0xFF21180D), Color(0xFF21180D)],
+                      colors: [AppPalette.warmInk81, AppPalette.warmInk81],
                     ),
                   ),
                 ),
@@ -733,14 +733,14 @@ class _HomeScreenState extends State<HomeScreen> {
               child: IgnorePointer(
                 child: Container(
                   height: 310,
-                  decoration: BoxDecoration(
+                  decoration: AppBoxDecoration(
                     gradient: RadialGradient(
                       center: const Alignment(0, -0.55),
                       radius: 1.0,
                       colors: [
-                        AppColors.accent.withValues(alpha: 0.08),
-                        AppColors.accent.withValues(alpha: 0.02),
-                        Colors.transparent,
+                        AppPalette.primary.withValues(alpha: 0.08),
+                        AppPalette.primary.withValues(alpha: 0.02),
+                        AppPalette.transparent,
                       ],
                       stops: const [0, 0.36, 1],
                     ),
@@ -762,7 +762,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Expanded(
                     child: RefreshIndicator(
                       key: _refreshIndicatorKey,
-                      color: AppColors.accent,
+                      color: AppPalette.primary,
                       onRefresh: _refreshActivities,
                       child: LayoutBuilder(
                         builder: (context, constraints) {
@@ -776,7 +776,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             slivers: [
                               SliverPadding(
-                                padding: EdgeInsets.fromLTRB(
+                                padding: AppEdgeInsets.fromLTRB(
                                   horizontalPadding,
                                   isCompact ? 24 : 29,
                                   horizontalPadding,
@@ -979,17 +979,17 @@ class _HomeHeader extends StatelessWidget {
     final buttonSize = isCompact ? 38.0 : 40.0;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(16, 12, 16, isCompact ? 13 : 14),
-      decoration: BoxDecoration(
+      padding: AppEdgeInsets.fromLTRB(16, 12, 16, isCompact ? 13 : 14),
+      decoration: AppBoxDecoration(
         border: Border(
-          bottom: BorderSide(color: AppColors.accent.withValues(alpha: 0.08)),
+          bottom: BorderSide(color: AppPalette.primary.withValues(alpha: 0.08)),
         ),
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            AppColors.accent.withValues(alpha: 0.03),
-            Colors.transparent,
+            AppPalette.primary.withValues(alpha: 0.03),
+            AppPalette.transparent,
           ],
         ),
       ),
@@ -1003,12 +1003,12 @@ class _HomeHeader extends StatelessWidget {
           Expanded(
             child: Center(
               child: Material(
-                color: Colors.transparent,
+                color: AppPalette.transparent,
                 child: InkWell(
                   onTap: onLocationTap,
-                  borderRadius: BorderRadius.circular(22),
+                  borderRadius: AppBorderRadius.circular(22),
                   child: Padding(
-                    padding: EdgeInsets.symmetric(
+                    padding: AppEdgeInsets.symmetric(
                       horizontal: isCompact ? 8 : 10,
                       vertical: 4,
                     ),
@@ -1018,16 +1018,16 @@ class _HomeHeader extends StatelessWidget {
                         Container(
                           width: isCompact ? 34 : 38,
                           height: isCompact ? 34 : 38,
-                          decoration: BoxDecoration(
+                          decoration: AppBoxDecoration(
                             shape: BoxShape.circle,
-                            color: AppColors.accent.withValues(alpha: 0.08),
+                            color: AppPalette.primary.withValues(alpha: 0.08),
                             border: Border.all(
-                              color: AppColors.accent.withValues(alpha: 0.08),
+                              color: AppPalette.primary.withValues(alpha: 0.08),
                             ),
                           ),
                           child: Icon(
                             Icons.location_on_rounded,
-                            color: AppColors.accent,
+                            color: AppPalette.primary,
                             size: isCompact ? 18 : 20,
                           ),
                         ),
@@ -1049,8 +1049,8 @@ class _HomeHeader extends StatelessWidget {
                                       includeCountry: false,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: const Color(0xFFFFF7EF),
+                                      style: AppTextStyle(
+                                        color: AppPalette.textWarm,
                                         fontSize: isCompact ? 16 : 17,
                                         fontWeight: FontWeight.w700,
                                       ),
@@ -1059,7 +1059,9 @@ class _HomeHeader extends StatelessWidget {
                                   const SizedBox(width: 4),
                                   Icon(
                                     Icons.expand_more_rounded,
-                                    color: Colors.white.withValues(alpha: 0.72),
+                                    color: AppPalette.white.withValues(
+                                      alpha: 0.72,
+                                    ),
                                     size: isCompact ? 14 : 16,
                                   ),
                                 ],
@@ -1111,22 +1113,22 @@ class _HeaderAvatarButton extends StatelessWidget {
       enabled: true,
       label: l10n.myProfileTitle,
       child: Material(
-        color: Colors.transparent,
+        color: AppPalette.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: AppBorderRadius.circular(999),
           child: Ink(
             width: size,
             height: size,
-            decoration: BoxDecoration(
-              color: AppColors.accent.withValues(alpha: 0.1),
+            decoration: AppBoxDecoration(
+              color: AppPalette.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
               border: Border.all(
-                color: AppColors.accent.withValues(alpha: 0.22),
+                color: AppPalette.primary.withValues(alpha: 0.22),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.16),
+                  color: AppPalette.black.withValues(alpha: 0.16),
                   blurRadius: 16,
                   offset: const Offset(0, 8),
                 ),
@@ -1167,13 +1169,13 @@ class _HeaderAvatarInitials extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.accent.withValues(alpha: 0.32),
-            const Color(0xFF3B260D),
+            AppPalette.primary.withValues(alpha: 0.32),
+            AppPalette.warmSurface66,
           ],
         ),
       ),
@@ -1182,8 +1184,8 @@ class _HeaderAvatarInitials extends StatelessWidget {
           initials,
           maxLines: 1,
           overflow: TextOverflow.clip,
-          style: const TextStyle(
-            color: Color(0xFFFFF7EF),
+          style: const AppTextStyle(
+            color: AppPalette.textWarm,
             fontSize: 13,
             fontWeight: FontWeight.w900,
             letterSpacing: 0,
@@ -1208,19 +1210,25 @@ class _HeaderActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppBorderRadius.circular(999),
         child: Ink(
           width: size,
           height: size,
-          decoration: BoxDecoration(
-            color: AppColors.accent.withValues(alpha: 0.08),
+          decoration: AppBoxDecoration(
+            color: AppPalette.primary.withValues(alpha: 0.08),
             shape: BoxShape.circle,
-            border: Border.all(color: AppColors.accent.withValues(alpha: 0.08)),
+            border: Border.all(
+              color: AppPalette.primary.withValues(alpha: 0.08),
+            ),
           ),
-          child: Icon(icon, color: AppColors.accent, size: size < 46 ? 20 : 22),
+          child: Icon(
+            icon,
+            color: AppPalette.primary,
+            size: size < 46 ? 20 : 22,
+          ),
         ),
       ),
     );
@@ -1238,20 +1246,20 @@ class _SearchBar extends StatelessWidget {
     final isCompact = MediaQuery.sizeOf(context).width < 375;
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppBorderRadius.circular(999),
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: isCompact ? 50 : 55),
           child: Ink(
-            padding: EdgeInsets.symmetric(horizontal: isCompact ? 16 : 18),
-            decoration: BoxDecoration(
-              color: const Color(0xFF43280D),
-              borderRadius: BorderRadius.circular(999),
+            padding: AppEdgeInsets.symmetric(horizontal: isCompact ? 16 : 18),
+            decoration: AppBoxDecoration(
+              color: AppPalette.warmSurface74,
+              borderRadius: AppBorderRadius.circular(999),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.white.withValues(alpha: 0.02),
+                  color: AppPalette.white.withValues(alpha: 0.02),
                   blurRadius: 0,
                   spreadRadius: 1,
                   offset: const Offset(0, 1),
@@ -1261,15 +1269,15 @@ class _SearchBar extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Icon(Icons.search_rounded, color: AppColors.accent, size: 20),
+                Icon(Icons.search_rounded, color: AppPalette.primary, size: 20),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     hint,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Color(0xFF927C67),
+                    style: AppTextStyle(
+                      color: AppPalette.warmMuted10,
                       fontSize: isCompact ? 15 : 16,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1304,8 +1312,8 @@ class _SectionHeader extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: TextStyle(
-              color: Color(0xFFF5EFE8),
+            style: AppTextStyle(
+              color: AppPalette.orangeWash11,
               fontSize: isCompact ? 19 : 20,
               height: 1.1,
               fontWeight: FontWeight.w800,
@@ -1316,13 +1324,16 @@ class _SectionHeader extends StatelessWidget {
         if (actionLabel != null && onActionTap != null)
           InkWell(
             onTap: onActionTap,
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: AppBorderRadius.circular(999),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+              padding: const AppEdgeInsets.symmetric(
+                horizontal: 2,
+                vertical: 4,
+              ),
               child: Text(
                 actionLabel!,
-                style: TextStyle(
-                  color: AppColors.accent,
+                style: AppTextStyle(
+                  color: AppPalette.primary,
                   fontSize: isCompact ? 13 : 14,
                   fontWeight: FontWeight.w700,
                 ),
@@ -1394,33 +1405,33 @@ class _PromoCard extends StatelessWidget {
     final isCompact = MediaQuery.sizeOf(context).width < 375;
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: Ink(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
+        decoration: AppBoxDecoration(
+          borderRadius: AppBorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.22),
+              color: AppPalette.black.withValues(alpha: 0.22),
               blurRadius: 35,
               offset: const Offset(0, 14),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppBorderRadius.circular(14),
           child: Stack(
             fit: StackFit.expand,
             children: [
               _NetworkCardImage(imageUrl: data.imageUrl),
               DecoratedBox(
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                     colors: [
-                      const Color(0xFF1C150C).withValues(alpha: 0.90),
-                      const Color(0xFF1C150C).withValues(alpha: 0.38),
-                      const Color(0xFF1C150C).withValues(alpha: 0.05),
+                      AppPalette.warmInk52.withValues(alpha: 0.90),
+                      AppPalette.warmInk52.withValues(alpha: 0.38),
+                      AppPalette.warmInk52.withValues(alpha: 0.05),
                     ],
                     stops: const [0, 0.48, 1],
                   ),
@@ -1430,7 +1441,7 @@ class _PromoCard extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 widthFactor: 0.66,
                 child: Padding(
-                  padding: EdgeInsets.symmetric(
+                  padding: AppEdgeInsets.symmetric(
                     horizontal: isCompact ? 20 : 24,
                     vertical: isCompact ? 22 : 28,
                   ),
@@ -1451,8 +1462,8 @@ class _PromoCard extends StatelessWidget {
                                 data.eyebrow,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: AppColors.accent,
+                                style: AppTextStyle(
+                                  color: AppPalette.primary,
                                   fontSize: isCompact ? 9 : 10,
                                   height: 1.1,
                                   fontWeight: FontWeight.w900,
@@ -1464,8 +1475,8 @@ class _PromoCard extends StatelessWidget {
                                 data.title,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: const Color(0xFFFFFBF6),
+                                style: AppTextStyle(
+                                  color: AppPalette.orangeWash30,
                                   fontSize: isCompact ? 20 : 22,
                                   height: 1.08,
                                   fontWeight: FontWeight.w900,
@@ -1476,8 +1487,10 @@ class _PromoCard extends StatelessWidget {
                                 data.description,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.78),
+                                style: AppTextStyle(
+                                  color: AppPalette.white.withValues(
+                                    alpha: 0.78,
+                                  ),
                                   fontSize: isCompact ? 12 : 13,
                                   height: 1.32,
                                 ),
@@ -1616,8 +1629,8 @@ class _TopDestinationPlaceCard extends StatelessWidget {
     final textScale = _homeTextScaleFactor(context);
     final titleFontSize = isCompact ? 16.0 : 17.0;
     final titleLineHeight = 1.16;
-    final titleStyle = TextStyle(
-      color: const Color(0xFFF7F2EA),
+    final titleStyle = AppTextStyle(
+      color: AppPalette.amberWash04,
       fontSize: titleFontSize,
       height: titleLineHeight,
       fontWeight: FontWeight.w900,
@@ -1631,10 +1644,10 @@ class _TopDestinationPlaceCard extends StatelessWidget {
     final categoryLabel = _homePlaceCategoryLabel(l10n, place);
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppBorderRadius.circular(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1643,18 +1656,18 @@ class _TopDestinationPlaceCard extends StatelessWidget {
               child: AspectRatio(
                 aspectRatio: 0.74,
                 child: Ink(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
+                  decoration: AppBoxDecoration(
+                    borderRadius: AppBorderRadius.circular(10),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.24),
+                        color: AppPalette.black.withValues(alpha: 0.24),
                         blurRadius: 28,
                         offset: const Offset(0, 14),
                       ),
                     ],
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: AppBorderRadius.circular(10),
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
@@ -1667,13 +1680,13 @@ class _TopDestinationPlaceCard extends StatelessWidget {
                                 MediaQuery.sizeOf(context).width * 0.5,
                           ),
                         DecoratedBox(
-                          decoration: BoxDecoration(
+                          decoration: AppBoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: [
-                                Colors.transparent,
-                                Colors.black.withValues(alpha: 0.58),
+                                AppPalette.transparent,
+                                AppPalette.black.withValues(alpha: 0.58),
                               ],
                               stops: const [0.48, 1],
                             ),
@@ -1734,8 +1747,8 @@ class _TopDestinationPlaceCard extends StatelessWidget {
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: const Color(0xFFA79D93),
+                    style: AppTextStyle(
+                      color: AppPalette.orangeSoft02,
                       fontSize: isCompact ? 12 : 13,
                     ),
                   ),
@@ -1743,8 +1756,8 @@ class _TopDestinationPlaceCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   '★ ${place.rating.toStringAsFixed(1)}',
-                  style: TextStyle(
-                    color: AppColors.accent,
+                  style: AppTextStyle(
+                    color: AppPalette.primary,
                     fontSize: isCompact ? 13 : 14,
                     fontWeight: FontWeight.w900,
                   ),
@@ -1764,17 +1777,17 @@ class _DestinationBookmarkBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         shape: BoxShape.circle,
-        color: const Color(0xFF1B2D32).withValues(alpha: 0.70),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+        color: AppPalette.tealSurface07.withValues(alpha: 0.70),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.10)),
       ),
       child: const SizedBox(
         width: 38,
         height: 38,
         child: Icon(
           Icons.bookmark_border_rounded,
-          color: Colors.white,
+          color: AppPalette.white,
           size: 23,
         ),
       ),
@@ -1790,18 +1803,18 @@ class _DestinationTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.58),
-        borderRadius: BorderRadius.circular(999),
+      decoration: AppBoxDecoration(
+        color: AppPalette.primary.withValues(alpha: 0.58),
+        borderRadius: AppBorderRadius.circular(999),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        padding: const AppEdgeInsets.symmetric(horizontal: 14, vertical: 4),
         child: Text(
           label.toUpperCase(),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Color(0xFFFFE5BC),
+          style: const AppTextStyle(
+            color: AppPalette.amberLight14,
             fontSize: 10,
             height: 1,
             fontWeight: FontWeight.w900,
@@ -1850,11 +1863,13 @@ class _PlaceCardImagePlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.05),
+      ),
       child: const Center(
         child: Icon(
           Icons.landscape_rounded,
-          color: AppColors.textCaption,
+          color: AppPalette.textCaption,
           size: 40,
         ),
       ),
@@ -1873,9 +1888,9 @@ class _TopDestinationLoadingCard extends StatelessWidget {
         AspectRatio(
           aspectRatio: 0.74,
           child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.07),
-              borderRadius: BorderRadius.circular(10),
+            decoration: AppBoxDecoration(
+              color: AppPalette.white.withValues(alpha: 0.07),
+              borderRadius: AppBorderRadius.circular(10),
             ),
           ),
         ),
@@ -1910,13 +1925,13 @@ class _TopDestinationMessage extends StatelessWidget {
         final useStackedAction = constraints.maxWidth < 340 || textScale > 1.25;
 
         return DecoratedBox(
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: AppColors.borderLight),
+          decoration: AppBoxDecoration(
+            color: AppPalette.white.withValues(alpha: 0.05),
+            borderRadius: AppBorderRadius.circular(22),
+            border: Border.all(color: AppPalette.outlineOverlayLight),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(18),
+            padding: const AppEdgeInsets.all(18),
             child: useStackedAction
                 ? Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1924,7 +1939,7 @@ class _TopDestinationMessage extends StatelessWidget {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(icon, color: AppColors.textCaption, size: 28),
+                          Icon(icon, color: AppPalette.textCaption, size: 28),
                           const SizedBox(width: 14),
                           Expanded(child: _TopDestinationMessageText(message)),
                         ],
@@ -1941,7 +1956,7 @@ class _TopDestinationMessage extends StatelessWidget {
                   )
                 : Row(
                     children: [
-                      Icon(icon, color: AppColors.textCaption, size: 28),
+                      Icon(icon, color: AppPalette.textCaption, size: 28),
                       const SizedBox(width: 14),
                       Expanded(child: _TopDestinationMessageText(message)),
                       const SizedBox(width: 8),
@@ -1972,8 +1987,8 @@ class _TopDestinationMessageText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       message,
-      style: const TextStyle(
-        color: AppColors.textSecondary,
+      style: const AppTextStyle(
+        color: AppPalette.textCoolSecondary,
         fontSize: 14,
         height: 1.35,
       ),
@@ -1998,8 +2013,8 @@ class _TopDestinationMessageAction extends StatelessWidget {
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          color: AppColors.accent,
+        style: const AppTextStyle(
+          color: AppPalette.primary,
           fontWeight: FontWeight.w800,
         ),
       ),
@@ -2142,14 +2157,14 @@ class _TopPostCard extends StatelessWidget {
     final titleLineHeight = 1.14;
     final excerptFontSize = isCompact ? 12.0 : 12.5;
     final excerptLineHeight = 1.34;
-    final titleStyle = TextStyle(
-      color: const Color(0xFFFFFAF4),
+    final titleStyle = AppTextStyle(
+      color: AppPalette.orangeWash28,
       fontSize: titleFontSize,
       height: titleLineHeight,
       fontWeight: FontWeight.w900,
     );
-    final excerptStyle = TextStyle(
-      color: const Color(0xFFCDB9A5),
+    final excerptStyle = AppTextStyle(
+      color: AppPalette.orangeSoft30,
       fontSize: excerptFontSize,
       height: excerptLineHeight,
       fontWeight: FontWeight.w500,
@@ -2162,36 +2177,36 @@ class _TopPostCard extends StatelessWidget {
     final isExpired = post.isExpired;
     final isInteractive = !isExpired;
     final borderColor = isExpired
-        ? Colors.white.withValues(alpha: 0.04)
-        : AppColors.accent.withValues(alpha: 0.18);
+        ? AppPalette.white.withValues(alpha: 0.04)
+        : AppPalette.primary.withValues(alpha: 0.18);
 
     return Opacity(
       opacity: isExpired ? 0.56 : 1,
       child: Material(
-        color: Colors.transparent,
+        color: AppPalette.transparent,
         child: InkWell(
           key: ValueKey('open-home-top-post-${post.id}'),
           onTap: isInteractive ? onTap : null,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: AppBorderRadius.circular(24),
           child: Ink(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
+            decoration: AppBoxDecoration(
+              borderRadius: AppBorderRadius.circular(24),
               gradient: const LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0xFF2B190D), Color(0xFF21140B)],
+                colors: [AppPalette.warmSurface23, AppPalette.warmInk74],
               ),
               border: Border.all(color: borderColor),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.28),
+                  color: AppPalette.black.withValues(alpha: 0.28),
                   blurRadius: 30,
                   offset: const Offset(0, 12),
                 ),
               ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: AppBorderRadius.circular(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -2203,13 +2218,13 @@ class _TopPostCard extends StatelessWidget {
                       children: [
                         StoryCoverImage(url: post.coverUrl),
                         DecoratedBox(
-                          decoration: BoxDecoration(
+                          decoration: AppBoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: [
-                                Colors.black.withValues(alpha: 0.08),
-                                Colors.black.withValues(alpha: 0.62),
+                                AppPalette.black.withValues(alpha: 0.08),
+                                AppPalette.black.withValues(alpha: 0.62),
                               ],
                               stops: const [0.42, 1],
                             ),
@@ -2226,7 +2241,7 @@ class _TopPostCard extends StatelessWidget {
                   ),
                   Expanded(
                     child: Padding(
-                      padding: EdgeInsets.fromLTRB(
+                      padding: AppEdgeInsets.fromLTRB(
                         isCompact ? 14 : 16,
                         isCompact ? 13 : 14,
                         isCompact ? 14 : 16,
@@ -2241,7 +2256,7 @@ class _TopPostCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: titleStyle.copyWith(
                               color: isExpired
-                                  ? const Color(0xFFD9C8B8)
+                                  ? AppPalette.orangeLight18
                                   : titleStyle.color,
                             ),
                             strutStyle: StrutStyle(
@@ -2270,7 +2285,7 @@ class _TopPostCard extends StatelessWidget {
                                 label: post.author.initials,
                                 imageUrl: post.author.avatarUrl,
                                 size: avatarSize,
-                                borderColor: AppColors.accent.withValues(
+                                borderColor: AppPalette.primary.withValues(
                                   alpha: isExpired ? 0.16 : 0.30,
                                 ),
                               ),
@@ -2280,8 +2295,8 @@ class _TopPostCard extends StatelessWidget {
                                   post.author.preferredName,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: const Color(0xFFD9C8B8),
+                                  style: AppTextStyle(
+                                    color: AppPalette.orangeLight18,
                                     fontSize: isCompact ? 11.5 : 12,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -2290,14 +2305,14 @@ class _TopPostCard extends StatelessWidget {
                               const SizedBox(width: 8),
                               Icon(
                                 Icons.remove_red_eye_outlined,
-                                color: AppColors.accent,
+                                color: AppPalette.primary,
                                 size: isCompact ? 15 : 16,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 formatStoryCountCompact(post.stats.views),
-                                style: TextStyle(
-                                  color: AppColors.accent,
+                                style: AppTextStyle(
+                                  color: AppPalette.primary,
                                   fontSize: isCompact ? 11.5 : 12,
                                   fontWeight: FontWeight.w900,
                                 ),
@@ -2329,18 +2344,18 @@ class _TopPostTag extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: Container(
         constraints: const BoxConstraints(maxWidth: 220),
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-        decoration: BoxDecoration(
-          color: const Color(0xD01F1710),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+        padding: const AppEdgeInsets.symmetric(horizontal: 11, vertical: 6),
+        decoration: AppBoxDecoration(
+          color: AppPalette.warmOverlayInk07,
+          borderRadius: AppBorderRadius.circular(999),
+          border: Border.all(color: AppPalette.white.withValues(alpha: 0.10)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(
               Icons.auto_stories_rounded,
-              color: Colors.white,
+              color: AppPalette.white,
               size: 13,
             ),
             const SizedBox(width: 6),
@@ -2349,8 +2364,8 @@ class _TopPostTag extends StatelessWidget {
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: const AppTextStyle(
+                  color: AppPalette.white,
                   fontSize: 11,
                   height: 1,
                   fontWeight: FontWeight.w900,
@@ -2372,25 +2387,25 @@ class _TopPostLoadingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.borderLight),
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.05),
+        borderRadius: AppBorderRadius.circular(24),
+        border: Border.all(color: AppPalette.outlineOverlayLight),
       ),
       child: Column(
         children: [
           Container(
             height: imageHeight,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.08),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
+            decoration: AppBoxDecoration(
+              color: AppPalette.white.withValues(alpha: 0.08),
+              borderRadius: const AppBorderRadius.vertical(
+                top: AppRadiusValue.circular(24),
               ),
             ),
           ),
           const Expanded(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 14),
+              padding: AppEdgeInsets.fromLTRB(16, 16, 16, 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -2451,7 +2466,7 @@ class _HomeSmartPostsSection extends StatelessWidget {
         children: List.generate(
           3,
           (index) => const Padding(
-            padding: EdgeInsets.only(bottom: 14),
+            padding: AppEdgeInsets.only(bottom: 14),
             child: _HomeSmartPostLoadingCard(),
           ),
         ),
@@ -2500,11 +2515,11 @@ class _HomeSmartPostLoadingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF26170C),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.18)),
+      padding: const AppEdgeInsets.all(18),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmInk108,
+        borderRadius: AppBorderRadius.circular(24),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.18)),
       ),
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2543,14 +2558,14 @@ class _HomeFeedPaginationLoading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 8),
+      padding: AppEdgeInsets.symmetric(vertical: 8),
       child: Center(
         child: SizedBox(
           width: 24,
           height: 24,
           child: CircularProgressIndicator(
             strokeWidth: 2.4,
-            color: AppColors.accent,
+            color: AppPalette.primary,
           ),
         ),
       ),
@@ -2571,9 +2586,11 @@ class _HomeFeedPaginationRetry extends StatelessWidget {
       icon: const Icon(Icons.refresh_rounded),
       label: Text(l10n.retryButton),
       style: OutlinedButton.styleFrom(
-        foregroundColor: AppColors.accent,
-        side: BorderSide(color: AppColors.accent.withValues(alpha: 0.34)),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        foregroundColor: AppPalette.primary,
+        side: BorderSide(color: AppPalette.primary.withValues(alpha: 0.34)),
+        shape: RoundedRectangleBorder(
+          borderRadius: AppBorderRadius.circular(18),
+        ),
       ),
     );
   }
@@ -2615,7 +2632,7 @@ class _RecommendedActivitiesSection extends StatelessWidget {
         children: List.generate(
           3,
           (index) => const Padding(
-            padding: EdgeInsets.only(bottom: 14),
+            padding: AppEdgeInsets.only(bottom: 14),
             child: _RecommendedLoadingCard(),
           ),
         ),
@@ -2624,19 +2641,19 @@ class _RecommendedActivitiesSection extends StatelessWidget {
 
     if (recommendedItems.isEmpty && hasLoadError) {
       return Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.borderLight),
+        padding: const AppEdgeInsets.all(20),
+        decoration: AppBoxDecoration(
+          color: AppPalette.white.withValues(alpha: 0.05),
+          borderRadius: AppBorderRadius.circular(24),
+          border: Border.all(color: AppPalette.outlineOverlayLight),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               provider.errorMessage ?? l10n.activitiesLoadFailed,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
+              style: const AppTextStyle(
+                color: AppPalette.textCoolSecondary,
                 fontSize: 14,
                 height: 1.5,
               ),
@@ -2645,9 +2662,9 @@ class _RecommendedActivitiesSection extends StatelessWidget {
             OutlinedButton(
               onPressed: onRetry,
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.accent,
+                foregroundColor: AppPalette.primary,
                 side: BorderSide(
-                  color: AppColors.accent.withValues(alpha: 0.30),
+                  color: AppPalette.primary.withValues(alpha: 0.30),
                 ),
               ),
               child: Text(l10n.retryButton),
@@ -2659,29 +2676,29 @@ class _RecommendedActivitiesSection extends StatelessWidget {
 
     if (recommendedItems.isEmpty) {
       return Material(
-        color: Colors.transparent,
+        color: AppPalette.transparent,
         child: InkWell(
           onTap: onEmptyTap,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: AppBorderRadius.circular(24),
           child: Ink(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: AppColors.borderLight),
+            padding: const AppEdgeInsets.all(20),
+            decoration: AppBoxDecoration(
+              color: AppPalette.white.withValues(alpha: 0.05),
+              borderRadius: AppBorderRadius.circular(24),
+              border: Border.all(color: AppPalette.outlineOverlayLight),
             ),
             child: Row(
               children: [
                 Container(
                   width: 56,
                   height: 56,
-                  decoration: BoxDecoration(
-                    color: AppColors.accent.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(18),
+                  decoration: AppBoxDecoration(
+                    color: AppPalette.primary.withValues(alpha: 0.14),
+                    borderRadius: AppBorderRadius.circular(18),
                   ),
                   child: const Icon(
                     Icons.explore_rounded,
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -2691,8 +2708,8 @@ class _RecommendedActivitiesSection extends StatelessWidget {
                     children: [
                       Text(
                         l10n.noActivitiesYet,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
+                        style: const AppTextStyle(
+                          color: AppPalette.textPrimary,
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                         ),
@@ -2700,8 +2717,8 @@ class _RecommendedActivitiesSection extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         l10n.activitiesWillAppearHere,
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
+                        style: const AppTextStyle(
+                          color: AppPalette.textCoolSecondary,
                           fontSize: 13,
                           height: 1.4,
                         ),
@@ -2712,7 +2729,7 @@ class _RecommendedActivitiesSection extends StatelessWidget {
                 const Icon(
                   Icons.arrow_forward_ios_rounded,
                   size: 16,
-                  color: AppColors.textCaption,
+                  color: AppPalette.textCaption,
                 ),
               ],
             ),
@@ -2801,12 +2818,12 @@ class _RecommendedActivityCard extends StatelessWidget {
         final buttonWidth = (constraints.maxWidth * 0.28).clamp(92.0, 126.0);
 
         return Material(
-          color: Colors.transparent,
+          color: AppPalette.transparent,
           child: InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: AppBorderRadius.circular(18),
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 5),
+              padding: const AppEdgeInsets.symmetric(vertical: 5),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -2825,8 +2842,8 @@ class _RecommendedActivityCard extends StatelessWidget {
                           item.title,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: const Color(0xFFFFF7EF),
+                          style: AppTextStyle(
+                            color: AppPalette.textWarm,
                             fontSize: isCompact ? 15 : 16,
                             height: 1.16,
                             fontWeight: FontWeight.w900,
@@ -2837,8 +2854,8 @@ class _RecommendedActivityCard extends StatelessWidget {
                           '${_categoryLabel()} • ${_durationLabel(l10n)}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: const Color(0xFFAFA5BA),
+                          style: AppTextStyle(
+                            color: AppPalette.violetSoft01,
                             fontSize: isCompact ? 11.5 : 12,
                           ),
                         ),
@@ -2850,8 +2867,8 @@ class _RecommendedActivityCard extends StatelessWidget {
                           children: [
                             Text(
                               item.isFree ? l10n.freeLabel : item.priceLabel,
-                              style: TextStyle(
-                                color: const Color(0xFFFF9F1A),
+                              style: AppTextStyle(
+                                color: AppPalette.orangeMuted07,
                                 fontSize: isCompact ? 16 : 17,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -2859,8 +2876,8 @@ class _RecommendedActivityCard extends StatelessWidget {
                             if (!item.isFree)
                               Text(
                                 l10n.createPricePerPersonHint,
-                                style: TextStyle(
-                                  color: const Color(0xFFAFA5BA),
+                                style: AppTextStyle(
+                                  color: AppPalette.violetSoft01,
                                   fontSize: isCompact ? 11 : 11.5,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -2899,27 +2916,29 @@ class _ActivityJoinButton extends StatelessWidget {
     final isCompact = MediaQuery.sizeOf(context).width < 360;
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppBorderRadius.circular(999),
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: isCompact ? 34 : 40),
           child: Ink(
-            decoration: BoxDecoration(
-              color: AppColors.accent,
-              borderRadius: BorderRadius.circular(999),
+            decoration: AppBoxDecoration(
+              color: AppPalette.primary,
+              borderRadius: AppBorderRadius.circular(999),
             ),
             child: Center(
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: isCompact ? 10 : 14),
+                padding: AppEdgeInsets.symmetric(
+                  horizontal: isCompact ? 10 : 14,
+                ),
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
                   child: Text(
                     label,
                     maxLines: 1,
-                    style: TextStyle(
-                      color: Colors.white,
+                    style: AppTextStyle(
+                      color: AppPalette.white,
                       fontSize: isCompact ? 12 : 13,
                       height: 1,
                       fontWeight: FontWeight.w900,
@@ -2954,7 +2973,7 @@ class _ActivityThumb extends StatelessWidget {
     final art = _homeCardArtForItem(item);
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(height / 2),
+      borderRadius: AppBorderRadius.circular(height / 2),
       child: SizedBox(
         width: width,
         height: height,
@@ -2974,7 +2993,7 @@ class _HomeDecorativeActivityThumb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -2990,9 +3009,9 @@ class _HomeDecorativeActivityThumb extends StatelessWidget {
             child: Container(
               width: 78,
               height: 78,
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.12),
+                color: AppPalette.white.withValues(alpha: 0.12),
               ),
             ),
           ),
@@ -3002,20 +3021,20 @@ class _HomeDecorativeActivityThumb extends StatelessWidget {
             child: Container(
               width: 90,
               height: 90,
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.black.withValues(alpha: 0.16),
+                color: AppPalette.black.withValues(alpha: 0.16),
               ),
             ),
           ),
           Align(
             alignment: Alignment.bottomLeft,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+              padding: const AppEdgeInsets.fromLTRB(12, 12, 12, 10),
               child: Icon(
                 spec.icon,
                 size: 34,
-                color: Colors.white.withValues(alpha: 0.3),
+                color: AppPalette.white.withValues(alpha: 0.3),
               ),
             ),
           ),
@@ -3040,11 +3059,14 @@ class _NetworkCardImage extends StatelessWidget {
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             return Container(
-              decoration: const BoxDecoration(
+              decoration: const AppBoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFF5A3519), Color(0xFF2D1A0D)],
+                  colors: [
+                    AppPalette.warmSurfaceHigh06,
+                    AppPalette.warmSurface30,
+                  ],
                 ),
               ),
             );
@@ -3066,7 +3088,7 @@ _HomeCardArtSpec _homeCategoryVisual(String slug) {
   if (slug.contains('wellness') || slug.contains('health')) {
     return const _HomeCardArtSpec(
       icon: Icons.spa_rounded,
-      colors: [Color(0xFF295E54), Color(0xFF74D2AE)],
+      colors: [AppPalette.tealSurfaceHigh06, AppPalette.tealSoft04],
     );
   }
   if (slug.contains('nature') ||
@@ -3074,13 +3096,13 @@ _HomeCardArtSpec _homeCategoryVisual(String slug) {
       slug.contains('hiking')) {
     return const _HomeCardArtSpec(
       icon: Icons.forest_rounded,
-      colors: [Color(0xFF2A4B2B), Color(0xFF78C36A)],
+      colors: [AppPalette.greenSurfaceHigh13, AppPalette.greenSoft03],
     );
   }
   if (slug.contains('food')) {
     return const _HomeCardArtSpec(
       icon: Icons.restaurant_rounded,
-      colors: [Color(0xFF66371A), Color(0xFFFFA657)],
+      colors: [AppPalette.warmSurfaceHigh12, AppPalette.orangeSoft44],
     );
   }
   if (slug.contains('culture') ||
@@ -3088,13 +3110,13 @@ _HomeCardArtSpec _homeCategoryVisual(String slug) {
       slug.contains('history')) {
     return const _HomeCardArtSpec(
       icon: Icons.palette_outlined,
-      colors: [Color(0xFF5A3055), Color(0xFFCB84BA)],
+      colors: [AppPalette.pinkSurfaceHigh02, AppPalette.pinkSoft02],
     );
   }
   if (slug.contains('sport') || slug.contains('adventure')) {
     return const _HomeCardArtSpec(
       icon: Icons.kayaking_rounded,
-      colors: [Color(0xFF5F3D1F), Color(0xFFE69B4B)],
+      colors: [AppPalette.warmSurfaceHigh11, AppPalette.orangeSoft34],
     );
   }
   if (slug.contains('workshop') ||
@@ -3102,19 +3124,19 @@ _HomeCardArtSpec _homeCategoryVisual(String slug) {
       slug.contains('education')) {
     return const _HomeCardArtSpec(
       icon: Icons.auto_stories_rounded,
-      colors: [Color(0xFF443A73), Color(0xFF9A89E2)],
+      colors: [AppPalette.blueSurfaceHigh30, AppPalette.blueSoft15],
     );
   }
   if (slug.contains('night') || slug.contains('social')) {
     return const _HomeCardArtSpec(
       icon: Icons.celebration_rounded,
-      colors: [Color(0xFF5A2348), Color(0xFFE07AB8)],
+      colors: [AppPalette.pinkSurfaceHigh01, AppPalette.pinkSoft04],
     );
   }
 
   return const _HomeCardArtSpec(
     icon: Icons.travel_explore_rounded,
-    colors: [Color(0xFF52301B), Color(0xFFCB8B50)],
+    colors: [AppPalette.warmSurface90, AppPalette.orangeMuted05],
   );
 }
 
@@ -3125,13 +3147,13 @@ _HomeCardArtSpec _homeCardArtForItem(ActivityListItemVm item) {
   if (item.format.toUpperCase() == 'ONLINE') {
     return const _HomeCardArtSpec(
       icon: Icons.videocam_rounded,
-      colors: [Color(0xFF1F4D8A), Color(0xFF67A8F5)],
+      colors: [AppPalette.blueSurfaceHigh18, AppPalette.blueSoft07],
     );
   }
   if (item.format.toUpperCase() == 'HYBRID') {
     return const _HomeCardArtSpec(
       icon: Icons.devices_rounded,
-      colors: [Color(0xFF5E3E86), Color(0xFFB08CF6)],
+      colors: [AppPalette.violetMuted01, AppPalette.violetLight02],
     );
   }
   return fromCategory;
@@ -3143,20 +3165,20 @@ class _RecommendedLoadingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: AppColors.borderLight),
+      padding: const AppEdgeInsets.all(14),
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.05),
+        borderRadius: AppBorderRadius.circular(26),
+        border: Border.all(color: AppPalette.outlineOverlayLight),
       ),
       child: Row(
         children: [
           Container(
             width: 86,
             height: 86,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(22),
+            decoration: AppBoxDecoration(
+              color: AppPalette.white.withValues(alpha: 0.08),
+              borderRadius: AppBorderRadius.circular(22),
             ),
           ),
           const SizedBox(width: 14),
@@ -3195,9 +3217,9 @@ class _SkeletonLine extends StatelessWidget {
       child: Container(
         width: width,
         height: 12,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(999),
+        decoration: AppBoxDecoration(
+          color: AppPalette.white.withValues(alpha: 0.08),
+          borderRadius: AppBorderRadius.circular(999),
         ),
       ),
     );
@@ -3214,8 +3236,8 @@ class _SkeletonCircle extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.08),
         shape: BoxShape.circle,
       ),
     );
@@ -3232,9 +3254,9 @@ class _SkeletonBlock extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: height,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(18),
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.08),
+        borderRadius: AppBorderRadius.circular(18),
       ),
     );
   }
@@ -3248,9 +3270,9 @@ class _SkeletonChip extends StatelessWidget {
     return Container(
       width: 78,
       height: 34,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(999),
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.08),
+        borderRadius: AppBorderRadius.circular(999),
       ),
     );
   }
@@ -3591,12 +3613,12 @@ double _homePostCardHeight({
   final horizontalPadding = isCompact ? 14.0 : 16.0;
   final textWidth = cardWidth - horizontalPadding * 2;
   final avatarSize = (isCompact ? 24.0 : 26.0) * textScale.clamp(1.0, 1.18);
-  final titleStyle = TextStyle(
+  final titleStyle = AppTextStyle(
     fontSize: titleFontSize,
     height: titleLineHeight,
     fontWeight: FontWeight.w900,
   );
-  final excerptStyle = TextStyle(
+  final excerptStyle = AppTextStyle(
     fontSize: excerptFontSize,
     height: excerptLineHeight,
     fontWeight: FontWeight.w500,

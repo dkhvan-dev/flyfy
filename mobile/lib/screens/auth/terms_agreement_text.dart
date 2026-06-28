@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:flutter/gestures.dart';
-import '../../core/ui/app_colors.dart';
 
 class TermsAgreementRichText extends StatelessWidget {
   const TermsAgreementRichText({
@@ -16,17 +16,17 @@ class TermsAgreementRichText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const baseStyle = TextStyle(
-      color: AppColors.textCaption,
+    const baseStyle = AppTextStyle(
+      color: AppPalette.textCaption,
       fontSize: 12,
       fontWeight: FontWeight.w400,
       height: 1.5,
     );
 
-    final linkStyle = TextStyle(
-      color: AppColors.accent,
+    final linkStyle = AppTextStyle(
+      color: AppPalette.primary,
       decoration: TextDecoration.underline,
-      decorationColor: AppColors.accent.withValues(alpha: 0.3),
+      decorationColor: AppPalette.primary.withValues(alpha: 0.3),
     );
 
     return RichText(

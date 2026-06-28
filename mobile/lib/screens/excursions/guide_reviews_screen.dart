@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/network/excursion_api.dart';
 import '../../core/network/file_api.dart';
-import '../../core/ui/app_colors.dart';
 import '../../core/ui/app_list_screen_header.dart';
 import '../../features/excursions/models/excursion_booking_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -85,13 +85,13 @@ class _GuideReviewsScreenState extends State<GuideReviewsScreen> {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: const Color(0xFF160D07),
+        backgroundColor: AppPalette.warmInk22,
         body: DecoratedBox(
-          decoration: const BoxDecoration(
+          decoration: const AppBoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Color(0xFF211609), Color(0xFF160D07)],
+              colors: [AppPalette.warmInk78, AppPalette.warmInk22],
             ),
           ),
           child: SafeArea(
@@ -102,7 +102,7 @@ class _GuideReviewsScreenState extends State<GuideReviewsScreen> {
                 child: Column(
                   children: [
                     Padding(
-                      padding: EdgeInsets.fromLTRB(
+                      padding: AppEdgeInsets.fromLTRB(
                         horizontalPadding,
                         12,
                         horizontalPadding,
@@ -119,25 +119,25 @@ class _GuideReviewsScreenState extends State<GuideReviewsScreen> {
                     ),
                     const SizedBox(height: 14),
                     Padding(
-                      padding: EdgeInsets.symmetric(
+                      padding: AppEdgeInsets.symmetric(
                         horizontal: horizontalPadding,
                       ),
                       child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2A1D13),
-                          borderRadius: BorderRadius.circular(8),
+                        decoration: AppBoxDecoration(
+                          color: AppPalette.warmSurface17,
+                          borderRadius: AppBorderRadius.circular(8),
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.06),
+                            color: AppPalette.white.withValues(alpha: 0.06),
                           ),
                         ),
                         child: TabBar(
                           indicatorSize: TabBarIndicatorSize.tab,
-                          indicator: BoxDecoration(
-                            color: AppColors.accent,
-                            borderRadius: BorderRadius.circular(8),
+                          indicator: AppBoxDecoration(
+                            color: AppPalette.primary,
+                            borderRadius: AppBorderRadius.circular(8),
                           ),
-                          labelColor: Colors.white,
-                          unselectedLabelColor: const Color(0xFFCBB8A3),
+                          labelColor: AppPalette.white,
+                          unselectedLabelColor: AppPalette.orangeSoft29,
                           tabs: [
                             Tab(text: l10n.guideDashboardExcursionReviewsTab),
                             Tab(text: l10n.guideDashboardDirectGuideReviewsTab),
@@ -150,8 +150,8 @@ class _GuideReviewsScreenState extends State<GuideReviewsScreen> {
                       child: TabBarView(
                         children: [
                           RefreshIndicator(
-                            color: AppColors.accent,
-                            backgroundColor: const Color(0xFF2A1D13),
+                            color: AppPalette.primary,
+                            backgroundColor: AppPalette.warmSurface17,
                             onRefresh: !canLoadReviews
                                 ? () async {}
                                 : () => _refresh(guideUserId),
@@ -164,8 +164,8 @@ class _GuideReviewsScreenState extends State<GuideReviewsScreen> {
                             ),
                           ),
                           RefreshIndicator(
-                            color: AppColors.accent,
-                            backgroundColor: const Color(0xFF2A1D13),
+                            color: AppPalette.primary,
+                            backgroundColor: AppPalette.warmSurface17,
                             onRefresh: !canLoadReviews
                                 ? () async {}
                                 : () => _refresh(guideUserId),
@@ -211,7 +211,7 @@ class _GuideExcursionReviewsTab extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(
+      padding: AppEdgeInsets.fromLTRB(
         horizontalPadding,
         0,
         horizontalPadding,
@@ -284,7 +284,7 @@ class _DirectGuideReviewsTab extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(
+      padding: AppEdgeInsets.fromLTRB(
         horizontalPadding,
         0,
         horizontalPadding,
@@ -360,11 +360,11 @@ class _GuideReviewCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2A1D13),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      padding: const AppEdgeInsets.all(16),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmSurface17,
+        borderRadius: AppBorderRadius.circular(8),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -374,15 +374,15 @@ class _GuideReviewCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 20,
-                backgroundColor: AppColors.accent.withValues(alpha: 0.16),
+                backgroundColor: AppPalette.primary.withValues(alpha: 0.16),
                 backgroundImage: avatarUrl == null
                     ? null
                     : NetworkImage(avatarUrl),
                 child: avatarUrl == null
                     ? Text(
                         _reviewInitial(authorName),
-                        style: const TextStyle(
-                          color: AppColors.accent,
+                        style: const AppTextStyle(
+                          color: AppPalette.primary,
                           fontWeight: FontWeight.w900,
                         ),
                       )
@@ -397,8 +397,8 @@ class _GuideReviewCard extends StatelessWidget {
                       authorName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: const AppTextStyle(
+                        color: AppPalette.textPrimary,
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                       ),
@@ -408,8 +408,8 @@ class _GuideReviewCard extends StatelessWidget {
                       excursionTitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFFD3BFA9),
+                      style: const AppTextStyle(
+                        color: AppPalette.orangeLight01,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -427,8 +427,8 @@ class _GuideReviewCard extends StatelessWidget {
               review.comment,
               maxLines: 6,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: const AppTextStyle(
+                color: AppPalette.textPrimary,
                 fontSize: 14,
                 height: 1.42,
               ),
@@ -437,8 +437,8 @@ class _GuideReviewCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             dateText,
-            style: const TextStyle(
-              color: Color(0xFF9F8E7B),
+            style: const AppTextStyle(
+              color: AppPalette.orangeMuted03,
               fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
@@ -470,11 +470,11 @@ class _DirectGuideReviewCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2A1D13),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      padding: const AppEdgeInsets.all(16),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmSurface17,
+        borderRadius: AppBorderRadius.circular(8),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -484,15 +484,15 @@ class _DirectGuideReviewCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 20,
-                backgroundColor: AppColors.accent.withValues(alpha: 0.16),
+                backgroundColor: AppPalette.primary.withValues(alpha: 0.16),
                 backgroundImage: avatarUrl == null
                     ? null
                     : NetworkImage(avatarUrl),
                 child: avatarUrl == null
                     ? Text(
                         _reviewInitial(authorName),
-                        style: const TextStyle(
-                          color: AppColors.accent,
+                        style: const AppTextStyle(
+                          color: AppPalette.primary,
                           fontWeight: FontWeight.w900,
                         ),
                       )
@@ -504,8 +504,8 @@ class _DirectGuideReviewCard extends StatelessWidget {
                   authorName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: const AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
                   ),
@@ -521,8 +521,8 @@ class _DirectGuideReviewCard extends StatelessWidget {
               review.comment,
               maxLines: 6,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: const AppTextStyle(
+                color: AppPalette.textPrimary,
                 fontSize: 14,
                 height: 1.42,
               ),
@@ -531,8 +531,8 @@ class _DirectGuideReviewCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             dateText,
-            style: const TextStyle(
-              color: Color(0xFF9F8E7B),
+            style: const AppTextStyle(
+              color: AppPalette.orangeMuted03,
               fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
@@ -551,21 +551,21 @@ class _GuideReviewRating extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
+      decoration: AppBoxDecoration(
+        color: AppPalette.primary.withValues(alpha: 0.12),
+        borderRadius: AppBorderRadius.circular(999),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.star_rounded, color: AppColors.accent, size: 15),
+            const Icon(Icons.star_rounded, color: AppPalette.primary, size: 15),
             const SizedBox(width: 3),
             Text(
               value.toStringAsFixed(1),
-              style: const TextStyle(
-                color: AppColors.accent,
+              style: const AppTextStyle(
+                color: AppPalette.primary,
                 fontSize: 12,
                 fontWeight: FontWeight.w900,
               ),
@@ -592,21 +592,21 @@ class _GuideReviewsInfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2A1D13),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      padding: const AppEdgeInsets.all(18),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmSurface17,
+        borderRadius: AppBorderRadius.circular(8),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: AppColors.accent, size: 30),
+          Icon(icon, color: AppPalette.primary, size: 30),
           const SizedBox(height: 12),
           Text(
             title,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
+            style: const AppTextStyle(
+              color: AppPalette.textPrimary,
               fontSize: 17,
               fontWeight: FontWeight.w900,
             ),
@@ -614,8 +614,8 @@ class _GuideReviewsInfoCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             message,
-            style: const TextStyle(
-              color: Color(0xFFD3BFA9),
+            style: const AppTextStyle(
+              color: AppPalette.orangeLight01,
               fontSize: 13,
               height: 1.4,
             ),
@@ -653,10 +653,10 @@ class _GuideReviewsSkeletonCard extends StatelessWidget {
         minHeight: _guideReviewsSkeletonMinHeight(context),
       ),
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+        decoration: AppBoxDecoration(
+          color: AppPalette.white.withValues(alpha: 0.05),
+          borderRadius: AppBorderRadius.circular(8),
+          border: Border.all(color: AppPalette.white.withValues(alpha: 0.04)),
         ),
       ),
     );

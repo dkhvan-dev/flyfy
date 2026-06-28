@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/generated/app_localizations.dart';
@@ -10,7 +11,7 @@ class AppMapAttribution extends StatelessWidget {
   const AppMapAttribution({
     super.key,
     this.alignment = Alignment.bottomRight,
-    this.padding = const EdgeInsets.all(10),
+    this.padding = const AppEdgeInsets.all(10),
   });
 
   static final Uri _inflapMapUri = Uri.https(
@@ -39,24 +40,24 @@ class AppMapAttribution extends StatelessWidget {
         child: Padding(
           padding: padding,
           child: Material(
-            color: Colors.transparent,
+            color: AppPalette.transparent,
             child: InkWell(
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: AppBorderRadius.circular(999),
               onTap: () => _showAttributionSheet(context),
               child: Ink(
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   color: theme.colorScheme.surface.withValues(alpha: 0.92),
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: AppBorderRadius.circular(999),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.14),
+                      color: AppPalette.black.withValues(alpha: 0.14),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
                   ],
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
+                  padding: const AppEdgeInsets.symmetric(
                     horizontal: 10,
                     vertical: 6,
                   ),
@@ -121,7 +122,7 @@ class _MapAttributionSheet extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(
+      padding: AppEdgeInsets.fromLTRB(
         20,
         4,
         20,
@@ -189,18 +190,21 @@ class _MapAttributionSourceRow extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const AppEdgeInsets.only(bottom: 8),
       child: Material(
         color: theme.colorScheme.surfaceContainerHighest.withValues(
           alpha: 0.42,
         ),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppBorderRadius.circular(8),
         child: InkWell(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppBorderRadius.circular(8),
           onTap: () =>
               unawaited(launchUrl(uri, mode: LaunchMode.externalApplication)),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+            padding: const AppEdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 11,
+            ),
             child: Row(
               children: [
                 Expanded(

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/network/file_api.dart';
-import '../../core/ui/app_colors.dart';
 import '../../features/chat/models/conversation_vm.dart';
 import '../../features/chat/utils/chat_presence_status.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -31,13 +31,13 @@ class ChatParticipantsScreen extends StatelessWidget {
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1d1208),
+      backgroundColor: AppPalette.warmInk54,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: const AppBoxDecoration(
           gradient: RadialGradient(
             center: Alignment(0, -1),
             radius: 0.9,
-            colors: [Color(0x14FFA200), Color(0x001D1208)],
+            colors: [AppPalette.warmOverlayMuted03, AppPalette.clearWarmInk02],
           ),
         ),
         child: LayoutBuilder(
@@ -64,7 +64,7 @@ class ChatParticipantsScreen extends StatelessWidget {
                       ),
                     ),
                     SliverPadding(
-                      padding: EdgeInsets.fromLTRB(
+                      padding: AppEdgeInsets.fromLTRB(
                         horizontalPadding,
                         24,
                         horizontalPadding,
@@ -89,7 +89,7 @@ class ChatParticipantsScreen extends StatelessWidget {
                           else
                             ...joined.map(
                               (participant) => Padding(
-                                padding: const EdgeInsets.only(bottom: 34),
+                                padding: const AppEdgeInsets.only(bottom: 34),
                                 child: _ParticipantRow(
                                   participant: participant,
                                   onTap: () => _openParticipantProfile(
@@ -177,15 +177,15 @@ class _ParticipantsHeader extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(
+      padding: AppEdgeInsets.fromLTRB(
         horizontalPadding,
         topPadding + 26,
         horizontalPadding,
         18,
       ),
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         border: Border(
-          bottom: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+          bottom: BorderSide(color: AppPalette.white.withValues(alpha: 0.06)),
         ),
       ),
       child: Stack(
@@ -196,7 +196,7 @@ class _ParticipantsHeader extends StatelessWidget {
             child: _BackButton(onTap: () => Navigator.of(context).pop()),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 48),
+            padding: const AppEdgeInsets.symmetric(horizontal: 48),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -207,12 +207,12 @@ class _ParticipantsHeader extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: const AppTextStyle(
                     fontSize: 25,
                     height: 1.15,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.75,
-                    color: Color(0xFFf6f1ea),
+                    color: AppPalette.orangeWash14,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -222,12 +222,12 @@ class _ParticipantsHeader extends StatelessWidget {
                     Container(
                       width: 11,
                       height: 11,
-                      decoration: BoxDecoration(
+                      decoration: AppBoxDecoration(
                         shape: BoxShape.circle,
-                        color: AppColors.accent,
+                        color: AppPalette.primary,
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.accent.withValues(alpha: 0.08),
+                            color: AppPalette.primary.withValues(alpha: 0.08),
                             blurRadius: 0,
                             spreadRadius: 5,
                           ),
@@ -237,11 +237,11 @@ class _ParticipantsHeader extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       l10n.chatParticipantsCount(count),
-                      style: const TextStyle(
+                      style: const AppTextStyle(
                         fontSize: 18,
                         height: 1.25,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.accent,
+                        color: AppPalette.primary,
                       ),
                     ),
                   ],
@@ -271,7 +271,7 @@ class _BackButton extends StatelessWidget {
         child: Icon(
           Icons.arrow_back_ios_new_rounded,
           size: 24,
-          color: Color(0xFFf6f1ea),
+          color: AppPalette.orangeWash14,
         ),
       ),
     );
@@ -287,12 +287,12 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: TextStyle(
+      style: AppTextStyle(
         fontSize: MediaQuery.sizeOf(context).width < 360 ? 14 : 16,
         height: 1.2,
         fontWeight: FontWeight.w700,
         letterSpacing: 1.92,
-        color: const Color(0xFFf6f1ea).withValues(alpha: 0.48),
+        color: AppPalette.orangeWash14.withValues(alpha: 0.48),
       ),
     );
   }
@@ -314,17 +314,17 @@ class _OrganizerCard extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Container(
         constraints: const BoxConstraints(minHeight: 178),
-        padding: EdgeInsets.symmetric(
+        padding: AppEdgeInsets.symmetric(
           horizontal: compact ? 18 : 22,
           vertical: compact ? 20 : 24,
         ),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(32),
-          color: Colors.white.withValues(alpha: 0.04),
-          border: Border.all(color: AppColors.accent.withValues(alpha: 0.14)),
+        decoration: AppBoxDecoration(
+          borderRadius: AppBorderRadius.circular(32),
+          color: AppPalette.white.withValues(alpha: 0.04),
+          border: Border.all(color: AppPalette.primary.withValues(alpha: 0.14)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.35),
+              color: AppPalette.black.withValues(alpha: 0.35),
               blurRadius: 40,
               offset: const Offset(0, 18),
             ),
@@ -413,12 +413,12 @@ class _ParticipantText extends StatelessWidget {
           displayName,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
+          style: AppTextStyle(
             fontSize: nameSize,
             height: 1.15,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.75,
-            color: const Color(0xFFf6f1ea),
+            color: AppPalette.orangeWash14,
           ),
         ),
         const SizedBox(height: 8),
@@ -428,9 +428,9 @@ class _ParticipantText extends StatelessWidget {
               Container(
                 width: 8,
                 height: 8,
-                decoration: const BoxDecoration(
+                decoration: const AppBoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.accent,
+                  color: AppPalette.primary,
                 ),
               ),
               const SizedBox(width: 8),
@@ -440,14 +440,14 @@ class _ParticipantText extends StatelessWidget {
                 status,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: AppTextStyle(
                   fontSize: nameSize >= 25 ? 18 : 16,
                   height: 1.3,
                   fontWeight: FontWeight.w400,
                   letterSpacing: 0.72,
                   color: online
-                      ? AppColors.accent
-                      : const Color(0xFFf6f1ea).withValues(alpha: 0.48),
+                      ? AppPalette.primary
+                      : AppPalette.orangeWash14.withValues(alpha: 0.48),
                 ),
               ),
             ),
@@ -478,14 +478,14 @@ class _ParticipantAvatar extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      padding: EdgeInsets.all(highlighted ? 4 : 0),
-      decoration: BoxDecoration(
+      padding: AppEdgeInsets.all(highlighted ? 4 : 0),
+      decoration: AppBoxDecoration(
         shape: BoxShape.circle,
-        color: highlighted ? AppColors.accent : Colors.transparent,
+        color: highlighted ? AppPalette.primary : AppPalette.transparent,
         boxShadow: highlighted
             ? [
                 BoxShadow(
-                  color: AppColors.accent.withValues(alpha: 0.18),
+                  color: AppPalette.primary.withValues(alpha: 0.18),
                   blurRadius: 30,
                   offset: const Offset(0, 14),
                 ),
@@ -494,7 +494,7 @@ class _ParticipantAvatar extends StatelessWidget {
       ),
       child: ClipOval(
         child: Container(
-          color: const Color(0xFF101010),
+          color: AppPalette.neutralInk01,
           child: imageUrl == null
               ? _AvatarFallback(name: participant.displayName)
               : Image.network(
@@ -519,20 +519,23 @@ class _AvatarFallback extends StatelessWidget {
     final initial = name.trim().isEmpty ? '?' : name.trim()[0].toUpperCase();
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: const AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF444444), Color(0xFF1c1c1c)],
+          colors: [
+            AppPalette.neutralSurfaceHigh01,
+            AppPalette.neutralSurface01,
+          ],
         ),
       ),
       child: Center(
         child: Text(
           initial,
-          style: const TextStyle(
+          style: const AppTextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w800,
-            color: Color(0xFFf6f1ea),
+            color: AppPalette.orangeWash14,
           ),
         ),
       ),
@@ -548,12 +551,12 @@ class _EmptyParticipants extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const AppEdgeInsets.symmetric(vertical: 16),
       child: Text(
         l10n.chatParticipantsEmpty,
-        style: TextStyle(
+        style: AppTextStyle(
           fontSize: 16,
-          color: const Color(0xFFf6f1ea).withValues(alpha: 0.48),
+          color: AppPalette.orangeWash14.withValues(alpha: 0.48),
         ),
       ),
     );

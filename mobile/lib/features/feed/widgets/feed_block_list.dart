@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
 import '../../../core/ui/app_inline_sort_row.dart';
 import '../../../l10n/generated/app_localizations.dart';
@@ -92,7 +93,7 @@ class FeedBlockList extends StatelessWidget {
           key: const PageStorageKey<String>('feed-block-list'),
           controller: controller,
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.fromLTRB(
+          padding: AppEdgeInsets.fromLTRB(
             _horizontalPadding(constraints.maxWidth),
             16,
             _horizontalPadding(constraints.maxWidth),
@@ -118,7 +119,7 @@ class FeedBlockList extends StatelessWidget {
                 : _blockChild(entry.block!);
 
             return Padding(
-              padding: EdgeInsets.only(
+              padding: AppEdgeInsets.only(
                 bottom: index == entries.length - 1 ? 0 : 16,
               ),
               child: child,
@@ -202,7 +203,7 @@ class _FeedPostSortRow extends StatelessWidget {
 
     return Padding(
       key: const ValueKey('feed-post-sort-row'),
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const AppEdgeInsets.symmetric(horizontal: 4),
       child: AppInlineSortRow<FeedPostSortMode>(
         label: l10n.activitiesSortLabel,
         options: [
@@ -284,7 +285,7 @@ class _FeedPaginationFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     if (isLoading) {
       return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 18),
+        padding: AppEdgeInsets.symmetric(vertical: 18),
         child: Center(child: CircularProgressIndicator()),
       );
     }
@@ -296,7 +297,7 @@ class _FeedPaginationFooter extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 18),
+      padding: const AppEdgeInsets.symmetric(vertical: 18),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 360),

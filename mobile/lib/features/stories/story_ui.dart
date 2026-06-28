@@ -1,10 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:intl/intl.dart';
 import 'package:video_player/video_player.dart';
 
-import '../../core/ui/app_colors.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'models/post_vm.dart';
 import 'models/story_vm.dart';
@@ -67,16 +67,16 @@ class StoryAdaptive {
 }
 
 abstract final class StoryPalette {
-  static const backgroundTop = Color(0xFF1E120A);
-  static const background = Color(0xFF120B06);
-  static const backgroundDeep = Color(0xFF0D0602);
-  static const surface = Color(0xFF24160C);
-  static const surfaceRaised = Color(0xFF2B190D);
-  static const surfaceCard = Color(0xFF22140B);
-  static const text = Color(0xFFFFF7EF);
-  static const textSoft = Color(0xFFD8C6B4);
-  static const textMuted = Color(0xFF8F7A66);
-  static const line = Color(0x1FFFA833);
+  static const backgroundTop = AppPalette.warmInk58;
+  static const background = AppPalette.background;
+  static const backgroundDeep = AppPalette.warmInk01;
+  static const surface = AppPalette.warmInk97;
+  static const surfaceRaised = AppPalette.warmSurface23;
+  static const surfaceCard = AppPalette.warmInk85;
+  static const text = AppPalette.textWarm;
+  static const textSoft = AppPalette.orangeLight14;
+  static const textMuted = AppPalette.warmMuted08;
+  static const line = AppPalette.orangeOverlaySoft02;
 }
 
 String formatStoryCategory(AppLocalizations l10n, String rawCategory) {
@@ -162,20 +162,20 @@ extension StoryEntryStateX on StoryEntryState {
   Color get foreground {
     return switch (this) {
       StoryEntryState.available => StoryPalette.textSoft,
-      StoryEntryState.seen => const Color(0xFF072012),
-      StoryEntryState.expired => const Color(0xFFFFE4C4),
-      StoryEntryState.pending => const Color(0xFF2B1A05),
-      StoryEntryState.hidden => const Color(0xFFFFE4E4),
+      StoryEntryState.seen => AppPalette.greenInk02,
+      StoryEntryState.expired => AppPalette.orangeLight49,
+      StoryEntryState.pending => AppPalette.warmInk116,
+      StoryEntryState.hidden => AppPalette.redWash02,
     };
   }
 
   Color background(BuildContext context) {
     return switch (this) {
-      StoryEntryState.available => Colors.transparent,
-      StoryEntryState.seen => AppColors.success,
-      StoryEntryState.expired => Colors.black.withValues(alpha: 0.64),
-      StoryEntryState.pending => const Color(0xFFF2B84B),
-      StoryEntryState.hidden => AppColors.destructive.withValues(alpha: 0.88),
+      StoryEntryState.available => AppPalette.transparent,
+      StoryEntryState.seen => AppPalette.success,
+      StoryEntryState.expired => AppPalette.black.withValues(alpha: 0.64),
+      StoryEntryState.pending => AppPalette.amberSoft09,
+      StoryEntryState.hidden => AppPalette.danger.withValues(alpha: 0.88),
     };
   }
 
@@ -291,14 +291,14 @@ class StoryStateAffordance extends StatelessWidget {
         constraints: BoxConstraints(
           maxWidth: adaptive.scale(compact ? 128 : 180),
         ),
-        padding: EdgeInsets.symmetric(
+        padding: AppEdgeInsets.symmetric(
           horizontal: adaptive.scale(horizontalPadding),
           vertical: adaptive.scale(verticalPadding),
         ),
-        decoration: BoxDecoration(
+        decoration: AppBoxDecoration(
           color: state.background(context),
-          borderRadius: BorderRadius.circular(adaptive.radius(999)),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+          borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
+          border: Border.all(color: AppPalette.white.withValues(alpha: 0.16)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -314,7 +314,7 @@ class StoryStateAffordance extends StatelessWidget {
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: AppTextStyle(
                   color: state.foreground,
                   fontSize: adaptive.scale(compact ? 11 : 12),
                   fontWeight: FontWeight.w800,
@@ -330,7 +330,7 @@ class StoryStateAffordance extends StatelessWidget {
 }
 
 BoxDecoration storyScreenBackground() {
-  return const BoxDecoration(
+  return const AppBoxDecoration(
     gradient: LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
@@ -360,31 +360,31 @@ class StoryAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final border = borderColor ?? AppColors.accent.withValues(alpha: 0.35);
+    final border = borderColor ?? AppPalette.primary.withValues(alpha: 0.35);
     final normalized = label.trim().isEmpty ? 'F' : label.trim().toUpperCase();
 
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(color: border, width: math.max(1.5, size * 0.06)),
       ),
       child: ClipOval(
         child: imageUrl == null
             ? DecoratedBox(
-                decoration: const BoxDecoration(
+                decoration: const AppBoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Color(0xFFF8E8D7), Color(0xFFF1B36B)],
+                    colors: [AppPalette.orangeWash17, AppPalette.orangeSoft37],
                   ),
                 ),
                 child: Center(
                   child: Text(
                     normalized,
-                    style: TextStyle(
-                      color: const Color(0xFF2C1507),
+                    style: AppTextStyle(
+                      color: AppPalette.warmSurface26,
                       fontSize: size * 0.38,
                       fontWeight: FontWeight.w800,
                     ),
@@ -396,18 +396,21 @@ class StoryAvatar extends StatelessWidget {
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return DecoratedBox(
-                    decoration: const BoxDecoration(
+                    decoration: const AppBoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: [Color(0xFFF8E8D7), Color(0xFFF1B36B)],
+                        colors: [
+                          AppPalette.orangeWash17,
+                          AppPalette.orangeSoft37,
+                        ],
                       ),
                     ),
                     child: Center(
                       child: Text(
                         normalized,
-                        style: TextStyle(
-                          color: const Color(0xFF2C1507),
+                        style: AppTextStyle(
+                          color: AppPalette.warmSurface26,
                           fontSize: size * 0.38,
                           fontWeight: FontWeight.w800,
                         ),
@@ -429,11 +432,11 @@ class StorySeenMarker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.success,
+      decoration: AppBoxDecoration(
+        color: AppPalette.success,
         shape: BoxShape.circle,
         border: Border.all(
-          color: const Color(0xFF120B06).withValues(alpha: 0.82),
+          color: AppPalette.background.withValues(alpha: 0.82),
           width: math.max(1.2, size * 0.08),
         ),
       ),
@@ -441,7 +444,7 @@ class StorySeenMarker extends StatelessWidget {
         dimension: size,
         child: Icon(
           Icons.check_rounded,
-          color: const Color(0xFF07140A),
+          color: AppPalette.greenInk01,
           size: size * 0.72,
         ),
       ),
@@ -458,20 +461,20 @@ class StoryCoverImage extends StatelessWidget {
   Widget build(BuildContext context) {
     if (url == null || url!.trim().isEmpty) {
       return DecoratedBox(
-        decoration: BoxDecoration(
+        decoration: AppBoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              AppColors.accent.withValues(alpha: 0.25),
-              const Color(0xFF22160D),
+              AppPalette.primary.withValues(alpha: 0.25),
+              AppPalette.warmInk86,
             ],
           ),
         ),
         child: Center(
           child: Icon(
             Icons.auto_stories_rounded,
-            color: Colors.white.withValues(alpha: 0.72),
+            color: AppPalette.white.withValues(alpha: 0.72),
             size: StoryAdaptive.of(context).scale(44),
           ),
         ),
@@ -586,11 +589,11 @@ class _StoryVideoCoverState extends State<_StoryVideoCover> {
     }
     if (_failed) {
       return const DecoratedBox(
-        decoration: BoxDecoration(color: Color(0xFF22160D)),
+        decoration: AppBoxDecoration(color: AppPalette.warmInk86),
         child: Center(
           child: Icon(
             Icons.broken_image_outlined,
-            color: Colors.white54,
+            color: AppPalette.white54,
             size: 34,
           ),
         ),
@@ -606,13 +609,13 @@ class _StoryImageLoadingPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(color: Color(0xFF22160D)),
+      decoration: const AppBoxDecoration(color: AppPalette.warmInk86),
       child: Center(
         child: SizedBox.square(
           dimension: StoryAdaptive.of(context).scale(26),
           child: CircularProgressIndicator(
             strokeWidth: StoryAdaptive.of(context).scale(2),
-            color: AppColors.accent,
+            color: AppPalette.primary,
           ),
         ),
       ),

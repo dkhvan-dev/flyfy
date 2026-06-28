@@ -20,11 +20,11 @@ void main() {
     expect(gateSource, isNot(contains('AlertDialog(')));
 
     expect(chromeSource, contains('class AppFilterPaletteDialog'));
-    expect(chromeSource, contains('Color(0xFF21170D)'));
-    expect(chromeSource, contains('Color(0x293A270F)'));
-    expect(chromeSource, contains('Color(0xFF2C2118)'));
-    expect(chromeSource, contains('Color(0xFF3B260D)'));
-    expect(chromeSource, contains('AppColors.accent'));
+    expect(chromeSource, contains('AppPalette.surface'));
+    expect(chromeSource, contains('AppPalette.border'));
+    expect(chromeSource, contains('AppPalette.warmSurface28'));
+    expect(chromeSource, contains('AppPalette.warmSurface66'));
+    expect(chromeSource, contains('AppPalette.primary'));
     expect(chromeSource, contains('SingleChildScrollView'));
     expect(chromeSource, contains('Wrap('));
   });

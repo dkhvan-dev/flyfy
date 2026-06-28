@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/ui/app_colors.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../data/help_center_api.dart';
 import 'help_article_tile.dart';
@@ -89,13 +89,13 @@ class _ContextualHelpSectionState extends State<ContextualHelpSection> {
 
     final l10n = AppLocalizations.of(context)!;
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFF26180D),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmSurface03,
+        borderRadius: AppBorderRadius.circular(18),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.07)),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+        padding: const AppEdgeInsets.fromLTRB(16, 16, 16, 18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -104,13 +104,13 @@ class _ContextualHelpSectionState extends State<ContextualHelpSection> {
                 Container(
                   width: 36,
                   height: 36,
-                  decoration: BoxDecoration(
-                    color: AppColors.accent.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(12),
+                  decoration: AppBoxDecoration(
+                    color: AppPalette.primary.withValues(alpha: 0.16),
+                    borderRadius: AppBorderRadius.circular(12),
                   ),
                   child: const Icon(
                     Icons.help_outline_rounded,
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                     size: 20,
                   ),
                 ),
@@ -120,8 +120,8 @@ class _ContextualHelpSectionState extends State<ContextualHelpSection> {
                     l10n.contextualHelpTitle,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: const AppTextStyle(
+                      color: AppPalette.textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 0,
@@ -147,7 +147,7 @@ class _ContextualHelpSectionState extends State<ContextualHelpSection> {
                   .entries
                   .map(
                     (entry) => Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
+                      padding: const AppEdgeInsets.only(bottom: 10),
                       child: HelpArticleTile(
                         article: entry.value,
                         compact: true,
@@ -223,11 +223,11 @@ class _ContextualHelpSkeleton extends StatelessWidget {
       children: List.generate(
         3,
         (index) => Padding(
-          padding: const EdgeInsets.only(bottom: 10),
+          padding: const AppEdgeInsets.only(bottom: 10),
           child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(14),
+            decoration: AppBoxDecoration(
+              color: AppPalette.white.withValues(alpha: 0.05),
+              borderRadius: AppBorderRadius.circular(14),
             ),
             child: const SizedBox(height: 72, width: double.infinity),
           ),
@@ -252,8 +252,8 @@ class _ContextualHelpError extends StatelessWidget {
             l10n.contextualHelpLoadFailed,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
+            style: const AppTextStyle(
+              color: AppPalette.textCoolSecondary,
               fontSize: 14,
               letterSpacing: 0,
             ),

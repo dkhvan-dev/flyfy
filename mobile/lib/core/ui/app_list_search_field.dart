@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-import 'app_colors.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
 class AppListSearchField extends StatelessWidget {
   const AppListSearchField({
@@ -34,14 +33,14 @@ class AppListSearchField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       constraints: const BoxConstraints(minHeight: 58),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2B1F14),
-        borderRadius: BorderRadius.circular(21),
+      decoration: AppBoxDecoration(
+        color: AppPalette.surfaceRaised,
+        borderRadius: AppBorderRadius.circular(21),
       ),
-      padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 8, 0),
+      padding: const AppEdgeInsetsDirectional.fromSTEB(16, 0, 8, 0),
       child: Row(
         children: [
-          const Icon(Icons.search_rounded, color: AppColors.accent, size: 27),
+          const Icon(Icons.search_rounded, color: AppPalette.primary, size: 27),
           const SizedBox(width: 12),
           Expanded(
             child: TextField(
@@ -51,17 +50,17 @@ class AppListSearchField extends StatelessWidget {
               onSubmitted: onSubmitted,
               onTapOutside: onTapOutside,
               textInputAction: TextInputAction.search,
-              cursorColor: AppColors.accent,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              cursorColor: AppPalette.primary,
+              style: const AppTextStyle(
+                color: AppPalette.textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 height: 1.2,
               ),
-              decoration: InputDecoration(
+              decoration: AppInputDecoration(
                 border: InputBorder.none,
                 hintText: hintText,
-                hintStyle: const TextStyle(color: Color(0xFF9F8B7D)),
+                hintStyle: const AppTextStyle(color: AppPalette.orangeMuted02),
               ),
             ),
           ),
@@ -79,7 +78,7 @@ class AppListSearchField extends StatelessWidget {
                   ).deleteButtonTooltip.toLowerCase(),
                   onPressed: onClear ?? controller.clear,
                   style: IconButton.styleFrom(
-                    foregroundColor: const Color(0xFF9F8B7D),
+                    foregroundColor: AppPalette.orangeMuted02,
                     minimumSize: const Size(36, 36),
                   ),
                   icon: const Icon(Icons.close_rounded, size: 20),
@@ -95,8 +94,8 @@ class AppListSearchField extends StatelessWidget {
                   tooltip: filterTooltip,
                   onPressed: onFilterTap,
                   style: IconButton.styleFrom(
-                    backgroundColor: AppColors.accent.withValues(alpha: 0.12),
-                    foregroundColor: AppColors.accent,
+                    backgroundColor: AppPalette.primary.withValues(alpha: 0.12),
+                    foregroundColor: AppPalette.primary,
                     minimumSize: const Size(43, 43),
                     shape: const CircleBorder(),
                   ),
@@ -114,16 +113,16 @@ class AppListSearchField extends StatelessWidget {
                         minWidth: 16,
                         minHeight: 16,
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.accent,
-                        borderRadius: BorderRadius.circular(999),
+                      padding: const AppEdgeInsets.symmetric(horizontal: 4),
+                      decoration: AppBoxDecoration(
+                        color: AppPalette.primary,
+                        borderRadius: AppBorderRadius.circular(999),
                       ),
                       alignment: Alignment.center,
                       child: Text(
                         activeFilterCount.toString(),
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: const AppTextStyle(
+                          color: AppPalette.white,
                           fontSize: 10,
                           height: 1,
                           fontWeight: FontWeight.w900,

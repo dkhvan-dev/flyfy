@@ -1,11 +1,11 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:provider/provider.dart';
 
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/locale_provider.dart';
-import 'app_colors.dart';
 
 Future<void> showAppLanguageSheet(BuildContext context) async {
   final l10n = AppLocalizations.of(context)!;
@@ -14,8 +14,8 @@ Future<void> showAppLanguageSheet(BuildContext context) async {
   final selectedCode = await showModalBottomSheet<String>(
     context: context,
     isDismissible: true,
-    backgroundColor: Colors.transparent,
-    barrierColor: Colors.black.withValues(alpha: 0.58),
+    backgroundColor: AppPalette.transparent,
+    barrierColor: AppPalette.black.withValues(alpha: 0.58),
     isScrollControlled: true,
     builder: (sheetContext) {
       final mediaQuery = MediaQuery.of(sheetContext);
@@ -49,33 +49,33 @@ Future<void> showAppLanguageSheet(BuildContext context) async {
       return SafeArea(
         top: false,
         child: Padding(
-          padding: EdgeInsets.only(bottom: bottomInset),
+          padding: AppEdgeInsets.only(bottom: bottomInset),
           child: ConstrainedBox(
             constraints: BoxConstraints(maxHeight: maxSheetHeight),
             child: ClipRRect(
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(sheetRadius),
+              borderRadius: AppBorderRadius.vertical(
+                top: AppRadiusValue.circular(sheetRadius),
               ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
                 child: DecoratedBox(
-                  decoration: BoxDecoration(
+                  decoration: AppBoxDecoration(
                     gradient: const LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Color(0xFF211207), Color(0xFF170D06)],
+                      colors: [AppPalette.warmInk70, AppPalette.warmInk25],
                     ),
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(sheetRadius),
+                    borderRadius: AppBorderRadius.vertical(
+                      top: AppRadiusValue.circular(sheetRadius),
                     ),
                     border: Border(
                       top: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.08),
+                        color: AppPalette.white.withValues(alpha: 0.08),
                       ),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.24),
+                        color: AppPalette.black.withValues(alpha: 0.24),
                         blurRadius: 40,
                         offset: const Offset(0, -12),
                       ),
@@ -86,13 +86,13 @@ Future<void> showAppLanguageSheet(BuildContext context) async {
                       Positioned.fill(
                         child: IgnorePointer(
                           child: DecoratedBox(
-                            decoration: BoxDecoration(
+                            decoration: AppBoxDecoration(
                               gradient: LinearGradient(
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
                                 colors: [
-                                  Colors.white.withValues(alpha: 0.02),
-                                  Colors.transparent,
+                                  AppPalette.white.withValues(alpha: 0.02),
+                                  AppPalette.transparent,
                                 ],
                                 stops: const [0, 0.16],
                               ),
@@ -107,13 +107,13 @@ Future<void> showAppLanguageSheet(BuildContext context) async {
                         child: IgnorePointer(
                           child: Container(
                             height: 110,
-                            decoration: BoxDecoration(
+                            decoration: AppBoxDecoration(
                               gradient: RadialGradient(
                                 center: const Alignment(0, 0.7),
                                 radius: 0.95,
                                 colors: [
-                                  AppColors.accent.withValues(alpha: 0.08),
-                                  Colors.transparent,
+                                  AppPalette.primary.withValues(alpha: 0.08),
+                                  AppPalette.transparent,
                                 ],
                               ),
                             ),
@@ -125,7 +125,7 @@ Future<void> showAppLanguageSheet(BuildContext context) async {
                         keyboardDismissBehavior:
                             ScrollViewKeyboardDismissBehavior.onDrag,
                         child: Padding(
-                          padding: EdgeInsets.fromLTRB(
+                          padding: AppEdgeInsets.fromLTRB(
                             horizontalPadding,
                             topPadding,
                             horizontalPadding,
@@ -138,14 +138,14 @@ Future<void> showAppLanguageSheet(BuildContext context) async {
                                 child: Container(
                                   width: 76,
                                   height: 7,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.accent.withValues(
+                                  decoration: AppBoxDecoration(
+                                    color: AppPalette.primary.withValues(
                                       alpha: 0.45,
                                     ),
-                                    borderRadius: BorderRadius.circular(999),
+                                    borderRadius: AppBorderRadius.circular(999),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: AppColors.accent.withValues(
+                                        color: AppPalette.primary.withValues(
                                           alpha: 0.18,
                                         ),
                                         blurRadius: 18,
@@ -161,20 +161,20 @@ Future<void> showAppLanguageSheet(BuildContext context) async {
                                   Container(
                                     width: glowSize,
                                     height: glowSize,
-                                    decoration: BoxDecoration(
+                                    decoration: AppBoxDecoration(
                                       shape: BoxShape.circle,
                                       gradient: RadialGradient(
                                         colors: [
-                                          AppColors.accent.withValues(
+                                          AppPalette.primary.withValues(
                                             alpha: 0.26,
                                           ),
-                                          AppColors.accent.withValues(
+                                          AppPalette.primary.withValues(
                                             alpha: 0.12,
                                           ),
-                                          AppColors.accent.withValues(
+                                          AppPalette.primary.withValues(
                                             alpha: 0.04,
                                           ),
-                                          Colors.transparent,
+                                          AppPalette.transparent,
                                         ],
                                         stops: const [0, 0.3, 0.52, 0.78],
                                       ),
@@ -183,28 +183,28 @@ Future<void> showAppLanguageSheet(BuildContext context) async {
                                   Container(
                                     width: iconWrapSize,
                                     height: iconWrapSize,
-                                    decoration: BoxDecoration(
+                                    decoration: AppBoxDecoration(
                                       shape: BoxShape.circle,
                                       gradient: RadialGradient(
                                         center: const Alignment(0, -0.25),
                                         colors: [
-                                          AppColors.accent.withValues(
+                                          AppPalette.primary.withValues(
                                             alpha: 0.05,
                                           ),
-                                          AppColors.accent.withValues(
+                                          AppPalette.primary.withValues(
                                             alpha: 0.01,
                                           ),
                                         ],
                                       ),
                                       border: Border.all(
-                                        color: AppColors.accent.withValues(
+                                        color: AppPalette.primary.withValues(
                                           alpha: 0.36,
                                         ),
                                         width: 2,
                                       ),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: AppColors.accent.withValues(
+                                          color: AppPalette.primary.withValues(
                                             alpha: 0.18,
                                           ),
                                           blurRadius: 28,
@@ -214,7 +214,7 @@ Future<void> showAppLanguageSheet(BuildContext context) async {
                                     child: Icon(
                                       Icons.language_rounded,
                                       size: iconSize,
-                                      color: AppColors.accent,
+                                      color: AppPalette.primary,
                                     ),
                                   ),
                                 ],
@@ -225,8 +225,8 @@ Future<void> showAppLanguageSheet(BuildContext context) async {
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: AppColors.textPrimary,
+                                style: AppTextStyle(
+                                  color: AppPalette.textPrimary,
                                   fontSize: isCompact ? 16 : 18,
                                   height: 1.15,
                                   fontWeight: FontWeight.w800,
@@ -289,24 +289,24 @@ class _LanguageOptionTile extends StatelessWidget {
       label: label,
       child: ExcludeSemantics(
         child: Material(
-          color: Colors.transparent,
+          color: AppPalette.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(isCompact ? 20 : 24),
+            borderRadius: AppBorderRadius.circular(isCompact ? 20 : 24),
             onTap: onTap,
             child: Ink(
-              padding: EdgeInsets.symmetric(
+              padding: AppEdgeInsets.symmetric(
                 horizontal: isCompact ? 18 : 20,
                 vertical: isCompact ? 15 : 18,
               ),
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 color: isSelected
-                    ? AppColors.accent.withValues(alpha: 0.17)
-                    : Colors.white.withValues(alpha: 0.035),
-                borderRadius: BorderRadius.circular(isCompact ? 20 : 24),
+                    ? AppPalette.primary.withValues(alpha: 0.17)
+                    : AppPalette.white.withValues(alpha: 0.035),
+                borderRadius: AppBorderRadius.circular(isCompact ? 20 : 24),
                 border: Border.all(
                   color: isSelected
-                      ? AppColors.accent
-                      : Colors.white.withValues(alpha: 0.08),
+                      ? AppPalette.primary
+                      : AppPalette.white.withValues(alpha: 0.08),
                   width: isSelected ? 1.6 : 1,
                 ),
               ),
@@ -316,16 +316,16 @@ class _LanguageOptionTile extends StatelessWidget {
                     width: isCompact ? 42 : 46,
                     height: isCompact ? 42 : 46,
                     alignment: Alignment.center,
-                    decoration: BoxDecoration(
+                    decoration: AppBoxDecoration(
                       shape: BoxShape.circle,
                       color: isSelected
-                          ? AppColors.accent.withValues(alpha: 0.22)
-                          : Colors.white.withValues(alpha: 0.06),
+                          ? AppPalette.primary.withValues(alpha: 0.22)
+                          : AppPalette.white.withValues(alpha: 0.06),
                     ),
                     child: Text(
                       code,
-                      style: TextStyle(
-                        color: AppColors.accent,
+                      style: AppTextStyle(
+                        color: AppPalette.primary,
                         fontSize: isCompact ? 13 : 14,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0.5,
@@ -338,8 +338,8 @@ class _LanguageOptionTile extends StatelessWidget {
                       label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
+                      style: AppTextStyle(
+                        color: AppPalette.textPrimary,
                         fontSize: isCompact ? 15 : 17,
                         fontWeight: FontWeight.w800,
                       ),
@@ -352,12 +352,12 @@ class _LanguageOptionTile extends StatelessWidget {
                         ? const Icon(
                             Icons.check_circle_rounded,
                             key: ValueKey('selected'),
-                            color: AppColors.accent,
+                            color: AppPalette.primary,
                           )
                         : Icon(
                             Icons.circle_outlined,
                             key: const ValueKey('idle'),
-                            color: Colors.white.withValues(alpha: 0.18),
+                            color: AppPalette.white.withValues(alpha: 0.18),
                           ),
                   ),
                 ],

@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/network/file_api.dart';
-import '../../../core/ui/app_colors.dart';
 import '../../../core/network/post_api.dart';
 import '../../../core/ui/error_dialog.dart';
 import '../../../l10n/generated/app_localizations.dart';
@@ -336,24 +336,24 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: _communityAmberPanelColor(),
-          surfaceTintColor: Colors.transparent,
+          surfaceTintColor: AppPalette.transparent,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-            side: BorderSide(color: AppColors.accent.withValues(alpha: 0.28)),
+            borderRadius: AppBorderRadius.circular(24),
+            side: BorderSide(color: AppPalette.primary.withValues(alpha: 0.28)),
           ),
           title: Text(l10n.communityProfileUnfollowConfirmTitle),
           content: Text(l10n.profileUnfollowDescription),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              style: TextButton.styleFrom(foregroundColor: AppColors.accent),
+              style: TextButton.styleFrom(foregroundColor: AppPalette.primary),
               child: Text(l10n.cancel),
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.accent,
-                foregroundColor: AppColors.textPrimary,
+                backgroundColor: AppPalette.primary,
+                foregroundColor: AppPalette.textPrimary,
               ),
               child: Text(l10n.profileUnfollowConfirm),
             ),
@@ -846,12 +846,12 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppPalette.backgroundWarm,
       body: SafeArea(
         top: false,
         child: RefreshIndicator(
-          color: AppColors.accent,
-          backgroundColor: AppColors.surface,
+          color: AppPalette.primary,
+          backgroundColor: AppPalette.surfaceCool,
           onRefresh: () async {
             await Future.wait([
               _loadCommunity(showLoading: false),
@@ -872,7 +872,7 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
     if (_isLoading && community == null) {
       return const _CommunityProfileStateList(
         child: Center(
-          child: CircularProgressIndicator(color: AppColors.accent),
+          child: CircularProgressIndicator(color: AppPalette.primary),
         ),
       );
     }
@@ -886,8 +886,8 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
           action: FilledButton(
             onPressed: () => _loadCommunity(),
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.accent,
-              foregroundColor: AppColors.background,
+              backgroundColor: AppPalette.primary,
+              foregroundColor: AppPalette.backgroundWarm,
             ),
             child: Text(l10n.feedRetryAction),
           ),
@@ -898,7 +898,7 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
     if (community == null) {
       return const _CommunityProfileStateList(
         child: Center(
-          child: CircularProgressIndicator(color: AppColors.accent),
+          child: CircularProgressIndicator(color: AppPalette.primary),
         ),
       );
     }
@@ -915,7 +915,7 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
         return ListView(
           controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.only(bottom: 32),
+          padding: const AppEdgeInsets.only(bottom: 32),
           children: [
             _CommunityProfileHeader(
               community: community,
@@ -939,7 +939,7 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 640),
                   child: Padding(
-                    padding: EdgeInsets.fromLTRB(
+                    padding: AppEdgeInsets.fromLTRB(
                       horizontalPadding,
                       16,
                       horizontalPadding,
@@ -953,7 +953,7 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
                 ),
               ),
             Padding(
-              padding: EdgeInsets.fromLTRB(
+              padding: AppEdgeInsets.fromLTRB(
                 0,
                 trustBanners.isEmpty ? 16 : 12,
                 0,
@@ -1103,11 +1103,11 @@ class _CommunityPostsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+          padding: AppEdgeInsets.symmetric(horizontal: horizontalPadding),
           child: Text(
             l10n.communityProfilePostsSectionTitle,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: AppColors.textPrimary,
+              color: AppPalette.textPrimary,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -1116,13 +1116,13 @@ class _CommunityPostsSection extends StatelessWidget {
         if (isLoading)
           const Center(
             child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 32),
-              child: CircularProgressIndicator(color: AppColors.accent),
+              padding: AppEdgeInsets.symmetric(vertical: 32),
+              child: CircularProgressIndicator(color: AppPalette.primary),
             ),
           )
         else if (error != null)
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+            padding: AppEdgeInsets.symmetric(horizontal: horizontalPadding),
             child: _CommunityProfileMessage(
               icon: Icons.wifi_off_rounded,
               title: l10n.communityProfilePostsLoadFailedTitle,
@@ -1135,7 +1135,7 @@ class _CommunityPostsSection extends StatelessWidget {
           )
         else if (stories.isEmpty)
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+            padding: AppEdgeInsets.symmetric(horizontal: horizontalPadding),
             child: _CommunityProfileMessage(
               icon: Icons.article_outlined,
               title: l10n.communityProfileNoPostsTitle,
@@ -1146,7 +1146,7 @@ class _CommunityPostsSection extends StatelessWidget {
           ...stories.map(
             (story) => Padding(
               key: postKeyFor(story),
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: const AppEdgeInsets.only(bottom: 12),
               child: story.isQuickPost
                   ? QuickPostThreadCard(
                       post: story,
@@ -1162,9 +1162,9 @@ class _CommunityPostsSection extends StatelessWidget {
           ),
         if (isLoadingMore)
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
+            padding: AppEdgeInsets.symmetric(vertical: 16),
             child: Center(
-              child: CircularProgressIndicator(color: AppColors.accent),
+              child: CircularProgressIndicator(color: AppPalette.primary),
             ),
           ),
       ],
@@ -1240,31 +1240,31 @@ class _CommunityProfileHeader extends StatelessWidget {
           ),
         ),
         Padding(
-          padding: EdgeInsets.only(top: coverHeight - panelOverlap),
+          padding: AppEdgeInsets.only(top: coverHeight - panelOverlap),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 640),
               child: DecoratedBox(
                 key: const ValueKey('community-profile-info-panel'),
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   color: _communityAmberPanelColor(),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(28),
-                    bottom: Radius.circular(8),
+                  borderRadius: const AppBorderRadius.vertical(
+                    top: AppRadiusValue.circular(28),
+                    bottom: AppRadiusValue.circular(8),
                   ),
                   border: Border.all(
-                    color: AppColors.accent.withValues(alpha: 0.24),
+                    color: AppPalette.primary.withValues(alpha: 0.24),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.accent.withValues(alpha: 0.10),
+                      color: AppPalette.primary.withValues(alpha: 0.10),
                       blurRadius: 24,
                       offset: const Offset(0, -4),
                     ),
                   ],
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
+                  padding: const AppEdgeInsets.fromLTRB(
                     18,
                     avatarRadius + 18,
                     18,
@@ -1279,7 +1279,7 @@ class _CommunityProfileHeader extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.headlineSmall
                             ?.copyWith(
-                              color: AppColors.textPrimary,
+                              color: AppPalette.textPrimary,
                               fontWeight: FontWeight.w800,
                             ),
                       ),
@@ -1289,7 +1289,7 @@ class _CommunityProfileHeader extends StatelessWidget {
                           children: [
                             Icon(
                               Icons.location_on_outlined,
-                              color: AppColors.accent.withValues(alpha: 0.9),
+                              color: AppPalette.primary.withValues(alpha: 0.9),
                               size: 18,
                             ),
                             const SizedBox(width: 6),
@@ -1303,7 +1303,7 @@ class _CommunityProfileHeader extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                                 style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(
-                                      color: AppColors.textSecondary,
+                                      color: AppPalette.textCoolSecondary,
                                       fontWeight: FontWeight.w700,
                                     ),
                               ),
@@ -1317,7 +1317,7 @@ class _CommunityProfileHeader extends StatelessWidget {
                           description,
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
-                                color: AppColors.textSecondary,
+                                color: AppPalette.textCoolSecondary,
                                 height: 1.35,
                               ),
                         ),
@@ -1355,12 +1355,12 @@ class _CommunityProfileHeader extends StatelessWidget {
                           onPressed: isUpdatingFollow ? null : onToggleFollow,
                           style: FilledButton.styleFrom(
                             backgroundColor: community.followedByViewer
-                                ? AppColors.surfaceLight
-                                : AppColors.accent,
-                            foregroundColor: AppColors.textPrimary,
+                                ? AppPalette.surfaceCoolLight
+                                : AppPalette.primary,
+                            foregroundColor: AppPalette.textPrimary,
                             minimumSize: const Size.fromHeight(52),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(999),
+                              borderRadius: AppBorderRadius.circular(999),
                             ),
                           ),
                           icon: isUpdatingFollow
@@ -1397,9 +1397,9 @@ class _CommunityProfileHeader extends StatelessWidget {
                               OutlinedButton.icon(
                                 onPressed: onCreatePost,
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppColors.accent,
+                                  foregroundColor: AppPalette.primary,
                                   side: const BorderSide(
-                                    color: AppColors.accent,
+                                    color: AppPalette.primary,
                                   ),
                                 ),
                                 icon: const Icon(Icons.edit_note_rounded),
@@ -1413,7 +1413,7 @@ class _CommunityProfileHeader extends StatelessWidget {
                               OutlinedButton.icon(
                                 onPressed: onMembersOpen,
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppColors.textPrimary,
+                                  foregroundColor: AppPalette.textPrimary,
                                 ),
                                 icon: const Icon(
                                   Icons.manage_accounts_outlined,
@@ -1428,7 +1428,7 @@ class _CommunityProfileHeader extends StatelessWidget {
                               OutlinedButton.icon(
                                 onPressed: onModerationOpen,
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppColors.accentLight,
+                                  foregroundColor: AppPalette.primaryLight,
                                 ),
                                 icon: const Icon(Icons.shield_outlined),
                                 label: Text(
@@ -1546,17 +1546,17 @@ class _CommunityHeaderActionsMenu extends StatelessWidget {
 
     return PopupMenuButton<_CommunityHeaderAction>(
       tooltip: tooltip,
-      padding: EdgeInsets.zero,
+      padding: AppEdgeInsets.zero,
       position: PopupMenuPosition.under,
       offset: const Offset(0, 10),
       color: _communityAmberMenuColor(),
       elevation: 18,
-      shadowColor: Colors.black.withValues(alpha: 0.28),
-      surfaceTintColor: Colors.transparent,
+      shadowColor: AppPalette.black.withValues(alpha: 0.28),
+      surfaceTintColor: AppPalette.transparent,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: AppColors.accent.withValues(alpha: 0.24)),
+        borderRadius: AppBorderRadius.circular(18),
+        side: BorderSide(color: AppPalette.primary.withValues(alpha: 0.24)),
       ),
       onSelected: (action) {
         switch (action) {
@@ -1569,7 +1569,7 @@ class _CommunityHeaderActionsMenu extends StatelessWidget {
         }
       },
       child: Material(
-        color: AppColors.accent.withValues(alpha: 0.22),
+        color: AppPalette.primary.withValues(alpha: 0.22),
         shape: const CircleBorder(),
         child: const _CommunityHeaderRoundButtonShell(
           icon: Icons.more_horiz_rounded,
@@ -1578,7 +1578,7 @@ class _CommunityHeaderActionsMenu extends StatelessWidget {
       itemBuilder: (context) => [
         PopupMenuItem<_CommunityHeaderAction>(
           height: 52,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const AppEdgeInsets.symmetric(horizontal: 8, vertical: 4),
           value: community.mutedByViewer
               ? _CommunityHeaderAction.unmute
               : _CommunityHeaderAction.mute,
@@ -1593,7 +1593,7 @@ class _CommunityHeaderActionsMenu extends StatelessWidget {
         ),
         PopupMenuItem<_CommunityHeaderAction>(
           height: 52,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const AppEdgeInsets.symmetric(horizontal: 8, vertical: 4),
           value: _CommunityHeaderAction.report,
           child: _CommunityHeaderMenuTile(
             icon: Icons.flag_outlined,
@@ -1619,20 +1619,20 @@ class _CommunityHeaderMenuTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foreground = isDestructive ? AppColors.destructive : AppColors.accent;
+    final foreground = isDestructive ? AppPalette.danger : AppPalette.primary;
 
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(14),
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.04),
+        borderRadius: AppBorderRadius.circular(14),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const AppEdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             DecoratedBox(
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 color: foreground.withValues(alpha: 0.14),
                 shape: BoxShape.circle,
               ),
@@ -1647,8 +1647,8 @@ class _CommunityHeaderMenuTile extends StatelessWidget {
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: const AppTextStyle(
+                  color: AppPalette.textPrimary,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -1676,7 +1676,7 @@ class _CommunityHeaderRoundButton extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: Colors.black.withValues(alpha: 0.32),
+        color: AppPalette.black.withValues(alpha: 0.32),
         shape: const CircleBorder(),
         child: InkWell(
           onTap: onPressed,
@@ -1697,7 +1697,7 @@ class _CommunityHeaderRoundButtonShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox.square(
       dimension: 48,
-      child: Icon(icon, color: AppColors.textPrimary, size: 24),
+      child: Icon(icon, color: AppPalette.textPrimary, size: 24),
     );
   }
 }
@@ -1718,25 +1718,25 @@ class _CommunityRulesList extends StatelessWidget {
         Text(
           l10n.communityProfileRulesTitle,
           style: textTheme.titleSmall?.copyWith(
-            color: AppColors.textPrimary,
+            color: AppPalette.textPrimary,
             fontWeight: FontWeight.w800,
           ),
         ),
         const SizedBox(height: 8),
         ...rules.map(
           (rule) => Padding(
-            padding: const EdgeInsets.only(bottom: 6),
+            padding: const AppEdgeInsets.only(bottom: 6),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Padding(
-                  padding: EdgeInsets.only(top: 8),
+                  padding: AppEdgeInsets.only(top: 8),
                   child: SizedBox(
                     width: 5,
                     height: 5,
                     child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: AppColors.accent,
+                      decoration: AppBoxDecoration(
+                        color: AppPalette.primary,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -1747,7 +1747,7 @@ class _CommunityRulesList extends StatelessWidget {
                   child: Text(
                     rule,
                     style: textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: AppPalette.textCoolSecondary,
                       height: 1.35,
                     ),
                   ),
@@ -1791,13 +1791,13 @@ class _CommunityCover extends StatelessWidget {
               },
             ),
           DecoratedBox(
-            decoration: BoxDecoration(
+            decoration: AppBoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withValues(alpha: 0.14),
-                  Colors.black.withValues(alpha: 0.46),
+                  AppPalette.black.withValues(alpha: 0.14),
+                  AppPalette.black.withValues(alpha: 0.46),
                 ],
               ),
             ),
@@ -1818,18 +1818,18 @@ class _CommunityCoverFallback extends StatelessWidget {
     final initial = _communityInitial(title);
 
     return DecoratedBox(
-      decoration: const BoxDecoration(
+      decoration: const AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppColors.accent, AppColors.surface],
+          colors: [AppPalette.primary, AppPalette.surfaceCool],
         ),
       ),
       child: Center(
         child: Text(
           initial,
           style: Theme.of(context).textTheme.displayLarge?.copyWith(
-            color: AppColors.textPrimary.withValues(alpha: 0.22),
+            color: AppPalette.textPrimary.withValues(alpha: 0.22),
             fontWeight: FontWeight.w900,
           ),
         ),
@@ -1856,13 +1856,13 @@ class _CommunityAvatar extends StatelessWidget {
       key: const ValueKey('community-profile-avatar'),
       width: radius * 2,
       height: radius * 2,
-      decoration: BoxDecoration(
-        color: AppColors.background,
+      decoration: AppBoxDecoration(
+        color: AppPalette.backgroundWarm,
         shape: BoxShape.circle,
-        border: Border.all(color: AppColors.background, width: 4),
+        border: Border.all(color: AppPalette.backgroundWarm, width: 4),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.32),
+            color: AppPalette.black.withValues(alpha: 0.32),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -1891,14 +1891,14 @@ class _CommunityAvatarFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.18),
+      decoration: AppBoxDecoration(
+        color: AppPalette.primary.withValues(alpha: 0.18),
       ),
       child: Center(
         child: Text(
           initial,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            color: AppColors.accent,
+            color: AppPalette.primary,
             fontWeight: FontWeight.w900,
           ),
         ),
@@ -1915,18 +1915,18 @@ class _CommunityBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(999),
+      decoration: AppBoxDecoration(
+        color: AppPalette.primary.withValues(alpha: 0.14),
+        borderRadius: AppBorderRadius.circular(999),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 5),
         child: Text(
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: AppColors.accent,
+            color: AppPalette.primary,
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -1946,7 +1946,7 @@ class _CommunityStat extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 19, color: AppColors.textSecondary),
+        Icon(icon, size: 19, color: AppPalette.textCoolSecondary),
         const SizedBox(width: 6),
         Flexible(
           child: Text(
@@ -1954,7 +1954,7 @@ class _CommunityStat extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: AppColors.textSecondary,
+              color: AppPalette.textCoolSecondary,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -1973,7 +1973,7 @@ class _CommunityProfileStateList extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(24),
+      padding: const AppEdgeInsets.all(24),
       children: [
         SizedBox(height: MediaQuery.sizeOf(context).height * 0.18),
         child,
@@ -2003,13 +2003,13 @@ class _CommunityProfileMessage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: AppColors.textSecondary, size: 42),
+            Icon(icon, color: AppPalette.textCoolSecondary, size: 42),
             const SizedBox(height: 14),
             Text(
               title,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: AppColors.textPrimary,
+                color: AppPalette.textPrimary,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -2017,9 +2017,9 @@ class _CommunityProfileMessage extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppPalette.textCoolSecondary,
+              ),
             ),
             if (action != null) ...[const SizedBox(height: 16), action!],
           ],
@@ -2140,15 +2140,15 @@ String _communityInitial(String title) {
 
 Color _communityAmberPanelColor() {
   return Color.alphaBlend(
-    AppColors.accent.withValues(alpha: 0.14),
-    AppColors.background,
+    AppPalette.primary.withValues(alpha: 0.14),
+    AppPalette.backgroundWarm,
   );
 }
 
 Color _communityAmberMenuColor() {
   return Color.alphaBlend(
-    AppColors.accent.withValues(alpha: 0.20),
-    AppColors.background,
+    AppPalette.primary.withValues(alpha: 0.20),
+    AppPalette.backgroundWarm,
   );
 }
 

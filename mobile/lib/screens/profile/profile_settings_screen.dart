@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -6,7 +7,6 @@ import '../../core/navigation/android_back_swipe_scope.dart';
 import '../../core/network/reference_api.dart';
 import '../../core/reference/country_filter_utils.dart';
 import '../../core/reference/currency_filter_utils.dart';
-import '../../core/ui/app_colors.dart';
 import '../../core/ui/app_language_sheet.dart';
 import '../../features/profile/models/user_profile_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -178,7 +178,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               child: Center(
                 child: Text(
                   l10n.profileNotAvailable,
-                  style: const TextStyle(color: AppColors.textPrimary),
+                  style: const AppTextStyle(color: AppPalette.textPrimary),
                 ),
               ),
             ),
@@ -191,19 +191,19 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     final lang = Localizations.localeOf(context).languageCode;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       body: ProfileResponsiveScope(
         child: ProfileGlassBackground(
           child: SafeArea(
             child: RefreshIndicator(
               onRefresh: _refreshProfileSettings,
-              color: AppColors.accent,
-              backgroundColor: AppColors.surface,
+              color: AppPalette.primary,
+              backgroundColor: AppPalette.surfaceCool,
               child: ListView(
                 physics: const BouncingScrollPhysics(
                   parent: AlwaysScrollableScrollPhysics(),
                 ),
-                padding: EdgeInsets.fromLTRB(
+                padding: AppEdgeInsets.fromLTRB(
                   padding,
                   profileScaled(context, 14, min: 10, max: 18),
                   padding,
@@ -266,22 +266,22 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   FilledButton.tonal(
                     onPressed: _confirmLogout,
                     style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.destructive,
-                      foregroundColor: AppColors.textPrimary,
+                      backgroundColor: AppPalette.danger,
+                      foregroundColor: AppPalette.textPrimary,
                       minimumSize: Size(
                         double.infinity,
                         profileScaled(context, 54, min: 48, max: 56),
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
+                        borderRadius: AppBorderRadius.circular(
                           profileScaled(context, 20, min: 18, max: 22),
                         ),
                       ),
                     ),
                     child: Text(
                       l10n.logoutButton,
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
+                      style: AppTextStyle(
+                        color: AppPalette.textPrimary,
                         fontSize: profileScaled(context, 15, min: 14, max: 16),
                         fontWeight: FontWeight.w800,
                       ),
@@ -312,7 +312,7 @@ class _SubpageTopBar extends StatelessWidget {
         ),
         Expanded(
           child: Padding(
-            padding: EdgeInsets.symmetric(
+            padding: AppEdgeInsets.symmetric(
               horizontal: profileScaled(context, 12, min: 8, max: 12),
             ),
             child: Text(
@@ -320,8 +320,8 @@ class _SubpageTopBar extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: AppColors.textPrimary,
+              style: AppTextStyle(
+                color: AppPalette.textPrimary,
                 fontSize: profileScaled(context, 18, min: 16, max: 20),
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.3,
@@ -358,16 +358,16 @@ class _LogoutConfirmDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final maxDialogHeight = MediaQuery.sizeOf(context).height * 0.84;
-    final radius = BorderRadius.circular(
+    final radius = AppBorderRadius.circular(
       profileScaled(context, 28, min: 24, max: 30),
     );
 
     return Dialog(
-      insetPadding: EdgeInsets.symmetric(
+      insetPadding: AppEdgeInsets.symmetric(
         horizontal: profileScaled(context, 18, min: 14, max: 24),
         vertical: profileScaled(context, 24, min: 18, max: 28),
       ),
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       elevation: 0,
       child: SafeArea(
         child: ConstrainedBox(
@@ -376,24 +376,24 @@ class _LogoutConfirmDialog extends StatelessWidget {
             maxHeight: maxDialogHeight,
           ),
           child: DecoratedBox(
-            decoration: BoxDecoration(
+            decoration: AppBoxDecoration(
               borderRadius: radius,
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF3A210C), Color(0xFF201207)],
+                colors: [AppPalette.warmSurface49, AppPalette.warmInk62],
               ),
               border: Border.all(
-                color: AppColors.accent.withValues(alpha: 0.28),
+                color: AppPalette.primary.withValues(alpha: 0.28),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.32),
+                  color: AppPalette.black.withValues(alpha: 0.32),
                   blurRadius: 34,
                   offset: const Offset(0, 18),
                 ),
                 BoxShadow(
-                  color: AppColors.accent.withValues(alpha: 0.14),
+                  color: AppPalette.primary.withValues(alpha: 0.14),
                   blurRadius: 28,
                   offset: const Offset(0, 10),
                 ),
@@ -402,7 +402,7 @@ class _LogoutConfirmDialog extends StatelessWidget {
             child: ClipRRect(
               borderRadius: radius,
               child: SingleChildScrollView(
-                padding: EdgeInsets.all(
+                padding: AppEdgeInsets.all(
                   profileScaled(context, 22, min: 18, max: 24),
                 ),
                 child: Column(
@@ -414,18 +414,18 @@ class _LogoutConfirmDialog extends StatelessWidget {
                       child: Container(
                         width: profileScaled(context, 58, min: 52, max: 62),
                         height: profileScaled(context, 58, min: 52, max: 62),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(
+                        decoration: AppBoxDecoration(
+                          borderRadius: AppBorderRadius.circular(
                             profileScaled(context, 20, min: 18, max: 22),
                           ),
-                          color: AppColors.accent.withValues(alpha: 0.14),
+                          color: AppPalette.primary.withValues(alpha: 0.14),
                           border: Border.all(
-                            color: AppColors.accent.withValues(alpha: 0.28),
+                            color: AppPalette.primary.withValues(alpha: 0.28),
                           ),
                         ),
                         child: const Icon(
                           Icons.logout_rounded,
-                          color: AppColors.accent,
+                          color: AppPalette.primary,
                         ),
                       ),
                     ),
@@ -434,8 +434,8 @@ class _LogoutConfirmDialog extends StatelessWidget {
                     ),
                     Text(
                       title,
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
+                      style: AppTextStyle(
+                        color: AppPalette.textPrimary,
                         fontSize: profileScaled(context, 24, min: 21, max: 26),
                         height: 1.08,
                         fontWeight: FontWeight.w900,
@@ -446,7 +446,7 @@ class _LogoutConfirmDialog extends StatelessWidget {
                     ),
                     Text(
                       message,
-                      style: TextStyle(
+                      style: AppTextStyle(
                         color: profileTextSoft,
                         fontSize: profileScaled(context, 15, min: 14, max: 16),
                         height: 1.45,
@@ -466,11 +466,11 @@ class _LogoutConfirmDialog extends StatelessWidget {
                           style: OutlinedButton.styleFrom(
                             foregroundColor: profileTextSoft,
                             side: BorderSide(
-                              color: Colors.white.withValues(alpha: 0.14),
+                              color: AppPalette.white.withValues(alpha: 0.14),
                             ),
                             minimumSize: const Size(132, 48),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(999),
+                              borderRadius: AppBorderRadius.circular(999),
                             ),
                           ),
                           child: Text(
@@ -482,11 +482,11 @@ class _LogoutConfirmDialog extends StatelessWidget {
                         FilledButton(
                           onPressed: () => Navigator.of(context).pop(true),
                           style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.accent,
-                            foregroundColor: Colors.white,
+                            backgroundColor: AppPalette.primary,
+                            foregroundColor: AppPalette.white,
                             minimumSize: const Size(132, 48),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(999),
+                              borderRadius: AppBorderRadius.circular(999),
                             ),
                           ),
                           child: Text(
@@ -545,16 +545,16 @@ class _ProfileOverviewCard extends StatelessWidget {
         children: List.generate(items.length, (index) {
           final item = items[index];
           return Container(
-            padding: EdgeInsets.symmetric(
+            padding: AppEdgeInsets.symmetric(
               horizontal: profileScaled(context, 18, min: 14, max: 20),
               vertical: profileScaled(context, 16, min: 14, max: 18),
             ),
-            decoration: BoxDecoration(
+            decoration: AppBoxDecoration(
               border: index == items.length - 1
                   ? null
                   : Border(
                       bottom: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.05),
+                        color: AppPalette.white.withValues(alpha: 0.05),
                       ),
                     ),
             ),
@@ -563,7 +563,7 @@ class _ProfileOverviewCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     item.$1,
-                    style: TextStyle(
+                    style: AppTextStyle(
                       color: profileTextSoft,
                       fontSize: profileScaled(context, 13, min: 12, max: 13),
                       fontWeight: FontWeight.w700,
@@ -577,8 +577,8 @@ class _ProfileOverviewCard extends StatelessWidget {
                     textAlign: TextAlign.right,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
+                    style: AppTextStyle(
+                      color: AppPalette.textPrimary,
                       fontSize: profileScaled(context, 14, min: 13, max: 15),
                       fontWeight: FontWeight.w800,
                     ),
@@ -622,16 +622,18 @@ class _SettingsActionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final effectiveDisabled = onTap == null;
     return Padding(
-      padding: EdgeInsets.only(
+      padding: AppEdgeInsets.only(
         bottom: profileScaled(context, 14, min: 10, max: 14),
       ),
       child: InkWell(
         onTap: effectiveDisabled ? null : onTap,
-        borderRadius: BorderRadius.circular(
+        borderRadius: AppBorderRadius.circular(
           profileScaled(context, 22, min: 18, max: 22),
         ),
         child: Ink(
-          padding: EdgeInsets.all(profileScaled(context, 18, min: 14, max: 20)),
+          padding: AppEdgeInsets.all(
+            profileScaled(context, 18, min: 14, max: 20),
+          ),
           decoration: profileCardDecoration(
             context,
             disabled: effectiveDisabled,
@@ -643,15 +645,17 @@ class _SettingsActionTile extends StatelessWidget {
               Container(
                 width: profileScaled(context, 46, min: 40, max: 48),
                 height: profileScaled(context, 46, min: 40, max: 48),
-                decoration: BoxDecoration(
-                  color: AppColors.accent.withValues(
+                decoration: AppBoxDecoration(
+                  color: AppPalette.primary.withValues(
                     alpha: effectiveDisabled ? 0.05 : 0.12,
                   ),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   icon,
-                  color: effectiveDisabled ? profileDisabled : AppColors.accent,
+                  color: effectiveDisabled
+                      ? profileDisabled
+                      : AppPalette.primary,
                 ),
               ),
               SizedBox(width: profileScaled(context, 14, min: 12, max: 16)),
@@ -661,10 +665,10 @@ class _SettingsActionTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: TextStyle(
+                      style: AppTextStyle(
                         color: effectiveDisabled
                             ? profileDisabled
-                            : AppColors.textPrimary,
+                            : AppPalette.textPrimary,
                         fontSize: profileScaled(context, 16, min: 14, max: 17),
                         fontWeight: FontWeight.w800,
                       ),
@@ -672,7 +676,7 @@ class _SettingsActionTile extends StatelessWidget {
                     SizedBox(height: profileScaled(context, 6, min: 4, max: 6)),
                     Text(
                       subtitle,
-                      style: TextStyle(
+                      style: AppTextStyle(
                         color: effectiveDisabled
                             ? profileDisabled
                             : profileTextMuted,

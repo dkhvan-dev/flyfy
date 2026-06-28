@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
-import '../../../core/ui/app_colors.dart';
 import '../service_catalog.dart';
 
-const _availableBackgroundColor = Color(0xFF43280D);
-const _availableTextColor = Color(0xFFF2E5D7);
-const _unavailableBackgroundColor = Color(0xFF2F2B27);
-const _unavailableForegroundColor = Color(0xFF9B8976);
-const _unavailableTextColor = Color(0xFFB5A694);
-const _unavailableBorderColor = Color(0xFF5C5147);
+const _availableBackgroundColor = AppPalette.warmSurface74;
+const _availableTextColor = AppPalette.orangeLight33;
+const _unavailableBackgroundColor = AppPalette.warmSurface38;
+const _unavailableForegroundColor = AppPalette.warmMuted15;
+const _unavailableTextColor = AppPalette.orangeSoft07;
+const _unavailableBorderColor = AppPalette.warmSurfaceHigh10;
 
 class ServiceGrid extends StatelessWidget {
   const ServiceGrid({
@@ -73,14 +73,14 @@ class _ServiceTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isEnabled = service.isAvailable && service.route.trim().isNotEmpty;
     final foregroundColor = isEnabled
-        ? AppColors.accent
+        ? AppPalette.primary
         : _unavailableForegroundColor;
     final textColor = isEnabled ? _availableTextColor : _unavailableTextColor;
     final backgroundColor = isEnabled
         ? _availableBackgroundColor
         : _unavailableBackgroundColor;
     final borderColor = isEnabled
-        ? Colors.transparent
+        ? AppPalette.transparent
         : _unavailableBorderColor;
     final iconSize = isCompact ? 26.0 : 31.0;
     final iconLabelGap = isCompact ? 7.0 : 9.0;
@@ -96,24 +96,24 @@ class _ServiceTile extends StatelessWidget {
       onTap: isEnabled ? () => onServiceTap(service) : null,
       child: ExcludeSemantics(
         child: Material(
-          color: Colors.transparent,
+          color: AppPalette.transparent,
           child: InkWell(
             onTap: isEnabled ? () => onServiceTap(service) : null,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppBorderRadius.circular(16),
             splashColor: isEnabled
-                ? AppColors.accent.withValues(alpha: 0.10)
-                : Colors.transparent,
-            highlightColor: Colors.transparent,
+                ? AppPalette.primary.withValues(alpha: 0.10)
+                : AppPalette.transparent,
+            highlightColor: AppPalette.transparent,
             child: Ink(
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 color: backgroundColor,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: AppBorderRadius.circular(14),
                 border: Border.all(color: borderColor),
               ),
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: minTileHeight),
                 child: Padding(
-                  padding: EdgeInsets.symmetric(
+                  padding: AppEdgeInsets.symmetric(
                     horizontal: isCompact ? 6 : 8,
                     vertical: verticalPadding,
                   ),
@@ -132,7 +132,7 @@ class _ServiceTile extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: AppTextStyle(
                           color: textColor,
                           fontSize: labelFontSize,
                           height: 1.12,

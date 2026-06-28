@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:file_selector/file_selector.dart' as file_selector;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -23,7 +24,6 @@ import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
 import '../../core/network/sticker_api.dart';
 import '../../core/platform/clipboard_media_service.dart';
-import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/chat/models/conversation_vm.dart';
 import '../../features/chat/models/message_vm.dart';
@@ -482,7 +482,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.chatClipboardEmpty),
-            backgroundColor: const Color(0xFF3a2415),
+            backgroundColor: AppPalette.warmSurface56,
           ),
         );
         return;
@@ -516,8 +516,8 @@ class _ChatScreenState extends State<ChatScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.45),
+      backgroundColor: AppPalette.transparent,
+      barrierColor: AppPalette.black.withValues(alpha: 0.45),
       builder: (sheetContext) {
         return _PastedImagePreviewSheet(attachment: attachment);
       },
@@ -752,25 +752,27 @@ class _ChatScreenState extends State<ChatScreen> {
     final shouldBlock = await showModalBottomSheet<bool>(
       context: context,
       isDismissible: true,
-      backgroundColor: const Color(0xFF1d120b),
+      backgroundColor: AppPalette.warmInk55,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: AppBorderRadius.vertical(
+          top: AppRadiusValue.circular(24),
+        ),
       ),
       builder: (sheetContext) {
         return SafeArea(
           child: Padding(
-            padding: EdgeInsets.symmetric(vertical: _scale(context, 8)),
+            padding: AppEdgeInsets.symmetric(vertical: _scale(context, 8)),
             child: ListTile(
               leading: Icon(
                 isBlocked ? Icons.lock_open_rounded : Icons.block_rounded,
-                color: isBlocked ? AppColors.accent : AppColors.destruct,
+                color: isBlocked ? AppPalette.primary : AppPalette.danger,
               ),
               title: Text(
                 isBlocked
                     ? l10n.chatUnblockUserAction
                     : l10n.chatBlockUserAction,
-                style: TextStyle(
-                  color: isBlocked ? AppColors.textPrimary : AppColors.destruct,
+                style: AppTextStyle(
+                  color: isBlocked ? AppPalette.textPrimary : AppPalette.danger,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -800,7 +802,7 @@ class _ChatScreenState extends State<ChatScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(l10n.chatActivityChatClosed),
-        backgroundColor: const Color(0xFF3a2415),
+        backgroundColor: AppPalette.warmSurface56,
       ),
     );
   }
@@ -1060,14 +1062,14 @@ class _ChatScreenState extends State<ChatScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1d120b),
+        backgroundColor: AppPalette.warmInk55,
         title: Text(
           l10n.chatExternalLinkTitle,
-          style: const TextStyle(color: Colors.white),
+          style: const AppTextStyle(color: AppPalette.white),
         ),
         content: Text(
           l10n.chatExternalLinkMessage(uri.toString()),
-          style: const TextStyle(color: Color(0xFFf5ede6)),
+          style: const AppTextStyle(color: AppPalette.orangeWash10),
         ),
         actions: [
           TextButton(
@@ -1116,9 +1118,11 @@ class _ChatScreenState extends State<ChatScreen> {
       context: context,
       isScrollControlled: true,
       isDismissible: true,
-      backgroundColor: const Color(0xFF1d120b),
+      backgroundColor: AppPalette.warmInk55,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: AppBorderRadius.vertical(
+          top: AppRadiusValue.circular(20),
+        ),
       ),
       builder: (sheetContext) {
         final maxHeight =
@@ -1132,7 +1136,7 @@ class _ChatScreenState extends State<ChatScreen> {
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                padding: const AppEdgeInsets.fromLTRB(24, 20, 24, 24),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -1151,7 +1155,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   Navigator.pop(sheetContext, 'read_receipts'),
                       ),
                       SizedBox(height: _scale(context, 12)),
-                      Divider(color: Colors.white.withValues(alpha: 0.08)),
+                      Divider(color: AppPalette.white.withValues(alpha: 0.08)),
                       SizedBox(height: _scale(context, 4)),
                     ],
                     if (canReact) ...[
@@ -1159,10 +1163,10 @@ class _ChatScreenState extends State<ChatScreen> {
                         alignment: Alignment.centerLeft,
                         child: Text(
                           l10n.chatReactionSheetTitle,
-                          style: TextStyle(
+                          style: AppTextStyle(
                             fontSize: _scale(context, 13),
                             fontWeight: FontWeight.w800,
-                            color: Colors.white.withValues(alpha: 0.58),
+                            color: AppPalette.white.withValues(alpha: 0.58),
                           ),
                         ),
                       ),
@@ -1176,18 +1180,18 @@ class _ChatScreenState extends State<ChatScreen> {
                             Navigator.pop(sheetContext, 'reaction:$emoji'),
                       ),
                       SizedBox(height: _scale(context, 12)),
-                      Divider(color: Colors.white.withValues(alpha: 0.08)),
+                      Divider(color: AppPalette.white.withValues(alpha: 0.08)),
                       SizedBox(height: _scale(context, 4)),
                     ],
                     if (canCopy)
                       ListTile(
                         leading: const Icon(
                           Icons.copy_rounded,
-                          color: AppColors.accent,
+                          color: AppPalette.primary,
                         ),
                         title: Text(
                           l10n.chatCopyAction,
-                          style: const TextStyle(color: Colors.white),
+                          style: const AppTextStyle(color: AppPalette.white),
                         ),
                         onTap: () => Navigator.pop(sheetContext, 'copy'),
                       ),
@@ -1195,11 +1199,11 @@ class _ChatScreenState extends State<ChatScreen> {
                       ListTile(
                         leading: const Icon(
                           Icons.forward_rounded,
-                          color: AppColors.accent,
+                          color: AppPalette.primary,
                         ),
                         title: Text(
                           l10n.chatForwardAction,
-                          style: const TextStyle(color: Colors.white),
+                          style: const AppTextStyle(color: AppPalette.white),
                         ),
                         onTap: () => Navigator.pop(sheetContext, 'forward'),
                       ),
@@ -1209,11 +1213,11 @@ class _ChatScreenState extends State<ChatScreen> {
                           isPinned
                               ? Icons.push_pin_outlined
                               : Icons.push_pin_rounded,
-                          color: AppColors.accent,
+                          color: AppPalette.primary,
                         ),
                         title: Text(
                           isPinned ? l10n.chatUnpinAction : l10n.chatPinAction,
-                          style: const TextStyle(color: Colors.white),
+                          style: const AppTextStyle(color: AppPalette.white),
                         ),
                         onTap: () => Navigator.pop(
                           sheetContext,
@@ -1224,11 +1228,11 @@ class _ChatScreenState extends State<ChatScreen> {
                       ListTile(
                         leading: const Icon(
                           Icons.delete_outline_rounded,
-                          color: Color(0xFFff6b5f),
+                          color: AppPalette.redSoft08,
                         ),
                         title: Text(
                           l10n.chatDeleteAction,
-                          style: const TextStyle(color: Colors.white),
+                          style: const AppTextStyle(color: AppPalette.white),
                         ),
                         onTap: () => Navigator.pop(sheetContext, 'delete'),
                       ),
@@ -1237,7 +1241,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       onPressed: () => Navigator.pop(sheetContext),
                       child: Text(
                         l10n.cancelButton,
-                        style: const TextStyle(color: AppColors.accent),
+                        style: const AppTextStyle(color: AppPalette.primary),
                       ),
                     ),
                   ],
@@ -1330,7 +1334,7 @@ class _ChatScreenState extends State<ChatScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(l10n.chatMessageCopied),
-        backgroundColor: const Color(0xFF3a2415),
+        backgroundColor: AppPalette.warmSurface56,
       ),
     );
   }
@@ -1350,9 +1354,11 @@ class _ChatScreenState extends State<ChatScreen> {
       context: context,
       isScrollControlled: true,
       isDismissible: true,
-      backgroundColor: const Color(0xFF1d120b),
+      backgroundColor: AppPalette.warmInk55,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: AppBorderRadius.vertical(
+          top: AppRadiusValue.circular(24),
+        ),
       ),
       builder: (sheetContext) => _ForwardMessageSheet(
         conversations: chat.conversations
@@ -1382,7 +1388,7 @@ class _ChatScreenState extends State<ChatScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(l10n.chatForwardSuccess),
-        backgroundColor: const Color(0xFF3a2415),
+        backgroundColor: AppPalette.warmSurface56,
       ),
     );
   }
@@ -1394,9 +1400,11 @@ class _ChatScreenState extends State<ChatScreen> {
       context: context,
       isScrollControlled: true,
       isDismissible: true,
-      backgroundColor: const Color(0xFF1d120b),
+      backgroundColor: AppPalette.warmInk55,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: AppBorderRadius.vertical(
+          top: AppRadiusValue.circular(24),
+        ),
       ),
       builder: (sheetContext) => _ReadReceiptsSheet(receipts: receipts),
     );
@@ -1413,9 +1421,11 @@ class _ChatScreenState extends State<ChatScreen> {
       context: context,
       isScrollControlled: true,
       isDismissible: true,
-      backgroundColor: const Color(0xFF1d120b),
+      backgroundColor: AppPalette.warmInk55,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: AppBorderRadius.vertical(
+          top: AppRadiusValue.circular(24),
+        ),
       ),
       builder: (sheetContext) =>
           _ReactionUsersSheet(reactionInfos: reactionInfos),
@@ -1701,7 +1711,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFF100802),
+      backgroundColor: AppPalette.warmInk05,
       resizeToAvoidBottomInset: true,
       body: Consumer<ChatProvider>(
         builder: (context, chat, _) {
@@ -1959,16 +1969,16 @@ class _ChatTopBar extends StatelessWidget {
     final hz = _scale(context, 16);
 
     return Container(
-      padding: EdgeInsets.only(
+      padding: AppEdgeInsets.only(
         top: mq.padding.top + _scale(context, 14),
         left: hz,
         right: hz,
         bottom: _scale(context, 14),
       ),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1d120b),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmInk55,
         border: Border(
-          bottom: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+          bottom: BorderSide(color: AppPalette.white.withValues(alpha: 0.08)),
         ),
       ),
       child: Row(
@@ -1983,7 +1993,7 @@ class _ChatTopBar extends StatelessWidget {
                 child: Icon(
                   Icons.arrow_back_ios_new,
                   size: _scale(context, 20),
-                  color: Colors.white,
+                  color: AppPalette.white,
                 ),
               ),
             ),
@@ -2026,16 +2036,16 @@ class _DirectActionsButton extends StatelessWidget {
       child: Container(
         width: s,
         height: s,
-        decoration: BoxDecoration(
+        decoration: AppBoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-          color: Colors.white.withValues(alpha: 0.05),
+          border: Border.all(color: AppPalette.white.withValues(alpha: 0.12)),
+          color: AppPalette.white.withValues(alpha: 0.05),
         ),
         child: Center(
           child: Icon(
             Icons.more_vert_rounded,
             size: _scale(context, 22),
-            color: AppColors.textPrimary,
+            color: AppPalette.textPrimary,
           ),
         ),
       ),
@@ -2057,16 +2067,16 @@ class _ParticipantsButton extends StatelessWidget {
       child: Container(
         width: s,
         height: s,
-        decoration: BoxDecoration(
+        decoration: AppBoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: const Color(0x2EFF9D00)),
-          color: const Color(0x0DFF9900),
+          border: Border.all(color: AppPalette.warmOverlayMuted04),
+          color: AppPalette.warmOverlayMuted01,
         ),
         child: Center(
           child: Icon(
             Icons.group_outlined,
             size: _scale(context, 20),
-            color: const Color(0xFFff9800),
+            color: AppPalette.warmMuted45,
           ),
         ),
       ),
@@ -2126,11 +2136,11 @@ class _DirectTopBarContent extends StatelessWidget {
                         l10n.chatFallbackTitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: AppTextStyle(
                       fontSize: _scale(context, 20),
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.5,
-                      color: const Color(0xFFffb11e),
+                      color: AppPalette.amberMuted04,
                     ),
                   ),
                   SizedBox(height: _scale(context, 4)),
@@ -2140,12 +2150,14 @@ class _DirectTopBarContent extends StatelessWidget {
                         Container(
                           width: _scale(context, 9),
                           height: _scale(context, 9),
-                          decoration: BoxDecoration(
+                          decoration: AppBoxDecoration(
                             shape: BoxShape.circle,
-                            color: AppColors.accent,
+                            color: AppPalette.primary,
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.accent.withValues(alpha: 0.28),
+                                color: AppPalette.primary.withValues(
+                                  alpha: 0.28,
+                                ),
                                 blurRadius: 10,
                                 spreadRadius: 2,
                               ),
@@ -2159,13 +2171,13 @@ class _DirectTopBarContent extends StatelessWidget {
                           statusLabel,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: AppTextStyle(
                             fontSize: _scale(context, 12),
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.4,
                             color: isOnline
-                                ? AppColors.accent
-                                : Colors.white.withValues(alpha: 0.56),
+                                ? AppPalette.primary
+                                : AppPalette.white.withValues(alpha: 0.56),
                           ),
                         ),
                       ),
@@ -2202,11 +2214,11 @@ class _GroupTopBarContent extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: AppTextStyle(
                 fontSize: _scale(context, 22),
                 fontWeight: FontWeight.w700,
                 letterSpacing: -0.5,
-                color: AppColors.textPrimary,
+                color: AppPalette.textPrimary,
               ),
             ),
             SizedBox(height: _scale(context, 3)),
@@ -2217,12 +2229,12 @@ class _GroupTopBarContent extends StatelessWidget {
                 Container(
                   width: _scale(context, 9),
                   height: _scale(context, 9),
-                  decoration: BoxDecoration(
+                  decoration: AppBoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.accent.withValues(alpha: 0.45),
+                        color: AppPalette.primary.withValues(alpha: 0.45),
                         blurRadius: 12,
                       ),
                     ],
@@ -2231,10 +2243,10 @@ class _GroupTopBarContent extends StatelessWidget {
                 SizedBox(width: _scale(context, 6)),
                 Text(
                   l10n.chatParticipantsCount(conversation.participants.length),
-                  style: TextStyle(
+                  style: AppTextStyle(
                     fontSize: _scale(context, 14),
                     fontWeight: FontWeight.w500,
-                    color: const Color(0xFFf4a020),
+                    color: AppPalette.warmMuted32,
                   ),
                 ),
               ],
@@ -2274,7 +2286,7 @@ class _PinnedMessagesBar extends StatelessWidget {
     final senderName = _senderNameForMessage(pinnedMessage, participants, l10n);
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(
+      padding: AppEdgeInsets.fromLTRB(
         _scale(context, 14),
         _scale(context, 10),
         _scale(context, 14),
@@ -2285,17 +2297,17 @@ class _PinnedMessagesBar extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         child: Container(
           width: double.infinity,
-          padding: EdgeInsets.symmetric(
+          padding: AppEdgeInsets.symmetric(
             horizontal: _scale(context, 16),
             vertical: _scale(context, 12),
           ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(_scale(context, 18)),
-            color: const Color(0xFF201108),
-            border: Border.all(color: const Color(0x3DFF9800)),
+          decoration: AppBoxDecoration(
+            borderRadius: AppBorderRadius.circular(_scale(context, 18)),
+            color: AppPalette.warmInk61,
+            border: Border.all(color: AppPalette.warmOverlayMuted06),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.18),
+                color: AppPalette.black.withValues(alpha: 0.18),
                 blurRadius: 18,
                 offset: const Offset(0, 8),
               ),
@@ -2306,9 +2318,9 @@ class _PinnedMessagesBar extends StatelessWidget {
               Container(
                 width: _scale(context, 4),
                 height: _scale(context, 42),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(999),
-                  color: AppColors.accent,
+                decoration: AppBoxDecoration(
+                  borderRadius: AppBorderRadius.circular(999),
+                  color: AppPalette.primary,
                 ),
               ),
               SizedBox(width: _scale(context, 12)),
@@ -2321,7 +2333,7 @@ class _PinnedMessagesBar extends StatelessWidget {
                         Icon(
                           Icons.push_pin_rounded,
                           size: _scale(context, 15),
-                          color: const Color(0xFFff9800),
+                          color: AppPalette.warmMuted45,
                         ),
                         SizedBox(width: _scale(context, 6)),
                         Expanded(
@@ -2329,21 +2341,21 @@ class _PinnedMessagesBar extends StatelessWidget {
                             l10n.chatPinnedMessageLabel,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
+                            style: AppTextStyle(
                               fontSize: _scale(context, 11),
                               fontWeight: FontWeight.w900,
                               letterSpacing: 0.7,
-                              color: const Color(0xFFff9800),
+                              color: AppPalette.warmMuted45,
                             ),
                           ),
                         ),
                         if (pinnedMessages.length > 1)
                           Text(
                             '${currentIndex + 1}/${pinnedMessages.length}',
-                            style: TextStyle(
+                            style: AppTextStyle(
                               fontSize: _scale(context, 11),
                               fontWeight: FontWeight.w800,
-                              color: Colors.white.withValues(alpha: 0.54),
+                              color: AppPalette.white.withValues(alpha: 0.54),
                             ),
                           ),
                       ],
@@ -2353,7 +2365,7 @@ class _PinnedMessagesBar extends StatelessWidget {
                       senderName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: AppTextStyle(
                         fontSize: _scale(context, 13),
                         fontWeight: FontWeight.w800,
                         color: accentColor,
@@ -2368,7 +2380,7 @@ class _PinnedMessagesBar extends StatelessWidget {
               Icon(
                 Icons.chevron_right_rounded,
                 size: _scale(context, 20),
-                color: Colors.white.withValues(alpha: 0.56),
+                color: AppPalette.white.withValues(alpha: 0.56),
               ),
             ],
           ),
@@ -2425,7 +2437,7 @@ class _MessageList extends StatelessWidget {
       ),
       slivers: [
         SliverPadding(
-          padding: EdgeInsets.symmetric(
+          padding: AppEdgeInsets.symmetric(
             horizontal: _scale(context, 14),
             vertical: _scale(context, 16),
           ),
@@ -2556,23 +2568,23 @@ class _DaySeparator extends StatelessWidget {
       children: [
         Expanded(child: _line()),
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: _scale(context, 12)),
+          padding: AppEdgeInsets.symmetric(horizontal: _scale(context, 12)),
           child: Container(
-            padding: EdgeInsets.symmetric(
+            padding: AppEdgeInsets.symmetric(
               horizontal: _scale(context, 14),
               vertical: _scale(context, 6),
             ),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(999),
-              color: const Color(0x734C2F15),
+            decoration: AppBoxDecoration(
+              borderRadius: AppBorderRadius.circular(999),
+              color: AppPalette.warmOverlaySurface03,
             ),
             child: Text(
               label,
-              style: TextStyle(
+              style: AppTextStyle(
                 fontSize: _scale(context, 12),
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.2,
-                color: const Color(0xFFb9a48d),
+                color: AppPalette.orangeSoft13,
               ),
             ),
           ),
@@ -2585,12 +2597,12 @@ class _DaySeparator extends StatelessWidget {
   Widget _line() {
     return Container(
       height: 1,
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.transparent,
-            Colors.white.withValues(alpha: 0.08),
-            Colors.transparent,
+            AppPalette.transparent,
+            AppPalette.white.withValues(alpha: 0.08),
+            AppPalette.transparent,
           ],
         ),
       ),
@@ -2608,17 +2620,17 @@ class _ChatClosedTailNotice extends StatelessWidget {
     return Center(
       child: Container(
         constraints: BoxConstraints(maxWidth: _scale(context, 320)),
-        padding: EdgeInsets.symmetric(
+        padding: AppEdgeInsets.symmetric(
           horizontal: _scale(context, 16),
           vertical: _scale(context, 10),
         ),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(_scale(context, 22)),
-          color: AppColors.accent.withValues(alpha: 0.12),
-          border: Border.all(color: AppColors.accent.withValues(alpha: 0.18)),
+        decoration: AppBoxDecoration(
+          borderRadius: AppBorderRadius.circular(_scale(context, 22)),
+          color: AppPalette.primary.withValues(alpha: 0.12),
+          border: Border.all(color: AppPalette.primary.withValues(alpha: 0.18)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.18),
+              color: AppPalette.black.withValues(alpha: 0.18),
               blurRadius: 18,
               offset: const Offset(0, 8),
             ),
@@ -2630,18 +2642,18 @@ class _ChatClosedTailNotice extends StatelessWidget {
             Icon(
               Icons.lock_clock_rounded,
               size: _scale(context, 17),
-              color: AppColors.accent,
+              color: AppPalette.primary,
             ),
             SizedBox(width: _scale(context, 8)),
             Flexible(
               child: Text(
                 text,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: AppTextStyle(
                   fontSize: _scale(context, 13),
                   fontWeight: FontWeight.w700,
                   height: 1.25,
-                  color: const Color(0xFFf4bd74),
+                  color: AppPalette.orangeSoft38,
                 ),
               ),
             ),
@@ -2655,12 +2667,12 @@ class _ChatClosedTailNotice extends StatelessWidget {
 // ── Message bubble ───────────────────────────────────────────────
 
 const _nameColors = [
-  Color(0xFF2d7dff),
-  Color(0xFF00df85),
-  Color(0xFFf4a020),
-  Color(0xFFe040fb),
-  Color(0xFF00bcd4),
-  Color(0xFFff5252),
+  AppPalette.blueSoft01,
+  AppPalette.tealMuted04,
+  AppPalette.warmMuted32,
+  AppPalette.pinkSoft03,
+  AppPalette.tealMuted03,
+  AppPalette.dangerAccent,
 ];
 
 Color _nameColorFor(String userId) {
@@ -2749,22 +2761,22 @@ class _ReplyPreviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final child = Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(
+      padding: AppEdgeInsets.symmetric(
         horizontal: _scale(context, 12),
         vertical: _scale(context, 10),
       ),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(_scale(context, 16)),
-        color: Colors.black.withValues(alpha: 0.16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+      decoration: AppBoxDecoration(
+        borderRadius: AppBorderRadius.circular(_scale(context, 16)),
+        color: AppPalette.black.withValues(alpha: 0.16),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.04)),
       ),
       child: Row(
         children: [
           Container(
             width: _scale(context, 4),
             height: _scale(context, 34),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(999),
+            decoration: AppBoxDecoration(
+              borderRadius: AppBorderRadius.circular(999),
               color: accentColor,
             ),
           ),
@@ -2778,7 +2790,7 @@ class _ReplyPreviewCard extends StatelessWidget {
                   senderName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: AppTextStyle(
                     fontSize: _scale(context, 12),
                     fontWeight: FontWeight.w800,
                     color: accentColor,
@@ -2797,14 +2809,14 @@ class _ReplyPreviewCard extends StatelessWidget {
               child: Container(
                 width: _scale(context, 26),
                 height: _scale(context, 26),
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.06),
+                  color: AppPalette.white.withValues(alpha: 0.06),
                 ),
                 child: Icon(
                   Icons.close_rounded,
                   size: _scale(context, 16),
-                  color: Colors.white.withValues(alpha: 0.72),
+                  color: AppPalette.white.withValues(alpha: 0.72),
                 ),
               ),
             ),
@@ -2856,9 +2868,9 @@ class _ReplyPreviewTextState extends State<_ReplyPreviewText> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final syncPreview = _messagePreviewText(widget.message, l10n);
-    final style = TextStyle(
+    final style = AppTextStyle(
       fontSize: _scale(context, 12),
-      color: Colors.white.withValues(alpha: 0.74),
+      color: AppPalette.white.withValues(alpha: 0.74),
     );
 
     if (syncPreview.isNotEmpty) {
@@ -2952,19 +2964,21 @@ class _ReplySwipeBackground extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: Padding(
-        padding: EdgeInsets.only(left: _scale(context, 10)),
+        padding: AppEdgeInsets.only(left: _scale(context, 10)),
         child: Container(
           width: _scale(context, 38),
           height: _scale(context, 38),
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             shape: BoxShape.circle,
-            color: AppColors.accent.withValues(alpha: 0.16),
-            border: Border.all(color: AppColors.accent.withValues(alpha: 0.24)),
+            color: AppPalette.primary.withValues(alpha: 0.16),
+            border: Border.all(
+              color: AppPalette.primary.withValues(alpha: 0.24),
+            ),
           ),
           child: Icon(
             Icons.reply_rounded,
             size: _scale(context, 20),
-            color: AppColors.accent,
+            color: AppPalette.primary,
           ),
         ),
       ),
@@ -3028,19 +3042,22 @@ class _ReactionChoiceButton extends StatelessWidget {
           duration: const Duration(milliseconds: 160),
           width: _scale(context, 46),
           height: _scale(context, 46),
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             shape: BoxShape.circle,
             color: selected
-                ? AppColors.accent.withValues(alpha: 0.2)
-                : Colors.white.withValues(alpha: 0.07),
+                ? AppPalette.primary.withValues(alpha: 0.2)
+                : AppPalette.white.withValues(alpha: 0.07),
             border: Border.all(
               color: selected
-                  ? AppColors.accent.withValues(alpha: 0.55)
-                  : Colors.white.withValues(alpha: 0.08),
+                  ? AppPalette.primary.withValues(alpha: 0.55)
+                  : AppPalette.white.withValues(alpha: 0.08),
             ),
           ),
           child: Center(
-            child: Text(emoji, style: TextStyle(fontSize: _scale(context, 24))),
+            child: Text(
+              emoji,
+              style: AppTextStyle(fontSize: _scale(context, 24)),
+            ),
           ),
         ),
       ),
@@ -3147,14 +3164,14 @@ class _StatusDetailCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(_scale(context, 12)),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(_scale(context, 18)),
-        color: Colors.white.withValues(alpha: 0.055),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.075)),
+      padding: AppEdgeInsets.all(_scale(context, 12)),
+      decoration: AppBoxDecoration(
+        borderRadius: AppBorderRadius.circular(_scale(context, 18)),
+        color: AppPalette.white.withValues(alpha: 0.055),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.075)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.14),
+            color: AppPalette.black.withValues(alpha: 0.14),
             blurRadius: _scale(context, 18),
             offset: Offset(0, _scale(context, 8)),
           ),
@@ -3178,11 +3195,15 @@ class _StatusMetricCard extends StatelessWidget {
         Container(
           width: _scale(context, 30),
           height: _scale(context, 30),
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             shape: BoxShape.circle,
-            color: AppColors.accent.withValues(alpha: 0.16),
+            color: AppPalette.primary.withValues(alpha: 0.16),
           ),
-          child: Icon(icon, size: _scale(context, 16), color: AppColors.accent),
+          child: Icon(
+            icon,
+            size: _scale(context, 16),
+            color: AppPalette.primary,
+          ),
         ),
         SizedBox(width: _scale(context, 10)),
         Expanded(
@@ -3190,10 +3211,10 @@ class _StatusMetricCard extends StatelessWidget {
             text,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
+            style: AppTextStyle(
               fontSize: _scale(context, 13),
               fontWeight: FontWeight.w800,
-              color: const Color(0xFFf3dfc8),
+              color: AppPalette.orangeLight35,
             ),
           ),
         ),
@@ -3217,21 +3238,21 @@ class _ReactionSummary extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: EdgeInsets.symmetric(
+        padding: AppEdgeInsets.symmetric(
           horizontal: _scale(context, 12),
           vertical: _scale(context, 10),
         ),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(_scale(context, 16)),
-          color: Colors.white.withValues(alpha: 0.06),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        decoration: AppBoxDecoration(
+          borderRadius: AppBorderRadius.circular(_scale(context, 16)),
+          color: AppPalette.white.withValues(alpha: 0.06),
+          border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
         ),
         child: Row(
           children: [
             Icon(
               Icons.add_reaction_rounded,
               size: _scale(context, 17),
-              color: AppColors.accent,
+              color: AppPalette.primary,
             ),
             SizedBox(width: _scale(context, 8)),
             Expanded(
@@ -3239,10 +3260,10 @@ class _ReactionSummary extends StatelessWidget {
                 l10n.chatReactionCount(reactionInfos.length),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: AppTextStyle(
                   fontSize: _scale(context, 13),
                   fontWeight: FontWeight.w800,
-                  color: const Color(0xFFf3dfc8),
+                  color: AppPalette.orangeLight35,
                 ),
               ),
             ),
@@ -3270,7 +3291,7 @@ class _ReactionSummary extends StatelessWidget {
             Icon(
               Icons.keyboard_arrow_right_rounded,
               size: _scale(context, 20),
-              color: Colors.white.withValues(alpha: 0.48),
+              color: AppPalette.white.withValues(alpha: 0.48),
             ),
           ],
         ),
@@ -3294,21 +3315,21 @@ class _ReadReceiptSummary extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: EdgeInsets.symmetric(
+        padding: AppEdgeInsets.symmetric(
           horizontal: _scale(context, 12),
           vertical: _scale(context, 10),
         ),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(_scale(context, 16)),
-          color: Colors.white.withValues(alpha: 0.06),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        decoration: AppBoxDecoration(
+          borderRadius: AppBorderRadius.circular(_scale(context, 16)),
+          color: AppPalette.white.withValues(alpha: 0.06),
+          border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
         ),
         child: Row(
           children: [
             Icon(
               Icons.done_all_rounded,
               size: _scale(context, 17),
-              color: AppColors.accent,
+              color: AppPalette.primary,
             ),
             SizedBox(width: _scale(context, 8)),
             Expanded(
@@ -3316,10 +3337,10 @@ class _ReadReceiptSummary extends StatelessWidget {
                 l10n.chatReadByCount(receipts.length),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: AppTextStyle(
                   fontSize: _scale(context, 13),
                   fontWeight: FontWeight.w800,
-                  color: const Color(0xFFf3dfc8),
+                  color: AppPalette.orangeLight35,
                 ),
               ),
             ),
@@ -3347,7 +3368,7 @@ class _ReadReceiptSummary extends StatelessWidget {
             Icon(
               Icons.keyboard_arrow_right_rounded,
               size: _scale(context, 20),
-              color: Colors.white.withValues(alpha: 0.48),
+              color: AppPalette.white.withValues(alpha: 0.48),
             ),
           ],
         ),
@@ -3371,7 +3392,7 @@ class _ReactionUsersSheet extends StatelessWidget {
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxHeight),
         child: Padding(
-          padding: EdgeInsets.fromLTRB(
+          padding: AppEdgeInsets.fromLTRB(
             _scale(context, 20),
             _scale(context, 12),
             _scale(context, 20),
@@ -3385,20 +3406,20 @@ class _ReactionUsersSheet extends StatelessWidget {
                 child: Container(
                   width: _scale(context, 38),
                   height: 4,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(999),
-                    color: Colors.white.withValues(alpha: 0.18),
+                  decoration: AppBoxDecoration(
+                    borderRadius: AppBorderRadius.circular(999),
+                    color: AppPalette.white.withValues(alpha: 0.18),
                   ),
                 ),
               ),
               SizedBox(height: _scale(context, 18)),
               Text(
                 l10n.chatReactionsByTitle,
-                style: TextStyle(
+                style: AppTextStyle(
                   fontSize: _scale(context, 20),
                   height: 1.1,
                   fontWeight: FontWeight.w900,
-                  color: const Color(0xFFf5ede6),
+                  color: AppPalette.orangeWash10,
                 ),
               ),
               SizedBox(height: _scale(context, 14)),
@@ -3409,7 +3430,7 @@ class _ReactionUsersSheet extends StatelessWidget {
                   itemCount: reactionInfos.length,
                   separatorBuilder: (_, _) => Divider(
                     height: 1,
-                    color: Colors.white.withValues(alpha: 0.06),
+                    color: AppPalette.white.withValues(alpha: 0.06),
                   ),
                   itemBuilder: (context, index) {
                     final reactionInfo = reactionInfos[index];
@@ -3438,7 +3459,7 @@ class _ReactionUserTile extends StatelessWidget {
         : participant.displayName.trim();
 
     return ListTile(
-      contentPadding: EdgeInsets.symmetric(vertical: _scale(context, 8)),
+      contentPadding: AppEdgeInsets.symmetric(vertical: _scale(context, 8)),
       leading: _ChatAvatar(
         size: _scale(context, 46),
         name: title,
@@ -3451,10 +3472,10 @@ class _ReactionUserTile extends StatelessWidget {
               title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
+              style: AppTextStyle(
                 fontSize: _scale(context, 15),
                 fontWeight: FontWeight.w800,
-                color: const Color(0xFFf5ede6),
+                color: AppPalette.orangeWash10,
               ),
             ),
           ),
@@ -3463,15 +3484,15 @@ class _ReactionUserTile extends StatelessWidget {
         ],
       ),
       subtitle: Padding(
-        padding: EdgeInsets.only(top: _scale(context, 3)),
+        padding: AppEdgeInsets.only(top: _scale(context, 3)),
         child: Text(
           _formatReactionAt(context, reactionInfo.reactedAt),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
+          style: AppTextStyle(
             fontSize: _scale(context, 12),
             fontWeight: FontWeight.w600,
-            color: Colors.white.withValues(alpha: 0.52),
+            color: AppPalette.white.withValues(alpha: 0.52),
           ),
         ),
       ),
@@ -3495,7 +3516,7 @@ class _ReadReceiptsSheet extends StatelessWidget {
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxHeight),
         child: Padding(
-          padding: EdgeInsets.fromLTRB(
+          padding: AppEdgeInsets.fromLTRB(
             _scale(context, 20),
             _scale(context, 12),
             _scale(context, 20),
@@ -3509,20 +3530,20 @@ class _ReadReceiptsSheet extends StatelessWidget {
                 child: Container(
                   width: _scale(context, 38),
                   height: 4,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(999),
-                    color: Colors.white.withValues(alpha: 0.18),
+                  decoration: AppBoxDecoration(
+                    borderRadius: AppBorderRadius.circular(999),
+                    color: AppPalette.white.withValues(alpha: 0.18),
                   ),
                 ),
               ),
               SizedBox(height: _scale(context, 18)),
               Text(
                 l10n.chatReadByTitle,
-                style: TextStyle(
+                style: AppTextStyle(
                   fontSize: _scale(context, 20),
                   height: 1.1,
                   fontWeight: FontWeight.w900,
-                  color: const Color(0xFFf5ede6),
+                  color: AppPalette.orangeWash10,
                 ),
               ),
               SizedBox(height: _scale(context, 14)),
@@ -3533,7 +3554,7 @@ class _ReadReceiptsSheet extends StatelessWidget {
                   itemCount: receipts.length,
                   separatorBuilder: (_, _) => Divider(
                     height: 1,
-                    color: Colors.white.withValues(alpha: 0.06),
+                    color: AppPalette.white.withValues(alpha: 0.06),
                   ),
                   itemBuilder: (context, index) {
                     final receipt = receipts[index];
@@ -3562,7 +3583,7 @@ class _ReadReceiptTile extends StatelessWidget {
         : participant.displayName.trim();
 
     return ListTile(
-      contentPadding: EdgeInsets.symmetric(vertical: _scale(context, 8)),
+      contentPadding: AppEdgeInsets.symmetric(vertical: _scale(context, 8)),
       leading: _ChatAvatar(
         size: _scale(context, 46),
         name: title,
@@ -3575,10 +3596,10 @@ class _ReadReceiptTile extends StatelessWidget {
               title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
+              style: AppTextStyle(
                 fontSize: _scale(context, 15),
                 fontWeight: FontWeight.w800,
-                color: const Color(0xFFf5ede6),
+                color: AppPalette.orangeWash10,
               ),
             ),
           ),
@@ -3589,15 +3610,15 @@ class _ReadReceiptTile extends StatelessWidget {
         ],
       ),
       subtitle: Padding(
-        padding: EdgeInsets.only(top: _scale(context, 3)),
+        padding: AppEdgeInsets.only(top: _scale(context, 3)),
         child: Text(
           _formatReadReceiptAt(context, receipt.readAt),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
+          style: AppTextStyle(
             fontSize: _scale(context, 12),
             fontWeight: FontWeight.w600,
-            color: Colors.white.withValues(alpha: 0.52),
+            color: AppPalette.white.withValues(alpha: 0.52),
           ),
         ),
       ),
@@ -3615,21 +3636,21 @@ class _ReadReceiptReactionBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       constraints: BoxConstraints(minWidth: _scale(context, 32)),
-      padding: EdgeInsets.symmetric(
+      padding: AppEdgeInsets.symmetric(
         horizontal: _scale(context, 8),
         vertical: _scale(context, 4),
       ),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(999),
-        color: AppColors.accent.withValues(alpha: 0.14),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.28)),
+      decoration: AppBoxDecoration(
+        borderRadius: AppBorderRadius.circular(999),
+        color: AppPalette.primary.withValues(alpha: 0.14),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.28)),
       ),
       child: Text(
         emoji,
         textAlign: TextAlign.center,
         maxLines: 1,
         overflow: TextOverflow.clip,
-        style: TextStyle(fontSize: _scale(context, 14), height: 1),
+        style: AppTextStyle(fontSize: _scale(context, 14), height: 1),
       ),
     );
   }
@@ -3657,7 +3678,7 @@ class _ForwardMessageSheet extends StatelessWidget {
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxHeight),
         child: Padding(
-          padding: EdgeInsets.fromLTRB(18, 12, 18, 18 + bottom),
+          padding: AppEdgeInsets.fromLTRB(18, 12, 18, 18 + bottom),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -3666,31 +3687,33 @@ class _ForwardMessageSheet extends StatelessWidget {
                 child: Container(
                   width: 38,
                   height: 4,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(999),
-                    color: Colors.white.withValues(alpha: 0.16),
+                  decoration: AppBoxDecoration(
+                    borderRadius: AppBorderRadius.circular(999),
+                    color: AppPalette.white.withValues(alpha: 0.16),
                   ),
                 ),
               ),
               SizedBox(height: _scale(context, 16)),
               Text(
                 l10n.chatForwardSheetTitle,
-                style: TextStyle(
+                style: AppTextStyle(
                   fontSize: _scale(context, 20),
                   fontWeight: FontWeight.w800,
-                  color: const Color(0xFFf5ede6),
+                  color: AppPalette.orangeWash10,
                 ),
               ),
               SizedBox(height: _scale(context, 14)),
               if (conversations.isEmpty)
                 Padding(
-                  padding: EdgeInsets.symmetric(vertical: _scale(context, 24)),
+                  padding: AppEdgeInsets.symmetric(
+                    vertical: _scale(context, 24),
+                  ),
                   child: Center(
                     child: Text(
                       l10n.chatNoForwardTargets,
-                      style: TextStyle(
+                      style: AppTextStyle(
                         fontSize: _scale(context, 14),
-                        color: Colors.white.withValues(alpha: 0.58),
+                        color: AppPalette.white.withValues(alpha: 0.58),
                       ),
                     ),
                   ),
@@ -3746,16 +3769,16 @@ class _ForwardConversationTile extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: EdgeInsets.all(_scale(context, 12)),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(_scale(context, 18)),
+        padding: AppEdgeInsets.all(_scale(context, 12)),
+        decoration: AppBoxDecoration(
+          borderRadius: AppBorderRadius.circular(_scale(context, 18)),
           color: isCurrent
-              ? AppColors.accent.withValues(alpha: 0.12)
-              : Colors.white.withValues(alpha: 0.045),
+              ? AppPalette.primary.withValues(alpha: 0.12)
+              : AppPalette.white.withValues(alpha: 0.045),
           border: Border.all(
             color: isCurrent
-                ? AppColors.accent.withValues(alpha: 0.28)
-                : Colors.white.withValues(alpha: 0.06),
+                ? AppPalette.primary.withValues(alpha: 0.28)
+                : AppPalette.white.withValues(alpha: 0.06),
           ),
         ),
         child: Row(
@@ -3771,10 +3794,10 @@ class _ForwardConversationTile extends StatelessWidget {
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: AppTextStyle(
                   fontSize: _scale(context, 15),
                   fontWeight: FontWeight.w800,
-                  color: const Color(0xFFf5ede6),
+                  color: AppPalette.orangeWash10,
                 ),
               ),
             ),
@@ -3782,7 +3805,7 @@ class _ForwardConversationTile extends StatelessWidget {
             Icon(
               Icons.send_rounded,
               size: _scale(context, 18),
-              color: AppColors.accent,
+              color: AppPalette.primary,
             ),
           ],
         ),
@@ -3809,7 +3832,7 @@ class _ForwardedMessageLabel extends StatelessWidget {
         Icon(
           Icons.forward_rounded,
           size: _scale(context, 15),
-          color: AppColors.accent,
+          color: AppPalette.primary,
         ),
         SizedBox(width: _scale(context, 6)),
         Expanded(
@@ -3817,10 +3840,10 @@ class _ForwardedMessageLabel extends StatelessWidget {
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
+            style: AppTextStyle(
               fontSize: _scale(context, 12),
               fontWeight: FontWeight.w800,
-              color: const Color(0xFFffd08a),
+              color: AppPalette.amberLight06,
             ),
           ),
         ),
@@ -3841,19 +3864,19 @@ class _StoryReplyContextCard extends StatelessWidget {
     final title = contextVm.storyTitle.trim();
 
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.22),
-        borderRadius: BorderRadius.circular(_scale(context, 14)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.black.withValues(alpha: 0.22),
+        borderRadius: AppBorderRadius.circular(_scale(context, 14)),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
       ),
       child: Padding(
-        padding: EdgeInsets.all(_scale(context, 10)),
+        padding: AppEdgeInsets.all(_scale(context, 10)),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (previewUrl != null) ...[
               ClipRRect(
-                borderRadius: BorderRadius.circular(_scale(context, 10)),
+                borderRadius: AppBorderRadius.circular(_scale(context, 10)),
                 child: Image.network(
                   previewUrl,
                   width: _scale(context, 42),
@@ -3874,10 +3897,10 @@ class _StoryReplyContextCard extends StatelessWidget {
                     l10n.chatStoryReplyLabel,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: AppTextStyle(
                       fontSize: _scale(context, 12),
                       fontWeight: FontWeight.w900,
-                      color: AppColors.accent,
+                      color: AppPalette.primary,
                     ),
                   ),
                   SizedBox(height: _scale(context, 3)),
@@ -3889,10 +3912,10 @@ class _StoryReplyContextCard extends StatelessWidget {
                         : title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: AppTextStyle(
                       fontSize: _scale(context, 13),
                       height: 1.25,
-                      color: Colors.white.withValues(alpha: 0.76),
+                      color: AppPalette.white.withValues(alpha: 0.76),
                     ),
                   ),
                 ],
@@ -3915,11 +3938,11 @@ class _StoryReplyPreviewFallback extends StatelessWidget {
     return Container(
       width: _scale(context, 42),
       height: _scale(context, 56),
-      color: Colors.white.withValues(alpha: 0.08),
+      color: AppPalette.white.withValues(alpha: 0.08),
       alignment: Alignment.center,
       child: Icon(
         Icons.auto_stories_rounded,
-        color: Colors.white.withValues(alpha: 0.62),
+        color: AppPalette.white.withValues(alpha: 0.62),
         size: _scale(context, 20),
         semanticLabel: l10n.chatStoryReplyLabel,
       ),
@@ -4032,15 +4055,15 @@ class _ForwardCountBadge extends StatelessWidget {
         Icon(
           Icons.repeat_rounded,
           size: _scale(context, 13),
-          color: Colors.white.withValues(alpha: 0.38),
+          color: AppPalette.white.withValues(alpha: 0.38),
         ),
         SizedBox(width: _scale(context, 4)),
         Text(
           l10n.chatForwardCount(count),
-          style: TextStyle(
+          style: AppTextStyle(
             fontSize: _scale(context, 11),
             fontWeight: FontWeight.w700,
-            color: Colors.white.withValues(alpha: 0.38),
+            color: AppPalette.white.withValues(alpha: 0.38),
           ),
         ),
       ],
@@ -4076,19 +4099,19 @@ class _MessageReactionStrip extends StatelessWidget {
             behavior: HitTestBehavior.opaque,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 160),
-              padding: EdgeInsets.symmetric(
+              padding: AppEdgeInsets.symmetric(
                 horizontal: _scale(context, 9),
                 vertical: _scale(context, 5),
               ),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(999),
+              decoration: AppBoxDecoration(
+                borderRadius: AppBorderRadius.circular(999),
                 color: reaction.reactedByMe
-                    ? AppColors.accent.withValues(alpha: 0.18)
-                    : const Color(0xB8412A18),
+                    ? AppPalette.primary.withValues(alpha: 0.18)
+                    : AppPalette.warmOverlaySurface08,
                 border: Border.all(
                   color: reaction.reactedByMe
-                      ? AppColors.accent.withValues(alpha: 0.45)
-                      : Colors.white.withValues(alpha: 0.08),
+                      ? AppPalette.primary.withValues(alpha: 0.45)
+                      : AppPalette.white.withValues(alpha: 0.08),
                 ),
               ),
               child: Row(
@@ -4096,17 +4119,17 @@ class _MessageReactionStrip extends StatelessWidget {
                 children: [
                   Text(
                     reaction.emoji,
-                    style: TextStyle(fontSize: _scale(context, 13)),
+                    style: AppTextStyle(fontSize: _scale(context, 13)),
                   ),
                   SizedBox(width: _scale(context, 4)),
                   Text(
                     reaction.count.toString(),
-                    style: TextStyle(
+                    style: AppTextStyle(
                       fontSize: _scale(context, 12),
                       fontWeight: FontWeight.w800,
                       color: reaction.reactedByMe
-                          ? AppColors.accent
-                          : Colors.white.withValues(alpha: 0.78),
+                          ? AppPalette.primary
+                          : AppPalette.white.withValues(alpha: 0.78),
                     ),
                   ),
                 ],
@@ -4199,7 +4222,7 @@ class _MessageBubble extends StatelessWidget {
               children: [
                 // Meta: name + time + ticks
                 Padding(
-                  padding: EdgeInsets.only(
+                  padding: AppEdgeInsets.only(
                     left: _scale(context, 4),
                     right: _scale(context, 4),
                     bottom: _scale(context, 8),
@@ -4212,7 +4235,7 @@ class _MessageBubble extends StatelessWidget {
                           senderName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: AppTextStyle(
                             fontSize: _scale(context, isGroup ? 20 : 16),
                             fontWeight: FontWeight.w800,
                             height: 1,
@@ -4226,9 +4249,9 @@ class _MessageBubble extends StatelessWidget {
                         children: [
                           Text(
                             _formatTime(message.sentAt),
-                            style: TextStyle(
+                            style: AppTextStyle(
                               fontSize: _scale(context, 12),
-                              color: Colors.white.withValues(alpha: 0.34),
+                              color: AppPalette.white.withValues(alpha: 0.34),
                             ),
                           ),
                           if (isMine && showReadTicks && !isDeleted)
@@ -4236,12 +4259,12 @@ class _MessageBubble extends StatelessWidget {
                           if (isMine && showReadTicks && !isDeleted)
                             Text(
                               readByOthers ? '✓✓' : '✓',
-                              style: TextStyle(
+                              style: AppTextStyle(
                                 fontSize: _scale(context, 13),
                                 fontWeight: FontWeight.w800,
                                 color: readByOthers
-                                    ? AppColors.accent
-                                    : Colors.white.withValues(alpha: 0.35),
+                                    ? AppPalette.primary
+                                    : AppPalette.white.withValues(alpha: 0.35),
                                 letterSpacing: -1,
                               ),
                             ),
@@ -4257,12 +4280,14 @@ class _MessageBubble extends StatelessWidget {
                   width: isSticker
                       ? _scale(context, 184).clamp(156.0, 216.0).toDouble()
                       : double.infinity,
-                  padding: EdgeInsets.all(isSticker ? 0 : _scale(context, 20)),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(
+                  padding: AppEdgeInsets.all(
+                    isSticker ? 0 : _scale(context, 20),
+                  ),
+                  decoration: AppBoxDecoration(
+                    borderRadius: AppBorderRadius.circular(
                       _scale(context, isSticker ? 24 : 22),
                     ),
-                    color: isSticker ? Colors.transparent : null,
+                    color: isSticker ? AppPalette.transparent : null,
                     gradient: isSticker
                         ? null
                         : isDeleted
@@ -4270,27 +4295,30 @@ class _MessageBubble extends StatelessWidget {
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             colors: [
-                              const Color(0xA334271D),
-                              const Color(0xD1261C15),
+                              AppPalette.warmOverlaySurface05,
+                              AppPalette.warmOverlaySurface11,
                             ],
                           )
                         : const LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
-                            colors: [Color(0xA34D2D13), Color(0xD13C210D)],
+                            colors: [
+                              AppPalette.warmOverlaySurface06,
+                              AppPalette.warmOverlaySurface14,
+                            ],
                           ),
                     border: Border.all(
                       color: isHighlighted
-                          ? AppColors.accent.withValues(alpha: 0.72)
+                          ? AppPalette.primary.withValues(alpha: 0.72)
                           : isSticker
-                          ? Colors.transparent
-                          : Colors.white.withValues(alpha: 0.05),
+                          ? AppPalette.transparent
+                          : AppPalette.white.withValues(alpha: 0.05),
                       width: isHighlighted ? 1.4 : 1,
                     ),
                     boxShadow: isHighlighted
                         ? [
                             BoxShadow(
-                              color: AppColors.accent.withValues(alpha: 0.22),
+                              color: AppPalette.primary.withValues(alpha: 0.22),
                               blurRadius: 24,
                               spreadRadius: 1,
                               offset: const Offset(0, 8),
@@ -4303,7 +4331,9 @@ class _MessageBubble extends StatelessWidget {
                     children: [
                       if (!isDeleted && message.storyReply != null)
                         Padding(
-                          padding: EdgeInsets.only(bottom: _scale(context, 12)),
+                          padding: AppEdgeInsets.only(
+                            bottom: _scale(context, 12),
+                          ),
                           child: _StoryReplyContextCard(
                             contextVm: message.storyReply!,
                             l10n: l10n,
@@ -4311,12 +4341,16 @@ class _MessageBubble extends StatelessWidget {
                         ),
                       if (!isDeleted && message.isForwarded)
                         Padding(
-                          padding: EdgeInsets.only(bottom: _scale(context, 10)),
+                          padding: AppEdgeInsets.only(
+                            bottom: _scale(context, 10),
+                          ),
                           child: _ForwardedMessageLabel(message: message),
                         ),
                       if (!isDeleted && message.replyToMessageId != null)
                         Padding(
-                          padding: EdgeInsets.only(bottom: _scale(context, 12)),
+                          padding: AppEdgeInsets.only(
+                            bottom: _scale(context, 12),
+                          ),
                           child: _ReplyPreviewCard(
                             senderName: repliedMessage == null
                                 ? l10n.chatUserFallbackName
@@ -4338,7 +4372,7 @@ class _MessageBubble extends StatelessWidget {
                                   ),
                             ),
                             accentColor: repliedMessage == null
-                                ? AppColors.accent
+                                ? AppPalette.primary
                                 : _nameColorFor(repliedMessage!.senderUserId),
                             onTap: onReplyPreviewTap,
                           ),
@@ -4362,11 +4396,11 @@ class _MessageBubble extends StatelessWidget {
                               message.isHiddenByModerator
                                   ? l10n.chatMessageRemovedByModerator
                                   : l10n.chatMessageDeleted,
-                              style: TextStyle(
+                              style: AppTextStyle(
                                 fontStyle: FontStyle.italic,
                                 fontSize: _scale(context, 15),
                                 height: 1.4,
-                                color: Colors.white.withValues(alpha: 0.58),
+                                color: AppPalette.white.withValues(alpha: 0.58),
                               ),
                             ),
                             if (message.isHiddenByModerator &&
@@ -4376,10 +4410,12 @@ class _MessageBubble extends StatelessWidget {
                                 l10n.chatModeratorComment(
                                   moderationPublicComment,
                                 ),
-                                style: TextStyle(
+                                style: AppTextStyle(
                                   fontSize: _scale(context, 14),
                                   height: 1.45,
-                                  color: Colors.white.withValues(alpha: 0.72),
+                                  color: AppPalette.white.withValues(
+                                    alpha: 0.72,
+                                  ),
                                 ),
                               ),
                             ],
@@ -4389,18 +4425,18 @@ class _MessageBubble extends StatelessWidget {
                         _HyperlinkedMessageText(
                           text: message.content,
                           onLinkTap: onLinkTap,
-                          style: TextStyle(
+                          style: AppTextStyle(
                             fontSize: _scale(context, 16),
                             height: 1.5,
-                            color: Colors.white.withValues(alpha: 0.98),
+                            color: AppPalette.white.withValues(alpha: 0.98),
                           ),
-                          linkStyle: TextStyle(
+                          linkStyle: AppTextStyle(
                             fontSize: _scale(context, 16),
                             height: 1.5,
                             fontWeight: FontWeight.w800,
-                            color: const Color(0xFFffd08a),
+                            color: AppPalette.amberLight06,
                             decoration: TextDecoration.underline,
-                            decorationColor: const Color(0xFFffd08a),
+                            decorationColor: AppPalette.amberLight06,
                           ),
                         ),
                     ],
@@ -4408,7 +4444,7 @@ class _MessageBubble extends StatelessWidget {
                 ),
                 if (!isDeleted && message.reactions.isNotEmpty)
                   Padding(
-                    padding: EdgeInsets.only(
+                    padding: AppEdgeInsets.only(
                       top: _scale(context, 7),
                       left: _scale(context, 4),
                     ),
@@ -4419,7 +4455,7 @@ class _MessageBubble extends StatelessWidget {
                   ),
                 if (!isDeleted && message.forwardCount > 0)
                   Padding(
-                    padding: EdgeInsets.only(
+                    padding: AppEdgeInsets.only(
                       top: _scale(context, 7),
                       left: _scale(context, 4),
                     ),
@@ -4427,16 +4463,16 @@ class _MessageBubble extends StatelessWidget {
                   ),
                 if (message.isEdited && !isDeleted)
                   Padding(
-                    padding: EdgeInsets.only(
+                    padding: AppEdgeInsets.only(
                       top: _scale(context, 3),
                       left: _scale(context, 4),
                     ),
                     child: Text(
                       l10n.chatEditedLabel,
-                      style: TextStyle(
+                      style: AppTextStyle(
                         fontSize: _scale(context, 10),
                         fontStyle: FontStyle.italic,
-                        color: Colors.white.withValues(alpha: 0.28),
+                        color: AppPalette.white.withValues(alpha: 0.28),
                       ),
                     ),
                   ),
@@ -4494,17 +4530,17 @@ class _SystemMessageDivider extends StatelessWidget {
     return Center(
       child: Container(
         constraints: BoxConstraints(maxWidth: _scale(context, 300)),
-        padding: EdgeInsets.symmetric(
+        padding: AppEdgeInsets.symmetric(
           horizontal: _scale(context, 14),
           vertical: _scale(context, 7),
         ),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(999),
-          color: const Color(0x8A4C2F15),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        decoration: AppBoxDecoration(
+          borderRadius: AppBorderRadius.circular(999),
+          color: AppPalette.warmOverlaySurface04,
+          border: Border.all(color: AppPalette.white.withValues(alpha: 0.05)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.18),
+              color: AppPalette.black.withValues(alpha: 0.18),
               blurRadius: 14,
               offset: const Offset(0, 6),
             ),
@@ -4515,12 +4551,12 @@ class _SystemMessageDivider extends StatelessWidget {
           textAlign: TextAlign.center,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
+          style: AppTextStyle(
             fontSize: _scale(context, 12),
             fontWeight: FontWeight.w700,
             height: 1.15,
             letterSpacing: 0.2,
-            color: const Color(0xFFc8b39a),
+            color: AppPalette.orangeSoft25,
           ),
         ),
       ),
@@ -4582,7 +4618,7 @@ class _StickerViewerScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF100802),
+      backgroundColor: AppPalette.warmInk05,
       body: SafeArea(
         child: Stack(
           children: [
@@ -4606,7 +4642,7 @@ class _StickerViewerScreen extends StatelessWidget {
               child: IconButton(
                 onPressed: () => Navigator.of(context).pop(),
                 icon: const Icon(Icons.close),
-                color: Colors.white.withValues(alpha: 0.86),
+                color: AppPalette.white.withValues(alpha: 0.86),
               ),
             ),
           ],
@@ -4716,9 +4752,9 @@ class _StickerPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     final normalizedEmoji = emoji.trim();
     return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(_scale(context, 18)),
-        color: Colors.white.withValues(alpha: 0.06),
+      decoration: AppBoxDecoration(
+        borderRadius: AppBorderRadius.circular(_scale(context, 18)),
+        color: AppPalette.white.withValues(alpha: 0.06),
       ),
       child: Center(
         child: loading
@@ -4727,19 +4763,19 @@ class _StickerPlaceholder extends StatelessWidget {
                 height: _scale(context, 22),
                 child: const CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: AppColors.accent,
+                  color: AppPalette.primary,
                 ),
               )
             : normalizedEmoji.isNotEmpty
             ? Text(
                 normalizedEmoji,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: _scale(context, 28), height: 1),
+                style: AppTextStyle(fontSize: _scale(context, 28), height: 1),
               )
             : Icon(
                 Icons.image_not_supported_outlined,
                 size: _scale(context, 26),
-                color: Colors.white.withValues(alpha: 0.42),
+                color: AppPalette.white.withValues(alpha: 0.42),
               ),
       ),
     );
@@ -4907,7 +4943,7 @@ class _MessageAttachmentsState extends State<_MessageAttachments> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.chatAttachmentDownloaded),
-          backgroundColor: const Color(0xFF3a2415),
+          backgroundColor: AppPalette.warmSurface56,
         ),
       );
       setState(() {
@@ -5032,7 +5068,7 @@ class _AttachmentTile extends StatelessWidget {
       return GestureDetector(
         onTap: onTap,
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(_scale(context, 18)),
+          borderRadius: AppBorderRadius.circular(_scale(context, 18)),
           child: AspectRatio(
             aspectRatio: 4 / 3,
             child: Stack(
@@ -5131,11 +5167,11 @@ class _VoiceWaveform extends StatelessWidget {
                         heightFactor: bars[i],
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 180),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(999),
+                          decoration: AppBoxDecoration(
+                            borderRadius: AppBorderRadius.circular(999),
                             color: i < activeBars
-                                ? AppColors.accent
-                                : Colors.white.withValues(alpha: 0.22),
+                                ? AppPalette.primary
+                                : AppPalette.white.withValues(alpha: 0.22),
                           ),
                         ),
                       ),
@@ -5178,20 +5214,20 @@ class _AttachmentFileRow extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: EdgeInsets.all(_scale(context, 12)),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(_scale(context, 18)),
-          color: Colors.black.withValues(alpha: 0.14),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        padding: AppEdgeInsets.all(_scale(context, 12)),
+        decoration: AppBoxDecoration(
+          borderRadius: AppBorderRadius.circular(_scale(context, 18)),
+          color: AppPalette.black.withValues(alpha: 0.14),
+          border: Border.all(color: AppPalette.white.withValues(alpha: 0.05)),
         ),
         child: Row(
           children: [
             Container(
               width: _scale(context, 46),
               height: _scale(context, 46),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(_scale(context, 14)),
-                color: const Color(0xFF3a2415),
+              decoration: AppBoxDecoration(
+                borderRadius: AppBorderRadius.circular(_scale(context, 14)),
+                color: AppPalette.warmSurface56,
               ),
               child: Icon(
                 _attachmentIcon(metadata),
@@ -5208,10 +5244,10 @@ class _AttachmentFileRow extends StatelessWidget {
                     name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: AppTextStyle(
                       fontSize: _scale(context, 15),
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFFf5ede6),
+                      color: AppPalette.orangeWash10,
                     ),
                   ),
                   SizedBox(height: _scale(context, 4)),
@@ -5219,9 +5255,9 @@ class _AttachmentFileRow extends StatelessWidget {
                     '${_downloadStatusLabel(context, item.downloaded, busy)} | $meta',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: AppTextStyle(
                       fontSize: _scale(context, 12),
-                      color: const Color(0xFFc8b39a).withValues(alpha: 0.72),
+                      color: AppPalette.orangeSoft25.withValues(alpha: 0.72),
                     ),
                   ),
                 ],
@@ -5250,10 +5286,12 @@ class _AttachmentDownloadBadge extends StatelessWidget {
     return Container(
       width: _scale(context, 34),
       height: _scale(context, 34),
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         shape: BoxShape.circle,
-        color: downloaded ? AppColors.accent : const Color(0xE62D1A0D),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        color: downloaded
+            ? AppPalette.primary
+            : AppPalette.warmOverlaySurface16,
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.12)),
       ),
       child: Center(
         child: busy
@@ -5262,7 +5300,7 @@ class _AttachmentDownloadBadge extends StatelessWidget {
                 height: _scale(context, 16),
                 child: const CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.white,
+                  color: AppPalette.white,
                 ),
               )
             : Icon(
@@ -5270,7 +5308,7 @@ class _AttachmentDownloadBadge extends StatelessWidget {
                     ? Icons.open_in_full_rounded
                     : Icons.download_rounded,
                 size: _scale(context, 17),
-                color: Colors.white,
+                color: AppPalette.white,
               ),
       ),
     );
@@ -5312,12 +5350,12 @@ IconData _attachmentIcon(FileMetadataVm? metadata) {
 Color _attachmentIconColor(FileMetadataVm? metadata) {
   final extension = metadata?.extensionLabel.toLowerCase() ?? '';
   if (extension == 'zip' || extension == 'rar' || extension == '7z') {
-    return const Color(0xFF9fd0ff);
+    return AppPalette.blueLight02;
   }
   if (extension == 'xls' || extension == 'xlsx' || extension == 'csv') {
-    return const Color(0xFFf0b983);
+    return AppPalette.orangeSoft35;
   }
-  return AppColors.accent;
+  return AppPalette.primary;
 }
 
 String _formatAttachmentSize(int bytes) {
@@ -5393,31 +5431,31 @@ class _ChatAvatar extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         shape: BoxShape.circle,
         gradient: url == null
             ? const LinearGradient(
                 begin: Alignment(-0.3, -0.4),
                 end: Alignment(0.8, 1),
                 colors: [
-                  Color(0xFFf3d7b3),
-                  Color(0xFFca9a6d),
-                  Color(0xFF6f3f22),
+                  AppPalette.orangeLight34,
+                  AppPalette.orangeSoft27,
+                  AppPalette.warmSurfaceHigh18,
                 ],
               )
             : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
+            color: AppPalette.black.withValues(alpha: 0.25),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
         ],
       ),
-      foregroundDecoration: BoxDecoration(
+      foregroundDecoration: AppBoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.12),
+          color: AppPalette.white.withValues(alpha: 0.12),
           width: 2,
         ),
       ),
@@ -5426,10 +5464,10 @@ class _ChatAvatar extends StatelessWidget {
             ? Center(
                 child: Text(
                   _initial,
-                  style: TextStyle(
+                  style: AppTextStyle(
                     fontSize: size * 0.38,
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFF2b1606),
+                    color: AppPalette.warmInk115,
                   ),
                 ),
               )
@@ -5439,10 +5477,10 @@ class _ChatAvatar extends StatelessWidget {
                 errorBuilder: (_, _, _) => Center(
                   child: Text(
                     _initial,
-                    style: TextStyle(
+                    style: AppTextStyle(
                       fontSize: size * 0.38,
                       fontWeight: FontWeight.w800,
-                      color: const Color(0xFF2b1606),
+                      color: AppPalette.warmInk115,
                     ),
                   ),
                 ),
@@ -5468,23 +5506,23 @@ class _ClosedComposerNotice extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(
+      padding: AppEdgeInsets.symmetric(
         horizontal: _scale(context, 14),
         vertical: _scale(context, 10),
       ),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(_scale(context, 18)),
-        color: AppColors.accent.withValues(alpha: 0.12),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.18)),
+      decoration: AppBoxDecoration(
+        borderRadius: AppBorderRadius.circular(_scale(context, 18)),
+        color: AppPalette.primary.withValues(alpha: 0.12),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.18)),
       ),
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: TextStyle(
+        style: AppTextStyle(
           fontSize: _scale(context, 13),
           fontWeight: FontWeight.w700,
           height: 1.2,
-          color: const Color(0xFFf4bd74),
+          color: AppPalette.orangeSoft38,
         ),
       ),
     );
@@ -5537,15 +5575,17 @@ class _PastedImagePreviewSheet extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        padding: EdgeInsets.fromLTRB(
+        padding: AppEdgeInsets.fromLTRB(
           _scale(context, 18),
           _scale(context, 12),
           _scale(context, 18),
           _scale(context, 18) + bottom,
         ),
-        decoration: const BoxDecoration(
-          color: Color(0xFF1d120b),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        decoration: const AppBoxDecoration(
+          color: AppPalette.warmInk55,
+          borderRadius: AppBorderRadius.vertical(
+            top: AppRadiusValue.circular(24),
+          ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -5553,17 +5593,17 @@ class _PastedImagePreviewSheet extends StatelessWidget {
             Container(
               width: 42,
               height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(999),
+              decoration: AppBoxDecoration(
+                color: AppPalette.white.withValues(alpha: 0.2),
+                borderRadius: AppBorderRadius.circular(999),
               ),
             ),
             SizedBox(height: _scale(context, 16)),
             Text(
               l10n.chatPasteImagePreviewTitle,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: const Color(0xFFf5f3ef),
+              style: AppTextStyle(
+                color: AppPalette.amberWash03,
                 fontSize: _scale(context, 18),
                 fontWeight: FontWeight.w900,
               ),
@@ -5573,10 +5613,12 @@ class _PastedImagePreviewSheet extends StatelessWidget {
               constraints: BoxConstraints(
                 maxHeight: MediaQuery.sizeOf(context).height * 0.42,
               ),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(_scale(context, 20)),
-                color: const Color(0xFF2a1a10),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              decoration: AppBoxDecoration(
+                borderRadius: AppBorderRadius.circular(_scale(context, 20)),
+                color: AppPalette.warmSurface14,
+                border: Border.all(
+                  color: AppPalette.white.withValues(alpha: 0.08),
+                ),
               ),
               clipBehavior: Clip.antiAlias,
               child: Image.memory(
@@ -5590,8 +5632,8 @@ class _PastedImagePreviewSheet extends StatelessWidget {
               '${attachment.name} · ${_formatAttachmentSize(attachment.bytes.lengthInBytes)}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.62),
+              style: AppTextStyle(
+                color: AppPalette.white.withValues(alpha: 0.62),
                 fontSize: _scale(context, 12),
                 fontWeight: FontWeight.w700,
               ),
@@ -5626,9 +5668,9 @@ class _PastePreviewActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bg = emphasized
-        ? AppColors.accent
-        : Colors.white.withValues(alpha: 0.08);
-    final fg = emphasized ? Colors.white : const Color(0xFFf5f3ef);
+        ? AppPalette.primary
+        : AppPalette.white.withValues(alpha: 0.08);
+    final fg = emphasized ? AppPalette.white : AppPalette.amberWash03;
 
     return GestureDetector(
       onTap: onTap,
@@ -5636,12 +5678,12 @@ class _PastePreviewActionButton extends StatelessWidget {
       child: Container(
         height: _scale(context, 48),
         alignment: Alignment.center,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(_scale(context, 16)),
+        decoration: AppBoxDecoration(
+          borderRadius: AppBorderRadius.circular(_scale(context, 16)),
           color: bg,
           border: emphasized
               ? null
-              : Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              : Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -5653,7 +5695,7 @@ class _PastePreviewActionButton extends StatelessWidget {
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: AppTextStyle(
                   color: fg,
                   fontSize: _scale(context, 13),
                   fontWeight: FontWeight.w900,
@@ -5697,10 +5739,10 @@ class _PendingAttachmentChip extends StatelessWidget {
 
     return Container(
       width: width,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(_scale(context, 20)),
-        color: const Color(0xD12D1A0D),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+      decoration: AppBoxDecoration(
+        borderRadius: AppBorderRadius.circular(_scale(context, 20)),
+        color: AppPalette.warmOverlaySurface12,
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.07)),
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
@@ -5708,13 +5750,13 @@ class _PendingAttachmentChip extends StatelessWidget {
           Positioned.fill(child: _PendingAttachmentPreview(attachment)),
           Positioned.fill(
             child: DecoratedBox(
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withValues(alpha: 0.02),
-                    Colors.black.withValues(alpha: 0.64),
+                    AppPalette.black.withValues(alpha: 0.02),
+                    AppPalette.black.withValues(alpha: 0.64),
                   ],
                 ),
               ),
@@ -5734,10 +5776,10 @@ class _PendingAttachmentChip extends StatelessWidget {
                       : attachment.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: AppTextStyle(
                     fontSize: _scale(context, 12),
                     fontWeight: FontWeight.w800,
-                    color: Colors.white,
+                    color: AppPalette.white,
                   ),
                 ),
                 SizedBox(height: _scale(context, 2)),
@@ -5745,9 +5787,9 @@ class _PendingAttachmentChip extends StatelessWidget {
                   subtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: AppTextStyle(
                     fontSize: _scale(context, 10),
-                    color: Colors.white.withValues(alpha: 0.76),
+                    color: AppPalette.white.withValues(alpha: 0.76),
                   ),
                 ),
               ],
@@ -5762,16 +5804,16 @@ class _PendingAttachmentChip extends StatelessWidget {
               child: Container(
                 width: _scale(context, 26),
                 height: _scale(context, 26),
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.black.withValues(alpha: 0.58),
+                  color: AppPalette.black.withValues(alpha: 0.58),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.12),
+                    color: AppPalette.white.withValues(alpha: 0.12),
                   ),
                 ),
                 child: Icon(
                   Icons.close_rounded,
-                  color: Colors.white,
+                  color: AppPalette.white,
                   size: _scale(context, 17),
                 ),
               ),
@@ -5780,11 +5822,11 @@ class _PendingAttachmentChip extends StatelessWidget {
           if (uploading)
             Positioned.fill(
               child: ColoredBox(
-                color: Colors.black.withValues(alpha: 0.34),
+                color: AppPalette.black.withValues(alpha: 0.34),
                 child: const Center(
                   child: CircularProgressIndicator(
                     strokeWidth: 2.4,
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                   ),
                 ),
               ),
@@ -5923,11 +5965,11 @@ class _PendingVoiceAttachmentChipState
 
     return Container(
       width: width,
-      padding: EdgeInsets.all(_scale(context, 10)),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(_scale(context, 20)),
-        color: const Color(0xD12D1A0D),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+      padding: AppEdgeInsets.all(_scale(context, 10)),
+      decoration: AppBoxDecoration(
+        borderRadius: AppBorderRadius.circular(_scale(context, 20)),
+        color: AppPalette.warmOverlaySurface12,
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.07)),
       ),
       child: Row(
         children: [
@@ -5950,9 +5992,9 @@ class _PendingVoiceAttachmentChipState
                 child: Container(
                   width: _scale(context, 42),
                   height: _scale(context, 42),
-                  decoration: const BoxDecoration(
+                  decoration: const AppBoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                   ),
                   child: Center(
                     child: busy
@@ -5961,7 +6003,7 @@ class _PendingVoiceAttachmentChipState
                             height: _scale(context, 17),
                             child: const CircularProgressIndicator(
                               strokeWidth: 2.1,
-                              color: Colors.white,
+                              color: AppPalette.white,
                             ),
                           )
                         : Icon(
@@ -5969,7 +6011,7 @@ class _PendingVoiceAttachmentChipState
                                 ? Icons.pause_rounded
                                 : Icons.play_arrow_rounded,
                             size: _scale(context, 27),
-                            color: Colors.white,
+                            color: AppPalette.white,
                           ),
                   ),
                 ),
@@ -5986,10 +6028,10 @@ class _PendingVoiceAttachmentChipState
                   l10n.chatVoicePreview,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: AppTextStyle(
                     fontSize: _scale(context, 12),
                     fontWeight: FontWeight.w800,
-                    color: Colors.white,
+                    color: AppPalette.white,
                   ),
                 ),
                 SizedBox(height: _scale(context, 8)),
@@ -6021,10 +6063,10 @@ class _PendingVoiceAttachmentChipState
                           _formatVoiceDuration(
                             position == Duration.zero ? duration : position,
                           ),
-                          style: TextStyle(
+                          style: AppTextStyle(
                             fontSize: _scale(context, 11),
                             fontWeight: FontWeight.w700,
-                            color: Colors.white.withValues(alpha: 0.72),
+                            color: AppPalette.white.withValues(alpha: 0.72),
                           ),
                         ),
                       ],
@@ -6040,7 +6082,7 @@ class _PendingVoiceAttachmentChipState
             behavior: HitTestBehavior.opaque,
             child: Icon(
               Icons.close_rounded,
-              color: Colors.white.withValues(
+              color: AppPalette.white.withValues(
                 alpha: widget.uploading ? 0.34 : 0.86,
               ),
               size: _scale(context, 21),
@@ -6072,18 +6114,18 @@ class _PendingAttachmentPreview extends StatelessWidget {
     }
 
     return DecoratedBox(
-      decoration: const BoxDecoration(
+      decoration: const AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF4b2d13), Color(0xFF1c0f08)],
+          colors: [AppPalette.warmSurface86, AppPalette.warmInk46],
         ),
       ),
       child: Center(
         child: Icon(
           Icons.insert_drive_file_rounded,
           size: _scale(context, 34),
-          color: AppColors.accent,
+          color: AppPalette.primary,
         ),
       ),
     );
@@ -6201,11 +6243,11 @@ class _PendingVideoAttachmentPreviewState
             )
           else
             const DecoratedBox(
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFF4b2d13), Color(0xFF1c0f08)],
+                  colors: [AppPalette.warmSurface86, AppPalette.warmInk46],
                 ),
               ),
             ),
@@ -6213,14 +6255,16 @@ class _PendingVideoAttachmentPreviewState
             child: Container(
               width: _scale(context, 34),
               height: _scale(context, 34),
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.black.withValues(alpha: 0.46),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+                color: AppPalette.black.withValues(alpha: 0.46),
+                border: Border.all(
+                  color: AppPalette.white.withValues(alpha: 0.16),
+                ),
               ),
               child: Icon(
                 _loadFailed ? Icons.movie_rounded : Icons.play_arrow_rounded,
-                color: Colors.white,
+                color: AppPalette.white,
                 size: _scale(context, 22),
               ),
             ),
@@ -6259,14 +6303,16 @@ class _VoiceRecordingBar extends StatelessWidget {
           child: Container(
             width: btnSize,
             height: btnSize,
-            decoration: BoxDecoration(
+            decoration: AppBoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xD136230F),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+              color: AppPalette.warmOverlaySurface13,
+              border: Border.all(
+                color: AppPalette.white.withValues(alpha: 0.06),
+              ),
             ),
             child: Icon(
               Icons.delete_outline_rounded,
-              color: Colors.white.withValues(alpha: stopping ? 0.34 : 0.9),
+              color: AppPalette.white.withValues(alpha: stopping ? 0.34 : 0.9),
               size: _scale(context, 22),
             ),
           ),
@@ -6275,11 +6321,13 @@ class _VoiceRecordingBar extends StatelessWidget {
         Expanded(
           child: Container(
             height: btnSize,
-            padding: EdgeInsets.symmetric(horizontal: _scale(context, 16)),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(999),
-              color: const Color(0xB8412A18),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+            padding: AppEdgeInsets.symmetric(horizontal: _scale(context, 16)),
+            decoration: AppBoxDecoration(
+              borderRadius: AppBorderRadius.circular(999),
+              color: AppPalette.warmOverlaySurface08,
+              border: Border.all(
+                color: AppPalette.white.withValues(alpha: 0.04),
+              ),
             ),
             child: Row(
               children: [
@@ -6294,20 +6342,20 @@ class _VoiceRecordingBar extends StatelessWidget {
                         : l10n.chatVoiceRecording,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: AppTextStyle(
                       fontSize: _scale(context, 15),
                       fontWeight: FontWeight.w800,
-                      color: const Color(0xFFf5ede6),
+                      color: AppPalette.orangeWash10,
                     ),
                   ),
                 ),
                 SizedBox(width: _scale(context, 10)),
                 Text(
                   _formatVoiceDuration(duration),
-                  style: TextStyle(
+                  style: AppTextStyle(
                     fontSize: _scale(context, 15),
                     fontWeight: FontWeight.w800,
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                   ),
                 ),
               ],
@@ -6321,9 +6369,9 @@ class _VoiceRecordingBar extends StatelessWidget {
           child: Container(
             width: btnSize,
             height: btnSize,
-            decoration: const BoxDecoration(
+            decoration: const AppBoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.accent,
+              color: AppPalette.primary,
             ),
             child: Center(
               child: stopping
@@ -6332,12 +6380,12 @@ class _VoiceRecordingBar extends StatelessWidget {
                       height: _scale(context, 20),
                       child: const CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        color: Colors.white,
+                        color: AppPalette.white,
                       ),
                     )
                   : Icon(
                       Icons.stop_rounded,
-                      color: Colors.white,
+                      color: AppPalette.white,
                       size: _scale(context, 24),
                     ),
             ),
@@ -6358,14 +6406,16 @@ class _RecordingPulse extends StatelessWidget {
     return Container(
       width: _scale(context, 12),
       height: _scale(context, 12),
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         shape: BoxShape.circle,
-        color: stopping ? Colors.white.withValues(alpha: 0.4) : Colors.red,
+        color: stopping
+            ? AppPalette.white.withValues(alpha: 0.4)
+            : AppPalette.materialDanger,
         boxShadow: stopping
             ? null
             : [
                 BoxShadow(
-                  color: Colors.red.withValues(alpha: 0.35),
+                  color: AppPalette.materialDanger.withValues(alpha: 0.35),
                   blurRadius: 12,
                   spreadRadius: 4,
                 ),
@@ -6398,12 +6448,12 @@ class _ComposerActionButtonSurface extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       width: size,
       height: size,
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         shape: BoxShape.circle,
         color: color,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.28),
+            color: AppPalette.black.withValues(alpha: 0.28),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -6416,12 +6466,12 @@ class _ComposerActionButtonSurface extends StatelessWidget {
                 height: _scale(context, 20),
                 child: const CircularProgressIndicator(
                   strokeWidth: 2.5,
-                  color: Colors.white,
+                  color: AppPalette.white,
                 ),
               )
             : Icon(
                 icon,
-                color: Colors.white.withValues(alpha: disabled ? 0.36 : 1),
+                color: AppPalette.white.withValues(alpha: disabled ? 0.36 : 1),
                 size: iconSize,
               ),
       ),
@@ -6585,7 +6635,7 @@ class _VoiceGestureButtonState extends State<_VoiceGestureButton> {
           onLongPressCancel: _cancelHold,
           child: _ComposerActionButtonSurface(
             size: widget.size,
-            color: active ? Colors.red : AppColors.accent,
+            color: active ? AppPalette.materialDanger : AppPalette.primary,
             disabled: widget.disabled,
             busy: widget.busy,
             icon: Icons.mic_rounded,
@@ -6605,13 +6655,13 @@ class _VoiceLockHint extends StatelessWidget {
     return Semantics(
       label: l10n.chatVoiceSlideUpToLock,
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.58),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        decoration: AppBoxDecoration(
+          color: AppPalette.black.withValues(alpha: 0.58),
+          borderRadius: AppBorderRadius.circular(999),
+          border: Border.all(color: AppPalette.white.withValues(alpha: 0.12)),
         ),
         child: Padding(
-          padding: EdgeInsets.symmetric(
+          padding: AppEdgeInsets.symmetric(
             horizontal: _scale(context, 9),
             vertical: _scale(context, 8),
           ),
@@ -6620,12 +6670,12 @@ class _VoiceLockHint extends StatelessWidget {
             children: [
               Icon(
                 Icons.keyboard_arrow_up_rounded,
-                color: Colors.white.withValues(alpha: 0.86),
+                color: AppPalette.white.withValues(alpha: 0.86),
                 size: _scale(context, 18),
               ),
               Icon(
                 Icons.lock_open_rounded,
-                color: AppColors.accent,
+                color: AppPalette.primary,
                 size: _scale(context, 18),
               ),
             ],
@@ -6722,17 +6772,17 @@ class _ChatComposer extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(
+      padding: AppEdgeInsets.fromLTRB(
         hz,
         _scale(context, 8),
         hz,
         _scale(context, 10) + mq.padding.bottom,
       ),
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+          top: BorderSide(color: AppPalette.white.withValues(alpha: 0.08)),
         ),
-        color: const Color(0xB8140B06),
+        color: AppPalette.warmOverlayInk05,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -6791,14 +6841,14 @@ class _ChatComposer extends StatelessWidget {
                 Expanded(
                   child: Container(
                     height: btnSize,
-                    padding: EdgeInsets.symmetric(
+                    padding: AppEdgeInsets.symmetric(
                       horizontal: _scale(context, 12),
                     ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(999),
-                      color: const Color(0xB8412A18),
+                    decoration: AppBoxDecoration(
+                      borderRadius: AppBorderRadius.circular(999),
+                      color: AppPalette.warmOverlaySurface08,
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.03),
+                        color: AppPalette.white.withValues(alpha: 0.03),
                       ),
                     ),
                     child: Row(
@@ -6847,23 +6897,23 @@ class _ChatComposer extends StatelessWidget {
                             maxLines: 1,
                             textAlignVertical: TextAlignVertical.center,
                             enabled: !attachmentUploading && !messagingClosed,
-                            style: const TextStyle(
+                            style: const AppTextStyle(
                               fontSize: 15,
-                              color: Color(0xFFf5f3ef),
+                              color: AppPalette.amberWash03,
                               letterSpacing: 0,
                             ),
-                            decoration: InputDecoration(
+                            decoration: AppInputDecoration(
                               border: InputBorder.none,
                               isDense: true,
-                              contentPadding: EdgeInsets.zero,
+                              contentPadding: AppEdgeInsets.zero,
                               hintText: messagingClosed
                                   ? l10n.chatComposerClosedHint
                                   : attachmentUploading
                                   ? l10n.chatAttachmentUploading
                                   : l10n.chatComposerHint,
-                              hintStyle: TextStyle(
+                              hintStyle: AppTextStyle(
                                 fontSize: 15,
-                                color: Colors.white.withValues(alpha: 0.48),
+                                color: AppPalette.white.withValues(alpha: 0.48),
                                 letterSpacing: 0,
                               ),
                             ),
@@ -6889,7 +6939,7 @@ class _ChatComposer extends StatelessWidget {
                               child: Icon(
                                 Icons.emoji_emotions_outlined,
                                 size: 22,
-                                color: Colors.white.withValues(alpha: 0.72),
+                                color: AppPalette.white.withValues(alpha: 0.72),
                               ),
                             ),
                           ),
@@ -6908,7 +6958,7 @@ class _ChatComposer extends StatelessWidget {
                         pendingAttachments.isNotEmpty;
                     if (hasDraft) return const SizedBox.shrink();
                     return Padding(
-                      padding: EdgeInsets.only(left: itemGap),
+                      padding: AppEdgeInsets.only(left: itemGap),
                       child: _ComposerCircleButton(
                         size: btnSize,
                         icon: Icons.camera_alt_rounded,
@@ -6949,7 +6999,7 @@ class _ChatComposer extends StatelessWidget {
                       onTap: disabled ? null : onSend,
                       child: _ComposerActionButtonSurface(
                         size: btnSize,
-                        color: const Color(0xFFff9d00),
+                        color: AppPalette.warmMuted48,
                         disabled: disabled,
                         busy: sending || attachmentUploading,
                         icon: Icons.send_rounded,
@@ -7095,15 +7145,15 @@ class _InlineEmojiStickerPanel extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOutCubic,
       height: panelHeight,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(_scale(context, 18)),
-        color: const Color(0xFF1d120b),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+      decoration: AppBoxDecoration(
+        borderRadius: AppBorderRadius.circular(_scale(context, 18)),
+        color: AppPalette.warmInk55,
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.07)),
       ),
       child: Column(
         children: [
           Padding(
-            padding: EdgeInsets.fromLTRB(
+            padding: AppEdgeInsets.fromLTRB(
               _scale(context, 12),
               _scale(context, 10),
               _scale(context, 12),
@@ -7163,27 +7213,27 @@ class _ComposerPanelTabButton extends StatelessWidget {
           duration: const Duration(milliseconds: 160),
           height: _scale(context, 38),
           alignment: Alignment.center,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
+          decoration: AppBoxDecoration(
+            borderRadius: AppBorderRadius.circular(999),
             color: selected
-                ? AppColors.accent.withValues(alpha: 0.18)
-                : Colors.white.withValues(alpha: 0.06),
+                ? AppPalette.primary.withValues(alpha: 0.18)
+                : AppPalette.white.withValues(alpha: 0.06),
             border: Border.all(
               color: selected
-                  ? AppColors.accent.withValues(alpha: 0.42)
-                  : Colors.white.withValues(alpha: 0.06),
+                  ? AppPalette.primary.withValues(alpha: 0.42)
+                  : AppPalette.white.withValues(alpha: 0.06),
             ),
           ),
           child: Text(
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
+            style: AppTextStyle(
               fontSize: _scale(context, 13),
               fontWeight: FontWeight.w800,
               color: selected
-                  ? const Color(0xFFffd08a)
-                  : Colors.white.withValues(alpha: 0.64),
+                  ? AppPalette.amberLight06
+                  : AppPalette.white.withValues(alpha: 0.64),
             ),
           ),
         ),
@@ -7205,7 +7255,7 @@ class _EmojiGrid extends StatelessWidget {
         final columns = rawColumns.clamp(6, 9).toInt();
 
         return GridView.builder(
-          padding: EdgeInsets.fromLTRB(
+          padding: AppEdgeInsets.fromLTRB(
             _scale(context, 12),
             _scale(context, 6),
             _scale(context, 12),
@@ -7224,12 +7274,15 @@ class _EmojiGrid extends StatelessWidget {
               button: true,
               label: value,
               child: InkWell(
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: AppBorderRadius.circular(999),
                 onTap: () => onSelected(value),
                 child: Center(
                   child: Text(
                     value,
-                    style: TextStyle(fontSize: _scale(context, 26), height: 1),
+                    style: AppTextStyle(
+                      fontSize: _scale(context, 26),
+                      height: 1,
+                    ),
                   ),
                 ),
               ),
@@ -7262,7 +7315,7 @@ class _StickerGrid extends StatelessWidget {
 
     if (loading && packs.isEmpty) {
       return const Center(
-        child: CircularProgressIndicator(color: AppColors.accent),
+        child: CircularProgressIndicator(color: AppPalette.primary),
       );
     }
 
@@ -7282,14 +7335,14 @@ class _StickerGrid extends StatelessWidget {
     if (stickers.isEmpty) {
       return Center(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: _scale(context, 24)),
+          padding: AppEdgeInsets.symmetric(horizontal: _scale(context, 24)),
           child: Text(
             l10n.stickersEmptySearch,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: AppTextStyle(
               fontSize: _scale(context, 13),
               fontWeight: FontWeight.w700,
-              color: Colors.white.withValues(alpha: 0.68),
+              color: AppPalette.white.withValues(alpha: 0.68),
             ),
           ),
         ),
@@ -7302,7 +7355,7 @@ class _StickerGrid extends StatelessWidget {
         final columns = rawColumns.clamp(4, 6).toInt();
 
         return GridView.builder(
-          padding: EdgeInsets.fromLTRB(
+          padding: AppEdgeInsets.fromLTRB(
             _scale(context, 12),
             _scale(context, 8),
             _scale(context, 12),
@@ -7343,13 +7396,13 @@ class _StickerPickerButton extends StatelessWidget {
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(_scale(context, 16)),
-            color: Colors.white.withValues(alpha: 0.07),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          decoration: AppBoxDecoration(
+            borderRadius: AppBorderRadius.circular(_scale(context, 16)),
+            color: AppPalette.white.withValues(alpha: 0.07),
+            border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
           ),
           child: Padding(
-            padding: EdgeInsets.all(_scale(context, 8)),
+            padding: AppEdgeInsets.all(_scale(context, 8)),
             child: _StickerImage(
               fileId: sticker.displayFileId,
               fit: BoxFit.contain,
@@ -7380,23 +7433,23 @@ class _StickerPanelMessage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: _scale(context, 24)),
+        padding: AppEdgeInsets.symmetric(horizontal: _scale(context, 24)),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
               size: _scale(context, 30),
-              color: Colors.white.withValues(alpha: 0.42),
+              color: AppPalette.white.withValues(alpha: 0.42),
             ),
             SizedBox(height: _scale(context, 10)),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: AppTextStyle(
                 fontSize: _scale(context, 13),
                 fontWeight: FontWeight.w700,
-                color: Colors.white.withValues(alpha: 0.68),
+                color: AppPalette.white.withValues(alpha: 0.68),
               ),
             ),
             SizedBox(height: _scale(context, 12)),
@@ -7404,7 +7457,7 @@ class _StickerPanelMessage extends StatelessWidget {
               onPressed: onAction,
               child: Text(
                 actionLabel,
-                style: const TextStyle(color: AppColors.accent),
+                style: const AppTextStyle(color: AppPalette.primary),
               ),
             ),
           ],
@@ -7437,8 +7490,8 @@ void _showAdaptiveAttachmentSheet({
     isDismissible: true,
     isScrollControlled: true,
     useSafeArea: true,
-    backgroundColor: Colors.transparent,
-    barrierColor: Colors.black.withValues(alpha: 0.58),
+    backgroundColor: AppPalette.transparent,
+    barrierColor: AppPalette.black.withValues(alpha: 0.58),
     builder: (sheetContext) => _AmberAttachmentSheet(
       title: title,
       cancelLabel: cancelLabel,
@@ -7465,19 +7518,21 @@ class _AmberAttachmentSheet extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(
+        padding: AppEdgeInsets.fromLTRB(
           _scale(context, 16),
           0,
           _scale(context, 16),
           math.max(_scale(context, 10), bottomInset),
         ),
         child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(_scale(context, 28)),
-            border: Border.all(color: AppColors.accent.withValues(alpha: 0.26)),
+          decoration: AppBoxDecoration(
+            borderRadius: AppBorderRadius.circular(_scale(context, 28)),
+            border: Border.all(
+              color: AppPalette.primary.withValues(alpha: 0.26),
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.44),
+                color: AppPalette.black.withValues(alpha: 0.44),
                 blurRadius: _scale(context, 34),
                 offset: Offset(0, _scale(context, 18)),
               ),
@@ -7485,13 +7540,13 @@ class _AmberAttachmentSheet extends StatelessWidget {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF2A1709), Color(0xFF150A03)],
+              colors: [AppPalette.warmSurface07, AppPalette.warmInk17],
             ),
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(_scale(context, 28)),
+            borderRadius: AppBorderRadius.circular(_scale(context, 28)),
             child: Padding(
-              padding: EdgeInsets.fromLTRB(
+              padding: AppEdgeInsets.fromLTRB(
                 _scale(context, 16),
                 _scale(context, 10),
                 _scale(context, 16),
@@ -7503,9 +7558,9 @@ class _AmberAttachmentSheet extends StatelessWidget {
                   Container(
                     width: _scale(context, 44),
                     height: _scale(context, 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.accent.withValues(alpha: 0.36),
-                      borderRadius: BorderRadius.circular(999),
+                    decoration: AppBoxDecoration(
+                      color: AppPalette.primary.withValues(alpha: 0.36),
+                      borderRadius: AppBorderRadius.circular(999),
                     ),
                   ),
                   SizedBox(height: _scale(context, 16)),
@@ -7514,16 +7569,16 @@ class _AmberAttachmentSheet extends StatelessWidget {
                       Container(
                         width: _scale(context, 42),
                         height: _scale(context, 42),
-                        decoration: BoxDecoration(
+                        decoration: AppBoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppColors.accent.withValues(alpha: 0.18),
+                          color: AppPalette.primary.withValues(alpha: 0.18),
                           border: Border.all(
-                            color: AppColors.accent.withValues(alpha: 0.28),
+                            color: AppPalette.primary.withValues(alpha: 0.28),
                           ),
                         ),
                         child: Icon(
                           Icons.attach_file_rounded,
-                          color: AppColors.accent,
+                          color: AppPalette.primary,
                           size: _scale(context, 22),
                         ),
                       ),
@@ -7533,8 +7588,8 @@ class _AmberAttachmentSheet extends StatelessWidget {
                           title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: AppColors.textPrimary,
+                          style: AppTextStyle(
+                            color: AppPalette.textPrimary,
                             fontSize: _scale(context, 21),
                             fontWeight: FontWeight.w900,
                           ),
@@ -7553,16 +7608,18 @@ class _AmberAttachmentSheet extends StatelessWidget {
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.textPrimary,
+                        foregroundColor: AppPalette.textPrimary,
                         side: BorderSide(
-                          color: AppColors.accent.withValues(alpha: 0.44),
+                          color: AppPalette.primary.withValues(alpha: 0.44),
                         ),
-                        backgroundColor: Colors.white.withValues(alpha: 0.04),
-                        padding: EdgeInsets.symmetric(
+                        backgroundColor: AppPalette.white.withValues(
+                          alpha: 0.04,
+                        ),
+                        padding: AppEdgeInsets.symmetric(
                           vertical: _scale(context, 15),
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
+                          borderRadius: AppBorderRadius.circular(
                             _scale(context, 18),
                           ),
                         ),
@@ -7571,7 +7628,7 @@ class _AmberAttachmentSheet extends StatelessWidget {
                         cancelLabel,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: AppTextStyle(
                           fontSize: _scale(context, 15),
                           fontWeight: FontWeight.w900,
                         ),
@@ -7599,16 +7656,16 @@ class _AmberAttachmentActionTile extends StatelessWidget {
       button: true,
       label: action.label,
       child: Material(
-        color: Colors.white.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(_scale(context, 18)),
+        color: AppPalette.white.withValues(alpha: 0.06),
+        borderRadius: AppBorderRadius.circular(_scale(context, 18)),
         child: InkWell(
-          borderRadius: BorderRadius.circular(_scale(context, 18)),
+          borderRadius: AppBorderRadius.circular(_scale(context, 18)),
           onTap: () {
             Navigator.pop(context);
             action.onSelected();
           },
           child: Padding(
-            padding: EdgeInsets.symmetric(
+            padding: AppEdgeInsets.symmetric(
               horizontal: _scale(context, 14),
               vertical: _scale(context, 12),
             ),
@@ -7617,13 +7674,13 @@ class _AmberAttachmentActionTile extends StatelessWidget {
                 Container(
                   width: _scale(context, 46),
                   height: _scale(context, 46),
-                  decoration: BoxDecoration(
+                  decoration: AppBoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppColors.accent.withValues(alpha: 0.17),
+                    color: AppPalette.primary.withValues(alpha: 0.17),
                   ),
                   child: Icon(
                     action.icon,
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                     size: _scale(context, 23),
                   ),
                 ),
@@ -7633,8 +7690,8 @@ class _AmberAttachmentActionTile extends StatelessWidget {
                     action.label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
+                    style: AppTextStyle(
+                      color: AppPalette.textPrimary,
                       fontSize: _scale(context, 16),
                       fontWeight: FontWeight.w900,
                     ),
@@ -7642,7 +7699,7 @@ class _AmberAttachmentActionTile extends StatelessWidget {
                 ),
                 Icon(
                   Icons.chevron_right_rounded,
-                  color: AppColors.accent.withValues(alpha: 0.78),
+                  color: AppPalette.primary.withValues(alpha: 0.78),
                   size: _scale(context, 25),
                 ),
               ],
@@ -7681,12 +7738,12 @@ class _ComposerCircleButton extends StatelessWidget {
         child: Container(
           width: size,
           height: size,
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xD136230F),
+            color: AppPalette.warmOverlaySurface13,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.28),
+                color: AppPalette.black.withValues(alpha: 0.28),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -7699,13 +7756,13 @@ class _ComposerCircleButton extends StatelessWidget {
                     height: size * 0.4,
                     child: const CircularProgressIndicator(
                       strokeWidth: 2.5,
-                      color: AppColors.accent,
+                      color: AppPalette.primary,
                     ),
                   )
                 : Icon(
                     icon,
                     size: size * 0.45,
-                    color: Colors.white.withValues(
+                    color: AppPalette.white.withValues(
                       alpha: disabled ? 0.36 : 0.9,
                     ),
                   ),
@@ -7724,8 +7781,10 @@ class _LoadingState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: Color(0xFF100802),
-      body: Center(child: CircularProgressIndicator(color: Color(0xFFff9800))),
+      backgroundColor: AppPalette.warmInk05,
+      body: Center(
+        child: CircularProgressIndicator(color: AppPalette.warmMuted45),
+      ),
     );
   }
 }
@@ -7740,7 +7799,7 @@ class _ErrorState extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF100802),
+      backgroundColor: AppPalette.warmInk05,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -7748,13 +7807,13 @@ class _ErrorState extends StatelessWidget {
             Icon(
               Icons.error_outline,
               size: _scale(context, 42),
-              color: const Color(0xFF94A3B8),
+              color: AppPalette.textCoolSecondary,
             ),
             SizedBox(height: _scale(context, 14)),
             Text(
               l10n.chatLoadFailed,
-              style: TextStyle(
-                color: const Color(0xFF94A3B8),
+              style: AppTextStyle(
+                color: AppPalette.textCoolSecondary,
                 fontSize: _scale(context, 15),
               ),
             ),
@@ -7763,8 +7822,8 @@ class _ErrorState extends StatelessWidget {
               onPressed: onRetry,
               child: Text(
                 l10n.retryButton,
-                style: TextStyle(
-                  color: const Color(0xFFff9800),
+                style: AppTextStyle(
+                  color: AppPalette.warmMuted45,
                   fontSize: _scale(context, 15),
                 ),
               ),

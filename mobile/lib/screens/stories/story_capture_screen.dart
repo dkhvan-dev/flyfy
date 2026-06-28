@@ -4,13 +4,13 @@ import 'dart:math' as math;
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../core/network/file_api.dart';
 import '../../core/network/story_api.dart';
-import '../../core/ui/app_colors.dart';
 import '../../features/stories/models/story_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 
@@ -397,23 +397,25 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
     final selected = await showModalBottomSheet<_StoryCaptureMediaKind>(
       context: context,
       isDismissible: true,
-      backgroundColor: const Color(0xFF1B1008),
+      backgroundColor: AppPalette.warmInk40,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+        borderRadius: AppBorderRadius.vertical(
+          top: AppRadiusValue.circular(18),
+        ),
       ),
       builder: (context) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+            padding: const AppEdgeInsets.fromLTRB(18, 14, 18, 18),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
                   width: 44,
                   height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.24),
-                    borderRadius: BorderRadius.circular(999),
+                  decoration: AppBoxDecoration(
+                    color: AppPalette.white.withValues(alpha: 0.24),
+                    borderRadius: AppBorderRadius.circular(999),
                   ),
                 ),
                 const SizedBox(height: 18),
@@ -551,7 +553,7 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
     final kind = _selectedKind;
     return Scaffold(
       key: const ValueKey('story-capture-screen'),
-      backgroundColor: Colors.black,
+      backgroundColor: AppPalette.black,
       body: file == null || kind == null
           ? _buildCameraBody(context)
           : _buildPreviewBody(context, file, kind),
@@ -570,20 +572,20 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
           child: initialized
               ? _StoryCameraPreview(controller: controller)
               : const Center(
-                  child: CircularProgressIndicator(color: AppColors.accent),
+                  child: CircularProgressIndicator(color: AppPalette.primary),
                 ),
         ),
         Positioned.fill(
           child: IgnorePointer(
             child: DecoratedBox(
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withValues(alpha: 0.66),
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.76),
+                    AppPalette.black.withValues(alpha: 0.66),
+                    AppPalette.transparent,
+                    AppPalette.black.withValues(alpha: 0.76),
                   ],
                   stops: const [0, 0.48, 1],
                 ),
@@ -593,7 +595,7 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
         ),
         SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
+            padding: const AppEdgeInsets.fromLTRB(16, 10, 16, 18),
             child: Column(
               children: [
                 Row(
@@ -611,7 +613,7 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(
-                              color: Colors.white,
+                              color: AppPalette.white,
                               fontWeight: FontWeight.w900,
                             ),
                       ),
@@ -700,14 +702,14 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
         Positioned.fill(
           child: IgnorePointer(
             child: DecoratedBox(
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withValues(alpha: 0.62),
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.78),
+                    AppPalette.black.withValues(alpha: 0.62),
+                    AppPalette.transparent,
+                    AppPalette.black.withValues(alpha: 0.78),
                   ],
                   stops: const [0, 0.5, 1],
                 ),
@@ -717,7 +719,7 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
         ),
         SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
+            padding: const AppEdgeInsets.fromLTRB(16, 10, 16, 18),
             child: Column(
               children: [
                 Row(
@@ -735,7 +737,7 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(
-                              color: Colors.white,
+                              color: AppPalette.white,
                               fontWeight: FontWeight.w900,
                             ),
                       ),
@@ -752,29 +754,29 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
                   controller: _captionController,
                   minLines: 1,
                   maxLines: 3,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
+                  style: const AppTextStyle(color: AppPalette.white),
+                  decoration: AppInputDecoration(
                     hintText: l10n.storyCaptureCaptionHint,
-                    hintStyle: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.56),
+                    hintStyle: AppTextStyle(
+                      color: AppPalette.white.withValues(alpha: 0.56),
                     ),
                     filled: true,
-                    fillColor: Colors.black.withValues(alpha: 0.36),
+                    fillColor: AppPalette.black.withValues(alpha: 0.36),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppBorderRadius.circular(8),
                       borderSide: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.18),
+                        color: AppPalette.white.withValues(alpha: 0.18),
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppBorderRadius.circular(8),
                       borderSide: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.18),
+                        color: AppPalette.white.withValues(alpha: 0.18),
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.accent),
+                      borderRadius: AppBorderRadius.circular(8),
+                      borderSide: const BorderSide(color: AppPalette.primary),
                     ),
                   ),
                 ),
@@ -793,13 +795,13 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
                         overflow: TextOverflow.ellipsis,
                       ),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
+                        foregroundColor: AppPalette.white,
                         side: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.24),
+                          color: AppPalette.white.withValues(alpha: 0.24),
                         ),
                         minimumSize: const Size.fromHeight(48),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: AppBorderRadius.circular(8),
                         ),
                       ),
                     );
@@ -812,7 +814,7 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
                               dimension: 18,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: Color(0xFF211307),
+                                color: AppPalette.warmInk73,
                               ),
                             )
                           : const Icon(Icons.send_rounded),
@@ -824,11 +826,11 @@ class _StoryCaptureScreenState extends State<StoryCaptureScreen>
                         overflow: TextOverflow.ellipsis,
                       ),
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.accent,
-                        foregroundColor: AppColors.textPrimary,
+                        backgroundColor: AppPalette.primary,
+                        foregroundColor: AppPalette.textPrimary,
                         minimumSize: const Size.fromHeight(48),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: AppBorderRadius.circular(8),
                         ),
                       ),
                     );
@@ -976,7 +978,7 @@ class _StoryCapturePreviewState extends State<_StoryCapturePreview> {
     }
 
     return const Center(
-      child: CircularProgressIndicator(color: AppColors.accent),
+      child: CircularProgressIndicator(color: AppPalette.primary),
     );
   }
 }
@@ -999,10 +1001,10 @@ class _CaptureIconButton extends StatelessWidget {
       child: IconButton.filled(
         onPressed: onPressed,
         style: IconButton.styleFrom(
-          backgroundColor: Colors.black.withValues(alpha: 0.32),
-          disabledBackgroundColor: Colors.black.withValues(alpha: 0.18),
-          foregroundColor: Colors.white,
-          disabledForegroundColor: Colors.white.withValues(alpha: 0.36),
+          backgroundColor: AppPalette.black.withValues(alpha: 0.32),
+          disabledBackgroundColor: AppPalette.black.withValues(alpha: 0.18),
+          foregroundColor: AppPalette.white,
+          disabledForegroundColor: AppPalette.white.withValues(alpha: 0.36),
         ),
         icon: Icon(icon),
       ),
@@ -1025,27 +1027,27 @@ class _CaptureModeButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: AppBorderRadius.circular(999),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
+        padding: const AppEdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: AppBoxDecoration(
           color: selected
-              ? Colors.white.withValues(alpha: 0.18)
-              : Colors.black.withValues(alpha: 0.20),
-          borderRadius: BorderRadius.circular(999),
+              ? AppPalette.white.withValues(alpha: 0.18)
+              : AppPalette.black.withValues(alpha: 0.20),
+          borderRadius: AppBorderRadius.circular(999),
           border: Border.all(
             color: selected
-                ? AppColors.accent
-                : Colors.white.withValues(alpha: 0.16),
+                ? AppPalette.primary
+                : AppPalette.white.withValues(alpha: 0.16),
           ),
         ),
         child: Text(
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: selected ? Colors.white : Colors.white70,
+          style: AppTextStyle(
+            color: selected ? AppPalette.white : AppPalette.white70,
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -1086,19 +1088,21 @@ class _CaptureButton extends StatelessWidget {
           duration: const Duration(milliseconds: 180),
           width: 76,
           height: 76,
-          padding: const EdgeInsets.all(5),
-          decoration: BoxDecoration(
+          padding: const AppEdgeInsets.all(5),
+          decoration: AppBoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 4),
+            border: Border.all(color: AppPalette.white, width: 4),
           ),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            decoration: BoxDecoration(
+            decoration: AppBoxDecoration(
               color: videoMode
-                  ? (recording ? AppColors.destructive : Colors.redAccent)
-                  : Colors.white,
+                  ? (recording
+                        ? AppPalette.danger
+                        : AppPalette.materialDangerAccent)
+                  : AppPalette.white,
               shape: recording ? BoxShape.rectangle : BoxShape.circle,
-              borderRadius: recording ? BorderRadius.circular(8) : null,
+              borderRadius: recording ? AppBorderRadius.circular(8) : null,
             ),
           ),
         ),
@@ -1120,8 +1124,8 @@ class _GalleryButton extends StatelessWidget {
       child: IconButton.filled(
         onPressed: onPressed,
         style: IconButton.styleFrom(
-          backgroundColor: Colors.black.withValues(alpha: 0.36),
-          foregroundColor: Colors.white,
+          backgroundColor: AppPalette.black.withValues(alpha: 0.36),
+          foregroundColor: AppPalette.white,
           minimumSize: const Size.square(52),
         ),
         icon: const Icon(Icons.photo_library_rounded),
@@ -1140,16 +1144,16 @@ class _RecordingPill extends StatelessWidget {
     final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
     final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.redAccent.withValues(alpha: 0.88),
-        borderRadius: BorderRadius.circular(999),
+      decoration: AppBoxDecoration(
+        color: AppPalette.materialDangerAccent.withValues(alpha: 0.88),
+        borderRadius: AppBorderRadius.circular(999),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const AppEdgeInsets.symmetric(horizontal: 14, vertical: 8),
         child: Text(
           '$minutes:$seconds',
-          style: const TextStyle(
-            color: Colors.white,
+          style: const AppTextStyle(
+            color: AppPalette.white,
             fontWeight: FontWeight.w900,
           ),
         ),
@@ -1167,19 +1171,17 @@ class _CaptureErrorPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       constraints: const BoxConstraints(maxWidth: 420),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFF3A180E).withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.destructive.withValues(alpha: 0.34),
-        ),
+      padding: const AppEdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: AppBoxDecoration(
+        color: AppPalette.redSurface02.withValues(alpha: 0.92),
+        borderRadius: AppBorderRadius.circular(8),
+        border: Border.all(color: AppPalette.danger.withValues(alpha: 0.34)),
       ),
       child: Text(
         message,
         textAlign: TextAlign.center,
-        style: const TextStyle(
-          color: Colors.white,
+        style: const AppTextStyle(
+          color: AppPalette.white,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -1202,13 +1204,13 @@ class _StoryCaptureSheetTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       onTap: onTap,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      tileColor: Colors.white.withValues(alpha: 0.08),
-      leading: Icon(icon, color: AppColors.accent),
+      shape: RoundedRectangleBorder(borderRadius: AppBorderRadius.circular(8)),
+      tileColor: AppPalette.white.withValues(alpha: 0.08),
+      leading: Icon(icon, color: AppPalette.primary),
       title: Text(
         label,
-        style: const TextStyle(
-          color: Colors.white,
+        style: const AppTextStyle(
+          color: AppPalette.white,
           fontWeight: FontWeight.w800,
         ),
       ),

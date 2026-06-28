@@ -2,23 +2,23 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/ui/app_colors.dart';
 import '../../features/currency/data/currency_api.dart';
 import '../../features/currency/models/currency_conversion_result.dart';
 import '../../features/help_center/data/help_center_api.dart';
 import '../../features/help_center/widgets/contextual_help_section.dart';
 import '../../l10n/generated/app_localizations.dart';
 
-const _backgroundColor = Color(0xFF1A1008);
-const _cardColor = Color(0xFF2A1C10);
-const _cardColorAlt = Color(0xFF342416);
-const _surfaceColor = Color(0xFF24170C);
-const _pillColor = Color(0xFF4B392B);
-const _primaryTextColor = Color(0xFFF8E9DC);
-const _secondaryTextColor = Color(0xFFCDB9A8);
-const _mutedTextColor = Color(0xFF9E8B7D);
+const _backgroundColor = AppPalette.warmInk35;
+const _cardColor = AppPalette.warmSurface16;
+const _cardColorAlt = AppPalette.warmSurface45;
+const _surfaceColor = AppPalette.warmInk99;
+const _pillColor = AppPalette.warmSurfaceHigh02;
+const _primaryTextColor = AppPalette.orangeWash18;
+const _secondaryTextColor = AppPalette.orangeSoft31;
+const _mutedTextColor = AppPalette.orangeMuted01;
 
 class CurrencyConverterScreen extends StatefulWidget {
   const CurrencyConverterScreen({super.key, this._api});
@@ -267,7 +267,7 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
           l10n.currencyConverterTitle,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
+          style: const AppTextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w800,
             letterSpacing: 0,
@@ -277,7 +277,7 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: EdgeInsets.fromLTRB(
+          padding: AppEdgeInsets.fromLTRB(
             horizontalPadding,
             8,
             horizontalPadding,
@@ -456,13 +456,13 @@ class _AmountCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+        borderRadius: AppBorderRadius.circular(28),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.07)),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+        padding: const AppEdgeInsets.fromLTRB(20, 18, 20, 20),
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 142),
           child: Column(
@@ -475,7 +475,7 @@ class _AmountCard extends StatelessWidget {
                       label.toUpperCase(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: const AppTextStyle(
                         color: _mutedTextColor,
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
@@ -507,24 +507,24 @@ class _AmountCard extends StatelessWidget {
                             ),
                             textAlign: TextAlign.right,
                             maxLines: 1,
-                            style: const TextStyle(
+                            style: const AppTextStyle(
                               color: _primaryTextColor,
                               fontSize: 44,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 0,
                             ),
-                            decoration: const InputDecoration(
+                            decoration: const AppInputDecoration(
                               border: InputBorder.none,
                               focusedBorder: InputBorder.none,
                               enabledBorder: InputBorder.none,
                               hintText: '0',
-                              hintStyle: TextStyle(
+                              hintStyle: AppTextStyle(
                                 color: _mutedTextColor,
                                 fontSize: 44,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 0,
                               ),
-                              contentPadding: EdgeInsets.zero,
+                              contentPadding: AppEdgeInsets.zero,
                               isDense: true,
                             ),
                             onChanged: onAmountChanged,
@@ -538,7 +538,7 @@ class _AmountCard extends StatelessWidget {
                                     height: 30,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2.4,
-                                      color: AppColors.accent,
+                                      color: AppPalette.primary,
                                     ),
                                   )
                                 : FittedBox(
@@ -547,7 +547,7 @@ class _AmountCard extends StatelessWidget {
                                     child: Text(
                                       amountText ?? '-',
                                       maxLines: 1,
-                                      style: const TextStyle(
+                                      style: const AppTextStyle(
                                         color: _primaryTextColor,
                                         fontSize: 44,
                                         fontWeight: FontWeight.w900,
@@ -566,8 +566,8 @@ class _AmountCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.right,
-                  style: const TextStyle(
-                    color: AppColors.accent,
+                  style: const AppTextStyle(
+                    color: AppPalette.primary,
                     fontSize: 12,
                     height: 1.3,
                     letterSpacing: 0,
@@ -597,7 +597,7 @@ class _CurrencySymbol extends StatelessWidget {
         child: Text(
           symbol,
           maxLines: 1,
-          style: const TextStyle(
+          style: const AppTextStyle(
             color: _primaryTextColor,
             fontSize: 46,
             fontWeight: FontWeight.w900,
@@ -627,16 +627,16 @@ class _CurrencyPill extends StatelessWidget {
     return Tooltip(
       message: option.name,
       child: Material(
-        color: Colors.transparent,
+        color: AppPalette.transparent,
         child: InkWell(
           onTap: isLoading ? null : onTap,
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: AppBorderRadius.circular(999),
           child: Ink(
-            decoration: BoxDecoration(
+            decoration: AppBoxDecoration(
               color: _pillColor,
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: AppBorderRadius.circular(999),
             ),
-            padding: const EdgeInsets.fromLTRB(6, 5, 10, 5),
+            padding: const AppEdgeInsets.fromLTRB(6, 5, 10, 5),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -646,7 +646,7 @@ class _CurrencyPill extends StatelessWidget {
                   currency,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: const AppTextStyle(
                     color: _primaryTextColor,
                     fontSize: 14,
                     fontWeight: FontWeight.w900,
@@ -679,17 +679,21 @@ class _SwapFloatingButton extends StatelessWidget {
     return Tooltip(
       message: l10n.currencyConverterSwapTooltip,
       child: Material(
-        color: AppColors.accent,
+        color: AppPalette.primary,
         shape: const CircleBorder(),
         elevation: 8,
-        shadowColor: AppColors.accent.withValues(alpha: 0.35),
+        shadowColor: AppPalette.primary.withValues(alpha: 0.35),
         child: InkWell(
           customBorder: const CircleBorder(),
           onTap: onSwap,
           child: const SizedBox(
             width: 58,
             height: 58,
-            child: Icon(Icons.swap_vert_rounded, color: Colors.white, size: 30),
+            child: Icon(
+              Icons.swap_vert_rounded,
+              color: AppPalette.white,
+              size: 30,
+            ),
           ),
         ),
       ),
@@ -723,7 +727,7 @@ class _RateStatusRow extends StatelessWidget {
           children: [
             const Icon(
               Icons.info_outline_rounded,
-              color: AppColors.accent,
+              color: AppPalette.primary,
               size: 18,
             ),
             const SizedBox(width: 8),
@@ -732,7 +736,7 @@ class _RateStatusRow extends StatelessWidget {
                 rateText,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: const AppTextStyle(
                   color: _secondaryTextColor,
                   fontSize: 12.5,
                   height: 1.35,
@@ -752,7 +756,7 @@ class _RateStatusRow extends StatelessWidget {
                   height: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                   ),
                 )
               : Text(
@@ -761,7 +765,7 @@ class _RateStatusRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.right,
-                  style: const TextStyle(
+                  style: const AppTextStyle(
                     color: _mutedTextColor,
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
@@ -823,8 +827,8 @@ class _QuickSwitchSection extends StatelessWidget {
           l10n.currencyConverterQuickSwitch.toUpperCase(),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: AppColors.accent,
+          style: const AppTextStyle(
+            color: AppPalette.primary,
             fontSize: 12,
             fontWeight: FontWeight.w900,
             letterSpacing: 0,
@@ -886,23 +890,26 @@ class _QuickSwitchTile extends StatelessWidget {
       child: SizedBox(
         width: width,
         child: Material(
-          color: Colors.transparent,
+          color: AppPalette.transparent,
           child: InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: AppBorderRadius.circular(22),
             child: Ink(
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 color: selected
-                    ? AppColors.accent.withValues(alpha: 0.18)
+                    ? AppPalette.primary.withValues(alpha: 0.18)
                     : _surfaceColor,
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: AppBorderRadius.circular(22),
                 border: Border.all(
                   color: selected
-                      ? AppColors.accent.withValues(alpha: 0.72)
-                      : Colors.white.withValues(alpha: 0.07),
+                      ? AppPalette.primary.withValues(alpha: 0.72)
+                      : AppPalette.white.withValues(alpha: 0.07),
                 ),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding: const AppEdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
               child: Row(
                 children: [
                   _CurrencyFlagIcon(code: pair.$1, size: 36),
@@ -915,7 +922,7 @@ class _QuickSwitchTile extends StatelessWidget {
                           '${pair.$1} / ${pair.$2}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: const AppTextStyle(
                             color: _primaryTextColor,
                             fontSize: 14,
                             fontWeight: FontWeight.w900,
@@ -927,7 +934,7 @@ class _QuickSwitchTile extends StatelessWidget {
                           ratePreview,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: const AppTextStyle(
                             color: _secondaryTextColor,
                             fontSize: 12,
                             height: 1.2,
@@ -957,26 +964,26 @@ class _NoticePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.05),
+        borderRadius: AppBorderRadius.circular(18),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const AppEdgeInsets.all(14),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Icon(
               Icons.shield_outlined,
-              color: AppColors.accent,
+              color: AppPalette.primary,
               size: 20,
             ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 l10n.currencyConverterInfoNotice,
-                style: const TextStyle(
+                style: const AppTextStyle(
                   color: _secondaryTextColor,
                   fontSize: 12.5,
                   height: 1.4,
@@ -1034,7 +1041,7 @@ class _CurrencyPickerScreenState extends State<_CurrencyPickerScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 2),
+              padding: const AppEdgeInsets.fromLTRB(8, 8, 8, 2),
               child: Stack(
                 alignment: Alignment.center,
                 children: [
@@ -1050,13 +1057,13 @@ class _CurrencyPickerScreenState extends State<_CurrencyPickerScreen> {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 56),
+                    padding: const AppEdgeInsets.symmetric(horizontal: 56),
                     child: Text(
                       l10n.currencyConverterSelectCurrencyTitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: const AppTextStyle(
                         color: _primaryTextColor,
                         fontSize: 18,
                         fontWeight: FontWeight.w900,
@@ -1068,38 +1075,38 @@ class _CurrencyPickerScreenState extends State<_CurrencyPickerScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(18, 14, 18, 10),
+              padding: const AppEdgeInsets.fromLTRB(18, 14, 18, 10),
               child: TextField(
                 controller: _searchController,
                 onChanged: (value) => setState(() => _query = value),
-                style: const TextStyle(
+                style: const AppTextStyle(
                   color: _primaryTextColor,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0,
                 ),
-                decoration: InputDecoration(
+                decoration: AppInputDecoration(
                   hintText: l10n.currencyConverterSearchCurrencyHint,
-                  hintStyle: const TextStyle(
+                  hintStyle: const AppTextStyle(
                     color: _mutedTextColor,
                     letterSpacing: 0,
                   ),
                   prefixIcon: const Icon(
                     Icons.search_rounded,
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                   ),
                   filled: true,
                   fillColor: _surfaceColor,
-                  contentPadding: const EdgeInsets.symmetric(
+                  contentPadding: const AppEdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 15,
                   ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: AppBorderRadius.circular(999),
                     borderSide: BorderSide.none,
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(999),
-                    borderSide: const BorderSide(color: AppColors.accent),
+                    borderRadius: AppBorderRadius.circular(999),
+                    borderSide: const BorderSide(color: AppPalette.primary),
                   ),
                 ),
               ),
@@ -1110,7 +1117,7 @@ class _CurrencyPickerScreenState extends State<_CurrencyPickerScreen> {
                   : ListView(
                       keyboardDismissBehavior:
                           ScrollViewKeyboardDismissBehavior.onDrag,
-                      padding: const EdgeInsets.fromLTRB(18, 4, 18, 24),
+                      padding: const AppEdgeInsets.fromLTRB(18, 4, 18, 24),
                       children: [
                         if (showRecent) ...[
                           _CurrencyPickerSectionTitle(
@@ -1161,8 +1168,8 @@ class _CurrencyPickerSectionTitle extends StatelessWidget {
       title.toUpperCase(),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: const TextStyle(
-        color: AppColors.accent,
+      style: const AppTextStyle(
+        color: AppPalette.primary,
         fontSize: 12,
         fontWeight: FontWeight.w900,
         letterSpacing: 0,
@@ -1190,25 +1197,28 @@ class _CurrencyPickerRow extends StatelessWidget {
     final country = _localizedCurrencyCountry(currency, l10n);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const AppEdgeInsets.only(bottom: 10),
       child: Material(
-        color: Colors.transparent,
+        color: AppPalette.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: AppBorderRadius.circular(20),
           child: Ink(
-            decoration: BoxDecoration(
+            decoration: AppBoxDecoration(
               color: selected
-                  ? AppColors.accent.withValues(alpha: 0.16)
+                  ? AppPalette.primary.withValues(alpha: 0.16)
                   : _surfaceColor,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: AppBorderRadius.circular(20),
               border: Border.all(
                 color: selected
-                    ? AppColors.accent.withValues(alpha: 0.72)
-                    : Colors.white.withValues(alpha: 0.06),
+                    ? AppPalette.primary.withValues(alpha: 0.72)
+                    : AppPalette.white.withValues(alpha: 0.06),
               ),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: const AppEdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
             child: Row(
               children: [
                 _CurrencyFlagIcon(code: currency.code, size: 42),
@@ -1221,7 +1231,7 @@ class _CurrencyPickerRow extends StatelessWidget {
                         name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: const AppTextStyle(
                           color: _primaryTextColor,
                           fontSize: 15,
                           fontWeight: FontWeight.w900,
@@ -1233,7 +1243,7 @@ class _CurrencyPickerRow extends StatelessWidget {
                         '${currency.code} - $country',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: const AppTextStyle(
                           color: _secondaryTextColor,
                           fontSize: 12.5,
                           letterSpacing: 0,
@@ -1246,7 +1256,7 @@ class _CurrencyPickerRow extends StatelessWidget {
                   const SizedBox(width: 12),
                   const Icon(
                     Icons.check_circle_rounded,
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                     size: 22,
                   ),
                 ],
@@ -1268,11 +1278,11 @@ class _CurrencyPickerEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const AppEdgeInsets.all(24),
         child: Text(
           l10n.currencyConverterNoCurrenciesFound,
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: const AppTextStyle(
             color: _secondaryTextColor,
             fontSize: 14,
             height: 1.35,
@@ -1301,10 +1311,10 @@ class _CurrencyFlagIcon extends StatelessWidget {
     return SizedBox.square(
       dimension: size,
       child: DecoratedBox(
-        decoration: BoxDecoration(
+        decoration: AppBoxDecoration(
           color: badgeColor.withValues(alpha: 0.24),
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+          border: Border.all(color: AppPalette.white.withValues(alpha: 0.16)),
         ),
         child: Center(
           child: Semantics(
@@ -1315,10 +1325,10 @@ class _CurrencyFlagIcon extends StatelessWidget {
                     width: innerSize,
                     height: innerSize,
                     clipBehavior: Clip.antiAlias,
-                    decoration: BoxDecoration(
+                    decoration: AppBoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.42),
+                        color: AppPalette.white.withValues(alpha: 0.42),
                         width: math.max(1, size * 0.035),
                       ),
                     ),
@@ -1454,66 +1464,66 @@ class _CurrencyFlagPainter extends CustomPainter {
 
   void _drawUnitedArabEmirates(Canvas canvas, Size size) {
     final redWidth = size.width * 0.3;
-    _fill(canvas, size, const Color(0xFF00732F));
+    _fill(canvas, size, AppPalette.greenSurfaceHigh01);
     _drawHorizontalStripes(
       canvas,
       Rect.fromLTWH(redWidth, 0, size.width - redWidth, size.height),
-      const [Color(0xFF009A49), Colors.white, Color(0xFF000000)],
+      const [AppPalette.greenSurfaceHigh06, AppPalette.white, AppPalette.black],
     );
     canvas.drawRect(
       Rect.fromLTWH(0, 0, redWidth, size.height),
-      _paint(const Color(0xFFFF0000)),
+      _paint(AppPalette.redMuted39),
     );
   }
 
   void _drawArmenia(Canvas canvas, Size size) {
     _drawHorizontalStripes(canvas, Offset.zero & size, const [
-      Color(0xFFD90012),
-      Color(0xFF0033A0),
-      Color(0xFFF2A800),
+      AppPalette.redMuted30,
+      AppPalette.blueSurfaceHigh05,
+      AppPalette.warmMuted31,
     ]);
   }
 
   void _drawArgentina(Canvas canvas, Size size) {
     _drawHorizontalStripes(canvas, Offset.zero & size, const [
-      Color(0xFF74ACDF),
-      Colors.white,
-      Color(0xFF74ACDF),
+      AppPalette.blueSoft09,
+      AppPalette.white,
+      AppPalette.blueSoft09,
     ]);
     canvas.drawCircle(
       Offset(size.width * 0.5, size.height * 0.5),
       size.shortestSide * 0.08,
-      _paint(const Color(0xFFF6B40E)),
+      _paint(AppPalette.warmMuted33),
     );
   }
 
   void _drawAustralia(Canvas canvas, Size size) {
-    _drawBlueEnsign(canvas, size, starColor: Colors.white);
+    _drawBlueEnsign(canvas, size, starColor: AppPalette.white);
   }
 
   void _drawAzerbaijan(Canvas canvas, Size size) {
     _drawHorizontalStripes(canvas, Offset.zero & size, const [
-      Color(0xFF00B5E2),
-      Color(0xFFEF3340),
-      Color(0xFF509E2F),
+      AppPalette.tealMuted02,
+      AppPalette.redSoft06,
+      AppPalette.greenMuted09,
     ]);
     _drawCrescent(
       canvas,
       Offset(size.width * 0.45, size.height * 0.5),
       size.shortestSide * 0.12,
-      Colors.white,
-      const Color(0xFFEF3340),
+      AppPalette.white,
+      AppPalette.redSoft06,
     );
     _drawStar(
       canvas,
       Offset(size.width * 0.63, size.height * 0.5),
       size.shortestSide * 0.055,
-      Colors.white,
+      AppPalette.white,
     );
   }
 
   void _drawBrazil(Canvas canvas, Size size) {
-    _fill(canvas, size, const Color(0xFF009B3A));
+    _fill(canvas, size, AppPalette.greenSurfaceHigh07);
     _drawDiamond(
       canvas,
       Rect.fromCenter(
@@ -1521,24 +1531,24 @@ class _CurrencyFlagPainter extends CustomPainter {
         width: size.width * 0.72,
         height: size.height * 0.5,
       ),
-      const Color(0xFFFFDF00),
+      AppPalette.warmMuted56,
     );
     canvas.drawCircle(
       Offset(size.width * 0.5, size.height * 0.5),
       size.shortestSide * 0.17,
-      _paint(const Color(0xFF002776)),
+      _paint(AppPalette.blueSurfaceHigh02),
     );
   }
 
   void _drawBelarus(Canvas canvas, Size size) {
     _drawWeightedHorizontalStripes(canvas, Offset.zero & size, const [
-      (Color(0xFFC8313E), 2.0),
-      (Color(0xFF4AA657), 1.0),
+      (AppPalette.redMuted12, 2.0),
+      (AppPalette.greenMuted07, 1.0),
     ]);
     final ornamentWidth = size.width * 0.18;
     canvas.drawRect(
       Rect.fromLTWH(0, 0, ornamentWidth, size.height),
-      _paint(Colors.white),
+      _paint(AppPalette.white),
     );
     for (var i = 0; i < 4; i += 1) {
       _drawDiamond(
@@ -1548,37 +1558,42 @@ class _CurrencyFlagPainter extends CustomPainter {
           width: ornamentWidth * 0.45,
           height: ornamentWidth * 0.45,
         ),
-        const Color(0xFFC8313E),
+        AppPalette.redMuted12,
       );
     }
   }
 
   void _drawCanada(Canvas canvas, Size size) {
     _drawVerticalStripes(canvas, Offset.zero & size, const [
-      Color(0xFFD80621),
-      Colors.white,
-      Color(0xFFD80621),
+      AppPalette.redMuted28,
+      AppPalette.white,
+      AppPalette.redMuted28,
     ]);
     _drawStar(
       canvas,
       Offset(size.width * 0.5, size.height * 0.52),
       size.shortestSide * 0.14,
-      const Color(0xFFD80621),
+      AppPalette.redMuted28,
     );
   }
 
   void _drawSwitzerland(Canvas canvas, Size size) {
-    _fill(canvas, size, const Color(0xFFFF0000));
-    _drawCenteredCross(canvas, size, Colors.white, size.shortestSide * 0.18);
+    _fill(canvas, size, AppPalette.redMuted39);
+    _drawCenteredCross(
+      canvas,
+      size,
+      AppPalette.white,
+      size.shortestSide * 0.18,
+    );
   }
 
   void _drawChina(Canvas canvas, Size size) {
-    _fill(canvas, size, const Color(0xFFDE2910));
+    _fill(canvas, size, AppPalette.redMuted35);
     _drawStar(
       canvas,
       Offset(size.width * 0.32, size.height * 0.34),
       size.shortestSide * 0.16,
-      const Color(0xFFFFDE00),
+      AppPalette.warmMuted55,
     );
     for (final center in [
       Offset(size.width * 0.58, size.height * 0.22),
@@ -1590,13 +1605,13 @@ class _CurrencyFlagPainter extends CustomPainter {
         canvas,
         center,
         size.shortestSide * 0.05,
-        const Color(0xFFFFDE00),
+        AppPalette.warmMuted55,
       );
     }
   }
 
   void _drawEuropeanUnion(Canvas canvas, Size size) {
-    _fill(canvas, size, const Color(0xFF244AA5));
+    _fill(canvas, size, AppPalette.blueMuted04);
     final center = Offset(size.width * 0.5, size.height * 0.5);
     final orbit = size.shortestSide * 0.24;
     final dotRadius = size.shortestSide * 0.025;
@@ -1605,92 +1620,87 @@ class _CurrencyFlagPainter extends CustomPainter {
       canvas.drawCircle(
         center + Offset(math.cos(angle) * orbit, math.sin(angle) * orbit),
         dotRadius,
-        _paint(const Color(0xFFFFCC00)),
+        _paint(AppPalette.warmMuted51),
       );
     }
   }
 
   void _drawUnitedKingdom(Canvas canvas, Size size) {
-    _fill(canvas, size, const Color(0xFF012169));
-    _drawDiagonal(canvas, size, Colors.white, size.shortestSide * 0.17);
+    _fill(canvas, size, AppPalette.blueSurface02);
+    _drawDiagonal(canvas, size, AppPalette.white, size.shortestSide * 0.17);
     _drawDiagonal(
       canvas,
       size,
-      const Color(0xFFC8102E),
+      AppPalette.redMuted11,
       size.shortestSide * 0.08,
     );
-    _drawCenteredCross(canvas, size, Colors.white, size.shortestSide * 0.2);
+    _drawCenteredCross(canvas, size, AppPalette.white, size.shortestSide * 0.2);
     _drawCenteredCross(
       canvas,
       size,
-      const Color(0xFFC8102E),
+      AppPalette.redMuted11,
       size.shortestSide * 0.11,
     );
   }
 
   void _drawCuba(Canvas canvas, Size size) {
     _drawHorizontalStripes(canvas, Offset.zero & size, const [
-      Color(0xFF002A8F),
-      Colors.white,
-      Color(0xFF002A8F),
-      Colors.white,
-      Color(0xFF002A8F),
+      AppPalette.blueSurfaceHigh03,
+      AppPalette.white,
+      AppPalette.blueSurfaceHigh03,
+      AppPalette.white,
+      AppPalette.blueSurfaceHigh03,
     ]);
     _drawTriangle(canvas, [
       Offset.zero,
       Offset(0, size.height),
       Offset(size.width * 0.45, size.height * 0.5),
-    ], const Color(0xFFCF142B));
+    ], AppPalette.redMuted22);
     _drawStar(
       canvas,
       Offset(size.width * 0.16, size.height * 0.5),
       size.shortestSide * 0.065,
-      Colors.white,
+      AppPalette.white,
     );
   }
 
   void _drawCzechia(Canvas canvas, Size size) {
     _drawHorizontalStripes(canvas, Offset.zero & size, const [
-      Colors.white,
-      Color(0xFFD7141A),
+      AppPalette.white,
+      AppPalette.redMuted27,
     ]);
     _drawTriangle(canvas, [
       Offset.zero,
       Offset(0, size.height),
       Offset(size.width * 0.54, size.height * 0.5),
-    ], const Color(0xFF11457E));
+    ], AppPalette.blueSurfaceHigh17);
   }
 
   void _drawDenmark(Canvas canvas, Size size) {
     _drawNordicCross(
       canvas,
       size,
-      background: const Color(0xFFC60C30),
-      cross: Colors.white,
+      background: AppPalette.redMuted09,
+      cross: AppPalette.white,
     );
   }
 
   void _drawEgypt(Canvas canvas, Size size) {
     _drawHorizontalStripes(canvas, Offset.zero & size, const [
-      Color(0xFFCE1126),
-      Colors.white,
-      Color(0xFF000000),
+      AppPalette.redMuted21,
+      AppPalette.white,
+      AppPalette.black,
     ]);
     canvas.drawCircle(
       Offset(size.width * 0.5, size.height * 0.5),
       size.shortestSide * 0.055,
-      _paint(const Color(0xFFC09300)),
+      _paint(AppPalette.warmSurfaceHigh38),
     );
   }
 
   void _drawGeorgia(Canvas canvas, Size size) {
-    _fill(canvas, size, Colors.white);
-    _drawCenteredCross(
-      canvas,
-      size,
-      const Color(0xFFFF0000),
-      size.width * 0.13,
-    );
+    _fill(canvas, size, AppPalette.white);
+    _drawCenteredCross(canvas, size, AppPalette.redMuted39, size.width * 0.13);
     for (final center in [
       Offset(size.width * 0.25, size.height * 0.25),
       Offset(size.width * 0.75, size.height * 0.25),
@@ -1703,22 +1713,22 @@ class _CurrencyFlagPainter extends CustomPainter {
 
   void _drawIndonesia(Canvas canvas, Size size) {
     _drawHorizontalStripes(canvas, Offset.zero & size, const [
-      Color(0xFFFF0000),
-      Colors.white,
+      AppPalette.redMuted39,
+      AppPalette.white,
     ]);
   }
 
   void _drawIndia(Canvas canvas, Size size) {
     _drawHorizontalStripes(canvas, Offset.zero & size, const [
-      Color(0xFFFF9933),
-      Colors.white,
-      Color(0xFF138808),
+      AppPalette.orangeSoft43,
+      AppPalette.white,
+      AppPalette.greenSurfaceHigh08,
     ]);
     canvas.drawCircle(
       Offset(size.width * 0.5, size.height * 0.5),
       size.shortestSide * 0.08,
       Paint()
-        ..color = const Color(0xFF000080)
+        ..color = AppPalette.blueSurfaceHigh01
         ..style = PaintingStyle.stroke
         ..strokeWidth = size.shortestSide * 0.018,
     );
@@ -1728,37 +1738,37 @@ class _CurrencyFlagPainter extends CustomPainter {
     _drawNordicCross(
       canvas,
       size,
-      background: const Color(0xFF02529C),
-      border: Colors.white,
-      cross: const Color(0xFFDC1E35),
+      background: AppPalette.blueSurfaceHigh13,
+      border: AppPalette.white,
+      cross: AppPalette.redMuted34,
     );
   }
 
   void _drawJapan(Canvas canvas, Size size) {
-    _fill(canvas, size, Colors.white);
+    _fill(canvas, size, AppPalette.white);
     canvas.drawCircle(
       Offset(size.width * 0.5, size.height * 0.5),
       size.shortestSide * 0.24,
-      _paint(const Color(0xFFBC002D)),
+      _paint(AppPalette.redSurfaceHigh09),
     );
   }
 
   void _drawKyrgyzstan(Canvas canvas, Size size) {
-    _fill(canvas, size, const Color(0xFFE8112D));
+    _fill(canvas, size, AppPalette.redMuted37);
     canvas.drawCircle(
       Offset(size.width * 0.5, size.height * 0.5),
       size.shortestSide * 0.2,
-      _paint(const Color(0xFFFFD700)),
+      _paint(AppPalette.warmMuted53),
     );
     canvas.drawCircle(
       Offset(size.width * 0.5, size.height * 0.5),
       size.shortestSide * 0.07,
-      _paint(const Color(0xFFE8112D)),
+      _paint(AppPalette.redMuted37),
     );
   }
 
   void _drawSouthKorea(Canvas canvas, Size size) {
-    _fill(canvas, size, Colors.white);
+    _fill(canvas, size, AppPalette.white);
     final taegeuk = Rect.fromCircle(
       center: Offset(size.width * 0.5, size.height * 0.5),
       radius: size.shortestSide * 0.18,
@@ -1768,15 +1778,21 @@ class _CurrencyFlagPainter extends CustomPainter {
       math.pi,
       math.pi,
       true,
-      _paint(const Color(0xFFCD2E3A)),
+      _paint(AppPalette.redMuted20),
     );
-    canvas.drawArc(taegeuk, 0, math.pi, true, _paint(const Color(0xFF0047A0)));
-    _drawMiniBars(canvas, size, const Color(0xFF111111));
+    canvas.drawArc(
+      taegeuk,
+      0,
+      math.pi,
+      true,
+      _paint(AppPalette.blueSurfaceHigh09),
+    );
+    _drawMiniBars(canvas, size, AppPalette.neutralInk02);
   }
 
   void _drawKazakhstan(Canvas canvas, Size size) {
-    _fill(canvas, size, const Color(0xFF00AFCA));
-    final gold = _paint(const Color(0xFFFFD100));
+    _fill(canvas, size, AppPalette.tealMuted01);
+    final gold = _paint(AppPalette.warmMuted52);
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width * 0.16, size.height), gold);
     canvas.drawCircle(
       Offset(size.width * 0.55, size.height * 0.42),
@@ -1794,7 +1810,7 @@ class _CurrencyFlagPainter extends CustomPainter {
       math.pi,
       false,
       Paint()
-        ..color = const Color(0xFFFFD100)
+        ..color = AppPalette.warmMuted52
         ..style = PaintingStyle.stroke
         ..strokeWidth = size.shortestSide * 0.05
         ..strokeCap = StrokeCap.round,
@@ -1803,11 +1819,11 @@ class _CurrencyFlagPainter extends CustomPainter {
 
   void _drawKenya(Canvas canvas, Size size) {
     _drawWeightedHorizontalStripes(canvas, Offset.zero & size, const [
-      (Color(0xFF000000), 1.0),
-      (Colors.white, 0.16),
-      (Color(0xFFBB0000), 1.0),
-      (Colors.white, 0.16),
-      (Color(0xFF006600), 1.0),
+      (AppPalette.black, 1.0),
+      (AppPalette.white, 0.16),
+      (AppPalette.redSurfaceHigh08, 1.0),
+      (AppPalette.white, 0.16),
+      (AppPalette.greenSurface02, 1.0),
     ]);
     canvas.drawOval(
       Rect.fromCenter(
@@ -1815,12 +1831,12 @@ class _CurrencyFlagPainter extends CustomPainter {
         width: size.width * 0.18,
         height: size.height * 0.38,
       ),
-      _paint(const Color(0xFF8B3A2B)),
+      _paint(AppPalette.redSurfaceHigh04),
     );
   }
 
   void _drawSriLanka(Canvas canvas, Size size) {
-    _fill(canvas, size, const Color(0xFFFFB700));
+    _fill(canvas, size, AppPalette.warmMuted50);
     canvas.drawRect(
       Rect.fromLTWH(
         size.width * 0.1,
@@ -1828,7 +1844,7 @@ class _CurrencyFlagPainter extends CustomPainter {
         size.width * 0.16,
         size.height * 0.72,
       ),
-      _paint(const Color(0xFF00534E)),
+      _paint(AppPalette.tealSurface01),
     );
     canvas.drawRect(
       Rect.fromLTWH(
@@ -1837,7 +1853,7 @@ class _CurrencyFlagPainter extends CustomPainter {
         size.width * 0.16,
         size.height * 0.72,
       ),
-      _paint(const Color(0xFFFF7F00)),
+      _paint(AppPalette.warmMuted42),
     );
     canvas.drawRect(
       Rect.fromLTWH(
@@ -1846,40 +1862,40 @@ class _CurrencyFlagPainter extends CustomPainter {
         size.width * 0.42,
         size.height * 0.72,
       ),
-      _paint(const Color(0xFF8D153A)),
+      _paint(AppPalette.redSurfaceHigh05),
     );
   }
 
   void _drawMorocco(Canvas canvas, Size size) {
-    _fill(canvas, size, const Color(0xFFC1272D));
+    _fill(canvas, size, AppPalette.redMuted06);
     _drawStar(
       canvas,
       Offset(size.width * 0.5, size.height * 0.52),
       size.shortestSide * 0.17,
-      const Color(0xFF006233),
+      AppPalette.greenSurface01,
     );
   }
 
   void _drawMoldova(Canvas canvas, Size size) {
     _drawVerticalStripes(canvas, Offset.zero & size, const [
-      Color(0xFF0032A0),
-      Color(0xFFFFD100),
-      Color(0xFFCE1126),
+      AppPalette.blueSurfaceHigh04,
+      AppPalette.warmMuted52,
+      AppPalette.redMuted21,
     ]);
     canvas.drawCircle(
       Offset(size.width * 0.5, size.height * 0.5),
       size.shortestSide * 0.06,
-      _paint(const Color(0xFF8C4A24)),
+      _paint(AppPalette.warmSurfaceHigh32),
     );
   }
 
   void _drawMongolia(Canvas canvas, Size size) {
     _drawVerticalStripes(canvas, Offset.zero & size, const [
-      Color(0xFFDA2032),
-      Color(0xFF0066B3),
-      Color(0xFFDA2032),
+      AppPalette.redMuted31,
+      AppPalette.blueSurfaceHigh11,
+      AppPalette.redMuted31,
     ]);
-    final gold = _paint(const Color(0xFFFFD900));
+    final gold = _paint(AppPalette.warmMuted54);
     canvas
       ..drawCircle(
         Offset(size.width * 0.23, size.height * 0.34),
@@ -1897,115 +1913,115 @@ class _CurrencyFlagPainter extends CustomPainter {
   }
 
   void _drawMaldives(Canvas canvas, Size size) {
-    _fill(canvas, size, const Color(0xFFD21034));
+    _fill(canvas, size, AppPalette.redMuted23);
     final greenRect = Rect.fromLTWH(
       size.width * 0.18,
       size.height * 0.22,
       size.width * 0.64,
       size.height * 0.56,
     );
-    canvas.drawRect(greenRect, _paint(const Color(0xFF007E3A)));
+    canvas.drawRect(greenRect, _paint(AppPalette.greenSurfaceHigh03));
     _drawCrescent(
       canvas,
       Offset(size.width * 0.52, size.height * 0.5),
       size.shortestSide * 0.13,
-      Colors.white,
-      const Color(0xFF007E3A),
+      AppPalette.white,
+      AppPalette.greenSurfaceHigh03,
       cutoutShift: Offset(size.width * 0.045, 0),
     );
   }
 
   void _drawMexico(Canvas canvas, Size size) {
     _drawVerticalStripes(canvas, Offset.zero & size, const [
-      Color(0xFF006847),
-      Colors.white,
-      Color(0xFFCE1126),
+      AppPalette.tealSurface02,
+      AppPalette.white,
+      AppPalette.redMuted21,
     ]);
     canvas.drawCircle(
       Offset(size.width * 0.5, size.height * 0.5),
       size.shortestSide * 0.055,
-      _paint(const Color(0xFF8C6239)),
+      _paint(AppPalette.warmMuted03),
     );
   }
 
   void _drawMalaysia(Canvas canvas, Size size) {
     _drawHorizontalStripes(canvas, Offset.zero & size, const [
-      Color(0xFFCC0001),
-      Colors.white,
-      Color(0xFFCC0001),
-      Colors.white,
-      Color(0xFFCC0001),
-      Colors.white,
-      Color(0xFFCC0001),
-      Colors.white,
+      AppPalette.redMuted18,
+      AppPalette.white,
+      AppPalette.redMuted18,
+      AppPalette.white,
+      AppPalette.redMuted18,
+      AppPalette.white,
+      AppPalette.redMuted18,
+      AppPalette.white,
     ]);
     final canton = Rect.fromLTWH(0, 0, size.width * 0.52, size.height * 0.56);
-    canvas.drawRect(canton, _paint(const Color(0xFF010066)));
+    canvas.drawRect(canton, _paint(AppPalette.blueSurface01));
     _drawCrescent(
       canvas,
       Offset(canton.width * 0.42, canton.height * 0.5),
       size.shortestSide * 0.11,
-      const Color(0xFFFFCC00),
-      const Color(0xFF010066),
+      AppPalette.warmMuted51,
+      AppPalette.blueSurface01,
     );
   }
 
   void _drawNewZealand(Canvas canvas, Size size) {
-    _drawBlueEnsign(canvas, size, starColor: const Color(0xFFCC142B));
+    _drawBlueEnsign(canvas, size, starColor: AppPalette.redMuted19);
   }
 
   void _drawPhilippines(Canvas canvas, Size size) {
     _drawHorizontalStripes(canvas, Offset.zero & size, const [
-      Color(0xFF0038A8),
-      Color(0xFFCE1126),
+      AppPalette.blueSurfaceHigh06,
+      AppPalette.redMuted21,
     ]);
     _drawTriangle(canvas, [
       Offset.zero,
       Offset(0, size.height),
       Offset(size.width * 0.48, size.height * 0.5),
-    ], Colors.white);
+    ], AppPalette.white);
     canvas.drawCircle(
       Offset(size.width * 0.18, size.height * 0.5),
       size.shortestSide * 0.06,
-      _paint(const Color(0xFFFCD116)),
+      _paint(AppPalette.warmMuted36),
     );
   }
 
   void _drawPoland(Canvas canvas, Size size) {
     _drawHorizontalStripes(canvas, Offset.zero & size, const [
-      Colors.white,
-      Color(0xFFDC143C),
+      AppPalette.white,
+      AppPalette.redMuted33,
     ]);
   }
 
   void _drawSerbia(Canvas canvas, Size size) {
     _drawHorizontalStripes(canvas, Offset.zero & size, const [
-      Color(0xFFC6363C),
-      Color(0xFF0C4076),
-      Colors.white,
+      AppPalette.redMuted10,
+      AppPalette.blueSurfaceHigh15,
+      AppPalette.white,
     ]);
     canvas.drawCircle(
       Offset(size.width * 0.34, size.height * 0.48),
       size.shortestSide * 0.07,
-      _paint(const Color(0xFFFFD700)),
+      _paint(AppPalette.warmMuted53),
     );
   }
 
   void _drawRussia(Canvas canvas, Size size) {
     _drawHorizontalStripes(canvas, Offset.zero & size, const [
-      Colors.white,
-      Color(0xFF0039A6),
-      Color(0xFFD52B1E),
+      AppPalette.white,
+      AppPalette.blueSurfaceHigh07,
+      AppPalette.redMuted24,
     ]);
   }
 
   void _drawSeychelles(Canvas canvas, Size size) {
     final points = [
-      (const Color(0xFF003F87), Offset.zero),
-      (const Color(0xFFFCD856), Offset(size.width * 0.2, 0)),
-      (const Color(0xFFD62828), Offset(size.width * 0.48, 0)),
-      (Colors.white, Offset(size.width * 0.74, 0)),
-      (const Color(0xFF007A3D), Offset(size.width, 0)),
+      (AppPalette.blueSurfaceHigh08, Offset.zero),
+      (AppPalette.amberSoft11, Offset(size.width * 0.2, 0)),
+      (AppPalette.redMuted25, Offset(size.width * 0.48, 0)),
+      (AppPalette.white, Offset(size.width * 0.74, 0)),
+      (AppPalette.greenSurfaceHigh02, Offset(size.width, 0)),
     ];
     for (var i = 0; i < points.length; i += 1) {
       final nextX = i == points.length - 1 ? size.width : points[i + 1].$2.dx;
@@ -2023,22 +2039,22 @@ class _CurrencyFlagPainter extends CustomPainter {
     _drawNordicCross(
       canvas,
       size,
-      background: const Color(0xFF006AA7),
-      cross: const Color(0xFFFECC00),
+      background: AppPalette.blueSurfaceHigh12,
+      cross: AppPalette.warmMuted38,
     );
   }
 
   void _drawSingapore(Canvas canvas, Size size) {
     _drawHorizontalStripes(canvas, Offset.zero & size, const [
-      Color(0xFFEF3340),
-      Colors.white,
+      AppPalette.redSoft06,
+      AppPalette.white,
     ]);
     _drawCrescent(
       canvas,
       Offset(size.width * 0.27, size.height * 0.28),
       size.shortestSide * 0.095,
-      Colors.white,
-      const Color(0xFFEF3340),
+      AppPalette.white,
+      AppPalette.redSoft06,
     );
     for (final center in [
       Offset(size.width * 0.42, size.height * 0.18),
@@ -2048,28 +2064,28 @@ class _CurrencyFlagPainter extends CustomPainter {
       canvas.drawCircle(
         center,
         size.shortestSide * 0.018,
-        _paint(Colors.white),
+        _paint(AppPalette.white),
       );
     }
   }
 
   void _drawThailand(Canvas canvas, Size size) {
     _drawWeightedHorizontalStripes(canvas, Offset.zero & size, const [
-      (Color(0xFFA51931), 1.0),
-      (Colors.white, 1.0),
-      (Color(0xFF2D2A4A), 2.0),
-      (Colors.white, 1.0),
-      (Color(0xFFA51931), 1.0),
+      (AppPalette.redSurfaceHigh06, 1.0),
+      (AppPalette.white, 1.0),
+      (AppPalette.blueSurfaceHigh23, 2.0),
+      (AppPalette.white, 1.0),
+      (AppPalette.redSurfaceHigh06, 1.0),
     ]);
   }
 
   void _drawTajikistan(Canvas canvas, Size size) {
     _drawWeightedHorizontalStripes(canvas, Offset.zero & size, const [
-      (Color(0xFFCC0000), 1.0),
-      (Colors.white, 1.5),
-      (Color(0xFF006600), 1.0),
+      (AppPalette.redMuted17, 1.0),
+      (AppPalette.white, 1.5),
+      (AppPalette.greenSurface02, 1.0),
     ]);
-    final gold = _paint(const Color(0xFFF8C300));
+    final gold = _paint(AppPalette.warmMuted35);
     canvas.drawArc(
       Rect.fromCircle(
         center: Offset(size.width * 0.5, size.height * 0.5),
@@ -2079,7 +2095,7 @@ class _CurrencyFlagPainter extends CustomPainter {
       math.pi * 0.84,
       false,
       Paint()
-        ..color = const Color(0xFFF8C300)
+        ..color = AppPalette.warmMuted35
         ..style = PaintingStyle.stroke
         ..strokeWidth = size.shortestSide * 0.025,
     );
@@ -2093,10 +2109,10 @@ class _CurrencyFlagPainter extends CustomPainter {
   }
 
   void _drawTurkmenistan(Canvas canvas, Size size) {
-    _fill(canvas, size, const Color(0xFF00843D));
+    _fill(canvas, size, AppPalette.greenSurfaceHigh04);
     canvas.drawRect(
       Rect.fromLTWH(size.width * 0.14, 0, size.width * 0.16, size.height),
-      _paint(const Color(0xFFB00020)),
+      _paint(AppPalette.redSurfaceHigh07),
     );
     for (var i = 0; i < 4; i += 1) {
       canvas.drawRect(
@@ -2106,76 +2122,75 @@ class _CurrencyFlagPainter extends CustomPainter {
           size.width * 0.1,
           size.height * 0.06,
         ),
-        _paint(const Color(0xFFF7C800)),
+        _paint(AppPalette.warmMuted34),
       );
     }
     _drawCrescent(
       canvas,
       Offset(size.width * 0.6, size.height * 0.33),
       size.shortestSide * 0.11,
-      Colors.white,
-      const Color(0xFF00843D),
+      AppPalette.white,
+      AppPalette.greenSurfaceHigh04,
     );
   }
 
   void _drawTurkey(Canvas canvas, Size size) {
-    _fill(canvas, size, const Color(0xFFE30A17));
+    _fill(canvas, size, AppPalette.redMuted36);
     final center = Offset(size.width * 0.43, size.height * 0.5);
-    canvas.drawCircle(center, size.shortestSide * 0.2, _paint(Colors.white));
+    canvas.drawCircle(
+      center,
+      size.shortestSide * 0.2,
+      _paint(AppPalette.white),
+    );
     canvas.drawCircle(
       center + Offset(size.width * 0.07, 0),
       size.shortestSide * 0.16,
-      _paint(const Color(0xFFE30A17)),
+      _paint(AppPalette.redMuted36),
     );
     _drawStar(
       canvas,
       Offset(size.width * 0.63, size.height * 0.5),
       size.shortestSide * 0.09,
-      Colors.white,
+      AppPalette.white,
     );
   }
 
   void _drawTanzania(Canvas canvas, Size size) {
-    _fill(canvas, size, const Color(0xFF1EB53A));
+    _fill(canvas, size, AppPalette.greenMuted04);
     _drawTriangle(canvas, [
       Offset(size.width, 0),
       Offset(size.width, size.height),
       Offset(0, size.height),
-    ], const Color(0xFF00A3DD));
+    ], AppPalette.blueMuted01);
     _drawDiagonalBand(
       canvas,
       size,
-      const Color(0xFFFCD116),
+      AppPalette.warmMuted36,
       size.shortestSide * 0.24,
     );
-    _drawDiagonalBand(
-      canvas,
-      size,
-      const Color(0xFF000000),
-      size.shortestSide * 0.14,
-    );
+    _drawDiagonalBand(canvas, size, AppPalette.black, size.shortestSide * 0.14);
   }
 
   void _drawUkraine(Canvas canvas, Size size) {
     _drawHorizontalStripes(canvas, Offset.zero & size, const [
-      Color(0xFF0057B7),
-      Color(0xFFFFD700),
+      AppPalette.blueSurfaceHigh10,
+      AppPalette.warmMuted53,
     ]);
   }
 
   void _drawUnitedStates(Canvas canvas, Size size) {
-    const red = Color(0xFFB22234);
-    const blue = Color(0xFF3C3B6E);
+    const red = AppPalette.redMuted02;
+    const blue = AppPalette.blueSurfaceHigh28;
     final stripeHeight = size.height / 13;
     for (var i = 0; i < 13; i += 1) {
       canvas.drawRect(
         Rect.fromLTWH(0, i * stripeHeight, size.width, stripeHeight + 0.5),
-        _paint(i.isEven ? red : Colors.white),
+        _paint(i.isEven ? red : AppPalette.white),
       );
     }
     final canton = Rect.fromLTWH(0, 0, size.width * 0.56, stripeHeight * 7);
     canvas.drawRect(canton, _paint(blue));
-    final dot = _paint(Colors.white);
+    final dot = _paint(AppPalette.white);
     for (var row = 0; row < 4; row += 1) {
       for (var col = 0; col < 5; col += 1) {
         canvas.drawCircle(
@@ -2191,17 +2206,17 @@ class _CurrencyFlagPainter extends CustomPainter {
   }
 
   void _drawUzbekistan(Canvas canvas, Size size) {
-    _fill(canvas, size, Colors.white);
+    _fill(canvas, size, AppPalette.white);
     final blueHeight = size.height * 0.34;
     final greenHeight = size.height * 0.3;
     final redLine = size.height * 0.04;
     canvas.drawRect(
       Rect.fromLTWH(0, 0, size.width, blueHeight),
-      _paint(const Color(0xFF1EB2E8)),
+      _paint(AppPalette.blueMuted03),
     );
     canvas.drawRect(
       Rect.fromLTWH(0, blueHeight, size.width, redLine),
-      _paint(const Color(0xFFCE1126)),
+      _paint(AppPalette.redMuted21),
     );
     canvas.drawRect(
       Rect.fromLTWH(
@@ -2210,31 +2225,31 @@ class _CurrencyFlagPainter extends CustomPainter {
         size.width,
         redLine,
       ),
-      _paint(const Color(0xFFCE1126)),
+      _paint(AppPalette.redMuted21),
     );
     canvas.drawRect(
       Rect.fromLTWH(0, size.height - greenHeight, size.width, greenHeight),
-      _paint(const Color(0xFF009639)),
+      _paint(AppPalette.greenSurfaceHigh05),
     );
     canvas.drawCircle(
       Offset(size.width * 0.26, size.height * 0.17),
       size.shortestSide * 0.08,
-      _paint(Colors.white),
+      _paint(AppPalette.white),
     );
     canvas.drawCircle(
       Offset(size.width * 0.3, size.height * 0.17),
       size.shortestSide * 0.07,
-      _paint(const Color(0xFF1EB2E8)),
+      _paint(AppPalette.blueMuted03),
     );
   }
 
   void _drawVietnam(Canvas canvas, Size size) {
-    _fill(canvas, size, const Color(0xFFDA251D));
+    _fill(canvas, size, AppPalette.redMuted32);
     _drawStar(
       canvas,
       Offset(size.width * 0.5, size.height * 0.5),
       size.shortestSide * 0.2,
-      const Color(0xFFFFD700),
+      AppPalette.warmMuted53,
     );
   }
 
@@ -2411,7 +2426,7 @@ class _CurrencyFlagPainter extends CustomPainter {
   }
 
   void _drawTinyCross(Canvas canvas, Offset center, double size) {
-    final paint = _paint(const Color(0xFFFF0000));
+    final paint = _paint(AppPalette.redMuted39);
     final width = size * 0.34;
     canvas
       ..drawRect(
@@ -2425,12 +2440,12 @@ class _CurrencyFlagPainter extends CustomPainter {
   }
 
   void _drawBlueEnsign(Canvas canvas, Size size, {required Color starColor}) {
-    _fill(canvas, size, const Color(0xFF012169));
+    _fill(canvas, size, AppPalette.blueSurface02);
     _drawMiniUnionJack(
       canvas,
       Rect.fromLTWH(0, 0, size.width * 0.52, size.height * 0.48),
     );
-    final outline = starColor == Colors.white ? null : Colors.white;
+    final outline = starColor == AppPalette.white ? null : AppPalette.white;
     for (final center in [
       Offset(size.width * 0.7, size.height * 0.28),
       Offset(size.width * 0.82, size.height * 0.48),
@@ -2550,7 +2565,7 @@ class _CurrencyFallbackGlyph extends StatelessWidget {
       '¤',
       maxLines: 1,
       overflow: TextOverflow.clip,
-      style: TextStyle(
+      style: AppTextStyle(
         color: _primaryTextColor,
         fontSize: size <= 30 ? 16 : 22,
         fontWeight: FontWeight.w800,
@@ -2664,55 +2679,55 @@ String _updatedText(
 
 Color _avatarColor(String code) {
   return switch (code) {
-    'AED' => const Color(0xFF187B5F),
-    'AMD' => const Color(0xFFB65C38),
-    'ARS' => const Color(0xFF5A9BC8),
-    'AUD' => const Color(0xFF2F4D8F),
-    'AZN' => const Color(0xFF338E7B),
-    'BRL' => const Color(0xFF23864C),
-    'BYN' => const Color(0xFFB95A55),
-    'CAD' => const Color(0xFFC8404F),
-    'CHF' => const Color(0xFFC53D42),
-    'CNY' => const Color(0xFFD64C3C),
-    'CUP' => const Color(0xFF2E5B9A),
-    'CZK' => const Color(0xFF496DA0),
-    'DKK' => const Color(0xFFC44456),
-    'EGP' => const Color(0xFF9A5E39),
-    'EUR' => const Color(0xFF3157A4),
-    'GBP' => const Color(0xFF7342A4),
-    'GEL' => const Color(0xFFC95353),
-    'IDR' => const Color(0xFFC94C4C),
-    'INR' => const Color(0xFFB9763D),
-    'ISK' => const Color(0xFF3F6EA8),
-    'JPY' => const Color(0xFFC96B70),
-    'KES' => const Color(0xFF477B4B),
-    'KGS' => const Color(0xFFC45D24),
-    'KRW' => const Color(0xFF6E6FB3),
-    'KZT' => const Color(0xFF168D95),
-    'LKR' => const Color(0xFF9A6A38),
-    'MAD' => const Color(0xFFAF4C4F),
-    'MDL' => const Color(0xFF8B65A6),
-    'MNT' => const Color(0xFF496FB0),
-    'MVR' => const Color(0xFF407D57),
-    'MXN' => const Color(0xFF3F8C62),
-    'MYR' => const Color(0xFF40538F),
-    'NZD' => const Color(0xFF394F90),
-    'PHP' => const Color(0xFF426AA0),
-    'PLN' => const Color(0xFFB65C73),
-    'RSD' => const Color(0xFF4F5C9C),
-    'RUB' => const Color(0xFF3C6CA8),
-    'SCR' => const Color(0xFF5A88A5),
-    'SEK' => const Color(0xFF3474A8),
-    'SGD' => const Color(0xFFC85A65),
-    'THB' => const Color(0xFF5F578D),
-    'TJS' => const Color(0xFF6B8B4A),
-    'TMT' => const Color(0xFF257B54),
-    'TRY' => const Color(0xFFB94A48),
-    'TZS' => const Color(0xFF3D8B7D),
-    'UAH' => const Color(0xFF4F7FAE),
-    'USD' => const Color(0xFF2D8B63),
-    'UZS' => const Color(0xFF2396A8),
-    'VND' => const Color(0xFFC84E44),
+    'AED' => AppPalette.tealSurfaceHigh02,
+    'AMD' => AppPalette.warmMuted20,
+    'ARS' => AppPalette.blueSoft05,
+    'AUD' => AppPalette.blueSurfaceHigh24,
+    'AZN' => AppPalette.tealSurfaceHigh09,
+    'BRL' => AppPalette.greenSurfaceHigh10,
+    'BYN' => AppPalette.redMuted05,
+    'CAD' => AppPalette.redMuted13,
+    'CHF' => AppPalette.redMuted08,
+    'CNY' => AppPalette.redMuted26,
+    'CUP' => AppPalette.blueMuted05,
+    'CZK' => AppPalette.blueMuted14,
+    'DKK' => AppPalette.redMuted07,
+    'EGP' => AppPalette.warmMuted11,
+    'EUR' => AppPalette.blueMuted06,
+    'GBP' => AppPalette.violetMuted02,
+    'GEL' => AppPalette.redMuted16,
+    'IDR' => AppPalette.redMuted15,
+    'INR' => AppPalette.warmMuted24,
+    'ISK' => AppPalette.blueMuted10,
+    'JPY' => AppPalette.redSoft02,
+    'KES' => AppPalette.greenMuted06,
+    'KGS' => AppPalette.warmMuted25,
+    'KRW' => AppPalette.blueSoft08,
+    'KZT' => AppPalette.tealSurfaceHigh01,
+    'LKR' => AppPalette.warmMuted13,
+    'MAD' => AppPalette.redMuted01,
+    'MDL' => AppPalette.violetMuted04,
+    'MNT' => AppPalette.blueMuted15,
+    'MVR' => AppPalette.greenSurfaceHigh19,
+    'MXN' => AppPalette.greenMuted05,
+    'MYR' => AppPalette.blueMuted11,
+    'NZD' => AppPalette.blueMuted08,
+    'PHP' => AppPalette.blueMuted12,
+    'PLN' => AppPalette.redMuted03,
+    'RSD' => AppPalette.blueMuted18,
+    'RUB' => AppPalette.blueMuted09,
+    'SCR' => AppPalette.blueMuted22,
+    'SEK' => AppPalette.blueMuted07,
+    'SGD' => AppPalette.redSoft01,
+    'THB' => AppPalette.blueMuted23,
+    'TJS' => AppPalette.greenMuted11,
+    'TMT' => AppPalette.greenSurfaceHigh12,
+    'TRY' => AppPalette.redMuted04,
+    'TZS' => AppPalette.tealMuted08,
+    'UAH' => AppPalette.blueMuted19,
+    'USD' => AppPalette.greenSurfaceHigh16,
+    'UZS' => AppPalette.tealMuted05,
+    'VND' => AppPalette.redMuted14,
     _ => _generatedAvatarColor(code),
   };
 }

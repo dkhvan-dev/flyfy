@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/ui/app_colors.dart';
 import '../../core/ui/app_list_search_field.dart';
 import '../../features/places/place_ui.dart';
 import '../../features/places/data/place_api.dart';
@@ -315,7 +315,7 @@ class _ExcursionSelectLocationScreenState
       isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (_) => PlacesFilterSheet(
         initial: _filters,
         api: _api,
@@ -448,13 +448,13 @@ class _ExcursionSelectLocationScreenState
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.light,
         child: Scaffold(
-          backgroundColor: const Color(0xFF150E08),
+          backgroundColor: AppPalette.warmInk18,
           body: DecoratedBox(
-            decoration: const BoxDecoration(
+            decoration: const AppBoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0xFF21160C), Color(0xFF150E08)],
+                colors: [AppPalette.warmInk79, AppPalette.warmInk18],
               ),
             ),
             child: SafeArea(
@@ -469,13 +469,18 @@ class _ExcursionSelectLocationScreenState
                       ),
                       Expanded(
                         child: RefreshIndicator(
-                          color: AppColors.accent,
-                          backgroundColor: const Color(0xFF2D1C0B),
+                          color: AppPalette.primary,
+                          backgroundColor: AppPalette.warmSurface31,
                           onRefresh: _refresh,
                           child: ListView(
                             controller: _scrollController,
                             physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
+                            padding: const AppEdgeInsets.fromLTRB(
+                              24,
+                              24,
+                              24,
+                              28,
+                            ),
                             children: [
                               _LocationSectionTitle(
                                 title: l10n.excursionSelectLocationPlaceSection,
@@ -504,8 +509,8 @@ class _ExcursionSelectLocationScreenState
                                   _totalPages,
                                 ),
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: Color(0xFF6F5848),
+                                style: const AppTextStyle(
+                                  color: AppPalette.warmSurfaceHigh19,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 3,
@@ -607,10 +612,12 @@ class _LocationTopBar extends StatelessWidget {
     return ConstrainedBox(
       constraints: BoxConstraints(minHeight: _locationTopBarMinHeight(context)),
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: const Color(0xFF21160C).withValues(alpha: 0.96),
+        decoration: AppBoxDecoration(
+          color: AppPalette.warmInk79.withValues(alpha: 0.96),
           border: Border(
-            bottom: BorderSide(color: AppColors.accent.withValues(alpha: 0.14)),
+            bottom: BorderSide(
+              color: AppPalette.primary.withValues(alpha: 0.14),
+            ),
           ),
         ),
         child: Row(
@@ -618,7 +625,7 @@ class _LocationTopBar extends StatelessWidget {
             IconButton(
               onPressed: onBack,
               icon: const Icon(Icons.arrow_back_rounded),
-              color: const Color(0xFFFFF8EF),
+              color: AppPalette.orangeWash26,
               tooltip: MaterialLocalizations.of(context).backButtonTooltip,
             ),
             Expanded(
@@ -627,8 +634,8 @@ class _LocationTopBar extends StatelessWidget {
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: const Color(0xFFFFF8EF),
+                style: AppTextStyle(
+                  color: AppPalette.orangeWash26,
                   fontSize: _locationTopBarTitleFontSize(context),
                   fontWeight: FontWeight.w900,
                 ),
@@ -653,8 +660,8 @@ class _LocationSectionTitle extends StatelessWidget {
       title,
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
-      style: const TextStyle(
-        color: Color(0xFFFFF8EF),
+      style: const AppTextStyle(
+        color: AppPalette.orangeWash26,
         fontSize: 28,
         fontWeight: FontWeight.w900,
         height: 1.05,
@@ -686,8 +693,8 @@ class _PlaceSelectionCard extends StatelessWidget {
     final categoryLabel = _placeSubtitle(context, place);
 
     return Material(
-      color: const Color(0xFF2C2014),
-      borderRadius: BorderRadius.circular(26),
+      color: AppPalette.warmSurface27,
+      borderRadius: AppBorderRadius.circular(26),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
@@ -715,13 +722,13 @@ class _PlaceSelectionCard extends StatelessWidget {
                   else
                     const _PlaceFallback(),
                   DecoratedBox(
-                    decoration: BoxDecoration(
+                    decoration: AppBoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.transparent,
-                          Colors.black.withValues(alpha: 0.42),
+                          AppPalette.transparent,
+                          AppPalette.black.withValues(alpha: 0.42),
                         ],
                         stops: const [0.52, 1.0],
                       ),
@@ -739,7 +746,7 @@ class _PlaceSelectionCard extends StatelessWidget {
             Expanded(
               flex: 5,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
+                padding: const AppEdgeInsets.fromLTRB(14, 12, 14, 6),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -749,8 +756,8 @@ class _PlaceSelectionCard extends StatelessWidget {
                         place.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFFFFF8EF),
+                        style: const AppTextStyle(
+                          color: AppPalette.orangeWash26,
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
                           height: 1.1,
@@ -787,12 +794,12 @@ class _PlaceCategoryTag extends StatelessWidget {
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: maxWidth),
             child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: const Color(0xB8554C24),
-                borderRadius: BorderRadius.circular(999),
+              decoration: AppBoxDecoration(
+                color: AppPalette.warmOverlaySurfaceHigh01,
+                borderRadius: AppBorderRadius.circular(999),
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(
+                padding: const AppEdgeInsets.symmetric(
                   horizontal: 10,
                   vertical: 5,
                 ),
@@ -800,8 +807,8 @@ class _PlaceCategoryTag extends StatelessWidget {
                   label.toUpperCase(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.accent,
+                  style: const AppTextStyle(
+                    color: AppPalette.primary,
                     fontSize: 11,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0.8,
@@ -829,19 +836,19 @@ class _SelectButton extends StatelessWidget {
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 44),
       alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: selected ? AppColors.accent : Colors.transparent,
-        borderRadius: BorderRadius.circular(999),
+      decoration: AppBoxDecoration(
+        color: selected ? AppPalette.primary : AppPalette.transparent,
+        borderRadius: AppBorderRadius.circular(999),
         border: Border.all(
           color: selected
-              ? AppColors.accent
-              : AppColors.accent.withValues(alpha: 0.38),
+              ? AppPalette.primary
+              : AppPalette.primary.withValues(alpha: 0.38),
           width: 1.5,
         ),
         boxShadow: selected
             ? [
                 BoxShadow(
-                  color: AppColors.accent.withValues(alpha: 0.28),
+                  color: AppPalette.primary.withValues(alpha: 0.28),
                   blurRadius: 22,
                   offset: const Offset(0, 10),
                 ),
@@ -852,8 +859,8 @@ class _SelectButton extends StatelessWidget {
         selected ? l10n.excursionSelectLocationSelected : l10n.select,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: selected ? Colors.white : AppColors.accent,
+        style: AppTextStyle(
+          color: selected ? AppPalette.white : AppPalette.primary,
           fontSize: 12,
           fontWeight: FontWeight.w900,
           letterSpacing: 1.4,
@@ -869,17 +876,21 @@ class _PlaceFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(
+      decoration: const AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF56C4EE), Color(0xFF0E4C5B), Color(0xFF173E2A)],
+          colors: [
+            AppPalette.blueSoft04,
+            AppPalette.tealSurface03,
+            AppPalette.greenSurface07,
+          ],
         ),
       ),
       child: Center(
         child: Icon(
           Icons.landscape_rounded,
-          color: Colors.white.withValues(alpha: 0.78),
+          color: AppPalette.white.withValues(alpha: 0.78),
           size: 44,
         ),
       ),
@@ -910,13 +921,13 @@ class _PlaceGridPlaceholder extends StatelessWidget {
           ),
           itemBuilder: (context, index) {
             return DecoratedBox(
-              decoration: BoxDecoration(
-                color: const Color(0xFF2C2014),
-                borderRadius: BorderRadius.circular(26),
+              decoration: AppBoxDecoration(
+                color: AppPalette.warmSurface27,
+                borderRadius: AppBorderRadius.circular(26),
               ),
               child: const Center(
                 child: CircularProgressIndicator(
-                  color: AppColors.accent,
+                  color: AppPalette.primary,
                   strokeWidth: 2,
                 ),
               ),
@@ -975,21 +986,21 @@ class _LocationStateBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFF2C2014),
-        borderRadius: BorderRadius.circular(24),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmSurface27,
+        borderRadius: AppBorderRadius.circular(24),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const AppEdgeInsets.all(24),
         child: Column(
           children: [
-            Icon(icon, color: AppColors.accent, size: 42),
+            Icon(icon, color: AppPalette.primary, size: 42),
             const SizedBox(height: 12),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFFFFF8EF),
+              style: const AppTextStyle(
+                color: AppPalette.orangeWash26,
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
               ),
@@ -998,9 +1009,9 @@ class _LocationStateBlock extends StatelessWidget {
             OutlinedButton(
               onPressed: onAction,
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.accent,
+                foregroundColor: AppPalette.primary,
                 side: BorderSide(
-                  color: AppColors.accent.withValues(alpha: 0.48),
+                  color: AppPalette.primary.withValues(alpha: 0.48),
                 ),
               ),
               child: Text(actionLabel),
@@ -1081,30 +1092,30 @@ class _PageCircle extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: enabled ? onTap : null,
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: AppBorderRadius.circular(999),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         width: 48,
         height: 48,
         alignment: Alignment.center,
-        decoration: BoxDecoration(
+        decoration: AppBoxDecoration(
           shape: BoxShape.circle,
           color: selected
-              ? AppColors.accent
-              : Colors.white.withValues(alpha: 0.025),
+              ? AppPalette.primary
+              : AppPalette.white.withValues(alpha: 0.025),
           border: Border.all(
             color: selected
-                ? AppColors.accent
-                : Colors.white.withValues(alpha: 0.08),
+                ? AppPalette.primary
+                : AppPalette.white.withValues(alpha: 0.08),
           ),
         ),
         child: icon == null
             ? Text(
                 label ?? '',
-                style: TextStyle(
+                style: AppTextStyle(
                   color: enabled
-                      ? const Color(0xFFD7C7BB)
-                      : const Color(0xFF6F5848),
+                      ? AppPalette.orangeLight09
+                      : AppPalette.warmSurfaceHigh19,
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
                 ),
@@ -1112,8 +1123,8 @@ class _PageCircle extends StatelessWidget {
             : Icon(
                 icon,
                 color: enabled
-                    ? const Color(0xFFD7C7BB)
-                    : const Color(0xFF6F5848),
+                    ? AppPalette.orangeLight09
+                    : AppPalette.warmSurfaceHigh19,
               ),
       ),
     );
@@ -1131,8 +1142,8 @@ class _PageDots extends StatelessWidget {
       child: Center(
         child: Text(
           '...',
-          style: TextStyle(
-            color: Color(0xFF6F5848),
+          style: AppTextStyle(
+            color: AppPalette.warmSurfaceHigh19,
             fontSize: 18,
             fontWeight: FontWeight.w900,
           ),
@@ -1157,19 +1168,19 @@ class _LocationConfirmBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Colors.transparent,
-            const Color(0xFF120C07).withValues(alpha: 0.92),
-            const Color(0xFF120C07),
+            AppPalette.transparent,
+            AppPalette.warmInk09.withValues(alpha: 0.92),
+            AppPalette.warmInk09,
           ],
         ),
       ),
       child: Padding(
-        padding: EdgeInsets.fromLTRB(24, 18, 24, 24 + bottomInset),
+        padding: AppEdgeInsets.fromLTRB(24, 18, 24, 24 + bottomInset),
         child: SizedBox(
           width: double.infinity,
           child: FilledButton.icon(
@@ -1181,15 +1192,20 @@ class _LocationConfirmBar extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.accent,
-              foregroundColor: Colors.white,
-              disabledBackgroundColor: AppColors.accent.withValues(alpha: 0.36),
-              disabledForegroundColor: Colors.white.withValues(alpha: 0.58),
-              padding: const EdgeInsets.symmetric(vertical: 19, horizontal: 22),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
+              backgroundColor: AppPalette.primary,
+              foregroundColor: AppPalette.white,
+              disabledBackgroundColor: AppPalette.primary.withValues(
+                alpha: 0.36,
               ),
-              textStyle: const TextStyle(
+              disabledForegroundColor: AppPalette.white.withValues(alpha: 0.58),
+              padding: const AppEdgeInsets.symmetric(
+                vertical: 19,
+                horizontal: 22,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: AppBorderRadius.circular(18),
+              ),
+              textStyle: const AppTextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 1.2,

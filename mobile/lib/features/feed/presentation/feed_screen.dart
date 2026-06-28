@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -9,7 +10,6 @@ import 'package:share_plus/share_plus.dart';
 import '../../../core/network/file_api.dart';
 import '../../../core/network/post_api.dart';
 import '../../../core/ui/app_bottom_navigation_bars.dart';
-import '../../../core/ui/app_colors.dart';
 import '../../../core/ui/error_dialog.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../providers/auth_provider.dart';
@@ -449,9 +449,9 @@ class _FeedScreenState extends State<FeedScreen>
       isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: AppColors.background,
+      backgroundColor: AppPalette.backgroundWarm,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
+        borderRadius: AppBorderRadius.vertical(top: AppRadiusValue.circular(8)),
       ),
       builder: (sheetContext) {
         final height = MediaQuery.sizeOf(sheetContext).height;
@@ -493,9 +493,9 @@ class _FeedScreenState extends State<FeedScreen>
       isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: AppColors.background,
+      backgroundColor: AppPalette.backgroundWarm,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
+        borderRadius: AppBorderRadius.vertical(top: AppRadiusValue.circular(8)),
       ),
       builder: (sheetContext) {
         final height = MediaQuery.sizeOf(sheetContext).height;
@@ -534,9 +534,9 @@ class _FeedScreenState extends State<FeedScreen>
       isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: const Color(0xFF1B1208),
+      backgroundColor: AppPalette.warmInk42,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
+        borderRadius: AppBorderRadius.vertical(top: AppRadiusValue.circular(8)),
       ),
       builder: (sheetContext) {
         final height = MediaQuery.sizeOf(sheetContext).height;
@@ -545,7 +545,7 @@ class _FeedScreenState extends State<FeedScreen>
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                padding: const AppEdgeInsets.fromLTRB(16, 12, 16, 8),
                 child: Row(
                   children: [
                     Expanded(
@@ -554,7 +554,7 @@ class _FeedScreenState extends State<FeedScreen>
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppColors.textPrimary,
+                          color: AppPalette.textPrimary,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -562,8 +562,10 @@ class _FeedScreenState extends State<FeedScreen>
                     TextButton(
                       onPressed: () => Navigator.of(sheetContext).maybePop(),
                       style: TextButton.styleFrom(
-                        foregroundColor: AppColors.accent,
-                        textStyle: const TextStyle(fontWeight: FontWeight.w900),
+                        foregroundColor: AppPalette.primary,
+                        textStyle: const AppTextStyle(
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                       child: Text(
                         MaterialLocalizations.of(context).closeButtonLabel,
@@ -574,7 +576,7 @@ class _FeedScreenState extends State<FeedScreen>
               ),
               Expanded(
                 child: ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  padding: const AppEdgeInsets.fromLTRB(16, 8, 16, 24),
                   itemCount: posts.length,
                   separatorBuilder: (context, index) =>
                       const SizedBox(height: 12),
@@ -1250,18 +1252,18 @@ class _FeedScreenState extends State<FeedScreen>
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1B1208),
+      backgroundColor: AppPalette.warmInk42,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF2A1A0E),
-        foregroundColor: const Color(0xFFFFF7ED),
+        backgroundColor: AppPalette.warmSurface13,
+        foregroundColor: AppPalette.surfaceInverse,
         elevation: 0,
         centerTitle: false,
         flexibleSpace: const DecoratedBox(
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF3D2612), Color(0xFF241509)],
+              colors: [AppPalette.warmSurface72, AppPalette.warmInk95],
             ),
           ),
         ),
@@ -1269,19 +1271,19 @@ class _FeedScreenState extends State<FeedScreen>
           l10n.feedTitle,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontWeight: FontWeight.w900),
+          style: const AppTextStyle(fontWeight: FontWeight.w900),
         ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 8),
+            padding: const AppEdgeInsets.only(right: 8),
             child: NotificationUnreadBadge(
               child: IconButton.filledTonal(
                 key: const ValueKey('open-feed-notifications'),
                 tooltip: l10n.notificationsTitle,
                 onPressed: () => context.push('/notifications'),
                 style: IconButton.styleFrom(
-                  backgroundColor: Colors.white.withValues(alpha: 0.10),
-                  foregroundColor: AppColors.accent,
+                  backgroundColor: AppPalette.white.withValues(alpha: 0.10),
+                  foregroundColor: AppPalette.primary,
                 ),
                 icon: const Icon(Icons.notifications_none_rounded),
               ),
@@ -1291,35 +1293,37 @@ class _FeedScreenState extends State<FeedScreen>
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(58),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+            padding: const AppEdgeInsets.fromLTRB(16, 4, 16, 12),
             child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              decoration: AppBoxDecoration(
+                color: AppPalette.white.withValues(alpha: 0.08),
+                borderRadius: AppBorderRadius.circular(18),
+                border: Border.all(
+                  color: AppPalette.white.withValues(alpha: 0.08),
+                ),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(4),
+                padding: const AppEdgeInsets.all(4),
                 child: TabBar(
                   controller: _tabController,
                   onTap: _selectTab,
-                  dividerColor: Colors.transparent,
+                  dividerColor: AppPalette.transparent,
                   indicatorSize: TabBarIndicatorSize.tab,
-                  indicator: BoxDecoration(
-                    color: AppColors.accent,
-                    borderRadius: BorderRadius.circular(14),
+                  indicator: AppBoxDecoration(
+                    color: AppPalette.primary,
+                    borderRadius: AppBorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.accent.withValues(alpha: 0.30),
+                        color: AppPalette.primary.withValues(alpha: 0.30),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
                     ],
                   ),
-                  labelColor: AppColors.textPrimary,
-                  unselectedLabelColor: const Color(0xFFFFE0B2),
-                  labelStyle: const TextStyle(fontWeight: FontWeight.w900),
-                  unselectedLabelStyle: const TextStyle(
+                  labelColor: AppPalette.textPrimary,
+                  unselectedLabelColor: AppPalette.amberLight08,
+                  labelStyle: const AppTextStyle(fontWeight: FontWeight.w900),
+                  unselectedLabelStyle: const AppTextStyle(
                     fontWeight: FontWeight.w700,
                   ),
                   tabs: [
@@ -1339,18 +1343,18 @@ class _FeedScreenState extends State<FeedScreen>
         ),
       ),
       body: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: const AppBoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF27180B), Color(0xFF18110A)],
+            colors: [AppPalette.warmInk111, AppPalette.warmInk31],
           ),
         ),
         child: SafeArea(
           top: false,
           child: RefreshIndicator(
-            color: AppColors.accent,
-            backgroundColor: const Color(0xFF2A1A0E),
+            color: AppPalette.primary,
+            backgroundColor: AppPalette.warmSurface13,
             onRefresh: () => _loadFeed(showLoading: false),
             child: _buildBody(context),
           ),
@@ -2123,7 +2127,7 @@ class _FeedStateList extends StatelessWidget {
 
         return ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.fromLTRB(
+          padding: AppEdgeInsets.fromLTRB(
             horizontalPadding,
             48,
             horizontalPadding,
@@ -2150,8 +2154,10 @@ class _FeedLoadingState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 48),
-      child: Center(child: CircularProgressIndicator(color: AppColors.accent)),
+      padding: AppEdgeInsets.symmetric(vertical: 48),
+      child: Center(
+        child: CircularProgressIndicator(color: AppPalette.primary),
+      ),
     );
   }
 }
@@ -2187,8 +2193,8 @@ class _FeedErrorState extends StatelessWidget {
       action: FilledButton(
         onPressed: onRetry,
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.accent,
-          foregroundColor: AppColors.background,
+          backgroundColor: AppPalette.primary,
+          foregroundColor: AppPalette.backgroundWarm,
         ),
         child: Text(
           l10n.feedRetryAction,
@@ -2218,17 +2224,17 @@ class _FeedMessageState extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border),
+      decoration: AppBoxDecoration(
+        color: AppPalette.surfaceCoolLight,
+        borderRadius: AppBorderRadius.circular(8),
+        border: Border.all(color: AppPalette.outlineOverlay),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const AppEdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: AppColors.accent, size: 34),
+            Icon(icon, color: AppPalette.primary, size: 34),
             const SizedBox(height: 14),
             Text(
               title,
@@ -2236,7 +2242,7 @@ class _FeedMessageState extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: textTheme.titleMedium?.copyWith(
-                color: AppColors.textPrimary,
+                color: AppPalette.textPrimary,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -2247,7 +2253,7 @@ class _FeedMessageState extends StatelessWidget {
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
               style: textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
+                color: AppPalette.textCoolSecondary,
               ),
             ),
             if (action != null) ...[const SizedBox(height: 18), action!],

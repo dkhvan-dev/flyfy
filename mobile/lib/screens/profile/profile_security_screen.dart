@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/auth_provider.dart';
@@ -19,7 +19,7 @@ class ProfileSecurityScreen extends StatelessWidget {
     final padding = profileScaled(context, 20, min: 14, max: 20);
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       body: ProfileResponsiveScope(
         child: ProfileGlassBackground(
           child: SafeArea(
@@ -27,7 +27,7 @@ class ProfileSecurityScreen extends StatelessWidget {
               physics: const BouncingScrollPhysics(
                 parent: AlwaysScrollableScrollPhysics(),
               ),
-              padding: EdgeInsets.fromLTRB(
+              padding: AppEdgeInsets.fromLTRB(
                 padding,
                 profileScaled(context, 14, min: 10, max: 18),
                 padding,
@@ -92,7 +92,7 @@ void _showChangePasswordSheet(BuildContext context) {
     isScrollControlled: true,
     isDismissible: true,
     useSafeArea: false,
-    backgroundColor: Colors.transparent,
+    backgroundColor: AppPalette.transparent,
     builder: (context) {
       return const _ChangePasswordSheet();
     },
@@ -112,14 +112,14 @@ class _SecurityTopBar extends StatelessWidget {
         ),
         Expanded(
           child: Padding(
-            padding: EdgeInsets.symmetric(
+            padding: AppEdgeInsets.symmetric(
               horizontal: profileScaled(context, 12, min: 8, max: 12),
             ),
             child: Text(
               AppLocalizations.of(context)!.profileSecurityPageTitle,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.textPrimary,
+              style: AppTextStyle(
+                color: AppPalette.textPrimary,
                 fontSize: profileScaled(context, 18, min: 16, max: 20),
                 fontWeight: FontWeight.w800,
               ),
@@ -141,7 +141,7 @@ class _SecurityHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(profileScaled(context, 22, min: 18, max: 24)),
+      padding: AppEdgeInsets.all(profileScaled(context, 22, min: 18, max: 24)),
       decoration: profileCardDecoration(
         context,
         highlighted: true,
@@ -153,15 +153,15 @@ class _SecurityHero extends StatelessWidget {
           Container(
             width: profileScaled(context, 54, min: 48, max: 58),
             height: profileScaled(context, 54, min: 48, max: 58),
-            decoration: BoxDecoration(
-              color: AppColors.accent.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(
+            decoration: AppBoxDecoration(
+              color: AppPalette.primary.withValues(alpha: 0.14),
+              borderRadius: AppBorderRadius.circular(
                 profileScaled(context, 18, min: 14, max: 20),
               ),
             ),
             child: Icon(
               Icons.security_rounded,
-              color: AppColors.accent,
+              color: AppPalette.primary,
               size: profileScaled(context, 26, min: 22, max: 28),
             ),
           ),
@@ -172,8 +172,8 @@ class _SecurityHero extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
+                  style: AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: profileScaled(context, 20, min: 18, max: 22),
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.5,
@@ -182,7 +182,7 @@ class _SecurityHero extends StatelessWidget {
                 SizedBox(height: profileScaled(context, 8, min: 6, max: 8)),
                 Text(
                   subtitle,
-                  style: TextStyle(
+                  style: AppTextStyle(
                     color: profileTextSoft,
                     fontSize: profileScaled(context, 14, min: 13, max: 15),
                     height: 1.45,
@@ -218,12 +218,12 @@ class _SecurityInfoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = danger ? const Color(0xFFF2A099) : profileTextSoft;
+    final accentColor = danger ? AppPalette.redLight01 : profileTextSoft;
     final radius = profileScaled(context, 22, min: 18, max: 24);
     final isActionable = onTap != null && !disabled;
 
     return Padding(
-      padding: EdgeInsets.only(
+      padding: AppEdgeInsets.only(
         bottom: profileScaled(context, 14, min: 10, max: 14),
       ),
       child: Container(
@@ -233,13 +233,13 @@ class _SecurityInfoTile extends StatelessWidget {
           radius: radius,
         ),
         child: Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(radius),
+          color: AppPalette.transparent,
+          borderRadius: AppBorderRadius.circular(radius),
           child: InkWell(
-            borderRadius: BorderRadius.circular(radius),
+            borderRadius: AppBorderRadius.circular(radius),
             onTap: isActionable ? onTap : null,
             child: Padding(
-              padding: EdgeInsets.all(
+              padding: AppEdgeInsets.all(
                 profileScaled(context, 18, min: 14, max: 20),
               ),
               child: Row(
@@ -248,7 +248,7 @@ class _SecurityInfoTile extends StatelessWidget {
                   Container(
                     width: profileScaled(context, 46, min: 40, max: 48),
                     height: profileScaled(context, 46, min: 40, max: 48),
-                    decoration: BoxDecoration(
+                    decoration: AppBoxDecoration(
                       color: accentColor.withValues(
                         alpha: disabled ? 0.06 : 0.14,
                       ),
@@ -263,10 +263,10 @@ class _SecurityInfoTile extends StatelessWidget {
                       children: [
                         Text(
                           title,
-                          style: TextStyle(
+                          style: AppTextStyle(
                             color: disabled
                                 ? profileDisabled
-                                : AppColors.textPrimary,
+                                : AppPalette.textPrimary,
                             fontSize: profileScaled(
                               context,
                               16,
@@ -281,7 +281,7 @@ class _SecurityInfoTile extends StatelessWidget {
                         ),
                         Text(
                           subtitle,
-                          style: TextStyle(
+                          style: AppTextStyle(
                             color: disabled
                                 ? profileDisabled
                                 : profileTextMuted,
@@ -510,7 +510,7 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
             child: AnimatedPadding(
               duration: const Duration(milliseconds: 220),
               curve: Curves.easeOutCubic,
-              padding: EdgeInsets.only(bottom: bottomInset),
+              padding: AppEdgeInsets.only(bottom: bottomInset),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   minWidth: constraints.maxWidth,
@@ -518,10 +518,10 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
                   maxHeight: availableHeight * 0.92,
                 ),
                 child: DecoratedBox(
-                  decoration: BoxDecoration(
+                  decoration: AppBoxDecoration(
                     color: profileBgBottom,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(
+                    borderRadius: AppBorderRadius.vertical(
+                      top: AppRadiusValue.circular(
                         profileScaled(context, 28, min: 22, max: 30),
                       ),
                     ),
@@ -537,7 +537,7 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
                           child: SingleChildScrollView(
                             keyboardDismissBehavior:
                                 ScrollViewKeyboardDismissBehavior.onDrag,
-                            padding: EdgeInsets.fromLTRB(
+                            padding: AppEdgeInsets.fromLTRB(
                               profileScaled(context, 20, min: 16, max: 24),
                               profileScaled(context, 14, min: 12, max: 18),
                               profileScaled(context, 20, min: 16, max: 24),
@@ -555,11 +555,13 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
                                       max: 46,
                                     ),
                                     height: 4,
-                                    decoration: BoxDecoration(
+                                    decoration: AppBoxDecoration(
                                       color: profileTextMuted.withValues(
                                         alpha: 0.45,
                                       ),
-                                      borderRadius: BorderRadius.circular(999),
+                                      borderRadius: AppBorderRadius.circular(
+                                        999,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -576,8 +578,8 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
                                     Expanded(
                                       child: Text(
                                         l10n.profileSecurityPasswordSheetTitle,
-                                        style: TextStyle(
-                                          color: AppColors.textPrimary,
+                                        style: AppTextStyle(
+                                          color: AppPalette.textPrimary,
                                           fontSize: profileScaled(
                                             context,
                                             22,
@@ -610,7 +612,7 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
                                 ),
                                 Text(
                                   l10n.profileSecurityPasswordSheetSubtitle,
-                                  style: TextStyle(
+                                  style: AppTextStyle(
                                     color: profileTextMuted,
                                     fontSize: profileScaled(
                                       context,
@@ -779,8 +781,8 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
                                   ),
                                   Text(
                                     validationError,
-                                    style: TextStyle(
-                                      color: const Color(0xFFFFB7A8),
+                                    style: AppTextStyle(
+                                      color: AppPalette.redLight05,
                                       fontSize: profileScaled(
                                         context,
                                         12,
@@ -844,12 +846,12 @@ class _PasswordChangeActions extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         color: profileBgBottom,
         border: Border(top: BorderSide(color: profileBorderSoft)),
       ),
       child: Padding(
-        padding: EdgeInsets.fromLTRB(
+        padding: AppEdgeInsets.fromLTRB(
           profileScaled(context, 20, min: 16, max: 24),
           profileScaled(context, 12, min: 10, max: 14),
           profileScaled(context, 20, min: 16, max: 24),
@@ -862,16 +864,16 @@ class _PasswordChangeActions extends StatelessWidget {
             FilledButton(
               onPressed: onPrimaryPressed,
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.accent,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: AppColors.accent.withValues(
+                backgroundColor: AppPalette.primary,
+                foregroundColor: AppPalette.white,
+                disabledBackgroundColor: AppPalette.primary.withValues(
                   alpha: 0.35,
                 ),
-                padding: EdgeInsets.symmetric(
+                padding: AppEdgeInsets.symmetric(
                   vertical: profileScaled(context, 15, min: 13, max: 16),
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
+                  borderRadius: AppBorderRadius.circular(
                     profileScaled(context, 16, min: 14, max: 18),
                   ),
                 ),
@@ -882,14 +884,14 @@ class _PasswordChangeActions extends StatelessWidget {
                       height: profileScaled(context, 20, min: 18, max: 22),
                       child: const CircularProgressIndicator(
                         strokeWidth: 2.2,
-                        color: Colors.white,
+                        color: AppPalette.white,
                       ),
                     )
                   : Text(
                       codeSent
                           ? l10n.profileSecurityPasswordSave
                           : l10n.profileSecurityPasswordSendCode,
-                      style: const TextStyle(fontWeight: FontWeight.w900),
+                      style: const AppTextStyle(fontWeight: FontWeight.w900),
                     ),
             ),
             if (codeSent) ...[
@@ -972,27 +974,27 @@ class _InfoBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(profileScaled(context, 14, min: 12, max: 16)),
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(
+      padding: AppEdgeInsets.all(profileScaled(context, 14, min: 12, max: 16)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.primary.withValues(alpha: 0.12),
+        borderRadius: AppBorderRadius.circular(
           profileScaled(context, 16, min: 14, max: 18),
         ),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.18)),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.18)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
             Icons.mark_email_read_outlined,
-            color: AppColors.accent,
+            color: AppPalette.primary,
             size: profileScaled(context, 20, min: 18, max: 22),
           ),
           SizedBox(width: profileScaled(context, 10, min: 8, max: 12)),
           Expanded(
             child: Text(
               text,
-              style: TextStyle(
+              style: AppTextStyle(
                 color: profileTextSoft,
                 fontSize: profileScaled(context, 13, min: 12, max: 14),
                 height: 1.35,
@@ -1013,18 +1015,18 @@ InputDecoration _sheetInputDecoration(
   String? errorText,
   Widget? suffixIcon,
 }) {
-  final radius = BorderRadius.circular(
+  final radius = AppBorderRadius.circular(
     profileScaled(context, 16, min: 14, max: 18),
   );
-  return InputDecoration(
+  return AppInputDecoration(
     labelText: label,
     hintText: hint,
     errorText: errorText,
     filled: true,
     fillColor: profileSurfaceSoft.withValues(alpha: 0.72),
-    labelStyle: TextStyle(color: profileTextMuted),
-    hintStyle: TextStyle(color: profileTextMuted.withValues(alpha: 0.72)),
-    errorStyle: const TextStyle(fontWeight: FontWeight.w700),
+    labelStyle: AppTextStyle(color: profileTextMuted),
+    hintStyle: AppTextStyle(color: profileTextMuted.withValues(alpha: 0.72)),
+    errorStyle: const AppTextStyle(fontWeight: FontWeight.w700),
     suffixIcon: suffixIcon,
     enabledBorder: OutlineInputBorder(
       borderRadius: radius,
@@ -1032,15 +1034,15 @@ InputDecoration _sheetInputDecoration(
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: radius,
-      borderSide: BorderSide(color: AppColors.accent.withValues(alpha: 0.7)),
+      borderSide: BorderSide(color: AppPalette.primary.withValues(alpha: 0.7)),
     ),
     errorBorder: OutlineInputBorder(
       borderRadius: radius,
-      borderSide: const BorderSide(color: Color(0xFFFFB7A8)),
+      borderSide: const BorderSide(color: AppPalette.redLight05),
     ),
     focusedErrorBorder: OutlineInputBorder(
       borderRadius: radius,
-      borderSide: const BorderSide(color: Color(0xFFFFB7A8)),
+      borderSide: const BorderSide(color: AppPalette.redLight05),
     ),
   );
 }
@@ -1059,20 +1061,20 @@ class _StatusTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(
+      padding: AppEdgeInsets.symmetric(
         horizontal: profileScaled(context, 12, min: 10, max: 14),
         vertical: profileScaled(context, 7, min: 6, max: 8),
       ),
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         color: color.withValues(alpha: disabled ? 0.04 : 0.12),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppBorderRadius.circular(999),
         border: Border.all(
           color: color.withValues(alpha: disabled ? 0.05 : 0.18),
         ),
       ),
       child: Text(
         label,
-        style: TextStyle(
+        style: AppTextStyle(
           color: disabled ? profileDisabled : color,
           fontSize: profileScaled(context, 11, min: 10, max: 12),
           fontWeight: FontWeight.w800,

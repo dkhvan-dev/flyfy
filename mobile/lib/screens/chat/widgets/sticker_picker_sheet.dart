@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/network/file_api.dart';
-import '../../../core/ui/app_colors.dart';
 import '../../../features/chat/models/sticker_pack_vm.dart';
 import '../../../features/chat/utils/sticker_asset_format.dart';
 import '../../../l10n/generated/app_localizations.dart';
@@ -89,13 +89,15 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> {
       child: AnimatedPadding(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOutCubic,
-        padding: EdgeInsets.only(bottom: bottomInset),
+        padding: AppEdgeInsets.only(bottom: bottomInset),
         child: Container(
           key: const ValueKey('sticker-picker-sheet'),
           height: _sheetHeight(context),
-          decoration: const BoxDecoration(
-            color: Color(0xFF1d120b),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+          decoration: const AppBoxDecoration(
+            color: AppPalette.warmInk55,
+            borderRadius: AppBorderRadius.vertical(
+              top: AppRadiusValue.circular(22),
+            ),
           ),
           child: Consumer<StickerCatalogProvider>(
             builder: (context, provider, _) {
@@ -116,13 +118,13 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> {
                   Container(
                     width: 42,
                     height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.20),
-                      borderRadius: BorderRadius.circular(999),
+                    decoration: AppBoxDecoration(
+                      color: AppPalette.white.withValues(alpha: 0.20),
+                      borderRadius: AppBorderRadius.circular(999),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                    padding: const AppEdgeInsets.fromLTRB(16, 14, 16, 10),
                     child: _StickerSearchField(
                       controller: _searchController,
                       hintText: l10n.stickersSearchHint,
@@ -192,25 +194,25 @@ class _StickerSearchField extends StatelessWidget {
           controller: controller,
           onChanged: onChanged,
           textInputAction: TextInputAction.search,
-          style: const TextStyle(
-            color: Color(0xFFf5f3ef),
+          style: const AppTextStyle(
+            color: AppPalette.amberWash03,
             fontSize: 15,
             letterSpacing: 0,
           ),
-          decoration: InputDecoration(
+          decoration: AppInputDecoration(
             prefixIcon: Icon(
               Icons.search_rounded,
-              color: Colors.white.withValues(alpha: 0.52),
+              color: AppPalette.white.withValues(alpha: 0.52),
             ),
             suffixIcon: searching
                 ? const Padding(
-                    padding: EdgeInsets.all(14),
+                    padding: AppEdgeInsets.all(14),
                     child: SizedBox(
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: AppColors.accent,
+                        color: AppPalette.primary,
                       ),
                     ),
                   )
@@ -222,30 +224,30 @@ class _StickerSearchField extends StatelessWidget {
                     onPressed: onClear,
                     icon: Icon(
                       Icons.close_rounded,
-                      color: Colors.white.withValues(alpha: 0.56),
+                      color: AppPalette.white.withValues(alpha: 0.56),
                     ),
                   )
                 : null,
             hintText: hintText,
-            hintStyle: TextStyle(
-              color: Colors.white.withValues(alpha: 0.46),
+            hintStyle: AppTextStyle(
+              color: AppPalette.white.withValues(alpha: 0.46),
               fontSize: 15,
               letterSpacing: 0,
             ),
             filled: true,
-            fillColor: const Color(0xFF2a1a10),
+            fillColor: AppPalette.warmSurface14,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AppBorderRadius.circular(16),
               borderSide: BorderSide.none,
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AppBorderRadius.circular(16),
               borderSide: BorderSide(
-                color: AppColors.accent.withValues(alpha: 0.42),
+                color: AppPalette.primary.withValues(alpha: 0.42),
               ),
             ),
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(
+            contentPadding: const AppEdgeInsets.symmetric(
               horizontal: 12,
               vertical: 12,
             ),
@@ -321,7 +323,7 @@ class _StickerGridContent extends StatelessWidget {
 
         return GridView.builder(
           key: const ValueKey('sticker-grid'),
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
+          padding: const AppEdgeInsets.fromLTRB(16, 12, 16, 18),
           physics: const BouncingScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: columns,
@@ -350,7 +352,7 @@ class _StickerGridSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
+      padding: const AppEdgeInsets.fromLTRB(16, 12, 16, 18),
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,
@@ -359,9 +361,9 @@ class _StickerGridSkeleton extends StatelessWidget {
       ),
       itemCount: 12,
       itemBuilder: (context, index) => DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: Colors.white.withValues(alpha: 0.06),
+        decoration: AppBoxDecoration(
+          borderRadius: AppBorderRadius.circular(16),
+          color: AppPalette.white.withValues(alpha: 0.06),
         ),
       ),
     );
@@ -387,16 +389,16 @@ class _StickerButton extends StatelessWidget {
       button: true,
       label: label,
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppBorderRadius.circular(16),
         onTap: onTap,
         child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: Colors.white.withValues(alpha: 0.06),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          decoration: AppBoxDecoration(
+            borderRadius: AppBorderRadius.circular(16),
+            color: AppPalette.white.withValues(alpha: 0.06),
+            border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(8),
+            padding: const AppEdgeInsets.all(8),
             child: _StickerPreview(
               sticker: sticker,
               previewContentLoader: previewContentLoader,
@@ -600,7 +602,7 @@ class _StickerFallback extends StatelessWidget {
           height: 20,
           child: CircularProgressIndicator(
             strokeWidth: 2,
-            color: AppColors.accent,
+            color: AppPalette.primary,
           ),
         ),
       );
@@ -610,7 +612,7 @@ class _StickerFallback extends StatelessWidget {
       child: Text(
         emoji.isEmpty ? '✦' : emoji,
         textAlign: TextAlign.center,
-        style: const TextStyle(fontSize: 30, height: 1, letterSpacing: 0),
+        style: const AppTextStyle(fontSize: 30, height: 1, letterSpacing: 0),
       ),
     );
   }
@@ -633,17 +635,21 @@ class _StickerMessageState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 28),
+        padding: const AppEdgeInsets.symmetric(horizontal: 28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 34, color: Colors.white.withValues(alpha: 0.40)),
+            Icon(
+              icon,
+              size: 34,
+              color: AppPalette.white.withValues(alpha: 0.40),
+            ),
             const SizedBox(height: 10),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.70),
+              style: AppTextStyle(
+                color: AppPalette.white.withValues(alpha: 0.70),
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0,
@@ -655,8 +661,8 @@ class _StickerMessageState extends StatelessWidget {
                 onPressed: onAction,
                 child: Text(
                   actionLabel!,
-                  style: const TextStyle(
-                    color: AppColors.accent,
+                  style: const AppTextStyle(
+                    color: AppPalette.primary,
                     letterSpacing: 0,
                   ),
                 ),

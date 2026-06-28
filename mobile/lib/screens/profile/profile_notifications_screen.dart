@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/notifications/data/notification_api.dart';
 import '../../features/profile/data/profile_api.dart';
@@ -385,7 +385,7 @@ class _ProfileNotificationsScreenState
         pushControlsEnabled && _preferences.pushEnabled;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       body: ProfileResponsiveScope(
         child: ProfileGlassBackground(
           child: SafeArea(
@@ -393,7 +393,7 @@ class _ProfileNotificationsScreenState
               physics: const BouncingScrollPhysics(
                 parent: AlwaysScrollableScrollPhysics(),
               ),
-              padding: EdgeInsets.fromLTRB(
+              padding: AppEdgeInsets.fromLTRB(
                 padding,
                 profileScaled(context, 14, min: 10, max: 18),
                 padding,
@@ -616,14 +616,14 @@ class _NotificationsTopBar extends StatelessWidget {
         ),
         Expanded(
           child: Padding(
-            padding: EdgeInsets.symmetric(
+            padding: AppEdgeInsets.symmetric(
               horizontal: profileScaled(context, 12, min: 8, max: 12),
             ),
             child: Text(
               AppLocalizations.of(context)!.profileNotificationsPageTitle,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.textPrimary,
+              style: AppTextStyle(
+                color: AppPalette.textPrimary,
                 fontSize: profileScaled(context, 18, min: 16, max: 20),
                 fontWeight: FontWeight.w800,
               ),
@@ -653,7 +653,7 @@ class _NotificationsHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Container(
-      padding: EdgeInsets.all(profileScaled(context, 22, min: 18, max: 24)),
+      padding: AppEdgeInsets.all(profileScaled(context, 22, min: 18, max: 24)),
       decoration: profileCardDecoration(
         context,
         highlighted: true,
@@ -665,9 +665,9 @@ class _NotificationsHero extends StatelessWidget {
           Container(
             width: profileScaled(context, 54, min: 48, max: 58),
             height: profileScaled(context, 54, min: 48, max: 58),
-            decoration: BoxDecoration(
-              color: AppColors.accent.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(
+            decoration: AppBoxDecoration(
+              color: AppPalette.primary.withValues(alpha: 0.14),
+              borderRadius: AppBorderRadius.circular(
                 profileScaled(context, 18, min: 14, max: 20),
               ),
             ),
@@ -675,7 +675,7 @@ class _NotificationsHero extends StatelessWidget {
               pushEnabled
                   ? Icons.notifications_active_outlined
                   : Icons.notifications_paused_outlined,
-              color: AppColors.accent,
+              color: AppPalette.primary,
               size: profileScaled(context, 26, min: 22, max: 28),
             ),
           ),
@@ -686,8 +686,8 @@ class _NotificationsHero extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
+                  style: AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: profileScaled(context, 20, min: 18, max: 22),
                     fontWeight: FontWeight.w900,
                   ),
@@ -695,7 +695,7 @@ class _NotificationsHero extends StatelessWidget {
                 SizedBox(height: profileScaled(context, 8, min: 6, max: 8)),
                 Text(
                   subtitle,
-                  style: TextStyle(
+                  style: AppTextStyle(
                     color: profileTextSoft,
                     fontSize: profileScaled(context, 14, min: 13, max: 15),
                     height: 1.45,
@@ -752,11 +752,13 @@ class _NotificationSwitchTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final disabled = !enabled || onChanged == null;
     return Padding(
-      padding: EdgeInsets.only(
+      padding: AppEdgeInsets.only(
         bottom: profileScaled(context, 14, min: 10, max: 14),
       ),
       child: Container(
-        padding: EdgeInsets.all(profileScaled(context, 18, min: 14, max: 20)),
+        padding: AppEdgeInsets.all(
+          profileScaled(context, 18, min: 14, max: 20),
+        ),
         decoration: profileCardDecoration(
           context,
           disabled: disabled,
@@ -768,15 +770,15 @@ class _NotificationSwitchTile extends StatelessWidget {
             Container(
               width: profileScaled(context, 46, min: 40, max: 48),
               height: profileScaled(context, 46, min: 40, max: 48),
-              decoration: BoxDecoration(
-                color: AppColors.accent.withValues(
+              decoration: AppBoxDecoration(
+                color: AppPalette.primary.withValues(
                   alpha: disabled ? 0.05 : 0.12,
                 ),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
-                color: disabled ? profileDisabled : AppColors.accent,
+                color: disabled ? profileDisabled : AppPalette.primary,
               ),
             ),
             SizedBox(width: profileScaled(context, 14, min: 12, max: 16)),
@@ -786,8 +788,10 @@ class _NotificationSwitchTile extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
-                      color: disabled ? profileDisabled : AppColors.textPrimary,
+                    style: AppTextStyle(
+                      color: disabled
+                          ? profileDisabled
+                          : AppPalette.textPrimary,
                       fontSize: profileScaled(context, 16, min: 14, max: 17),
                       fontWeight: FontWeight.w800,
                     ),
@@ -795,7 +799,7 @@ class _NotificationSwitchTile extends StatelessWidget {
                   SizedBox(height: profileScaled(context, 6, min: 4, max: 6)),
                   Text(
                     subtitle,
-                    style: TextStyle(
+                    style: AppTextStyle(
                       color: disabled ? profileDisabled : profileTextMuted,
                       fontSize: profileScaled(context, 13, min: 12, max: 13),
                       height: 1.45,
@@ -815,7 +819,7 @@ class _NotificationSwitchTile extends StatelessWidget {
                     height: 22,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: AppColors.accent.withValues(alpha: 0.9),
+                      color: AppPalette.primary.withValues(alpha: 0.9),
                     ),
                   ),
                 ),
@@ -824,9 +828,9 @@ class _NotificationSwitchTile extends StatelessWidget {
               Switch.adaptive(
                 value: value,
                 onChanged: disabled ? null : onChanged,
-                activeThumbColor: AppColors.accent,
-                activeTrackColor: AppColors.accent.withValues(alpha: 0.38),
-                inactiveTrackColor: Colors.white.withValues(alpha: 0.1),
+                activeThumbColor: AppPalette.primary,
+                activeTrackColor: AppPalette.primary.withValues(alpha: 0.38),
+                inactiveTrackColor: AppPalette.white.withValues(alpha: 0.1),
               ),
           ],
         ),
@@ -864,10 +868,10 @@ class _QuietHoursPanel extends StatelessWidget {
     ];
 
     return Container(
-      margin: EdgeInsets.only(
+      margin: AppEdgeInsets.only(
         bottom: profileScaled(context, 14, min: 10, max: 14),
       ),
-      padding: EdgeInsets.all(profileScaled(context, 18, min: 14, max: 20)),
+      padding: AppEdgeInsets.all(profileScaled(context, 18, min: 14, max: 20)),
       decoration: profileCardDecoration(
         context,
         disabled: !enabled,
@@ -897,7 +901,7 @@ class _QuietHoursPanel extends StatelessWidget {
           SizedBox(height: profileScaled(context, 14, min: 12, max: 16)),
           Text(
             l10n.profileNotificationsQuietHoursTimezone(timezone),
-            style: TextStyle(
+            style: AppTextStyle(
               color: enabled ? profileTextMuted : profileDisabled,
               fontSize: profileScaled(context, 12, min: 11, max: 13),
               height: 1.35,
@@ -938,16 +942,16 @@ class _TimeButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppBorderRadius.circular(18),
         child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: enabled ? 0.06 : 0.03),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          padding: const AppEdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: AppBoxDecoration(
+            color: AppPalette.white.withValues(alpha: enabled ? 0.06 : 0.03),
+            borderRadius: AppBorderRadius.circular(18),
+            border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -955,7 +959,7 @@ class _TimeButton extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: TextStyle(
+                style: AppTextStyle(
                   color: enabled ? profileTextMuted : profileDisabled,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -964,8 +968,8 @@ class _TimeButton extends StatelessWidget {
               const SizedBox(height: 5),
               Text(
                 value,
-                style: TextStyle(
-                  color: enabled ? AppColors.textPrimary : profileDisabled,
+                style: AppTextStyle(
+                  color: enabled ? AppPalette.textPrimary : profileDisabled,
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
                 ),
@@ -994,15 +998,17 @@ class _PresetChip extends StatelessWidget {
     return ActionChip(
       onPressed: enabled ? onTap : null,
       label: Text(label),
-      labelStyle: TextStyle(
-        color: enabled ? AppColors.textPrimary : profileDisabled,
+      labelStyle: AppTextStyle(
+        color: enabled ? AppPalette.textPrimary : profileDisabled,
         fontSize: 12,
         fontWeight: FontWeight.w800,
       ),
-      backgroundColor: Colors.white.withValues(alpha: 0.06),
-      disabledColor: Colors.white.withValues(alpha: 0.03),
-      side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+      backgroundColor: AppPalette.white.withValues(alpha: 0.06),
+      disabledColor: AppPalette.white.withValues(alpha: 0.03),
+      side: BorderSide(color: AppPalette.white.withValues(alpha: 0.08)),
+      shape: RoundedRectangleBorder(
+        borderRadius: AppBorderRadius.circular(999),
+      ),
     );
   }
 }
@@ -1025,21 +1031,21 @@ class _NotificationInfoBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.only(
+      margin: AppEdgeInsets.only(
         bottom: profileScaled(context, 14, min: 10, max: 14),
       ),
-      padding: EdgeInsets.all(profileScaled(context, 16, min: 14, max: 18)),
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(
+      padding: AppEdgeInsets.all(profileScaled(context, 16, min: 14, max: 18)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.primary.withValues(alpha: 0.08),
+        borderRadius: AppBorderRadius.circular(
           profileScaled(context, 22, min: 18, max: 24),
         ),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.18)),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.18)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: AppColors.accent, size: 24),
+          Icon(icon, color: AppPalette.primary, size: 24),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -1047,8 +1053,8 @@ class _NotificationInfoBanner extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: const AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w900,
                     height: 1.2,
@@ -1057,7 +1063,7 @@ class _NotificationInfoBanner extends StatelessWidget {
                 const SizedBox(height: 5),
                 Text(
                   subtitle,
-                  style: TextStyle(
+                  style: AppTextStyle(
                     color: profileTextMuted,
                     fontSize: 12,
                     height: 1.4,
@@ -1068,8 +1074,8 @@ class _NotificationInfoBanner extends StatelessWidget {
                   TextButton(
                     onPressed: onAction,
                     style: TextButton.styleFrom(
-                      foregroundColor: AppColors.accent,
-                      padding: EdgeInsets.zero,
+                      foregroundColor: AppPalette.primary,
+                      padding: AppEdgeInsets.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: Text(actionLabel!),
@@ -1092,20 +1098,20 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = active ? AppColors.accent : AppColors.textCaption;
+    final color = active ? AppPalette.primary : AppPalette.textCaption;
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         color: color.withValues(alpha: active ? 0.14 : 0.10),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppBorderRadius.circular(999),
         border: Border.all(
           color: color.withValues(alpha: active ? 0.28 : 0.18),
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Text(
           label,
-          style: TextStyle(
+          style: AppTextStyle(
             color: color,
             fontSize: 11,
             fontWeight: FontWeight.w900,
@@ -1122,11 +1128,11 @@ class _NotificationLinearLoader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: AppBorderRadius.circular(999),
       child: LinearProgressIndicator(
         minHeight: 3,
-        color: AppColors.accent,
-        backgroundColor: Colors.white.withValues(alpha: 0.08),
+        color: AppPalette.primary,
+        backgroundColor: AppPalette.white.withValues(alpha: 0.08),
       ),
     );
   }

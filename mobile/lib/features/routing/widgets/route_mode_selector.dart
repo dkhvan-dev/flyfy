@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
-import '../../../core/ui/app_colors.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../models/routing_models.dart';
 
@@ -36,20 +36,20 @@ class RouteModeSelector extends StatelessWidget {
         : visibleProfiles.first;
 
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.accent.withValues(alpha: 0.18),
-            const Color(0xFF2A1907).withValues(alpha: 0.96),
+            AppPalette.primary.withValues(alpha: 0.18),
+            AppPalette.warmInk114.withValues(alpha: 0.96),
           ],
         ),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.34)),
+        borderRadius: AppBorderRadius.circular(8),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.34)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(4),
+        padding: const AppEdgeInsets.all(4),
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: SegmentedButton<RouteProfile>(
@@ -82,32 +82,32 @@ class RouteModeSelector extends StatelessWidget {
               ),
               foregroundColor: WidgetStateProperty.resolveWith((states) {
                 if (states.contains(WidgetState.selected)) {
-                  return AppColors.textPrimary;
+                  return AppPalette.textPrimary;
                 }
-                return const Color(0xFFFFE6B8);
+                return AppPalette.amberLight17;
               }),
               iconColor: WidgetStateProperty.resolveWith((states) {
                 if (states.contains(WidgetState.selected)) {
-                  return AppColors.textPrimary;
+                  return AppPalette.textPrimary;
                 }
-                return AppColors.accent;
+                return AppPalette.primary;
               }),
               backgroundColor: WidgetStateProperty.resolveWith((states) {
                 if (states.contains(WidgetState.selected)) {
-                  return AppColors.accent;
+                  return AppPalette.primary;
                 }
-                return Colors.white.withValues(alpha: 0.06);
+                return AppPalette.white.withValues(alpha: 0.06);
               }),
               side: WidgetStateProperty.resolveWith((states) {
                 final alpha = states.contains(WidgetState.selected)
                     ? 0.76
                     : 0.24;
                 return BorderSide(
-                  color: AppColors.accent.withValues(alpha: alpha),
+                  color: AppPalette.primary.withValues(alpha: alpha),
                 );
               }),
               padding: WidgetStateProperty.all(
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                const AppEdgeInsets.symmetric(horizontal: 10, vertical: 8),
               ),
             ),
           ),

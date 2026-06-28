@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
-import '../../../core/ui/app_colors.dart';
 import '../../../core/ui/filter_sheet_chrome.dart';
 import '../../../features/excursions/models/create_excursion_review_request.dart';
 import '../../../features/excursions/models/excursion_booking_vm.dart';
@@ -28,15 +28,17 @@ Future<ExcursionReviewAction?> showExcursionReviewActionsSheet(
     isDismissible: true,
     isScrollControlled: true,
     useSafeArea: true,
-    backgroundColor: Colors.transparent,
+    backgroundColor: AppPalette.transparent,
     builder: (context) {
       return AppDismissibleModalSheet(
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(18, 14, 18, 22),
-          decoration: const BoxDecoration(
-            color: Color(0xFF211609),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          padding: const AppEdgeInsets.fromLTRB(18, 14, 18, 22),
+          decoration: const AppBoxDecoration(
+            color: AppPalette.warmInk78,
+            borderRadius: AppBorderRadius.vertical(
+              top: AppRadiusValue.circular(24),
+            ),
           ),
           child: SafeArea(
             top: false,
@@ -48,17 +50,17 @@ Future<ExcursionReviewAction?> showExcursionReviewActionsSheet(
                   child: Container(
                     width: 42,
                     height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(99),
+                    decoration: AppBoxDecoration(
+                      color: AppPalette.white.withValues(alpha: 0.18),
+                      borderRadius: AppBorderRadius.circular(99),
                     ),
                   ),
                 ),
                 const SizedBox(height: 18),
                 Text(
                   l10n.excursionReviewActionsTitle,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: const AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                   ),
@@ -95,7 +97,7 @@ Future<ExcursionReviewEditDraft?> showExcursionReviewEditSheet(
     isDismissible: true,
     isScrollControlled: true,
     useSafeArea: true,
-    backgroundColor: Colors.transparent,
+    backgroundColor: AppPalette.transparent,
     builder: (context) => _ExcursionReviewEditSheet(review: review),
   );
 }
@@ -115,14 +117,14 @@ class _ReviewActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = destructive ? AppColors.destructive : AppColors.accent;
+    final color = destructive ? AppPalette.danger : AppPalette.primary;
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppBorderRadius.circular(8),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 13),
+          padding: const AppEdgeInsets.symmetric(horizontal: 4, vertical: 13),
           child: Row(
             children: [
               Icon(icon, color: color, size: 22),
@@ -130,7 +132,7 @@ class _ReviewActionTile extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: TextStyle(
+                  style: AppTextStyle(
                     color: color,
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
@@ -187,23 +189,25 @@ class _ExcursionReviewEditSheetState extends State<_ExcursionReviewEditSheet> {
     return AppDismissibleModalSheet(
       child: Container(
         width: double.infinity,
-        padding: EdgeInsets.only(
+        padding: AppEdgeInsets.only(
           bottom: MediaQuery.viewInsetsOf(context).bottom,
         ),
-        decoration: const BoxDecoration(
-          color: Color(0xFF211609),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        decoration: const AppBoxDecoration(
+          color: AppPalette.warmInk78,
+          borderRadius: AppBorderRadius.vertical(
+            top: AppRadiusValue.circular(24),
+          ),
         ),
         child: SafeArea(
           top: false,
           child: ListView(
             shrinkWrap: true,
-            padding: const EdgeInsets.fromLTRB(22, 22, 22, 24),
+            padding: const AppEdgeInsets.fromLTRB(22, 22, 22, 24),
             children: [
               Text(
                 l10n.excursionReviewEditTitle,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: const AppTextStyle(
+                  color: AppPalette.textPrimary,
                   fontSize: 20,
                   fontWeight: FontWeight.w900,
                 ),
@@ -220,7 +224,7 @@ class _ExcursionReviewEditSheetState extends State<_ExcursionReviewEditSheet> {
                       value <= _rating.round()
                           ? Icons.star_rounded
                           : Icons.star_border_rounded,
-                      color: AppColors.accent,
+                      color: AppPalette.primary,
                       size: 32,
                     ),
                   );
@@ -232,15 +236,17 @@ class _ExcursionReviewEditSheetState extends State<_ExcursionReviewEditSheet> {
                 maxLines: 5,
                 minLines: 3,
                 maxLength: 600,
-                cursorColor: AppColors.accent,
-                style: const TextStyle(color: AppColors.textPrimary),
-                decoration: InputDecoration(
+                cursorColor: AppPalette.primary,
+                style: const AppTextStyle(color: AppPalette.textPrimary),
+                decoration: AppInputDecoration(
                   hintText: l10n.myExcursionsReviewHint,
-                  hintStyle: const TextStyle(color: Color(0xFF9F8B7D)),
+                  hintStyle: const AppTextStyle(
+                    color: AppPalette.orangeMuted02,
+                  ),
                   filled: true,
-                  fillColor: const Color(0xFF332416),
+                  fillColor: AppPalette.surfaceHigh,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppBorderRadius.circular(8),
                     borderSide: BorderSide.none,
                   ),
                 ),

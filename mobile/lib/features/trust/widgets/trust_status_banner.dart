@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-import '../../../core/ui/app_colors.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
 enum TrustStatusBannerKind { blocked, muted, pendingAppeal, rejected }
 
@@ -34,13 +33,13 @@ class TrustStatusBanner extends StatelessWidget {
     return Semantics(
       container: true,
       child: DecoratedBox(
-        decoration: BoxDecoration(
+        decoration: AppBoxDecoration(
           color: colors.background,
           border: Border.all(color: colors.border),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppBorderRadius.circular(8),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const AppEdgeInsets.all(14),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -66,7 +65,7 @@ class TrustStatusBanner extends StatelessWidget {
                                 onPressed: onAction,
                                 style: TextButton.styleFrom(
                                   foregroundColor: colors.foreground,
-                                  padding: const EdgeInsets.symmetric(
+                                  padding: const AppEdgeInsets.symmetric(
                                     horizontal: 10,
                                     vertical: 8,
                                   ),
@@ -114,7 +113,7 @@ class _TrustStatusBannerCopy extends StatelessWidget {
         Text(
           title,
           style: textTheme.titleSmall?.copyWith(
-            color: AppColors.textPrimary,
+            color: AppPalette.textPrimary,
             fontWeight: FontWeight.w700,
           ),
           maxLines: 3,
@@ -123,7 +122,9 @@ class _TrustStatusBannerCopy extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           message,
-          style: textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+          style: textTheme.bodySmall?.copyWith(
+            color: AppPalette.textCoolSecondary,
+          ),
           maxLines: 6,
           overflow: TextOverflow.ellipsis,
         ),
@@ -146,24 +147,24 @@ class _TrustStatusBannerColors {
   static _TrustStatusBannerColors forKind(TrustStatusBannerKind kind) {
     return switch (kind) {
       TrustStatusBannerKind.blocked => _TrustStatusBannerColors(
-        background: AppColors.destructive.withValues(alpha: 0.12),
-        border: AppColors.destructive.withValues(alpha: 0.45),
-        foreground: AppColors.destructive,
+        background: AppPalette.danger.withValues(alpha: 0.12),
+        border: AppPalette.danger.withValues(alpha: 0.45),
+        foreground: AppPalette.danger,
       ),
       TrustStatusBannerKind.muted => _TrustStatusBannerColors(
-        background: AppColors.surfaceLight,
-        border: AppColors.border,
-        foreground: AppColors.textSecondary,
+        background: AppPalette.surfaceCoolLight,
+        border: AppPalette.outlineOverlay,
+        foreground: AppPalette.textCoolSecondary,
       ),
       TrustStatusBannerKind.pendingAppeal => _TrustStatusBannerColors(
-        background: AppColors.accent.withValues(alpha: 0.12),
-        border: AppColors.accent.withValues(alpha: 0.42),
-        foreground: AppColors.accent,
+        background: AppPalette.primary.withValues(alpha: 0.12),
+        border: AppPalette.primary.withValues(alpha: 0.42),
+        foreground: AppPalette.primary,
       ),
       TrustStatusBannerKind.rejected => _TrustStatusBannerColors(
-        background: const Color(0xFFB45309).withValues(alpha: 0.12),
-        border: const Color(0xFFB45309).withValues(alpha: 0.42),
-        foreground: const Color(0xFFB45309),
+        background: AppPalette.warmSurfaceHigh37.withValues(alpha: 0.12),
+        border: AppPalette.warmSurfaceHigh37.withValues(alpha: 0.42),
+        foreground: AppPalette.warmSurfaceHigh37,
       ),
     };
   }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
-import '../../../../../core/ui/app_colors.dart';
 import '../../../../../l10n/generated/app_localizations.dart';
 import '../../../story_ui.dart';
 import '../../domain/story_document.dart';
@@ -22,134 +22,134 @@ abstract final class StoryEditorBreakpoints {
 ThemeData storyEditorTheme(BuildContext context) {
   final base = Theme.of(context);
   final colorScheme = base.colorScheme.copyWith(
-    primary: AppColors.accent,
-    onPrimary: AppColors.textPrimary,
-    primaryContainer: AppColors.accent.withValues(alpha: 0.22),
-    onPrimaryContainer: AppColors.textPrimary,
-    secondary: AppColors.accent,
-    onSecondary: AppColors.textPrimary,
-    secondaryContainer: AppColors.accent.withValues(alpha: 0.16),
-    onSecondaryContainer: AppColors.textPrimary,
-    tertiary: AppColors.accent,
-    onTertiary: AppColors.textPrimary,
+    primary: AppPalette.primary,
+    onPrimary: AppPalette.textPrimary,
+    primaryContainer: AppPalette.primary.withValues(alpha: 0.22),
+    onPrimaryContainer: AppPalette.textPrimary,
+    secondary: AppPalette.primary,
+    onSecondary: AppPalette.textPrimary,
+    secondaryContainer: AppPalette.primary.withValues(alpha: 0.16),
+    onSecondaryContainer: AppPalette.textPrimary,
+    tertiary: AppPalette.primary,
+    onTertiary: AppPalette.textPrimary,
     surface: StoryPalette.surface,
-    onSurface: AppColors.textPrimary,
+    onSurface: AppPalette.textPrimary,
     surfaceContainerHighest: StoryPalette.surfaceRaised,
-    outline: AppColors.border,
-    outlineVariant: AppColors.borderLight,
+    outline: AppPalette.outlineOverlay,
+    outlineVariant: AppPalette.outlineOverlayLight,
   );
   final border = OutlineInputBorder(
-    borderRadius: BorderRadius.circular(8),
-    borderSide: BorderSide(color: AppColors.border),
+    borderRadius: AppBorderRadius.circular(8),
+    borderSide: BorderSide(color: AppPalette.outlineOverlay),
   );
   final focusedBorder = OutlineInputBorder(
-    borderRadius: BorderRadius.circular(8),
-    borderSide: const BorderSide(color: AppColors.accent, width: 1.4),
+    borderRadius: AppBorderRadius.circular(8),
+    borderSide: const BorderSide(color: AppPalette.primary, width: 1.4),
   );
 
   return base.copyWith(
     colorScheme: colorScheme,
-    dividerColor: AppColors.border,
-    splashColor: AppColors.accent.withValues(alpha: 0.10),
-    highlightColor: AppColors.accent.withValues(alpha: 0.08),
+    dividerColor: AppPalette.outlineOverlay,
+    splashColor: AppPalette.primary.withValues(alpha: 0.10),
+    highlightColor: AppPalette.primary.withValues(alpha: 0.08),
     textSelectionTheme: base.textSelectionTheme.copyWith(
-      cursorColor: AppColors.accent,
-      selectionColor: AppColors.accent.withValues(alpha: 0.28),
-      selectionHandleColor: AppColors.accent,
+      cursorColor: AppPalette.primary,
+      selectionColor: AppPalette.primary.withValues(alpha: 0.28),
+      selectionHandleColor: AppPalette.primary,
     ),
     inputDecorationTheme: base.inputDecorationTheme.copyWith(
       filled: true,
-      fillColor: AppColors.surfaceLight,
+      fillColor: AppPalette.surfaceCoolLight,
       enabledBorder: border,
       focusedBorder: focusedBorder,
       border: border,
       labelStyle: base.textTheme.bodyMedium?.copyWith(
-        color: AppColors.textSecondary,
+        color: AppPalette.textCoolSecondary,
       ),
       floatingLabelStyle: base.textTheme.bodyMedium?.copyWith(
-        color: AppColors.accent,
+        color: AppPalette.primary,
         fontWeight: FontWeight.w700,
       ),
       hintStyle: base.textTheme.bodyMedium?.copyWith(
-        color: AppColors.textCaption,
+        color: AppPalette.textCaption,
       ),
-      suffixIconColor: AppColors.accent,
-      prefixIconColor: AppColors.accent,
+      suffixIconColor: AppPalette.primary,
+      prefixIconColor: AppPalette.primary,
     ),
     popupMenuTheme: base.popupMenuTheme.copyWith(
       color: StoryPalette.surfaceRaised,
-      surfaceTintColor: Colors.transparent,
+      surfaceTintColor: AppPalette.transparent,
       textStyle: base.textTheme.bodyMedium?.copyWith(
-        color: AppColors.textPrimary,
+        color: AppPalette.textPrimary,
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: AppColors.accent,
-        foregroundColor: AppColors.textPrimary,
-        disabledBackgroundColor: AppColors.accent.withValues(alpha: 0.18),
-        disabledForegroundColor: AppColors.textCaption,
+        backgroundColor: AppPalette.primary,
+        foregroundColor: AppPalette.textPrimary,
+        disabledBackgroundColor: AppPalette.primary.withValues(alpha: 0.18),
+        disabledForegroundColor: AppPalette.textCaption,
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: AppColors.accent,
-        disabledForegroundColor: AppColors.textCaption,
-        side: BorderSide(color: AppColors.accent.withValues(alpha: 0.58)),
+        foregroundColor: AppPalette.primary,
+        disabledForegroundColor: AppPalette.textCaption,
+        side: BorderSide(color: AppPalette.primary.withValues(alpha: 0.58)),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        foregroundColor: AppColors.accent,
-        disabledForegroundColor: AppColors.textCaption,
+        foregroundColor: AppPalette.primary,
+        disabledForegroundColor: AppPalette.textCaption,
       ),
     ),
     iconButtonTheme: IconButtonThemeData(
       style: IconButton.styleFrom(
-        foregroundColor: AppColors.accent,
-        disabledForegroundColor: AppColors.textCaption,
+        foregroundColor: AppPalette.primary,
+        disabledForegroundColor: AppPalette.textCaption,
       ),
     ),
     segmentedButtonTheme: SegmentedButtonThemeData(
       style: ButtonStyle(
         foregroundColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.textPrimary;
+            return AppPalette.textPrimary;
           }
-          return AppColors.accent;
+          return AppPalette.primary;
         }),
         backgroundColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.accent;
+            return AppPalette.primary;
           }
-          return AppColors.accent.withValues(alpha: 0.10);
+          return AppPalette.primary.withValues(alpha: 0.10);
         }),
         side: WidgetStatePropertyAll(
-          BorderSide(color: AppColors.accent.withValues(alpha: 0.46)),
+          BorderSide(color: AppPalette.primary.withValues(alpha: 0.46)),
         ),
       ),
     ),
     chipTheme: base.chipTheme.copyWith(
-      backgroundColor: AppColors.accent.withValues(alpha: 0.12),
-      selectedColor: AppColors.accent.withValues(alpha: 0.24),
-      disabledColor: AppColors.surfaceLight,
+      backgroundColor: AppPalette.primary.withValues(alpha: 0.12),
+      selectedColor: AppPalette.primary.withValues(alpha: 0.24),
+      disabledColor: AppPalette.surfaceCoolLight,
       labelStyle: base.textTheme.bodySmall?.copyWith(
-        color: AppColors.textPrimary,
+        color: AppPalette.textPrimary,
       ),
       secondaryLabelStyle: base.textTheme.bodySmall?.copyWith(
-        color: AppColors.textPrimary,
+        color: AppPalette.textPrimary,
       ),
-      iconTheme: const IconThemeData(color: AppColors.accent),
-      side: BorderSide(color: AppColors.border),
+      iconTheme: const IconThemeData(color: AppPalette.primary),
+      side: BorderSide(color: AppPalette.outlineOverlay),
     ),
   );
 }
 
 BoxDecoration storyEditorPanelDecoration(BuildContext context) {
-  return BoxDecoration(
-    color: AppColors.surfaceLight,
-    border: Border.all(color: AppColors.border),
-    borderRadius: BorderRadius.circular(8),
+  return AppBoxDecoration(
+    color: AppPalette.surfaceCoolLight,
+    border: Border.all(color: AppPalette.outlineOverlay),
+    borderRadius: AppBorderRadius.circular(8),
   );
 }
 
@@ -160,21 +160,21 @@ InputDecoration storyEditorInputDecoration({
   String? errorText,
 }) {
   final errorBorder = OutlineInputBorder(
-    borderRadius: BorderRadius.circular(8),
-    borderSide: const BorderSide(color: AppColors.destructive, width: 1.4),
+    borderRadius: AppBorderRadius.circular(8),
+    borderSide: const BorderSide(color: AppPalette.danger, width: 1.4),
   );
-  return InputDecoration(
+  return AppInputDecoration(
     labelText: label,
     hintText: hint,
     suffixIcon: suffixIcon,
     errorText: errorText,
     errorMaxLines: 2,
     filled: true,
-    fillColor: AppColors.surfaceLight,
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+    fillColor: AppPalette.surfaceCoolLight,
+    border: OutlineInputBorder(borderRadius: AppBorderRadius.circular(8)),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
-      borderSide: BorderSide(color: AppColors.border),
+      borderRadius: AppBorderRadius.circular(8),
+      borderSide: BorderSide(color: AppPalette.outlineOverlay),
     ),
     errorBorder: errorBorder,
     focusedErrorBorder: errorBorder,

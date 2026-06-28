@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/device/device_context_service.dart';
 import '../../../core/time/app_time.dart';
-import '../../../core/ui/app_colors.dart';
 import '../../../features/excursions/models/excursion_schedule_vm.dart';
 import '../../../features/excursions/models/excursion_vm.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../providers/excursion_provider.dart';
 import '../../../providers/excursion_schedule_provider.dart';
 
-const _slotSheetFieldIconColor = Color(0xFFB8AB9D);
+const _slotSheetFieldIconColor = AppPalette.orangeSoft11;
 
 class GuideScheduleSlotSheet extends StatefulWidget {
   const GuideScheduleSlotSheet({super.key, this.slot, this.initialDate});
@@ -105,13 +105,15 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
         maxChildSize: 0.95,
         builder: (context, controller) {
           return DecoratedBox(
-            decoration: const BoxDecoration(
-              color: Color(0xFF241A11),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
+            decoration: const AppBoxDecoration(
+              color: AppPalette.warmSurface01,
+              borderRadius: AppBorderRadius.vertical(
+                top: AppRadiusValue.circular(8),
+              ),
             ),
             child: ListView(
               controller: controller,
-              padding: EdgeInsets.fromLTRB(
+              padding: AppEdgeInsets.fromLTRB(
                 20,
                 18,
                 20,
@@ -124,8 +126,8 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
                       : isEditing
                       ? l10n.guideCalendarEditSlot
                       : l10n.guideCalendarAddSlot,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: const AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: 22,
                     fontWeight: FontWeight.w900,
                   ),
@@ -135,7 +137,7 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
                   initialValue: _selectedOfferId,
                   menuMaxHeight: 320,
                   itemHeight: 74,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppBorderRadius.circular(8),
                   items: dropdownOptions
                       .map((option) {
                         return DropdownMenuItem<String>(
@@ -152,8 +154,8 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
                             option.title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
+                            style: const AppTextStyle(
+                              color: AppPalette.textPrimary,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
@@ -168,10 +170,10 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
                           _showConflictBanner = false;
                         }),
                   isExpanded: true,
-                  dropdownColor: const Color(0xFF241A11),
+                  dropdownColor: AppPalette.warmSurface01,
                   iconEnabledColor: _slotSheetFieldIconColor,
                   iconDisabledColor: _slotSheetFieldIconColor,
-                  style: const TextStyle(color: AppColors.textPrimary),
+                  style: const AppTextStyle(color: AppPalette.textPrimary),
                   decoration: _inputDecoration(l10n.guideCalendarOfferLabel)
                       .copyWith(
                         errorText: _offerError,
@@ -215,8 +217,8 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
                   controller: _capacityController,
                   keyboardType: TextInputType.number,
                   enabled: !isReadonly,
-                  cursorColor: AppColors.accent,
-                  style: const TextStyle(color: AppColors.textPrimary),
+                  cursorColor: AppPalette.primary,
+                  style: const AppTextStyle(color: AppPalette.textPrimary),
                   onChanged: (_) => _clearActionHints(clearCapacity: true),
                   decoration: _inputDecoration(l10n.guideCalendarCapacityLabel)
                       .copyWith(
@@ -279,8 +281,8 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
                   const SizedBox(height: 14),
                   Text(
                     provider.actionErrorMessage!,
-                    style: const TextStyle(
-                      color: Color(0xFFFFB4A8),
+                    style: const AppTextStyle(
+                      color: AppPalette.redLight03,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -294,8 +296,8 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
                     if (isEditing && !isReadonly) ...[
                       FilledButton.icon(
                         style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.accent,
-                          foregroundColor: AppColors.textPrimary,
+                          backgroundColor: AppPalette.primary,
+                          foregroundColor: AppPalette.textPrimary,
                         ),
                         onPressed:
                             provider.actionState ==
@@ -339,8 +341,8 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
                     ] else
                       FilledButton.icon(
                         style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.accent,
-                          foregroundColor: AppColors.textPrimary,
+                          backgroundColor: AppPalette.primary,
+                          foregroundColor: AppPalette.textPrimary,
                         ),
                         onPressed:
                             provider.actionState ==
@@ -362,94 +364,98 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
   }
 
   InputDecoration _inputDecoration(String label) {
-    return InputDecoration(
+    return AppInputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(
-        color: Color(0xFFB8AB9D),
+      labelStyle: const AppTextStyle(
+        color: AppPalette.orangeSoft11,
         fontWeight: FontWeight.w700,
       ),
-      hintStyle: const TextStyle(
-        color: Color(0xFFB8AB9D),
+      hintStyle: const AppTextStyle(
+        color: AppPalette.orangeSoft11,
         fontSize: 16,
         height: 1.2,
       ),
       errorMaxLines: 2,
-      helperStyle: const TextStyle(
-        color: Color(0xFFB8AB9D),
+      helperStyle: const AppTextStyle(
+        color: AppPalette.orangeSoft11,
         fontWeight: FontWeight.w600,
       ),
       isDense: true,
-      contentPadding: const EdgeInsets.fromLTRB(18, 17, 18, 17),
+      contentPadding: const AppEdgeInsets.fromLTRB(18, 17, 18, 17),
       filled: true,
-      fillColor: const Color(0xFF3A2107),
+      fillColor: AppPalette.warmSurface47,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(999),
-        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.03)),
+        borderRadius: AppBorderRadius.circular(999),
+        borderSide: BorderSide(color: AppPalette.white.withValues(alpha: 0.03)),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(999),
-        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.03)),
+        borderRadius: AppBorderRadius.circular(999),
+        borderSide: BorderSide(color: AppPalette.white.withValues(alpha: 0.03)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(999),
-        borderSide: BorderSide(color: AppColors.accent.withValues(alpha: 0.55)),
+        borderRadius: AppBorderRadius.circular(999),
+        borderSide: BorderSide(
+          color: AppPalette.primary.withValues(alpha: 0.55),
+        ),
       ),
       disabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(999),
-        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.03)),
+        borderRadius: AppBorderRadius.circular(999),
+        borderSide: BorderSide(color: AppPalette.white.withValues(alpha: 0.03)),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(999),
-        borderSide: const BorderSide(color: Color(0xFFFFB4A8)),
+        borderRadius: AppBorderRadius.circular(999),
+        borderSide: const BorderSide(color: AppPalette.redLight03),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(999),
-        borderSide: const BorderSide(color: Color(0xFFFFB4A8)),
+        borderRadius: AppBorderRadius.circular(999),
+        borderSide: const BorderSide(color: AppPalette.redLight03),
       ),
     );
   }
 
   ChipThemeData _chipTheme(BuildContext context) {
     return Theme.of(context).chipTheme.copyWith(
-      backgroundColor: const Color(0xFF3A2107),
-      selectedColor: AppColors.accent,
-      disabledColor: const Color(0xFF3A2107).withValues(alpha: 0.52),
-      checkmarkColor: AppColors.textPrimary,
-      labelStyle: const TextStyle(
-        color: Color(0xFFEFDCC8),
+      backgroundColor: AppPalette.warmSurface47,
+      selectedColor: AppPalette.primary,
+      disabledColor: AppPalette.warmSurface47.withValues(alpha: 0.52),
+      checkmarkColor: AppPalette.textPrimary,
+      labelStyle: const AppTextStyle(
+        color: AppPalette.orangeLight30,
         fontWeight: FontWeight.w800,
       ),
-      secondaryLabelStyle: const TextStyle(
-        color: AppColors.textPrimary,
+      secondaryLabelStyle: const AppTextStyle(
+        color: AppPalette.textPrimary,
         fontWeight: FontWeight.w900,
       ),
-      side: BorderSide(color: AppColors.accent.withValues(alpha: 0.26)),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      side: BorderSide(color: AppPalette.primary.withValues(alpha: 0.26)),
+      shape: RoundedRectangleBorder(
+        borderRadius: AppBorderRadius.circular(999),
+      ),
+      padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 8),
     );
   }
 
   ButtonStyle _closeSlotButtonStyle() {
     return OutlinedButton.styleFrom(
-      foregroundColor: AppColors.textPrimary,
-      backgroundColor: AppColors.accent.withValues(alpha: 0.16),
-      side: BorderSide(color: AppColors.accent.withValues(alpha: 0.58)),
+      foregroundColor: AppPalette.textPrimary,
+      backgroundColor: AppPalette.primary.withValues(alpha: 0.16),
+      side: BorderSide(color: AppPalette.primary.withValues(alpha: 0.58)),
     );
   }
 
   ButtonStyle _cancelSlotButtonStyle() {
     return OutlinedButton.styleFrom(
-      foregroundColor: const Color(0xFFFFE5BF),
-      backgroundColor: const Color(0xFF7A4A08).withValues(alpha: 0.34),
-      side: BorderSide(color: AppColors.accent.withValues(alpha: 0.34)),
+      foregroundColor: AppPalette.amberLight15,
+      backgroundColor: AppPalette.warmSurfaceHigh25.withValues(alpha: 0.34),
+      side: BorderSide(color: AppPalette.primary.withValues(alpha: 0.34)),
     );
   }
 
   ButtonStyle _deleteSlotButtonStyle() {
     return OutlinedButton.styleFrom(
-      foregroundColor: const Color(0xFFFFD6CC),
-      backgroundColor: const Color(0xFF6D2418).withValues(alpha: 0.42),
-      side: BorderSide(color: const Color(0xFFFF8A76).withValues(alpha: 0.36)),
+      foregroundColor: AppPalette.redWash01,
+      backgroundColor: AppPalette.redSurfaceHigh02.withValues(alpha: 0.42),
+      side: BorderSide(color: AppPalette.redSoft12.withValues(alpha: 0.36)),
     );
   }
 
@@ -645,7 +651,7 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (_) => const _GuideCancelSlotReasonSheet(),
     );
     if (!mounted || reason == null) return;
@@ -941,19 +947,19 @@ class _OfferOptionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const AppEdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
           Container(
             width: 34,
             height: 34,
-            decoration: BoxDecoration(
-              color: AppColors.accent.withValues(alpha: 0.16),
+            decoration: AppBoxDecoration(
+              color: AppPalette.primary.withValues(alpha: 0.16),
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.route_rounded,
-              color: AppColors.accent,
+              color: AppPalette.primary,
               size: 18,
             ),
           ),
@@ -967,8 +973,8 @@ class _OfferOptionTile extends StatelessWidget {
                   option.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: const AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -978,8 +984,8 @@ class _OfferOptionTile extends StatelessWidget {
                     option.subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
+                    style: const AppTextStyle(
+                      color: AppPalette.textCoolSecondary,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1056,25 +1062,25 @@ class _SlotTextField extends StatelessWidget {
         keyboardType: keyboardType,
         inputFormatters: inputFormatters,
         onChanged: onChanged,
-        cursorColor: AppColors.accent,
-        style: TextStyle(
+        cursorColor: AppPalette.primary,
+        style: AppTextStyle(
           color: enabled
-              ? AppColors.textPrimary
-              : AppColors.textPrimary.withValues(alpha: 0.72),
+              ? AppPalette.textPrimary
+              : AppPalette.textPrimary.withValues(alpha: 0.72),
           fontSize: 16,
           height: 1.2,
         ),
-        decoration: InputDecoration(
+        decoration: AppInputDecoration(
           labelText: label,
           hintText: hint,
           errorText: errorText,
           errorMaxLines: 2,
-          labelStyle: const TextStyle(
-            color: Color(0xFFB8AB9D),
+          labelStyle: const AppTextStyle(
+            color: AppPalette.orangeSoft11,
             fontWeight: FontWeight.w700,
           ),
-          hintStyle: const TextStyle(
-            color: Color(0xFFB8AB9D),
+          hintStyle: const AppTextStyle(
+            color: AppPalette.orangeSoft11,
             fontSize: 16,
             height: 1.2,
           ),
@@ -1084,34 +1090,40 @@ class _SlotTextField extends StatelessWidget {
             minHeight: 64,
           ),
           isDense: true,
-          contentPadding: const EdgeInsets.fromLTRB(18, 17, 8, 17),
+          contentPadding: const AppEdgeInsets.fromLTRB(18, 17, 8, 17),
           filled: true,
-          fillColor: const Color(0xFF3A2107),
+          fillColor: AppPalette.warmSurface47,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(999),
-            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.03)),
+            borderRadius: AppBorderRadius.circular(999),
+            borderSide: BorderSide(
+              color: AppPalette.white.withValues(alpha: 0.03),
+            ),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(999),
-            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.03)),
+            borderRadius: AppBorderRadius.circular(999),
+            borderSide: BorderSide(
+              color: AppPalette.white.withValues(alpha: 0.03),
+            ),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: AppBorderRadius.circular(999),
             borderSide: BorderSide(
-              color: AppColors.accent.withValues(alpha: 0.55),
+              color: AppPalette.primary.withValues(alpha: 0.55),
             ),
           ),
           disabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(999),
-            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.03)),
+            borderRadius: AppBorderRadius.circular(999),
+            borderSide: BorderSide(
+              color: AppPalette.white.withValues(alpha: 0.03),
+            ),
           ),
           errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(999),
-            borderSide: const BorderSide(color: Color(0xFFFFB4A8)),
+            borderRadius: AppBorderRadius.circular(999),
+            borderSide: const BorderSide(color: AppPalette.redLight03),
           ),
           focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(999),
-            borderSide: const BorderSide(color: Color(0xFFFFB4A8)),
+            borderRadius: AppBorderRadius.circular(999),
+            borderSide: const BorderSide(color: AppPalette.redLight03),
           ),
         ),
       ),
@@ -1211,15 +1223,15 @@ class _GuideCalendarConflictBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.38)),
+      padding: const AppEdgeInsets.all(14),
+      decoration: AppBoxDecoration(
+        color: AppPalette.primary.withValues(alpha: 0.12),
+        borderRadius: AppBorderRadius.circular(8),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.38)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded, color: AppColors.accent),
+          const Icon(Icons.warning_amber_rounded, color: AppPalette.primary),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -1227,16 +1239,16 @@ class _GuideCalendarConflictBanner extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: const AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   suggestionLabel,
-                  style: const TextStyle(
-                    color: Color(0xFFEFDCC8),
+                  style: const AppTextStyle(
+                    color: AppPalette.orangeLight30,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -1257,21 +1269,21 @@ class _GuideCalendarReadonlyBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF3A2107).withValues(alpha: 0.68),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      padding: const AppEdgeInsets.all(14),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmSurface47.withValues(alpha: 0.68),
+        borderRadius: AppBorderRadius.circular(8),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.visibility_rounded, color: Color(0xFFD3BFA9)),
+          const Icon(Icons.visibility_rounded, color: AppPalette.orangeLight01),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
-                color: Color(0xFFEFDCC8),
+              style: const AppTextStyle(
+                color: AppPalette.orangeLight30,
                 fontWeight: FontWeight.w800,
                 height: 1.25,
               ),
@@ -1328,7 +1340,12 @@ class _GuideCancelSlotReasonSheetState
       child: AnimatedPadding(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
-        padding: EdgeInsets.fromLTRB(12, 0, 12, mediaQuery.viewInsets.bottom),
+        padding: AppEdgeInsets.fromLTRB(
+          12,
+          0,
+          12,
+          mediaQuery.viewInsets.bottom,
+        ),
         child: Align(
           alignment: Alignment.bottomCenter,
           child: ConstrainedBox(
@@ -1337,15 +1354,17 @@ class _GuideCancelSlotReasonSheetState
               maxHeight: mediaQuery.size.height * 0.86,
             ),
             child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: const Color(0xFF241A11),
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(24),
+              decoration: AppBoxDecoration(
+                color: AppPalette.warmSurface01,
+                borderRadius: const AppBorderRadius.vertical(
+                  top: AppRadiusValue.circular(24),
                 ),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                border: Border.all(
+                  color: AppPalette.white.withValues(alpha: 0.08),
+                ),
               ),
               child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(
+                padding: AppEdgeInsets.fromLTRB(
                   compact ? 16 : 20,
                   14,
                   compact ? 16 : 20,
@@ -1359,17 +1378,17 @@ class _GuideCancelSlotReasonSheetState
                       child: Container(
                         width: 52,
                         height: 5,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.18),
-                          borderRadius: BorderRadius.circular(999),
+                        decoration: AppBoxDecoration(
+                          color: AppPalette.white.withValues(alpha: 0.18),
+                          borderRadius: AppBorderRadius.circular(999),
                         ),
                       ),
                     ),
                     const SizedBox(height: 20),
                     Text(
                       l10n.guideDashboardCancelTitle,
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
+                      style: AppTextStyle(
+                        color: AppPalette.textPrimary,
                         fontSize: compact ? 21 : 23,
                         fontWeight: FontWeight.w900,
                       ),
@@ -1377,8 +1396,8 @@ class _GuideCancelSlotReasonSheetState
                     const SizedBox(height: 10),
                     Text(
                       l10n.guideDashboardCancelDescription,
-                      style: const TextStyle(
-                        color: Color(0xFFD3BFA9),
+                      style: const AppTextStyle(
+                        color: AppPalette.orangeLight01,
                         fontSize: 14,
                         height: 1.42,
                         fontWeight: FontWeight.w600,
@@ -1387,21 +1406,21 @@ class _GuideCancelSlotReasonSheetState
                     const SizedBox(height: 18),
                     Text(
                       l10n.guideDashboardCancelReasonLabel,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: const AppTextStyle(
+                        color: AppPalette.textPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     const SizedBox(height: 10),
                     DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(18),
+                      decoration: AppBoxDecoration(
+                        color: AppPalette.white.withValues(alpha: 0.05),
+                        borderRadius: AppBorderRadius.circular(18),
                         border: Border.all(
                           color: _errorText == null
-                              ? Colors.white.withValues(alpha: 0.08)
-                              : const Color(0x88FF8A65),
+                              ? AppPalette.white.withValues(alpha: 0.08)
+                              : AppPalette.redOverlaySoft02,
                         ),
                       ),
                       child: TextField(
@@ -1411,25 +1430,25 @@ class _GuideCancelSlotReasonSheetState
                         minLines: 3,
                         maxLength: 160,
                         textCapitalization: TextCapitalization.sentences,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
+                        style: const AppTextStyle(
+                          color: AppPalette.textPrimary,
                           fontSize: 14,
                           height: 1.4,
                         ),
-                        decoration: InputDecoration(
+                        decoration: AppInputDecoration(
                           hintText: l10n.guideDashboardCancelReasonPlaceholder,
-                          hintStyle: TextStyle(
-                            color: const Color(
-                              0xFFD3BFA9,
-                            ).withValues(alpha: 0.72),
+                          hintStyle: AppTextStyle(
+                            color: AppPalette.orangeLight01.withValues(
+                              alpha: 0.72,
+                            ),
                             fontSize: 14,
                           ),
                           border: InputBorder.none,
-                          counterStyle: const TextStyle(
-                            color: Color(0xFFD3BFA9),
+                          counterStyle: const AppTextStyle(
+                            color: AppPalette.orangeLight01,
                             fontSize: 12,
                           ),
-                          contentPadding: const EdgeInsets.fromLTRB(
+                          contentPadding: const AppEdgeInsets.fromLTRB(
                             14,
                             12,
                             14,
@@ -1449,8 +1468,8 @@ class _GuideCancelSlotReasonSheetState
                       const SizedBox(height: 8),
                       Text(
                         _errorText!,
-                        style: const TextStyle(
-                          color: Color(0xFFFF8A65),
+                        style: const AppTextStyle(
+                          color: AppPalette.redSoft11,
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                         ),
@@ -1463,9 +1482,9 @@ class _GuideCancelSlotReasonSheetState
                         final keep = OutlinedButton(
                           onPressed: () => Navigator.of(context).pop(),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.textPrimary,
+                            foregroundColor: AppPalette.textPrimary,
                             side: BorderSide(
-                              color: Colors.white.withValues(alpha: 0.12),
+                              color: AppPalette.white.withValues(alpha: 0.12),
                             ),
                             minimumSize: const Size(0, 50),
                           ),
@@ -1476,8 +1495,8 @@ class _GuideCancelSlotReasonSheetState
                           icon: const Icon(Icons.event_busy_rounded),
                           label: Text(l10n.guideDashboardCancelConfirm),
                           style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.accent,
-                            foregroundColor: Colors.white,
+                            backgroundColor: AppPalette.primary,
+                            foregroundColor: AppPalette.white,
                             minimumSize: const Size(0, 50),
                           ),
                         );

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/ui/app_colors.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 class FeatureStubScreen extends StatelessWidget {
@@ -14,40 +14,44 @@ class FeatureStubScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppPalette.backgroundWarm,
       body: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: const AppBoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF1A120D), Color(0xFF120B07), Color(0xFF0F0906)],
+            colors: [
+              AppPalette.warmInk38,
+              AppPalette.warmInk08,
+              AppPalette.warmInk04,
+            ],
           ),
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+            padding: const AppEdgeInsets.fromLTRB(24, 16, 24, 24),
             child: Column(
               children: [
                 Row(
                   children: [
                     Material(
-                      color: Colors.transparent,
+                      color: AppPalette.transparent,
                       child: InkWell(
                         onTap: () => context.pop(),
-                        borderRadius: BorderRadius.circular(999),
+                        borderRadius: AppBorderRadius.circular(999),
                         child: Ink(
                           width: 44,
                           height: 44,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.04),
+                          decoration: AppBoxDecoration(
+                            color: AppPalette.white.withValues(alpha: 0.04),
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.06),
+                              color: AppPalette.white.withValues(alpha: 0.06),
                             ),
                           ),
                           child: const Icon(
                             Icons.arrow_back_ios_new_rounded,
-                            color: AppColors.textPrimary,
+                            color: AppPalette.textPrimary,
                             size: 18,
                           ),
                         ),
@@ -57,8 +61,8 @@ class FeatureStubScreen extends StatelessWidget {
                     Expanded(
                       child: Text(
                         title,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
+                        style: const AppTextStyle(
+                          color: AppPalette.textPrimary,
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
                         ),
@@ -76,16 +80,18 @@ class FeatureStubScreen extends StatelessWidget {
                           Container(
                             width: 120,
                             height: 120,
-                            decoration: BoxDecoration(
+                            decoration: AppBoxDecoration(
                               shape: BoxShape.circle,
-                              color: AppColors.accent.withValues(alpha: 0.10),
+                              color: AppPalette.primary.withValues(alpha: 0.10),
                               border: Border.all(
-                                color: AppColors.accent.withValues(alpha: 0.24),
+                                color: AppPalette.primary.withValues(
+                                  alpha: 0.24,
+                                ),
                                 width: 2,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.accent.withValues(
+                                  color: AppPalette.primary.withValues(
                                     alpha: 0.10,
                                   ),
                                   blurRadius: 34,
@@ -95,15 +101,15 @@ class FeatureStubScreen extends StatelessWidget {
                             child: const Icon(
                               Icons.auto_awesome_rounded,
                               size: 48,
-                              color: AppColors.accent,
+                              color: AppPalette.primary,
                             ),
                           ),
                           const SizedBox(height: 28),
                           Text(
                             title,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
+                            style: const AppTextStyle(
+                              color: AppPalette.textPrimary,
                               fontSize: 30,
                               fontWeight: FontWeight.w800,
                               height: 1,
@@ -113,8 +119,8 @@ class FeatureStubScreen extends StatelessWidget {
                           Text(
                             l10n.comingSoon,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
+                            style: const AppTextStyle(
+                              color: AppPalette.textCoolSecondary,
                               fontSize: 16,
                               height: 1.5,
                             ),
@@ -123,8 +129,8 @@ class FeatureStubScreen extends StatelessWidget {
                           FilledButton(
                             onPressed: () => context.go('/'),
                             style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.accent,
-                              foregroundColor: AppColors.background,
+                              backgroundColor: AppPalette.primary,
+                              foregroundColor: AppPalette.backgroundWarm,
                               minimumSize: const Size(180, 54),
                             ),
                             child: Text(l10n.homeNavHome),

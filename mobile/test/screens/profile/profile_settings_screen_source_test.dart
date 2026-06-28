@@ -194,7 +194,7 @@ void main() {
     expect(source, contains('_LogoutConfirmDialog('));
     expect(source, isNot(contains('return AlertDialog(')));
     expect(dialogSource, contains('Dialog('));
-    expect(dialogSource, contains('AppColors.accent'));
+    expect(dialogSource, contains('AppPalette.primary'));
     expect(dialogSource, contains('LinearGradient('));
     expect(dialogSource, contains('Icons.logout_rounded'));
     expect(dialogSource, contains('profileScaled(context'));

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
 import '../../features/notifications/presentation/notification_unread_badge.dart';
-import 'app_colors.dart';
 
 class AppListScreenHeader extends StatelessWidget {
   const AppListScreenHeader({
@@ -43,23 +43,23 @@ class AppListScreenHeader extends StatelessWidget {
 
     return Container(
       height: resolvedHeight,
-      padding: EdgeInsets.fromLTRB(
+      padding: AppEdgeInsets.fromLTRB(
         resolvedHorizontalPadding,
         resolvedTopPadding,
         resolvedHorizontalPadding,
         resolvedBottomPadding,
       ),
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         border: showBottomBorder
-            ? const Border(bottom: BorderSide(color: Color(0xFF3A270F)))
+            ? const Border(bottom: BorderSide(color: AppPalette.warmSurface57))
             : null,
       ),
       child: Row(
         children: [
           _AppListHeaderButton(
             icon: Icons.arrow_back_ios_new_rounded,
-            color: AppColors.textPrimary,
-            background: Colors.transparent,
+            color: AppPalette.textPrimary,
+            background: AppPalette.transparent,
             size: buttonSize,
             iconSize: backIconSize,
             tooltip: MaterialLocalizations.of(context).backButtonTooltip,
@@ -67,12 +67,12 @@ class AppListScreenHeader extends StatelessWidget {
           ),
           Expanded(
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8 * scale),
+              padding: AppEdgeInsets.symmetric(horizontal: 8 * scale),
               child: Text(
                 title,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppColors.textPrimary,
+                style: AppTextStyle(
+                  color: AppPalette.textPrimary,
                   fontSize: titleSize,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0,
@@ -85,8 +85,8 @@ class AppListScreenHeader extends StatelessWidget {
           NotificationUnreadBadge(
             child: _AppListHeaderButton(
               icon: Icons.notifications_outlined,
-              color: AppColors.accent,
-              background: const Color(0xFF3A2308),
+              color: AppPalette.primary,
+              background: AppPalette.warmSurface54,
               size: buttonSize,
               iconSize: notificationIconSize,
               tooltip: notificationsTooltip,
@@ -130,14 +130,14 @@ class _AppListHeaderButton extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: Colors.transparent,
+        color: AppPalette.transparent,
         child: InkWell(
           onTap: onTap,
           customBorder: const CircleBorder(),
           child: Ink(
             width: size,
             height: size,
-            decoration: BoxDecoration(
+            decoration: AppBoxDecoration(
               color: background,
               shape: BoxShape.circle,
             ),

@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
 class PushNotificationEnvelope {
   const PushNotificationEnvelope({
@@ -262,7 +262,7 @@ class LocalPushNotificationPresenter implements PushNotificationPresenter {
   }) : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
 
   static const _notificationIcon = 'ic_stat_inflap_notification';
-  static const _notificationColor = Color(0xFF00BCD4);
+  static const _notificationColor = AppPalette.tealMuted03;
 
   final FlutterLocalNotificationsPlugin _plugin;
   final bool _showForegroundNotification;

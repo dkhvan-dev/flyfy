@@ -243,7 +243,7 @@ void main() {
       expect(sheetSource, contains('citiesByCountry('));
       expect(sheetSource, contains('.take(_initialCountryCityLimit)'));
       expect(sheetSource, contains('Icons.location_off_rounded'));
-      expect(sheetSource, contains('color: AppColors.accent'));
+      expect(sheetSource, contains('color: AppPalette.primary'));
     },
   );
 

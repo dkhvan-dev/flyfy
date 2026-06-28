@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -11,7 +12,6 @@ import '../../core/device/device_context_service.dart';
 import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
 import '../../core/network/reference_api.dart';
-import '../../core/ui/app_colors.dart';
 import '../../core/ui/app_inline_field_error.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/places/place_ui.dart';
@@ -296,7 +296,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
       isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (context) =>
           _CreateReviewSheet(l10n: l10n, onSubmit: _submitReview),
     );
@@ -378,7 +378,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
       context: context,
       barrierDismissible: true,
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      barrierColor: Colors.black,
+      barrierColor: AppPalette.black,
       transitionDuration: const Duration(milliseconds: 180),
       pageBuilder: (context, animation, secondaryAnimation) {
         return _PlaceImageGallery(
@@ -603,13 +603,13 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
           return AnnotatedRegion<SystemUiOverlayStyle>(
             value: SystemUiOverlayStyle.light,
             child: Scaffold(
-              backgroundColor: const Color(0xFF211609),
+              backgroundColor: AppPalette.warmInk78,
               body: SafeArea(
                 bottom: false,
                 child: waitingForLocalizedDetails
                     ? const Center(
                         child: CircularProgressIndicator(
-                          color: AppColors.accent,
+                          color: AppPalette.primary,
                         ),
                       )
                     : _error != null && _place == null
@@ -622,8 +622,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                                 _buildTopBar(adaptive, l10n),
                                 Expanded(
                                   child: RefreshIndicator(
-                                    color: AppColors.accent,
-                                    backgroundColor: const Color(0xFF271609),
+                                    color: AppPalette.primary,
+                                    backgroundColor: AppPalette.warmInk109,
                                     onRefresh: _loadData,
                                     child: CustomScrollView(
                                       controller: _scrollController,
@@ -661,7 +661,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
         children: [
           Text(
             l10n.placeDetailsLoadFailed,
-            style: const TextStyle(color: AppColors.textSecondary),
+            style: const AppTextStyle(color: AppPalette.textCoolSecondary),
             textAlign: TextAlign.center,
           ),
           SizedBox(height: a.scale(12)),
@@ -669,7 +669,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
             onPressed: _loadData,
             child: Text(
               l10n.retryButton,
-              style: const TextStyle(color: AppColors.accent),
+              style: const AppTextStyle(color: AppPalette.primary),
             ),
           ),
         ],
@@ -692,22 +692,22 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
   Widget _buildTopBar(PlaceAdaptive a, AppLocalizations l10n) {
     return Container(
       height: a.scale(74, minFactor: 0.9),
-      padding: EdgeInsets.fromLTRB(
+      padding: AppEdgeInsets.fromLTRB(
         a.scale(28, minFactor: 0.78),
         a.scale(14),
         a.scale(28, minFactor: 0.78),
         a.scale(14),
       ),
-      decoration: const BoxDecoration(
-        color: Color(0xFF211609),
-        border: Border(bottom: BorderSide(color: Color(0xFF332416))),
+      decoration: const AppBoxDecoration(
+        color: AppPalette.warmInk78,
+        border: Border(bottom: BorderSide(color: AppPalette.surfaceHigh)),
       ),
       child: Row(
         children: [
           _circleIconButton(
             icon: Icons.arrow_back_ios_new_rounded,
-            color: AppColors.textPrimary,
-            background: Colors.transparent,
+            color: AppPalette.textPrimary,
+            background: AppPalette.transparent,
             size: a.scale(42),
             iconSize: a.scale(20),
             tooltip: l10n.placeBackTooltip,
@@ -715,12 +715,12 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
           ),
           Expanded(
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: a.scale(8)),
+              padding: AppEdgeInsets.symmetric(horizontal: a.scale(8)),
               child: Text(
                 l10n.placeDetailsTitle,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppColors.textPrimary,
+                style: AppTextStyle(
+                  color: AppPalette.textPrimary,
                   fontSize: a.scale(19, minFactor: 0.9),
                   fontWeight: FontWeight.w900,
                   letterSpacing: -1.0,
@@ -732,8 +732,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
           ),
           _circleIconButton(
             icon: Icons.notifications_outlined,
-            color: AppColors.accent,
-            background: AppColors.accent.withValues(alpha: 0.12),
+            color: AppPalette.primary,
+            background: AppPalette.primary.withValues(alpha: 0.12),
             size: a.scale(42),
             iconSize: a.scale(20),
             tooltip: l10n.placeNotificationsTooltip,
@@ -756,14 +756,14 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: Colors.transparent,
+        color: AppPalette.transparent,
         child: InkWell(
           onTap: onTap,
           customBorder: const CircleBorder(),
           child: Ink(
             width: size,
             height: size,
-            decoration: BoxDecoration(
+            decoration: AppBoxDecoration(
               color: background,
               shape: BoxShape.circle,
             ),
@@ -812,13 +812,13 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
           Positioned.fill(
             child: IgnorePointer(
               child: DecoratedBox(
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.transparent,
-                      const Color(0xFF211609).withValues(alpha: 0.96),
+                      AppPalette.transparent,
+                      AppPalette.warmInk78.withValues(alpha: 0.96),
                     ],
                     stops: const [0.42, 1.0],
                   ),
@@ -842,16 +842,16 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                   if (place.rating >= 4.0) ...[
                     Container(
                       height: a.scale(27, minFactor: 0.9),
-                      padding: EdgeInsets.symmetric(horizontal: a.scale(13)),
+                      padding: AppEdgeInsets.symmetric(horizontal: a.scale(13)),
                       alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: AppColors.accent,
-                        borderRadius: BorderRadius.circular(999),
+                      decoration: AppBoxDecoration(
+                        color: AppPalette.primary,
+                        borderRadius: AppBorderRadius.circular(999),
                       ),
                       child: Text(
                         l10n.placeMustVisitBadge.toUpperCase(),
-                        style: TextStyle(
-                          color: Colors.white,
+                        style: AppTextStyle(
+                          color: AppPalette.white,
                           fontSize: a.scale(11),
                           fontWeight: FontWeight.w900,
                           letterSpacing: 0.8,
@@ -864,8 +864,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                   ],
                   Text(
                     place.title,
-                    style: TextStyle(
-                      color: Colors.white,
+                    style: AppTextStyle(
+                      color: AppPalette.white,
                       fontSize: a.scale(38, minFactor: 0.86),
                       fontWeight: FontWeight.w900,
                       height: 0.95,
@@ -879,15 +879,15 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                     children: [
                       Icon(
                         Icons.location_on_rounded,
-                        color: AppColors.accent,
+                        color: AppPalette.primary,
                         size: a.scale(14),
                       ),
                       SizedBox(width: a.scale(6)),
                       Expanded(
                         child: Text(
                           locationLabel.toUpperCase(),
-                          style: TextStyle(
-                            color: const Color(0xFFD8C2AD),
+                          style: AppTextStyle(
+                            color: AppPalette.orangeLight11,
                             fontSize: a.scale(14, minFactor: 0.82),
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.4,
@@ -955,14 +955,14 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
         count,
         (i) => AnimatedContainer(
           duration: const Duration(milliseconds: 250),
-          margin: EdgeInsets.symmetric(horizontal: a.scale(3)),
+          margin: AppEdgeInsets.symmetric(horizontal: a.scale(3)),
           width: _currentImageIndex == i ? a.scale(18) : a.scale(6),
           height: a.scale(6),
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             color: _currentImageIndex == i
-                ? AppColors.accent
-                : Colors.white.withValues(alpha: 0.35),
-            borderRadius: BorderRadius.circular(3),
+                ? AppPalette.primary
+                : AppPalette.white.withValues(alpha: 0.35),
+            borderRadius: AppBorderRadius.circular(3),
           ),
         ),
       ),
@@ -971,11 +971,11 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
 
   Widget _heroPlaceholder() {
     return Container(
-      color: Colors.white.withValues(alpha: 0.05),
+      color: AppPalette.white.withValues(alpha: 0.05),
       child: const Center(
         child: Icon(
           Icons.landscape_rounded,
-          color: AppColors.textCaption,
+          color: AppPalette.textCaption,
           size: 64,
         ),
       ),
@@ -993,7 +993,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
     final hasStructuredVisitPlanning = _hasStructuredVisitPlanning(place);
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(
+      padding: AppEdgeInsets.fromLTRB(
         padX,
         a.scale(24, minFactor: 0.72),
         padX,
@@ -1065,26 +1065,26 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
     AppLocalizations l10n,
   ) {
     final locationLabel = _resolvedLocationLabel(v);
-    final radius = BorderRadius.circular(a.radius(16));
+    final radius = AppBorderRadius.circular(a.radius(16));
 
     return Semantics(
       button: true,
       label: l10n.placeMapLink,
       child: Material(
-        color: Colors.transparent,
+        color: AppPalette.transparent,
         child: InkWell(
           onTap: _isBuildingRoute ? null : _openMap,
           borderRadius: radius,
           child: Ink(
-            padding: EdgeInsets.symmetric(
+            padding: AppEdgeInsets.symmetric(
               horizontal: a.scale(14),
               vertical: a.scale(13, minFactor: 0.84),
             ),
-            decoration: BoxDecoration(
-              color: const Color(0xFF332416),
+            decoration: AppBoxDecoration(
+              color: AppPalette.surfaceHigh,
               borderRadius: radius,
               border: Border.all(
-                color: AppColors.accent.withValues(alpha: 0.22),
+                color: AppPalette.primary.withValues(alpha: 0.22),
               ),
             ),
             child: Row(
@@ -1092,13 +1092,13 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                 Container(
                   width: a.scale(42, minFactor: 0.84),
                   height: a.scale(42, minFactor: 0.84),
-                  decoration: BoxDecoration(
-                    color: AppColors.accent.withValues(alpha: 0.14),
+                  decoration: AppBoxDecoration(
+                    color: AppPalette.primary.withValues(alpha: 0.14),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.location_on_rounded,
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                     size: a.scale(21, minFactor: 0.86),
                   ),
                 ),
@@ -1110,8 +1110,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                     children: [
                       Text(
                         locationLabel,
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
+                        style: AppTextStyle(
+                          color: AppPalette.textPrimary,
                           fontSize: a.scale(16, minFactor: 0.86),
                           fontWeight: FontWeight.w900,
                           height: 1.15,
@@ -1123,8 +1123,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                       SizedBox(height: a.scale(3, minFactor: 0.7)),
                       Text(
                         l10n.placeMapLink,
-                        style: TextStyle(
-                          color: const Color(0xFFD8C2AD),
+                        style: AppTextStyle(
+                          color: AppPalette.orangeLight11,
                           fontSize: a.scale(12, minFactor: 0.88),
                           fontWeight: FontWeight.w800,
                         ),
@@ -1138,21 +1138,21 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                 Container(
                   width: a.scale(40, minFactor: 0.86),
                   height: a.scale(40, minFactor: 0.86),
-                  decoration: const BoxDecoration(
-                    color: AppColors.accent,
+                  decoration: const AppBoxDecoration(
+                    color: AppPalette.primary,
                     shape: BoxShape.circle,
                   ),
                   child: _isBuildingRoute
                       ? Padding(
-                          padding: EdgeInsets.all(a.scale(10)),
+                          padding: AppEdgeInsets.all(a.scale(10)),
                           child: const CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Colors.white,
+                            color: AppPalette.white,
                           ),
                         )
                       : Icon(
                           Icons.map_rounded,
-                          color: Colors.white,
+                          color: AppPalette.white,
                           size: a.scale(20, minFactor: 0.86),
                         ),
                 ),
@@ -1171,16 +1171,16 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
   Widget _buildStats(PlaceVm v, PlaceAdaptive a, AppLocalizations l10n) {
     final duration = formatPlaceDurationLabel(l10n, v);
     return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF3A2A1A),
-        borderRadius: BorderRadius.circular(a.radius(18)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmSurface60,
+        borderRadius: AppBorderRadius.circular(a.radius(18)),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: AppPalette.white.withValues(alpha: 0.05),
           width: 4,
         ),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(a.radius(15)),
+        borderRadius: AppBorderRadius.circular(a.radius(15)),
         child: IntrinsicHeight(
           child: Row(
             children: [
@@ -1218,7 +1218,10 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
   }
 
   Widget _statDivider() {
-    return Container(width: 4, color: Colors.white.withValues(alpha: 0.035));
+    return Container(
+      width: 4,
+      color: AppPalette.white.withValues(alpha: 0.035),
+    );
   }
 
   String _formatDetailsPriceLabel(
@@ -1245,21 +1248,21 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
     required PlaceAdaptive a,
   }) {
     return Container(
-      color: const Color(0xFF332416),
+      color: AppPalette.surfaceHigh,
       constraints: BoxConstraints(minHeight: a.scale(94, minFactor: 0.86)),
-      padding: EdgeInsets.symmetric(
+      padding: AppEdgeInsets.symmetric(
         horizontal: a.scale(8),
         vertical: a.scale(19),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: AppColors.accent, size: a.scale(22)),
+          Icon(icon, color: AppPalette.primary, size: a.scale(22)),
           SizedBox(height: a.scale(7)),
           Text(
             value,
-            style: TextStyle(
-              color: AppColors.textPrimary,
+            style: AppTextStyle(
+              color: AppPalette.textPrimary,
               fontSize: a.scale(19, minFactor: 0.86),
               fontWeight: FontWeight.w900,
               letterSpacing: -0.5,
@@ -1271,8 +1274,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
           SizedBox(height: a.scale(3)),
           Text(
             label.toUpperCase(),
-            style: TextStyle(
-              color: const Color(0xFFD8C2AD),
+            style: AppTextStyle(
+              color: AppPalette.orangeLight11,
               fontSize: a.scale(10),
               fontWeight: FontWeight.w900,
               letterSpacing: 1.3,
@@ -1298,8 +1301,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
         SizedBox(height: a.scale(16)),
         Text(
           v.description,
-          style: TextStyle(
-            color: const Color(0xFFE6CDB8),
+          style: AppTextStyle(
+            color: AppPalette.orangeLight22,
             fontSize: a.scale(18, minFactor: 0.86),
             fontWeight: FontWeight.w500,
             height: 1.47,
@@ -1313,19 +1316,19 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
   Widget _buildFeeDetails(PlaceVm v, PlaceAdaptive a, AppLocalizations l10n) {
     final details = v.feeDetails;
     if (details.isEmpty) return const SizedBox.shrink();
-    final radius = BorderRadius.circular(a.radius(16));
+    final radius = AppBorderRadius.circular(a.radius(16));
 
     return Theme(
       data: Theme.of(context).copyWith(
-        dividerColor: Colors.transparent,
-        splashColor: AppColors.accent.withValues(alpha: 0.08),
-        highlightColor: AppColors.accent.withValues(alpha: 0.05),
+        dividerColor: AppPalette.transparent,
+        splashColor: AppPalette.primary.withValues(alpha: 0.08),
+        highlightColor: AppPalette.primary.withValues(alpha: 0.05),
       ),
       child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF332416),
+        decoration: AppBoxDecoration(
+          color: AppPalette.surfaceHigh,
           borderRadius: radius,
-          border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+          border: Border.all(color: AppPalette.white.withValues(alpha: 0.07)),
         ),
         child: ClipRRect(
           borderRadius: radius,
@@ -1333,43 +1336,43 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
             key: PageStorageKey<String>('place-fee-details-${v.id}'),
             initiallyExpanded: false,
             maintainState: true,
-            tilePadding: EdgeInsets.fromLTRB(
+            tilePadding: AppEdgeInsets.fromLTRB(
               a.scale(14),
               a.scale(5, minFactor: 0.7),
               a.scale(10),
               a.scale(5, minFactor: 0.7),
             ),
-            childrenPadding: EdgeInsets.fromLTRB(
+            childrenPadding: AppEdgeInsets.fromLTRB(
               a.scale(14),
               0,
               a.scale(14),
               a.scale(14, minFactor: 0.72),
             ),
-            iconColor: AppColors.accent,
-            collapsedIconColor: AppColors.accent,
-            textColor: AppColors.textPrimary,
-            collapsedTextColor: AppColors.textPrimary,
-            backgroundColor: const Color(0xFF332416),
-            collapsedBackgroundColor: const Color(0xFF332416),
+            iconColor: AppPalette.primary,
+            collapsedIconColor: AppPalette.primary,
+            textColor: AppPalette.textPrimary,
+            collapsedTextColor: AppPalette.textPrimary,
+            backgroundColor: AppPalette.surfaceHigh,
+            collapsedBackgroundColor: AppPalette.surfaceHigh,
             shape: RoundedRectangleBorder(borderRadius: radius),
             collapsedShape: RoundedRectangleBorder(borderRadius: radius),
             leading: Container(
               width: a.scale(34, minFactor: 0.78),
               height: a.scale(34, minFactor: 0.78),
-              decoration: const BoxDecoration(
-                color: Color(0xFF5A350B),
+              decoration: const AppBoxDecoration(
+                color: AppPalette.warmSurface95,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.receipt_long_rounded,
-                color: AppColors.accent,
+                color: AppPalette.primary,
                 size: a.scale(17, minFactor: 0.8),
               ),
             ),
             title: Text(
               l10n.placeFeeDetailsTitle,
-              style: TextStyle(
-                color: AppColors.textPrimary,
+              style: AppTextStyle(
+                color: AppPalette.textPrimary,
                 fontSize: a.scale(15, minFactor: 0.84),
                 fontWeight: FontWeight.w900,
                 letterSpacing: -0.25,
@@ -1378,11 +1381,11 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
               overflow: TextOverflow.ellipsis,
             ),
             subtitle: Padding(
-              padding: EdgeInsets.only(top: a.scale(2)),
+              padding: AppEdgeInsets.only(top: a.scale(2)),
               child: Text(
                 l10n.placeFeeDetailsNote,
-                style: TextStyle(
-                  color: const Color(0xFFA9917B),
+                style: AppTextStyle(
+                  color: AppPalette.orangeSoft03,
                   fontSize: a.scale(11, minFactor: 0.82),
                   fontWeight: FontWeight.w600,
                   height: 1.2,
@@ -1398,7 +1401,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                   Divider(
                     height: a.scale(1),
                     thickness: 1,
-                    color: Colors.white.withValues(alpha: 0.06),
+                    color: AppPalette.white.withValues(alpha: 0.06),
                   ),
               ],
             ],
@@ -1702,20 +1705,20 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
     bool initiallyExpanded = false,
   }) {
     if (children.isEmpty) return const SizedBox.shrink();
-    final radius = BorderRadius.circular(a.radius(16));
+    final radius = AppBorderRadius.circular(a.radius(16));
 
     return Theme(
       data: Theme.of(context).copyWith(
-        dividerColor: Colors.transparent,
-        splashColor: AppColors.accent.withValues(alpha: 0.08),
-        highlightColor: AppColors.accent.withValues(alpha: 0.05),
+        dividerColor: AppPalette.transparent,
+        splashColor: AppPalette.primary.withValues(alpha: 0.08),
+        highlightColor: AppPalette.primary.withValues(alpha: 0.05),
       ),
       child: Container(
         width: double.infinity,
-        decoration: BoxDecoration(
-          color: const Color(0xFF332416),
+        decoration: AppBoxDecoration(
+          color: AppPalette.surfaceHigh,
           borderRadius: radius,
-          border: Border.all(color: AppColors.accent.withValues(alpha: 0.16)),
+          border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
         ),
         child: ClipRRect(
           borderRadius: radius,
@@ -1723,43 +1726,43 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
             key: PageStorageKey<String>(storageKey),
             initiallyExpanded: initiallyExpanded,
             maintainState: true,
-            tilePadding: EdgeInsets.fromLTRB(
+            tilePadding: AppEdgeInsets.fromLTRB(
               a.scale(14),
               a.scale(5, minFactor: 0.7),
               a.scale(10),
               a.scale(5, minFactor: 0.7),
             ),
-            childrenPadding: EdgeInsets.fromLTRB(
+            childrenPadding: AppEdgeInsets.fromLTRB(
               a.scale(14),
               0,
               a.scale(14),
               a.scale(14, minFactor: 0.72),
             ),
-            iconColor: AppColors.accent,
-            collapsedIconColor: AppColors.accent,
-            textColor: AppColors.textPrimary,
-            collapsedTextColor: AppColors.textPrimary,
-            backgroundColor: const Color(0xFF332416),
-            collapsedBackgroundColor: const Color(0xFF332416),
+            iconColor: AppPalette.primary,
+            collapsedIconColor: AppPalette.primary,
+            textColor: AppPalette.textPrimary,
+            collapsedTextColor: AppPalette.textPrimary,
+            backgroundColor: AppPalette.surfaceHigh,
+            collapsedBackgroundColor: AppPalette.surfaceHigh,
             shape: RoundedRectangleBorder(borderRadius: radius),
             collapsedShape: RoundedRectangleBorder(borderRadius: radius),
             leading: Container(
               width: a.scale(34, minFactor: 0.78),
               height: a.scale(34, minFactor: 0.78),
-              decoration: const BoxDecoration(
-                color: Color(0xFF5A350B),
+              decoration: const AppBoxDecoration(
+                color: AppPalette.warmSurface95,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
-                color: AppColors.accent,
+                color: AppPalette.primary,
                 size: a.scale(17, minFactor: 0.8),
               ),
             ),
             title: Text(
               title,
-              style: TextStyle(
-                color: AppColors.textPrimary,
+              style: AppTextStyle(
+                color: AppPalette.textPrimary,
                 fontSize: a.scale(15, minFactor: 0.84),
                 fontWeight: FontWeight.w900,
                 letterSpacing: -0.25,
@@ -1778,15 +1781,15 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
     return Divider(
       height: a.scale(1),
       thickness: 1,
-      color: Colors.white.withValues(alpha: 0.06),
+      color: AppPalette.white.withValues(alpha: 0.06),
     );
   }
 
   Widget _eyebrow(String text, PlaceAdaptive a) {
     return Text(
       text.toUpperCase(),
-      style: TextStyle(
-        color: AppColors.accent,
+      style: AppTextStyle(
+        color: AppPalette.primary,
         fontSize: a.scale(11),
         fontWeight: FontWeight.w900,
         letterSpacing: 1.5,
@@ -1802,19 +1805,19 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
     final items = _visitPlanItems(context, v, l10n);
     final tip = _localizedInflapTip(context, v, l10n);
     final summary = _visitPlanSummary(items);
-    final radius = BorderRadius.circular(a.radius(16));
+    final radius = AppBorderRadius.circular(a.radius(16));
 
     return Theme(
       data: Theme.of(context).copyWith(
-        dividerColor: Colors.transparent,
-        splashColor: AppColors.accent.withValues(alpha: 0.08),
-        highlightColor: AppColors.accent.withValues(alpha: 0.05),
+        dividerColor: AppPalette.transparent,
+        splashColor: AppPalette.primary.withValues(alpha: 0.08),
+        highlightColor: AppPalette.primary.withValues(alpha: 0.05),
       ),
       child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF332416),
+        decoration: AppBoxDecoration(
+          color: AppPalette.surfaceHigh,
           borderRadius: radius,
-          border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+          border: Border.all(color: AppPalette.white.withValues(alpha: 0.07)),
         ),
         child: ClipRRect(
           borderRadius: radius,
@@ -1822,43 +1825,43 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
             key: PageStorageKey<String>('place-visit-plan-${v.id}'),
             initiallyExpanded: false,
             maintainState: true,
-            tilePadding: EdgeInsets.fromLTRB(
+            tilePadding: AppEdgeInsets.fromLTRB(
               a.scale(14),
               a.scale(5, minFactor: 0.7),
               a.scale(10),
               a.scale(5, minFactor: 0.7),
             ),
-            childrenPadding: EdgeInsets.fromLTRB(
+            childrenPadding: AppEdgeInsets.fromLTRB(
               a.scale(14),
               0,
               a.scale(14),
               a.scale(14, minFactor: 0.72),
             ),
-            iconColor: AppColors.accent,
-            collapsedIconColor: AppColors.accent,
-            textColor: AppColors.textPrimary,
-            collapsedTextColor: AppColors.textPrimary,
-            backgroundColor: const Color(0xFF332416),
-            collapsedBackgroundColor: const Color(0xFF332416),
+            iconColor: AppPalette.primary,
+            collapsedIconColor: AppPalette.primary,
+            textColor: AppPalette.textPrimary,
+            collapsedTextColor: AppPalette.textPrimary,
+            backgroundColor: AppPalette.surfaceHigh,
+            collapsedBackgroundColor: AppPalette.surfaceHigh,
             shape: RoundedRectangleBorder(borderRadius: radius),
             collapsedShape: RoundedRectangleBorder(borderRadius: radius),
             leading: Container(
               width: a.scale(34, minFactor: 0.78),
               height: a.scale(34, minFactor: 0.78),
-              decoration: const BoxDecoration(
-                color: Color(0xFF5A350B),
+              decoration: const AppBoxDecoration(
+                color: AppPalette.warmSurface95,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.event_available_rounded,
-                color: AppColors.accent,
+                color: AppPalette.primary,
                 size: a.scale(17, minFactor: 0.8),
               ),
             ),
             title: Text(
               l10n.placeVisitPlanSection,
-              style: TextStyle(
-                color: AppColors.textPrimary,
+              style: AppTextStyle(
+                color: AppPalette.textPrimary,
                 fontSize: a.scale(15, minFactor: 0.84),
                 fontWeight: FontWeight.w900,
                 letterSpacing: -0.25,
@@ -1869,11 +1872,11 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
             subtitle: summary.isEmpty
                 ? null
                 : Padding(
-                    padding: EdgeInsets.only(top: a.scale(2)),
+                    padding: AppEdgeInsets.only(top: a.scale(2)),
                     child: Text(
                       summary,
-                      style: TextStyle(
-                        color: const Color(0xFFA9917B),
+                      style: AppTextStyle(
+                        color: AppPalette.orangeSoft03,
                         fontSize: a.scale(11, minFactor: 0.82),
                         fontWeight: FontWeight.w600,
                         height: 1.2,
@@ -1891,7 +1894,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                   Divider(
                     height: a.scale(1),
                     thickness: 1,
-                    color: Colors.white.withValues(alpha: 0.06),
+                    color: AppPalette.white.withValues(alpha: 0.06),
                   ),
               ],
             ],
@@ -1922,8 +1925,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
             Expanded(
               child: Text(
                 l10n.placeReviewsTitle,
-                style: TextStyle(
-                  color: AppColors.textPrimary,
+                style: AppTextStyle(
+                  color: AppPalette.textPrimary,
                   fontSize: a.scale(24, minFactor: 0.86),
                   fontWeight: FontWeight.w900,
                   letterSpacing: -1.2,
@@ -1939,14 +1942,14 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                   child: TextButton(
                     onPressed: () {},
                     style: TextButton.styleFrom(
-                      foregroundColor: AppColors.accent,
-                      padding: EdgeInsets.symmetric(horizontal: a.scale(8)),
+                      foregroundColor: AppPalette.primary,
+                      padding: AppEdgeInsets.symmetric(horizontal: a.scale(8)),
                       minimumSize: const Size(0, 36),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: Text(
                       l10n.placeSeeAllReviews(_reviewTotal),
-                      style: TextStyle(
+                      style: AppTextStyle(
                         fontSize: a.scale(13),
                         fontWeight: FontWeight.w900,
                       ),
@@ -1962,19 +1965,21 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
         if (!hasAnyReviews)
           Container(
             width: double.infinity,
-            padding: EdgeInsets.all(a.scale(14, minFactor: 0.74)),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.04),
-              borderRadius: BorderRadius.circular(a.radius(14)),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            padding: AppEdgeInsets.all(a.scale(14, minFactor: 0.74)),
+            decoration: AppBoxDecoration(
+              color: AppPalette.white.withValues(alpha: 0.04),
+              borderRadius: AppBorderRadius.circular(a.radius(14)),
+              border: Border.all(
+                color: AppPalette.white.withValues(alpha: 0.06),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   l10n.placeNoReviews,
-                  style: TextStyle(
-                    color: AppColors.textCaption,
+                  style: AppTextStyle(
+                    color: AppPalette.textCaption,
                     fontSize: a.scale(13, minFactor: 0.84),
                     fontWeight: FontWeight.w600,
                     height: 1.32,
@@ -1993,21 +1998,21 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.accent,
-                    disabledBackgroundColor: AppColors.accent.withValues(
+                    backgroundColor: AppPalette.primary,
+                    disabledBackgroundColor: AppPalette.primary.withValues(
                       alpha: 0.35,
                     ),
-                    foregroundColor: AppColors.textPrimary,
-                    disabledForegroundColor: AppColors.textPrimary.withValues(
+                    foregroundColor: AppPalette.textPrimary,
+                    disabledForegroundColor: AppPalette.textPrimary.withValues(
                       alpha: 0.45,
                     ),
                     elevation: 0,
                     minimumSize: Size(double.infinity, a.scale(44)),
-                    padding: EdgeInsets.symmetric(horizontal: a.scale(14)),
+                    padding: AppEdgeInsets.symmetric(horizontal: a.scale(14)),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(a.radius(12)),
+                      borderRadius: AppBorderRadius.circular(a.radius(12)),
                     ),
-                    textStyle: TextStyle(
+                    textStyle: AppTextStyle(
                       fontSize: a.scale(13, minFactor: 0.84),
                       fontWeight: FontWeight.w900,
                     ),
@@ -2055,19 +2060,19 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
       right: 0,
       bottom: 0,
       child: Container(
-        padding: EdgeInsets.fromLTRB(
+        padding: AppEdgeInsets.fromLTRB(
           padX,
           a.scale(20),
           padX,
           mq.padding.bottom + a.scale(20),
         ),
-        decoration: BoxDecoration(
+        decoration: AppBoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              const Color(0xFF211609).withValues(alpha: 0.0),
-              const Color(0xFF211609),
+              AppPalette.warmInk78.withValues(alpha: 0.0),
+              AppPalette.warmInk78,
             ],
             stops: const [0.0, 0.4],
           ),
@@ -2077,12 +2082,12 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
           child: ElevatedButton(
             onPressed: _isOpeningExcursions ? null : _openExcursionsForPlace,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accent,
-              foregroundColor: Colors.white,
-              shadowColor: AppColors.accent.withValues(alpha: 0.22),
+              backgroundColor: AppPalette.primary,
+              foregroundColor: AppPalette.white,
+              shadowColor: AppPalette.primary.withValues(alpha: 0.22),
               elevation: 12,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(a.radius(15)),
+                borderRadius: AppBorderRadius.circular(a.radius(15)),
               ),
               minimumSize: Size.fromHeight(a.scale(55)),
             ),
@@ -2095,7 +2100,9 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                     height: a.scale(18),
                     child: const CircularProgressIndicator(
                       strokeWidth: 2.2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppPalette.white,
+                      ),
                     ),
                   ),
                   SizedBox(width: a.scale(12)),
@@ -2105,7 +2112,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                     l10n.placeFindExcursions,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: AppTextStyle(
                       fontSize: a.scale(15),
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.4,
@@ -2160,7 +2167,7 @@ class _PlaceImageGalleryState extends State<_PlaceImageGallery> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: AppPalette.black,
         body: SafeArea(
           child: Stack(
             children: [
@@ -2192,19 +2199,19 @@ class _PlaceImageGalleryState extends State<_PlaceImageGallery> {
                   child: Center(
                     child: Container(
                       height: 38,
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      padding: const AppEdgeInsets.symmetric(horizontal: 14),
                       alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.48),
-                        borderRadius: BorderRadius.circular(999),
+                      decoration: AppBoxDecoration(
+                        color: AppPalette.black.withValues(alpha: 0.48),
+                        borderRadius: AppBorderRadius.circular(999),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.14),
+                          color: AppPalette.white.withValues(alpha: 0.14),
                         ),
                       ),
                       child: Text(
                         '${_currentIndex + 1}/${widget.media.length}',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: const AppTextStyle(
+                          color: AppPalette.white,
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
                         ),
@@ -2279,12 +2286,12 @@ class _GalleryIconButton extends StatelessWidget {
         child: Container(
           width: 44,
           height: 44,
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.black.withValues(alpha: 0.54),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+            color: AppPalette.black.withValues(alpha: 0.54),
+            border: Border.all(color: AppPalette.white.withValues(alpha: 0.16)),
           ),
-          child: Icon(icon, color: Colors.white, size: 24),
+          child: Icon(icon, color: AppPalette.white, size: 24),
         ),
       ),
     );
@@ -2301,7 +2308,7 @@ class _GalleryLoading extends StatelessWidget {
         width: 28,
         height: 28,
         child: CircularProgressIndicator(
-          color: AppColors.accent,
+          color: AppPalette.primary,
           strokeWidth: 2.4,
         ),
       ),
@@ -2317,7 +2324,7 @@ class _GalleryPlaceholder extends StatelessWidget {
     return const Center(
       child: Icon(
         Icons.image_not_supported_rounded,
-        color: AppColors.textCaption,
+        color: AppPalette.textCaption,
         size: 54,
       ),
     );
@@ -2371,8 +2378,8 @@ class _FeeDetailRow extends StatelessWidget {
             if (title.isNotEmpty)
               Text(
                 title,
-                style: TextStyle(
-                  color: AppColors.textPrimary,
+                style: AppTextStyle(
+                  color: AppPalette.textPrimary,
                   fontSize: adaptive.scale(13.5, minFactor: 0.84),
                   fontWeight: FontWeight.w900,
                   height: 1.16,
@@ -2385,8 +2392,8 @@ class _FeeDetailRow extends StatelessWidget {
               SizedBox(height: adaptive.scale(3, minFactor: 0.72)),
               Text(
                 description,
-                style: TextStyle(
-                  color: const Color(0xFFA9917B),
+                style: AppTextStyle(
+                  color: AppPalette.orangeSoft03,
                   fontSize: adaptive.scale(11.5, minFactor: 0.84),
                   fontWeight: FontWeight.w600,
                   height: 1.22,
@@ -2402,8 +2409,8 @@ class _FeeDetailRow extends StatelessWidget {
             ? const SizedBox.shrink()
             : Text(
                 amountLabel,
-                style: TextStyle(
-                  color: AppColors.accent,
+                style: AppTextStyle(
+                  color: AppPalette.primary,
                   fontSize: adaptive.scale(13, minFactor: 0.84),
                   fontWeight: FontWeight.w900,
                   height: 1.12,
@@ -2467,20 +2474,20 @@ class _VisitPlanRow extends StatelessWidget {
     final iconBoxSize = adaptive.scale(30, minFactor: 0.78);
 
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: adaptive.scale(9)),
+      padding: AppEdgeInsets.symmetric(vertical: adaptive.scale(9)),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: iconBoxSize,
             height: iconBoxSize,
-            decoration: const BoxDecoration(
-              color: Color(0xFF5A350B),
+            decoration: const AppBoxDecoration(
+              color: AppPalette.warmSurface95,
               shape: BoxShape.circle,
             ),
             child: Icon(
               item.icon,
-              color: AppColors.accent,
+              color: AppPalette.primary,
               size: adaptive.scale(15, minFactor: 0.82),
             ),
           ),
@@ -2491,8 +2498,8 @@ class _VisitPlanRow extends StatelessWidget {
               children: [
                 Text(
                   item.label,
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
+                  style: AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: adaptive.scale(12.5, minFactor: 0.84),
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.15,
@@ -2503,8 +2510,8 @@ class _VisitPlanRow extends StatelessWidget {
                 SizedBox(height: adaptive.scale(2, minFactor: 0.72)),
                 Text(
                   item.value,
-                  style: TextStyle(
-                    color: const Color(0xFFA9917B),
+                  style: AppTextStyle(
+                    color: AppPalette.orangeSoft03,
                     fontSize: adaptive.scale(11.5, minFactor: 0.84),
                     fontWeight: FontWeight.w600,
                     height: 1.22,
@@ -2577,11 +2584,11 @@ class _AccessOptionCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(adaptive.scale(12, minFactor: 0.74)),
-      decoration: BoxDecoration(
-        color: const Color(0xFF3B2B1C),
-        borderRadius: BorderRadius.circular(adaptive.radius(12)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      padding: AppEdgeInsets.all(adaptive.scale(12, minFactor: 0.74)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.surfaceMuted,
+        borderRadius: AppBorderRadius.circular(adaptive.radius(12)),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2591,7 +2598,7 @@ class _AccessOptionCard extends StatelessWidget {
             children: [
               Icon(
                 Icons.directions_car_rounded,
-                color: AppColors.accent,
+                color: AppPalette.primary,
                 size: adaptive.scale(18, minFactor: 0.82),
               ),
               SizedBox(width: adaptive.scale(8, minFactor: 0.72)),
@@ -2601,8 +2608,8 @@ class _AccessOptionCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
+                      style: AppTextStyle(
+                        color: AppPalette.textPrimary,
                         fontSize: adaptive.scale(13.5, minFactor: 0.84),
                         fontWeight: FontWeight.w900,
                         height: 1.15,
@@ -2614,8 +2621,8 @@ class _AccessOptionCard extends StatelessWidget {
                       SizedBox(height: adaptive.scale(4, minFactor: 0.72)),
                       Text(
                         facts.join(' · '),
-                        style: TextStyle(
-                          color: const Color(0xFFD7BFAA),
+                        style: AppTextStyle(
+                          color: AppPalette.orangeLight07,
                           fontSize: adaptive.scale(11.5, minFactor: 0.84),
                           fontWeight: FontWeight.w700,
                           height: 1.24,
@@ -2637,7 +2644,7 @@ class _AccessOptionCard extends StatelessWidget {
                 Divider(
                   height: adaptive.scale(1),
                   thickness: 1,
-                  color: Colors.white.withValues(alpha: 0.06),
+                  color: AppPalette.white.withValues(alpha: 0.06),
                 ),
             ],
           ],
@@ -2678,14 +2685,14 @@ class _RecommendedItemChip extends StatelessWidget {
             : adaptive.scale(184, minFactor: 0.82),
       ),
       child: Container(
-        padding: EdgeInsets.symmetric(
+        padding: AppEdgeInsets.symmetric(
           horizontal: adaptive.scale(11, minFactor: 0.74),
           vertical: adaptive.scale(10, minFactor: 0.74),
         ),
-        decoration: BoxDecoration(
-          color: const Color(0xFF3B2B1C),
-          borderRadius: BorderRadius.circular(adaptive.radius(12)),
-          border: Border.all(color: AppColors.accent.withValues(alpha: 0.15)),
+        decoration: AppBoxDecoration(
+          color: AppPalette.surfaceMuted,
+          borderRadius: AppBorderRadius.circular(adaptive.radius(12)),
+          border: Border.all(color: AppPalette.primary.withValues(alpha: 0.15)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -2693,7 +2700,7 @@ class _RecommendedItemChip extends StatelessWidget {
           children: [
             Icon(
               _recommendedItemIcon(item.itemType),
-              color: AppColors.accent,
+              color: AppPalette.primary,
               size: adaptive.scale(18, minFactor: 0.82),
             ),
             SizedBox(width: adaptive.scale(8, minFactor: 0.72)),
@@ -2703,8 +2710,8 @@ class _RecommendedItemChip extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
+                    style: AppTextStyle(
+                      color: AppPalette.textPrimary,
                       fontSize: adaptive.scale(12.5, minFactor: 0.84),
                       fontWeight: FontWeight.w900,
                       height: 1.14,
@@ -2715,8 +2722,8 @@ class _RecommendedItemChip extends StatelessWidget {
                   SizedBox(height: adaptive.scale(2, minFactor: 0.72)),
                   Text(
                     note.isEmpty ? importance : '$importance · $note',
-                    style: TextStyle(
-                      color: const Color(0xFFA9917B),
+                    style: AppTextStyle(
+                      color: AppPalette.orangeSoft03,
                       fontSize: adaptive.scale(10.8, minFactor: 0.82),
                       fontWeight: FontWeight.w700,
                       height: 1.22,
@@ -2751,20 +2758,20 @@ class _PracticalNoteRow extends StatelessWidget {
     final body = note.body.trim();
 
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: adaptive.scale(9)),
+      padding: AppEdgeInsets.symmetric(vertical: adaptive.scale(9)),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: adaptive.scale(30, minFactor: 0.78),
             height: adaptive.scale(30, minFactor: 0.78),
-            decoration: const BoxDecoration(
-              color: Color(0xFF5A350B),
+            decoration: const AppBoxDecoration(
+              color: AppPalette.warmSurface95,
               shape: BoxShape.circle,
             ),
             child: Icon(
               _practicalNoteIcon(note.noteType),
-              color: AppColors.accent,
+              color: AppPalette.primary,
               size: adaptive.scale(15, minFactor: 0.82),
             ),
           ),
@@ -2776,8 +2783,8 @@ class _PracticalNoteRow extends StatelessWidget {
                 if (title.isNotEmpty)
                   Text(
                     title,
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
+                    style: AppTextStyle(
+                      color: AppPalette.textPrimary,
                       fontSize: adaptive.scale(12.5, minFactor: 0.84),
                       fontWeight: FontWeight.w900,
                       height: 1.16,
@@ -2789,8 +2796,8 @@ class _PracticalNoteRow extends StatelessWidget {
                   SizedBox(height: adaptive.scale(2, minFactor: 0.72)),
                   Text(
                     body,
-                    style: TextStyle(
-                      color: const Color(0xFFA9917B),
+                    style: AppTextStyle(
+                      color: AppPalette.orangeSoft03,
                       fontSize: adaptive.scale(11.5, minFactor: 0.84),
                       fontWeight: FontWeight.w600,
                       height: 1.24,
@@ -2823,16 +2830,16 @@ class _InflapTipCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.fromLTRB(
+      padding: AppEdgeInsets.fromLTRB(
         adaptive.scale(12),
         adaptive.scale(11),
         adaptive.scale(12),
         adaptive.scale(11),
       ),
-      decoration: BoxDecoration(
-        color: const Color(0xFF3B2B1C),
-        borderRadius: BorderRadius.circular(adaptive.radius(13)),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.18)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.surfaceMuted,
+        borderRadius: AppBorderRadius.circular(adaptive.radius(13)),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.18)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2840,13 +2847,13 @@ class _InflapTipCard extends StatelessWidget {
           Container(
             width: adaptive.scale(32, minFactor: 0.8),
             height: adaptive.scale(32, minFactor: 0.8),
-            decoration: const BoxDecoration(
-              color: Color(0xFF5A350B),
+            decoration: const AppBoxDecoration(
+              color: AppPalette.warmSurface95,
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.tips_and_updates_rounded,
-              color: AppColors.accent,
+              color: AppPalette.primary,
               size: adaptive.scale(16, minFactor: 0.82),
             ),
           ),
@@ -2857,8 +2864,8 @@ class _InflapTipCard extends StatelessWidget {
               children: [
                 Text(
                   l10n.placeInflapTipTitle,
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
+                  style: AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: adaptive.scale(12.5, minFactor: 0.84),
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.25,
@@ -2867,8 +2874,8 @@ class _InflapTipCard extends StatelessWidget {
                 SizedBox(height: adaptive.scale(3, minFactor: 0.72)),
                 Text(
                   tip,
-                  style: TextStyle(
-                    color: const Color(0xFFD7BFAA),
+                  style: AppTextStyle(
+                    color: AppPalette.orangeLight07,
                     fontSize: adaptive.scale(11.5, minFactor: 0.84),
                     fontWeight: FontWeight.w600,
                     height: 1.28,
@@ -3360,9 +3367,9 @@ class _ReviewCard extends StatelessWidget {
         : null;
 
     return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF3B2B1C),
-        borderRadius: BorderRadius.circular(adaptive.radius(15)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.surfaceMuted,
+        borderRadius: AppBorderRadius.circular(adaptive.radius(15)),
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
@@ -3373,14 +3380,14 @@ class _ReviewCard extends StatelessWidget {
             bottom: adaptive.scale(8),
             child: Container(
               width: 4,
-              decoration: BoxDecoration(
-                color: AppColors.accent,
-                borderRadius: BorderRadius.circular(999),
+              decoration: AppBoxDecoration(
+                color: AppPalette.primary,
+                borderRadius: AppBorderRadius.circular(999),
               ),
             ),
           ),
           Padding(
-            padding: EdgeInsets.fromLTRB(
+            padding: AppEdgeInsets.fromLTRB(
               adaptive.scale(26, minFactor: 0.7),
               adaptive.scale(25),
               adaptive.scale(22, minFactor: 0.78),
@@ -3394,14 +3401,14 @@ class _ReviewCard extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: adaptive.scale(19),
-                      backgroundColor: const Color(0xFF245163),
+                      backgroundColor: AppPalette.blueSurfaceHigh20,
                       backgroundImage: avatarUrl != null
                           ? NetworkImage(avatarUrl)
                           : null,
                       child: avatarUrl == null
                           ? Icon(
                               Icons.person_rounded,
-                              color: Colors.white.withValues(alpha: 0.85),
+                              color: AppPalette.white.withValues(alpha: 0.85),
                               size: adaptive.scale(20),
                             )
                           : null,
@@ -3414,8 +3421,8 @@ class _ReviewCard extends StatelessWidget {
                           Text(
                             review.author.nickname ??
                                 l10n.placeTravelerFallback,
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
+                            style: AppTextStyle(
+                              color: AppPalette.textPrimary,
                               fontSize: adaptive.scale(14),
                               fontWeight: FontWeight.w900,
                               letterSpacing: -0.2,
@@ -3426,8 +3433,8 @@ class _ReviewCard extends StatelessWidget {
                           SizedBox(height: adaptive.scale(3)),
                           Text(
                             l10n.placeVerifiedNomad.toUpperCase(),
-                            style: TextStyle(
-                              color: const Color(0xFFD8C2AD),
+                            style: AppTextStyle(
+                              color: AppPalette.orangeLight11,
                               fontSize: adaptive.scale(10),
                               fontWeight: FontWeight.w900,
                               letterSpacing: 1.2,
@@ -3447,8 +3454,8 @@ class _ReviewCard extends StatelessWidget {
                   SizedBox(height: adaptive.scale(4)),
                   Text(
                     '"${review.comment}"',
-                    style: TextStyle(
-                      color: const Color(0xFFD7BFAA),
+                    style: AppTextStyle(
+                      color: AppPalette.orangeLight07,
                       fontSize: adaptive.scale(14),
                       fontWeight: FontWeight.w500,
                       fontStyle: FontStyle.italic,
@@ -3500,20 +3507,20 @@ class _ReviewCard extends StatelessWidget {
     final isVideo = media.mediaType.toUpperCase() == 'VIDEO';
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(a.radius(10)),
+      borderRadius: AppBorderRadius.circular(a.radius(10)),
       child: Container(
         width: a.scale(96),
         height: a.scale(82),
-        color: Colors.white.withValues(alpha: 0.07),
+        color: AppPalette.white.withValues(alpha: 0.07),
         child: isVideo
             ? Stack(
                 fit: StackFit.expand,
                 children: [
-                  Container(color: Colors.black.withValues(alpha: 0.35)),
+                  Container(color: AppPalette.black.withValues(alpha: 0.35)),
                   Center(
                     child: Icon(
                       Icons.play_circle_fill_rounded,
-                      color: AppColors.accent,
+                      color: AppPalette.primary,
                       size: a.scale(32),
                     ),
                   ),
@@ -3522,7 +3529,7 @@ class _ReviewCard extends StatelessWidget {
             : (url == null
                   ? Icon(
                       Icons.image_rounded,
-                      color: AppColors.textCaption,
+                      color: AppPalette.textCaption,
                       size: a.scale(28),
                     )
                   : Image.network(
@@ -3538,13 +3545,13 @@ class _ReviewCard extends StatelessWidget {
                         }
                         return Icon(
                           Icons.image_rounded,
-                          color: AppColors.textCaption,
+                          color: AppPalette.textCaption,
                           size: a.scale(28),
                         );
                       },
                       errorBuilder: (_, _, _) => Icon(
                         Icons.image_not_supported_rounded,
-                        color: AppColors.textCaption,
+                        color: AppPalette.textCaption,
                         size: a.scale(28),
                       ),
                     )),
@@ -3561,20 +3568,20 @@ class _ReviewCard extends StatelessWidget {
         if (i < fullStars) {
           return Icon(
             Icons.star_rounded,
-            color: AppColors.accent,
+            color: AppPalette.primary,
             size: a.scale(13),
           );
         }
         if (i == fullStars && hasHalf) {
           return Icon(
             Icons.star_half_rounded,
-            color: AppColors.accent,
+            color: AppPalette.primary,
             size: a.scale(13),
           );
         }
         return Icon(
           Icons.star_border_rounded,
-          color: AppColors.accent.withValues(alpha: 0.4),
+          color: AppPalette.primary.withValues(alpha: 0.4),
           size: a.scale(13),
         );
       }),
@@ -3618,9 +3625,9 @@ class _ExcursionPlaceReviewCard extends StatelessWidget {
           ? () => onLongPress!(review)
           : null,
       child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF3B2B1C),
-          borderRadius: BorderRadius.circular(adaptive.radius(15)),
+        decoration: AppBoxDecoration(
+          color: AppPalette.surfaceMuted,
+          borderRadius: AppBorderRadius.circular(adaptive.radius(15)),
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(
@@ -3631,14 +3638,14 @@ class _ExcursionPlaceReviewCard extends StatelessWidget {
               bottom: adaptive.scale(8),
               child: Container(
                 width: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.accent,
-                  borderRadius: BorderRadius.circular(999),
+                decoration: AppBoxDecoration(
+                  color: AppPalette.primary,
+                  borderRadius: AppBorderRadius.circular(999),
                 ),
               ),
             ),
             Padding(
-              padding: EdgeInsets.fromLTRB(
+              padding: AppEdgeInsets.fromLTRB(
                 adaptive.scale(26, minFactor: 0.7),
                 adaptive.scale(22),
                 adaptive.scale(22, minFactor: 0.78),
@@ -3653,21 +3660,21 @@ class _ExcursionPlaceReviewCard extends StatelessWidget {
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Container(
-                        padding: EdgeInsets.symmetric(
+                        padding: AppEdgeInsets.symmetric(
                           horizontal: adaptive.scale(10),
                           vertical: adaptive.scale(6),
                         ),
-                        decoration: BoxDecoration(
-                          color: AppColors.accent.withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(999),
+                        decoration: AppBoxDecoration(
+                          color: AppPalette.primary.withValues(alpha: 0.14),
+                          borderRadius: AppBorderRadius.circular(999),
                           border: Border.all(
-                            color: AppColors.accent.withValues(alpha: 0.22),
+                            color: AppPalette.primary.withValues(alpha: 0.22),
                           ),
                         ),
                         child: Text(
                           l10n.excursionReviewSourcePlaceBadge,
-                          style: TextStyle(
-                            color: AppColors.accent,
+                          style: AppTextStyle(
+                            color: AppPalette.primary,
                             fontSize: adaptive.scale(10),
                             fontWeight: FontWeight.w900,
                             letterSpacing: 0,
@@ -3683,14 +3690,14 @@ class _ExcursionPlaceReviewCard extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         radius: adaptive.scale(18),
-                        backgroundColor: const Color(0xFF245163),
+                        backgroundColor: AppPalette.blueSurfaceHigh20,
                         backgroundImage: authorAvatarUrl != null
                             ? NetworkImage(authorAvatarUrl)
                             : null,
                         child: authorAvatarUrl == null
                             ? Icon(
                                 Icons.person_rounded,
-                                color: Colors.white.withValues(alpha: 0.85),
+                                color: AppPalette.white.withValues(alpha: 0.85),
                                 size: adaptive.scale(19),
                               )
                             : null,
@@ -3704,8 +3711,8 @@ class _ExcursionPlaceReviewCard extends StatelessWidget {
                               authorName,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: AppColors.textPrimary,
+                              style: AppTextStyle(
+                                color: AppPalette.textPrimary,
                                 fontSize: adaptive.scale(14),
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 0,
@@ -3716,8 +3723,8 @@ class _ExcursionPlaceReviewCard extends StatelessWidget {
                               l10n.excursionReviewViaGuide(guideName),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: const Color(0xFFD8C2AD),
+                              style: AppTextStyle(
+                                color: AppPalette.orangeLight11,
                                 fontSize: adaptive.scale(11),
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 0,
@@ -3732,8 +3739,8 @@ class _ExcursionPlaceReviewCard extends StatelessWidget {
                     SizedBox(height: adaptive.scale(12)),
                     Text(
                       '"${review.comment}"',
-                      style: TextStyle(
-                        color: const Color(0xFFD7BFAA),
+                      style: AppTextStyle(
+                        color: AppPalette.orangeLight07,
                         fontSize: adaptive.scale(14),
                         fontWeight: FontWeight.w500,
                         fontStyle: FontStyle.italic,
@@ -3762,20 +3769,20 @@ Widget _buildExcursionStars(double rating, PlaceAdaptive adaptive) {
       if (index < fullStars) {
         return Icon(
           Icons.star_rounded,
-          color: AppColors.accent,
+          color: AppPalette.primary,
           size: adaptive.scale(13),
         );
       }
       if (index == fullStars && hasHalf) {
         return Icon(
           Icons.star_half_rounded,
-          color: AppColors.accent,
+          color: AppPalette.primary,
           size: adaptive.scale(13),
         );
       }
       return Icon(
         Icons.star_border_rounded,
-        color: AppColors.accent.withValues(alpha: 0.4),
+        color: AppPalette.primary.withValues(alpha: 0.4),
         size: adaptive.scale(13),
       );
     }),
@@ -3858,17 +3865,19 @@ class _CreateReviewSheetState extends State<_CreateReviewSheet> {
     return AnimatedPadding(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
-      padding: EdgeInsets.only(bottom: mq.viewInsets.bottom),
+      padding: AppEdgeInsets.only(bottom: mq.viewInsets.bottom),
       child: SafeArea(
         top: false,
         child: Container(
           constraints: BoxConstraints(maxHeight: mq.size.height * 0.9),
-          decoration: const BoxDecoration(
-            color: Color(0xFF241509),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          decoration: const AppBoxDecoration(
+            color: AppPalette.warmInk95,
+            borderRadius: AppBorderRadius.vertical(
+              top: AppRadiusValue.circular(24),
+            ),
           ),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            padding: const AppEdgeInsets.fromLTRB(20, 12, 20, 20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -3877,9 +3886,9 @@ class _CreateReviewSheetState extends State<_CreateReviewSheet> {
                   child: Container(
                     width: 42,
                     height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.22),
-                      borderRadius: BorderRadius.circular(999),
+                    decoration: AppBoxDecoration(
+                      color: AppPalette.white.withValues(alpha: 0.22),
+                      borderRadius: AppBorderRadius.circular(999),
                     ),
                   ),
                 ),
@@ -3889,8 +3898,8 @@ class _CreateReviewSheetState extends State<_CreateReviewSheet> {
                     Expanded(
                       child: Text(
                         widget.l10n.placeReviewSheetTitle,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
+                        style: const AppTextStyle(
+                          color: AppPalette.textPrimary,
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
                         ),
@@ -3903,7 +3912,7 @@ class _CreateReviewSheetState extends State<_CreateReviewSheet> {
                           ? null
                           : () => Navigator.of(context).pop(false),
                       icon: const Icon(Icons.close_rounded),
-                      color: AppColors.textSecondary,
+                      color: AppPalette.textCoolSecondary,
                       tooltip: MaterialLocalizations.of(
                         context,
                       ).closeButtonTooltip,
@@ -3913,8 +3922,8 @@ class _CreateReviewSheetState extends State<_CreateReviewSheet> {
                 const SizedBox(height: 18),
                 Text(
                   widget.l10n.placeReviewRatingLabel,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
+                  style: const AppTextStyle(
+                    color: AppPalette.textCoolSecondary,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -3928,30 +3937,34 @@ class _CreateReviewSheetState extends State<_CreateReviewSheet> {
                   minLines: 3,
                   maxLines: 5,
                   maxLength: 2000,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: const AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: 14,
                     height: 1.4,
                   ),
-                  decoration: InputDecoration(
+                  decoration: AppInputDecoration(
                     labelText: widget.l10n.placeReviewCommentLabel,
                     hintText: widget.l10n.placeReviewCommentHint,
                     errorText: _errorText,
                     filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.06),
-                    counterStyle: const TextStyle(
-                      color: AppColors.textCaption,
+                    fillColor: AppPalette.white.withValues(alpha: 0.06),
+                    counterStyle: const AppTextStyle(
+                      color: AppPalette.textCaption,
                       fontSize: 11,
                     ),
-                    labelStyle: const TextStyle(color: AppColors.textCaption),
-                    hintStyle: const TextStyle(color: AppColors.textCaption),
+                    labelStyle: const AppTextStyle(
+                      color: AppPalette.textCaption,
+                    ),
+                    hintStyle: const AppTextStyle(
+                      color: AppPalette.textCaption,
+                    ),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: AppBorderRadius.circular(14),
                       borderSide: BorderSide.none,
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: AppColors.accent),
+                      borderRadius: AppBorderRadius.circular(14),
+                      borderSide: const BorderSide(color: AppPalette.primary),
                     ),
                   ),
                 ),
@@ -3971,15 +3984,15 @@ class _CreateReviewSheetState extends State<_CreateReviewSheet> {
                   child: ElevatedButton(
                     onPressed: canSubmit ? _submit : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accent,
-                      disabledBackgroundColor: Colors.white.withValues(
+                      backgroundColor: AppPalette.primary,
+                      disabledBackgroundColor: AppPalette.white.withValues(
                         alpha: 0.12,
                       ),
-                      foregroundColor: Colors.black,
-                      disabledForegroundColor: AppColors.textCaption,
+                      foregroundColor: AppPalette.black,
+                      disabledForegroundColor: AppPalette.textCaption,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: AppBorderRadius.circular(14),
                       ),
                     ),
                     child: _submitting
@@ -3992,7 +4005,7 @@ class _CreateReviewSheetState extends State<_CreateReviewSheet> {
                                 height: 18,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: AppColors.textCaption,
+                                  color: AppPalette.textCaption,
                                 ),
                               ),
                               const SizedBox(width: 10),
@@ -4029,11 +4042,11 @@ class _CreateReviewSheetState extends State<_CreateReviewSheet> {
           onPressed: _submitting
               ? null
               : () => setState(() => _rating = value.toDouble()),
-          padding: EdgeInsets.zero,
+          padding: AppEdgeInsets.zero,
           constraints: const BoxConstraints.tightFor(width: 42, height: 42),
           icon: Icon(
             selected ? Icons.star_rounded : Icons.star_border_rounded,
-            color: selected ? AppColors.accent : AppColors.textCaption,
+            color: selected ? AppPalette.primary : AppPalette.textCaption,
             size: 34,
           ),
         );
@@ -4085,10 +4098,10 @@ class _CreateReviewSheetState extends State<_CreateReviewSheet> {
 
   ButtonStyle _mediaButtonStyle() {
     return OutlinedButton.styleFrom(
-      foregroundColor: AppColors.accent,
-      side: BorderSide(color: AppColors.accent.withValues(alpha: 0.55)),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      foregroundColor: AppPalette.primary,
+      side: BorderSide(color: AppPalette.primary.withValues(alpha: 0.55)),
+      shape: RoundedRectangleBorder(borderRadius: AppBorderRadius.circular(12)),
+      padding: const AppEdgeInsets.symmetric(horizontal: 12, vertical: 12),
     );
   }
 
@@ -4104,11 +4117,11 @@ class _CreateReviewSheetState extends State<_CreateReviewSheet> {
           return Stack(
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppBorderRadius.circular(12),
                 child: Container(
                   width: 104,
                   height: 88,
-                  color: Colors.white.withValues(alpha: 0.07),
+                  color: AppPalette.white.withValues(alpha: 0.07),
                   child: item.isPhoto
                       ? Image.memory(
                           item.bytes,
@@ -4120,18 +4133,18 @@ class _CreateReviewSheetState extends State<_CreateReviewSheet> {
                           children: [
                             const Icon(
                               Icons.play_circle_fill_rounded,
-                              color: AppColors.accent,
+                              color: AppPalette.primary,
                               size: 34,
                             ),
                             const SizedBox(height: 4),
                             Padding(
-                              padding: const EdgeInsets.symmetric(
+                              padding: const AppEdgeInsets.symmetric(
                                 horizontal: 6,
                               ),
                               child: Text(
                                 widget.l10n.placeReviewVideoPreview,
-                                style: const TextStyle(
-                                  color: AppColors.textCaption,
+                                style: const AppTextStyle(
+                                  color: AppPalette.textCaption,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -4156,13 +4169,13 @@ class _CreateReviewSheetState extends State<_CreateReviewSheet> {
                     child: Ink(
                       width: 26,
                       height: 26,
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.62),
+                      decoration: AppBoxDecoration(
+                        color: AppPalette.black.withValues(alpha: 0.62),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.close_rounded,
-                        color: Colors.white,
+                        color: AppPalette.white,
                         size: 16,
                       ),
                     ),

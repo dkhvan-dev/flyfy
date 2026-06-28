@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
-import '../../../../../core/ui/app_colors.dart';
 import '../../../../../core/ui/filter_sheet_chrome.dart';
 import '../../../../../l10n/generated/app_localizations.dart';
 import '../../../../user_routes/user_route_feature_flags.dart';
@@ -88,24 +88,24 @@ class StoryAddBlockSheet extends StatelessWidget {
     return AnimatedPadding(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
-      padding: EdgeInsets.only(bottom: bottomInset),
+      padding: AppEdgeInsets.only(bottom: bottomInset),
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxHeight),
         child: DecoratedBox(
           key: const ValueKey('story-add-block-sheet-chrome'),
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             gradient: const LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Color(0xFF2B1808), Color(0xFF201208)],
+              colors: [AppPalette.warmSurface21, AppPalette.warmInk63],
             ),
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(adaptive.radius(28)),
+            borderRadius: AppBorderRadius.vertical(
+              top: AppRadiusValue.circular(adaptive.radius(28)),
             ),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+            border: Border.all(color: AppPalette.white.withValues(alpha: 0.04)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.36),
+                color: AppPalette.black.withValues(alpha: 0.36),
                 blurRadius: adaptive.scale(30),
                 offset: Offset(0, adaptive.scale(-8)),
               ),
@@ -131,7 +131,7 @@ class StoryAddBlockSheet extends StatelessWidget {
                 Flexible(
                   child: ListView.separated(
                     physics: const BouncingScrollPhysics(),
-                    padding: EdgeInsets.fromLTRB(
+                    padding: AppEdgeInsets.fromLTRB(
                       horizontalPadding,
                       adaptive.scale(14),
                       horizontalPadding,
@@ -167,21 +167,23 @@ class _BlockOptionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
-    final radius = BorderRadius.circular(adaptive.radius(18));
+    final radius = AppBorderRadius.circular(adaptive.radius(18));
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: radius,
         child: Ink(
           key: ValueKey('story-add-block-option-${option.type.name}'),
-          decoration: BoxDecoration(
-            color: const Color(0xFF2C2118),
+          decoration: AppBoxDecoration(
+            color: AppPalette.warmSurface28,
             borderRadius: radius,
-            border: Border.all(color: AppColors.accent.withValues(alpha: 0.13)),
+            border: Border.all(
+              color: AppPalette.primary.withValues(alpha: 0.13),
+            ),
           ),
           child: Padding(
-            padding: EdgeInsets.symmetric(
+            padding: AppEdgeInsets.symmetric(
               horizontal: adaptive.scale(14),
               vertical: adaptive.scale(13),
             ),
@@ -190,16 +192,16 @@ class _BlockOptionTile extends StatelessWidget {
                 Container(
                   width: adaptive.scale(42),
                   height: adaptive.scale(42),
-                  decoration: BoxDecoration(
+                  decoration: AppBoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppColors.accent.withValues(alpha: 0.13),
+                    color: AppPalette.primary.withValues(alpha: 0.13),
                     border: Border.all(
-                      color: AppColors.accent.withValues(alpha: 0.22),
+                      color: AppPalette.primary.withValues(alpha: 0.22),
                     ),
                   ),
                   child: Icon(
                     option.icon,
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                     size: adaptive.scale(21),
                   ),
                 ),
@@ -212,7 +214,7 @@ class _BlockOptionTile extends StatelessWidget {
                         option.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: AppTextStyle(
                           color: StoryPalette.text,
                           fontSize: adaptive.scale(15.5),
                           fontWeight: FontWeight.w800,
@@ -224,7 +226,7 @@ class _BlockOptionTile extends StatelessWidget {
                         option.subtitle,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: AppTextStyle(
                           color: StoryPalette.textSoft.withValues(alpha: 0.82),
                           fontSize: adaptive.scale(12.5),
                           height: 1.22,
@@ -238,7 +240,7 @@ class _BlockOptionTile extends StatelessWidget {
                 SizedBox(width: adaptive.scale(8)),
                 Icon(
                   Icons.add_rounded,
-                  color: AppColors.accent,
+                  color: AppPalette.primary,
                   size: adaptive.scale(22),
                 ),
               ],

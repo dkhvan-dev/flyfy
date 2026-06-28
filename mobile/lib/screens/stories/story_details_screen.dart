@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -11,7 +12,6 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
 import '../../core/network/post_api.dart';
-import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/feed/data/feed_api.dart';
 import '../../features/profile/data/profile_api.dart';
@@ -477,9 +477,11 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
       isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: const Color(0xFF23140A),
+      backgroundColor: AppPalette.warmInk89,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+        borderRadius: AppBorderRadius.vertical(
+          top: AppRadiusValue.circular(26),
+        ),
       ),
       builder: (sheetContext) {
         return const _StoryReportSheet();
@@ -872,7 +874,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
       context: context,
       barrierDismissible: true,
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      barrierColor: Colors.black,
+      barrierColor: AppPalette.black,
       transitionDuration: const Duration(milliseconds: 180),
       pageBuilder: (context, animation, secondaryAnimation) {
         return _StoryImageGalleryViewer(
@@ -964,30 +966,30 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF2A1E11),
+          backgroundColor: AppPalette.warmSurface18,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: AppBorderRadius.circular(20),
           ),
           title: Text(
             l10n.storyDeleteCommentTitle,
-            style: const TextStyle(color: AppColors.textPrimary),
+            style: const AppTextStyle(color: AppPalette.textPrimary),
           ),
           content: Text(
             l10n.storyDeleteCommentMessage,
-            style: const TextStyle(color: AppColors.textSecondary),
+            style: const AppTextStyle(color: AppPalette.textCoolSecondary),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
               child: Text(
                 l10n.cancel,
-                style: const TextStyle(color: AppColors.textSecondary),
+                style: const AppTextStyle(color: AppPalette.textCoolSecondary),
               ),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accent,
+                backgroundColor: AppPalette.primary,
               ),
               child: Text(l10n.storyDeleteCommentAction),
             ),
@@ -1067,30 +1069,30 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF2A1E11),
+          backgroundColor: AppPalette.warmSurface18,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: AppBorderRadius.circular(20),
           ),
           title: Text(
             l10n.storyDeleteTitle,
-            style: const TextStyle(color: AppColors.textPrimary),
+            style: const AppTextStyle(color: AppPalette.textPrimary),
           ),
           content: Text(
             l10n.storyDeleteMessage,
-            style: const TextStyle(color: AppColors.textSecondary),
+            style: const AppTextStyle(color: AppPalette.textCoolSecondary),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
               child: Text(
                 l10n.cancel,
-                style: const TextStyle(color: AppColors.textSecondary),
+                style: const AppTextStyle(color: AppPalette.textCoolSecondary),
               ),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accent,
+                backgroundColor: AppPalette.primary,
               ),
               child: Text(l10n.storyDeleteAction),
             ),
@@ -1139,7 +1141,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
           bottom: false,
           child: _isLoading && detail == null
               ? const Center(
-                  child: CircularProgressIndicator(color: AppColors.accent),
+                  child: CircularProgressIndicator(color: AppPalette.primary),
                 )
               : _errorMessage != null && detail == null
               ? _StoryDetailErrorState(
@@ -1171,7 +1173,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                           ),
                         ),
                         SliverPadding(
-                          padding: EdgeInsets.fromLTRB(
+                          padding: AppEdgeInsets.fromLTRB(
                             adaptive.scale(16),
                             0,
                             adaptive.scale(16),
@@ -1321,7 +1323,7 @@ class _StoryReportSheetState extends State<_StoryReportSheet> {
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxHeight),
       child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
+        padding: AppEdgeInsets.fromLTRB(
           adaptive.scale(18),
           adaptive.scale(18),
           adaptive.scale(18),
@@ -1335,16 +1337,16 @@ class _StoryReportSheetState extends State<_StoryReportSheet> {
               child: Container(
                 width: adaptive.scale(42),
                 height: adaptive.scale(4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.22),
-                  borderRadius: BorderRadius.circular(999),
+                decoration: AppBoxDecoration(
+                  color: AppPalette.white.withValues(alpha: 0.22),
+                  borderRadius: AppBorderRadius.circular(999),
                 ),
               ),
             ),
             SizedBox(height: adaptive.scale(18)),
             Text(
               l10n.storyReportTitle,
-              style: TextStyle(
+              style: AppTextStyle(
                 color: StoryPalette.text,
                 fontSize: adaptive.scale(20),
                 fontWeight: FontWeight.w800,
@@ -1353,7 +1355,7 @@ class _StoryReportSheetState extends State<_StoryReportSheet> {
             SizedBox(height: adaptive.scale(8)),
             Text(
               l10n.storyReportSubtitle,
-              style: TextStyle(
+              style: AppTextStyle(
                 color: StoryPalette.textSoft,
                 fontSize: adaptive.scale(13),
                 height: 1.35,
@@ -1376,12 +1378,12 @@ class _StoryReportSheetState extends State<_StoryReportSheet> {
                   for (final reason in _storyReportReasons)
                     RadioListTile<String>(
                       value: reason,
-                      activeColor: AppColors.accent,
+                      activeColor: AppPalette.primary,
                       dense: true,
-                      contentPadding: EdgeInsets.zero,
+                      contentPadding: AppEdgeInsets.zero,
                       title: Text(
                         _storyReportReasonLabel(l10n, reason),
-                        style: TextStyle(
+                        style: AppTextStyle(
                           color: StoryPalette.text,
                           fontSize: adaptive.scale(13),
                           fontWeight: FontWeight.w700,
@@ -1398,21 +1400,21 @@ class _StoryReportSheetState extends State<_StoryReportSheet> {
               maxLines: 4,
               maxLength: 500,
               textInputAction: TextInputAction.newline,
-              style: const TextStyle(color: StoryPalette.text),
-              decoration: InputDecoration(
+              style: const AppTextStyle(color: StoryPalette.text),
+              decoration: AppInputDecoration(
                 labelText: l10n.storyReportDetailsLabel,
                 hintText: l10n.storyReportDetailsHint,
-                labelStyle: const TextStyle(color: StoryPalette.textMuted),
-                hintStyle: const TextStyle(color: StoryPalette.textMuted),
+                labelStyle: const AppTextStyle(color: StoryPalette.textMuted),
+                hintStyle: const AppTextStyle(color: StoryPalette.textMuted),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(adaptive.radius(18)),
+                  borderRadius: AppBorderRadius.circular(adaptive.radius(18)),
                   borderSide: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.12),
+                    color: AppPalette.white.withValues(alpha: 0.12),
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(adaptive.radius(18)),
-                  borderSide: const BorderSide(color: AppColors.accent),
+                  borderRadius: AppBorderRadius.circular(adaptive.radius(18)),
+                  borderSide: const BorderSide(color: AppPalette.primary),
                 ),
               ),
             ),
@@ -1437,10 +1439,10 @@ class _StoryReportSheetState extends State<_StoryReportSheet> {
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accent,
-                      foregroundColor: Colors.black,
+                      backgroundColor: AppPalette.primary,
+                      foregroundColor: AppPalette.black,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
+                        borderRadius: AppBorderRadius.circular(
                           adaptive.radius(18),
                         ),
                       ),
@@ -1518,20 +1520,20 @@ class _StoryHero extends StatelessWidget {
             behavior: canOpenCover ? HitTestBehavior.opaque : null,
             child: Container(
               height: heroHeight,
-              decoration: const BoxDecoration(color: Color(0xFF1E1208)),
+              decoration: const AppBoxDecoration(color: AppPalette.warmInk57),
               child: Stack(
                 fit: StackFit.expand,
                 children: [
                   StoryCoverImage(url: story.coverUrl),
                   DecoratedBox(
-                    decoration: BoxDecoration(
+                    decoration: AppBoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withValues(alpha: 0.10),
-                          Colors.black.withValues(alpha: 0.28),
-                          const Color(0xF2100703),
+                          AppPalette.black.withValues(alpha: 0.10),
+                          AppPalette.black.withValues(alpha: 0.28),
+                          AppPalette.warmOverlayInk11,
                         ],
                         stops: const [0, 0.42, 1],
                       ),
@@ -1559,8 +1561,8 @@ class _StoryHero extends StatelessWidget {
                 child: Text(
                   titleLabel,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.92),
+                  style: AppTextStyle(
+                    color: AppPalette.white.withValues(alpha: 0.92),
                     fontSize: adaptive.scale(11),
                     fontWeight: FontWeight.w700,
                   ),
@@ -1604,8 +1606,8 @@ class _StoryHero extends StatelessWidget {
                 story.title,
                 maxLines: adaptive.isNarrow ? 4 : 3,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Colors.white,
+                style: AppTextStyle(
+                  color: AppPalette.white,
                   fontSize: adaptive.scale(24),
                   height: 1.05,
                   fontWeight: FontWeight.w800,
@@ -1617,8 +1619,8 @@ class _StoryHero extends StatelessWidget {
                 children: [
                   Text(
                     formatStoryDate(context, story.sortDate),
-                    style: TextStyle(
-                      color: AppColors.accent,
+                    style: AppTextStyle(
+                      color: AppPalette.primary,
                       fontSize: adaptive.scale(11),
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1.1,
@@ -1628,16 +1630,16 @@ class _StoryHero extends StatelessWidget {
                   Container(
                     width: adaptive.scale(4),
                     height: adaptive.scale(4),
-                    decoration: const BoxDecoration(
-                      color: AppColors.accent,
+                    decoration: const AppBoxDecoration(
+                      color: AppPalette.primary,
                       shape: BoxShape.circle,
                     ),
                   ),
                   SizedBox(width: adaptive.scale(8)),
                   Text(
                     '${formatStoryCountCompact(story.stats.views)} ${AppLocalizations.of(context)!.storyViewsSuffix}',
-                    style: TextStyle(
-                      color: AppColors.accent,
+                    style: AppTextStyle(
+                      color: AppPalette.primary,
                       fontSize: adaptive.scale(11),
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1.1,
@@ -1676,11 +1678,11 @@ class _OverlayIconButton extends StatelessWidget {
         child: Container(
           width: adaptive.scale(36),
           height: adaptive.scale(36),
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.black.withValues(alpha: 0.18),
+            color: AppPalette.black.withValues(alpha: 0.18),
           ),
-          child: Icon(icon, color: Colors.white, size: adaptive.scale(18)),
+          child: Icon(icon, color: AppPalette.white, size: adaptive.scale(18)),
         ),
       ),
     );
@@ -1697,27 +1699,27 @@ class _HeroChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
     return Container(
-      padding: EdgeInsets.symmetric(
+      padding: AppEdgeInsets.symmetric(
         horizontal: adaptive.scale(9),
         vertical: adaptive.scale(6),
       ),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(adaptive.radius(999)),
+      decoration: AppBoxDecoration(
+        borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
         color: accent
-            ? AppColors.accent.withValues(alpha: 0.12)
-            : Colors.white.withValues(alpha: 0.08),
+            ? AppPalette.primary.withValues(alpha: 0.12)
+            : AppPalette.white.withValues(alpha: 0.08),
         border: Border.all(
           color: accent
-              ? AppColors.accent.withValues(alpha: 0.3)
-              : Colors.white.withValues(alpha: 0.14),
+              ? AppPalette.primary.withValues(alpha: 0.3)
+              : AppPalette.white.withValues(alpha: 0.14),
         ),
       ),
       child: Text(
         label,
-        style: TextStyle(
+        style: AppTextStyle(
           color: accent
-              ? AppColors.accent
-              : Colors.white.withValues(alpha: 0.9),
+              ? AppPalette.primary
+              : AppPalette.white.withValues(alpha: 0.9),
           fontSize: adaptive.scale(9),
           fontWeight: FontWeight.w800,
           letterSpacing: 1.0,
@@ -1766,23 +1768,23 @@ class _AuthorCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(
+      padding: AppEdgeInsets.fromLTRB(
         adaptive.scale(14),
         adaptive.scale(16),
         adaptive.scale(14),
         adaptive.scale(12),
       ),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(adaptive.radius(24)),
+      decoration: AppBoxDecoration(
+        borderRadius: AppBorderRadius.circular(adaptive.radius(24)),
         gradient: const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF2A180C), Color(0xFF23140A)],
+          colors: [AppPalette.warmSurface08, AppPalette.warmInk89],
         ),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.08)),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.08)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.32),
+            color: AppPalette.black.withValues(alpha: 0.32),
             blurRadius: adaptive.scale(34),
             offset: const Offset(0, 14),
           ),
@@ -1807,7 +1809,7 @@ class _AuthorCard extends StatelessWidget {
                   children: [
                     Text(
                       l10n.storyAuthorLabel,
-                      style: TextStyle(
+                      style: AppTextStyle(
                         color: StoryPalette.textMuted,
                         fontSize: adaptive.scale(8),
                         fontWeight: FontWeight.w800,
@@ -1819,7 +1821,7 @@ class _AuthorCard extends StatelessWidget {
                       onTap: onProfileTap,
                       child: Text(
                         story.author.preferredName,
-                        style: TextStyle(
+                        style: AppTextStyle(
                           color: StoryPalette.text,
                           fontSize: adaptive.scale(15),
                           fontWeight: FontWeight.w700,
@@ -1840,12 +1842,12 @@ class _AuthorCard extends StatelessWidget {
                   child: OutlinedButton(
                     onPressed: onEditTap,
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.accent,
+                      foregroundColor: AppPalette.primary,
                       side: BorderSide(
-                        color: AppColors.accent.withValues(alpha: 0.24),
+                        color: AppPalette.primary.withValues(alpha: 0.24),
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
+                        borderRadius: AppBorderRadius.circular(
                           adaptive.radius(999),
                         ),
                       ),
@@ -1864,7 +1866,7 @@ class _AuthorCard extends StatelessWidget {
                   child: TextButton(
                     onPressed: onDeleteTap,
                     style: TextButton.styleFrom(
-                      foregroundColor: AppColors.destructive,
+                      foregroundColor: AppPalette.danger,
                     ),
                     child: Text(l10n.storyDeleteAction),
                   ),
@@ -1882,12 +1884,12 @@ class _AuthorCard extends StatelessWidget {
                     OutlinedButton(
                       onPressed: isFollowing ? null : onFollowTap,
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.accent,
+                        foregroundColor: AppPalette.primary,
                         side: BorderSide(
-                          color: AppColors.accent.withValues(alpha: 0.24),
+                          color: AppPalette.primary.withValues(alpha: 0.24),
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
+                          borderRadius: AppBorderRadius.circular(
                             adaptive.radius(999),
                           ),
                         ),
@@ -1904,12 +1906,12 @@ class _AuthorCard extends StatelessWidget {
                     OutlinedButton.icon(
                       onPressed: isReporting ? null : onReportTap,
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.destructive,
+                        foregroundColor: AppPalette.danger,
                         side: BorderSide(
-                          color: AppColors.destructive.withValues(alpha: 0.26),
+                          color: AppPalette.danger.withValues(alpha: 0.26),
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
+                          borderRadius: AppBorderRadius.circular(
                             adaptive.radius(999),
                           ),
                         ),
@@ -1926,10 +1928,12 @@ class _AuthorCard extends StatelessWidget {
             ),
           SizedBox(height: adaptive.scale(12)),
           Container(
-            padding: EdgeInsets.only(top: adaptive.scale(12)),
-            decoration: BoxDecoration(
+            padding: AppEdgeInsets.only(top: adaptive.scale(12)),
+            decoration: AppBoxDecoration(
               border: Border(
-                top: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+                top: BorderSide(
+                  color: AppPalette.white.withValues(alpha: 0.06),
+                ),
               ),
             ),
             child: Row(
@@ -1988,15 +1992,15 @@ class _StatItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
-    final iconColor = active ? AppColors.accent : StoryPalette.textSoft;
+    final iconColor = active ? AppPalette.primary : StoryPalette.textSoft;
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(adaptive.radius(14)),
+        borderRadius: AppBorderRadius.circular(adaptive.radius(14)),
         child: Padding(
-          padding: EdgeInsets.symmetric(
+          padding: AppEdgeInsets.symmetric(
             vertical: adaptive.scale(6),
             horizontal: adaptive.scale(4),
           ),
@@ -2006,10 +2010,10 @@ class _StatItem extends StatelessWidget {
               SizedBox(height: adaptive.scale(6)),
               Text(
                 number,
-                style: TextStyle(
+                style: AppTextStyle(
                   color: active
-                      ? AppColors.accent
-                      : Colors.white.withValues(alpha: 0.82),
+                      ? AppPalette.primary
+                      : AppPalette.white.withValues(alpha: 0.82),
                   fontSize: adaptive.scale(10),
                   fontWeight: FontWeight.w700,
                 ),
@@ -2018,8 +2022,8 @@ class _StatItem extends StatelessWidget {
               Text(
                 label,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: active ? AppColors.accent : StoryPalette.textMuted,
+                style: AppTextStyle(
+                  color: active ? AppPalette.primary : StoryPalette.textMuted,
                   fontSize: adaptive.scale(8),
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.7,
@@ -2056,7 +2060,7 @@ class _StoryArticle extends StatelessWidget {
           SizedBox(height: adaptive.scale(24)),
           Text(
             AppLocalizations.of(context)!.storyTagsLabel,
-            style: TextStyle(
+            style: AppTextStyle(
               color: StoryPalette.textMuted,
               fontSize: adaptive.scale(9),
               fontWeight: FontWeight.w800,
@@ -2070,21 +2074,23 @@ class _StoryArticle extends StatelessWidget {
             children: [
               for (final tag in story.tags)
                 Container(
-                  padding: EdgeInsets.symmetric(
+                  padding: AppEdgeInsets.symmetric(
                     horizontal: adaptive.scale(11),
                     vertical: adaptive.scale(7),
                   ),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(adaptive.radius(999)),
-                    color: Colors.white.withValues(alpha: 0.05),
+                  decoration: AppBoxDecoration(
+                    borderRadius: AppBorderRadius.circular(
+                      adaptive.radius(999),
+                    ),
+                    color: AppPalette.white.withValues(alpha: 0.05),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.06),
+                      color: AppPalette.white.withValues(alpha: 0.06),
                     ),
                   ),
                   child: Text(
                     tag,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.72),
+                    style: AppTextStyle(
+                      color: AppPalette.white.withValues(alpha: 0.72),
                       fontSize: adaptive.scale(11),
                       fontWeight: FontWeight.w600,
                     ),
@@ -2134,16 +2140,16 @@ class _CommentComposer extends StatelessWidget {
       children: [
         if (editingTitle != null) ...[
           Container(
-            margin: EdgeInsets.only(bottom: adaptive.scale(10)),
-            padding: EdgeInsets.symmetric(
+            margin: AppEdgeInsets.only(bottom: adaptive.scale(10)),
+            padding: AppEdgeInsets.symmetric(
               horizontal: adaptive.scale(14),
               vertical: adaptive.scale(10),
             ),
-            decoration: BoxDecoration(
-              color: AppColors.accent.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(adaptive.radius(16)),
+            decoration: AppBoxDecoration(
+              color: AppPalette.primary.withValues(alpha: 0.08),
+              borderRadius: AppBorderRadius.circular(adaptive.radius(16)),
               border: Border.all(
-                color: AppColors.accent.withValues(alpha: 0.16),
+                color: AppPalette.primary.withValues(alpha: 0.16),
               ),
             ),
             child: Row(
@@ -2151,8 +2157,8 @@ class _CommentComposer extends StatelessWidget {
                 Expanded(
                   child: Text(
                     editingTitle!,
-                    style: TextStyle(
-                      color: AppColors.accent,
+                    style: AppTextStyle(
+                      color: AppPalette.primary,
                       fontSize: adaptive.scale(13),
                       fontWeight: FontWeight.w700,
                     ),
@@ -2163,7 +2169,7 @@ class _CommentComposer extends StatelessWidget {
                     onPressed: onCancelEdit,
                     style: TextButton.styleFrom(
                       foregroundColor: StoryPalette.textSoft,
-                      padding: EdgeInsets.symmetric(
+                      padding: AppEdgeInsets.symmetric(
                         horizontal: adaptive.scale(8),
                         vertical: adaptive.scale(4),
                       ),
@@ -2181,11 +2187,11 @@ class _CommentComposer extends StatelessWidget {
           children: [
             Expanded(
               child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(adaptive.radius(20)),
+                decoration: AppBoxDecoration(
+                  color: AppPalette.white.withValues(alpha: 0.05),
+                  borderRadius: AppBorderRadius.circular(adaptive.radius(20)),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: AppPalette.white.withValues(alpha: 0.05),
                   ),
                 ),
                 child: TextField(
@@ -2194,18 +2200,18 @@ class _CommentComposer extends StatelessWidget {
                   enabled: enabled || isEditing,
                   minLines: 1,
                   maxLines: 4,
-                  style: TextStyle(
+                  style: AppTextStyle(
                     color: StoryPalette.text,
                     fontSize: adaptive.scale(15),
                   ),
-                  decoration: InputDecoration(
+                  decoration: AppInputDecoration(
                     border: InputBorder.none,
                     hintText: l10n.storyCommentHint,
-                    hintStyle: TextStyle(
+                    hintStyle: AppTextStyle(
                       color: StoryPalette.textMuted,
                       fontSize: adaptive.scale(15),
                     ),
-                    contentPadding: EdgeInsets.symmetric(
+                    contentPadding: AppEdgeInsets.symmetric(
                       horizontal: adaptive.scale(16),
                       vertical: adaptive.scale(14),
                     ),
@@ -2219,11 +2225,11 @@ class _CommentComposer extends StatelessWidget {
                   ? null
                   : onSubmit,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accent,
-                foregroundColor: Colors.white,
+                backgroundColor: AppPalette.primary,
+                foregroundColor: AppPalette.white,
                 minimumSize: Size(adaptive.scale(54), adaptive.scale(54)),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(adaptive.radius(18)),
+                  borderRadius: AppBorderRadius.circular(adaptive.radius(18)),
                 ),
               ),
               child: isSubmitting
@@ -2232,13 +2238,13 @@ class _CommentComposer extends StatelessWidget {
                       height: adaptive.scale(18),
                       child: const CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: AppPalette.white,
                       ),
                     )
                   : isEditing
                   ? Text(
                       submitLabel ?? l10n.storyCommentSaveAction,
-                      style: TextStyle(
+                      style: AppTextStyle(
                         fontSize: adaptive.scale(13),
                         fontWeight: FontWeight.w700,
                       ),
@@ -2251,7 +2257,7 @@ class _CommentComposer extends StatelessWidget {
           SizedBox(height: adaptive.scale(8)),
           Text(
             helperText!,
-            style: TextStyle(
+            style: AppTextStyle(
               color: StoryPalette.textMuted,
               fontSize: adaptive.scale(12),
               height: 1.4,
@@ -2291,7 +2297,7 @@ class _CommentsSection extends StatelessWidget {
       children: [
         Text(
           l10n.storyCommentsTitle,
-          style: TextStyle(
+          style: AppTextStyle(
             color: StoryPalette.text,
             fontSize: adaptive.scale(20),
             fontWeight: FontWeight.w800,
@@ -2301,7 +2307,7 @@ class _CommentsSection extends StatelessWidget {
         if (comments.isEmpty)
           Text(
             l10n.storyCommentsEmpty,
-            style: TextStyle(
+            style: AppTextStyle(
               color: StoryPalette.textSoft,
               fontSize: adaptive.scale(15),
             ),
@@ -2352,11 +2358,11 @@ class _CommentCard extends StatelessWidget {
     final adaptive = StoryAdaptive.of(context);
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(adaptive.scale(14)),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(adaptive.radius(18)),
-        color: Colors.white.withValues(alpha: 0.04),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      padding: AppEdgeInsets.all(adaptive.scale(14)),
+      decoration: AppBoxDecoration(
+        borderRadius: AppBorderRadius.circular(adaptive.radius(18)),
+        color: AppPalette.white.withValues(alpha: 0.04),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2375,7 +2381,7 @@ class _CommentCard extends StatelessWidget {
                   children: [
                     Text(
                       comment.author.preferredName,
-                      style: TextStyle(
+                      style: AppTextStyle(
                         color: StoryPalette.text,
                         fontSize: adaptive.scale(14),
                         fontWeight: FontWeight.w700,
@@ -2383,7 +2389,7 @@ class _CommentCard extends StatelessWidget {
                     ),
                     Text(
                       formatStoryDate(context, comment.createdAt),
-                      style: TextStyle(
+                      style: AppTextStyle(
                         color: StoryPalette.textMuted,
                         fontSize: adaptive.scale(11),
                       ),
@@ -2392,7 +2398,7 @@ class _CommentCard extends StatelessWidget {
                       SizedBox(height: adaptive.scale(2)),
                       Text(
                         '• ${AppLocalizations.of(context)!.chatEditedLabel}',
-                        style: TextStyle(
+                        style: AppTextStyle(
                           color: StoryPalette.textMuted,
                           fontSize: adaptive.scale(11),
                         ),
@@ -2406,7 +2412,7 @@ class _CommentCard extends StatelessWidget {
           SizedBox(height: adaptive.scale(10)),
           Text(
             comment.body,
-            style: TextStyle(
+            style: AppTextStyle(
               color: StoryPalette.textSoft,
               fontSize: adaptive.scale(15),
               height: 1.5,
@@ -2467,15 +2473,15 @@ class _CommentActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
-    final color = accent ? AppColors.accent : StoryPalette.textMuted;
+    final color = accent ? AppPalette.primary : StoryPalette.textMuted;
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(adaptive.radius(999)),
+        borderRadius: AppBorderRadius.circular(adaptive.radius(999)),
         child: Padding(
-          padding: EdgeInsets.symmetric(
+          padding: AppEdgeInsets.symmetric(
             horizontal: adaptive.scale(10),
             vertical: adaptive.scale(6),
           ),
@@ -2486,7 +2492,7 @@ class _CommentActionButton extends StatelessWidget {
               SizedBox(width: adaptive.scale(6)),
               Text(
                 label,
-                style: TextStyle(
+                style: AppTextStyle(
                   color: color,
                   fontSize: adaptive.scale(12),
                   fontWeight: FontWeight.w700,
@@ -2682,7 +2688,7 @@ class _StoryImageGalleryViewerState extends State<_StoryImageGalleryViewer> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: DefaultTextStyle.merge(
-        style: const TextStyle(decoration: TextDecoration.none),
+        style: const AppTextStyle(decoration: TextDecoration.none),
         child: Listener(
           behavior: HitTestBehavior.translucent,
           onPointerDown: _startSwipeTracking,
@@ -2691,7 +2697,7 @@ class _StoryImageGalleryViewerState extends State<_StoryImageGalleryViewer> {
           onPointerCancel: _cancelSwipeTracking,
           child: SizedBox.expand(
             child: ColoredBox(
-              color: Colors.black,
+              color: AppPalette.black,
               child: SafeArea(
                 child: Stack(
                   children: [
@@ -2743,21 +2749,23 @@ class _StoryImageGalleryViewerState extends State<_StoryImageGalleryViewer> {
                         child: Center(
                           child: Container(
                             height: 38,
-                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            padding: const AppEdgeInsets.symmetric(
+                              horizontal: 14,
+                            ),
                             alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.48),
-                              borderRadius: BorderRadius.circular(999),
+                            decoration: AppBoxDecoration(
+                              color: AppPalette.black.withValues(alpha: 0.48),
+                              borderRadius: AppBorderRadius.circular(999),
                               border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.14),
+                                color: AppPalette.white.withValues(alpha: 0.14),
                               ),
                             ),
                             child: Text(
                               '${_currentIndex + 1}/${widget.images.length}',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: const AppTextStyle(
+                                color: AppPalette.white,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w800,
                               ),
@@ -3063,12 +3071,12 @@ class _StoryImageViewerIconButton extends StatelessWidget {
         child: Container(
           width: 44,
           height: 44,
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.black.withValues(alpha: 0.54),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+            color: AppPalette.black.withValues(alpha: 0.54),
+            border: Border.all(color: AppPalette.white.withValues(alpha: 0.16)),
           ),
-          child: Icon(icon, color: Colors.white, size: 24),
+          child: Icon(icon, color: AppPalette.white, size: 24),
         ),
       ),
     );
@@ -3084,7 +3092,7 @@ class _StoryImageViewerLoading extends StatelessWidget {
       child: SizedBox.square(
         dimension: 30,
         child: CircularProgressIndicator(
-          color: AppColors.accent,
+          color: AppPalette.primary,
           strokeWidth: 2.4,
         ),
       ),
@@ -3100,7 +3108,7 @@ class _StoryImageViewerPlaceholder extends StatelessWidget {
     return const Center(
       child: Icon(
         Icons.image_not_supported_rounded,
-        color: AppColors.textCaption,
+        color: AppPalette.textCaption,
         size: 54,
       ),
     );
@@ -3133,8 +3141,8 @@ class _RelatedStoriesSection extends StatelessWidget {
                 children: [
                   Text(
                     l10n.storyRelatedEyebrow,
-                    style: TextStyle(
-                      color: AppColors.accent,
+                    style: AppTextStyle(
+                      color: AppPalette.primary,
                       fontSize: adaptive.scale(9),
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1.1,
@@ -3143,7 +3151,7 @@ class _RelatedStoriesSection extends StatelessWidget {
                   SizedBox(height: adaptive.scale(6)),
                   Text(
                     l10n.storyRelatedTitle,
-                    style: TextStyle(
+                    style: AppTextStyle(
                       color: StoryPalette.text,
                       fontSize: adaptive.scale(18),
                       fontWeight: FontWeight.w800,
@@ -3156,8 +3164,8 @@ class _RelatedStoriesSection extends StatelessWidget {
               onTap: () => context.go('/posts'),
               child: Text(
                 l10n.storyViewAll,
-                style: TextStyle(
-                  color: AppColors.accent,
+                style: AppTextStyle(
+                  color: AppPalette.primary,
                   fontSize: adaptive.scale(10),
                   fontWeight: FontWeight.w800,
                   letterSpacing: 1.0,
@@ -3170,7 +3178,7 @@ class _RelatedStoriesSection extends StatelessWidget {
         if (stories.isEmpty)
           Text(
             l10n.storyRelatedEmpty,
-            style: TextStyle(
+            style: AppTextStyle(
               color: StoryPalette.textSoft,
               fontSize: adaptive.scale(15),
             ),
@@ -3187,18 +3195,21 @@ class _RelatedStoriesSection extends StatelessWidget {
                           ? null
                           : () => onStoryTap(story),
                       child: Container(
-                        margin: EdgeInsets.only(bottom: adaptive.scale(14)),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(
+                        margin: AppEdgeInsets.only(bottom: adaptive.scale(14)),
+                        decoration: AppBoxDecoration(
+                          borderRadius: AppBorderRadius.circular(
                             adaptive.radius(14),
                           ),
                           gradient: const LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
-                            colors: [Color(0xFF22140A), Color(0xFF1B1008)],
+                            colors: [
+                              AppPalette.warmInk84,
+                              AppPalette.warmInk40,
+                            ],
                           ),
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.03),
+                            color: AppPalette.white.withValues(alpha: 0.03),
                           ),
                         ),
                         child: Column(
@@ -3207,9 +3218,11 @@ class _RelatedStoriesSection extends StatelessWidget {
                             Container(
                               height: adaptive.scale(220),
                               clipBehavior: Clip.antiAlias,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.vertical(
-                                  top: Radius.circular(adaptive.radius(14)),
+                              decoration: AppBoxDecoration(
+                                borderRadius: AppBorderRadius.vertical(
+                                  top: AppRadiusValue.circular(
+                                    adaptive.radius(14),
+                                  ),
                                 ),
                               ),
                               child: Stack(
@@ -3219,7 +3232,7 @@ class _RelatedStoriesSection extends StatelessWidget {
                                   if (state.disablesEntry)
                                     Positioned.fill(
                                       child: ColoredBox(
-                                        color: Colors.black.withValues(
+                                        color: AppPalette.black.withValues(
                                           alpha: 0.38,
                                         ),
                                       ),
@@ -3249,7 +3262,7 @@ class _RelatedStoriesSection extends StatelessWidget {
                               ),
                             ),
                             Padding(
-                              padding: EdgeInsets.fromLTRB(
+                              padding: AppEdgeInsets.fromLTRB(
                                 adaptive.scale(12),
                                 adaptive.scale(12),
                                 adaptive.scale(12),
@@ -3262,8 +3275,8 @@ class _RelatedStoriesSection extends StatelessWidget {
                                     story.title,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: const Color(0xFFF6EDE2),
+                                    style: AppTextStyle(
+                                      color: AppPalette.orangeWash13,
                                       fontSize: adaptive.scale(15),
                                       height: 1.15,
                                       fontWeight: FontWeight.w700,
@@ -3272,8 +3285,8 @@ class _RelatedStoriesSection extends StatelessWidget {
                                   SizedBox(height: adaptive.scale(4)),
                                   Text(
                                     story.author.preferredName,
-                                    style: TextStyle(
-                                      color: Colors.white.withValues(
+                                    style: AppTextStyle(
+                                      color: AppPalette.white.withValues(
                                         alpha: 0.48,
                                       ),
                                       fontSize: adaptive.scale(10),
@@ -3338,7 +3351,7 @@ class _StoryDetailErrorState extends StatelessWidget {
     final adaptive = StoryAdaptive.of(context);
     return Center(
       child: Padding(
-        padding: EdgeInsets.all(
+        padding: AppEdgeInsets.all(
           adaptive.scale(24, minFactor: 0.86, maxFactor: 1.04),
         ),
         child: Column(
@@ -3346,20 +3359,20 @@ class _StoryDetailErrorState extends StatelessWidget {
           children: [
             Icon(
               Icons.error_outline_rounded,
-              color: AppColors.accent,
+              color: AppPalette.primary,
               size: adaptive.scale(42, minFactor: 0.86, maxFactor: 1.04),
             ),
             SizedBox(height: adaptive.scale(14, minFactor: 0.86)),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: StoryPalette.textSoft),
+              style: const AppTextStyle(color: StoryPalette.textSoft),
             ),
             SizedBox(height: adaptive.scale(18, minFactor: 0.86)),
             ElevatedButton(
               onPressed: () => onRetry(),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accent,
+                backgroundColor: AppPalette.primary,
               ),
               child: Text(retryLabel),
             ),

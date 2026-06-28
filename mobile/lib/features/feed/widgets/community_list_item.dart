@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
-import '../../../core/ui/app_colors.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../models/feed_block_vm.dart';
 import 'community_display_helpers.dart';
@@ -49,10 +49,10 @@ class CommunityListItem extends StatelessWidget {
 
     return InkWell(
       key: ValueKey('$openKeyPrefix-${community.id}'),
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: AppBorderRadius.circular(8),
       onTap: onOpen == null ? null : () => onOpen!(community),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
+        padding: const AppEdgeInsets.symmetric(vertical: 2),
         child: Row(
           children: [
             _CommunityAvatar(title: title, radius: compact ? 20 : 22),
@@ -66,7 +66,7 @@ class CommunityListItem extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppColors.textPrimary,
+                      color: AppPalette.textPrimary,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -80,7 +80,7 @@ class CommunityListItem extends StatelessWidget {
                       maxLines: compact ? 1 : 2,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: AppPalette.textCoolSecondary,
                       ),
                     ),
                   ],
@@ -94,7 +94,9 @@ class CommunityListItem extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary.withValues(alpha: 0.86),
+                        color: AppPalette.textCoolSecondary.withValues(
+                          alpha: 0.86,
+                        ),
                         height: 1.12,
                       ),
                     ),
@@ -113,8 +115,8 @@ class CommunityListItem extends StatelessWidget {
                             ? null
                             : () => onToggle(community),
                         style: IconButton.styleFrom(
-                          foregroundColor: AppColors.accent,
-                          backgroundColor: AppColors.accent.withValues(
+                          foregroundColor: AppPalette.primary,
+                          backgroundColor: AppPalette.primary.withValues(
                             alpha: 0.12,
                           ),
                           minimumSize: const Size.square(36),
@@ -136,8 +138,8 @@ class CommunityListItem extends StatelessWidget {
                             : () => onToggle(community),
                         style: TextButton.styleFrom(
                           foregroundColor: community.followedByViewer
-                              ? AppColors.textSecondary
-                              : AppColors.accent,
+                              ? AppPalette.textCoolSecondary
+                              : AppPalette.primary,
                           visualDensity: VisualDensity.compact,
                         ),
                         child: isUpdating
@@ -161,7 +163,7 @@ class CommunityListItem extends StatelessWidget {
                     key: ValueKey('moderate-${community.id}'),
                     onPressed: () => onModerationOpen!(community),
                     style: TextButton.styleFrom(
-                      foregroundColor: AppColors.accentLight,
+                      foregroundColor: AppPalette.primaryLight,
                       visualDensity: VisualDensity.compact,
                     ),
                     icon: const Icon(Icons.shield_outlined, size: 16),
@@ -192,13 +194,13 @@ class _CommunityAvatar extends StatelessWidget {
 
     return CircleAvatar(
       radius: radius,
-      backgroundColor: AppColors.accent.withValues(alpha: 0.16),
-      foregroundColor: AppColors.accent,
+      backgroundColor: AppPalette.primary.withValues(alpha: 0.16),
+      foregroundColor: AppPalette.primary,
       child: Text(
         initial,
         maxLines: 1,
         overflow: TextOverflow.clip,
-        style: const TextStyle(fontWeight: FontWeight.w800),
+        style: const AppTextStyle(fontWeight: FontWeight.w800),
       ),
     );
   }

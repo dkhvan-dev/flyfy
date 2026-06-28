@@ -118,7 +118,7 @@ void main() {
       expect(source, contains('extra: localizedLandmark'));
       expect(source, contains('actionLabel:'));
       expect(source, contains('l10n.detailsButton'));
-      expect(source, contains('AppColors.accent'));
+      expect(source, contains('AppPalette.primary'));
     },
   );
 
@@ -272,7 +272,7 @@ void main() {
       expect(source, contains('TripPreparationCta('));
       expect(ctaSource, contains('Icons.chevron_right_rounded'));
       expect(ctaSource, contains('iconAlignment: IconAlignment.end'));
-      expect(ctaSource, contains('foregroundColor: AppColors.textPrimary'));
+      expect(ctaSource, contains('foregroundColor: AppPalette.textPrimary'));
 
       final bottomActionStart = source.indexOf('final bottomAction =');
       final contentStart = source.indexOf(
@@ -304,7 +304,7 @@ void main() {
       final checkoutSource = source.substring(checkoutStart, loadingStart);
       expect(
         checkoutSource,
-        contains('foregroundColor: AppColors.textPrimary'),
+        contains('foregroundColor: AppPalette.textPrimary'),
       );
       expect(checkoutSource, contains('iconAlignment: IconAlignment.end'));
     },

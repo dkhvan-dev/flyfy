@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:inflap/core/ui/app_colors.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:inflap/core/ui/filter_sheet_chrome.dart';
 
 void main() {
@@ -26,7 +26,7 @@ void main() {
 
     expect(title.textAlign, TextAlign.center);
     expect(title.maxLines, 1);
-    expect(clear.style?.foregroundColor?.resolve({}), AppColors.accent);
+    expect(clear.style?.foregroundColor?.resolve({}), AppPalette.primary);
   });
 
   testWidgets('filter apply button stretches and keeps entity count label', (

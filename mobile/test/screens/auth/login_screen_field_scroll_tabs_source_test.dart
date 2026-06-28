@@ -19,12 +19,12 @@ void main() {
       expect(
         source,
         contains(
-          'foregroundColor: WidgetStateProperty.all(AppColors.textPrimary)',
+          'foregroundColor: WidgetStateProperty.all(AppPalette.textPrimary)',
         ),
       );
       expect(
         source,
-        contains('iconColor: WidgetStateProperty.all(AppColors.textPrimary)'),
+        contains('iconColor: WidgetStateProperty.all(AppPalette.textPrimary)'),
       );
     },
   );

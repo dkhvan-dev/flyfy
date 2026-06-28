@@ -2,9 +2,9 @@ import 'dart:io' as io;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
 import '../../../../../core/network/file_api.dart';
-import '../../../../../core/ui/app_colors.dart';
 import '../../../../../l10n/generated/app_localizations.dart';
 import '../../domain/story_document.dart';
 import '../story_editor_controller.dart';
@@ -63,16 +63,16 @@ class StoryMediaBlock extends StatelessWidget {
     }
 
     return InkWell(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: AppBorderRadius.circular(8),
       onTap: onFocus,
       child: DecoratedBox(
         decoration: storyEditorPanelDecoration(context).copyWith(
           border: Border.all(
-            color: selected ? AppColors.accent : AppColors.border,
+            color: selected ? AppPalette.primary : AppPalette.outlineOverlay,
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(StoryEditorSpacing.md),
+          padding: const AppEdgeInsets.all(StoryEditorSpacing.md),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -257,7 +257,7 @@ class _MediaPreview extends StatelessWidget {
     final bytes = queueItem?.previewBytes;
     if (bytes != null && bytes.isNotEmpty) {
       return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppBorderRadius.circular(8),
         child: Image.memory(
           bytes,
           fit: BoxFit.cover,
@@ -274,7 +274,7 @@ class _MediaPreview extends StatelessWidget {
     final localPath = queueItem?.localPath?.trim();
     if (localPath != null && localPath.isNotEmpty) {
       return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppBorderRadius.circular(8),
         child: Image.file(
           io.File(localPath),
           fit: BoxFit.cover,
@@ -290,7 +290,7 @@ class _MediaPreview extends StatelessWidget {
     final imageUrl = resolvePublicFileContentUrl(image?.fileId ?? '');
     if (imageUrl != null) {
       return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppBorderRadius.circular(8),
         child: Image.network(
           imageUrl,
           fit: BoxFit.cover,
@@ -327,7 +327,7 @@ class _GalleryPreviewCarousel extends StatelessWidget {
         child: _MediaPreviewFrame(
           child: Icon(
             Icons.photo_library_outlined,
-            color: AppColors.textCaption,
+            color: AppPalette.textCaption,
           ),
         ),
       );
@@ -353,7 +353,7 @@ class _GalleryPreviewCarousel extends StatelessWidget {
             children: [
               for (var index = 0; index < itemCount; index++)
                 Padding(
-                  padding: EdgeInsetsDirectional.only(
+                  padding: AppEdgeInsetsDirectional.only(
                     end: index == itemCount - 1 ? 0 : gap,
                   ),
                   child: SizedBox(
@@ -434,10 +434,12 @@ class _GalleryPreviewTile extends StatelessWidget {
                 visualDensity: VisualDensity.compact,
                 constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                 style: IconButton.styleFrom(
-                  backgroundColor: AppColors.surface.withValues(alpha: 0.86),
-                  foregroundColor: AppColors.destructive,
+                  backgroundColor: AppPalette.surfaceCool.withValues(
+                    alpha: 0.86,
+                  ),
+                  foregroundColor: AppPalette.danger,
                   side: BorderSide(
-                    color: AppColors.destructive.withValues(alpha: 0.45),
+                    color: AppPalette.danger.withValues(alpha: 0.45),
                   ),
                 ),
                 icon: const Icon(Icons.close_rounded, size: 18),
@@ -484,19 +486,19 @@ class _MediaPreviewStatusPill extends StatelessWidget {
         ? Icons.check_rounded
         : Icons.schedule_rounded;
     final color = failed
-        ? AppColors.destructive
+        ? AppPalette.danger
         : done
-        ? AppColors.success
-        : AppColors.accent;
+        ? AppPalette.success
+        : AppPalette.primary;
 
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.82),
-        borderRadius: BorderRadius.circular(999),
+      decoration: AppBoxDecoration(
+        color: AppPalette.surfaceCool.withValues(alpha: 0.82),
+        borderRadius: AppBorderRadius.circular(999),
         border: Border.all(color: color.withValues(alpha: 0.55)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(StoryEditorSpacing.xs),
+        padding: const AppEdgeInsets.all(StoryEditorSpacing.xs),
         child: Icon(icon, size: 14, color: color),
       ),
     );
@@ -511,10 +513,10 @@ class _MediaPreviewFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border),
+      decoration: AppBoxDecoration(
+        color: AppPalette.surfaceCoolLight,
+        borderRadius: AppBorderRadius.circular(8),
+        border: Border.all(color: AppPalette.outlineOverlay),
       ),
       child: Center(child: child),
     );

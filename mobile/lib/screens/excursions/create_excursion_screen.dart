@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -14,7 +15,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
-import '../../core/ui/app_colors.dart';
 import '../../core/ui/app_inline_field_error.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/excursions/excursion_cover_url.dart';
@@ -1124,7 +1124,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           context: context,
           isDismissible: true,
           isScrollControlled: true,
-          backgroundColor: Colors.transparent,
+          backgroundColor: AppPalette.transparent,
           builder: (context) =>
               _ExcursionIncludedItemsEditorSheet(initialItems: _includedItems),
         );
@@ -1768,7 +1768,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (context) => _AddItinerarySlotSheet(
         l10n: l10n,
         initialItem: item,
@@ -1925,16 +1925,16 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       canPop: false,
       onPopInvokedWithResult: (didPop, _) => _handleRoutePopInvoked(didPop),
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: AppPalette.backgroundWarm,
         body: Stack(
           children: [
             Positioned.fill(
               child: DecoratedBox(
-                decoration: const BoxDecoration(
+                decoration: const AppBoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Color(0xFF25180D), Color(0xFF3B2815)],
+                    colors: [AppPalette.warmInk105, AppPalette.warmSurface67],
                   ),
                 ),
                 child: SafeArea(
@@ -2020,7 +2020,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     double bottomInset,
   ) {
     return ListView(
-      padding: EdgeInsets.fromLTRB(20, 10, 20, 24 + bottomInset),
+      padding: AppEdgeInsets.fromLTRB(20, 10, 20, 24 + bottomInset),
       children: [
         ..._buildOfferCoverSection(l10n),
         const SizedBox(height: 24),
@@ -2029,15 +2029,18 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
         Text(
           l10n.createExcursionAutosaveHint,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: Color(0xFFB69B78), fontSize: 12),
+          style: const AppTextStyle(
+            color: AppPalette.orangeSoft08,
+            fontSize: 12,
+          ),
         ),
         if (_autosaveRestored) ...[
           const SizedBox(height: 6),
           Text(
             l10n.createExcursionAutosaveRestored,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppColors.accent,
+            style: const AppTextStyle(
+              color: AppPalette.primary,
               fontSize: 12,
               fontWeight: FontWeight.w800,
             ),
@@ -2078,7 +2081,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       ],
       ..._itinerary.map(
         (item) => Padding(
-          padding: const EdgeInsets.only(bottom: 10),
+          padding: const AppEdgeInsets.only(bottom: 10),
           child: _ItinerarySlotCard(
             item: item,
             hasError: !_isCompleteItineraryDraft(item),
@@ -2105,7 +2108,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
 
   Widget _buildStepLandmark(AppLocalizations l10n, double bottomInset) {
     return ListView(
-      padding: EdgeInsets.fromLTRB(20, 10, 20, 24 + bottomInset),
+      padding: AppEdgeInsets.fromLTRB(20, 10, 20, 24 + bottomInset),
       children: [
         _SectionHeader(title: l10n.createExcursionSelectedLandmark),
         const SizedBox(height: 12),
@@ -2131,7 +2134,10 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
         Text(
           l10n.createExcursionAutosaveHint,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: Color(0xFFB69B78), fontSize: 12),
+          style: const AppTextStyle(
+            color: AppPalette.orangeSoft08,
+            fontSize: 12,
+          ),
         ),
       ],
     );
@@ -2139,7 +2145,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
 
   Widget _buildStepLogistics(AppLocalizations l10n, double bottomInset) {
     return ListView(
-      padding: EdgeInsets.fromLTRB(20, 10, 20, 24 + bottomInset),
+      padding: AppEdgeInsets.fromLTRB(20, 10, 20, 24 + bottomInset),
       children: [
         _ExcursionDurationPickerRow(
           controller: _durationValueCtrl,
@@ -2164,7 +2170,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           label: l10n.createExcursionMaxGroupSizeLabel,
           hint: l10n.createExcursionMaxGroupSizeHint,
           icon: Icons.group_outlined,
-          iconColor: AppColors.accent,
+          iconColor: AppPalette.primary,
           keyboardType: TextInputType.number,
           errorText: _groupSizeErrorText,
           onChanged: (_) => setState(() {
@@ -2210,7 +2216,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
 
   Widget _buildStepStoryAndPrice(AppLocalizations l10n, double bottomInset) {
     return ListView(
-      padding: EdgeInsets.fromLTRB(20, 10, 20, 24 + bottomInset),
+      padding: AppEdgeInsets.fromLTRB(20, 10, 20, 24 + bottomInset),
       children: [
         _SectionHeader(title: l10n.createMeetingPointTitle),
         const SizedBox(height: 12),
@@ -2219,7 +2225,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           label: l10n.createMeetingPointLocationLabel,
           hint: l10n.createExcursionMeetingPointHint,
           icon: Icons.location_on_outlined,
-          iconColor: AppColors.accent,
+          iconColor: AppPalette.primary,
           horizontalScroll: true,
           readOnly: true,
           errorText: _meetingPointErrorText,
@@ -2234,7 +2240,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           label: l10n.createMapLinkLabel,
           hint: l10n.createMapLinkHint,
           icon: Icons.link_rounded,
-          iconColor: AppColors.accent,
+          iconColor: AppPalette.primary,
           keyboardType: TextInputType.url,
           horizontalScroll: true,
           errorText: _mapUrlErrorText,
@@ -2242,8 +2248,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
         const SizedBox(height: 14),
         Text(
           l10n.createMapEarlyStageNotice,
-          style: const TextStyle(
-            color: Color(0xFFD4BEA8),
+          style: const AppTextStyle(
+            color: AppPalette.orangeLight02,
             fontSize: 12,
             height: 1.35,
           ),
@@ -2258,7 +2264,10 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
         const SizedBox(height: 8),
         Text(
           l10n.createMapTapHint,
-          style: const TextStyle(color: Color(0xFFD4BEA8), fontSize: 12),
+          style: const AppTextStyle(
+            color: AppPalette.orangeLight02,
+            fontSize: 12,
+          ),
         ),
         _SectionHeader(title: l10n.createExcursionInvestmentTitle),
         const SizedBox(height: 12),
@@ -2267,7 +2276,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           label: l10n.createPriceAmountLabel,
           hint: '0.00',
           icon: Icons.payments_outlined,
-          iconColor: AppColors.accent,
+          iconColor: AppPalette.primary,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           errorText: _priceErrorText,
           onChanged: (_) => setState(() {
@@ -2354,7 +2363,7 @@ class _ExcursionDurationPickerRow extends StatelessWidget {
           label: l10n.createExcursionDurationLabel,
           hint: '4',
           icon: Icons.schedule_rounded,
-          iconColor: AppColors.accent,
+          iconColor: AppPalette.primary,
           keyboardType: TextInputType.number,
           errorText: errorText,
           onChanged: onChanged,
@@ -2404,8 +2413,10 @@ class _DurationUnitPickerField extends StatelessWidget {
       child: PopupMenuButton<_ExcursionDurationUnit>(
         initialValue: selectedUnit,
         onSelected: onChanged,
-        color: const Color(0xFF2D2115),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        color: AppPalette.warmSurface35,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppBorderRadius.circular(18),
+        ),
         itemBuilder: (context) => [
           for (final unit in _ExcursionDurationUnit.values)
             PopupMenuItem<_ExcursionDurationUnit>(
@@ -2417,8 +2428,8 @@ class _DurationUnitPickerField extends StatelessWidget {
                         ? Icons.check_circle_rounded
                         : Icons.radio_button_unchecked_rounded,
                     color: unit == selectedUnit
-                        ? AppColors.accent
-                        : const Color(0xFFA99683),
+                        ? AppPalette.primary
+                        : AppPalette.textMuted,
                     size: 19,
                   ),
                   const SizedBox(width: 10),
@@ -2427,8 +2438,8 @@ class _DurationUnitPickerField extends StatelessWidget {
                       unit.label(l10n),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFFFFF8F0),
+                      style: const AppTextStyle(
+                        color: AppPalette.orangeWash27,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -2439,23 +2450,25 @@ class _DurationUnitPickerField extends StatelessWidget {
         ],
         child: Container(
           constraints: const BoxConstraints(minHeight: 62),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: const Color(0xFF2D2115),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.accent.withValues(alpha: 0.10)),
+          padding: const AppEdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: AppBoxDecoration(
+            color: AppPalette.warmSurface35,
+            borderRadius: AppBorderRadius.circular(24),
+            border: Border.all(
+              color: AppPalette.primary.withValues(alpha: 0.10),
+            ),
           ),
           child: Row(
             children: [
-              const Icon(Icons.timelapse_rounded, color: AppColors.accent),
+              const Icon(Icons.timelapse_rounded, color: AppPalette.primary),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   selectedUnit.label(l10n),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFFFFF8F0),
+                  style: const AppTextStyle(
+                    color: AppPalette.orangeWash27,
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                   ),
@@ -2463,7 +2476,7 @@ class _DurationUnitPickerField extends StatelessWidget {
               ),
               const Icon(
                 Icons.keyboard_arrow_down_rounded,
-                color: AppColors.accent,
+                color: AppPalette.primary,
               ),
             ],
           ),
@@ -2801,58 +2814,58 @@ class _ExcursionLanguagePickerFieldState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           DecoratedBox(
-            decoration: BoxDecoration(
-              color: const Color(0xFF2D2115),
-              borderRadius: BorderRadius.circular(24),
+            decoration: AppBoxDecoration(
+              color: AppPalette.warmSurface35,
+              borderRadius: AppBorderRadius.circular(24),
               border: Border.all(
                 color: widget.errorText == null
-                    ? AppColors.accent.withValues(alpha: 0.10)
-                    : const Color(0xFFFFB199),
+                    ? AppPalette.primary.withValues(alpha: 0.10)
+                    : AppPalette.redLight02,
               ),
             ),
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const AppEdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   TextField(
                     controller: _languageSearchController,
-                    cursorColor: AppColors.accent,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    cursorColor: AppPalette.primary,
+                    style: const AppTextStyle(
+                      color: AppPalette.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                     ),
-                    decoration: InputDecoration(
+                    decoration: AppInputDecoration(
                       hintText: l10n.createExcursionLanguagesSearchHint,
-                      hintStyle: const TextStyle(
-                        color: Color(0xFF9D8877),
+                      hintStyle: const AppTextStyle(
+                        color: AppPalette.warmMuted18,
                         fontWeight: FontWeight.w600,
                       ),
                       prefixIcon: const Icon(
                         Icons.search_rounded,
-                        color: AppColors.accent,
+                        color: AppPalette.primary,
                       ),
                       filled: true,
-                      fillColor: const Color(0xFF171009),
-                      contentPadding: const EdgeInsets.symmetric(
+                      fillColor: AppPalette.warmInk27,
+                      contentPadding: const AppEdgeInsets.symmetric(
                         horizontal: 14,
                         vertical: 12,
                       ),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: AppBorderRadius.circular(16),
                         borderSide: BorderSide.none,
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: AppBorderRadius.circular(16),
                         borderSide: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.06),
+                          color: AppPalette.white.withValues(alpha: 0.06),
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: AppBorderRadius.circular(16),
                         borderSide: const BorderSide(
-                          color: AppColors.accent,
+                          color: AppPalette.primary,
                           width: 1.2,
                         ),
                       ),
@@ -2863,8 +2876,8 @@ class _ExcursionLanguagePickerFieldState
                     if (visibleLanguages.isEmpty)
                       Text(
                         l10n.createExcursionLanguagesNoResults,
-                        style: const TextStyle(
-                          color: Color(0xFFBDAA98),
+                        style: const AppTextStyle(
+                          color: AppPalette.orangeSoft17,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
@@ -2918,8 +2931,8 @@ class _ExcursionLanguagePickerFieldState
                   const SizedBox(height: 10),
                   Text(
                     l10n.createExcursionLanguagesPickerHint(maxSelected),
-                    style: const TextStyle(
-                      color: Color(0xFFA99683),
+                    style: const AppTextStyle(
+                      color: AppPalette.textMuted,
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                     ),
@@ -2952,24 +2965,27 @@ class _ExcursionLanguageOptionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppBorderRadius.circular(14),
         child: DecoratedBox(
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             color: selected
-                ? AppColors.accent.withValues(alpha: 0.18)
-                : const Color(0xFF2C2118),
-            borderRadius: BorderRadius.circular(14),
+                ? AppPalette.primary.withValues(alpha: 0.18)
+                : AppPalette.warmSurface28,
+            borderRadius: AppBorderRadius.circular(14),
             border: Border.all(
               color: selected
-                  ? AppColors.accent
-                  : Colors.white.withValues(alpha: 0.07),
+                  ? AppPalette.primary
+                  : AppPalette.white.withValues(alpha: 0.07),
             ),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+            padding: const AppEdgeInsets.symmetric(
+              horizontal: 13,
+              vertical: 11,
+            ),
             child: Row(
               children: [
                 Expanded(
@@ -2977,8 +2993,8 @@ class _ExcursionLanguageOptionRow extends StatelessWidget {
                     label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: const AppTextStyle(
+                      color: AppPalette.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
                     ),
@@ -2987,8 +3003,8 @@ class _ExcursionLanguageOptionRow extends StatelessWidget {
                 const SizedBox(width: 10),
                 Text(
                   code,
-                  style: const TextStyle(
-                    color: Color(0xFFBDAA98),
+                  style: const AppTextStyle(
+                    color: AppPalette.orangeSoft17,
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                   ),
@@ -2997,7 +3013,7 @@ class _ExcursionLanguageOptionRow extends StatelessWidget {
                   const SizedBox(width: 8),
                   const Icon(
                     Icons.check_circle_rounded,
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                     size: 18,
                   ),
                 ],
@@ -3026,29 +3042,33 @@ class _ExcursionLanguageChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foreground = disabled
-        ? const Color(0xFF806F5E)
+        ? AppPalette.warmMuted02
         : selected
-        ? Colors.white
-        : const Color(0xFFFFF8F0);
+        ? AppPalette.white
+        : AppPalette.orangeWash27;
 
     return Material(
-      color: selected ? AppColors.accent : const Color(0xFF3A2A1D),
-      borderRadius: BorderRadius.circular(999),
+      color: selected ? AppPalette.primary : AppPalette.warmSurface62,
+      borderRadius: AppBorderRadius.circular(999),
       child: InkWell(
         onTap: disabled ? null : onTap,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppBorderRadius.circular(999),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+          padding: const AppEdgeInsets.symmetric(horizontal: 12, vertical: 9),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (selected) ...[
-                const Icon(Icons.check_rounded, color: Colors.white, size: 15),
+                const Icon(
+                  Icons.check_rounded,
+                  color: AppPalette.white,
+                  size: 15,
+                ),
                 const SizedBox(width: 5),
               ],
               Text(
                 label,
-                style: TextStyle(
+                style: AppTextStyle(
                   color: foreground,
                   fontSize: 13,
                   fontWeight: FontWeight.w900,
@@ -3076,32 +3096,34 @@ class _ExcursionIncludedItemsPreview extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Material(
-      color: const Color(0xFF2D2115),
-      borderRadius: BorderRadius.circular(24),
+      color: AppPalette.warmSurface35,
+      borderRadius: AppBorderRadius.circular(24),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: AppBorderRadius.circular(24),
         child: Container(
           width: double.infinity,
           constraints: const BoxConstraints(minHeight: 70),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.accent.withValues(alpha: 0.10)),
+          padding: const AppEdgeInsets.all(14),
+          decoration: AppBoxDecoration(
+            borderRadius: AppBorderRadius.circular(24),
+            border: Border.all(
+              color: AppPalette.primary.withValues(alpha: 0.10),
+            ),
           ),
           child: items.isEmpty
               ? Row(
                   children: [
                     const Icon(
                       Icons.checklist_rounded,
-                      color: AppColors.accent,
+                      color: AppPalette.primary,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         l10n.createExcursionIncludedItemsEmpty,
-                        style: const TextStyle(
-                          color: Color(0xFFA99683),
+                        style: const AppTextStyle(
+                          color: AppPalette.textMuted,
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                         ),
@@ -3133,23 +3155,23 @@ class _ExcursionIncludedItemChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       constraints: const BoxConstraints(maxWidth: 260),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF4A321D),
-        borderRadius: BorderRadius.circular(999),
+      padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmSurface85,
+        borderRadius: AppBorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(item.type.icon, color: AppColors.accent, size: 16),
+          Icon(item.type.icon, color: AppPalette.primary, size: 16),
           const SizedBox(width: 6),
           Flexible(
             child: Text(
               item.type.label(l10n),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xFFFFF8F0),
+              style: const AppTextStyle(
+                color: AppPalette.orangeWash27,
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
               ),
@@ -3215,7 +3237,7 @@ class _ExcursionIncludedItemsEditorSheetState
     return SafeArea(
       top: false,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(
+        padding: AppEdgeInsets.fromLTRB(
           16,
           0,
           16,
@@ -3224,9 +3246,9 @@ class _ExcursionIncludedItemsEditorSheetState
         child: ConstrainedBox(
           constraints: BoxConstraints(maxHeight: maxHeight),
           child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: const Color(0xFF2D2115),
-              borderRadius: BorderRadius.circular(28),
+            decoration: AppBoxDecoration(
+              color: AppPalette.warmSurface35,
+              borderRadius: AppBorderRadius.circular(28),
             ),
             child: Column(
               children: [
@@ -3234,20 +3256,20 @@ class _ExcursionIncludedItemsEditorSheetState
                 Container(
                   width: 48,
                   height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(999),
+                  decoration: AppBoxDecoration(
+                    color: AppPalette.white.withValues(alpha: 0.16),
+                    borderRadius: AppBorderRadius.circular(999),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 18, 10, 8),
+                  padding: const AppEdgeInsets.fromLTRB(18, 18, 10, 8),
                   child: Row(
                     children: [
                       Expanded(
                         child: Text(
                           l10n.createExcursionIncludedItemsEditorTitle,
-                          style: const TextStyle(
-                            color: Color(0xFFFFF8F0),
+                          style: const AppTextStyle(
+                            color: AppPalette.orangeWash27,
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
                           ),
@@ -3256,14 +3278,14 @@ class _ExcursionIncludedItemsEditorSheetState
                       IconButton(
                         onPressed: () => Navigator.of(context).pop(),
                         icon: const Icon(Icons.close_rounded),
-                        color: const Color(0xFFFFF8F0),
+                        color: AppPalette.orangeWash27,
                       ),
                     ],
                   ),
                 ),
                 Expanded(
                   child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
+                    padding: const AppEdgeInsets.fromLTRB(16, 6, 16, 12),
                     children: [
                       for (final type in _selectableIncludedItemTypes) ...[
                         _ExcursionIncludedTypeOption(
@@ -3277,15 +3299,15 @@ class _ExcursionIncludedItemsEditorSheetState
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  padding: const AppEdgeInsets.fromLTRB(16, 0, 16, 16),
                   child: FilledButton(
                     onPressed: _submit,
                     style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.accent,
-                      foregroundColor: Colors.white,
+                      backgroundColor: AppPalette.primary,
+                      foregroundColor: AppPalette.white,
                       minimumSize: const Size.fromHeight(50),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: AppBorderRadius.circular(16),
                       ),
                     ),
                     child: Text(
@@ -3321,27 +3343,27 @@ class _ExcursionIncludedTypeOption extends StatelessWidget {
     final iconBoxSize = _createExcursionIncludedItemIconBoxSize(context);
 
     return Material(
-      color: selected ? AppColors.accent : const Color(0xFF3A2A1D),
-      borderRadius: BorderRadius.circular(18),
+      color: selected ? AppPalette.primary : AppPalette.warmSurface62,
+      borderRadius: AppBorderRadius.circular(18),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppBorderRadius.circular(18),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          padding: const AppEdgeInsets.symmetric(horizontal: 14, vertical: 14),
           child: Row(
             children: [
               Container(
                 width: iconBoxSize,
                 height: iconBoxSize,
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   color: selected
-                      ? Colors.white.withValues(alpha: 0.18)
-                      : AppColors.accent.withValues(alpha: 0.12),
+                      ? AppPalette.white.withValues(alpha: 0.18)
+                      : AppPalette.primary.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   type.icon,
-                  color: selected ? Colors.white : AppColors.accent,
+                  color: selected ? AppPalette.white : AppPalette.primary,
                   size: 19,
                 ),
               ),
@@ -3351,8 +3373,10 @@ class _ExcursionIncludedTypeOption extends StatelessWidget {
                   type.label(l10n),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: selected ? Colors.white : const Color(0xFFFFF8F0),
+                  style: AppTextStyle(
+                    color: selected
+                        ? AppPalette.white
+                        : AppPalette.orangeWash27,
                     fontSize: 15,
                     fontWeight: FontWeight.w900,
                   ),
@@ -3362,7 +3386,7 @@ class _ExcursionIncludedTypeOption extends StatelessWidget {
                 selected
                     ? Icons.check_circle_rounded
                     : Icons.radio_button_unchecked_rounded,
-                color: selected ? Colors.white : const Color(0xFFA99683),
+                color: selected ? AppPalette.white : AppPalette.textMuted,
                 size: 22,
               ),
             ],
@@ -3394,32 +3418,32 @@ class _ExcursionAmberConfirmDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return Dialog(
       elevation: 0,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
-      backgroundColor: Colors.transparent,
+      insetPadding: const AppEdgeInsets.symmetric(horizontal: 22, vertical: 24),
+      backgroundColor: AppPalette.transparent,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 420),
         child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(30),
+          decoration: AppBoxDecoration(
+            borderRadius: AppBorderRadius.circular(30),
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF4A2B10), Color(0xFF241407)],
+              colors: [AppPalette.warmSurface81, AppPalette.textOnInverse],
             ),
             border: Border.all(
-              color: AppColors.accent.withValues(alpha: 0.58),
+              color: AppPalette.primary.withValues(alpha: 0.58),
               width: 1.4,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.42),
+                color: AppPalette.black.withValues(alpha: 0.42),
                 blurRadius: 30,
                 offset: const Offset(0, 18),
               ),
             ],
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+            padding: const AppEdgeInsets.fromLTRB(22, 22, 22, 18),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -3430,16 +3454,16 @@ class _ExcursionAmberConfirmDialog extends StatelessWidget {
                     Container(
                       width: 54,
                       height: 54,
-                      decoration: BoxDecoration(
-                        color: AppColors.accent.withValues(alpha: 0.18),
+                      decoration: AppBoxDecoration(
+                        color: AppPalette.primary.withValues(alpha: 0.18),
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: AppColors.accent.withValues(alpha: 0.72),
+                          color: AppPalette.primary.withValues(alpha: 0.72),
                         ),
                       ),
                       child: const Icon(
                         Icons.warning_amber_rounded,
-                        color: AppColors.accent,
+                        color: AppPalette.primary,
                         size: 30,
                       ),
                     ),
@@ -3450,8 +3474,8 @@ class _ExcursionAmberConfirmDialog extends StatelessWidget {
                         children: [
                           Text(
                             title,
-                            style: const TextStyle(
-                              color: Color(0xFFFFF5E8),
+                            style: const AppTextStyle(
+                              color: AppPalette.orangeWash23,
                               fontSize: 21,
                               fontWeight: FontWeight.w900,
                               height: 1.1,
@@ -3460,8 +3484,8 @@ class _ExcursionAmberConfirmDialog extends StatelessWidget {
                           const SizedBox(height: 9),
                           Text(
                             description,
-                            style: const TextStyle(
-                              color: Color(0xFFD8C3AA),
+                            style: const AppTextStyle(
+                              color: AppPalette.orangeLight13,
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                               height: 1.38,
@@ -3478,13 +3502,13 @@ class _ExcursionAmberConfirmDialog extends StatelessWidget {
                   child: FilledButton(
                     onPressed: onConfirm,
                     style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.accent,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      backgroundColor: AppPalette.primary,
+                      foregroundColor: AppPalette.white,
+                      padding: const AppEdgeInsets.symmetric(vertical: 15),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: AppBorderRadius.circular(18),
                       ),
-                      textStyle: const TextStyle(
+                      textStyle: const AppTextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w900,
                       ),
@@ -3502,17 +3526,17 @@ class _ExcursionAmberConfirmDialog extends StatelessWidget {
                   child: TextButton(
                     onPressed: onCancel,
                     style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFFEBD6BE),
-                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      foregroundColor: AppPalette.orangeLight29,
+                      padding: const AppEdgeInsets.symmetric(vertical: 13),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: AppBorderRadius.circular(16),
                       ),
                     ),
                     child: Text(
                       cancelLabel,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w800),
+                      style: const AppTextStyle(fontWeight: FontWeight.w800),
                     ),
                   ),
                 ),
@@ -3534,13 +3558,13 @@ class _ExcursionTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+      padding: const AppEdgeInsets.fromLTRB(14, 8, 14, 8),
       child: Row(
         children: [
           IconButton(
             onPressed: onBack,
             icon: const Icon(Icons.arrow_back_rounded),
-            color: const Color(0xFFF5E9DA),
+            color: AppPalette.orangeWash09,
             tooltip: MaterialLocalizations.of(context).backButtonTooltip,
           ),
           Expanded(
@@ -3549,8 +3573,8 @@ class _ExcursionTopBar extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xFFF9F0E4),
+              style: const AppTextStyle(
+                color: AppPalette.orangeWash19,
                 fontSize: 24,
                 fontWeight: FontWeight.w800,
               ),
@@ -3577,7 +3601,7 @@ class _ExcursionStepIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(28, 8, 28, 14),
+      padding: const AppEdgeInsets.fromLTRB(28, 8, 28, 14),
       child: Row(
         children: List.generate(totalSteps * 2 - 1, (index) {
           if (index.isOdd) {
@@ -3585,12 +3609,12 @@ class _ExcursionStepIndicator extends StatelessWidget {
             return Expanded(
               child: Container(
                 height: 3,
-                margin: const EdgeInsets.symmetric(horizontal: 10),
-                decoration: BoxDecoration(
+                margin: const AppEdgeInsets.symmetric(horizontal: 10),
+                decoration: AppBoxDecoration(
                   color: isDone
-                      ? AppColors.success
-                      : AppColors.accent.withValues(alpha: 0.32),
-                  borderRadius: BorderRadius.circular(999),
+                      ? AppPalette.success
+                      : AppPalette.primary.withValues(alpha: 0.32),
+                  borderRadius: AppBorderRadius.circular(999),
                 ),
               ),
             );
@@ -3601,7 +3625,7 @@ class _ExcursionStepIndicator extends StatelessWidget {
           final isStepTappable = onStepTap != null && isDone;
           final stepSize = isActive ? 48.0 : (isDone ? 40.0 : 34.0);
           return Material(
-            color: Colors.transparent,
+            color: AppPalette.transparent,
             shape: const CircleBorder(),
             child: InkWell(
               onTap: isStepTappable ? () => onStepTap!(step) : null,
@@ -3610,17 +3634,17 @@ class _ExcursionStepIndicator extends StatelessWidget {
                 duration: const Duration(milliseconds: 180),
                 width: stepSize,
                 height: stepSize,
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   shape: BoxShape.circle,
                   color: isDone
-                      ? AppColors.success
+                      ? AppPalette.success
                       : isActive
-                      ? AppColors.accent
-                      : const Color(0xFF5A370D),
+                      ? AppPalette.primary
+                      : AppPalette.warmSurface96,
                   boxShadow: isDone
                       ? [
                           BoxShadow(
-                            color: AppColors.success.withValues(alpha: 0.22),
+                            color: AppPalette.success.withValues(alpha: 0.22),
                             blurRadius: 22,
                             offset: const Offset(0, 12),
                           ),
@@ -3628,25 +3652,25 @@ class _ExcursionStepIndicator extends StatelessWidget {
                       : isActive
                       ? [
                           BoxShadow(
-                            color: AppColors.accent.withValues(alpha: 0.24),
+                            color: AppPalette.primary.withValues(alpha: 0.24),
                             blurRadius: 22,
                             offset: const Offset(0, 10),
                           ),
                         ]
                       : null,
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.08),
+                    color: AppPalette.white.withValues(alpha: 0.08),
                   ),
                 ),
                 child: Center(
                   child: isDone
-                      ? const Icon(Icons.check_rounded, color: Colors.white)
+                      ? const Icon(Icons.check_rounded, color: AppPalette.white)
                       : Text(
                           '${step + 1}',
-                          style: TextStyle(
+                          style: AppTextStyle(
                             color: isActive
-                                ? Colors.white
-                                : const Color(0xFFF6DEC2),
+                                ? AppPalette.white
+                                : AppPalette.orangeLight37,
                             fontSize: isActive ? 20 : 15,
                             fontWeight: FontWeight.w900,
                           ),
@@ -3669,30 +3693,30 @@ class _InlineError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+      padding: const AppEdgeInsets.fromLTRB(20, 0, 20, 10),
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: const Color(0xFFFF8A65).withValues(alpha: 0.14),
-          borderRadius: BorderRadius.circular(14),
+        decoration: AppBoxDecoration(
+          color: AppPalette.redSoft11.withValues(alpha: 0.14),
+          borderRadius: AppBorderRadius.circular(14),
           border: Border.all(
-            color: const Color(0xFFFF8A65).withValues(alpha: 0.35),
+            color: AppPalette.redSoft11.withValues(alpha: 0.35),
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const AppEdgeInsets.all(12),
           child: Row(
             children: [
               const Icon(
                 Icons.error_outline_rounded,
-                color: Color(0xFFFFB199),
+                color: AppPalette.redLight02,
                 size: 20,
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   message,
-                  style: const TextStyle(
-                    color: Color(0xFFFFD4C5),
+                  style: const AppTextStyle(
+                    color: AppPalette.orangeLight45,
                     fontSize: 13,
                     height: 1.35,
                   ),
@@ -3726,8 +3750,8 @@ class _SectionHeader extends StatelessWidget {
             title,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xFFFFE3B8),
+            style: const AppTextStyle(
+              color: AppPalette.amberLight13,
               fontSize: 18,
               fontWeight: FontWeight.w800,
             ),
@@ -3738,7 +3762,7 @@ class _SectionHeader extends StatelessWidget {
             onPressed: onActionTap,
             child: Text(
               actionLabel!,
-              style: const TextStyle(color: AppColors.accent),
+              style: const AppTextStyle(color: AppPalette.primary),
             ),
           ),
       ],
@@ -3796,20 +3820,20 @@ class _CreationModeChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? AppColors.accent : const Color(0xFF3A2A1D),
-      borderRadius: BorderRadius.circular(999),
+      color: selected ? AppPalette.primary : AppPalette.warmSurface62,
+      borderRadius: AppBorderRadius.circular(999),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppBorderRadius.circular(999),
         child: Container(
           constraints: const BoxConstraints(minHeight: 44, maxWidth: 260),
-          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+          padding: const AppEdgeInsets.symmetric(horizontal: 13, vertical: 10),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 selected ? Icons.check_circle_rounded : icon,
-                color: selected ? Colors.white : AppColors.accent,
+                color: selected ? AppPalette.white : AppPalette.primary,
                 size: 18,
               ),
               const SizedBox(width: 7),
@@ -3818,8 +3842,10 @@ class _CreationModeChip extends StatelessWidget {
                   label,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: selected ? Colors.white : const Color(0xFFFFF8F0),
+                  style: AppTextStyle(
+                    color: selected
+                        ? AppPalette.white
+                        : AppPalette.orangeWash27,
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
                     height: 1.15,
@@ -3869,26 +3895,26 @@ class _LandmarkSelectionCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
+          decoration: AppBoxDecoration(
+            borderRadius: AppBorderRadius.circular(24),
             gradient: const LinearGradient(
-              colors: [Color(0xFF9A673A), Color(0xFF533018)],
+              colors: [AppPalette.warmMuted12, AppPalette.warmSurface92],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             border: errorText == null
                 ? null
-                : Border.all(color: const Color(0xFFFFB199), width: 1.4),
+                : Border.all(color: AppPalette.redLight02, width: 1.4),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.24),
+                color: AppPalette.black.withValues(alpha: 0.24),
                 blurRadius: 28,
                 offset: const Offset(0, 14),
               ),
             ],
           ),
           child: Padding(
-            padding: const EdgeInsets.all(18),
+            padding: const AppEdgeInsets.all(18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -3898,13 +3924,13 @@ class _LandmarkSelectionCard extends StatelessWidget {
                     Container(
                       width: 76,
                       height: 76,
-                      decoration: BoxDecoration(
+                      decoration: AppBoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.white.withValues(alpha: 0.12),
+                        color: AppPalette.white.withValues(alpha: 0.12),
                       ),
                       child: const Icon(
                         Icons.place_rounded,
-                        color: Color(0xFFFFE5C2),
+                        color: AppPalette.orangeLight50,
                         size: 40,
                       ),
                     ),
@@ -3917,8 +3943,8 @@ class _LandmarkSelectionCard extends StatelessWidget {
                             title,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xFFFFF5E8),
+                            style: const AppTextStyle(
+                              color: AppPalette.orangeWash23,
                               fontSize: 18,
                               fontWeight: FontWeight.w900,
                               height: 1.16,
@@ -3929,8 +3955,8 @@ class _LandmarkSelectionCard extends StatelessWidget {
                             subtitle,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xFFFFE5C2),
+                            style: const AppTextStyle(
+                              color: AppPalette.orangeLight50,
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
                               height: 1.28,
@@ -3947,22 +3973,22 @@ class _LandmarkSelectionCard extends StatelessWidget {
                   child: FilledButton(
                     onPressed: onSelectLocation,
                     style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.accent,
-                      disabledBackgroundColor: Colors.white.withValues(
+                      backgroundColor: AppPalette.primary,
+                      disabledBackgroundColor: AppPalette.white.withValues(
                         alpha: 0.10,
                       ),
-                      disabledForegroundColor: Colors.white.withValues(
+                      disabledForegroundColor: AppPalette.white.withValues(
                         alpha: 0.42,
                       ),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
+                      foregroundColor: AppPalette.white,
+                      padding: const AppEdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 14,
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: AppBorderRadius.circular(18),
                       ),
-                      textStyle: const TextStyle(
+                      textStyle: const AppTextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0,
@@ -4025,12 +4051,12 @@ class _ExcursionCoverUploadCard extends StatelessWidget {
     final hasPreview = (previewBytes?.isNotEmpty ?? false) || _hasImageUrl;
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: isUploading ? null : onTap,
-        borderRadius: BorderRadius.circular(radius),
+        borderRadius: AppBorderRadius.circular(radius),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(radius),
+          borderRadius: AppBorderRadius.circular(radius),
           child: SizedBox(
             width: double.infinity,
             height: height,
@@ -4040,18 +4066,18 @@ class _ExcursionCoverUploadCard extends StatelessWidget {
                 _buildBackground(hasPreview: hasPreview),
                 Positioned.fill(
                   child: DecoratedBox(
-                    decoration: BoxDecoration(
+                    decoration: AppBoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withValues(
+                          AppPalette.black.withValues(
                             alpha: hasPreview ? 0.08 : 0.12,
                           ),
-                          Colors.black.withValues(
+                          AppPalette.black.withValues(
                             alpha: hasPreview ? 0.42 : 0.18,
                           ),
-                          Colors.black.withValues(alpha: 0.68),
+                          AppPalette.black.withValues(alpha: 0.68),
                         ],
                         stops: const [0, 0.52, 1],
                       ),
@@ -4073,8 +4099,8 @@ class _ExcursionCoverUploadCard extends StatelessWidget {
                 if (isUploading)
                   Positioned.fill(
                     child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.42),
+                      decoration: AppBoxDecoration(
+                        color: AppPalette.black.withValues(alpha: 0.42),
                       ),
                       child: const Center(
                         child: SizedBox(
@@ -4083,7 +4109,7 @@ class _ExcursionCoverUploadCard extends StatelessWidget {
                           child: CircularProgressIndicator(
                             strokeWidth: 2.4,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              AppColors.accent,
+                              AppPalette.primary,
                             ),
                           ),
                         ),
@@ -4094,8 +4120,8 @@ class _ExcursionCoverUploadCard extends StatelessWidget {
                   child: CustomPaint(
                     painter: _DashedExcursionCoverBorderPainter(
                       color: hasError
-                          ? const Color(0xFFFF7B6E).withValues(alpha: 0.74)
-                          : const Color(0xFFBE965D).withValues(alpha: 0.45),
+                          ? AppPalette.redSoft10.withValues(alpha: 0.74)
+                          : AppPalette.amberMuted03.withValues(alpha: 0.45),
                       radius: radius,
                     ),
                   ),
@@ -4126,11 +4152,11 @@ class _ExcursionCoverUploadCard extends StatelessWidget {
 
   Widget _buildPlaceholder({required bool hasPreview}) {
     return DecoratedBox(
-      decoration: const BoxDecoration(
+      decoration: const AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF3A240D), Color(0xFF181109)],
+          colors: [AppPalette.warmSurface55, AppPalette.warmInk30],
         ),
       ),
       child: Stack(
@@ -4142,9 +4168,9 @@ class _ExcursionCoverUploadCard extends StatelessWidget {
             child: Container(
               width: 138,
               height: 138,
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.accent.withValues(alpha: 0.17),
+                color: AppPalette.primary.withValues(alpha: 0.17),
               ),
             ),
           ),
@@ -4154,9 +4180,9 @@ class _ExcursionCoverUploadCard extends StatelessWidget {
             child: Container(
               width: 150,
               height: 150,
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.05),
+                color: AppPalette.white.withValues(alpha: 0.05),
               ),
             ),
           ),
@@ -4165,16 +4191,16 @@ class _ExcursionCoverUploadCard extends StatelessWidget {
               child: Container(
                 width: 68,
                 height: 68,
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.08),
+                  color: AppPalette.white.withValues(alpha: 0.08),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.14),
+                    color: AppPalette.white.withValues(alpha: 0.14),
                   ),
                 ),
                 child: Icon(
                   Icons.add_photo_alternate_rounded,
-                  color: Colors.white.withValues(alpha: 0.92),
+                  color: AppPalette.white.withValues(alpha: 0.92),
                   size: 32,
                 ),
               ),
@@ -4207,25 +4233,27 @@ class _ExcursionCoverCardCopy extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.accent.withValues(alpha: 0.18),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: AppColors.accent.withValues(alpha: 0.26)),
+          padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: AppBoxDecoration(
+            color: AppPalette.primary.withValues(alpha: 0.18),
+            borderRadius: AppBorderRadius.circular(999),
+            border: Border.all(
+              color: AppPalette.primary.withValues(alpha: 0.26),
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 hasPreview ? Icons.refresh_rounded : Icons.file_upload_outlined,
-                color: AppColors.accent,
+                color: AppPalette.primary,
                 size: compact ? 14 : 15,
               ),
               const SizedBox(width: 6),
               Text(
                 title,
-                style: TextStyle(
-                  color: AppColors.accent,
+                style: AppTextStyle(
+                  color: AppPalette.primary,
                   fontSize: compact ? 12 : 13,
                   fontWeight: FontWeight.w800,
                 ),
@@ -4238,10 +4266,10 @@ class _ExcursionCoverCardCopy extends StatelessWidget {
           hint,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
+          style: AppTextStyle(
             color: hasError
-                ? const Color(0xFFFFC0B8)
-                : Colors.white.withValues(alpha: 0.88),
+                ? AppPalette.redLight06
+                : AppPalette.white.withValues(alpha: 0.88),
             fontSize: compact ? 13 : 14,
             height: 1.35,
             fontWeight: FontWeight.w600,
@@ -4266,7 +4294,7 @@ class _DashedExcursionCoverBorderPainter extends CustomPainter {
     final rect = Offset.zero & size;
     final rrect = RRect.fromRectAndRadius(
       rect.deflate(1.5),
-      Radius.circular(radius),
+      AppRadiusValue.circular(radius),
     );
     final path = ui.Path()..addRRect(rrect);
     final paint = Paint()
@@ -4307,17 +4335,17 @@ class _ItineraryEmptyState extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         DecoratedBox(
-          decoration: BoxDecoration(
-            color: const Color(0xFF4A321D),
-            borderRadius: BorderRadius.circular(20),
+          decoration: AppBoxDecoration(
+            color: AppPalette.warmSurface85,
+            borderRadius: AppBorderRadius.circular(20),
             border: Border.all(
               color: errorText == null
-                  ? Colors.white.withValues(alpha: 0.08)
-                  : const Color(0xFFFFB199),
+                  ? AppPalette.white.withValues(alpha: 0.08)
+                  : AppPalette.redLight02,
             ),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const AppEdgeInsets.all(14),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -4325,13 +4353,13 @@ class _ItineraryEmptyState extends StatelessWidget {
                   width: 38,
                   height: 38,
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: AppColors.accent.withValues(alpha: 0.18),
+                  decoration: AppBoxDecoration(
+                    color: AppPalette.primary.withValues(alpha: 0.18),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.route_rounded,
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                     size: 20,
                   ),
                 ),
@@ -4339,8 +4367,8 @@ class _ItineraryEmptyState extends StatelessWidget {
                 Expanded(
                   child: Text(
                     message,
-                    style: const TextStyle(
-                      color: Color(0xFFFFE3B8),
+                    style: const AppTextStyle(
+                      color: AppPalette.amberLight13,
                       fontSize: 14,
                       height: 1.35,
                       fontWeight: FontWeight.w700,
@@ -4373,34 +4401,34 @@ class _ItinerarySlotCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xFF4A321D),
-      borderRadius: BorderRadius.circular(20),
+      color: AppPalette.warmSurface85,
+      borderRadius: AppBorderRadius.circular(20),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: AppBorderRadius.circular(20),
         child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
+          decoration: AppBoxDecoration(
+            borderRadius: AppBorderRadius.circular(20),
             border: hasError
-                ? Border.all(color: const Color(0xFFFFB199), width: 1.2)
+                ? Border.all(color: AppPalette.redLight02, width: 1.2)
                 : null,
           ),
-          padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+          padding: const AppEdgeInsets.fromLTRB(14, 12, 8, 12),
           child: Row(
             children: [
               Container(
                 width: 58,
                 height: 58,
                 alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(16),
+                decoration: AppBoxDecoration(
+                  color: AppPalette.white.withValues(alpha: 0.08),
+                  borderRadius: AppBorderRadius.circular(16),
                 ),
                 child: Text(
                   _formatOffset(context, item.startOffsetMinutes),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Color(0xFFFFDEB6),
+                  style: const AppTextStyle(
+                    color: AppPalette.orangeLight48,
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
                   ),
@@ -4415,8 +4443,8 @@ class _ItinerarySlotCard extends StatelessWidget {
                       item.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: const AppTextStyle(
+                        color: AppPalette.white,
                         fontSize: 15,
                         fontWeight: FontWeight.w900,
                       ),
@@ -4426,8 +4454,8 @@ class _ItinerarySlotCard extends StatelessWidget {
                       item.description,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFFC4A27D),
+                      style: const AppTextStyle(
+                        color: AppPalette.orangeSoft19,
                         fontSize: 12,
                         height: 1.25,
                       ),
@@ -4439,8 +4467,8 @@ class _ItinerarySlotCard extends StatelessWidget {
                 onPressed: onDelete,
                 icon: const Icon(Icons.close_rounded),
                 color: onDelete == null
-                    ? const Color(0xFF8F765B)
-                    : const Color(0xFFFFDEB6),
+                    ? AppPalette.warmMuted06
+                    : AppPalette.orangeLight48,
                 tooltip: MaterialLocalizations.of(context).deleteButtonTooltip,
               ),
             ],
@@ -4482,10 +4510,12 @@ class _OutlineActionButton extends StatelessWidget {
       icon: Icon(icon),
       label: Text(label),
       style: OutlinedButton.styleFrom(
-        foregroundColor: const Color(0xFFFFDEB6),
-        side: BorderSide(color: Colors.white.withValues(alpha: 0.18)),
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        foregroundColor: AppPalette.orangeLight48,
+        side: BorderSide(color: AppPalette.white.withValues(alpha: 0.18)),
+        padding: const AppEdgeInsets.symmetric(vertical: 16, horizontal: 18),
+        shape: RoundedRectangleBorder(
+          borderRadius: AppBorderRadius.circular(18),
+        ),
       ),
     );
   }
@@ -4524,7 +4554,7 @@ class _ExcursionTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     final effectiveMinLines = horizontalScroll ? 1 : minLines;
     final effectiveMaxLines = horizontalScroll ? 1 : maxLines;
-    final effectiveIconColor = iconColor ?? const Color(0xFFA99683);
+    final effectiveIconColor = iconColor ?? AppPalette.textMuted;
 
     return _ExcursionFieldShell(
       label: label,
@@ -4537,50 +4567,56 @@ class _ExcursionTextField extends StatelessWidget {
         maxLines: effectiveMaxLines,
         scrollPhysics: horizontalScroll ? const BouncingScrollPhysics() : null,
         textCapitalization: TextCapitalization.sentences,
-        style: const TextStyle(
-          color: Color(0xFFFFF8F0),
+        style: const AppTextStyle(
+          color: AppPalette.orangeWash27,
           fontSize: 16,
           fontWeight: FontWeight.w700,
         ),
-        decoration: InputDecoration(
+        decoration: AppInputDecoration(
           hintText: hint,
           errorText: errorText,
           errorMaxLines: 3,
           prefixIcon: Icon(icon, color: effectiveIconColor),
-          hintStyle: const TextStyle(color: Color(0xFFA99683)),
-          errorStyle: const TextStyle(
-            color: Color(0xFFFFB199),
+          hintStyle: const AppTextStyle(color: AppPalette.textMuted),
+          errorStyle: const AppTextStyle(
+            color: AppPalette.redLight02,
             fontSize: 12,
             fontWeight: FontWeight.w700,
           ),
           floatingLabelBehavior: FloatingLabelBehavior.never,
           filled: true,
-          fillColor: const Color(0xFF2D2115),
-          contentPadding: const EdgeInsets.symmetric(
+          fillColor: AppPalette.warmSurface35,
+          contentPadding: const AppEdgeInsets.symmetric(
             horizontal: 18,
             vertical: 18,
           ),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: AppBorderRadius.circular(24),
             borderSide: BorderSide.none,
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: AppBorderRadius.circular(24),
             borderSide: BorderSide(
-              color: AppColors.accent.withValues(alpha: 0.10),
+              color: AppPalette.primary.withValues(alpha: 0.10),
             ),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(24),
-            borderSide: const BorderSide(color: AppColors.accent, width: 1.4),
+            borderRadius: AppBorderRadius.circular(24),
+            borderSide: const BorderSide(color: AppPalette.primary, width: 1.4),
           ),
           errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(24),
-            borderSide: const BorderSide(color: Color(0xFFFFB199), width: 1.2),
+            borderRadius: AppBorderRadius.circular(24),
+            borderSide: const BorderSide(
+              color: AppPalette.redLight02,
+              width: 1.2,
+            ),
           ),
           focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(24),
-            borderSide: const BorderSide(color: Color(0xFFFFB199), width: 1.4),
+            borderRadius: AppBorderRadius.circular(24),
+            borderSide: const BorderSide(
+              color: AppPalette.redLight02,
+              width: 1.4,
+            ),
           ),
         ),
       ),
@@ -4603,8 +4639,8 @@ class _ExcursionFieldShell extends StatelessWidget {
           label,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Color(0xFFD4BEA8),
+          style: const AppTextStyle(
+            color: AppPalette.orangeLight02,
             fontSize: 13,
             fontWeight: FontWeight.w900,
             height: 1.15,
@@ -4635,27 +4671,27 @@ class _VisibilityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? AppColors.accent : const Color(0xFF3A2108),
-      borderRadius: BorderRadius.circular(20),
+      color: selected ? AppPalette.primary : AppPalette.warmSurface48,
+      borderRadius: AppBorderRadius.circular(20),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: AppBorderRadius.circular(20),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const AppEdgeInsets.all(16),
           child: Row(
             children: [
               Container(
                 width: 48,
                 height: 48,
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   shape: BoxShape.circle,
                   color: selected
-                      ? Colors.white.withValues(alpha: 0.16)
-                      : Colors.white.withValues(alpha: 0.08),
+                      ? AppPalette.white.withValues(alpha: 0.16)
+                      : AppPalette.white.withValues(alpha: 0.08),
                 ),
                 child: Icon(
                   icon,
-                  color: selected ? Colors.white : const Color(0xFFFFDEB6),
+                  color: selected ? AppPalette.white : AppPalette.orangeLight48,
                 ),
               ),
               const SizedBox(width: 14),
@@ -4665,10 +4701,10 @@ class _VisibilityCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: TextStyle(
+                      style: AppTextStyle(
                         color: selected
-                            ? Colors.white
-                            : const Color(0xFFFFE3B8),
+                            ? AppPalette.white
+                            : AppPalette.amberLight13,
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
                       ),
@@ -4676,10 +4712,10 @@ class _VisibilityCard extends StatelessWidget {
                     const SizedBox(height: 5),
                     Text(
                       description,
-                      style: TextStyle(
+                      style: AppTextStyle(
                         color: selected
-                            ? Colors.white.withValues(alpha: 0.82)
-                            : const Color(0xFFC4A27D),
+                            ? AppPalette.white.withValues(alpha: 0.82)
+                            : AppPalette.orangeSoft19,
                         fontSize: 13,
                         height: 1.3,
                       ),
@@ -4688,7 +4724,7 @@ class _VisibilityCard extends StatelessWidget {
                 ),
               ),
               if (selected)
-                const Icon(Icons.check_circle_rounded, color: Colors.white),
+                const Icon(Icons.check_circle_rounded, color: AppPalette.white),
             ],
           ),
         ),
@@ -4719,7 +4755,7 @@ class _ExcursionBottomActionBar extends StatelessWidget {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final secondaryLabel = this.secondaryLabel;
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 10, 20, 14 + bottomInset),
+      padding: AppEdgeInsets.fromLTRB(20, 10, 20, 14 + bottomInset),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -4733,25 +4769,25 @@ class _ExcursionBottomActionBar extends StatelessWidget {
                       height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: AppPalette.white,
                       ),
                     )
                   : const Icon(Icons.arrow_forward_rounded),
               label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.accent,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: AppColors.accent.withValues(
+                backgroundColor: AppPalette.primary,
+                foregroundColor: AppPalette.white,
+                disabledBackgroundColor: AppPalette.primary.withValues(
                   alpha: 0.55,
                 ),
-                padding: const EdgeInsets.symmetric(
+                padding: const AppEdgeInsets.symmetric(
                   vertical: 17,
                   horizontal: 20,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(22),
+                  borderRadius: AppBorderRadius.circular(22),
                 ),
-                textStyle: const TextStyle(
+                textStyle: const AppTextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w900,
                 ),
@@ -4766,12 +4802,12 @@ class _ExcursionBottomActionBar extends StatelessWidget {
                 onPressed: isSubmitting ? null : onSecondaryPressed,
                 icon: Icon(
                   secondaryIcon,
-                  color: AppColors.textSecondary,
+                  color: AppPalette.textCoolSecondary,
                   size: 18,
                 ),
                 label: Text(
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
+                  style: AppTextStyle(
+                    color: AppPalette.textCoolSecondary,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                   ),
@@ -4966,14 +5002,14 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     return SafeArea(
       child: Padding(
-        padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + bottomInset),
+        padding: AppEdgeInsets.fromLTRB(16, 0, 16, 16 + bottomInset),
         child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: const Color(0xFF2D1E11),
-            borderRadius: BorderRadius.circular(28),
+          decoration: AppBoxDecoration(
+            color: AppPalette.warmSurface33,
+            borderRadius: AppBorderRadius.circular(28),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(18),
+            padding: const AppEdgeInsets.all(18),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -5059,7 +5095,7 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
                     const SizedBox(height: 12),
                     Text(
                       _errorText!,
-                      style: const TextStyle(color: Color(0xFFFFB199)),
+                      style: const AppTextStyle(color: AppPalette.redLight02),
                     ),
                   ],
                   const SizedBox(height: 16),
@@ -5068,12 +5104,14 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
                     child: FilledButton(
                       onPressed: _submit,
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.accent,
-                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        backgroundColor: AppPalette.primary,
+                        padding: const AppEdgeInsets.symmetric(vertical: 15),
                       ),
                       child: Text(
                         widget.l10n.confirm,
-                        style: const TextStyle(color: AppColors.textPrimary),
+                        style: const AppTextStyle(
+                          color: AppPalette.textPrimary,
+                        ),
                       ),
                     ),
                   ),

@@ -258,7 +258,7 @@ void main() {
         'title: l10n.excursionsFilterLanguage',
       );
       final endMarker = source.indexOf(
-        'Padding(\n                padding: EdgeInsets.fromLTRB',
+        'Padding(\n                padding: AppEdgeInsets.fromLTRB',
         languageSectionStart,
       );
       expect(languageSectionStart, isNonNegative);

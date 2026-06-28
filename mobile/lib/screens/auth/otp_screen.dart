@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/auth_provider.dart';
@@ -197,7 +197,7 @@ class _OtpScreenState extends State<OtpScreen> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Container(color: AppColors.background),
+            Container(color: AppPalette.backgroundWarm),
             Positioned(
               top: 0,
               right: 0,
@@ -206,13 +206,13 @@ class _OtpScreenState extends State<OtpScreen> {
                 child: Container(
                   width: authScaled(context, 250, min: 180, max: 250),
                   height: authScaled(context, 250, min: 180, max: 250),
-                  decoration: BoxDecoration(
-                    color: AppColors.accent.withValues(alpha: 0.15),
+                  decoration: AppBoxDecoration(
+                    color: AppPalette.primary.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-                    child: Container(color: Colors.transparent),
+                    child: Container(color: AppPalette.transparent),
                   ),
                 ),
               ),
@@ -225,13 +225,13 @@ class _OtpScreenState extends State<OtpScreen> {
                 child: Container(
                   width: authScaled(context, 350, min: 240, max: 350),
                   height: authScaled(context, 350, min: 240, max: 350),
-                  decoration: BoxDecoration(
-                    color: AppColors.accent.withValues(alpha: 0.08),
+                  decoration: AppBoxDecoration(
+                    color: AppPalette.primary.withValues(alpha: 0.08),
                     shape: BoxShape.circle,
                   ),
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
-                    child: Container(color: Colors.transparent),
+                    child: Container(color: AppPalette.transparent),
                   ),
                 ),
               ),
@@ -330,14 +330,14 @@ class _OtpScreenState extends State<OtpScreen> {
                   return AnimatedPadding(
                     duration: const Duration(milliseconds: 220),
                     curve: Curves.easeOut,
-                    padding: EdgeInsets.only(bottom: bottomInset),
+                    padding: AppEdgeInsets.only(bottom: bottomInset),
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(
                         parent: AlwaysScrollableScrollPhysics(),
                       ),
                       keyboardDismissBehavior:
                           ScrollViewKeyboardDismissBehavior.onDrag,
-                      padding: EdgeInsets.symmetric(
+                      padding: AppEdgeInsets.symmetric(
                         horizontal: horizontalPadding,
                       ),
                       child: ConstrainedBox(
@@ -352,13 +352,13 @@ class _OtpScreenState extends State<OtpScreen> {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 Padding(
-                                  padding: EdgeInsets.symmetric(
+                                  padding: AppEdgeInsets.symmetric(
                                     vertical: topPadding,
                                   ),
                                   child: Row(
                                     children: [
                                       Material(
-                                        color: AppColors.accent.withValues(
+                                        color: AppPalette.primary.withValues(
                                           alpha: 0.1,
                                         ),
                                         shape: const CircleBorder(),
@@ -370,7 +370,7 @@ class _OtpScreenState extends State<OtpScreen> {
                                             height: headerButtonSize,
                                             child: Icon(
                                               Icons.arrow_back,
-                                              color: AppColors.accent,
+                                              color: AppPalette.primary,
                                               size: authScaled(
                                                 context,
                                                 22,
@@ -391,11 +391,11 @@ class _OtpScreenState extends State<OtpScreen> {
                                       ),
                                       InkWell(
                                         onTap: () => context.go('/'),
-                                        borderRadius: BorderRadius.circular(
+                                        borderRadius: AppBorderRadius.circular(
                                           999,
                                         ),
                                         child: Padding(
-                                          padding: EdgeInsets.symmetric(
+                                          padding: AppEdgeInsets.symmetric(
                                             horizontal: authScaled(
                                               context,
                                               4,
@@ -411,7 +411,7 @@ class _OtpScreenState extends State<OtpScreen> {
                                           ),
                                           child: Text(
                                             'Inflap',
-                                            style: TextStyle(
+                                            style: AppTextStyle(
                                               fontSize: authScaled(
                                                 context,
                                                 20,
@@ -419,7 +419,7 @@ class _OtpScreenState extends State<OtpScreen> {
                                                 max: 20,
                                               ),
                                               fontWeight: FontWeight.bold,
-                                              color: AppColors.accent,
+                                              color: AppPalette.primary,
                                             ),
                                           ),
                                         ),
@@ -432,10 +432,10 @@ class _OtpScreenState extends State<OtpScreen> {
                                   isEmailRegistration
                                       ? l10n.verifyYourEmail
                                       : l10n.verifyYourPhone,
-                                  style: TextStyle(
+                                  style: AppTextStyle(
                                     fontSize: titleSize,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.textPrimary,
+                                    color: AppPalette.textPrimary,
                                     height: 1.2,
                                   ),
                                   textAlign: TextAlign.left,
@@ -450,9 +450,9 @@ class _OtpScreenState extends State<OtpScreen> {
                                 ),
                                 Text.rich(
                                   TextSpan(
-                                    style: TextStyle(
+                                    style: AppTextStyle(
                                       fontSize: bodySize,
-                                      color: AppColors.textSecondary,
+                                      color: AppPalette.textCoolSecondary,
                                       height: 1.5,
                                     ),
                                     children: [
@@ -462,8 +462,8 @@ class _OtpScreenState extends State<OtpScreen> {
                                         TextSpan(text: l10n.enterAuthCode),
                                       TextSpan(
                                         text: destination,
-                                        style: const TextStyle(
-                                          color: AppColors.accent,
+                                        style: const AppTextStyle(
+                                          color: AppPalette.primary,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -505,19 +505,19 @@ class _OtpScreenState extends State<OtpScreen> {
                                                     width: boxWidth,
                                                     height: boxHeight,
                                                     alignment: Alignment.center,
-                                                    decoration: BoxDecoration(
-                                                      color: AppColors.accent
+                                                    decoration: AppBoxDecoration(
+                                                      color: AppPalette.primary
                                                           .withValues(
                                                             alpha: 0.05,
                                                           ),
                                                       borderRadius:
-                                                          BorderRadius.circular(
+                                                          AppBorderRadius.circular(
                                                             otpRadius,
                                                           ),
                                                       border: Border.all(
                                                         color: isFocused
-                                                            ? AppColors.accent
-                                                            : AppColors.accent
+                                                            ? AppPalette.primary
+                                                            : AppPalette.primary
                                                                   .withValues(
                                                                     alpha: 0.2,
                                                                   ),
@@ -526,14 +526,14 @@ class _OtpScreenState extends State<OtpScreen> {
                                                     ),
                                                     child: Text(
                                                       char.isEmpty ? '·' : char,
-                                                      style: TextStyle(
+                                                      style: AppTextStyle(
                                                         fontSize: otpFontSize,
                                                         fontWeight:
                                                             FontWeight.bold,
                                                         color: char.isEmpty
-                                                            ? AppColors
+                                                            ? AppPalette
                                                                   .textCaption
-                                                            : AppColors
+                                                            : AppPalette
                                                                   .textPrimary,
                                                       ),
                                                     ),
@@ -550,10 +550,10 @@ class _OtpScreenState extends State<OtpScreen> {
                                             controller: _codeController,
                                             focusNode: _focusNode,
                                             keyboardType: TextInputType.number,
-                                            style: const TextStyle(
-                                              color: Colors.transparent,
+                                            style: const AppTextStyle(
+                                              color: AppPalette.transparent,
                                             ),
-                                            cursorColor: Colors.transparent,
+                                            cursorColor: AppPalette.transparent,
                                             enableInteractiveSelection: false,
                                             autofocus: true,
                                             onTapOutside: (_) => FocusScope.of(
@@ -567,15 +567,21 @@ class _OtpScreenState extends State<OtpScreen> {
                                               ),
                                             ],
                                             onChanged: _handleCodeChanged,
-                                            decoration: const InputDecoration(
-                                              border: InputBorder.none,
-                                              focusedBorder: InputBorder.none,
-                                              enabledBorder: InputBorder.none,
-                                              errorBorder: InputBorder.none,
-                                              disabledBorder: InputBorder.none,
-                                              contentPadding: EdgeInsets.zero,
-                                              fillColor: Colors.transparent,
-                                            ),
+                                            decoration:
+                                                const AppInputDecoration(
+                                                  border: InputBorder.none,
+                                                  focusedBorder:
+                                                      InputBorder.none,
+                                                  enabledBorder:
+                                                      InputBorder.none,
+                                                  errorBorder: InputBorder.none,
+                                                  disabledBorder:
+                                                      InputBorder.none,
+                                                  contentPadding:
+                                                      AppEdgeInsets.zero,
+                                                  fillColor:
+                                                      AppPalette.transparent,
+                                                ),
                                           ),
                                         ),
                                       ],
@@ -588,11 +594,11 @@ class _OtpScreenState extends State<OtpScreen> {
                                     Expanded(
                                       child: Container(
                                         height: 1,
-                                        color: AppColors.borderLight,
+                                        color: AppPalette.outlineOverlayLight,
                                       ),
                                     ),
                                     Padding(
-                                      padding: EdgeInsets.symmetric(
+                                      padding: AppEdgeInsets.symmetric(
                                         horizontal: authScaled(
                                           context,
                                           16,
@@ -610,7 +616,7 @@ class _OtpScreenState extends State<OtpScreen> {
                                               min: 14,
                                               max: 16,
                                             ),
-                                            color: AppColors.textCaption,
+                                            color: AppPalette.textCaption,
                                           ),
                                           SizedBox(
                                             width: authScaled(
@@ -622,8 +628,8 @@ class _OtpScreenState extends State<OtpScreen> {
                                           ),
                                           Text(
                                             _formatCountdown(),
-                                            style: TextStyle(
-                                              color: AppColors.textCaption,
+                                            style: AppTextStyle(
+                                              color: AppPalette.textCaption,
                                               fontSize: authScaled(
                                                 context,
                                                 14,
@@ -639,7 +645,7 @@ class _OtpScreenState extends State<OtpScreen> {
                                     Expanded(
                                       child: Container(
                                         height: 1,
-                                        color: AppColors.borderLight,
+                                        color: AppPalette.outlineOverlayLight,
                                       ),
                                     ),
                                   ],
@@ -662,8 +668,8 @@ class _OtpScreenState extends State<OtpScreen> {
                                       children: [
                                         Text(
                                           l10n.didntReceiveOTP,
-                                          style: TextStyle(
-                                            color: AppColors.textSecondary,
+                                          style: AppTextStyle(
+                                            color: AppPalette.textCoolSecondary,
                                             fontSize: authScaled(
                                               context,
                                               14,
@@ -677,10 +683,10 @@ class _OtpScreenState extends State<OtpScreen> {
                                               ? _resendCode
                                               : null,
                                           style: TextButton.styleFrom(
-                                            foregroundColor: AppColors.accent,
+                                            foregroundColor: AppPalette.primary,
                                             disabledForegroundColor:
-                                                AppColors.textCaption,
-                                            padding: EdgeInsets.symmetric(
+                                                AppPalette.textCaption,
+                                            padding: AppEdgeInsets.symmetric(
                                               horizontal: authScaled(
                                                 context,
                                                 6,
@@ -715,12 +721,13 @@ class _OtpScreenState extends State<OtpScreen> {
                                                   child:
                                                       const CircularProgressIndicator(
                                                         strokeWidth: 2,
-                                                        color: AppColors.accent,
+                                                        color:
+                                                            AppPalette.primary,
                                                       ),
                                                 )
                                               : Text(
                                                   l10n.resendCode,
-                                                  style: TextStyle(
+                                                  style: AppTextStyle(
                                                     fontSize: authScaled(
                                                       context,
                                                       14,
@@ -738,7 +745,7 @@ class _OtpScreenState extends State<OtpScreen> {
                               ],
                             ),
                             Padding(
-                              padding: EdgeInsets.only(top: footerTopGap),
+                              padding: AppEdgeInsets.only(top: footerTopGap),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
@@ -747,18 +754,19 @@ class _OtpScreenState extends State<OtpScreen> {
                                       if (auth.isVerifyingOtp) {
                                         return Container(
                                           height: buttonHeight,
-                                          decoration: BoxDecoration(
-                                            color: AppColors.accent,
-                                            borderRadius: BorderRadius.circular(
-                                              cardRadius,
-                                            ),
+                                          decoration: AppBoxDecoration(
+                                            color: AppPalette.primary,
+                                            borderRadius:
+                                                AppBorderRadius.circular(
+                                                  cardRadius,
+                                                ),
                                           ),
                                           alignment: Alignment.center,
                                           child: const SizedBox(
                                             width: 24,
                                             height: 24,
                                             child: CircularProgressIndicator(
-                                              color: AppColors.background,
+                                              color: AppPalette.backgroundWarm,
                                               strokeWidth: 2.5,
                                             ),
                                           ),
@@ -772,23 +780,25 @@ class _OtpScreenState extends State<OtpScreen> {
                                       return ElevatedButton(
                                         onPressed: canSubmit ? _submit : null,
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: AppColors.accent,
-                                          foregroundColor: AppColors.background,
-                                          disabledBackgroundColor: AppColors
-                                              .accent
+                                          backgroundColor: AppPalette.primary,
+                                          foregroundColor:
+                                              AppPalette.backgroundWarm,
+                                          disabledBackgroundColor: AppPalette
+                                              .primary
                                               .withValues(alpha: 0.5),
-                                          padding: EdgeInsets.zero,
+                                          padding: AppEdgeInsets.zero,
                                           minimumSize: Size(
                                             double.infinity,
                                             buttonHeight,
                                           ),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              cardRadius,
-                                            ),
+                                            borderRadius:
+                                                AppBorderRadius.circular(
+                                                  cardRadius,
+                                                ),
                                           ),
                                           elevation: canSubmit ? 4 : 0,
-                                          shadowColor: AppColors.accent
+                                          shadowColor: AppPalette.primary
                                               .withValues(alpha: 0.5),
                                         ),
                                         child: Row(
@@ -797,7 +807,7 @@ class _OtpScreenState extends State<OtpScreen> {
                                           children: [
                                             Text(
                                               l10n.verifyAndLogin,
-                                              style: TextStyle(
+                                              style: AppTextStyle(
                                                 fontSize: authScaled(
                                                   context,
                                                   18,
@@ -805,7 +815,7 @@ class _OtpScreenState extends State<OtpScreen> {
                                                   max: 18,
                                                 ),
                                                 fontWeight: FontWeight.bold,
-                                                color: AppColors.textPrimary,
+                                                color: AppPalette.textPrimary,
                                               ),
                                             ),
                                             SizedBox(
@@ -824,7 +834,7 @@ class _OtpScreenState extends State<OtpScreen> {
                                                 min: 20,
                                                 max: 24,
                                               ),
-                                              color: AppColors.textPrimary,
+                                              color: AppPalette.textPrimary,
                                             ),
                                           ],
                                         ),

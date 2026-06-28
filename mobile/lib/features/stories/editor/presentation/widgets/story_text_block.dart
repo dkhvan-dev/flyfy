@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
-import '../../../../../core/ui/app_colors.dart';
 import '../../../../../l10n/generated/app_localizations.dart';
 import '../../domain/story_document.dart';
 import 'story_editor_focus_visibility.dart';
@@ -105,11 +105,13 @@ class _StoryTextBlockState extends State<StoryTextBlock> {
     return DecoratedBox(
       decoration: storyEditorPanelDecoration(context).copyWith(
         border: Border.all(
-          color: widget.selected ? AppColors.accent : AppColors.border,
+          color: widget.selected
+              ? AppPalette.primary
+              : AppPalette.outlineOverlay,
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(StoryEditorSpacing.md),
+        padding: const AppEdgeInsets.all(StoryEditorSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -147,7 +149,7 @@ class _StoryTextBlockState extends State<StoryTextBlock> {
                 maxLines: null,
                 textInputAction: TextInputAction.newline,
                 style: textStyle,
-                decoration: InputDecoration(
+                decoration: AppInputDecoration(
                   hintText: _hintFor(l10n, type),
                   border: InputBorder.none,
                 ),
@@ -274,7 +276,7 @@ class _StoryTextEditingController extends TextEditingController {
         ),
         StoryInlineMarkType.underline => next,
         StoryInlineMarkType.strikethrough => next,
-        StoryInlineMarkType.link => next.copyWith(color: AppColors.accent),
+        StoryInlineMarkType.link => next.copyWith(color: AppPalette.primary),
       };
       switch (mark.type) {
         case StoryInlineMarkType.underline:
@@ -296,7 +298,7 @@ class _StoryTextEditingController extends TextEditingController {
       next = next.copyWith(
         decoration: TextDecoration.combine(decorations),
         decorationColor: decorations.contains(TextDecoration.underline)
-            ? AppColors.accent
+            ? AppPalette.primary
             : next.decorationColor,
       );
     }

@@ -266,7 +266,7 @@ void main() {
       expect(contentSource, contains('?bottomAction'));
       expect(
         contentSource,
-        contains('padding: const EdgeInsets.only(bottom: 24)'),
+        contains('padding: const AppEdgeInsets.only(bottom: 24)'),
       );
       expect(contentSource, isNot(contains('scrollBottomPadding')));
       expect(contentSource, isNot(contains('bottom: 0')));

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/time/app_time.dart';
-import '../../../core/ui/app_colors.dart';
 import '../../../features/excursions/models/excursion_schedule_vm.dart';
 import 'guide_schedule_slot_card.dart';
 
@@ -33,15 +33,15 @@ class GuideCalendarDayStrip extends StatelessWidget {
       height: _guideCalendarDayStripHeight(context),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const AppEdgeInsets.symmetric(horizontal: 20),
         itemBuilder: (context, index) {
           final day = days[index];
           final selected = _isSameDay(day, selectedDate);
           final daySlots = _slotsForDay(day);
           final indicatorColor = daySlots.any((slot) => slot.isBooked)
-              ? AppColors.accent
+              ? AppPalette.primary
               : daySlots.isEmpty
-              ? Colors.transparent
+              ? AppPalette.transparent
               : guideScheduleStatusColor(daySlots.first);
           return Semantics(
             button: true,
@@ -52,19 +52,19 @@ class GuideCalendarDayStrip extends StatelessWidget {
                 minWidth: _guideCalendarDayCellMinWidth(context),
               ),
               child: Material(
-                color: selected ? AppColors.accent : const Color(0xFF2A2118),
-                borderRadius: BorderRadius.circular(
+                color: selected ? AppPalette.primary : AppPalette.warmSurface20,
+                borderRadius: AppBorderRadius.circular(
                   _guideCalendarDayCellRadius,
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(
+                  borderRadius: AppBorderRadius.circular(
                     _guideCalendarDayCellRadius,
                   ),
                   onTap: () => onDateSelected(day),
                   child: ExcludeSemantics(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
+                      padding: const AppEdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 10,
                       ),
@@ -75,10 +75,10 @@ class GuideCalendarDayStrip extends StatelessWidget {
                             DateFormat.E(locale).format(day),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
+                            style: AppTextStyle(
                               color: selected
-                                  ? AppColors.textPrimary
-                                  : AppColors.textSecondary,
+                                  ? AppPalette.textPrimary
+                                  : AppPalette.textCoolSecondary,
                               fontSize: _guideCalendarWeekdayFontSize(context),
                               fontWeight: FontWeight.w800,
                             ),
@@ -86,10 +86,10 @@ class GuideCalendarDayStrip extends StatelessWidget {
                           const SizedBox(height: 6),
                           Text(
                             DateFormat.d(locale).format(day),
-                            style: TextStyle(
+                            style: AppTextStyle(
                               color: selected
-                                  ? AppColors.textPrimary
-                                  : AppColors.textPrimary,
+                                  ? AppPalette.textPrimary
+                                  : AppPalette.textPrimary,
                               fontSize: _guideCalendarDayFontSize(context),
                               fontWeight: FontWeight.w900,
                             ),
@@ -98,9 +98,9 @@ class GuideCalendarDayStrip extends StatelessWidget {
                           Container(
                             width: _guideCalendarIndicatorSize(context),
                             height: _guideCalendarIndicatorSize(context),
-                            decoration: BoxDecoration(
+                            decoration: AppBoxDecoration(
                               color: selected
-                                  ? AppColors.textPrimary
+                                  ? AppPalette.textPrimary
                                   : indicatorColor,
                               shape: BoxShape.circle,
                             ),

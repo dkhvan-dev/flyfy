@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -14,7 +15,6 @@ import '../../core/network/activity_api.dart';
 import '../../core/network/checklist_api.dart';
 import '../../core/network/file_api.dart';
 import '../../core/time/app_time.dart';
-import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../core/ui/error_view.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
@@ -407,7 +407,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       context: context,
       barrierDismissible: true,
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      barrierColor: Colors.transparent,
+      barrierColor: AppPalette.transparent,
       transitionDuration: const Duration(milliseconds: 220),
       pageBuilder: (dialogContext, _, _) {
         return _PrivateActivityPasswordDialog(
@@ -737,7 +737,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (sheetContext) => _CancelActivitySheet(l10n: l10n),
     );
   }
@@ -747,7 +747,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (sheetContext) => _CompleteActivitySheet(l10n: l10n),
     );
   }
@@ -757,7 +757,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (sheetContext) => _CancelInsteadSheet(l10n: l10n),
     );
   }
@@ -1156,7 +1156,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (sheetContext) {
         final locale = Localizations.localeOf(sheetContext).toString();
         final dateFormat = DateFormat.MMMd(locale).add_Hm();
@@ -1167,33 +1167,33 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
             top: false,
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+              padding: const AppEdgeInsets.fromLTRB(12, 12, 12, 0),
               child: Container(
                 constraints: BoxConstraints(
                   maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.72,
                 ),
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   color: _DetailsColors.sheet,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(30),
+                  borderRadius: const AppBorderRadius.vertical(
+                    top: AppRadiusValue.circular(30),
                   ),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.08),
+                    color: AppPalette.white.withValues(alpha: 0.08),
                   ),
                 ),
                 child: Column(
                   children: [
                     Container(
-                      margin: const EdgeInsets.only(top: 12),
+                      margin: const AppEdgeInsets.only(top: 12),
                       width: 48,
                       height: 5,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(999),
+                      decoration: AppBoxDecoration(
+                        color: AppPalette.white.withValues(alpha: 0.18),
+                        borderRadius: AppBorderRadius.circular(999),
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(22, 18, 22, 10),
+                      padding: const AppEdgeInsets.fromLTRB(22, 18, 22, 10),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -1202,7 +1202,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                               Expanded(
                                 child: Text(
                                   l10n.activityGoingTitle(participants.length),
-                                  style: const TextStyle(
+                                  style: const AppTextStyle(
                                     color: _DetailsColors.text,
                                     fontSize: 18,
                                     fontWeight: FontWeight.w800,
@@ -1228,8 +1228,8 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                                 unawaited(_showInviteFriendsSheet(l10n));
                               },
                               style: TextButton.styleFrom(
-                                foregroundColor: AppColors.accent,
-                                padding: EdgeInsets.zero,
+                                foregroundColor: AppPalette.primary,
+                                padding: AppEdgeInsets.zero,
                                 minimumSize: const Size(0, 40),
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
@@ -1241,7 +1241,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                                 l10n.activityInviteFriendsButton,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: const AppTextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 0,
@@ -1252,10 +1252,10 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                         ],
                       ),
                     ),
-                    const Divider(height: 1, color: Color(0x14FFFFFF)),
+                    const Divider(height: 1, color: AppPalette.outlineOverlay),
                     Expanded(
                       child: ListView.separated(
-                        padding: EdgeInsets.fromLTRB(
+                        padding: AppEdgeInsets.fromLTRB(
                           22,
                           14,
                           22,
@@ -1293,7 +1293,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                                         l10n,
                                         resolvedProfiles: _resolvedProfiles,
                                       ),
-                                      style: const TextStyle(
+                                      style: const AppTextStyle(
                                         color: _DetailsColors.text,
                                         fontSize: 14,
                                         fontWeight: FontWeight.w700,
@@ -1304,7 +1304,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                                       dateFormat.format(
                                         participant.joinedAt.toLocal(),
                                       ),
-                                      style: const TextStyle(
+                                      style: const AppTextStyle(
                                         color: _DetailsColors.muted,
                                         fontSize: 12,
                                         fontWeight: FontWeight.w500,
@@ -1361,7 +1361,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (sheetContext) {
         return _DetailsResponsiveTextScope(
           child: _InviteFriendsSheet(
@@ -1499,7 +1499,9 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
           body: Stack(
             children: [
               Positioned.fill(child: _DetailsBackdrop()),
-              Center(child: CircularProgressIndicator(color: AppColors.accent)),
+              Center(
+                child: CircularProgressIndicator(color: AppPalette.primary),
+              ),
             ],
           ),
         ),
@@ -1614,7 +1616,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
         : Icons.event_busy_rounded;
     final lifecycleReasonColor = activity.isCompletedEarly
         ? _DetailsColors.success
-        : AppColors.accent;
+        : AppPalette.primary;
     final baseCategoryLabel = _resolveLocalizedCategoryLabel(
       activity.categorySlug,
       provider.categoryItems,
@@ -1688,13 +1690,13 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
 
                   return RefreshIndicator(
                     onRefresh: _refreshScreen,
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                     backgroundColor: _DetailsColors.sheet,
                     child: ListView(
                       physics: const AlwaysScrollableScrollPhysics(
                         parent: BouncingScrollPhysics(),
                       ),
-                      padding: EdgeInsets.fromLTRB(
+                      padding: AppEdgeInsets.fromLTRB(
                         horizontalPadding,
                         10,
                         horizontalPadding,
@@ -2005,13 +2007,13 @@ double _detailsScaled(
 }
 
 abstract final class _DetailsColors {
-  static const base = Color(0xFF140901);
-  static const sheet = Color(0xFF1A0F08);
-  static const text = Color(0xFFF4F1EB);
-  static const muted = Color(0xFFB8B3B4);
-  static const subtle = Color(0xFF97929A);
-  static const success = Color(0xFF18C26E);
-  static const mutedPill = Color(0xB4959A96);
+  static const base = AppPalette.warmInk13;
+  static const sheet = AppPalette.warmInk33;
+  static const text = AppPalette.amberWash02;
+  static const muted = AppPalette.neutralSoft04;
+  static const subtle = AppPalette.neutralSoft01;
+  static const success = AppPalette.greenMuted01;
+  static const mutedPill = AppPalette.neutralOverlaySoft01;
 }
 
 class _DetailsBackdrop extends StatelessWidget {
@@ -2023,11 +2025,11 @@ class _DetailsBackdrop extends StatelessWidget {
     final bottomGlowHeight = _detailsScaled(context, 220, min: 180, max: 260);
 
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [const Color(0xFF1B0F07), _DetailsColors.base],
+          colors: [AppPalette.warmInk39, _DetailsColors.base],
         ),
       ),
       child: Stack(
@@ -2038,13 +2040,13 @@ class _DetailsBackdrop extends StatelessWidget {
             right: -40,
             height: topGlowHeight,
             child: DecoratedBox(
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 gradient: RadialGradient(
                   center: Alignment.topCenter,
                   radius: 0.8,
                   colors: [
-                    AppColors.accent.withValues(alpha: 0.14),
-                    Colors.transparent,
+                    AppPalette.primary.withValues(alpha: 0.14),
+                    AppPalette.transparent,
                   ],
                 ),
               ),
@@ -2056,13 +2058,13 @@ class _DetailsBackdrop extends StatelessWidget {
             right: -20,
             height: bottomGlowHeight,
             child: DecoratedBox(
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 gradient: RadialGradient(
                   center: Alignment.bottomCenter,
                   radius: 0.9,
                   colors: [
-                    AppColors.accent.withValues(alpha: 0.08),
-                    Colors.transparent,
+                    AppPalette.primary.withValues(alpha: 0.08),
+                    AppPalette.transparent,
                   ],
                 ),
               ),
@@ -2166,26 +2168,26 @@ class _PrivateActivityPasswordDialogState
         behavior: HitTestBehavior.opaque,
         onTap: () => FocusScope.of(context).unfocus(),
         child: Material(
-          color: Colors.transparent,
+          color: AppPalette.transparent,
           child: Stack(
             children: [
               Positioned.fill(
                 child: DecoratedBox(
-                  decoration: BoxDecoration(
+                  decoration: AppBoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        const Color(0x6605060A),
-                        const Color(0xC2080A12),
-                        const Color(0xEB090B12),
+                        AppPalette.blueOverlayInk01,
+                        AppPalette.blueOverlayInk02,
+                        AppPalette.blueOverlayInk03,
                       ],
                     ),
                   ),
                   child: BackdropFilter(
                     filter: ui.ImageFilter.blur(sigmaX: 6, sigmaY: 6),
                     child: ColoredBox(
-                      color: Colors.black.withValues(alpha: 0.12),
+                      color: AppPalette.black.withValues(alpha: 0.12),
                     ),
                   ),
                 ),
@@ -2197,7 +2199,7 @@ class _PrivateActivityPasswordDialogState
                   child: AnimatedPadding(
                     duration: const Duration(milliseconds: 220),
                     curve: Curves.easeOutCubic,
-                    padding: EdgeInsets.only(
+                    padding: AppEdgeInsets.only(
                       left: 12,
                       right: 12,
                       bottom: mediaQuery.viewInsets.bottom,
@@ -2205,26 +2207,31 @@ class _PrivateActivityPasswordDialogState
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 520),
                       child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(34),
+                        decoration: AppBoxDecoration(
+                          borderRadius: const AppBorderRadius.vertical(
+                            top: AppRadiusValue.circular(34),
                           ),
-                          border: Border.all(color: const Color(0x2EFFAB4F)),
+                          border: Border.all(
+                            color: AppPalette.orangeOverlaySoft04,
+                          ),
                           gradient: const LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
-                            colors: [Color(0xF029190A), Color(0xFA170E08)],
+                            colors: [
+                              AppPalette.warmOverlaySurface18,
+                              AppPalette.warmOverlayInk15,
+                            ],
                           ),
                           boxShadow: const [
                             BoxShadow(
-                              color: Color(0x47000000),
+                              color: AppPalette.neutralOverlayInk05,
                               blurRadius: 60,
                               offset: Offset(0, -28),
                             ),
                           ],
                         ),
                         child: SingleChildScrollView(
-                          padding: EdgeInsets.fromLTRB(
+                          padding: AppEdgeInsets.fromLTRB(
                             compact ? 18 : 20,
                             18,
                             compact ? 18 : 20,
@@ -2236,14 +2243,14 @@ class _PrivateActivityPasswordDialogState
                               Container(
                                 width: 58,
                                 height: 8,
-                                decoration: BoxDecoration(
-                                  color: AppColors.accent.withValues(
+                                decoration: AppBoxDecoration(
+                                  color: AppPalette.primary.withValues(
                                     alpha: 0.42,
                                   ),
-                                  borderRadius: BorderRadius.circular(999),
+                                  borderRadius: AppBorderRadius.circular(999),
                                   boxShadow: const [
                                     BoxShadow(
-                                      color: Color(0x14FFFFFF),
+                                      color: AppPalette.outlineOverlay,
                                       blurRadius: 1,
                                       offset: Offset(0, 1),
                                       spreadRadius: -0.4,
@@ -2255,14 +2262,14 @@ class _PrivateActivityPasswordDialogState
                               Container(
                                 width: compact ? 64 : 70,
                                 height: compact ? 64 : 70,
-                                decoration: BoxDecoration(
+                                decoration: AppBoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: AppColors.accent.withValues(
+                                  color: AppPalette.primary.withValues(
                                     alpha: 0.14,
                                   ),
                                   boxShadow: const [
                                     BoxShadow(
-                                      color: Color(0x1F000000),
+                                      color: AppPalette.neutralOverlayInk03,
                                       blurRadius: 16,
                                       offset: Offset(0, 6),
                                     ),
@@ -2271,14 +2278,14 @@ class _PrivateActivityPasswordDialogState
                                 child: const Icon(
                                   Icons.lock_outline_rounded,
                                   size: 28,
-                                  color: AppColors.accent,
+                                  color: AppPalette.primary,
                                 ),
                               ),
                               const SizedBox(height: 20),
                               Text(
                                 widget.l10n.activityPrivateJoinTitle,
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
+                                style: AppTextStyle(
                                   color: _DetailsColors.text,
                                   fontSize: compact ? 23 : 26,
                                   fontWeight: FontWeight.w700,
@@ -2293,8 +2300,8 @@ class _PrivateActivityPasswordDialogState
                                 child: Text(
                                   widget.l10n.activityPrivateJoinDescription,
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: const Color(0xFFB7B2BD),
+                                  style: AppTextStyle(
+                                    color: AppPalette.neutralSoft03,
                                     fontSize: compact ? 14 : 15,
                                     height: 1.4,
                                     letterSpacing: 0,
@@ -2306,7 +2313,7 @@ class _PrivateActivityPasswordDialogState
                                 alignment: Alignment.centerLeft,
                                 child: Text(
                                   widget.l10n.activityPrivateJoinPasswordLabel,
-                                  style: const TextStyle(
+                                  style: const AppTextStyle(
                                     color: _DetailsColors.text,
                                     fontSize: 15,
                                     fontWeight: FontWeight.w500,
@@ -2316,19 +2323,19 @@ class _PrivateActivityPasswordDialogState
                               ),
                               const SizedBox(height: 10),
                               DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color: const Color(0xC21F130A),
-                                  borderRadius: BorderRadius.circular(30),
+                                decoration: AppBoxDecoration(
+                                  color: AppPalette.warmOverlayInk06,
+                                  borderRadius: AppBorderRadius.circular(30),
                                   border: Border.all(
                                     color: _errorText == null
-                                        ? const Color(0x57FF9900)
-                                        : const Color(0xCCFF7A59),
+                                        ? AppPalette.warmOverlayMuted09
+                                        : AppPalette.redOverlaySoft03,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
                                       color: _errorText == null
-                                          ? const Color(0x0DFFB854)
-                                          : const Color(0x14FF7A59),
+                                          ? AppPalette.amberOverlaySoft01
+                                          : AppPalette.redOverlaySoft01,
                                       blurRadius: 0,
                                       spreadRadius: 1,
                                     ),
@@ -2345,25 +2352,25 @@ class _PrivateActivityPasswordDialogState
                                   autofillHints: const [AutofillHints.password],
                                   autocorrect: false,
                                   enableSuggestions: false,
-                                  style: TextStyle(
-                                    color: Colors.white,
+                                  style: AppTextStyle(
+                                    color: AppPalette.white,
                                     fontSize: compact ? 16 : 17,
                                     fontWeight: FontWeight.w600,
                                     letterSpacing: 0.2,
                                   ),
-                                  decoration: InputDecoration(
+                                  decoration: AppInputDecoration(
                                     hintText: widget
                                         .l10n
                                         .activityPrivateJoinPasswordPlaceholder,
-                                    hintStyle: TextStyle(
-                                      color: Colors.white.withValues(
+                                    hintStyle: AppTextStyle(
+                                      color: AppPalette.white.withValues(
                                         alpha: 0.72,
                                       ),
                                       fontSize: compact ? 15 : 16,
                                       fontWeight: FontWeight.w500,
                                     ),
                                     border: InputBorder.none,
-                                    contentPadding: EdgeInsets.symmetric(
+                                    contentPadding: AppEdgeInsets.symmetric(
                                       horizontal: 22,
                                       vertical: compact ? 14 : 16,
                                     ),
@@ -2378,7 +2385,7 @@ class _PrivateActivityPasswordDialogState
                                         _obscureText
                                             ? Icons.visibility_outlined
                                             : Icons.visibility_off_outlined,
-                                        color: AppColors.accent,
+                                        color: AppPalette.primary,
                                       ),
                                     ),
                                   ),
@@ -2400,13 +2407,13 @@ class _PrivateActivityPasswordDialogState
                                 Align(
                                   alignment: Alignment.centerLeft,
                                   child: Padding(
-                                    padding: const EdgeInsets.symmetric(
+                                    padding: const AppEdgeInsets.symmetric(
                                       horizontal: 6,
                                     ),
                                     child: Text(
                                       _errorText!,
-                                      style: const TextStyle(
-                                        color: Color(0xFFFF8A65),
+                                      style: const AppTextStyle(
+                                        color: AppPalette.redSoft11,
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -2416,19 +2423,19 @@ class _PrivateActivityPasswordDialogState
                               ],
                               const SizedBox(height: 26),
                               DecoratedBox(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(999),
+                                decoration: AppBoxDecoration(
+                                  borderRadius: AppBorderRadius.circular(999),
                                   gradient: const LinearGradient(
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
                                     colors: [
-                                      Color(0xFFFF9900),
-                                      Color(0xFFFF9300),
+                                      AppPalette.warmMuted46,
+                                      AppPalette.warmMuted44,
                                     ],
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppColors.accent.withValues(
+                                      color: AppPalette.primary.withValues(
                                         alpha: 0.28,
                                       ),
                                       blurRadius: 28,
@@ -2437,9 +2444,9 @@ class _PrivateActivityPasswordDialogState
                                   ],
                                 ),
                                 child: Material(
-                                  color: Colors.transparent,
+                                  color: AppPalette.transparent,
                                   child: InkWell(
-                                    borderRadius: BorderRadius.circular(999),
+                                    borderRadius: AppBorderRadius.circular(999),
                                     onTap: _isSubmitting ? null : _submit,
                                     child: SizedBox(
                                       width: double.infinity,
@@ -2453,7 +2460,7 @@ class _PrivateActivityPasswordDialogState
                                                   strokeWidth: 2.6,
                                                   valueColor:
                                                       AlwaysStoppedAnimation(
-                                                        Colors.white,
+                                                        AppPalette.white,
                                                       ),
                                                 ),
                                               )
@@ -2461,8 +2468,8 @@ class _PrivateActivityPasswordDialogState
                                                 widget
                                                     .l10n
                                                     .activityPrivateJoinSubmit,
-                                                style: TextStyle(
-                                                  color: Colors.white,
+                                                style: AppTextStyle(
+                                                  color: AppPalette.white,
                                                   fontSize: compact ? 16 : 17,
                                                   fontWeight: FontWeight.w700,
                                                   letterSpacing: 0,
@@ -2605,7 +2612,7 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
           child: AnimatedPadding(
             duration: const Duration(milliseconds: 220),
             curve: Curves.easeOutCubic,
-            padding: EdgeInsets.only(
+            padding: AppEdgeInsets.only(
               left: 12,
               right: 12,
               bottom: mediaQuery.viewInsets.bottom,
@@ -2613,28 +2620,31 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 520),
               child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(32),
+                decoration: AppBoxDecoration(
+                  borderRadius: const AppBorderRadius.vertical(
+                    top: AppRadiusValue.circular(32),
                   ),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.08),
+                    color: AppPalette.white.withValues(alpha: 0.08),
                   ),
                   gradient: const LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Color(0xF92A190D), Color(0xFA180E08)],
+                    colors: [
+                      AppPalette.warmOverlaySurface20,
+                      AppPalette.warmOverlayInk16,
+                    ],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.34),
+                      color: AppPalette.black.withValues(alpha: 0.34),
                       blurRadius: 36,
                       offset: const Offset(0, -18),
                     ),
                   ],
                 ),
                 child: SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(
+                  padding: AppEdgeInsets.fromLTRB(
                     compact ? 16 : 18,
                     14,
                     compact ? 16 : 18,
@@ -2648,9 +2658,9 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
                         child: Container(
                           width: 52,
                           height: 5,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.18),
-                            borderRadius: BorderRadius.circular(999),
+                          decoration: AppBoxDecoration(
+                            color: AppPalette.white.withValues(alpha: 0.18),
+                            borderRadius: AppBorderRadius.circular(999),
                           ),
                         ),
                       ),
@@ -2659,16 +2669,16 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
                         child: Container(
                           width: compact ? 58 : 62,
                           height: compact ? 58 : 62,
-                          decoration: BoxDecoration(
+                          decoration: AppBoxDecoration(
                             shape: BoxShape.circle,
-                            color: AppColors.accent.withValues(alpha: 0.12),
+                            color: AppPalette.primary.withValues(alpha: 0.12),
                             border: Border.all(
-                              color: AppColors.accent.withValues(alpha: 0.26),
+                              color: AppPalette.primary.withValues(alpha: 0.26),
                             ),
                           ),
                           child: Icon(
                             widget.confirmIcon,
-                            color: AppColors.accent,
+                            color: AppPalette.primary,
                             size: 26,
                           ),
                         ),
@@ -2678,7 +2688,7 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
                         child: Text(
                           widget.title,
                           textAlign: TextAlign.center,
-                          style: TextStyle(
+                          style: AppTextStyle(
                             color: _DetailsColors.text,
                             fontSize: compact ? 21 : 23,
                             fontWeight: FontWeight.w800,
@@ -2693,7 +2703,7 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
                           child: Text(
                             widget.description,
                             textAlign: TextAlign.center,
-                            style: TextStyle(
+                            style: AppTextStyle(
                               color: _DetailsColors.muted,
                               fontSize: compact ? 13.5 : 14,
                               height: 1.42,
@@ -2704,7 +2714,7 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
                       const SizedBox(height: 22),
                       Text(
                         widget.reasonLabel,
-                        style: const TextStyle(
+                        style: const AppTextStyle(
                           color: _DetailsColors.text,
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
@@ -2712,13 +2722,13 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
                       ),
                       const SizedBox(height: 10),
                       DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(22),
+                        decoration: AppBoxDecoration(
+                          color: AppPalette.white.withValues(alpha: 0.05),
+                          borderRadius: AppBorderRadius.circular(22),
                           border: Border.all(
                             color: _errorText == null
-                                ? Colors.white.withValues(alpha: 0.08)
-                                : const Color(0x88FF8A65),
+                                ? AppPalette.white.withValues(alpha: 0.08)
+                                : AppPalette.redOverlaySoft02,
                           ),
                         ),
                         child: TextField(
@@ -2728,15 +2738,15 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
                           minLines: 3,
                           maxLength: 160,
                           textCapitalization: TextCapitalization.sentences,
-                          style: const TextStyle(
+                          style: const AppTextStyle(
                             color: _DetailsColors.text,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                             height: 1.4,
                           ),
-                          decoration: InputDecoration(
+                          decoration: AppInputDecoration(
                             hintText: widget.reasonPlaceholder,
-                            hintStyle: TextStyle(
+                            hintStyle: AppTextStyle(
                               color: _DetailsColors.muted.withValues(
                                 alpha: 0.72,
                               ),
@@ -2744,12 +2754,12 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
                               fontWeight: FontWeight.w500,
                             ),
                             border: InputBorder.none,
-                            counterStyle: const TextStyle(
+                            counterStyle: const AppTextStyle(
                               color: _DetailsColors.subtle,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
-                            contentPadding: const EdgeInsets.fromLTRB(
+                            contentPadding: const AppEdgeInsets.fromLTRB(
                               16,
                               14,
                               16,
@@ -2770,11 +2780,11 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
                       if (_errorText != null) ...[
                         const SizedBox(height: 10),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          padding: const AppEdgeInsets.symmetric(horizontal: 4),
                           child: Text(
                             _errorText!,
-                            style: const TextStyle(
-                              color: Color(0xFFFF8A65),
+                            style: const AppTextStyle(
+                              color: AppPalette.redSoft11,
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                             ),
@@ -2854,12 +2864,12 @@ class _SheetActionButton extends StatelessWidget {
     final iconSize = _detailsScaled(context, 16, min: 15, max: 18);
 
     final backgroundColor = isPrimary
-        ? AppColors.accent
-        : Colors.white.withValues(alpha: 0.06);
-    final foregroundColor = isPrimary ? Colors.white : _DetailsColors.text;
+        ? AppPalette.primary
+        : AppPalette.white.withValues(alpha: 0.06);
+    final foregroundColor = isPrimary ? AppPalette.white : _DetailsColors.text;
     final borderColor = isPrimary
-        ? AppColors.accent
-        : Colors.white.withValues(alpha: 0.1);
+        ? AppPalette.primary
+        : AppPalette.white.withValues(alpha: 0.1);
 
     return ConstrainedBox(
       constraints: BoxConstraints(minHeight: minHeight),
@@ -2870,7 +2880,7 @@ class _SheetActionButton extends StatelessWidget {
           foregroundColor: foregroundColor,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: AppBorderRadius.circular(18),
             side: BorderSide(color: borderColor),
           ),
         ),
@@ -2884,7 +2894,7 @@ class _SheetActionButton extends StatelessWidget {
               child: Text(
                 label,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: const AppTextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0,
@@ -2938,7 +2948,7 @@ class _DetailsTopBar extends StatelessWidget {
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: AppTextStyle(
                   color: _DetailsColors.text,
                   fontSize: titleFontSize,
                   fontWeight: FontWeight.w700,
@@ -2953,7 +2963,7 @@ class _DetailsTopBar extends StatelessWidget {
                   Container(
                     width: statusDotSize,
                     height: statusDotSize,
-                    decoration: BoxDecoration(
+                    decoration: AppBoxDecoration(
                       color: statusColor,
                       shape: BoxShape.circle,
                       boxShadow: [
@@ -2970,7 +2980,7 @@ class _DetailsTopBar extends StatelessWidget {
                       status,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: AppTextStyle(
                         color: _DetailsColors.subtle,
                         fontSize: statusFontSize,
                         fontWeight: FontWeight.w700,
@@ -3002,14 +3012,14 @@ class _CircleIconButton extends StatelessWidget {
     final iconSize = _detailsScaled(context, 20, min: 18, max: 22);
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: onTap,
         customBorder: const CircleBorder(),
         child: Ink(
           width: side,
           height: side,
-          decoration: const BoxDecoration(shape: BoxShape.circle),
+          decoration: const AppBoxDecoration(shape: BoxShape.circle),
           child: Icon(icon, color: _DetailsColors.text, size: iconSize),
         ),
       ),
@@ -3038,23 +3048,23 @@ class _DetailsHero extends StatelessWidget {
 
     return Container(
       height: height,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(34),
+      decoration: AppBoxDecoration(
+        borderRadius: AppBorderRadius.circular(34),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.36),
+            color: AppPalette.black.withValues(alpha: 0.36),
             blurRadius: 34,
             offset: const Offset(0, 18),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(34),
+        borderRadius: AppBorderRadius.circular(34),
         child: Stack(
           fit: StackFit.expand,
           children: [
             DecoratedBox(
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -3073,15 +3083,15 @@ class _DetailsHero extends StatelessWidget {
               ),
             Positioned.fill(
               child: DecoratedBox(
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.black.withValues(alpha: 0.08),
-                      Colors.black.withValues(alpha: 0.16),
-                      Colors.black.withValues(alpha: 0.48),
-                      Colors.black.withValues(alpha: 0.72),
+                      AppPalette.black.withValues(alpha: 0.08),
+                      AppPalette.black.withValues(alpha: 0.16),
+                      AppPalette.black.withValues(alpha: 0.48),
+                      AppPalette.black.withValues(alpha: 0.72),
                     ],
                     stops: const [0, 0.28, 0.68, 1],
                   ),
@@ -3094,13 +3104,13 @@ class _DetailsHero extends StatelessWidget {
               bottom: -10,
               height: height * 0.42,
               child: DecoratedBox(
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.white.withValues(alpha: 0.06),
-                      Colors.white.withValues(alpha: 0.01),
+                      AppPalette.white.withValues(alpha: 0.06),
+                      AppPalette.white.withValues(alpha: 0.01),
                     ],
                   ),
                 ),
@@ -3117,13 +3127,13 @@ class _DetailsHero extends StatelessWidget {
                   ..setEntry(3, 2, 0.002)
                   ..rotateX(1.18),
                 child: DecoratedBox(
-                  decoration: BoxDecoration(
+                  decoration: AppBoxDecoration(
                     gradient: LinearGradient(
                       colors: List.generate(
                         10,
                         (index) => index.isEven
-                            ? Colors.white.withValues(alpha: 0.08)
-                            : Colors.transparent,
+                            ? AppPalette.white.withValues(alpha: 0.08)
+                            : AppPalette.transparent,
                       ),
                     ),
                   ),
@@ -3136,14 +3146,14 @@ class _DetailsHero extends StatelessWidget {
               bottom: 0,
               height: height * 0.38,
               child: DecoratedBox(
-                decoration: BoxDecoration(
+                decoration: AppBoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.transparent,
-                      Colors.black.withValues(alpha: 0.15),
-                      Colors.black.withValues(alpha: 0.34),
+                      AppPalette.transparent,
+                      AppPalette.black.withValues(alpha: 0.15),
+                      AppPalette.black.withValues(alpha: 0.34),
                     ],
                   ),
                 ),
@@ -3159,8 +3169,8 @@ class _DetailsHero extends StatelessWidget {
                 children: [
                   _StatusPill(
                     label: categoryLabel,
-                    backgroundColor: AppColors.accent,
-                    textColor: Colors.white,
+                    backgroundColor: AppPalette.primary,
+                    textColor: AppPalette.white,
                   ),
                   _StatusPill(
                     label: contextLabel,
@@ -3199,7 +3209,7 @@ class _DetailsHeroArtwork extends StatelessWidget {
           child: Container(
             width: glowSizeLarge,
             height: glowSizeLarge,
-            decoration: BoxDecoration(
+            decoration: AppBoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
@@ -3216,12 +3226,12 @@ class _DetailsHeroArtwork extends StatelessWidget {
           child: Container(
             width: glowSizeSmall,
             height: glowSizeSmall,
-            decoration: BoxDecoration(
+            decoration: AppBoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  Colors.white.withValues(alpha: 0.18),
-                  Colors.white.withValues(alpha: 0.0),
+                  AppPalette.white.withValues(alpha: 0.18),
+                  AppPalette.white.withValues(alpha: 0.0),
                 ],
               ),
             ),
@@ -3233,17 +3243,19 @@ class _DetailsHeroArtwork extends StatelessWidget {
           top: 28,
           bottom: 98,
           child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
+            decoration: AppBoxDecoration(
+              borderRadius: AppBorderRadius.circular(28),
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.white.withValues(alpha: 0.12),
-                  Colors.white.withValues(alpha: 0.02),
+                  AppPalette.white.withValues(alpha: 0.12),
+                  AppPalette.white.withValues(alpha: 0.02),
                 ],
               ),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              border: Border.all(
+                color: AppPalette.white.withValues(alpha: 0.08),
+              ),
             ),
             child: Stack(
               children: [
@@ -3258,11 +3270,11 @@ class _DetailsHeroArtwork extends StatelessWidget {
                       (index) => Container(
                         width: 30 + (index * 10),
                         height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(
+                        decoration: AppBoxDecoration(
+                          color: AppPalette.white.withValues(
                             alpha: index.isEven ? 0.14 : 0.08,
                           ),
-                          borderRadius: BorderRadius.circular(999),
+                          borderRadius: AppBorderRadius.circular(999),
                         ),
                       ),
                     ),
@@ -3272,20 +3284,20 @@ class _DetailsHeroArtwork extends StatelessWidget {
                   child: Container(
                     width: centerOrb,
                     height: centerOrb,
-                    decoration: BoxDecoration(
+                    decoration: AppBoxDecoration(
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
                         colors: [
-                          Colors.white.withValues(alpha: 0.28),
-                          Colors.white.withValues(alpha: 0.08),
+                          AppPalette.white.withValues(alpha: 0.28),
+                          AppPalette.white.withValues(alpha: 0.08),
                         ],
                       ),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.18),
+                        color: AppPalette.white.withValues(alpha: 0.18),
                         width: 1.4,
                       ),
                     ),
-                    child: Icon(visual.icon, color: Colors.white, size: 48),
+                    child: Icon(visual.icon, color: AppPalette.white, size: 48),
                   ),
                 ),
               ],
@@ -3298,7 +3310,7 @@ class _DetailsHeroArtwork extends StatelessWidget {
           bottom: 64,
           height: ridgeHeight,
           child: DecoratedBox(
-            decoration: BoxDecoration(
+            decoration: AppBoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -3316,7 +3328,7 @@ class _DetailsHeroArtwork extends StatelessWidget {
           bottom: -18,
           height: baseHeight,
           child: DecoratedBox(
-            decoration: BoxDecoration(
+            decoration: AppBoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -3352,7 +3364,7 @@ class _HeadingSection extends StatelessWidget {
       children: [
         Text(
           title,
-          style: TextStyle(
+          style: AppTextStyle(
             color: _DetailsColors.text,
             fontSize: compact ? 24 : 27,
             fontWeight: FontWeight.w800,
@@ -3363,7 +3375,7 @@ class _HeadingSection extends StatelessWidget {
         const SizedBox(height: 10),
         Text(
           description,
-          style: TextStyle(
+          style: AppTextStyle(
             color: _DetailsColors.muted,
             fontSize: compact ? 14 : 15,
             height: 1.48,
@@ -3396,18 +3408,18 @@ class _LifecycleReasonCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
+      padding: const AppEdgeInsets.all(15),
+      decoration: AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Colors.white.withValues(alpha: 0.05),
-            Colors.white.withValues(alpha: 0.04),
+            AppPalette.white.withValues(alpha: 0.05),
+            AppPalette.white.withValues(alpha: 0.04),
           ],
         ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        borderRadius: AppBorderRadius.circular(24),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3415,7 +3427,7 @@ class _LifecycleReasonCard extends StatelessWidget {
           Container(
             width: badgeSize,
             height: badgeSize,
-            decoration: BoxDecoration(
+            decoration: AppBoxDecoration(
               color: accentColor.withValues(alpha: 0.12),
               shape: BoxShape.circle,
               border: Border.all(color: accentColor.withValues(alpha: 0.22)),
@@ -3429,7 +3441,7 @@ class _LifecycleReasonCard extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(
+                  style: AppTextStyle(
                     color: accentColor,
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
@@ -3439,7 +3451,7 @@ class _LifecycleReasonCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   reason,
-                  style: const TextStyle(
+                  style: const AppTextStyle(
                     color: _DetailsColors.text,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -3488,15 +3500,18 @@ class _HostCard extends StatelessWidget {
             Container(
               width: avatarSize,
               height: avatarSize,
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 shape: BoxShape.circle,
                 gradient: const LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0xFF2A9EA4), Color(0xFF2D7478)],
+                  colors: [
+                    AppPalette.tealMuted07,
+                    AppPalette.tealSurfaceHigh08,
+                  ],
                 ),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.05),
+                  color: AppPalette.white.withValues(alpha: 0.05),
                   width: 3,
                 ),
               ),
@@ -3505,8 +3520,8 @@ class _HostCard extends StatelessWidget {
                     ? Center(
                         child: Text(
                           avatarFallbackText,
-                          style: TextStyle(
-                            color: Colors.white,
+                          style: AppTextStyle(
+                            color: AppPalette.white,
                             fontSize: avatarIcon * 0.72,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0,
@@ -3519,8 +3534,8 @@ class _HostCard extends StatelessWidget {
                         errorBuilder: (_, _, _) => Center(
                           child: Text(
                             avatarFallbackText,
-                            style: TextStyle(
-                              color: Colors.white,
+                            style: AppTextStyle(
+                              color: AppPalette.white,
                               fontSize: avatarIcon * 0.72,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0,
@@ -3536,13 +3551,13 @@ class _HostCard extends StatelessWidget {
               child: Container(
                 width: badgeSize,
                 height: badgeSize,
-                decoration: const BoxDecoration(
-                  color: AppColors.accent,
+                decoration: const AppBoxDecoration(
+                  color: AppPalette.primary,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.star_rounded,
-                  color: Colors.white,
+                  color: AppPalette.white,
                   size: _detailsScaled(context, 13, min: 11, max: 14),
                 ),
               ),
@@ -3559,7 +3574,7 @@ class _HostCard extends StatelessWidget {
                     hostName,
                     maxLines: compact ? 2 : 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: const AppTextStyle(
                       color: _DetailsColors.text,
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
@@ -3577,8 +3592,8 @@ class _HostCard extends StatelessWidget {
                 subtitle,
                 maxLines: compact ? 3 : 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.accent,
+                style: const AppTextStyle(
+                  color: AppPalette.primary,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   height: 1.35,
@@ -3589,23 +3604,25 @@ class _HostCard extends StatelessWidget {
         );
 
         return Material(
-          color: Colors.transparent,
+          color: AppPalette.transparent,
           child: InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: AppBorderRadius.circular(24),
             child: Ink(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
+              padding: const AppEdgeInsets.all(16),
+              decoration: AppBoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.white.withValues(alpha: 0.05),
-                    Colors.white.withValues(alpha: 0.04),
+                    AppPalette.white.withValues(alpha: 0.05),
+                    AppPalette.white.withValues(alpha: 0.04),
                   ],
                 ),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                borderRadius: AppBorderRadius.circular(24),
+                border: Border.all(
+                  color: AppPalette.white.withValues(alpha: 0.06),
+                ),
               ),
               child: Row(
                 children: [
@@ -3615,7 +3632,7 @@ class _HostCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Icon(
                     Icons.chevron_right_rounded,
-                    color: AppColors.accent.withValues(alpha: 0.76),
+                    color: AppPalette.primary.withValues(alpha: 0.76),
                     size: _detailsScaled(context, 22, min: 20, max: 24),
                   ),
                 ],
@@ -3637,18 +3654,18 @@ class _HostRatingPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       constraints: const BoxConstraints(minHeight: 26),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.16)),
+      padding: const AppEdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: AppBoxDecoration(
+        color: AppPalette.primary.withValues(alpha: 0.18),
+        borderRadius: AppBorderRadius.circular(999),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             Icons.star_rounded,
-            color: AppColors.accent,
+            color: AppPalette.primary,
             size: _detailsScaled(context, 14, min: 12, max: 15),
           ),
           const SizedBox(width: 3),
@@ -3656,8 +3673,8 @@ class _HostRatingPill extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: AppColors.accent,
+            style: const AppTextStyle(
+              color: AppPalette.primary,
               fontSize: 12,
               fontWeight: FontWeight.w900,
               letterSpacing: 0,
@@ -3729,18 +3746,18 @@ class _ActivityScheduleCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.fromLTRB(16, dense ? 15 : 17, 16, dense ? 15 : 17),
-      decoration: BoxDecoration(
+      padding: AppEdgeInsets.fromLTRB(16, dense ? 15 : 17, 16, dense ? 15 : 17),
+      decoration: AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.accent.withValues(alpha: 0.12),
-            Colors.white.withValues(alpha: 0.04),
+            AppPalette.primary.withValues(alpha: 0.12),
+            AppPalette.white.withValues(alpha: 0.04),
           ],
         ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.16)),
+        borderRadius: AppBorderRadius.circular(24),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3751,16 +3768,16 @@ class _ActivityScheduleCard extends StatelessWidget {
               Container(
                 width: 38,
                 height: 38,
-                decoration: BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.16),
+                decoration: AppBoxDecoration(
+                  color: AppPalette.primary.withValues(alpha: 0.16),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: AppColors.accent.withValues(alpha: 0.18),
+                    color: AppPalette.primary.withValues(alpha: 0.18),
                   ),
                 ),
                 child: const Icon(
                   Icons.schedule_rounded,
-                  color: AppColors.accent,
+                  color: AppPalette.primary,
                   size: 21,
                 ),
               ),
@@ -3768,7 +3785,7 @@ class _ActivityScheduleCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   l10n.activityDateAndTime,
-                  style: const TextStyle(
+                  style: const AppTextStyle(
                     color: _DetailsColors.text,
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
@@ -3790,10 +3807,10 @@ class _ActivityScheduleCard extends StatelessWidget {
             dense: dense,
           ),
           Padding(
-            padding: EdgeInsets.symmetric(vertical: dense ? 10 : 12),
+            padding: AppEdgeInsets.symmetric(vertical: dense ? 10 : 12),
             child: Divider(
               height: 1,
-              color: Colors.white.withValues(alpha: 0.08),
+              color: AppPalette.white.withValues(alpha: 0.08),
             ),
           ),
           _ScheduleTimeRow(
@@ -3836,12 +3853,12 @@ class _ScheduleTimeRow extends StatelessWidget {
         Container(
           width: 30,
           height: 30,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.06),
+          decoration: AppBoxDecoration(
+            color: AppPalette.white.withValues(alpha: 0.06),
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
           ),
-          child: Icon(icon, color: AppColors.accent, size: 17),
+          child: Icon(icon, color: AppPalette.primary, size: 17),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -3851,7 +3868,7 @@ class _ScheduleTimeRow extends StatelessWidget {
             children: [
               Text(
                 label.toUpperCase(),
-                style: const TextStyle(
+                style: const AppTextStyle(
                   color: _DetailsColors.subtle,
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
@@ -3862,7 +3879,7 @@ class _ScheduleTimeRow extends StatelessWidget {
               const SizedBox(height: 5),
               Text(
                 timeText,
-                style: TextStyle(
+                style: AppTextStyle(
                   color: _DetailsColors.text,
                   fontSize: dense ? 14 : 15,
                   fontWeight: FontWeight.w800,
@@ -3875,20 +3892,20 @@ class _ScheduleTimeRow extends StatelessWidget {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
+                    padding: const AppEdgeInsets.symmetric(
                       horizontal: 9,
                       vertical: 6,
                     ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(999),
+                    decoration: AppBoxDecoration(
+                      color: AppPalette.white.withValues(alpha: 0.06),
+                      borderRadius: AppBorderRadius.circular(999),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.07),
+                        color: AppPalette.white.withValues(alpha: 0.07),
                       ),
                     ),
                     child: Text(
                       userTime,
-                      style: const TextStyle(
+                      style: const AppTextStyle(
                         color: _DetailsColors.muted,
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -3978,8 +3995,10 @@ class _StatsGrid extends StatelessWidget {
         }
 
         return Container(
-          padding: EdgeInsets.zero,
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(24)),
+          padding: AppEdgeInsets.zero,
+          decoration: AppBoxDecoration(
+            borderRadius: AppBorderRadius.circular(24),
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -4017,28 +4036,28 @@ class _DetailsStatCard extends StatelessWidget {
     final dense = textScale > 1.1;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(14, dense ? 13 : 15, 14, dense ? 12 : 14),
-      decoration: BoxDecoration(
+      padding: AppEdgeInsets.fromLTRB(14, dense ? 13 : 15, 14, dense ? 12 : 14),
+      decoration: AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Colors.white.withValues(alpha: 0.045),
-            Colors.white.withValues(alpha: 0.035),
+            AppPalette.white.withValues(alpha: 0.045),
+            AppPalette.white.withValues(alpha: 0.035),
           ],
         ),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        borderRadius: AppBorderRadius.circular(22),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(item.icon, color: AppColors.accent, size: 21),
+          Icon(item.icon, color: AppPalette.primary, size: 21),
           SizedBox(height: dense ? 12 : 15),
           Text(
             item.label.toUpperCase(),
-            style: const TextStyle(
+            style: const AppTextStyle(
               color: _DetailsColors.subtle,
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -4047,7 +4066,7 @@ class _DetailsStatCard extends StatelessWidget {
           SizedBox(height: dense ? 5 : 6),
           Text(
             item.value,
-            style: const TextStyle(
+            style: const AppTextStyle(
               color: _DetailsColors.text,
               fontSize: 13,
               fontWeight: FontWeight.w700,
@@ -4143,7 +4162,7 @@ class _MeetingSection extends StatelessWidget {
                 children: [
                   Text(
                     l10n.activityMeetingPoint,
-                    style: const TextStyle(
+                    style: const AppTextStyle(
                       color: _DetailsColors.text,
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
@@ -4154,7 +4173,7 @@ class _MeetingSection extends StatelessWidget {
                   TextButton(
                     onPressed: isBuildingRoute ? null : onActionTap,
                     style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
+                      padding: AppEdgeInsets.zero,
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
@@ -4164,13 +4183,13 @@ class _MeetingSection extends StatelessWidget {
                             height: 16,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: AppColors.accent,
+                              color: AppPalette.primary,
                             ),
                           )
                         : Text(
                             actionLabel,
-                            style: const TextStyle(
-                              color: AppColors.accent,
+                            style: const AppTextStyle(
+                              color: AppPalette.primary,
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
                             ),
@@ -4185,7 +4204,7 @@ class _MeetingSection extends StatelessWidget {
                 Expanded(
                   child: Text(
                     l10n.activityMeetingPoint,
-                    style: const TextStyle(
+                    style: const AppTextStyle(
                       color: _DetailsColors.text,
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
@@ -4201,13 +4220,13 @@ class _MeetingSection extends StatelessWidget {
                           height: 16,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: AppColors.accent,
+                            color: AppPalette.primary,
                           ),
                         )
                       : Text(
                           actionLabel,
-                          style: const TextStyle(
-                            color: AppColors.accent,
+                          style: const AppTextStyle(
+                            color: AppPalette.primary,
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
                           ),
@@ -4220,18 +4239,18 @@ class _MeetingSection extends StatelessWidget {
         const SizedBox(height: 14),
         Container(
           height: mapHeight,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
+          decoration: AppBoxDecoration(
+            borderRadius: AppBorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.24),
+                color: AppPalette.black.withValues(alpha: 0.24),
                 blurRadius: 28,
                 offset: const Offset(0, 12),
               ),
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: AppBorderRadius.circular(24),
             child: Stack(
               fit: StackFit.expand,
               children: [
@@ -4250,15 +4269,15 @@ class _MeetingSection extends StatelessWidget {
                   left: 16,
                   top: 16,
                   child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1A0F08).withValues(alpha: 0.86),
-                      borderRadius: BorderRadius.circular(999),
+                    decoration: AppBoxDecoration(
+                      color: AppPalette.warmInk33.withValues(alpha: 0.86),
+                      borderRadius: AppBorderRadius.circular(999),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.10),
+                        color: AppPalette.white.withValues(alpha: 0.10),
                       ),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
+                      padding: const AppEdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 8,
                       ),
@@ -4268,13 +4287,13 @@ class _MeetingSection extends StatelessWidget {
                           const Icon(
                             Icons.place_rounded,
                             size: 15,
-                            color: AppColors.accent,
+                            color: AppPalette.primary,
                           ),
                           const SizedBox(width: 6),
                           Text(
                             l10n.activityMeetingPoint,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: const AppTextStyle(
+                              color: AppPalette.white,
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                             ),
@@ -4293,7 +4312,7 @@ class _MeetingSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Padding(
-              padding: EdgeInsets.only(top: 2),
+              padding: AppEdgeInsets.only(top: 2),
               child: Icon(
                 Icons.place_outlined,
                 color: _DetailsColors.subtle,
@@ -4305,7 +4324,7 @@ class _MeetingSection extends StatelessWidget {
               child: showProtectedNotice
                   ? Text(
                       l10n.activitySensitiveDetailsHint,
-                      style: const TextStyle(
+                      style: const AppTextStyle(
                         color: _DetailsColors.muted,
                         fontSize: 14,
                         height: 1.4,
@@ -4321,7 +4340,7 @@ class _MeetingSection extends StatelessWidget {
                           : l10n.notSpecified,
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: const AppTextStyle(
                         color: _DetailsColors.muted,
                         fontSize: 14,
                         height: 1.4,
@@ -4393,10 +4412,10 @@ class _ProtectedMeetingNoticeOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black.withValues(alpha: 0.26),
-      padding: const EdgeInsets.all(20),
+      color: AppPalette.black.withValues(alpha: 0.26),
+      padding: const AppEdgeInsets.all(20),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: AppBorderRadius.circular(24),
         child: BackdropFilter(
           filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: LayoutBuilder(
@@ -4417,13 +4436,13 @@ class _ProtectedMeetingNoticeOverlay extends StatelessWidget {
                         Container(
                           width: 54,
                           height: 54,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.12),
+                          decoration: AppBoxDecoration(
+                            color: AppPalette.white.withValues(alpha: 0.12),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
                             Icons.lock_outline_rounded,
-                            color: Colors.white,
+                            color: AppPalette.white,
                             size: 26,
                           ),
                         ),
@@ -4431,8 +4450,8 @@ class _ProtectedMeetingNoticeOverlay extends StatelessWidget {
                         Text(
                           l10n.activitySensitiveDetailsProtected,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: const AppTextStyle(
+                            color: AppPalette.white,
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             height: 1.45,
@@ -4489,32 +4508,32 @@ class _MeetingLocationFallbackCard extends StatelessWidget {
     final iconSize = _detailsScaled(context, 32, min: 26, max: 34);
 
     return DecoratedBox(
-      decoration: const BoxDecoration(
+      decoration: const AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF2D1C0F), Color(0xFF1C110A)],
+          colors: [AppPalette.warmSurface32, AppPalette.warmInk50],
         ),
       ),
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const AppEdgeInsets.symmetric(horizontal: 24),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
                 width: iconWrap,
                 height: iconWrap,
-                decoration: BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.14),
+                decoration: AppBoxDecoration(
+                  color: AppPalette.primary.withValues(alpha: 0.14),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: AppColors.accent.withValues(alpha: 0.34),
+                    color: AppPalette.primary.withValues(alpha: 0.34),
                   ),
                 ),
                 child: Icon(
                   Icons.place_rounded,
-                  color: AppColors.accent,
+                  color: AppPalette.primary,
                   size: iconSize,
                 ),
               ),
@@ -4528,8 +4547,8 @@ class _MeetingLocationFallbackCard extends StatelessWidget {
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: const AppTextStyle(
+                  color: AppPalette.white,
                   fontSize: 15,
                   height: 1.45,
                   fontWeight: FontWeight.w600,
@@ -4557,12 +4576,12 @@ class _MeetingLeaveAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppBorderRadius.circular(999),
         onTap: isBusy ? null : onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+          padding: const AppEdgeInsets.symmetric(horizontal: 9, vertical: 7),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -4572,20 +4591,20 @@ class _MeetingLeaveAction extends StatelessWidget {
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.1,
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                   ),
                 )
               else
                 Icon(
                   Icons.logout_rounded,
                   size: 16,
-                  color: AppColors.accent.withValues(alpha: 0.9),
+                  color: AppPalette.primary.withValues(alpha: 0.9),
                 ),
               const SizedBox(width: 8),
               Text(
                 label,
-                style: TextStyle(
-                  color: AppColors.accent.withValues(alpha: 0.94),
+                style: AppTextStyle(
+                  color: AppPalette.primary.withValues(alpha: 0.94),
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0,
@@ -4613,18 +4632,20 @@ class _MeetingOwnerCancelAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppBorderRadius.circular(999),
         onTap: isBusy ? null : onTap,
         child: Ink(
-          decoration: BoxDecoration(
-            color: AppColors.accent.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: AppColors.accent.withValues(alpha: 0.24)),
+          decoration: AppBoxDecoration(
+            color: AppPalette.primary.withValues(alpha: 0.1),
+            borderRadius: AppBorderRadius.circular(999),
+            border: Border.all(
+              color: AppPalette.primary.withValues(alpha: 0.24),
+            ),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            padding: const AppEdgeInsets.symmetric(horizontal: 14, vertical: 9),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -4634,20 +4655,20 @@ class _MeetingOwnerCancelAction extends StatelessWidget {
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.1,
-                      color: AppColors.accent,
+                      color: AppPalette.primary,
                     ),
                   )
                 else
                   Icon(
                     Icons.event_busy_rounded,
                     size: 16,
-                    color: AppColors.accent.withValues(alpha: 0.94),
+                    color: AppPalette.primary.withValues(alpha: 0.94),
                   ),
                 const SizedBox(width: 8),
                 Text(
                   label,
-                  style: TextStyle(
-                    color: AppColors.accent.withValues(alpha: 0.96),
+                  style: AppTextStyle(
+                    color: AppPalette.primary.withValues(alpha: 0.96),
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0,
@@ -4752,16 +4773,16 @@ class _MeetingOwnerTonalAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppBorderRadius.circular(18),
         onTap: isBusy ? null : onTap,
         child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.04),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          padding: const AppEdgeInsets.symmetric(horizontal: 11, vertical: 10),
+          decoration: AppBoxDecoration(
+            color: AppPalette.white.withValues(alpha: 0.04),
+            borderRadius: AppBorderRadius.circular(18),
+            border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -4773,21 +4794,21 @@ class _MeetingOwnerTonalAction extends StatelessWidget {
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.1,
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                   ),
                 )
               else
                 Icon(
                   icon,
                   size: 16,
-                  color: AppColors.accent.withValues(alpha: 0.96),
+                  color: AppPalette.primary.withValues(alpha: 0.96),
                 ),
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
                   label,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: AppTextStyle(
                     color: _DetailsColors.text.withValues(alpha: 0.96),
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -4817,31 +4838,34 @@ class _MeetingOwnerCompleteAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppBorderRadius.circular(999),
         onTap: isBusy ? null : onTap,
         child: Ink(
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                AppColors.accent,
-                AppColors.accent.withValues(alpha: 0.84),
+                AppPalette.primary,
+                AppPalette.primary.withValues(alpha: 0.84),
               ],
             ),
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: AppBorderRadius.circular(999),
             boxShadow: [
               BoxShadow(
-                color: AppColors.accent.withValues(alpha: 0.2),
+                color: AppPalette.primary.withValues(alpha: 0.2),
                 blurRadius: 18,
                 offset: const Offset(0, 10),
               ),
             ],
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const AppEdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 10,
+            ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -4851,20 +4875,20 @@ class _MeetingOwnerCompleteAction extends StatelessWidget {
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.1,
-                      color: AppColors.textPrimary,
+                      color: AppPalette.textPrimary,
                     ),
                   )
                 else
                   const Icon(
                     Icons.task_alt_rounded,
                     size: 16,
-                    color: AppColors.textPrimary,
+                    color: AppPalette.textPrimary,
                   ),
                 const SizedBox(width: 8),
                 Text(
                   label,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: const AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0,
@@ -4888,44 +4912,47 @@ class _MeetingOwnerQrAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppBorderRadius.circular(999),
         onTap: onTap,
         child: Ink(
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                AppColors.accent,
-                AppColors.accent.withValues(alpha: 0.84),
+                AppPalette.primary,
+                AppPalette.primary.withValues(alpha: 0.84),
               ],
             ),
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: AppBorderRadius.circular(999),
             boxShadow: [
               BoxShadow(
-                color: AppColors.accent.withValues(alpha: 0.2),
+                color: AppPalette.primary.withValues(alpha: 0.2),
                 blurRadius: 18,
                 offset: const Offset(0, 10),
               ),
             ],
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const AppEdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 10,
+            ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(
                   Icons.qr_code_2_rounded,
                   size: 16,
-                  color: AppColors.textPrimary,
+                  color: AppPalette.textPrimary,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   label,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: const AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0,
@@ -5130,43 +5157,45 @@ class _InviteFriendsSheetState extends State<_InviteFriendsSheet> {
       top: false,
       bottom: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+        padding: const AppEdgeInsets.fromLTRB(12, 12, 12, 0),
         child: AnimatedPadding(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOut,
-          padding: EdgeInsets.only(
+          padding: AppEdgeInsets.only(
             bottom: MediaQuery.viewInsetsOf(context).bottom,
           ),
           child: Container(
             constraints: BoxConstraints(
               maxHeight: MediaQuery.sizeOf(context).height * 0.82,
             ),
-            decoration: BoxDecoration(
+            decoration: AppBoxDecoration(
               color: _DetailsColors.sheet,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(30),
+              borderRadius: const AppBorderRadius.vertical(
+                top: AppRadiusValue.circular(30),
               ),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              border: Border.all(
+                color: AppPalette.white.withValues(alpha: 0.08),
+              ),
             ),
             child: Column(
               children: [
                 Container(
-                  margin: const EdgeInsets.only(top: 12),
+                  margin: const AppEdgeInsets.only(top: 12),
                   width: 48,
                   height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(999),
+                  decoration: AppBoxDecoration(
+                    color: AppPalette.white.withValues(alpha: 0.18),
+                    borderRadius: AppBorderRadius.circular(999),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(22, 18, 10, 8),
+                  padding: const AppEdgeInsets.fromLTRB(22, 18, 10, 8),
                   child: Row(
                     children: [
                       Expanded(
                         child: Text(
                           l10n.activityInviteFriendsTitle,
-                          style: const TextStyle(
+                          style: const AppTextStyle(
                             color: _DetailsColors.text,
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
@@ -5185,16 +5214,16 @@ class _InviteFriendsSheetState extends State<_InviteFriendsSheet> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(22, 0, 22, 14),
+                  padding: const AppEdgeInsets.fromLTRB(22, 0, 22, 14),
                   child: _InviteFriendSearchField(
                     controller: _searchController,
                     hintText: l10n.activityInviteFriendsSearchHint,
                   ),
                 ),
-                const Divider(height: 1, color: Color(0x14FFFFFF)),
+                const Divider(height: 1, color: AppPalette.outlineOverlay),
                 Expanded(child: _buildBody(l10n)),
                 Padding(
-                  padding: EdgeInsets.fromLTRB(
+                  padding: AppEdgeInsets.fromLTRB(
                     22,
                     12,
                     22,
@@ -5224,7 +5253,7 @@ class _InviteFriendsSheetState extends State<_InviteFriendsSheet> {
   Widget _buildBody(AppLocalizations l10n) {
     if (_loading && _friends.isEmpty) {
       return const Center(
-        child: CircularProgressIndicator(color: AppColors.accent),
+        child: CircularProgressIndicator(color: AppPalette.primary),
       );
     }
 
@@ -5248,20 +5277,20 @@ class _InviteFriendsSheetState extends State<_InviteFriendsSheet> {
 
     return ListView.separated(
       controller: _scrollController,
-      padding: const EdgeInsets.fromLTRB(22, 14, 22, 18),
+      padding: const AppEdgeInsets.fromLTRB(22, 14, 22, 18),
       itemCount: _friends.length + (_loadingMore ? 1 : 0),
       separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         if (index >= _friends.length) {
           return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 10),
+            padding: AppEdgeInsets.symmetric(vertical: 10),
             child: Center(
               child: SizedBox(
                 width: 22,
                 height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.2,
-                  color: AppColors.accent,
+                  color: AppPalette.primary,
                 ),
               ),
             ),
@@ -5293,29 +5322,29 @@ class _InviteFriendSearchField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       constraints: const BoxConstraints(minHeight: 54),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2B1F14),
-        borderRadius: BorderRadius.circular(20),
+      decoration: AppBoxDecoration(
+        color: AppPalette.surfaceRaised,
+        borderRadius: AppBorderRadius.circular(20),
       ),
-      padding: const EdgeInsetsDirectional.fromSTEB(15, 0, 14, 0),
+      padding: const AppEdgeInsetsDirectional.fromSTEB(15, 0, 14, 0),
       child: Row(
         children: [
-          const Icon(Icons.search_rounded, color: AppColors.accent, size: 24),
+          const Icon(Icons.search_rounded, color: AppPalette.primary, size: 24),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
               controller: controller,
               textInputAction: TextInputAction.search,
-              cursorColor: AppColors.accent,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              cursorColor: AppPalette.primary,
+              style: const AppTextStyle(
+                color: AppPalette.textPrimary,
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
               ),
-              decoration: InputDecoration(
+              decoration: AppInputDecoration(
                 border: InputBorder.none,
                 hintText: hintText,
-                hintStyle: const TextStyle(color: Color(0xFF9F8B7D)),
+                hintStyle: const AppTextStyle(color: AppPalette.orangeMuted02),
               ),
             ),
           ),
@@ -5342,21 +5371,21 @@ class _InviteFriendRow extends StatelessWidget {
     final title = friend.nicknameOrFallback('user_${friend.userId}');
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppBorderRadius.circular(18),
         onTap: onTap,
         child: Ink(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
+          padding: const AppEdgeInsets.all(12),
+          decoration: AppBoxDecoration(
             color: selected
-                ? AppColors.accent.withValues(alpha: 0.14)
-                : Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(18),
+                ? AppPalette.primary.withValues(alpha: 0.14)
+                : AppPalette.white.withValues(alpha: 0.05),
+            borderRadius: AppBorderRadius.circular(18),
             border: Border.all(
               color: selected
-                  ? AppColors.accent.withValues(alpha: 0.5)
-                  : Colors.white.withValues(alpha: 0.06),
+                  ? AppPalette.primary.withValues(alpha: 0.5)
+                  : AppPalette.white.withValues(alpha: 0.06),
             ),
           ),
           child: Row(
@@ -5371,8 +5400,8 @@ class _InviteFriendRow extends StatelessWidget {
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: const AppTextStyle(
+                        color: AppPalette.textPrimary,
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0,
@@ -5384,8 +5413,8 @@ class _InviteFriendRow extends StatelessWidget {
                         l10n.chatPresenceOnline,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.accent,
+                        style: const AppTextStyle(
+                          color: AppPalette.primary,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),
@@ -5398,11 +5427,13 @@ class _InviteFriendRow extends StatelessWidget {
               Checkbox(
                 value: selected,
                 onChanged: (_) => onTap(),
-                activeColor: AppColors.accent,
-                checkColor: AppColors.textPrimary,
-                side: BorderSide(color: Colors.white.withValues(alpha: 0.32)),
+                activeColor: AppPalette.primary,
+                checkColor: AppPalette.textPrimary,
+                side: BorderSide(
+                  color: AppPalette.white.withValues(alpha: 0.32),
+                ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: AppBorderRadius.circular(6),
                 ),
               ),
             ],
@@ -5424,19 +5455,19 @@ class _InviteFriendAvatar extends StatelessWidget {
     return Container(
       width: 48,
       height: 48,
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
       ),
       child: ClipOval(
         child: ColoredBox(
-          color: const Color(0xFF171009),
+          color: AppPalette.warmInk27,
           child: imageUrl == null
               ? Center(
                   child: Text(
                     friend.initials,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: const AppTextStyle(
+                      color: AppPalette.textPrimary,
                       fontSize: 17,
                       fontWeight: FontWeight.w900,
                     ),
@@ -5448,8 +5479,8 @@ class _InviteFriendAvatar extends StatelessWidget {
                   errorBuilder: (_, _, _) => Center(
                     child: Text(
                       friend.initials,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: const AppTextStyle(
+                        color: AppPalette.textPrimary,
                         fontSize: 17,
                         fontWeight: FontWeight.w900,
                       ),
@@ -5479,17 +5510,17 @@ class _InviteFriendsMessage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const AppEdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: AppColors.accent, size: 34),
+            Icon(icon, color: AppPalette.primary, size: 34),
             const SizedBox(height: 12),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: const AppTextStyle(
+                color: AppPalette.textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0,
@@ -5499,7 +5530,7 @@ class _InviteFriendsMessage extends StatelessWidget {
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: const AppTextStyle(
                 color: _DetailsColors.muted,
                 fontSize: 13,
                 height: 1.35,
@@ -5513,8 +5544,8 @@ class _InviteFriendsMessage extends StatelessWidget {
                   MaterialLocalizations.of(
                     context,
                   ).refreshIndicatorSemanticLabel,
-                  style: const TextStyle(
-                    color: AppColors.accent,
+                  style: const AppTextStyle(
+                    color: AppPalette.primary,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -5565,7 +5596,7 @@ class _ParticipantsSection extends StatelessWidget {
                 children: [
                   Text(
                     l10n.activityGoingTitle(participants.length),
-                    style: const TextStyle(
+                    style: const AppTextStyle(
                       color: _DetailsColors.text,
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
@@ -5576,14 +5607,14 @@ class _ParticipantsSection extends StatelessWidget {
                   TextButton(
                     onPressed: onViewAll,
                     style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
+                      padding: AppEdgeInsets.zero,
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: Text(
                       l10n.activityDetailsViewAll,
-                      style: const TextStyle(
-                        color: AppColors.accent,
+                      style: const AppTextStyle(
+                        color: AppPalette.primary,
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                       ),
@@ -5598,7 +5629,7 @@ class _ParticipantsSection extends StatelessWidget {
                 Expanded(
                   child: Text(
                     l10n.activityGoingTitle(participants.length),
-                    style: const TextStyle(
+                    style: const AppTextStyle(
                       color: _DetailsColors.text,
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
@@ -5611,8 +5642,8 @@ class _ParticipantsSection extends StatelessWidget {
                     onPressed: onViewAll,
                     child: Text(
                       l10n.activityDetailsViewAll,
-                      style: const TextStyle(
-                        color: AppColors.accent,
+                      style: const AppTextStyle(
+                        color: AppPalette.primary,
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                       ),
@@ -5653,7 +5684,7 @@ class _ParticipantsSection extends StatelessWidget {
               if (participants.length > 6)
                 Text(
                   '+${participants.length - 6}',
-                  style: const TextStyle(
+                  style: const AppTextStyle(
                     color: _DetailsColors.muted,
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -5663,11 +5694,13 @@ class _ParticipantsSection extends StatelessWidget {
           )
         else if (isLoading)
           Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            padding: const AppEdgeInsets.all(18),
+            decoration: AppBoxDecoration(
+              color: AppPalette.white.withValues(alpha: 0.05),
+              borderRadius: AppBorderRadius.circular(20),
+              border: Border.all(
+                color: AppPalette.white.withValues(alpha: 0.06),
+              ),
             ),
             child: const Center(
               child: SizedBox(
@@ -5675,7 +5708,7 @@ class _ParticipantsSection extends StatelessWidget {
                 height: 26,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.4,
-                  color: AppColors.accent,
+                  color: AppPalette.primary,
                 ),
               ),
             ),
@@ -5683,17 +5716,19 @@ class _ParticipantsSection extends StatelessWidget {
         else
           Container(
             width: double.infinity,
-            padding: EdgeInsets.all(compact ? 16 : 18),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            padding: AppEdgeInsets.all(compact ? 16 : 18),
+            decoration: AppBoxDecoration(
+              color: AppPalette.white.withValues(alpha: 0.05),
+              borderRadius: AppBorderRadius.circular(20),
+              border: Border.all(
+                color: AppPalette.white.withValues(alpha: 0.06),
+              ),
             ),
             child: Text(
               loadFailed
                   ? l10n.activityParticipantsLoadFailed
                   : l10n.activityParticipantsEmpty,
-              style: const TextStyle(
+              style: const AppTextStyle(
                 color: _DetailsColors.muted,
                 fontSize: 14,
                 height: 1.45,
@@ -5727,7 +5762,7 @@ class _ParticipantAvatar extends StatelessWidget {
     return Container(
       width: radius * 2,
       height: radius * 2,
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(color: borderColor, width: borderWidth),
         gradient: LinearGradient(
@@ -5741,8 +5776,8 @@ class _ParticipantAvatar extends StatelessWidget {
             ? Center(
                 child: Text(
                   initials,
-                  style: TextStyle(
-                    color: Colors.white,
+                  style: AppTextStyle(
+                    color: AppPalette.white,
                     fontSize: radius * 0.62,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0,
@@ -5755,8 +5790,8 @@ class _ParticipantAvatar extends StatelessWidget {
                 errorBuilder: (_, _, _) => Center(
                   child: Text(
                     initials,
-                    style: TextStyle(
-                      color: Colors.white,
+                    style: AppTextStyle(
+                      color: AppPalette.white,
                       fontSize: radius * 0.62,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0,
@@ -5805,7 +5840,7 @@ class _ActivityReviewsSection extends StatelessWidget {
             Expanded(
               child: Text(
                 l10n.activityReviewsSectionTitle,
-                style: const TextStyle(
+                style: const AppTextStyle(
                   color: _DetailsColors.text,
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
@@ -5830,8 +5865,8 @@ class _ActivityReviewsSection extends StatelessWidget {
                       : l10n.activityReviewWriteButton,
                 ),
                 style: TextButton.styleFrom(
-                  foregroundColor: AppColors.accent,
-                  padding: EdgeInsets.zero,
+                  foregroundColor: AppPalette.primary,
+                  padding: AppEdgeInsets.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
               ),
@@ -5893,7 +5928,7 @@ class _ActivityReviewGroupTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: const TextStyle(
+      style: const AppTextStyle(
         color: _DetailsColors.muted,
         fontSize: 13,
         fontWeight: FontWeight.w900,
@@ -5932,11 +5967,11 @@ class _ActivityReviewCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF25160B),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      padding: const AppEdgeInsets.all(16),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmInk101,
+        borderRadius: AppBorderRadius.circular(18),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -5946,15 +5981,15 @@ class _ActivityReviewCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: AppColors.accent.withValues(alpha: 0.15),
+                backgroundColor: AppPalette.primary.withValues(alpha: 0.15),
                 backgroundImage: avatarUrl == null
                     ? null
                     : NetworkImage(avatarUrl),
                 child: avatarUrl == null
                     ? Text(
                         _displayInitials(authorName, fallback: 'F'),
-                        style: const TextStyle(
-                          color: AppColors.accent,
+                        style: const AppTextStyle(
+                          color: AppPalette.primary,
                           fontWeight: FontWeight.w900,
                         ),
                       )
@@ -5969,7 +6004,7 @@ class _ActivityReviewCard extends StatelessWidget {
                       authorName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: const AppTextStyle(
                         color: _DetailsColors.text,
                         fontSize: 14,
                         fontWeight: FontWeight.w900,
@@ -5981,7 +6016,7 @@ class _ActivityReviewCard extends StatelessWidget {
                       '$subtitle · $dateText',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: const AppTextStyle(
                         color: _DetailsColors.muted,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -6001,8 +6036,8 @@ class _ActivityReviewCard extends StatelessWidget {
               comment.trim(),
               maxLines: 5,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xFFD7BFAA),
+              style: const AppTextStyle(
+                color: AppPalette.orangeLight07,
                 fontSize: 14,
                 height: 1.48,
                 fontWeight: FontWeight.w600,
@@ -6024,21 +6059,21 @@ class _ActivityReviewRating extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.13),
-        borderRadius: BorderRadius.circular(999),
+      decoration: AppBoxDecoration(
+        color: AppPalette.primary.withValues(alpha: 0.13),
+        borderRadius: AppBorderRadius.circular(999),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+        padding: const AppEdgeInsets.symmetric(horizontal: 9, vertical: 6),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.star_rounded, color: AppColors.accent, size: 15),
+            const Icon(Icons.star_rounded, color: AppPalette.primary, size: 15),
             const SizedBox(width: 3),
             Text(
               value.toStringAsFixed(1),
-              style: const TextStyle(
-                color: AppColors.accent,
+              style: const AppTextStyle(
+                color: AppPalette.primary,
                 fontSize: 12,
                 fontWeight: FontWeight.w900,
               ),
@@ -6059,16 +6094,16 @@ class _ActivityReviewInfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.045),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      padding: const AppEdgeInsets.symmetric(horizontal: 18, vertical: 20),
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.045),
+        borderRadius: AppBorderRadius.circular(18),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
       ),
       child: Text(
         message,
         textAlign: TextAlign.center,
-        style: const TextStyle(
+        style: const AppTextStyle(
           color: _DetailsColors.muted,
           fontSize: 13,
           height: 1.42,
@@ -6101,11 +6136,11 @@ class _ActivityReviewSkeletonCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.045),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      padding: const AppEdgeInsets.all(14),
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.045),
+        borderRadius: AppBorderRadius.circular(18),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -6145,9 +6180,9 @@ class _ActivityReviewSkeletonDot extends StatelessWidget {
     return AspectRatio(
       aspectRatio: 1,
       child: DecoratedBox(
-        decoration: BoxDecoration(
+        decoration: AppBoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.white.withValues(alpha: 0.07),
+          color: AppPalette.white.withValues(alpha: 0.07),
         ),
       ),
     );
@@ -6165,9 +6200,9 @@ class _ActivityReviewSkeletonLine extends StatelessWidget {
       alignment: Alignment.centerLeft,
       widthFactor: widthFactor,
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.07),
-          borderRadius: BorderRadius.circular(999),
+        decoration: AppBoxDecoration(
+          color: AppPalette.white.withValues(alpha: 0.07),
+          borderRadius: AppBorderRadius.circular(999),
         ),
         child: const SizedBox(width: double.infinity, height: 10),
       ),
@@ -6295,21 +6330,26 @@ class _DetailsActionBar extends StatelessWidget {
     final priceBlockValue = isPaid ? l10n.activityPaymentPaidValue : priceLabel;
     final priceBlockLabelColor = isPaid
         ? _DetailsColors.success.withValues(alpha: 0.72)
-        : const Color(0xFF9C9695);
-    final priceBlockValueColor = isPaid ? _DetailsColors.success : Colors.white;
+        : AppPalette.neutralSoft02;
+    final priceBlockValueColor = isPaid
+        ? _DetailsColors.success
+        : AppPalette.white;
 
     return SafeArea(
       top: false,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
-        decoration: BoxDecoration(
+        padding: const AppEdgeInsets.fromLTRB(18, 10, 18, 10),
+        decoration: AppBoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [const Color(0xE02F1809), const Color(0xF51D0E06)],
+            colors: [
+              AppPalette.warmOverlaySurface15,
+              AppPalette.warmOverlayInk13,
+            ],
           ),
           border: Border(
-            top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+            top: BorderSide(color: AppPalette.white.withValues(alpha: 0.08)),
           ),
         ),
         child: LayoutBuilder(
@@ -6407,8 +6447,8 @@ class _FooterPriceBlock extends StatelessWidget {
   const _FooterPriceBlock({
     required this.label,
     required this.value,
-    this.labelColor = const Color(0xFF9C9695),
-    this.valueColor = Colors.white,
+    this.labelColor = AppPalette.neutralSoft02,
+    this.valueColor = AppPalette.white,
   });
 
   final String label;
@@ -6426,7 +6466,7 @@ class _FooterPriceBlock extends StatelessWidget {
         children: [
           Text(
             label.toUpperCase(),
-            style: TextStyle(
+            style: AppTextStyle(
               color: labelColor,
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -6439,7 +6479,7 @@ class _FooterPriceBlock extends StatelessWidget {
             child: Text(
               value,
               maxLines: 1,
-              style: TextStyle(
+              style: AppTextStyle(
                 color: valueColor,
                 fontSize: 20,
                 height: 1,
@@ -6485,12 +6525,12 @@ class _FooterButton extends StatelessWidget {
 
     final isPrimary = spec.style == _FooterButtonStyle.primary;
     final backgroundColor = isPrimary
-        ? AppColors.accent
-        : Colors.white.withValues(alpha: 0.08);
+        ? AppPalette.primary
+        : AppPalette.white.withValues(alpha: 0.08);
     final borderColor = isPrimary
-        ? AppColors.accent
-        : Colors.white.withValues(alpha: 0.1);
-    final foreground = isPrimary ? Colors.white : _DetailsColors.text;
+        ? AppPalette.primary
+        : AppPalette.white.withValues(alpha: 0.1);
+    final foreground = isPrimary ? AppPalette.white : _DetailsColors.text;
 
     return ConstrainedBox(
       constraints: BoxConstraints(minHeight: minHeight),
@@ -6502,9 +6542,9 @@ class _FooterButton extends StatelessWidget {
           disabledBackgroundColor: backgroundColor,
           disabledForegroundColor: foreground,
           elevation: isPrimary ? 0 : 0,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+          padding: const AppEdgeInsets.symmetric(horizontal: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: AppBorderRadius.circular(18),
             side: BorderSide(color: borderColor),
           ),
         ),
@@ -6514,7 +6554,7 @@ class _FooterButton extends StatelessWidget {
                 height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
-                  color: Colors.white,
+                  color: AppPalette.white,
                 ),
               )
             : Row(
@@ -6526,7 +6566,7 @@ class _FooterButton extends StatelessWidget {
                       spec.label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: const AppTextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0,
@@ -6562,14 +6602,17 @@ class _StatusPill extends StatelessWidget {
     final fontSize = _detailsScaled(context, 12, min: 11, max: 12.5);
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: horizontal, vertical: vertical),
-      decoration: BoxDecoration(
+      padding: AppEdgeInsets.symmetric(
+        horizontal: horizontal,
+        vertical: vertical,
+      ),
+      decoration: AppBoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(999),
-        boxShadow: backgroundColor == AppColors.accent
+        borderRadius: AppBorderRadius.circular(999),
+        boxShadow: backgroundColor == AppPalette.primary
             ? [
                 BoxShadow(
-                  color: AppColors.accent.withValues(alpha: 0.35),
+                  color: AppPalette.primary.withValues(alpha: 0.35),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -6584,7 +6627,7 @@ class _StatusPill extends StatelessWidget {
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
+          style: AppTextStyle(
             color: textColor,
             fontSize: fontSize,
             fontWeight: FontWeight.w800,
@@ -6640,15 +6683,15 @@ _DetailsHeroVisualSpec _detailsHeroVisual(String rawSlug) {
     return const _DetailsHeroVisualSpec(
       icon: Icons.spa_rounded,
       backgroundColors: [
-        Color(0xFF9EDFD3),
-        Color(0xFF74CBB5),
-        Color(0xFF357B70),
-        Color(0xFF1D4B45),
-        Color(0xFF10211E),
+        AppPalette.tealLight01,
+        AppPalette.tealSoft03,
+        AppPalette.tealSurfaceHigh11,
+        AppPalette.tealSurface08,
+        AppPalette.tealInk04,
       ],
-      glowColor: Color(0xFFB8F6DF),
-      ridgeColor: Color(0xFF1B6258),
-      baseColor: Color(0xFF0C1816),
+      glowColor: AppPalette.tealLight02,
+      ridgeColor: AppPalette.tealSurfaceHigh03,
+      baseColor: AppPalette.tealInk02,
     );
   }
   if (slug.contains('nature') ||
@@ -6657,30 +6700,30 @@ _DetailsHeroVisualSpec _detailsHeroVisual(String rawSlug) {
     return const _DetailsHeroVisualSpec(
       icon: Icons.forest_rounded,
       backgroundColors: [
-        Color(0xFFB8DB95),
-        Color(0xFF7BBE6D),
-        Color(0xFF3C7B42),
-        Color(0xFF1D4726),
-        Color(0xFF0E1D13),
+        AppPalette.greenSoft09,
+        AppPalette.greenSoft04,
+        AppPalette.greenSurfaceHigh18,
+        AppPalette.greenSurface08,
+        AppPalette.greenInk04,
       ],
-      glowColor: Color(0xFFD6F2B8),
-      ridgeColor: Color(0xFF2A5F31),
-      baseColor: Color(0xFF101A10),
+      glowColor: AppPalette.greenLight03,
+      ridgeColor: AppPalette.greenSurfaceHigh14,
+      baseColor: AppPalette.greenInk05,
     );
   }
   if (slug.contains('food')) {
     return const _DetailsHeroVisualSpec(
       icon: Icons.restaurant_rounded,
       backgroundColors: [
-        Color(0xFFFFD0A1),
-        Color(0xFFFFA65F),
-        Color(0xFFB95D28),
-        Color(0xFF5A2F13),
-        Color(0xFF231108),
+        AppPalette.orangeLight43,
+        AppPalette.orangeSoft45,
+        AppPalette.warmMuted23,
+        AppPalette.warmSurface94,
+        AppPalette.warmInk87,
       ],
-      glowColor: Color(0xFFFFD9A8),
-      ridgeColor: Color(0xFF7A3B18),
-      baseColor: Color(0xFF211109),
+      glowColor: AppPalette.orangeLight47,
+      ridgeColor: AppPalette.warmSurfaceHigh24,
+      baseColor: AppPalette.warmInk69,
     );
   }
   if (slug.contains('culture') ||
@@ -6689,30 +6732,30 @@ _DetailsHeroVisualSpec _detailsHeroVisual(String rawSlug) {
     return const _DetailsHeroVisualSpec(
       icon: Icons.palette_outlined,
       backgroundColors: [
-        Color(0xFFE0C3EF),
-        Color(0xFFC58EDC),
-        Color(0xFF7A4D94),
-        Color(0xFF3F264F),
-        Color(0xFF190E22),
+        AppPalette.violetLight03,
+        AppPalette.violetSoft02,
+        AppPalette.violetMuted03,
+        AppPalette.violetSurfaceHigh01,
+        AppPalette.violetInk02,
       ],
-      glowColor: Color(0xFFF0D4FF),
-      ridgeColor: Color(0xFF5A356D),
-      baseColor: Color(0xFF170F1F),
+      glowColor: AppPalette.violetWash01,
+      ridgeColor: AppPalette.violetSurfaceHigh02,
+      baseColor: AppPalette.violetInk01,
     );
   }
   if (slug.contains('sport') || slug.contains('adventure')) {
     return const _DetailsHeroVisualSpec(
       icon: Icons.kayaking_rounded,
       backgroundColors: [
-        Color(0xFFF4C07D),
-        Color(0xFFE48D44),
-        Color(0xFF9E5523),
-        Color(0xFF4F2914),
-        Color(0xFF1D1008),
+        AppPalette.orangeSoft39,
+        AppPalette.orangeSoft33,
+        AppPalette.warmSurfaceHigh36,
+        AppPalette.warmSurface88,
+        AppPalette.warmInk53,
       ],
-      glowColor: Color(0xFFFFD09A),
-      ridgeColor: Color(0xFF6E3717),
-      baseColor: Color(0xFF1C1109),
+      glowColor: AppPalette.orangeLight42,
+      ridgeColor: AppPalette.warmSurfaceHigh17,
+      baseColor: AppPalette.warmInk49,
     );
   }
   if (slug.contains('workshop') ||
@@ -6721,45 +6764,45 @@ _DetailsHeroVisualSpec _detailsHeroVisual(String rawSlug) {
     return const _DetailsHeroVisualSpec(
       icon: Icons.auto_stories_rounded,
       backgroundColors: [
-        Color(0xFFD7D2FF),
-        Color(0xFFAAA0F0),
-        Color(0xFF665CB6),
-        Color(0xFF342E63),
-        Color(0xFF161329),
+        AppPalette.blueWash02,
+        AppPalette.blueLight04,
+        AppPalette.blueMuted25,
+        AppPalette.blueSurfaceHigh26,
+        AppPalette.blueSurface07,
       ],
-      glowColor: Color(0xFFE2DDFF),
-      ridgeColor: Color(0xFF4A418D),
-      baseColor: Color(0xFF171428),
+      glowColor: AppPalette.blueWash03,
+      ridgeColor: AppPalette.blueMuted16,
+      baseColor: AppPalette.blueSurface09,
     );
   }
   if (slug.contains('night') || slug.contains('social')) {
     return const _DetailsHeroVisualSpec(
       icon: Icons.celebration_rounded,
       backgroundColors: [
-        Color(0xFFF5BEDD),
-        Color(0xFFE58BBE),
-        Color(0xFF9A3F75),
-        Color(0xFF501D3D),
-        Color(0xFF1F0A17),
+        AppPalette.pinkLight01,
+        AppPalette.pinkSoft06,
+        AppPalette.pinkMuted01,
+        AppPalette.pinkSurface01,
+        AppPalette.pinkInk02,
       ],
-      glowColor: Color(0xFFFFD1EC),
-      ridgeColor: Color(0xFF712651),
-      baseColor: Color(0xFF1D0B17),
+      glowColor: AppPalette.pinkWash01,
+      ridgeColor: AppPalette.pinkSurfaceHigh03,
+      baseColor: AppPalette.pinkInk01,
     );
   }
 
   return const _DetailsHeroVisualSpec(
     icon: Icons.travel_explore_rounded,
     backgroundColors: [
-      Color(0xFFB7D2E7),
-      Color(0xFF7AA4C9),
-      Color(0xFF47698A),
-      Color(0xFF263C53),
-      Color(0xFF101A25),
+      AppPalette.blueLight06,
+      AppPalette.blueSoft11,
+      AppPalette.blueMuted13,
+      AppPalette.blueSurfaceHigh22,
+      AppPalette.blueSurface06,
     ],
-    glowColor: Color(0xFFD3E8FA),
-    ridgeColor: Color(0xFF33516E),
-    baseColor: Color(0xFF101923),
+    glowColor: AppPalette.blueWash01,
+    ridgeColor: AppPalette.blueSurfaceHigh25,
+    baseColor: AppPalette.blueSurface05,
   );
 }
 
@@ -6882,49 +6925,49 @@ Color _activityStatusColor(String status) {
     case 'ENROLLMENT_OPEN':
       return _DetailsColors.success;
     case 'FULL':
-      return const Color(0xFFF7B955);
+      return AppPalette.amberSoft10;
     case 'DRAFT':
-      return const Color(0xFF8C8582);
+      return AppPalette.neutralMuted02;
     case 'COMPLETED':
-      return const Color(0xFF80B7FF);
+      return AppPalette.blueLight01;
     case 'CANCELLED':
-      return const Color(0xFFFF6B6B);
+      return AppPalette.danger;
     case 'ARCHIVED':
-      return const Color(0xFFC9AF89);
+      return AppPalette.amberSoft02;
     default:
-      return const Color(0xFF8C8582);
+      return AppPalette.neutralMuted02;
   }
 }
 
 Color _statusPillColor(String status) {
   switch (status.toUpperCase()) {
     case 'INVITED':
-      return const Color(0x2280B7FF);
+      return AppPalette.blueOverlayLight01;
     case 'APPROVED':
     case 'CONFIRMED':
     case 'CHECKED_IN':
       return _DetailsColors.success.withValues(alpha: 0.18);
     case 'WAITLISTED':
-      return AppColors.accent.withValues(alpha: 0.18);
+      return AppPalette.primary.withValues(alpha: 0.18);
     case 'REQUESTED':
-      return const Color(0x2280B7FF);
+      return AppPalette.blueOverlayLight01;
     default:
-      return Colors.white.withValues(alpha: 0.08);
+      return AppPalette.white.withValues(alpha: 0.08);
   }
 }
 
 Color _statusTextColor(String status) {
   switch (status.toUpperCase()) {
     case 'INVITED':
-      return const Color(0xFF80B7FF);
+      return AppPalette.blueLight01;
     case 'APPROVED':
     case 'CONFIRMED':
     case 'CHECKED_IN':
       return _DetailsColors.success;
     case 'WAITLISTED':
-      return AppColors.accent;
+      return AppPalette.primary;
     case 'REQUESTED':
-      return const Color(0xFF80B7FF);
+      return AppPalette.blueLight01;
     default:
       return _DetailsColors.text;
   }
@@ -6932,12 +6975,12 @@ Color _statusTextColor(String status) {
 
 List<Color> _seedGradient(String seed) {
   const palettes = <List<Color>>[
-    [Color(0xFF2A7A6E), Color(0xFF7ABDA9)],
-    [Color(0xFFC8CDB5), Color(0xFFF3EFE2)],
-    [Color(0xFFA6B686), Color(0xFF6F8E55)],
-    [Color(0xFF3A302C), Color(0xFFC9B09B)],
-    [Color(0xFF6CB5B1), Color(0xFF5F9E98)],
-    [Color(0xFF6E78A6), Color(0xFFA6ABD8)],
+    [AppPalette.tealSurfaceHigh07, AppPalette.tealSoft05],
+    [AppPalette.greenLight02, AppPalette.amberWash01],
+    [AppPalette.greenSoft06, AppPalette.greenMuted13],
+    [AppPalette.warmSurface64, AppPalette.orangeSoft26],
+    [AppPalette.tealSoft02, AppPalette.tealMuted10],
+    [AppPalette.blueMuted26, AppPalette.blueLight03],
   ];
 
   final hash = seed.codeUnits.fold<int>(0, (sum, unit) => sum + unit);

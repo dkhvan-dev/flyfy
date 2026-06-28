@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../core/network/attendance_api.dart';
-import '../../core/ui/app_colors.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
@@ -120,31 +120,31 @@ class _ActivityAttendanceQrScreenState
     final compact = MediaQuery.sizeOf(context).width < 360;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF130A03),
+      backgroundColor: AppPalette.warmInk11,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _loadQr,
-          color: AppColors.accent,
-          backgroundColor: const Color(0xFF221209),
+          color: AppPalette.primary,
+          backgroundColor: AppPalette.warmInk83,
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(
               parent: BouncingScrollPhysics(),
             ),
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            padding: const AppEdgeInsets.fromLTRB(20, 12, 20, 24),
             children: [
               Row(
                 children: [
                   IconButton(
                     onPressed: () => context.pop(),
                     icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                    color: Colors.white,
+                    color: AppPalette.white,
                   ),
                   Expanded(
                     child: Text(
                       l10n.activityAttendanceQrTitle,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: const AppTextStyle(
+                        color: AppPalette.white,
                         fontSize: 19,
                         fontWeight: FontWeight.w800,
                       ),
@@ -159,8 +159,8 @@ class _ActivityAttendanceQrScreenState
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Colors.white,
+                style: AppTextStyle(
+                  color: AppPalette.white,
                   fontSize: compact ? 24 : 28,
                   fontWeight: FontWeight.w900,
                   height: 1.06,
@@ -170,24 +170,24 @@ class _ActivityAttendanceQrScreenState
               Text(
                 l10n.activityAttendanceQrSubtitle,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.72),
+                style: AppTextStyle(
+                  color: AppPalette.white.withValues(alpha: 0.72),
                   fontSize: 14,
                   height: 1.45,
                 ),
               ),
               const SizedBox(height: 28),
               Container(
-                padding: const EdgeInsets.all(22),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF211108),
-                  borderRadius: BorderRadius.circular(32),
+                padding: const AppEdgeInsets.all(22),
+                decoration: AppBoxDecoration(
+                  color: AppPalette.warmInk68,
+                  borderRadius: AppBorderRadius.circular(32),
                   border: Border.all(
-                    color: AppColors.accent.withValues(alpha: 0.18),
+                    color: AppPalette.primary.withValues(alpha: 0.18),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.26),
+                      color: AppPalette.black.withValues(alpha: 0.26),
                       blurRadius: 30,
                       offset: const Offset(0, 18),
                     ),
@@ -197,15 +197,15 @@ class _ActivityAttendanceQrScreenState
               ),
               const SizedBox(height: 18),
               Container(
-                padding: const EdgeInsets.symmetric(
+                padding: const AppEdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 14,
                 ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF26160C),
-                  borderRadius: BorderRadius.circular(22),
+                decoration: AppBoxDecoration(
+                  color: AppPalette.warmInk107,
+                  borderRadius: AppBorderRadius.circular(22),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.08),
+                    color: AppPalette.white.withValues(alpha: 0.08),
                   ),
                 ),
                 child: Row(
@@ -213,13 +213,13 @@ class _ActivityAttendanceQrScreenState
                     Container(
                       width: 42,
                       height: 42,
-                      decoration: BoxDecoration(
-                        color: AppColors.accent.withValues(alpha: 0.14),
+                      decoration: AppBoxDecoration(
+                        color: AppPalette.primary.withValues(alpha: 0.14),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.timelapse_rounded,
-                        color: AppColors.accent,
+                        color: AppPalette.primary,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -229,8 +229,8 @@ class _ActivityAttendanceQrScreenState
                         children: [
                           Text(
                             _countdownLabel(l10n),
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: const AppTextStyle(
+                              color: AppPalette.white,
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
                             ),
@@ -238,8 +238,8 @@ class _ActivityAttendanceQrScreenState
                           const SizedBox(height: 4),
                           Text(
                             l10n.activityAttendanceQrRefreshHint,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.66),
+                            style: AppTextStyle(
+                              color: AppPalette.white.withValues(alpha: 0.66),
                               fontSize: 13,
                               height: 1.4,
                             ),
@@ -262,7 +262,7 @@ class _ActivityAttendanceQrScreenState
       return SizedBox(
         height: _qrBodyHeight(context),
         child: const Center(
-          child: CircularProgressIndicator(color: AppColors.accent),
+          child: CircularProgressIndicator(color: AppPalette.primary),
         ),
       );
     }
@@ -275,15 +275,15 @@ class _ActivityAttendanceQrScreenState
           children: [
             const Icon(
               Icons.qr_code_2_rounded,
-              color: AppColors.accent,
+              color: AppPalette.primary,
               size: 42,
             ),
             const SizedBox(height: 14),
             Text(
               l10n.activityAttendanceQrLoadFailed,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
+              style: const AppTextStyle(
+                color: AppPalette.white,
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
               ),
@@ -292,8 +292,8 @@ class _ActivityAttendanceQrScreenState
             FilledButton(
               onPressed: _loadQr,
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.accent,
-                foregroundColor: Colors.black,
+                backgroundColor: AppPalette.primary,
+                foregroundColor: AppPalette.black,
               ),
               child: Text(l10n.retryButton),
             ),
@@ -307,24 +307,24 @@ class _ActivityAttendanceQrScreenState
         AspectRatio(
           aspectRatio: 1,
           child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(28),
+            decoration: AppBoxDecoration(
+              color: AppPalette.white,
+              borderRadius: AppBorderRadius.circular(28),
             ),
-            padding: const EdgeInsets.all(18),
+            padding: const AppEdgeInsets.all(18),
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final qrSize = constraints.biggest.shortestSide;
                 return Center(
                   child: QrImageView(
                     data: _token!,
-                    backgroundColor: Colors.white,
+                    backgroundColor: AppPalette.white,
                     eyeStyle: const QrEyeStyle(
                       eyeShape: QrEyeShape.square,
-                      color: Colors.black,
+                      color: AppPalette.black,
                     ),
                     dataModuleStyle: const QrDataModuleStyle(
-                      color: Colors.black,
+                      color: AppPalette.black,
                       dataModuleShape: QrDataModuleShape.square,
                     ),
                     size: qrSize,
@@ -338,8 +338,8 @@ class _ActivityAttendanceQrScreenState
         Text(
           l10n.activityAttendanceQrHelper,
           textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.7),
+          style: AppTextStyle(
+            color: AppPalette.white.withValues(alpha: 0.7),
             fontSize: 14,
             height: 1.45,
           ),

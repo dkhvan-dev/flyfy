@@ -3,8 +3,8 @@ import 'dart:collection';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
-import '../../../core/ui/app_colors.dart';
 import 'push_notification_coordinator.dart';
 
 class PushNotificationBannerController {
@@ -133,7 +133,7 @@ class _PushNotificationBannerHostState
                     child: display == null
                         ? const SizedBox.shrink()
                         : Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                            padding: const AppEdgeInsets.fromLTRB(12, 8, 12, 0),
                             child: AppNotificationBanner(
                               display: display,
                               onTap: _openCurrent,
@@ -228,9 +228,9 @@ class AppNotificationBanner extends StatelessWidget {
       button: true,
       label: title,
       child: Material(
-        color: Colors.transparent,
+        color: AppPalette.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: AppBorderRadius.circular(18),
           onTap: onTap,
           child: LayoutBuilder(
             builder: (context, constraints) {
@@ -239,7 +239,7 @@ class AppNotificationBanner extends StatelessWidget {
               final iconSize = veryCompact ? 34.0 : (compact ? 38.0 : 42.0);
               final closeSize = compact ? 32.0 : 36.0;
               final horizontalGap = compact ? 8.0 : 11.0;
-              final contentPadding = EdgeInsetsDirectional.fromSTEB(
+              final contentPadding = AppEdgeInsetsDirectional.fromSTEB(
                 compact ? 14 : 16,
                 compact ? 10 : 12,
                 compact ? 8 : 10,
@@ -247,29 +247,29 @@ class AppNotificationBanner extends StatelessWidget {
               );
 
               return ClipRRect(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: AppBorderRadius.circular(18),
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                   child: DecoratedBox(
-                    decoration: BoxDecoration(
+                    decoration: AppBoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          const Color(0xFF2A1E11).withValues(alpha: 0.98),
-                          const Color(0xFF20170E).withValues(alpha: 0.98),
-                          AppColors.surface.withValues(alpha: 0.98),
+                          AppPalette.warmSurface18.withValues(alpha: 0.98),
+                          AppPalette.warmInk67.withValues(alpha: 0.98),
+                          AppPalette.surfaceCool.withValues(alpha: 0.98),
                         ],
                       ),
-                      border: Border.all(color: AppColors.borderLight),
+                      border: Border.all(color: AppPalette.outlineOverlayLight),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.34),
+                          color: AppPalette.black.withValues(alpha: 0.34),
                           blurRadius: 24,
                           offset: const Offset(0, 12),
                         ),
                         BoxShadow(
-                          color: AppColors.accent.withValues(alpha: 0.10),
+                          color: AppPalette.primary.withValues(alpha: 0.10),
                           blurRadius: 28,
                           offset: const Offset(0, 16),
                         ),
@@ -282,13 +282,13 @@ class AppNotificationBanner extends StatelessWidget {
                           top: 0,
                           bottom: 0,
                           child: DecoratedBox(
-                            decoration: BoxDecoration(
+                            decoration: AppBoxDecoration(
                               gradient: LinearGradient(
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
                                 colors: [
-                                  AppColors.accent,
-                                  AppColors.accent.withValues(alpha: 0.72),
+                                  AppPalette.primary,
+                                  AppPalette.primary.withValues(alpha: 0.72),
                                 ],
                               ),
                             ),
@@ -321,12 +321,12 @@ class AppNotificationBanner extends StatelessWidget {
                                       overflow: TextOverflow.ellipsis,
                                       style:
                                           textTheme.titleSmall?.copyWith(
-                                            color: AppColors.textPrimary,
+                                            color: AppPalette.textPrimary,
                                             fontWeight: FontWeight.w800,
                                             height: 1.15,
                                           ) ??
-                                          const TextStyle(
-                                            color: AppColors.textPrimary,
+                                          const AppTextStyle(
+                                            color: AppPalette.textPrimary,
                                             fontSize: 15,
                                             fontWeight: FontWeight.w800,
                                             height: 1.15,
@@ -340,12 +340,14 @@ class AppNotificationBanner extends StatelessWidget {
                                         overflow: TextOverflow.ellipsis,
                                         style:
                                             textTheme.bodySmall?.copyWith(
-                                              color: AppColors.textSecondary,
+                                              color:
+                                                  AppPalette.textCoolSecondary,
                                               fontWeight: FontWeight.w500,
                                               height: 1.25,
                                             ) ??
-                                            const TextStyle(
-                                              color: AppColors.textSecondary,
+                                            const AppTextStyle(
+                                              color:
+                                                  AppPalette.textCoolSecondary,
                                               fontSize: 13,
                                               fontWeight: FontWeight.w500,
                                               height: 1.25,
@@ -391,13 +393,13 @@ class _NotificationBannerMeta extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final style =
         textTheme.labelSmall?.copyWith(
-          color: AppColors.textCaption,
+          color: AppPalette.textCaption,
           fontWeight: FontWeight.w700,
           height: 1,
           letterSpacing: 0,
         ) ??
-        const TextStyle(
-          color: AppColors.textCaption,
+        const AppTextStyle(
+          color: AppPalette.textCaption,
           fontSize: 11,
           fontWeight: FontWeight.w700,
           height: 1,
@@ -411,15 +413,15 @@ class _NotificationBannerMeta extends StatelessWidget {
             'Inflap',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: style.copyWith(color: AppColors.textSecondary),
+            style: style.copyWith(color: AppPalette.textCoolSecondary),
           ),
         ),
         if (showChannel) ...[
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
+            padding: const AppEdgeInsets.symmetric(horizontal: 6),
             child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: AppColors.accent.withValues(alpha: 0.86),
+              decoration: AppBoxDecoration(
+                color: AppPalette.primary.withValues(alpha: 0.86),
                 shape: BoxShape.circle,
               ),
               child: const SizedBox.square(dimension: 4),
@@ -458,7 +460,7 @@ class _NotificationBannerCloseButton extends StatelessWidget {
       child: SizedBox.square(
         dimension: size,
         child: Material(
-          color: AppColors.surfaceLight,
+          color: AppPalette.surfaceCoolLight,
           shape: const CircleBorder(),
           child: InkResponse(
             onTap: onDismiss,
@@ -468,7 +470,7 @@ class _NotificationBannerCloseButton extends StatelessWidget {
             child: Icon(
               Icons.close_rounded,
               size: iconSize,
-              color: AppColors.textSecondary,
+              color: AppPalette.textCoolSecondary,
             ),
           ),
         ),
@@ -488,13 +490,13 @@ class _NotificationBannerIcon extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(size * 0.34),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.26)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.primary.withValues(alpha: 0.14),
+        borderRadius: AppBorderRadius.circular(size * 0.34),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.26)),
       ),
       alignment: Alignment.center,
-      child: Icon(visual.icon, color: AppColors.accent, size: size * 0.54),
+      child: Icon(visual.icon, color: AppPalette.primary, size: size * 0.54),
     );
   }
 }
@@ -514,27 +516,27 @@ class _NotificationBannerVisual {
     return switch (channel) {
       PushNotificationChannel.activity => const _NotificationBannerVisual(
         icon: Icons.event_available_rounded,
-        color: AppColors.accent,
+        color: AppPalette.primary,
         label: 'Activity',
       ),
       PushNotificationChannel.checklists => const _NotificationBannerVisual(
         icon: Icons.checklist_rounded,
-        color: AppColors.accent,
+        color: AppPalette.primary,
         label: 'Checklist',
       ),
       PushNotificationChannel.messages => const _NotificationBannerVisual(
         icon: Icons.chat_bubble_rounded,
-        color: AppColors.accent,
+        color: AppPalette.primary,
         label: 'Messages',
       ),
       PushNotificationChannel.content => const _NotificationBannerVisual(
         icon: Icons.auto_stories_rounded,
-        color: AppColors.accent,
+        color: AppPalette.primary,
         label: 'Posts and stories',
       ),
       PushNotificationChannel.system => const _NotificationBannerVisual(
         icon: Icons.notifications_active_rounded,
-        color: AppColors.accent,
+        color: AppPalette.primary,
         label: 'System',
       ),
     };

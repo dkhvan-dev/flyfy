@@ -3,10 +3,10 @@ import 'dart:io';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../core/media/video_trimmer.dart';
-import '../../core/ui/app_colors.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 class ChatRecordedVideoReviewScreen extends StatefulWidget {
@@ -248,7 +248,7 @@ class _ChatRecordedVideoReviewScreenState
     final trimRange = _trimRange;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppPalette.black,
       body: SafeArea(
         child: Stack(
           children: [
@@ -258,11 +258,13 @@ class _ChatRecordedVideoReviewScreenState
                 onTap: initialized ? () => unawaited(_togglePlayback()) : null,
                 child: Center(
                   child: _loading
-                      ? const CircularProgressIndicator(color: AppColors.accent)
+                      ? const CircularProgressIndicator(
+                          color: AppPalette.primary,
+                        )
                       : _loadFailed || !initialized
                       ? Icon(
                           Icons.movie_outlined,
-                          color: Colors.white.withValues(alpha: 0.5),
+                          color: AppPalette.white.withValues(alpha: 0.5),
                           size: 54,
                         )
                       : AspectRatio(
@@ -275,14 +277,14 @@ class _ChatRecordedVideoReviewScreenState
             Positioned.fill(
               child: IgnorePointer(
                 child: DecoratedBox(
-                  decoration: BoxDecoration(
+                  decoration: AppBoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.black.withValues(alpha: 0.58),
-                        Colors.transparent,
-                        Colors.black.withValues(alpha: 0.78),
+                        AppPalette.black.withValues(alpha: 0.58),
+                        AppPalette.transparent,
+                        AppPalette.black.withValues(alpha: 0.78),
                       ],
                       stops: const [0, 0.42, 1],
                     ),
@@ -388,10 +390,10 @@ class _ReviewControls extends StatelessWidget {
       children: [
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
-            activeTrackColor: AppColors.accent,
-            inactiveTrackColor: Colors.white.withValues(alpha: 0.24),
-            thumbColor: Colors.white,
-            overlayColor: AppColors.accent.withValues(alpha: 0.18),
+            activeTrackColor: AppPalette.primary,
+            inactiveTrackColor: AppPalette.white.withValues(alpha: 0.24),
+            thumbColor: AppPalette.white,
+            overlayColor: AppPalette.primary.withValues(alpha: 0.18),
           ),
           child: Slider(
             min: 0,
@@ -434,13 +436,13 @@ class _TrimRangeSelector extends StatelessWidget {
     final end = Duration(milliseconds: values.end.round());
 
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.48),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.black.withValues(alpha: 0.48),
+        borderRadius: AppBorderRadius.circular(18),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.14)),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+        padding: const AppEdgeInsets.fromLTRB(14, 10, 14, 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -449,8 +451,8 @@ class _TrimRangeSelector extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: const AppTextStyle(
+                    color: AppPalette.white,
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0,
@@ -459,8 +461,8 @@ class _TrimRangeSelector extends StatelessWidget {
                 const Spacer(),
                 Text(
                   '${_formatReviewDuration(start)} - ${_formatReviewDuration(end)}',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.76),
+                  style: AppTextStyle(
+                    color: AppPalette.white.withValues(alpha: 0.76),
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0,
@@ -475,8 +477,8 @@ class _TrimRangeSelector extends StatelessWidget {
                 values.start.clamp(0.0, max).toDouble(),
                 values.end.clamp(0.0, max <= 0 ? 1 : max).toDouble(),
               ),
-              activeColor: AppColors.accent,
-              inactiveColor: Colors.white.withValues(alpha: 0.24),
+              activeColor: AppPalette.primary,
+              inactiveColor: AppPalette.white.withValues(alpha: 0.24),
               onChanged: onChanged,
             ),
           ],
@@ -513,14 +515,14 @@ class _ReviewIconButton extends StatelessWidget {
         child: Container(
           width: size,
           height: size,
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.black.withValues(alpha: 0.48),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+            color: AppPalette.black.withValues(alpha: 0.48),
+            border: Border.all(color: AppPalette.white.withValues(alpha: 0.16)),
           ),
           child: Icon(
             icon,
-            color: Colors.white.withValues(alpha: onTap == null ? 0.36 : 1),
+            color: AppPalette.white.withValues(alpha: onTap == null ? 0.36 : 1),
             size: iconSize,
           ),
         ),
@@ -542,23 +544,28 @@ class _SendButton extends StatelessWidget {
       label: label,
       enabled: onTap != null,
       child: InkWell(
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppBorderRadius.circular(999),
         onTap: onTap,
         child: DecoratedBox(
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             color: onTap == null
-                ? Colors.white.withValues(alpha: 0.2)
-                : Colors.white,
-            borderRadius: BorderRadius.circular(999),
+                ? AppPalette.white.withValues(alpha: 0.2)
+                : AppPalette.white,
+            borderRadius: AppBorderRadius.circular(999),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const AppEdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 10,
+            ),
             child: Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.black.withValues(alpha: onTap == null ? 0.48 : 1),
+              style: AppTextStyle(
+                color: AppPalette.black.withValues(
+                  alpha: onTap == null ? 0.48 : 1,
+                ),
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0,
@@ -579,18 +586,18 @@ class _ReviewErrorBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.72),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.black.withValues(alpha: 0.72),
+        borderRadius: AppBorderRadius.circular(14),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.12)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const AppEdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Text(
           message,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Colors.white,
+          style: const AppTextStyle(
+            color: AppPalette.white,
             fontSize: 14,
             fontWeight: FontWeight.w700,
             letterSpacing: 0,

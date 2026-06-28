@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:just_audio/just_audio.dart';
 
 import '../../../core/files/chat_file_cache.dart';
 import '../../../core/network/file_api.dart';
-import '../../../core/ui/app_colors.dart';
 import '../../../core/ui/error_dialog.dart';
 import '../../../l10n/generated/app_localizations.dart';
 
@@ -164,12 +164,13 @@ class _ChatVoiceAttachmentPlayerState extends State<ChatVoiceAttachmentPlayer> {
     final scale = _voiceScale(context, widget.dense);
 
     return Container(
-      padding: widget.padding ?? EdgeInsets.all(scale(12)),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(scale(widget.dense ? 18 : 22)),
-        color: widget.backgroundColor ?? Colors.black.withValues(alpha: 0.14),
+      padding: widget.padding ?? AppEdgeInsets.all(scale(12)),
+      decoration: AppBoxDecoration(
+        borderRadius: AppBorderRadius.circular(scale(widget.dense ? 18 : 22)),
+        color:
+            widget.backgroundColor ?? AppPalette.black.withValues(alpha: 0.14),
         border: Border.all(
-          color: widget.borderColor ?? Colors.white.withValues(alpha: 0.05),
+          color: widget.borderColor ?? AppPalette.white.withValues(alpha: 0.05),
         ),
       ),
       child: Row(
@@ -192,9 +193,9 @@ class _ChatVoiceAttachmentPlayerState extends State<ChatVoiceAttachmentPlayer> {
                 child: Container(
                   width: scale(widget.dense ? 42 : 48),
                   height: scale(widget.dense ? 42 : 48),
-                  decoration: const BoxDecoration(
+                  decoration: const AppBoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                   ),
                   child: Center(
                     child: busy
@@ -203,7 +204,7 @@ class _ChatVoiceAttachmentPlayerState extends State<ChatVoiceAttachmentPlayer> {
                             height: scale(18),
                             child: const CircularProgressIndicator(
                               strokeWidth: 2.2,
-                              color: Colors.white,
+                              color: AppPalette.white,
                             ),
                           )
                         : Icon(
@@ -211,7 +212,7 @@ class _ChatVoiceAttachmentPlayerState extends State<ChatVoiceAttachmentPlayer> {
                                 ? Icons.pause_rounded
                                 : Icons.play_arrow_rounded,
                             size: scale(widget.dense ? 27 : 30),
-                            color: Colors.white,
+                            color: AppPalette.white,
                           ),
                   ),
                 ),
@@ -227,10 +228,10 @@ class _ChatVoiceAttachmentPlayerState extends State<ChatVoiceAttachmentPlayer> {
                   l10n.chatVoiceMessage,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: AppTextStyle(
                     fontSize: scale(widget.dense ? 14 : 15),
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFFf5ede6),
+                    color: AppPalette.orangeWash10,
                   ),
                 ),
                 SizedBox(height: scale(widget.dense ? 7 : 8)),
@@ -271,12 +272,12 @@ class _ChatVoiceAttachmentPlayerState extends State<ChatVoiceAttachmentPlayer> {
                                       ? duration
                                       : position,
                                 ),
-                                style: TextStyle(
+                                style: AppTextStyle(
                                   fontSize: scale(widget.dense ? 11 : 12),
                                   fontWeight: FontWeight.w700,
-                                  color: const Color(
-                                    0xFFc8b39a,
-                                  ).withValues(alpha: 0.82),
+                                  color: AppPalette.orangeSoft25.withValues(
+                                    alpha: 0.82,
+                                  ),
                                 ),
                               ),
                             ],
@@ -345,11 +346,11 @@ class _ChatVoiceWaveform extends StatelessWidget {
                         heightFactor: bars[i],
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 180),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(999),
+                          decoration: AppBoxDecoration(
+                            borderRadius: AppBorderRadius.circular(999),
                             color: i < activeBars
-                                ? AppColors.accent
-                                : Colors.white.withValues(alpha: 0.22),
+                                ? AppPalette.primary
+                                : AppPalette.white.withValues(alpha: 0.22),
                           ),
                         ),
                       ),

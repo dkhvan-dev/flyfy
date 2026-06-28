@@ -11,7 +11,7 @@ void main() {
       ).readAsString();
 
       expect(source, contains('final floatingLabelReserve = authScaled('));
-      expect(source, contains('padding: EdgeInsets.only('));
+      expect(source, contains('padding: AppEdgeInsets.only('));
       expect(source, contains('top: floatingLabelReserve'));
       expect(
         source,

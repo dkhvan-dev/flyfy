@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
-import '../../../core/ui/app_colors.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../data/help_center_api.dart';
 
@@ -31,15 +31,15 @@ class HelpArticleTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final textScale = MediaQuery.textScalerOf(context);
-    final titleStyle = TextStyle(
-      color: AppColors.textPrimary,
+    final titleStyle = AppTextStyle(
+      color: AppPalette.textPrimary,
       fontSize: compact ? 15 : 16,
       fontWeight: FontWeight.w800,
       height: 1.22,
       letterSpacing: 0,
     );
-    final bodyStyle = TextStyle(
-      color: AppColors.textSecondary,
+    final bodyStyle = AppTextStyle(
+      color: AppPalette.textCoolSecondary,
       fontSize: compact ? 13 : 14,
       height: 1.4,
       letterSpacing: 0,
@@ -47,35 +47,35 @@ class HelpArticleTile extends StatelessWidget {
 
     return Theme(
       data: Theme.of(context).copyWith(
-        dividerColor: Colors.transparent,
-        splashColor: AppColors.accent.withValues(alpha: 0.08),
-        highlightColor: AppColors.accent.withValues(alpha: 0.06),
+        dividerColor: AppPalette.transparent,
+        splashColor: AppPalette.primary.withValues(alpha: 0.08),
+        highlightColor: AppPalette.primary.withValues(alpha: 0.06),
       ),
       child: Material(
-        color: Colors.white.withValues(alpha: compact ? 0.04 : 0.055),
+        color: AppPalette.white.withValues(alpha: compact ? 0.04 : 0.055),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+          borderRadius: AppBorderRadius.circular(14),
+          side: BorderSide(color: AppPalette.white.withValues(alpha: 0.08)),
         ),
         clipBehavior: Clip.antiAlias,
         child: ExpansionTile(
           key: PageStorageKey<String>('help-article-${article.id}'),
           initiallyExpanded: initiallyExpanded,
           maintainState: true,
-          tilePadding: EdgeInsets.fromLTRB(
+          tilePadding: AppEdgeInsets.fromLTRB(
             compact ? 14 : 16,
             compact ? 8 : 10,
             compact ? 10 : 12,
             compact ? 8 : 10,
           ),
-          childrenPadding: EdgeInsets.fromLTRB(
+          childrenPadding: AppEdgeInsets.fromLTRB(
             compact ? 14 : 16,
             0,
             compact ? 14 : 16,
             compact ? 14 : 16,
           ),
-          iconColor: AppColors.accent,
-          collapsedIconColor: AppColors.textSecondary,
+          iconColor: AppPalette.primary,
+          collapsedIconColor: AppPalette.textCoolSecondary,
           title: Text(
             article.title,
             maxLines: compact ? 3 : 4,
@@ -86,7 +86,7 @@ class HelpArticleTile extends StatelessWidget {
           subtitle: article.shortAnswer.trim().isEmpty
               ? null
               : Padding(
-                  padding: const EdgeInsets.only(top: 6),
+                  padding: const AppEdgeInsets.only(top: 6),
                   child: Text(
                     article.shortAnswer,
                     maxLines: compact ? 3 : 4,
@@ -160,15 +160,15 @@ class _ArticleActions extends StatelessWidget {
                 ),
                 style: FilledButton.styleFrom(
                   backgroundColor: _isPrimary(action.type)
-                      ? AppColors.accent
-                      : Colors.white.withValues(alpha: 0.08),
+                      ? AppPalette.primary
+                      : AppPalette.white.withValues(alpha: 0.08),
                   foregroundColor: _isPrimary(action.type)
-                      ? AppColors.textPrimary
-                      : AppColors.textPrimary,
+                      ? AppPalette.textPrimary
+                      : AppPalette.textPrimary,
                   minimumSize: const Size(44, 42),
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  padding: const AppEdgeInsets.symmetric(horizontal: 14),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppBorderRadius.circular(12),
                   ),
                 ),
               ),
@@ -228,8 +228,8 @@ class _FeedbackActions extends StatelessWidget {
             l10n.helpCenterWasHelpful,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
+            style: const AppTextStyle(
+              color: AppPalette.textCoolSecondary,
               fontSize: 13,
               fontWeight: FontWeight.w700,
               letterSpacing: 0,
@@ -272,18 +272,18 @@ class _FeedbackActions extends StatelessWidget {
 
   ButtonStyle _feedbackButtonStyle(bool selected) {
     final background = selected
-        ? AppColors.accent
-        : Colors.white.withValues(alpha: 0.08);
-    final foreground = AppColors.textPrimary;
+        ? AppPalette.primary
+        : AppPalette.white.withValues(alpha: 0.08);
+    final foreground = AppPalette.textPrimary;
     return IconButton.styleFrom(
       backgroundColor: background,
       foregroundColor: foreground,
       disabledBackgroundColor: selected
-          ? AppColors.accent
-          : Colors.white.withValues(alpha: 0.05),
+          ? AppPalette.primary
+          : AppPalette.white.withValues(alpha: 0.05),
       disabledForegroundColor: selected
-          ? AppColors.textPrimary
-          : AppColors.textSecondary,
+          ? AppPalette.textPrimary
+          : AppPalette.textCoolSecondary,
     );
   }
 }

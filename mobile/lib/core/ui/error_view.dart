@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
 import '../../l10n/generated/app_localizations.dart';
-import 'app_colors.dart';
 
 class ErrorView extends StatelessWidget {
   const ErrorView({super.key, required this.message, required this.onRetry});
@@ -15,23 +15,27 @@ class ErrorView extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const AppEdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, size: 72, color: Colors.redAccent),
+            const Icon(
+              Icons.error_outline,
+              size: 72,
+              color: AppPalette.materialDangerAccent,
+            ),
             const SizedBox(height: 16),
             Text(
               message,
-              style: const TextStyle(color: Colors.white),
+              style: const AppTextStyle(color: AppPalette.white),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: onRetry,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accent,
-                foregroundColor: Colors.white,
+                backgroundColor: AppPalette.primary,
+                foregroundColor: AppPalette.white,
               ),
               child: Text(l10n.retryButton),
             ),

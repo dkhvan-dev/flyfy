@@ -17,6 +17,7 @@ import 'features/notifications/data/notification_api.dart';
 import 'features/notifications/data/push_registration_service.dart';
 import 'features/notifications/presentation/push_notification_banner.dart';
 import 'features/notifications/presentation/push_notification_coordinator.dart';
+import 'core/ui/app_design_system.dart';
 import 'providers/auth_provider.dart';
 import 'providers/currency_rate_provider.dart';
 import 'providers/home_location_provider.dart';
@@ -161,15 +162,7 @@ class _SuperAppState extends State<SuperApp> {
                 ),
               );
             },
-            theme: ThemeData(
-              useMaterial3: true,
-              scaffoldBackgroundColor: const Color(0xFF0A0A0F),
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color(0xFF00BCD4),
-                brightness: Brightness.dark,
-              ),
-              fontFamily: 'Inter',
-            ),
+            theme: AppDesignSystem.darkTheme(),
             localizationsDelegates: const [
               AppLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,

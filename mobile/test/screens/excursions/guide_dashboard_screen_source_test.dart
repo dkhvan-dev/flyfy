@@ -63,7 +63,7 @@ void main() {
         source.contains('GuideBookingDashboardTab? _bookingStatusFilter'),
         isTrue,
       );
-      expect(source, contains('AppColors.accent'));
+      expect(source, contains('AppPalette.primary'));
       expect(source, contains('_matchesSmartQuery'));
       expect(source, contains('_bookingCountForOffer'));
       expect(source, contains('_archiveOffer'));
@@ -93,11 +93,11 @@ void main() {
       );
       expect(
         deleteDialogSource,
-        contains('backgroundColor: const Color(0xFF21170D)'),
+        contains('backgroundColor: AppPalette.surface'),
       );
-      expect(deleteDialogSource, contains('const Color(0xFF2C2118)'));
-      expect(deleteDialogSource, contains('Color(0xFFFFF7EC)'));
-      expect(deleteDialogSource, contains('AppColors.accent'));
+      expect(deleteDialogSource, contains('AppPalette.warmSurface28'));
+      expect(deleteDialogSource, contains('AppPalette.orangeWash25'));
+      expect(deleteDialogSource, contains('AppPalette.primary'));
       expect(
         source,
         contains('imageUrl: resolveOwnedExcursionCoverUrl(excursion)'),
@@ -369,7 +369,7 @@ void main() {
       );
       expect(journeyCardSource.contains('final destructiveButton ='), isTrue);
       expect(
-        journeyCardSource.contains('foregroundColor: const Color(0xFFFFB4AB)'),
+        journeyCardSource.contains('foregroundColor: AppPalette.redLight04'),
         isTrue,
       );
     },

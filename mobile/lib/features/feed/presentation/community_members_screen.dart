@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
-import '../../../core/ui/app_colors.dart';
 import '../../../core/ui/error_dialog.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../data/community_moderation_api.dart';
@@ -172,12 +172,12 @@ class _CommunityMembersScreenState extends State<CommunityMembersScreen> {
     final selectedRole = await showModalBottomSheet<String>(
       context: context,
       isDismissible: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppPalette.surfaceCool,
       builder: (sheetContext) {
         final l10n = AppLocalizations.of(sheetContext)!;
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+            padding: const AppEdgeInsets.fromLTRB(20, 20, 20, 24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -187,22 +187,22 @@ class _CommunityMembersScreenState extends State<CommunityMembersScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(sheetContext).textTheme.titleMedium?.copyWith(
-                    color: AppColors.textPrimary,
+                    color: AppPalette.textPrimary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 12),
                 for (final option in _roleOptions(l10n))
                   ListTile(
-                    contentPadding: EdgeInsets.zero,
+                    contentPadding: AppEdgeInsets.zero,
                     title: Text(
                       option.label,
-                      style: const TextStyle(color: AppColors.textPrimary),
+                      style: const AppTextStyle(color: AppPalette.textPrimary),
                     ),
                     trailing: member.role == option.value
                         ? const Icon(
                             Icons.check_rounded,
-                            color: AppColors.accent,
+                            color: AppPalette.primary,
                           )
                         : null,
                     onTap: () => Navigator.of(sheetContext).pop(option.value),
@@ -236,7 +236,7 @@ class _CommunityMembersScreenState extends State<CommunityMembersScreen> {
       context: context,
       isDismissible: true,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppPalette.surfaceCool,
       builder: (sheetContext) {
         return _RoleHistorySheet(member: member, historyFuture: historyFuture);
       },
@@ -247,12 +247,12 @@ class _CommunityMembersScreenState extends State<CommunityMembersScreen> {
     final selectedStatus = await showModalBottomSheet<String>(
       context: context,
       isDismissible: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppPalette.surfaceCool,
       builder: (sheetContext) {
         final l10n = AppLocalizations.of(sheetContext)!;
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+            padding: const AppEdgeInsets.fromLTRB(20, 20, 20, 24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -262,26 +262,26 @@ class _CommunityMembersScreenState extends State<CommunityMembersScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(sheetContext).textTheme.titleMedium?.copyWith(
-                    color: AppColors.textPrimary,
+                    color: AppPalette.textPrimary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 12),
                 for (final option in _statusActionOptions(l10n))
                   ListTile(
-                    contentPadding: EdgeInsets.zero,
+                    contentPadding: AppEdgeInsets.zero,
                     title: Text(
                       option.label,
-                      style: TextStyle(
+                      style: AppTextStyle(
                         color: option.isDestructive
-                            ? Colors.redAccent
-                            : AppColors.textPrimary,
+                            ? AppPalette.materialDangerAccent
+                            : AppPalette.textPrimary,
                       ),
                     ),
                     trailing: member.status == option.value
                         ? const Icon(
                             Icons.check_rounded,
-                            color: AppColors.accent,
+                            color: AppPalette.primary,
                           )
                         : null,
                     onTap: () => Navigator.of(sheetContext).pop(option.value),
@@ -406,10 +406,10 @@ class _CommunityMembersScreenState extends State<CommunityMembersScreen> {
     final communityTitle = (widget.communityTitle ?? '').trim();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppPalette.backgroundWarm,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: AppPalette.backgroundWarm,
+        foregroundColor: AppPalette.textPrimary,
         elevation: 0,
         title: Text(
           l10n.communityMembersTitle,
@@ -419,7 +419,7 @@ class _CommunityMembersScreenState extends State<CommunityMembersScreen> {
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(34),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            padding: const AppEdgeInsets.fromLTRB(16, 0, 16, 12),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -429,7 +429,7 @@ class _CommunityMembersScreenState extends State<CommunityMembersScreen> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppPalette.textCoolSecondary,
                 ),
               ),
             ),
@@ -439,8 +439,8 @@ class _CommunityMembersScreenState extends State<CommunityMembersScreen> {
       body: SafeArea(
         top: false,
         child: RefreshIndicator(
-          color: AppColors.accent,
-          backgroundColor: AppColors.surface,
+          color: AppPalette.primary,
+          backgroundColor: AppPalette.surfaceCool,
           onRefresh: () => _loadMembers(),
           child: _buildBody(context),
         ),
@@ -454,7 +454,7 @@ class _CommunityMembersScreenState extends State<CommunityMembersScreen> {
     if (_isLoading && _members.isEmpty) {
       return const _MembersStateList(
         child: Center(
-          child: CircularProgressIndicator(color: AppColors.accent),
+          child: CircularProgressIndicator(color: AppPalette.primary),
         ),
       );
     }
@@ -468,8 +468,8 @@ class _CommunityMembersScreenState extends State<CommunityMembersScreen> {
           action: FilledButton(
             onPressed: () => _loadMembers(),
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.accent,
-              foregroundColor: AppColors.background,
+              backgroundColor: AppPalette.primary,
+              foregroundColor: AppPalette.backgroundWarm,
             ),
             child: Text(l10n.feedRetryAction),
           ),
@@ -484,7 +484,7 @@ class _CommunityMembersScreenState extends State<CommunityMembersScreen> {
         return ListView.builder(
           controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.fromLTRB(
+          padding: AppEdgeInsets.fromLTRB(
             horizontalPadding,
             12,
             horizontalPadding,
@@ -498,7 +498,7 @@ class _CommunityMembersScreenState extends State<CommunityMembersScreen> {
           itemBuilder: (context, index) {
             if (index == 0) {
               return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const AppEdgeInsets.only(bottom: 12),
                 child: _MemberFilters(
                   selectedRole: _roleFilter,
                   selectedStatus: _statusFilter,
@@ -519,16 +519,16 @@ class _CommunityMembersScreenState extends State<CommunityMembersScreen> {
 
             if (memberIndex >= _members.length) {
               return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
+                padding: AppEdgeInsets.symmetric(vertical: 16),
                 child: Center(
-                  child: CircularProgressIndicator(color: AppColors.accent),
+                  child: CircularProgressIndicator(color: AppPalette.primary),
                 ),
               );
             }
 
             final member = _members[memberIndex];
             return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+              padding: const AppEdgeInsets.only(bottom: 10),
               child: _CommunityMemberTile(
                 member: member,
                 isUpdating: _updatingUserIds.contains(member.userId),
@@ -564,20 +564,20 @@ class _MemberFilters extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 640),
         child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: AppColors.surfaceLight,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.border),
+          decoration: AppBoxDecoration(
+            color: AppPalette.surfaceCoolLight,
+            borderRadius: AppBorderRadius.circular(8),
+            border: Border.all(color: AppPalette.outlineOverlay),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const AppEdgeInsets.all(12),
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final roleField = DropdownButtonFormField<String?>(
                   key: const ValueKey('community-members-role-filter'),
                   initialValue: selectedRole,
                   isExpanded: true,
-                  dropdownColor: AppColors.surface,
+                  dropdownColor: AppPalette.surfaceCool,
                   decoration: _filterDecoration(
                     l10n.communityMembersRoleFilterLabel,
                   ),
@@ -598,7 +598,7 @@ class _MemberFilters extends StatelessWidget {
                   key: const ValueKey('community-members-status-filter'),
                   initialValue: selectedStatus,
                   isExpanded: true,
-                  dropdownColor: AppColors.surface,
+                  dropdownColor: AppPalette.surfaceCool,
                   decoration: _filterDecoration(
                     l10n.communityMembersStatusFilterLabel,
                   ),
@@ -666,13 +666,13 @@ class _CommunityMemberTile extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 640),
         child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: AppColors.surfaceLight,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.border),
+          decoration: AppBoxDecoration(
+            color: AppPalette.surfaceCoolLight,
+            borderRadius: AppBorderRadius.circular(8),
+            border: Border.all(color: AppPalette.outlineOverlay),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const AppEdgeInsets.all(14),
             child: Row(
               children: [
                 _MemberAvatar(label: member.user.preferredName),
@@ -686,7 +686,7 @@ class _CommunityMemberTile extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: textTheme.titleSmall?.copyWith(
-                          color: AppColors.textPrimary,
+                          color: AppPalette.textPrimary,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -756,7 +756,7 @@ class _RoleHistorySheet extends StatelessWidget {
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxHeight),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+          padding: const AppEdgeInsets.fromLTRB(20, 20, 20, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -765,7 +765,7 @@ class _RoleHistorySheet extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.textPrimary,
+                  color: AppPalette.textPrimary,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -775,7 +775,7 @@ class _RoleHistorySheet extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppPalette.textCoolSecondary,
                 ),
               ),
               const SizedBox(height: 16),
@@ -786,7 +786,7 @@ class _RoleHistorySheet extends StatelessWidget {
                     if (snapshot.connectionState != ConnectionState.done) {
                       return const Center(
                         child: CircularProgressIndicator(
-                          color: AppColors.accent,
+                          color: AppPalette.primary,
                         ),
                       );
                     }
@@ -811,7 +811,7 @@ class _RoleHistorySheet extends StatelessWidget {
                     return ListView.separated(
                       itemCount: changes.length,
                       separatorBuilder: (_, _) =>
-                          Divider(height: 1, color: AppColors.border),
+                          Divider(height: 1, color: AppPalette.outlineOverlay),
                       itemBuilder: (context, index) {
                         return _RoleHistoryTile(change: changes[index]);
                       },
@@ -839,7 +839,7 @@ class _RoleHistoryTile extends StatelessWidget {
     final changedAt = _formatRoleChangeDate(change.createdAt);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const AppEdgeInsets.symmetric(vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -848,7 +848,7 @@ class _RoleHistoryTile extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: AppColors.textPrimary,
+              color: AppPalette.textPrimary,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -857,9 +857,9 @@ class _RoleHistoryTile extends StatelessWidget {
             '${l10n.communityMembersRoleHistoryChangedBy} $actorName',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppPalette.textCoolSecondary,
+            ),
           ),
           if (changedAt.isNotEmpty) ...[
             const SizedBox(height: 4),
@@ -867,9 +867,9 @@ class _RoleHistoryTile extends StatelessWidget {
               changedAt,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(
-                context,
-              ).textTheme.labelSmall?.copyWith(color: AppColors.textSecondary),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: AppPalette.textCoolSecondary,
+              ),
             ),
           ],
         ],
@@ -888,11 +888,11 @@ class _MemberAvatar extends StatelessWidget {
     final initials = label.trim().isEmpty ? 'I' : label.trim()[0].toUpperCase();
     return CircleAvatar(
       radius: 22,
-      backgroundColor: AppColors.accent.withValues(alpha: 0.18),
+      backgroundColor: AppPalette.primary.withValues(alpha: 0.18),
       child: Text(
         initials,
-        style: const TextStyle(
-          color: AppColors.accent,
+        style: const AppTextStyle(
+          color: AppPalette.primary,
           fontWeight: FontWeight.w800,
         ),
       ),
@@ -908,19 +908,19 @@ class _StatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppColors.border),
+      decoration: AppBoxDecoration(
+        color: AppPalette.surfaceCool,
+        borderRadius: AppBorderRadius.circular(999),
+        border: Border.all(color: AppPalette.outlineOverlay),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        padding: const AppEdgeInsets.symmetric(horizontal: 10, vertical: 5),
         child: Text(
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: AppColors.textSecondary,
+            color: AppPalette.textCoolSecondary,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -938,7 +938,7 @@ class _MembersStateList extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(24),
+      padding: const AppEdgeInsets.all(24),
       children: [
         SizedBox(height: MediaQuery.sizeOf(context).height * 0.18),
         child,
@@ -968,13 +968,13 @@ class _MembersMessage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: AppColors.textSecondary, size: 42),
+            Icon(icon, color: AppPalette.textCoolSecondary, size: 42),
             const SizedBox(height: 14),
             Text(
               title,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: AppColors.textPrimary,
+                color: AppPalette.textPrimary,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -982,9 +982,9 @@ class _MembersMessage extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppPalette.textCoolSecondary,
+              ),
             ),
             if (action != null) ...[const SizedBox(height: 16), action!],
           ],
@@ -1052,16 +1052,16 @@ List<_StatusOption> _statusActionOptions(AppLocalizations l10n) {
 }
 
 InputDecoration _filterDecoration(String label) {
-  return InputDecoration(
+  return AppInputDecoration(
     labelText: label,
-    labelStyle: const TextStyle(color: AppColors.textSecondary),
+    labelStyle: const AppTextStyle(color: AppPalette.textCoolSecondary),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
-      borderSide: BorderSide(color: AppColors.border),
+      borderRadius: AppBorderRadius.circular(8),
+      borderSide: BorderSide(color: AppPalette.outlineOverlay),
     ),
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
-      borderSide: const BorderSide(color: AppColors.accent),
+      borderRadius: AppBorderRadius.circular(8),
+      borderSide: const BorderSide(color: AppPalette.primary),
     ),
   );
 }

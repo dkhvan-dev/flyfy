@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
-import '../../../core/ui/app_colors.dart';
 import '../../../features/stories/models/post_vm.dart';
 import '../../../features/stories/story_ui.dart';
 import '../../../l10n/generated/app_localizations.dart';
@@ -28,23 +28,23 @@ class ProfilePostCard extends StatelessWidget {
       label: post.title,
       onTap: onTap,
       child: Material(
-        color: Colors.transparent,
+        color: AppPalette.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(
+          borderRadius: AppBorderRadius.circular(
             profileScaled(context, 22, min: 18, max: 22),
           ),
           child: Ink(
             decoration: profileCardDecoration(context, highlighted: true),
             child: Padding(
-              padding: EdgeInsets.all(profileScaled(context, 12, min: 10)),
+              padding: AppEdgeInsets.all(profileScaled(context, 12, min: 10)),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox.square(
                     dimension: coverSize,
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(
+                      borderRadius: AppBorderRadius.circular(
                         profileScaled(context, 18, min: 14, max: 20),
                       ),
                       child: StoryCoverImage(url: post.coverUrl),
@@ -60,8 +60,8 @@ class ProfilePostCard extends StatelessWidget {
                             metaText,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
+                            style: AppTextStyle(
+                              color: AppPalette.textCoolSecondary,
                               fontSize: profileScaled(
                                 context,
                                 12,
@@ -77,8 +77,8 @@ class ProfilePostCard extends StatelessWidget {
                           post.title,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: AppColors.textPrimary,
+                          style: AppTextStyle(
+                            color: AppPalette.textPrimary,
                             fontSize: profileScaled(
                               context,
                               15,
@@ -95,8 +95,8 @@ class ProfilePostCard extends StatelessWidget {
                             post.excerpt.trim(),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
+                            style: AppTextStyle(
+                              color: AppPalette.textCoolSecondary,
                               fontSize: profileScaled(
                                 context,
                                 13,
@@ -119,7 +119,7 @@ class ProfilePostCard extends StatelessWidget {
                                 min: 14,
                                 max: 16,
                               ),
-                              color: AppColors.accent.withValues(alpha: 0.78),
+                              color: AppPalette.primary.withValues(alpha: 0.78),
                             ),
                             SizedBox(width: profileScaled(context, 5, min: 4)),
                             Flexible(
@@ -127,8 +127,8 @@ class ProfilePostCard extends StatelessWidget {
                                 '${formatStoryCountCompact(post.stats.views)} ${l10n.storyViewsSuffix}',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: AppColors.textSecondary,
+                                style: AppTextStyle(
+                                  color: AppPalette.textCoolSecondary,
                                   fontSize: profileScaled(
                                     context,
                                     12,

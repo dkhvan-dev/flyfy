@@ -16,7 +16,7 @@ void main() {
     expect(source, contains('Alignment.bottomCenter'));
     expect(source, contains('heightFactor: 1'));
     expect(source, contains('AnimatedPadding('));
-    expect(source, contains('EdgeInsets.only(bottom: bottomInset)'));
+    expect(source, contains('AppEdgeInsets.only(bottom: bottomInset)'));
     expect(source, contains('maxHeight: availableHeight * 0.92'));
     expect(source, contains('Flexible('));
     expect(source, contains('class _PasswordChangeActions'));

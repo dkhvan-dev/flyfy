@@ -378,7 +378,7 @@ void main() {
     expect(pricingSectionEnd, greaterThan(currencyStart));
 
     final currencySource = source.substring(currencyStart, pricingSectionEnd);
-    expect(currencySource, contains('surfaceColor: const Color(0xFF3A2108)'));
+    expect(currencySource, contains('surfaceColor: AppPalette.warmSurface48'));
   });
 
   test(

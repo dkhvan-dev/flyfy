@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/ui/app_colors.dart';
 import '../../features/attendance/attendance_qr_token.dart';
 import '../../features/attendance/attendance_queue_repository.dart';
 import '../../features/attendance/attendance_sync_manager.dart';
@@ -349,13 +349,13 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
   Color _feedbackColor() {
     switch (_feedbackTone) {
       case _ScannerFeedbackTone.success:
-        return const Color(0xFF1DBF73);
+        return AppPalette.greenMuted03;
       case _ScannerFeedbackTone.warning:
-        return AppColors.accent;
+        return AppPalette.primary;
       case _ScannerFeedbackTone.error:
-        return const Color(0xFFFF6B57);
+        return AppPalette.redSoft07;
       case _ScannerFeedbackTone.neutral:
-        return Colors.white;
+        return AppPalette.white;
     }
   }
 
@@ -364,25 +364,25 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF140901),
+      backgroundColor: AppPalette.warmInk13,
       body: SafeArea(
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+              padding: const AppEdgeInsets.fromLTRB(16, 10, 16, 0),
               child: Row(
                 children: [
                   IconButton(
                     onPressed: () => Navigator.of(context).maybePop(),
                     icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                    color: Colors.white,
+                    color: AppPalette.white,
                   ),
                   Expanded(
                     child: Text(
                       l10n.qrScannerTitle,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: const AppTextStyle(
+                        color: AppPalette.white,
                         fontSize: 19,
                         fontWeight: FontWeight.w800,
                       ),
@@ -393,12 +393,12 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 18),
+              padding: const AppEdgeInsets.fromLTRB(24, 12, 24, 18),
               child: Text(
                 l10n.qrScannerSubtitle,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.72),
+                style: AppTextStyle(
+                  color: AppPalette.white.withValues(alpha: 0.72),
                   fontSize: 14,
                   height: 1.45,
                 ),
@@ -406,9 +406,9 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18),
+                padding: const AppEdgeInsets.symmetric(horizontal: 18),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: AppBorderRadius.circular(30),
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
@@ -417,19 +417,19 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
                         onDetect: _handleDetect,
                         errorBuilder: (context, error) {
                           return DecoratedBox(
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF221109),
+                            decoration: const AppBoxDecoration(
+                              color: AppPalette.warmInk82,
                             ),
                             child: Center(
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(
+                                padding: const AppEdgeInsets.symmetric(
                                   horizontal: 24,
                                 ),
                                 child: Text(
                                   l10n.qrScannerCameraUnavailable,
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: const AppTextStyle(
+                                    color: AppPalette.white,
                                     fontSize: 15,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -445,15 +445,15 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
                             child: Container(
                               width: frameWidth,
                               height: frameHeight,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(28),
+                              decoration: AppBoxDecoration(
+                                borderRadius: AppBorderRadius.circular(28),
                                 border: Border.all(
-                                  color: AppColors.accent,
+                                  color: AppPalette.primary,
                                   width: 2.4,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.accent.withValues(
+                                    color: AppPalette.primary.withValues(
                                       alpha: 0.22,
                                     ),
                                     blurRadius: 28,
@@ -470,12 +470,12 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
                         right: 18,
                         bottom: 18,
                         child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xD91D1009),
-                            borderRadius: BorderRadius.circular(24),
+                          padding: const AppEdgeInsets.all(16),
+                          decoration: AppBoxDecoration(
+                            color: AppPalette.warmOverlayInk10,
+                            borderRadius: AppBorderRadius.circular(24),
                             border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.08),
+                              color: AppPalette.white.withValues(alpha: 0.08),
                             ),
                           ),
                           child: Column(
@@ -484,9 +484,9 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
                             children: [
                               Text(
                                 _feedbackMessage ?? l10n.qrScannerReady,
-                                style: TextStyle(
+                                style: AppTextStyle(
                                   color: _feedbackMessage == null
-                                      ? Colors.white
+                                      ? AppPalette.white
                                       : _feedbackColor(),
                                   fontSize: 15,
                                   fontWeight: FontWeight.w700,
@@ -499,8 +499,10 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
                                         _pendingCount.toString(),
                                       )
                                     : l10n.qrScannerNoPending,
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.7),
+                                style: AppTextStyle(
+                                  color: AppPalette.white.withValues(
+                                    alpha: 0.7,
+                                  ),
                                   fontSize: 13,
                                 ),
                               ),
@@ -513,13 +515,13 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
                                           ? null
                                           : _handleManualSync,
                                       style: OutlinedButton.styleFrom(
-                                        foregroundColor: Colors.white,
+                                        foregroundColor: AppPalette.white,
                                         side: BorderSide(
-                                          color: Colors.white.withValues(
+                                          color: AppPalette.white.withValues(
                                             alpha: 0.14,
                                           ),
                                         ),
-                                        padding: const EdgeInsets.symmetric(
+                                        padding: const AppEdgeInsets.symmetric(
                                           vertical: 14,
                                         ),
                                       ),
@@ -531,9 +533,10 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
                                                 strokeWidth: 2,
                                                 valueColor:
                                                     AlwaysStoppedAnimation(
-                                                      Colors.white.withValues(
-                                                        alpha: 0.92,
-                                                      ),
+                                                      AppPalette.white
+                                                          .withValues(
+                                                            alpha: 0.92,
+                                                          ),
                                                     ),
                                               ),
                                             )
@@ -545,9 +548,9 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
                                     child: FilledButton(
                                       onPressed: _restartScanner,
                                       style: FilledButton.styleFrom(
-                                        backgroundColor: AppColors.accent,
-                                        foregroundColor: AppColors.textPrimary,
-                                        padding: const EdgeInsets.symmetric(
+                                        backgroundColor: AppPalette.primary,
+                                        foregroundColor: AppPalette.textPrimary,
+                                        padding: const AppEdgeInsets.symmetric(
                                           vertical: 14,
                                         ),
                                       ),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-import 'app_colors.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
 class AppInlineSortOption<T> {
   const AppInlineSortOption({required this.value, required this.label});
@@ -26,9 +25,9 @@ class AppInlineSortRow<T> extends StatelessWidget {
     this.minItemHeight = 40,
     this.letterSpacing = 1.4,
     this.wrap = false,
-    this.labelColor = const Color(0xC7E3D4C2),
-    this.activeColor = AppColors.accent,
-    this.inactiveColor = const Color(0xFFA98D74),
+    this.labelColor = AppPalette.orangeOverlayLight02,
+    this.activeColor = AppPalette.primary,
+    this.inactiveColor = AppPalette.orangeMuted04,
   });
 
   final String label;
@@ -57,7 +56,7 @@ class AppInlineSortRow<T> extends StatelessWidget {
 
     final labelWidget = Text(
       '$label:',
-      style: TextStyle(
+      style: AppTextStyle(
         color: labelColor,
         fontSize: fontSize,
         fontWeight: FontWeight.w700,
@@ -148,7 +147,7 @@ class _InlineSortItem<T> extends StatelessWidget {
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: minItemHeight),
           child: Padding(
-            padding: EdgeInsets.symmetric(vertical: verticalPadding),
+            padding: AppEdgeInsets.symmetric(vertical: verticalPadding),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -156,7 +155,7 @@ class _InlineSortItem<T> extends StatelessWidget {
                   option.label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: AppTextStyle(
                     color: foregroundColor,
                     fontSize: fontSize,
                     fontWeight: FontWeight.w700,

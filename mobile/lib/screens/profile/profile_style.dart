@@ -1,19 +1,18 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
-import '../../core/ui/app_colors.dart';
-
-const Color profileBgTop = Color(0xFF1C1007);
-const Color profileBgBottom = Color(0xFF170C04);
-const Color profileSurface = Color(0xFF2A180D);
-const Color profileSurfaceSoft = Color(0xFF322013);
-const Color profileSurfaceMuted = Color(0xFF433124);
-const Color profileBorder = Color(0x33FF9800);
-const Color profileBorderSoft = Color(0x12FFFFFF);
-const Color profileTextSoft = Color(0xFFD8CABC);
-const Color profileTextMuted = Color(0xFFA59282);
-const Color profileDisabled = Color(0xFF756252);
+const Color profileBgTop = AppPalette.warmInk47;
+const Color profileBgBottom = AppPalette.warmInk24;
+const Color profileSurface = AppPalette.warmSurface09;
+const Color profileSurfaceSoft = AppPalette.warmSurface41;
+const Color profileSurfaceMuted = AppPalette.warmSurface76;
+const Color profileBorder = AppPalette.borderStrong;
+const Color profileBorderSoft = AppPalette.borderSoft;
+const Color profileTextSoft = AppPalette.orangeLight16;
+const Color profileTextMuted = AppPalette.orangeSoft01;
+const Color profileDisabled = AppPalette.textDisabled;
 
 class ProfileResponsiveScope extends StatelessWidget {
   const ProfileResponsiveScope({super.key, required this.child});
@@ -70,10 +69,10 @@ BoxDecoration profileCardDecoration(
   double? radius,
 }) {
   final glowColor = disabled
-      ? Colors.transparent
-      : AppColors.accent.withValues(alpha: highlighted ? 0.18 : 0.1);
+      ? AppPalette.transparent
+      : AppPalette.primary.withValues(alpha: highlighted ? 0.18 : 0.1);
 
-  return BoxDecoration(
+  return AppBoxDecoration(
     gradient: LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
@@ -88,11 +87,11 @@ BoxDecoration profileCardDecoration(
               profileSurface.withValues(alpha: 0.96),
             ]
           : [
-              Colors.white.withValues(alpha: 0.03),
-              Colors.white.withValues(alpha: 0.015),
+              AppPalette.white.withValues(alpha: 0.03),
+              AppPalette.white.withValues(alpha: 0.015),
             ],
     ),
-    borderRadius: BorderRadius.circular(
+    borderRadius: AppBorderRadius.circular(
       radius ?? profileScaled(context, 22, min: 18, max: 28),
     ),
     border: Border.all(
@@ -100,11 +99,11 @@ BoxDecoration profileCardDecoration(
           ? profileBorderSoft
           : highlighted
           ? profileBorder
-          : Colors.white.withValues(alpha: 0.04),
+          : AppPalette.white.withValues(alpha: 0.04),
     ),
     boxShadow: [
       BoxShadow(
-        color: Colors.black.withValues(alpha: 0.22),
+        color: AppPalette.black.withValues(alpha: 0.22),
         blurRadius: profileScaled(context, 24, min: 16, max: 28),
         offset: Offset(0, profileScaled(context, 10, min: 6, max: 12)),
       ),
@@ -136,7 +135,7 @@ class ProfileTopIconButton extends StatelessWidget {
     final iconSize = profileScaled(context, 20, min: 18, max: 20);
 
     return Material(
-      color: Colors.white.withValues(alpha: 0.04),
+      color: AppPalette.white.withValues(alpha: 0.04),
       shape: const CircleBorder(),
       child: InkWell(
         onTap: disabled ? null : onTap,
@@ -147,7 +146,7 @@ class ProfileTopIconButton extends StatelessWidget {
           child: Icon(
             icon,
             size: iconSize,
-            color: disabled ? profileDisabled : AppColors.textPrimary,
+            color: disabled ? profileDisabled : AppPalette.textPrimary,
           ),
         ),
       ),
@@ -178,12 +177,12 @@ class ProfileSectionHeading extends StatelessWidget {
             children: [
               if ((kicker ?? '').trim().isNotEmpty)
                 Padding(
-                  padding: EdgeInsets.only(
+                  padding: AppEdgeInsets.only(
                     bottom: profileScaled(context, 6, min: 4, max: 6),
                   ),
                   child: Text(
                     kicker!,
-                    style: TextStyle(
+                    style: AppTextStyle(
                       color: profileTextSoft,
                       fontSize: profileScaled(context, 11, min: 10, max: 11),
                       fontWeight: FontWeight.w800,
@@ -193,8 +192,8 @@ class ProfileSectionHeading extends StatelessWidget {
                 ),
               Text(
                 title,
-                style: TextStyle(
-                  color: AppColors.textPrimary,
+                style: AppTextStyle(
+                  color: AppPalette.textPrimary,
                   fontSize: profileScaled(context, 18, min: 16, max: 22),
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.4,
@@ -217,7 +216,7 @@ class ProfileGlassBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: const AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
@@ -232,7 +231,7 @@ class ProfileGlassBackground extends StatelessWidget {
             right: -80,
             child: _GlowOrb(
               size: profileScaled(context, 280, min: 200, max: 320),
-              color: AppColors.accent.withValues(alpha: 0.12),
+              color: AppPalette.primary.withValues(alpha: 0.12),
             ),
           ),
           Positioned(
@@ -240,7 +239,7 @@ class ProfileGlassBackground extends StatelessWidget {
             left: -100,
             child: _GlowOrb(
               size: profileScaled(context, 240, min: 160, max: 260),
-              color: AppColors.accent.withValues(alpha: 0.06),
+              color: AppPalette.primary.withValues(alpha: 0.06),
             ),
           ),
           child,
@@ -263,7 +262,7 @@ class _GlowOrb extends StatelessWidget {
       child: Container(
         width: size,
         height: size,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        decoration: AppBoxDecoration(color: color, shape: BoxShape.circle),
       ),
     );
   }

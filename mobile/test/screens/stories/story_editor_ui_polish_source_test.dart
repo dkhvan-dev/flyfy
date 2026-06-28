@@ -48,7 +48,7 @@ void main() {
     expect(popupSource, contains('maxWidth: fieldWidth'));
     expect(popupSource, contains('_StoryMetadataMenuItem('));
     expect(popupSource, contains('Icons.check_circle_rounded'));
-    expect(popupSource, contains('AppColors.accent.withValues(alpha: 0.14)'));
+    expect(popupSource, contains('AppPalette.primary.withValues(alpha: 0.14)'));
   });
 
   test('story editor exposes a broader reusable template set', () {
@@ -152,7 +152,7 @@ void main() {
     expect(screen, contains('AnimatedPadding('));
     expect(screen, contains('MediaQuery.viewInsetsOf(context).bottom'));
     for (final source in [toolbar, canvas, media, text]) {
-      expect(source, contains('AppColors.'));
+      expect(source, contains('AppPalette.'));
       expect(source, isNot(contains('colorScheme.primary')));
     }
   });

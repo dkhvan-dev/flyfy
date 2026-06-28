@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -10,7 +11,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/files/chat_file_cache.dart';
 import '../../core/network/chat_api.dart';
 import '../../core/network/file_api.dart';
-import '../../core/ui/app_colors.dart';
 import '../../features/chat/models/conversation_vm.dart';
 import '../../features/chat/models/message_vm.dart';
 import '../../features/chat/utils/chat_link_utils.dart';
@@ -214,7 +214,7 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.chatAttachmentDownloaded),
-          backgroundColor: const Color(0xFF3a2415),
+          backgroundColor: AppPalette.warmSurface56,
         ),
       );
     } catch (_) {
@@ -270,11 +270,14 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
     return showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1d120b),
-        title: Text(l10n.error, style: const TextStyle(color: Colors.white)),
+        backgroundColor: AppPalette.warmInk55,
+        title: Text(
+          l10n.error,
+          style: const AppTextStyle(color: AppPalette.white),
+        ),
         content: Text(
           message,
-          style: const TextStyle(color: Color(0xFFf5ede6)),
+          style: const AppTextStyle(color: AppPalette.orangeWash10),
         ),
         actions: [
           TextButton(
@@ -294,25 +297,27 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
     final action = await showModalBottomSheet<String>(
       context: context,
       isDismissible: true,
-      backgroundColor: const Color(0xFF1d120b),
+      backgroundColor: AppPalette.warmInk55,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: AppBorderRadius.vertical(
+          top: AppRadiusValue.circular(20),
+        ),
       ),
       builder: (sheetContext) => SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+          padding: const AppEdgeInsets.fromLTRB(18, 16, 18, 18),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
                 leading: const Icon(
                   Icons.subdirectory_arrow_left_rounded,
-                  color: AppColors.accent,
+                  color: AppPalette.primary,
                 ),
                 title: Text(
                   l10n.chatSharedGoToMessageAction,
-                  style: const TextStyle(
-                    color: Color(0xFFf5ede6),
+                  style: const AppTextStyle(
+                    color: AppPalette.orangeWash10,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -361,14 +366,14 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1d120b),
+        backgroundColor: AppPalette.warmInk55,
         title: Text(
           l10n.chatExternalLinkTitle,
-          style: const TextStyle(color: Colors.white),
+          style: const AppTextStyle(color: AppPalette.white),
         ),
         content: Text(
           l10n.chatExternalLinkMessage(uri.toString()),
-          style: const TextStyle(color: Color(0xFFf5ede6)),
+          style: const AppTextStyle(color: AppPalette.orangeWash10),
         ),
         actions: [
           TextButton(
@@ -412,13 +417,13 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
         : '';
 
     return Scaffold(
-      backgroundColor: const Color(0xFF140a05),
+      backgroundColor: AppPalette.warmInk14,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: const AppBoxDecoration(
           gradient: RadialGradient(
             center: Alignment(0, -1),
             radius: 0.92,
-            colors: [Color(0x14FF9800), Color(0x00140A05)],
+            colors: [AppPalette.warmOverlayMuted02, AppPalette.clearWarmInk01],
           ),
         ),
         child: LayoutBuilder(
@@ -450,7 +455,7 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
                     ),
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: EdgeInsets.fromLTRB(
+                        padding: AppEdgeInsets.fromLTRB(
                           horizontalPadding,
                           22,
                           horizontalPadding,
@@ -471,7 +476,7 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
                             voiceMessages.isNotEmpty))
                       SliverToBoxAdapter(
                         child: Padding(
-                          padding: EdgeInsets.fromLTRB(
+                          padding: AppEdgeInsets.fromLTRB(
                             horizontalPadding,
                             18,
                             horizontalPadding,
@@ -544,7 +549,7 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
 
     return [
       SliverPadding(
-        padding: EdgeInsets.fromLTRB(
+        padding: AppEdgeInsets.fromLTRB(
           horizontalPadding,
           24,
           horizontalPadding,
@@ -587,7 +592,7 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
 
     return [
       SliverPadding(
-        padding: EdgeInsets.fromLTRB(
+        padding: AppEdgeInsets.fromLTRB(
           horizontalPadding,
           34,
           horizontalPadding,
@@ -629,7 +634,7 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
 
     return [
       SliverPadding(
-        padding: EdgeInsets.fromLTRB(
+        padding: AppEdgeInsets.fromLTRB(
           horizontalPadding,
           28,
           horizontalPadding,
@@ -672,7 +677,7 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
 
     return [
       SliverPadding(
-        padding: EdgeInsets.fromLTRB(
+        padding: AppEdgeInsets.fromLTRB(
           horizontalPadding,
           28,
           horizontalPadding,
@@ -821,16 +826,16 @@ class _SharedHeader extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(
+      padding: AppEdgeInsets.fromLTRB(
         horizontalPadding,
         topPadding + 18,
         horizontalPadding,
         18,
       ),
-      decoration: BoxDecoration(
-        color: const Color(0x661D1109),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmOverlayInk03,
         border: Border(
-          bottom: BorderSide(color: Colors.white.withValues(alpha: 0.07)),
+          bottom: BorderSide(color: AppPalette.white.withValues(alpha: 0.07)),
         ),
       ),
       child: Stack(
@@ -841,7 +846,7 @@ class _SharedHeader extends StatelessWidget {
             child: _SharedBackButton(onTap: () => Navigator.of(context).pop()),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 48),
+            padding: const AppEdgeInsets.symmetric(horizontal: 48),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -855,14 +860,14 @@ class _SharedHeader extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: AppTextStyle(
                       fontSize: MediaQuery.sizeOf(context).width < 360
                           ? 22
                           : 24,
                       height: 1.12,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.9,
-                      color: const Color(0xFFf7f4f1),
+                      color: AppPalette.orangeWash16,
                     ),
                   ),
                 ),
@@ -874,12 +879,12 @@ class _SharedHeader extends StatelessWidget {
                       Container(
                         width: 10,
                         height: 10,
-                        decoration: BoxDecoration(
+                        decoration: AppBoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppColors.accent,
+                          color: AppPalette.primary,
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.accent.withValues(alpha: 0.08),
+                              color: AppPalette.primary.withValues(alpha: 0.08),
                               blurRadius: 0,
                               spreadRadius: 4,
                             ),
@@ -889,11 +894,11 @@ class _SharedHeader extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         l10n.chatParticipantsCount(participantCount),
-                        style: const TextStyle(
+                        style: const AppTextStyle(
                           fontSize: 16,
                           height: 1,
                           fontWeight: FontWeight.w500,
-                          color: Color(0xFFf1a234),
+                          color: AppPalette.orangeSoft36,
                         ),
                       ),
                     ],
@@ -924,7 +929,7 @@ class _SharedBackButton extends StatelessWidget {
         child: Icon(
           Icons.arrow_back_ios_new_rounded,
           size: 24,
-          color: Color(0xFFf7f4f1),
+          color: AppPalette.orangeWash16,
         ),
       ),
     );
@@ -943,11 +948,11 @@ class _SharedTabs extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Container(
-      padding: EdgeInsets.all(compact ? 8 : 10),
-      decoration: BoxDecoration(
-        color: const Color(0xB83A2616),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.02)),
+      padding: AppEdgeInsets.all(compact ? 8 : 10),
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmOverlaySurface07,
+        borderRadius: AppBorderRadius.circular(999),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.02)),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -1011,15 +1016,15 @@ class _SharedTabButton extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         height: compact ? 58 : 66,
         constraints: BoxConstraints(minWidth: compact ? 92 : 104),
-        padding: EdgeInsets.symmetric(horizontal: compact ? 16 : 20),
+        padding: AppEdgeInsets.symmetric(horizontal: compact ? 16 : 20),
         alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: active ? AppColors.accent : Colors.transparent,
-          borderRadius: BorderRadius.circular(999),
+        decoration: AppBoxDecoration(
+          color: active ? AppPalette.primary : AppPalette.transparent,
+          borderRadius: AppBorderRadius.circular(999),
           boxShadow: active
               ? [
                   BoxShadow(
-                    color: AppColors.accent.withValues(alpha: 0.22),
+                    color: AppPalette.primary.withValues(alpha: 0.22),
                     blurRadius: 24,
                     offset: const Offset(0, 10),
                   ),
@@ -1030,12 +1035,12 @@ class _SharedTabButton extends StatelessWidget {
           label,
           maxLines: 1,
           overflow: TextOverflow.visible,
-          style: TextStyle(
+          style: AppTextStyle(
             fontSize: compact ? 14 : 16,
             height: 1,
             fontWeight: FontWeight.w800,
             letterSpacing: compact ? 0.2 : 0.6,
-            color: active ? const Color(0xFFfff7ef) : const Color(0xFFd8c2b3),
+            color: active ? AppPalette.textWarm : AppPalette.orangeLight12,
           ),
         ),
       ),
@@ -1063,7 +1068,7 @@ class _MediaGroup extends StatelessWidget {
     final radius = width < 360 ? 22.0 : 28.0;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 38),
+      padding: const AppEdgeInsets.only(bottom: 38),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1072,7 +1077,7 @@ class _MediaGroup extends StatelessWidget {
           GridView.builder(
             itemCount: group.items.length,
             shrinkWrap: true,
-            padding: EdgeInsets.zero,
+            padding: AppEdgeInsets.zero,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
@@ -1144,13 +1149,13 @@ class _MediaTile extends StatelessWidget {
     }
 
     final tile = ClipRRect(
-      borderRadius: BorderRadius.circular(radius),
+      borderRadius: AppBorderRadius.circular(radius),
       child: DecoratedBox(
-        decoration: BoxDecoration(
+        decoration: AppBoxDecoration(
           gradient: _fallbackGradient(item.fileId),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.22),
+              color: AppPalette.black.withValues(alpha: 0.22),
               blurRadius: 24,
               offset: const Offset(0, 12),
             ),
@@ -1166,13 +1171,13 @@ class _MediaTile extends StatelessWidget {
                 gaplessPlayback: true,
               ),
             DecoratedBox(
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.white.withValues(alpha: 0.03),
-                    Colors.black.withValues(alpha: 0.08),
+                    AppPalette.white.withValues(alpha: 0.03),
+                    AppPalette.black.withValues(alpha: 0.08),
                   ],
                 ),
               ),
@@ -1213,18 +1218,18 @@ class _LinksGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
+      padding: const AppEdgeInsets.only(bottom: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const AppEdgeInsets.symmetric(horizontal: 4),
             child: _SectionTitle(group.label),
           ),
           const SizedBox(height: 14),
           ...group.items.map(
             (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: const AppEdgeInsets.only(bottom: 12),
               child: _LinkItem(
                 item: item,
                 onTap: () => onLinkTap(item),
@@ -1282,19 +1287,19 @@ class _CompactLinkCard extends StatelessWidget {
       onLongPress: onLongPress,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: EdgeInsets.fromLTRB(
+        padding: AppEdgeInsets.fromLTRB(
           compact ? 12 : 14,
           compact ? 11 : 12,
           compact ? 12 : 14,
           compact ? 11 : 12,
         ),
-        decoration: BoxDecoration(
-          color: const Color(0xFF21140c),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        decoration: AppBoxDecoration(
+          color: AppPalette.warmInk75,
+          borderRadius: AppBorderRadius.circular(18),
+          border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.14),
+              color: AppPalette.black.withValues(alpha: 0.14),
               blurRadius: 14,
               offset: const Offset(0, 7),
             ),
@@ -1319,7 +1324,7 @@ class _CompactLinkCard extends StatelessWidget {
                       Icon(
                         Icons.link_rounded,
                         size: compact ? 15 : 16,
-                        color: AppColors.accent,
+                        color: AppPalette.primary,
                       ),
                       const SizedBox(width: 5),
                       Expanded(
@@ -1327,11 +1332,11 @@ class _CompactLinkCard extends StatelessWidget {
                           hostLabel,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: AppTextStyle(
                             fontSize: compact ? 13 : 14,
                             height: 1.1,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.accent,
+                            color: AppPalette.primary,
                           ),
                         ),
                       ),
@@ -1342,11 +1347,11 @@ class _CompactLinkCard extends StatelessWidget {
                     item.snippet,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: AppTextStyle(
                       fontSize: compact ? 14 : 15,
                       height: 1.25,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFFf1ebe3),
+                      color: AppPalette.orangeWash02,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1354,11 +1359,11 @@ class _CompactLinkCard extends StatelessWidget {
                     item.senderName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: AppTextStyle(
                       fontSize: compact ? 12 : 13,
                       height: 1.1,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white.withValues(alpha: 0.48),
+                      color: AppPalette.white.withValues(alpha: 0.48),
                     ),
                   ),
                 ],
@@ -1368,7 +1373,7 @@ class _CompactLinkCard extends StatelessWidget {
             Icon(
               Icons.open_in_new_rounded,
               size: compact ? 18 : 20,
-              color: Colors.white.withValues(alpha: 0.44),
+              color: AppPalette.white.withValues(alpha: 0.44),
             ),
           ],
         ),
@@ -1393,18 +1398,18 @@ class _FilesGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 30),
+      padding: const AppEdgeInsets.only(bottom: 30),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
+            padding: const AppEdgeInsets.symmetric(horizontal: 14),
             child: _SectionTitle(group.label),
           ),
           const SizedBox(height: 16),
           ...group.items.map(
             (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 18),
+              padding: const AppEdgeInsets.only(bottom: 18),
               child: _FileCard(
                 item: item,
                 busy: busyFileIds.contains(item.fileId),
@@ -1452,14 +1457,14 @@ class _FileCard extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Container(
         constraints: BoxConstraints(minHeight: compact ? 136 : 148),
-        padding: EdgeInsets.fromLTRB(16, 18, compact ? 14 : 18, 18),
-        decoration: BoxDecoration(
-          color: const Color(0xFF2a190e),
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.025)),
+        padding: AppEdgeInsets.fromLTRB(16, 18, compact ? 14 : 18, 18),
+        decoration: AppBoxDecoration(
+          color: AppPalette.warmSurface11,
+          borderRadius: AppBorderRadius.circular(30),
+          border: Border.all(color: AppPalette.white.withValues(alpha: 0.025)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.12),
+              color: AppPalette.black.withValues(alpha: 0.12),
               blurRadius: 22,
               offset: const Offset(0, 10),
             ),
@@ -1470,9 +1475,9 @@ class _FileCard extends StatelessWidget {
             Container(
               width: compact ? 72 : 78,
               height: compact ? 72 : 78,
-              decoration: BoxDecoration(
-                color: const Color(0xFF3a2415),
-                borderRadius: BorderRadius.circular(24),
+              decoration: AppBoxDecoration(
+                color: AppPalette.warmSurface56,
+                borderRadius: AppBorderRadius.circular(24),
               ),
               child: Icon(icon, size: 38, color: iconColor),
             ),
@@ -1486,12 +1491,12 @@ class _FileCard extends StatelessWidget {
                     name,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: AppTextStyle(
                       fontSize: compact ? 21 : 23,
                       height: 1.18,
                       fontWeight: FontWeight.w600,
                       letterSpacing: -0.7,
-                      color: const Color(0xFFf2e7dd),
+                      color: AppPalette.orangeWash04,
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -1499,10 +1504,10 @@ class _FileCard extends StatelessWidget {
                     '${_downloadStatusLabel(context, item.downloaded, busy)} | $label',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: AppTextStyle(
                       fontSize: compact ? 16 : 17,
                       height: 1.2,
-                      color: const Color(0xFFa99586),
+                      color: AppPalette.orangeSoft04,
                     ),
                   ),
                 ],
@@ -1530,18 +1535,18 @@ class _VoiceMessagesGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 30),
+      padding: const AppEdgeInsets.only(bottom: 30),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
+            padding: const AppEdgeInsets.symmetric(horizontal: 14),
             child: _SectionTitle(group.label),
           ),
           const SizedBox(height: 14),
           ...group.items.map(
             (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 14),
+              padding: const AppEdgeInsets.only(bottom: 14),
               child: _VoiceMessageCard(
                 item: item,
                 onLongPress: () => onGoToMessage(item.message.id),
@@ -1566,26 +1571,26 @@ class _VoiceMessageCard extends StatelessWidget {
       onLongPress: onLongPress,
       behavior: HitTestBehavior.opaque,
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: const Color(0xFF2a190e),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.025)),
+        decoration: AppBoxDecoration(
+          color: AppPalette.warmSurface11,
+          borderRadius: AppBorderRadius.circular(24),
+          border: Border.all(color: AppPalette.white.withValues(alpha: 0.025)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.12),
+              color: AppPalette.black.withValues(alpha: 0.12),
               blurRadius: 18,
               offset: const Offset(0, 8),
             ),
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const AppEdgeInsets.all(12),
           child: ChatVoiceAttachmentPlayer(
             fileId: item.fileId,
             metadata: item.metadata,
             dense: true,
-            backgroundColor: Colors.black.withValues(alpha: 0.12),
-            borderColor: Colors.white.withValues(alpha: 0.04),
+            backgroundColor: AppPalette.black.withValues(alpha: 0.12),
+            borderColor: AppPalette.white.withValues(alpha: 0.04),
           ),
         ),
       ),
@@ -1609,10 +1614,12 @@ class _SharedDownloadBadge extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         shape: BoxShape.circle,
-        color: downloaded ? AppColors.accent : const Color(0xE62D1A0D),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+        color: downloaded
+            ? AppPalette.primary
+            : AppPalette.warmOverlaySurface16,
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.14)),
       ),
       child: Center(
         child: busy
@@ -1621,7 +1628,7 @@ class _SharedDownloadBadge extends StatelessWidget {
                 height: 16,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.white,
+                  color: AppPalette.white,
                 ),
               )
             : Icon(
@@ -1629,7 +1636,7 @@ class _SharedDownloadBadge extends StatelessWidget {
                     ? Icons.open_in_full_rounded
                     : Icons.download_rounded,
                 size: size * 0.52,
-                color: Colors.white,
+                color: AppPalette.white,
               ),
       ),
     );
@@ -1645,12 +1652,12 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: TextStyle(
+      style: AppTextStyle(
         fontSize: MediaQuery.sizeOf(context).width < 360 ? 15 : 16,
         height: 1.1,
         fontWeight: FontWeight.w800,
         letterSpacing: 2.6,
-        color: const Color(0xFFf1a234),
+        color: AppPalette.orangeSoft36,
       ),
     );
   }
@@ -1675,18 +1682,18 @@ class _SharedAvatar extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         shape: BoxShape.circle,
         gradient: url == null
             ? const LinearGradient(
                 begin: Alignment(-0.3, -0.5),
                 end: Alignment(0.8, 1),
-                colors: [Color(0xFFf5b05a), Color(0xFF8f4a16)],
+                colors: [AppPalette.orangeSoft40, AppPalette.warmSurfaceHigh34],
               )
             : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
+            color: AppPalette.black.withValues(alpha: 0.18),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -1697,10 +1704,10 @@ class _SharedAvatar extends StatelessWidget {
             ? Center(
                 child: Text(
                   initial,
-                  style: TextStyle(
+                  style: AppTextStyle(
                     fontSize: size * 0.38,
                     fontWeight: FontWeight.w800,
-                    color: Colors.white,
+                    color: AppPalette.white,
                   ),
                 ),
               )
@@ -1710,10 +1717,10 @@ class _SharedAvatar extends StatelessWidget {
                 errorBuilder: (_, _, _) => Center(
                   child: Text(
                     initial,
-                    style: TextStyle(
+                    style: AppTextStyle(
                       fontSize: size * 0.38,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      color: AppPalette.white,
                     ),
                   ),
                 ),
@@ -1743,7 +1750,7 @@ class _EmptyOrLoadingState extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 96, 24, 0),
+      padding: const AppEdgeInsets.fromLTRB(24, 96, 24, 0),
       child: Column(
         children: [
           if (loading) ...[
@@ -1752,7 +1759,7 @@ class _EmptyOrLoadingState extends StatelessWidget {
               height: 28,
               child: CircularProgressIndicator(
                 strokeWidth: 2.6,
-                color: AppColors.accent,
+                color: AppPalette.primary,
               ),
             ),
             const SizedBox(height: 18),
@@ -1760,13 +1767,13 @@ class _EmptyOrLoadingState extends StatelessWidget {
             Container(
               width: 64,
               height: 64,
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.accent.withValues(alpha: 0.12),
+                color: AppPalette.primary.withValues(alpha: 0.12),
               ),
               child: Icon(
                 error == null ? Icons.inventory_2_outlined : Icons.wifi_off,
-                color: AppColors.accent,
+                color: AppPalette.primary,
                 size: 28,
               ),
             ),
@@ -1774,22 +1781,22 @@ class _EmptyOrLoadingState extends StatelessWidget {
           Text(
             error == null ? title : l10n.chatSharedLoadFailed,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: const AppTextStyle(
               fontSize: 22,
               height: 1.15,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.6,
-              color: Color(0xFFf5ede6),
+              color: AppPalette.orangeWash10,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             error == null ? subtitle : l10n.chatSharedLoadFailedSubtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: const AppTextStyle(
               fontSize: 15,
               height: 1.35,
-              color: Color(0xFFa99586),
+              color: AppPalette.orangeSoft04,
             ),
           ),
           if (error != null) ...[
@@ -1798,20 +1805,20 @@ class _EmptyOrLoadingState extends StatelessWidget {
               onTap: onRetry,
               behavior: HitTestBehavior.opaque,
               child: Container(
-                padding: const EdgeInsets.symmetric(
+                padding: const AppEdgeInsets.symmetric(
                   horizontal: 22,
                   vertical: 13,
                 ),
-                decoration: BoxDecoration(
-                  color: AppColors.accent,
-                  borderRadius: BorderRadius.circular(999),
+                decoration: AppBoxDecoration(
+                  color: AppPalette.primary,
+                  borderRadius: AppBorderRadius.circular(999),
                 ),
                 child: Text(
                   l10n.retryButton,
-                  style: const TextStyle(
+                  style: const AppTextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
-                    color: Colors.white,
+                    color: AppPalette.white,
                   ),
                 ),
               ),
@@ -1831,20 +1838,20 @@ class _PartialLoadWarning extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.16)),
+      padding: const AppEdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: AppBoxDecoration(
+        color: AppPalette.primary.withValues(alpha: 0.1),
+        borderRadius: AppBorderRadius.circular(18),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.16)),
       ),
       child: Text(
         l10n.chatSharedPartialLoadWarning,
         textAlign: TextAlign.center,
-        style: TextStyle(
+        style: AppTextStyle(
           fontSize: 13,
           height: 1.25,
           fontWeight: FontWeight.w600,
-          color: Color(0xFFf1a234),
+          color: AppPalette.orangeSoft36,
         ),
       ),
     );
@@ -1971,10 +1978,26 @@ String _snippetAroundUrl({
 
 LinearGradient _fallbackGradient(String seed) {
   final palettes = const [
-    [Color(0xFF5aa8df), Color(0xFF0c3f67), Color(0xFF071d31)],
-    [Color(0xFF1877bc), Color(0xFF0e4f88), Color(0xFF083256)],
-    [Color(0xFF5a1b05), Color(0xFF8a3009), Color(0xFF2d1308)],
-    [Color(0xFF66431e), Color(0xFF33200f), Color(0xFF160b05)],
+    [
+      AppPalette.blueSoft06,
+      AppPalette.blueSurfaceHigh14,
+      AppPalette.blueSurface03,
+    ],
+    [
+      AppPalette.blueMuted02,
+      AppPalette.blueSurfaceHigh16,
+      AppPalette.blueSurface04,
+    ],
+    [
+      AppPalette.warmSurface93,
+      AppPalette.warmSurfaceHigh28,
+      AppPalette.warmSurface29,
+    ],
+    [
+      AppPalette.warmSurfaceHigh13,
+      AppPalette.warmSurface42,
+      AppPalette.warmInk20,
+    ],
   ];
   final index =
       seed.codeUnits.fold<int>(0, (sum, code) => sum + code) % palettes.length;
@@ -2004,12 +2027,12 @@ IconData _fileIcon(FileMetadataVm? metadata) {
 Color _fileIconColor(FileMetadataVm? metadata) {
   final extension = metadata?.extensionLabel.toLowerCase() ?? '';
   if (extension == 'zip' || extension == 'rar' || extension == '7z') {
-    return const Color(0xFF9fd0ff);
+    return AppPalette.blueLight02;
   }
   if (extension == 'xls' || extension == 'xlsx' || extension == 'csv') {
-    return const Color(0xFFf0b983);
+    return AppPalette.orangeSoft35;
   }
-  return AppColors.accent;
+  return AppPalette.primary;
 }
 
 bool _isSharedMediaOrAudio(FileMetadataVm? metadata) {

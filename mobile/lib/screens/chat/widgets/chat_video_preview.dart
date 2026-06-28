@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../core/files/chat_file_cache.dart';
 import '../../../core/network/file_api.dart';
-import '../../../core/ui/app_colors.dart';
 import '../chat_video_viewer_screen.dart';
 
 class ChatVideoPreview extends StatefulWidget {
@@ -197,15 +197,15 @@ class _ChatVideoPreviewState extends State<ChatVideoPreview> {
       onTap: widget.enablePlayback ? () => unawaited(_openFullscreen()) : null,
       behavior: HitTestBehavior.opaque,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(widget.borderRadius),
+        borderRadius: AppBorderRadius.circular(widget.borderRadius),
         child: AspectRatio(
           aspectRatio: widget.aspectRatio,
           child: DecoratedBox(
-            decoration: const BoxDecoration(
+            decoration: const AppBoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF3b2414), Color(0xFF100802)],
+                colors: [AppPalette.warmSurface65, AppPalette.warmInk05],
               ),
             ),
             child: Stack(
@@ -234,19 +234,19 @@ class _ChatVideoPreviewState extends State<ChatVideoPreview> {
                     return const _VideoFallback(
                       progress: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: AppColors.accent,
+                        color: AppPalette.primary,
                       ),
                     );
                   },
                 ),
                 DecoratedBox(
-                  decoration: BoxDecoration(
+                  decoration: AppBoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.transparent,
-                        Colors.black.withValues(alpha: 0.18),
+                        AppPalette.transparent,
+                        AppPalette.black.withValues(alpha: 0.18),
                       ],
                     ),
                   ),
@@ -279,7 +279,7 @@ class _VideoFallback extends StatelessWidget {
           progress ??
           Icon(
             icon ?? Icons.movie_rounded,
-            color: Colors.white.withValues(alpha: 0.52),
+            color: AppPalette.white.withValues(alpha: 0.52),
             size: 28,
           ),
     );
@@ -305,10 +305,10 @@ class _VideoPlayBadge extends StatelessWidget {
       child: Container(
         width: size,
         height: size,
-        decoration: BoxDecoration(
+        decoration: AppBoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.black.withValues(alpha: 0.42),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.32)),
+          color: AppPalette.black.withValues(alpha: 0.42),
+          border: Border.all(color: AppPalette.white.withValues(alpha: 0.32)),
         ),
         child: busy
             ? Center(
@@ -317,13 +317,13 @@ class _VideoPlayBadge extends StatelessWidget {
                   height: size * 0.38,
                   child: const CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Colors.white,
+                    color: AppPalette.white,
                   ),
                 ),
               )
             : Icon(
                 isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                color: Colors.white,
+                color: AppPalette.white,
                 size: size * 0.62,
               ),
       ),

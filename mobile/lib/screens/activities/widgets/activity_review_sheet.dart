@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
-import '../../../core/ui/app_colors.dart';
 import '../../../core/ui/filter_sheet_chrome.dart';
 import '../../../features/activities/models/activity_review_vm.dart';
 import '../../../l10n/generated/app_localizations.dart';
@@ -16,7 +16,7 @@ Future<SaveActivityReviewsRequest?> showActivityReviewSheet(
     isDismissible: true,
     isScrollControlled: true,
     useSafeArea: true,
-    backgroundColor: Colors.transparent,
+    backgroundColor: AppPalette.transparent,
     builder: (context) => _ActivityReviewSheet(
       activityReview: activityReview,
       organizerReview: organizerReview,
@@ -114,42 +114,45 @@ class _ActivityReviewSheetState extends State<_ActivityReviewSheet> {
 
     final confirmed = await showDialog<bool>(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.72),
+      barrierColor: AppPalette.black.withValues(alpha: 0.72),
       builder: (dialogContext) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        backgroundColor: AppPalette.transparent,
+        insetPadding: const AppEdgeInsets.symmetric(
+          horizontal: 24,
+          vertical: 24,
+        ),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420),
           child: DecoratedBox(
-            decoration: BoxDecoration(
+            decoration: AppBoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  const Color(0xFF2B1808).withValues(alpha: 0.99),
-                  const Color(0xFF201208),
+                  AppPalette.warmSurface21.withValues(alpha: 0.99),
+                  AppPalette.warmInk63,
                 ],
               ),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: const Color(0xFF3B260D)),
+              borderRadius: AppBorderRadius.circular(24),
+              border: Border.all(color: AppPalette.warmSurface66),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.36),
+                  color: AppPalette.black.withValues(alpha: 0.36),
                   blurRadius: 24,
                   offset: const Offset(0, 14),
                 ),
               ],
             ),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+              padding: const AppEdgeInsets.fromLTRB(20, 18, 20, 18),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     l10n.activityReviewPublishConfirmTitle,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: const AppTextStyle(
+                      color: AppPalette.textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
                     ),
@@ -157,8 +160,8 @@ class _ActivityReviewSheetState extends State<_ActivityReviewSheet> {
                   const SizedBox(height: 10),
                   Text(
                     l10n.activityReviewPublishConfirmDescription,
-                    style: const TextStyle(
-                      color: Color(0xFFB9A88F),
+                    style: const AppTextStyle(
+                      color: AppPalette.amberSoft01,
                       fontSize: 14,
                       height: 1.35,
                     ),
@@ -175,7 +178,7 @@ class _ActivityReviewSheetState extends State<_ActivityReviewSheet> {
                           onPressed: () =>
                               Navigator.of(dialogContext).pop(false),
                           style: TextButton.styleFrom(
-                            foregroundColor: AppColors.accent,
+                            foregroundColor: AppPalette.primary,
                           ),
                           child: Text(l10n.cancelButton),
                         ),
@@ -183,10 +186,10 @@ class _ActivityReviewSheetState extends State<_ActivityReviewSheet> {
                           onPressed: () =>
                               Navigator.of(dialogContext).pop(true),
                           style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.accent,
-                            foregroundColor: AppColors.textPrimary,
+                            backgroundColor: AppPalette.primary,
+                            foregroundColor: AppPalette.textPrimary,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(999),
+                              borderRadius: AppBorderRadius.circular(999),
                             ),
                           ),
                           child: Text(l10n.activityReviewPublishConfirmButton),
@@ -223,33 +226,35 @@ class _ActivityReviewSheetState extends State<_ActivityReviewSheet> {
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxHeight),
         child: DecoratedBox(
-          decoration: const BoxDecoration(
-            color: Color(0xFF211609),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          decoration: const AppBoxDecoration(
+            color: AppPalette.warmInk78,
+            borderRadius: AppBorderRadius.vertical(
+              top: AppRadiusValue.circular(24),
+            ),
           ),
           child: SafeArea(
             top: false,
             child: Padding(
-              padding: EdgeInsets.only(bottom: bottomInset),
+              padding: AppEdgeInsets.only(bottom: bottomInset),
               child: ListView(
                 shrinkWrap: true,
-                padding: const EdgeInsets.fromLTRB(20, 18, 20, 22),
+                padding: const AppEdgeInsets.fromLTRB(20, 18, 20, 22),
                 children: [
                   Center(
                     child: Container(
                       width: 42,
                       height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(99),
+                      decoration: AppBoxDecoration(
+                        color: AppPalette.white.withValues(alpha: 0.18),
+                        borderRadius: AppBorderRadius.circular(99),
                       ),
                     ),
                   ),
                   const SizedBox(height: 18),
                   Text(
                     l10n.activityReviewSheetTitle,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: const AppTextStyle(
+                      color: AppPalette.textPrimary,
                       fontSize: 20,
                       fontWeight: FontWeight.w900,
                     ),
@@ -282,8 +287,8 @@ class _ActivityReviewSheetState extends State<_ActivityReviewSheet> {
                     const SizedBox(height: 12),
                     Text(
                       _errorText!,
-                      style: const TextStyle(
-                        color: AppColors.destructive,
+                      style: const AppTextStyle(
+                        color: AppPalette.danger,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                       ),
@@ -293,11 +298,11 @@ class _ActivityReviewSheetState extends State<_ActivityReviewSheet> {
                   FilledButton.icon(
                     onPressed: _submit,
                     style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.accent,
-                      foregroundColor: AppColors.textPrimary,
+                      backgroundColor: AppPalette.primary,
+                      foregroundColor: AppPalette.textPrimary,
                       minimumSize: const Size.fromHeight(50),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: AppBorderRadius.circular(16),
                       ),
                     ),
                     icon: const Icon(Icons.rate_review_rounded),
@@ -338,25 +343,25 @@ class _ActivityReviewEditor extends StatelessWidget {
       duration: const Duration(milliseconds: 160),
       opacity: enabled ? 1 : 0.55,
       child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.045),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        padding: const AppEdgeInsets.all(14),
+        decoration: AppBoxDecoration(
+          color: AppPalette.white.withValues(alpha: 0.045),
+          borderRadius: AppBorderRadius.circular(16),
+          border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Material(
-              color: Colors.transparent,
+              color: AppPalette.transparent,
               child: SwitchListTile.adaptive(
                 value: enabled,
-                contentPadding: EdgeInsets.zero,
-                activeThumbColor: AppColors.accent,
+                contentPadding: AppEdgeInsets.zero,
+                activeThumbColor: AppPalette.primary,
                 title: Text(
                   title,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: const AppTextStyle(
+                    color: AppPalette.textPrimary,
                     fontSize: 15,
                     fontWeight: FontWeight.w900,
                   ),
@@ -380,7 +385,7 @@ class _ActivityReviewEditor extends StatelessWidget {
                           value <= rating.round()
                               ? Icons.star_rounded
                               : Icons.star_border_rounded,
-                          color: AppColors.accent,
+                          color: AppPalette.primary,
                           size: 30,
                         ),
                       );
@@ -392,32 +397,32 @@ class _ActivityReviewEditor extends StatelessWidget {
                     minLines: 3,
                     maxLines: 5,
                     maxLength: 2000,
-                    style: const TextStyle(color: AppColors.textPrimary),
-                    decoration: InputDecoration(
+                    style: const AppTextStyle(color: AppPalette.textPrimary),
+                    decoration: AppInputDecoration(
                       hintText: l10n.myExcursionsReviewHint,
-                      hintStyle: TextStyle(
-                        color: AppColors.textPrimary.withValues(alpha: 0.42),
+                      hintStyle: AppTextStyle(
+                        color: AppPalette.textPrimary.withValues(alpha: 0.42),
                       ),
-                      counterStyle: TextStyle(
-                        color: AppColors.textPrimary.withValues(alpha: 0.42),
+                      counterStyle: AppTextStyle(
+                        color: AppPalette.textPrimary.withValues(alpha: 0.42),
                       ),
                       filled: true,
-                      fillColor: Colors.black.withValues(alpha: 0.16),
+                      fillColor: AppPalette.black.withValues(alpha: 0.16),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: AppBorderRadius.circular(14),
                         borderSide: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.08),
+                          color: AppPalette.white.withValues(alpha: 0.08),
                         ),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: AppBorderRadius.circular(14),
                         borderSide: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.08),
+                          color: AppPalette.white.withValues(alpha: 0.08),
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: AppColors.accent),
+                        borderRadius: AppBorderRadius.circular(14),
+                        borderSide: const BorderSide(color: AppPalette.primary),
                       ),
                     ),
                   ),

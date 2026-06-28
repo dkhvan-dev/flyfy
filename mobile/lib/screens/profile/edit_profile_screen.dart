@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
@@ -10,7 +11,6 @@ import '../../core/network/file_api.dart';
 import '../../core/network/reference_api.dart';
 import '../../core/reference/country_filter_utils.dart';
 import '../../core/reference/currency_filter_utils.dart';
-import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/profile/data/profile_api.dart';
 import '../../features/profile/models/update_profile_request.dart';
@@ -340,8 +340,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   ButtonStyle get _phoneChangeActionStyle {
     return TextButton.styleFrom(
-      foregroundColor: AppColors.accent,
-      padding: EdgeInsets.zero,
+      foregroundColor: AppPalette.primary,
+      padding: AppEdgeInsets.zero,
       alignment: Alignment.centerLeft,
     );
   }
@@ -1236,15 +1236,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   Container(
                     width: profileScaled(context, 42, min: 38, max: 44),
                     height: profileScaled(context, 42, min: 38, max: 44),
-                    decoration: BoxDecoration(
-                      color: AppColors.accent.withValues(alpha: 0.12),
+                    decoration: AppBoxDecoration(
+                      color: AppPalette.primary.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       isVerified
                           ? Icons.verified_user_rounded
                           : Icons.sms_outlined,
-                      color: AppColors.accent,
+                      color: AppPalette.primary,
                       size: profileScaled(context, 21, min: 19, max: 22),
                     ),
                   ),
@@ -1257,8 +1257,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           isVerified
                               ? l10n.profilePhoneVerifiedTitle
                               : l10n.profilePhoneVerificationTitle,
-                          style: TextStyle(
-                            color: AppColors.textPrimary,
+                          style: AppTextStyle(
+                            color: AppPalette.textPrimary,
                             fontSize: profileScaled(
                               context,
                               16,
@@ -1275,7 +1275,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           isVerified
                               ? l10n.profilePhoneVerifiedDescription
                               : l10n.profilePhoneVerificationDescription,
-                          style: TextStyle(
+                          style: AppTextStyle(
                             color: profileTextMuted,
                             fontSize: profileScaled(
                               context,
@@ -1308,7 +1308,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 _PhoneStatusLine(
                   icon: Icons.check_circle_rounded,
                   text: l10n.profilePhoneVerifiedAs(displayPhone),
-                  color: const Color(0xFF65D08A),
+                  color: AppPalette.greenSoft01,
                 ),
                 SizedBox(height: profileScaled(context, 10, min: 8, max: 12)),
                 Align(
@@ -1331,7 +1331,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   text: l10n.profilePhoneCurrentVerifiedAs(
                     currentVerifiedPhone,
                   ),
-                  color: const Color(0xFF65D08A),
+                  color: AppPalette.greenSoft01,
                 ),
               ],
               if (!isVerified && !_hasPendingPhoneVerification) ...[
@@ -1339,14 +1339,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 FilledButton(
                   onPressed: isSendDisabled ? null : _startPhoneVerification,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.accent,
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppPalette.primary,
+                    foregroundColor: AppPalette.white,
                     minimumSize: Size(
                       double.infinity,
                       profileScaled(context, 50, min: 46, max: 52),
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
+                      borderRadius: AppBorderRadius.circular(
                         profileScaled(context, 16, min: 14, max: 18),
                       ),
                     ),
@@ -1357,13 +1357,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           height: profileScaled(context, 18, min: 16, max: 18),
                           child: const CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Colors.white,
+                            color: AppPalette.white,
                           ),
                         )
                       : Text(
                           l10n.profilePhoneSendCode,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(fontWeight: FontWeight.w800),
+                          style: const AppTextStyle(
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                 ),
                 if (isChangingVerifiedPhone) ...[
@@ -1403,14 +1405,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 FilledButton(
                   onPressed: isVerifyDisabled ? null : _verifyPhoneVerification,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.accent,
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppPalette.primary,
+                    foregroundColor: AppPalette.white,
                     minimumSize: Size(
                       double.infinity,
                       profileScaled(context, 50, min: 46, max: 52),
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
+                      borderRadius: AppBorderRadius.circular(
                         profileScaled(context, 16, min: 14, max: 18),
                       ),
                     ),
@@ -1421,13 +1423,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           height: profileScaled(context, 18, min: 16, max: 18),
                           child: const CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Colors.white,
+                            color: AppPalette.white,
                           ),
                         )
                       : Text(
                           l10n.profilePhoneVerifyCode,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(fontWeight: FontWeight.w800),
+                          style: const AppTextStyle(
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                 ),
                 SizedBox(height: profileScaled(context, 10, min: 8, max: 12)),
@@ -1492,7 +1496,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 _PhoneStatusLine(
                   icon: Icons.error_outline_rounded,
                   text: _phoneVerificationError!.trim(),
-                  color: const Color(0xFFE47F78),
+                  color: AppPalette.redSoft05,
                 ),
               ],
             ],
@@ -1506,14 +1510,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return FilledButton(
       onPressed: (_isSaving || _isUploadingAvatar) ? null : _save,
       style: FilledButton.styleFrom(
-        backgroundColor: AppColors.accent,
-        foregroundColor: Colors.white,
+        backgroundColor: AppPalette.primary,
+        foregroundColor: AppPalette.white,
         minimumSize: Size(
           double.infinity,
           profileScaled(context, 56, min: 50, max: 58),
         ),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
+          borderRadius: AppBorderRadius.circular(
             profileScaled(context, 18, min: 16, max: 20),
           ),
         ),
@@ -1524,12 +1528,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               height: profileScaled(context, 18, min: 16, max: 18),
               child: const CircularProgressIndicator(
                 strokeWidth: 2,
-                color: Colors.white,
+                color: AppPalette.white,
               ),
             )
           : Text(
               l10n.profileSaveChangesButton,
-              style: TextStyle(
+              style: AppTextStyle(
                 fontSize: profileScaled(context, 15, min: 14, max: 16),
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.4,
@@ -1547,9 +1551,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final previewInitials = _previewInitials(profile);
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       bottomNavigationBar: SafeArea(
-        minimum: EdgeInsets.fromLTRB(
+        minimum: AppEdgeInsets.fromLTRB(
           padding,
           profileScaled(context, 8, min: 6, max: 10),
           padding,
@@ -1566,7 +1570,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 physics: const BouncingScrollPhysics(
                   parent: AlwaysScrollableScrollPhysics(),
                 ),
-                padding: EdgeInsets.fromLTRB(
+                padding: AppEdgeInsets.fromLTRB(
                   padding,
                   profileScaled(context, 14, min: 10, max: 18),
                   padding,
@@ -1742,7 +1746,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   Center(
                     child: Text(
                       l10n.profileDeactivateAccountLabel,
-                      style: TextStyle(
+                      style: AppTextStyle(
                         color: Color.fromARGB(255, 143, 34, 15),
                         fontSize: profileScaled(context, 12, min: 11, max: 12),
                         fontWeight: FontWeight.w800,
@@ -1775,14 +1779,14 @@ class _EditProfileTopBar extends StatelessWidget {
         ),
         Expanded(
           child: Padding(
-            padding: EdgeInsets.symmetric(
+            padding: AppEdgeInsets.symmetric(
               horizontal: profileScaled(context, 12, min: 8, max: 12),
             ),
             child: Text(
               title,
               textAlign: TextAlign.left,
-              style: TextStyle(
-                color: AppColors.textPrimary,
+              style: AppTextStyle(
+                color: AppPalette.textPrimary,
                 fontSize: profileScaled(context, 18, min: 16, max: 20),
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0.6,
@@ -1835,24 +1839,30 @@ class _EditProfileHero extends StatelessWidget {
                 child: Container(
                   width: size,
                   height: size,
-                  padding: EdgeInsets.all(
+                  padding: AppEdgeInsets.all(
                     profileScaled(context, 4, min: 3, max: 5),
                   ),
-                  decoration: const BoxDecoration(
+                  decoration: const AppBoxDecoration(
                     shape: BoxShape.circle,
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Color(0xFFE5C48D), Color(0xFF8B5506)],
+                      colors: [
+                        AppPalette.amberSoft06,
+                        AppPalette.warmSurfaceHigh30,
+                      ],
                     ),
                   ),
                   child: ClipOval(
                     child: DecoratedBox(
-                      decoration: const BoxDecoration(
+                      decoration: const AppBoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
-                          colors: [Color(0xFFEEF3F6), Color(0xFFB9CAD5)],
+                          colors: [
+                            AppPalette.blueWash04,
+                            AppPalette.blueLight07,
+                          ],
                         ),
                       ),
                       child: Stack(
@@ -1867,8 +1877,8 @@ class _EditProfileHero extends StatelessWidget {
                               errorBuilder: (_, _, _) => Center(
                                 child: Text(
                                   initials,
-                                  style: TextStyle(
-                                    color: const Color(0xFF516572),
+                                  style: AppTextStyle(
+                                    color: AppPalette.blueMuted20,
                                     fontSize: profileScaled(
                                       context,
                                       34,
@@ -1884,8 +1894,8 @@ class _EditProfileHero extends StatelessWidget {
                             Center(
                               child: Text(
                                 initials,
-                                style: TextStyle(
-                                  color: const Color(0xFF516572),
+                                style: AppTextStyle(
+                                  color: AppPalette.blueMuted20,
                                   fontSize: profileScaled(
                                     context,
                                     34,
@@ -1898,7 +1908,7 @@ class _EditProfileHero extends StatelessWidget {
                             ),
                           if (isUploadingAvatar)
                             Container(
-                              color: Colors.black.withValues(alpha: 0.28),
+                              color: AppPalette.black.withValues(alpha: 0.28),
                               child: Center(
                                 child: SizedBox(
                                   width: profileScaled(
@@ -1915,7 +1925,7 @@ class _EditProfileHero extends StatelessWidget {
                                   ),
                                   child: const CircularProgressIndicator(
                                     strokeWidth: 2.2,
-                                    color: Colors.white,
+                                    color: AppPalette.white,
                                   ),
                                 ),
                               ),
@@ -1934,16 +1944,16 @@ class _EditProfileHero extends StatelessWidget {
                   child: Container(
                     width: profileScaled(context, 34, min: 30, max: 36),
                     height: profileScaled(context, 34, min: 30, max: 36),
-                    decoration: BoxDecoration(
+                    decoration: AppBoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppColors.accent,
+                      color: AppPalette.primary,
                       border: Border.all(color: profileBgTop, width: 2),
                     ),
                     child: Icon(
                       isUploadingAvatar
                           ? Icons.hourglass_top_rounded
                           : Icons.edit_rounded,
-                      color: Colors.white,
+                      color: AppPalette.white,
                       size: profileScaled(context, 16, min: 14, max: 16),
                     ),
                   ),
@@ -1956,8 +1966,8 @@ class _EditProfileHero extends StatelessWidget {
         Text(
           name,
           textAlign: TextAlign.center,
-          style: TextStyle(
-            color: AppColors.textPrimary,
+          style: AppTextStyle(
+            color: AppPalette.textPrimary,
             fontSize: profileScaled(context, 28, min: 24, max: 30),
             fontWeight: FontWeight.w900,
             letterSpacing: -0.8,
@@ -1980,7 +1990,7 @@ class _EditProfileHero extends StatelessWidget {
         Text(
           avatarHint,
           textAlign: TextAlign.center,
-          style: TextStyle(
+          style: AppTextStyle(
             color: profileDisabled,
             fontSize: profileScaled(context, 12, min: 11, max: 12),
             height: 1.4,
@@ -1999,18 +2009,18 @@ class _ContactPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(
+      padding: AppEdgeInsets.symmetric(
         horizontal: profileScaled(context, 12, min: 10, max: 14),
         vertical: profileScaled(context, 7, min: 6, max: 8),
       ),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.04),
+        borderRadius: AppBorderRadius.circular(999),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.05)),
       ),
       child: Text(
         text,
-        style: TextStyle(
+        style: AppTextStyle(
           color: profileTextSoft,
           fontSize: profileScaled(context, 12, min: 11, max: 12),
           fontWeight: FontWeight.w700,
@@ -2045,7 +2055,7 @@ class _PhoneStatusLine extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: TextStyle(
+            style: AppTextStyle(
               color: color,
               fontSize: profileScaled(context, 12, min: 11, max: 13),
               fontWeight: FontWeight.w700,
@@ -2100,24 +2110,24 @@ class _ProfileCountrySearchField extends StatelessWidget {
             : _countryLabel(selectedCountry!);
         final errorText = field.errorText;
         final hasError = errorText != null;
-        const errorColor = Color(0xFFE47F78);
+        const errorColor = AppPalette.redSoft05;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (hasSelection) ...[
               DecoratedBox(
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.04),
-                  borderRadius: BorderRadius.circular(
+                decoration: AppBoxDecoration(
+                  color: AppPalette.white.withValues(alpha: 0.04),
+                  borderRadius: AppBorderRadius.circular(
                     profileScaled(context, 18, min: 16, max: 20),
                   ),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: AppPalette.white.withValues(alpha: 0.05),
                   ),
                 ),
                 child: Padding(
-                  padding: EdgeInsets.symmetric(
+                  padding: AppEdgeInsets.symmetric(
                     horizontal: profileScaled(context, 14, min: 12, max: 16),
                     vertical: profileScaled(context, 11, min: 10, max: 12),
                   ),
@@ -2125,7 +2135,7 @@ class _ProfileCountrySearchField extends StatelessWidget {
                     children: [
                       Icon(
                         Icons.public_rounded,
-                        color: AppColors.accent,
+                        color: AppPalette.primary,
                         size: profileScaled(context, 20, min: 18, max: 21),
                       ),
                       SizedBox(
@@ -2136,8 +2146,8 @@ class _ProfileCountrySearchField extends StatelessWidget {
                           selectedLabel ?? '',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: AppColors.textPrimary,
+                          style: AppTextStyle(
+                            color: AppPalette.textPrimary,
                             fontSize: profileScaled(
                               context,
                               15,
@@ -2172,15 +2182,15 @@ class _ProfileCountrySearchField extends StatelessWidget {
             TextField(
               controller: searchController,
               enabled: !isLoading,
-              cursorColor: AppColors.accent,
-              style: TextStyle(
-                color: AppColors.textPrimary,
+              cursorColor: AppPalette.primary,
+              style: AppTextStyle(
+                color: AppPalette.textPrimary,
                 fontSize: profileScaled(context, 14, min: 13, max: 15),
                 fontWeight: FontWeight.w700,
               ),
-              decoration: InputDecoration(
+              decoration: AppInputDecoration(
                 hintText: searchHint,
-                hintStyle: TextStyle(
+                hintStyle: AppTextStyle(
                   color: profileTextMuted,
                   fontSize: profileScaled(context, 14, min: 13, max: 15),
                   fontWeight: FontWeight.w600,
@@ -2189,51 +2199,51 @@ class _ProfileCountrySearchField extends StatelessWidget {
                   Icons.search_rounded,
                   color: hasError && !hasSelection
                       ? errorColor
-                      : AppColors.accent,
+                      : AppPalette.primary,
                 ),
                 errorText: hasSelection ? null : errorText,
-                errorStyle: TextStyle(
+                errorStyle: AppTextStyle(
                   color: errorColor,
                   fontSize: profileScaled(context, 12, min: 11, max: 12),
                   fontWeight: FontWeight.w600,
                 ),
                 filled: true,
-                fillColor: Colors.white.withValues(alpha: 0.04),
-                contentPadding: EdgeInsets.symmetric(
+                fillColor: AppPalette.white.withValues(alpha: 0.04),
+                contentPadding: AppEdgeInsets.symmetric(
                   horizontal: profileScaled(context, 14, min: 12, max: 16),
                   vertical: profileScaled(context, 13, min: 11, max: 14),
                 ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(
+                  borderRadius: AppBorderRadius.circular(
                     profileScaled(context, 16, min: 14, max: 18),
                   ),
                   borderSide: BorderSide.none,
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(
+                  borderRadius: AppBorderRadius.circular(
                     profileScaled(context, 16, min: 14, max: 18),
                   ),
                   borderSide: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: AppPalette.white.withValues(alpha: 0.05),
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(
+                  borderRadius: AppBorderRadius.circular(
                     profileScaled(context, 16, min: 14, max: 18),
                   ),
                   borderSide: const BorderSide(
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                     width: 1.2,
                   ),
                 ),
                 errorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(
+                  borderRadius: AppBorderRadius.circular(
                     profileScaled(context, 16, min: 14, max: 18),
                   ),
                   borderSide: const BorderSide(color: errorColor),
                 ),
                 focusedErrorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(
+                  borderRadius: AppBorderRadius.circular(
                     profileScaled(context, 16, min: 14, max: 18),
                   ),
                   borderSide: const BorderSide(color: errorColor, width: 1.2),
@@ -2249,7 +2259,7 @@ class _ProfileCountrySearchField extends StatelessWidget {
                   height: profileScaled(context, 22, min: 20, max: 24),
                   child: const CircularProgressIndicator(
                     strokeWidth: 2.2,
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                   ),
                 ),
               ),
@@ -2258,7 +2268,7 @@ class _ProfileCountrySearchField extends StatelessWidget {
               if (visibleCountries.isEmpty)
                 Text(
                   emptyLabel,
-                  style: TextStyle(
+                  style: AppTextStyle(
                     color: profileTextMuted,
                     fontSize: profileScaled(context, 13, min: 12, max: 13),
                     fontWeight: FontWeight.w600,
@@ -2288,25 +2298,25 @@ class _ProfileCountrySearchField extends StatelessWidget {
                           field.didChange(code);
                           onCountrySelected(country);
                         },
-                        borderRadius: BorderRadius.circular(
+                        borderRadius: AppBorderRadius.circular(
                           profileScaled(context, 14, min: 12, max: 16),
                         ),
                         child: DecoratedBox(
-                          decoration: BoxDecoration(
+                          decoration: AppBoxDecoration(
                             color: selected
-                                ? AppColors.accent.withValues(alpha: 0.16)
-                                : Colors.white.withValues(alpha: 0.04),
-                            borderRadius: BorderRadius.circular(
+                                ? AppPalette.primary.withValues(alpha: 0.16)
+                                : AppPalette.white.withValues(alpha: 0.04),
+                            borderRadius: AppBorderRadius.circular(
                               profileScaled(context, 14, min: 12, max: 16),
                             ),
                             border: Border.all(
                               color: selected
-                                  ? AppColors.accent
-                                  : Colors.white.withValues(alpha: 0.05),
+                                  ? AppPalette.primary
+                                  : AppPalette.white.withValues(alpha: 0.05),
                             ),
                           ),
                           child: Padding(
-                            padding: EdgeInsets.symmetric(
+                            padding: AppEdgeInsets.symmetric(
                               horizontal: profileScaled(
                                 context,
                                 13,
@@ -2327,8 +2337,8 @@ class _ProfileCountrySearchField extends StatelessWidget {
                                     _countryLabel(country),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: AppColors.textPrimary,
+                                    style: AppTextStyle(
+                                      color: AppPalette.textPrimary,
                                       fontSize: profileScaled(
                                         context,
                                         14,
@@ -2349,7 +2359,7 @@ class _ProfileCountrySearchField extends StatelessWidget {
                                 ),
                                 Text(
                                   code,
-                                  style: TextStyle(
+                                  style: AppTextStyle(
                                     color: profileTextMuted,
                                     fontSize: profileScaled(
                                       context,
@@ -2418,15 +2428,17 @@ class _ProfileCurrencySearchField extends StatelessWidget {
       children: [
         if (hasSelection) ...[
           DecoratedBox(
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.04),
-              borderRadius: BorderRadius.circular(
+            decoration: AppBoxDecoration(
+              color: AppPalette.white.withValues(alpha: 0.04),
+              borderRadius: AppBorderRadius.circular(
                 profileScaled(context, 18, min: 16, max: 20),
               ),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+              border: Border.all(
+                color: AppPalette.white.withValues(alpha: 0.05),
+              ),
             ),
             child: Padding(
-              padding: EdgeInsets.symmetric(
+              padding: AppEdgeInsets.symmetric(
                 horizontal: profileScaled(context, 14, min: 12, max: 16),
                 vertical: profileScaled(context, 11, min: 10, max: 12),
               ),
@@ -2436,8 +2448,8 @@ class _ProfileCurrencySearchField extends StatelessWidget {
                     selectedSymbol == null || selectedSymbol.isEmpty
                         ? selectedCurrencyCode ?? ''
                         : selectedSymbol,
-                    style: TextStyle(
-                      color: AppColors.accent,
+                    style: AppTextStyle(
+                      color: AppPalette.primary,
                       fontSize: profileScaled(context, 18, min: 16, max: 20),
                       fontWeight: FontWeight.w900,
                     ),
@@ -2448,8 +2460,8 @@ class _ProfileCurrencySearchField extends StatelessWidget {
                       selectedLabel,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
+                      style: AppTextStyle(
+                        color: AppPalette.textPrimary,
                         fontSize: profileScaled(context, 15, min: 14, max: 16),
                         fontWeight: FontWeight.w800,
                       ),
@@ -2464,49 +2476,52 @@ class _ProfileCurrencySearchField extends StatelessWidget {
         TextField(
           controller: searchController,
           enabled: !isLoading,
-          cursorColor: AppColors.accent,
+          cursorColor: AppPalette.primary,
           textCapitalization: TextCapitalization.words,
-          style: TextStyle(
-            color: AppColors.textPrimary,
+          style: AppTextStyle(
+            color: AppPalette.textPrimary,
             fontSize: profileScaled(context, 14, min: 13, max: 15),
             fontWeight: FontWeight.w700,
           ),
-          decoration: InputDecoration(
+          decoration: AppInputDecoration(
             hintText: searchHint,
-            hintStyle: TextStyle(
+            hintStyle: AppTextStyle(
               color: profileTextMuted,
               fontSize: profileScaled(context, 14, min: 13, max: 15),
               fontWeight: FontWeight.w600,
             ),
             prefixIcon: const Icon(
               Icons.search_rounded,
-              color: AppColors.accent,
+              color: AppPalette.primary,
             ),
             filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.04),
-            contentPadding: EdgeInsets.symmetric(
+            fillColor: AppPalette.white.withValues(alpha: 0.04),
+            contentPadding: AppEdgeInsets.symmetric(
               horizontal: profileScaled(context, 14, min: 12, max: 16),
               vertical: profileScaled(context, 13, min: 11, max: 14),
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(
+              borderRadius: AppBorderRadius.circular(
                 profileScaled(context, 16, min: 14, max: 18),
               ),
               borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(
+              borderRadius: AppBorderRadius.circular(
                 profileScaled(context, 16, min: 14, max: 18),
               ),
               borderSide: BorderSide(
-                color: Colors.white.withValues(alpha: 0.05),
+                color: AppPalette.white.withValues(alpha: 0.05),
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(
+              borderRadius: AppBorderRadius.circular(
                 profileScaled(context, 16, min: 14, max: 18),
               ),
-              borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
+              borderSide: const BorderSide(
+                color: AppPalette.primary,
+                width: 1.2,
+              ),
             ),
           ),
         ),
@@ -2519,7 +2534,7 @@ class _ProfileCurrencySearchField extends StatelessWidget {
               height: profileScaled(context, 22, min: 20, max: 24),
               child: const CircularProgressIndicator(
                 strokeWidth: 2.2,
-                color: AppColors.accent,
+                color: AppPalette.primary,
               ),
             ),
           ),
@@ -2528,7 +2543,7 @@ class _ProfileCurrencySearchField extends StatelessWidget {
           if (visibleCurrencies.isEmpty)
             Text(
               emptyLabel,
-              style: TextStyle(
+              style: AppTextStyle(
                 color: profileTextMuted,
                 fontSize: profileScaled(context, 13, min: 12, max: 13),
                 fontWeight: FontWeight.w600,
@@ -2555,25 +2570,25 @@ class _ProfileCurrencySearchField extends StatelessWidget {
 
                   return InkWell(
                     onTap: () => onCurrencySelected(currency),
-                    borderRadius: BorderRadius.circular(
+                    borderRadius: AppBorderRadius.circular(
                       profileScaled(context, 14, min: 12, max: 16),
                     ),
                     child: DecoratedBox(
-                      decoration: BoxDecoration(
+                      decoration: AppBoxDecoration(
                         color: selected
-                            ? AppColors.accent.withValues(alpha: 0.16)
-                            : Colors.white.withValues(alpha: 0.04),
-                        borderRadius: BorderRadius.circular(
+                            ? AppPalette.primary.withValues(alpha: 0.16)
+                            : AppPalette.white.withValues(alpha: 0.04),
+                        borderRadius: AppBorderRadius.circular(
                           profileScaled(context, 14, min: 12, max: 16),
                         ),
                         border: Border.all(
                           color: selected
-                              ? AppColors.accent
-                              : Colors.white.withValues(alpha: 0.05),
+                              ? AppPalette.primary
+                              : AppPalette.white.withValues(alpha: 0.05),
                         ),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.symmetric(
+                        padding: AppEdgeInsets.symmetric(
                           horizontal: profileScaled(
                             context,
                             13,
@@ -2591,8 +2606,8 @@ class _ProfileCurrencySearchField extends StatelessWidget {
                           children: [
                             Text(
                               symbol.isEmpty ? currencyCode : symbol,
-                              style: TextStyle(
-                                color: AppColors.accent,
+                              style: AppTextStyle(
+                                color: AppPalette.primary,
                                 fontSize: profileScaled(
                                   context,
                                   16,
@@ -2615,8 +2630,8 @@ class _ProfileCurrencySearchField extends StatelessWidget {
                                 referenceCurrencyLabel(currency),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: AppColors.textPrimary,
+                                style: AppTextStyle(
+                                  color: AppPalette.textPrimary,
                                   fontSize: profileScaled(
                                     context,
                                     14,
@@ -2637,7 +2652,7 @@ class _ProfileCurrencySearchField extends StatelessWidget {
                             ),
                             Text(
                               currencyCode,
-                              style: TextStyle(
+                              style: AppTextStyle(
                                 color: profileTextMuted,
                                 fontSize: profileScaled(
                                   context,
@@ -2671,7 +2686,7 @@ class _ProfileSectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(profileScaled(context, 18, min: 14, max: 20)),
+      padding: AppEdgeInsets.all(profileScaled(context, 18, min: 14, max: 20)),
       decoration: profileCardDecoration(
         context,
         radius: profileScaled(context, 22, min: 18, max: 24),
@@ -2694,7 +2709,7 @@ class _LabeledInput extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(
+          style: AppTextStyle(
             color: profileTextSoft,
             fontSize: profileScaled(context, 12, min: 11, max: 12),
             fontWeight: FontWeight.w800,
@@ -2735,7 +2750,7 @@ class _StyledTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(
+    final radius = AppBorderRadius.circular(
       profileScaled(context, 18, min: 16, max: 20),
     );
 
@@ -2747,45 +2762,49 @@ class _StyledTextField extends StatelessWidget {
       maxLines: maxLines,
       keyboardType: keyboardType,
       textCapitalization: textCapitalization,
-      style: TextStyle(
-        color: AppColors.textPrimary,
+      style: AppTextStyle(
+        color: AppPalette.textPrimary,
         fontSize: profileScaled(context, 15, min: 14, max: 16),
       ),
-      decoration: InputDecoration(
+      decoration: AppInputDecoration(
         hintText: hintText,
         helperText: helperText,
         helperMaxLines: 3,
         errorText: errorText,
         errorMaxLines: 3,
-        hintStyle: TextStyle(
+        hintStyle: AppTextStyle(
           color: profileTextMuted,
           fontSize: profileScaled(context, 15, min: 14, max: 16),
         ),
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.04),
+        fillColor: AppPalette.white.withValues(alpha: 0.04),
         border: OutlineInputBorder(
           borderRadius: radius,
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.04)),
+          borderSide: BorderSide(
+            color: AppPalette.white.withValues(alpha: 0.04),
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: radius,
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.04)),
+          borderSide: BorderSide(
+            color: AppPalette.white.withValues(alpha: 0.04),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: radius,
           borderSide: BorderSide(
-            color: AppColors.accent.withValues(alpha: 0.3),
+            color: AppPalette.primary.withValues(alpha: 0.3),
           ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: radius,
-          borderSide: const BorderSide(color: Color(0xFFE47F78)),
+          borderSide: const BorderSide(color: AppPalette.redSoft05),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: radius,
-          borderSide: const BorderSide(color: Color(0xFFE47F78)),
+          borderSide: const BorderSide(color: AppPalette.redSoft05),
         ),
-        contentPadding: EdgeInsets.symmetric(
+        contentPadding: AppEdgeInsets.symmetric(
           horizontal: profileScaled(context, 16, min: 14, max: 18),
           vertical: profileScaled(context, 14, min: 12, max: 16),
         ),

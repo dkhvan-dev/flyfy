@@ -4,6 +4,7 @@ import 'dart:math' as math;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
@@ -12,7 +13,6 @@ import 'package:provider/provider.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/device/device_context_service.dart';
-import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/routing/models/routing_models.dart';
 import '../../features/routing/widgets/route_mode_selector.dart';
@@ -57,7 +57,7 @@ class MapActivityTarget {
     required this.priceLabel,
     this.avatarLabel,
     this.icon = Icons.event_available_rounded,
-    this.accentColor = const Color(0xFFFFB44D),
+    this.accentColor = AppPalette.primarySoft,
   });
 
   final String id;
@@ -701,7 +701,7 @@ class _MapScreenState extends State<MapScreen> {
         nativeDuration: duration,
         webMaxDuration: duration,
         webMaxZoom: 16,
-        padding: EdgeInsets.all(_mapScaled(context, 56, min: 40, max: 72)),
+        padding: AppEdgeInsets.all(_mapScaled(context, 56, min: 40, max: 72)),
       ),
     );
   }
@@ -1037,14 +1037,14 @@ class _MapScreenState extends State<MapScreen> {
           ..add(
             PolylineLayer(
               polylines: [routeFeature],
-              color: Colors.white.withValues(alpha: 0.78),
+              color: AppPalette.white.withValues(alpha: 0.78),
               width: 8,
             ),
           )
           ..add(
             PolylineLayer(
               polylines: [routeFeature],
-              color: AppColors.accent,
+              color: AppPalette.primary,
               width: 5,
             ),
           );
@@ -1059,9 +1059,9 @@ class _MapScreenState extends State<MapScreen> {
                 for (final stop in stops) _pointFeature(stop.id, stop.point),
               ],
               radius: 11,
-              color: const Color(0xFFFFF7E6),
+              color: AppPalette.amberWash07,
               strokeWidth: 3,
-              strokeColor: AppColors.accent,
+              strokeColor: AppPalette.primary,
             ),
           )
           ..add(
@@ -1071,9 +1071,9 @@ class _MapScreenState extends State<MapScreen> {
                   _pointFeature('${stop.id}:core', stop.point),
               ],
               radius: 5,
-              color: AppColors.accent,
+              color: AppPalette.primary,
               strokeWidth: 1,
-              strokeColor: const Color(0xFF3A2108),
+              strokeColor: AppPalette.warmSurface48,
             ),
           );
       }
@@ -1091,9 +1091,9 @@ class _MapScreenState extends State<MapScreen> {
                 _pointFeature(stop.id, stop.point),
             ],
             radius: 11,
-            color: const Color(0xFFFFF7E6),
+            color: AppPalette.amberWash07,
             strokeWidth: 3,
-            strokeColor: AppColors.accent,
+            strokeColor: AppPalette.primary,
           ),
         )
         ..add(
@@ -1103,9 +1103,9 @@ class _MapScreenState extends State<MapScreen> {
                 _pointFeature('${stop.id}:core', stop.point),
             ],
             radius: 5,
-            color: AppColors.accent,
+            color: AppPalette.primary,
             strokeWidth: 1,
-            strokeColor: const Color(0xFF3A2108),
+            strokeColor: AppPalette.warmSurface48,
           ),
         );
     }
@@ -1116,9 +1116,9 @@ class _MapScreenState extends State<MapScreen> {
         CircleLayer(
           points: [_pointFeature('user-location', userLocation)],
           radius: 8,
-          color: const Color(0xFF4BA8FF),
+          color: AppPalette.blueSoft03,
           strokeWidth: 3,
-          strokeColor: Colors.white,
+          strokeColor: AppPalette.white,
         ),
       );
     }
@@ -1132,10 +1132,10 @@ class _MapScreenState extends State<MapScreen> {
           points: [for (final place in places) _placeFeature(place)],
           radius: _showsActivityMarkers ? 9 : 7,
           color: _showsActivityMarkers
-              ? const Color(0xFFFFB44D)
-              : const Color(0xFFF6E5D4),
+              ? AppPalette.primarySoft
+              : AppPalette.orangeLight38,
           strokeWidth: 2,
-          strokeColor: Colors.white,
+          strokeColor: AppPalette.white,
         ),
       );
     }
@@ -1146,9 +1146,9 @@ class _MapScreenState extends State<MapScreen> {
         CircleLayer(
           points: [_placeFeature(selectedPlace)],
           radius: 13,
-          color: AppColors.accent.withValues(alpha: 0.42),
+          color: AppPalette.primary.withValues(alpha: 0.42),
           strokeWidth: 3,
-          strokeColor: Colors.white,
+          strokeColor: AppPalette.white,
         ),
       );
     }
@@ -1603,14 +1603,18 @@ class _MapScreenState extends State<MapScreen> {
         : l10n.mapTapPlaceHint;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppPalette.backgroundWarm,
       body: _MapResponsiveTextScope(
         child: DecoratedBox(
-          decoration: const BoxDecoration(
+          decoration: const AppBoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Color(0xFF1A120D), Color(0xFF120B07), Color(0xFF0F0906)],
+              colors: [
+                AppPalette.warmInk38,
+                AppPalette.warmInk08,
+                AppPalette.warmInk04,
+              ],
             ),
           ),
           child: SafeArea(
@@ -1705,7 +1709,7 @@ class _MapScreenState extends State<MapScreen> {
                 final mapRadius = _mapScaled(context, 30, min: 24, max: 32);
 
                 return Padding(
-                  padding: EdgeInsets.fromLTRB(
+                  padding: AppEdgeInsets.fromLTRB(
                     outerPadding,
                     topPadding,
                     outerPadding,
@@ -1729,8 +1733,8 @@ class _MapScreenState extends State<MapScreen> {
                               children: [
                                 Text(
                                   mapTitle,
-                                  style: TextStyle(
-                                    color: AppColors.textPrimary,
+                                  style: AppTextStyle(
+                                    color: AppPalette.textPrimary,
                                     fontSize: _mapScaled(
                                       context,
                                       24,
@@ -1753,8 +1757,8 @@ class _MapScreenState extends State<MapScreen> {
                                   mapSubtitle,
                                   maxLines: compactHeight ? 2 : 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: AppColors.accent,
+                                  style: AppTextStyle(
+                                    color: AppPalette.primary,
                                     fontSize: _mapScaled(
                                       context,
                                       14,
@@ -1817,12 +1821,14 @@ class _MapScreenState extends State<MapScreen> {
                           children: [
                             Expanded(
                               child: ClipRRect(
-                                borderRadius: BorderRadius.circular(mapRadius),
+                                borderRadius: AppBorderRadius.circular(
+                                  mapRadius,
+                                ),
                                 child: Stack(
                                   fit: StackFit.expand,
                                   children: [
                                     ColoredBox(
-                                      color: const Color(0xFFB3A28D),
+                                      color: AppPalette.orangeSoft05,
                                       child: _mapSuspendedForNavigation
                                           ? const _MapNativeSuspendedPlaceholder()
                                           : MapLibreMap(
@@ -1839,7 +1845,7 @@ class _MapScreenState extends State<MapScreen> {
                                                 ),
                                                 initZoom: _initialMapZoom,
                                                 androidForegroundLoadColor:
-                                                    const Color(0xFFB3A28D),
+                                                    AppPalette.orangeSoft05,
                                               ),
                                               onMapCreated: (controller) {
                                                 if (!mounted ||
@@ -2010,7 +2016,7 @@ class _MapScreenState extends State<MapScreen> {
                                                     ],
                                                   ),
                                                 AppMapAttribution(
-                                                  padding: EdgeInsets.all(
+                                                  padding: AppEdgeInsets.all(
                                                     _mapScaled(
                                                       context,
                                                       10,
@@ -2027,14 +2033,14 @@ class _MapScreenState extends State<MapScreen> {
                                     Positioned.fill(
                                       child: IgnorePointer(
                                         child: DecoratedBox(
-                                          decoration: BoxDecoration(
+                                          decoration: AppBoxDecoration(
                                             gradient: LinearGradient(
                                               begin: Alignment.topCenter,
                                               end: Alignment.bottomCenter,
                                               colors: [
-                                                const Color(0x12000000),
-                                                Colors.transparent,
-                                                const Color(0x24000000),
+                                                AppPalette.neutralOverlayInk02,
+                                                AppPalette.transparent,
+                                                AppPalette.neutralOverlayInk04,
                                               ],
                                             ),
                                           ),
@@ -2094,7 +2100,7 @@ class _MapScreenState extends State<MapScreen> {
                                         _targetPlace == null)
                                       Center(
                                         child: Padding(
-                                          padding: EdgeInsets.symmetric(
+                                          padding: AppEdgeInsets.symmetric(
                                             horizontal: _mapScaled(
                                               context,
                                               28,
@@ -2111,7 +2117,7 @@ class _MapScreenState extends State<MapScreen> {
                                     if (_bootstrapping)
                                       const Center(
                                         child: CircularProgressIndicator(
-                                          color: AppColors.accent,
+                                          color: AppPalette.primary,
                                         ),
                                       ),
                                   ],
@@ -2309,11 +2315,15 @@ class _MapNativeSuspendedPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFB3A28D), Color(0xFFCDBEA7), Color(0xFF8FA18B)],
+          colors: [
+            AppPalette.orangeSoft05,
+            AppPalette.amberSoft03,
+            AppPalette.greenSoft05,
+          ],
         ),
       ),
     );
@@ -2358,22 +2368,22 @@ class _RouteBuilderPanel extends StatelessWidget {
     final message = errorMessage?.trim();
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: const Color(0xFF25170D).withValues(alpha: 0.96),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.accent.withValues(alpha: 0.36)),
+        decoration: AppBoxDecoration(
+          color: AppPalette.warmInk104.withValues(alpha: 0.96),
+          borderRadius: AppBorderRadius.circular(8),
+          border: Border.all(color: AppPalette.primary.withValues(alpha: 0.36)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.24),
+              color: AppPalette.black.withValues(alpha: 0.24),
               blurRadius: 18,
               offset: const Offset(0, 10),
             ),
           ],
         ),
         child: Padding(
-          padding: EdgeInsets.all(_mapScaled(context, 14, min: 12, max: 16)),
+          padding: AppEdgeInsets.all(_mapScaled(context, 14, min: 12, max: 16)),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2384,16 +2394,16 @@ class _RouteBuilderPanel extends StatelessWidget {
                   Container(
                     width: _mapScaled(context, 40, min: 36, max: 42),
                     height: _mapScaled(context, 40, min: 36, max: 42),
-                    decoration: BoxDecoration(
-                      color: AppColors.accent.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(8),
+                    decoration: AppBoxDecoration(
+                      color: AppPalette.primary.withValues(alpha: 0.18),
+                      borderRadius: AppBorderRadius.circular(8),
                       border: Border.all(
-                        color: AppColors.accent.withValues(alpha: 0.4),
+                        color: AppPalette.primary.withValues(alpha: 0.4),
                       ),
                     ),
                     child: Icon(
                       Icons.alt_route_rounded,
-                      color: AppColors.accent,
+                      color: AppPalette.primary,
                       size: _mapScaled(context, 21, min: 18, max: 22),
                     ),
                   ),
@@ -2407,7 +2417,7 @@ class _RouteBuilderPanel extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.titleMedium?.copyWith(
-                            color: AppColors.textPrimary,
+                            color: AppPalette.textPrimary,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -2419,7 +2429,7 @@ class _RouteBuilderPanel extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: AppColors.accent,
+                            color: AppPalette.primary,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -2436,17 +2446,17 @@ class _RouteBuilderPanel extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFFF5DEC2),
+                  color: AppPalette.orangeLight36,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               if (building) ...[
                 SizedBox(height: _mapScaled(context, 10, min: 8, max: 10)),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: AppBorderRadius.circular(999),
                   child: const LinearProgressIndicator(
                     minHeight: 3,
-                    color: AppColors.accent,
+                    color: AppPalette.primary,
                   ),
                 ),
               ],
@@ -2464,20 +2474,20 @@ class _RouteBuilderPanel extends StatelessWidget {
                 child: FilledButton.icon(
                   onPressed: building || savingRoute ? null : onBuildRoute,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.accent,
-                    foregroundColor: const Color(0xFF241100),
-                    disabledBackgroundColor: AppColors.accent.withValues(
+                    backgroundColor: AppPalette.primary,
+                    foregroundColor: AppPalette.warmInk90,
+                    disabledBackgroundColor: AppPalette.primary.withValues(
                       alpha: 0.46,
                     ),
-                    disabledForegroundColor: const Color(
-                      0xFF241100,
-                    ).withValues(alpha: 0.58),
-                    padding: EdgeInsets.symmetric(
+                    disabledForegroundColor: AppPalette.warmInk90.withValues(
+                      alpha: 0.58,
+                    ),
+                    padding: AppEdgeInsets.symmetric(
                       horizontal: _mapScaled(context, 14, min: 12, max: 16),
                       vertical: _mapScaled(context, 12, min: 10, max: 13),
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppBorderRadius.circular(8),
                     ),
                   ),
                   icon: building
@@ -2485,7 +2495,7 @@ class _RouteBuilderPanel extends StatelessWidget {
                           dimension: _mapScaled(context, 16, min: 14, max: 16),
                           child: const CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Color(0xFF241100),
+                            color: AppPalette.warmInk90,
                           ),
                         )
                       : const Icon(Icons.route_rounded),
@@ -2551,20 +2561,18 @@ class _RouteBuilderPanel extends StatelessWidget {
                         ? null
                         : onSaveRoute,
                     style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFF1D6),
-                      disabledBackgroundColor: const Color(
-                        0xFFFFF1D6,
-                      ).withValues(alpha: 0.58),
-                      foregroundColor: AppColors.textPrimary,
-                      disabledForegroundColor: AppColors.textPrimary.withValues(
-                        alpha: 0.58,
-                      ),
-                      padding: EdgeInsets.symmetric(
+                      backgroundColor: AppPalette.amberWash05,
+                      disabledBackgroundColor: AppPalette.amberWash05
+                          .withValues(alpha: 0.58),
+                      foregroundColor: AppPalette.textPrimary,
+                      disabledForegroundColor: AppPalette.textPrimary
+                          .withValues(alpha: 0.58),
+                      padding: AppEdgeInsets.symmetric(
                         horizontal: _mapScaled(context, 14, min: 12, max: 16),
                         vertical: _mapScaled(context, 12, min: 10, max: 13),
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppBorderRadius.circular(8),
                       ),
                     ),
                     icon: savingRoute
@@ -2577,7 +2585,7 @@ class _RouteBuilderPanel extends StatelessWidget {
                             ),
                             child: const CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: AppColors.textPrimary,
+                              color: AppPalette.textPrimary,
                             ),
                           )
                         : routeSaved
@@ -2602,14 +2610,14 @@ class _RouteBuilderPanel extends StatelessWidget {
 
   ButtonStyle _routeBuilderSecondaryButtonStyle(BuildContext context) {
     return OutlinedButton.styleFrom(
-      foregroundColor: const Color(0xFFFFE1AE),
-      disabledForegroundColor: const Color(0xFFFFE1AE).withValues(alpha: 0.38),
-      side: BorderSide(color: AppColors.accent.withValues(alpha: 0.42)),
-      padding: EdgeInsets.symmetric(
+      foregroundColor: AppPalette.amberLight09,
+      disabledForegroundColor: AppPalette.amberLight09.withValues(alpha: 0.38),
+      side: BorderSide(color: AppPalette.primary.withValues(alpha: 0.42)),
+      padding: AppEdgeInsets.symmetric(
         horizontal: _mapScaled(context, 12, min: 10, max: 14),
         vertical: _mapScaled(context, 11, min: 9, max: 12),
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      shape: RoundedRectangleBorder(borderRadius: AppBorderRadius.circular(8)),
     );
   }
 }
@@ -2644,18 +2652,18 @@ class _RoutePreviewPanel extends StatelessWidget {
     final message = errorMessage;
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (canSwitchProfiles) ...[
             DecoratedBox(
-              decoration: BoxDecoration(
+              decoration: AppBoxDecoration(
                 color: Theme.of(
                   context,
                 ).colorScheme.surface.withValues(alpha: 0.92),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppBorderRadius.circular(8),
                 border: Border.all(
                   color: Theme.of(
                     context,
@@ -2663,7 +2671,9 @@ class _RoutePreviewPanel extends StatelessWidget {
                 ),
               ),
               child: Padding(
-                padding: EdgeInsets.all(_mapScaled(context, 6, min: 4, max: 6)),
+                padding: AppEdgeInsets.all(
+                  _mapScaled(context, 6, min: 4, max: 6),
+                ),
                 child: RouteModeSelector(
                   selected: preview.route.profile,
                   enabledProfiles: preview.enabledProfiles,
@@ -2675,10 +2685,10 @@ class _RoutePreviewPanel extends StatelessWidget {
           ],
           if (switching) ...[
             ClipRRect(
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: AppBorderRadius.circular(999),
               child: const LinearProgressIndicator(
                 minHeight: 3,
-                color: AppColors.accent,
+                color: AppPalette.primary,
               ),
             ),
             SizedBox(height: _mapScaled(context, 8, min: 6, max: 8)),
@@ -2697,20 +2707,20 @@ class _RoutePreviewPanel extends StatelessWidget {
                     ? null
                     : onSaveRoute,
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.accent,
-                  foregroundColor: AppColors.textPrimary,
-                  disabledBackgroundColor: AppColors.accent.withValues(
+                  backgroundColor: AppPalette.primary,
+                  foregroundColor: AppPalette.textPrimary,
+                  disabledBackgroundColor: AppPalette.primary.withValues(
                     alpha: 0.46,
                   ),
-                  disabledForegroundColor: AppColors.textPrimary.withValues(
+                  disabledForegroundColor: AppPalette.textPrimary.withValues(
                     alpha: 0.58,
                   ),
-                  padding: EdgeInsets.symmetric(
+                  padding: AppEdgeInsets.symmetric(
                     horizontal: _mapScaled(context, 14, min: 12, max: 16),
                     vertical: _mapScaled(context, 12, min: 10, max: 13),
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppBorderRadius.circular(8),
                   ),
                 ),
                 icon: savingRoute
@@ -2718,7 +2728,7 @@ class _RoutePreviewPanel extends StatelessWidget {
                         dimension: _mapScaled(context, 16, min: 14, max: 16),
                         child: const CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: AppColors.textPrimary,
+                          color: AppPalette.textPrimary,
                         ),
                       )
                     : routeSaved
@@ -2750,12 +2760,12 @@ class _RoutePreviewErrorMessage extends StatelessWidget {
     final theme = Theme.of(context);
 
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         color: theme.colorScheme.errorContainer.withValues(alpha: 0.94),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppBorderRadius.circular(8),
       ),
       child: Padding(
-        padding: EdgeInsets.symmetric(
+        padding: AppEdgeInsets.symmetric(
           horizontal: _mapScaled(context, 12, min: 10, max: 12),
           vertical: _mapScaled(context, 10, min: 8, max: 10),
         ),
@@ -2844,17 +2854,17 @@ class _MapHeaderButton extends StatelessWidget {
     final progressSize = _mapScaled(context, 18, min: 16, max: 18);
 
     return Material(
-      color: Colors.transparent,
+      color: AppPalette.transparent,
       child: InkWell(
         onTap: loading ? null : onTap,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppBorderRadius.circular(999),
         child: Ink(
           width: buttonSize,
           height: buttonSize,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.04),
+          decoration: AppBoxDecoration(
+            color: AppPalette.white.withValues(alpha: 0.04),
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            border: Border.all(color: AppPalette.white.withValues(alpha: 0.06)),
           ),
           child: Center(
             child: loading
@@ -2863,10 +2873,10 @@ class _MapHeaderButton extends StatelessWidget {
                     height: progressSize,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: AppColors.accent,
+                      color: AppPalette.primary,
                     ),
                   )
-                : Icon(icon, color: AppColors.textPrimary, size: iconSize),
+                : Icon(icon, color: AppPalette.textPrimary, size: iconSize),
           ),
         ),
       ),
@@ -2887,7 +2897,9 @@ class _MapInfoChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foreground = accent ? AppColors.textPrimary : const Color(0xFFF4E8DA);
+    final foreground = accent
+        ? AppPalette.textPrimary
+        : AppPalette.orangeWash07;
     final maxWidth = (MediaQuery.sizeOf(context).width - 32)
         .clamp(140.0, 360.0)
         .toDouble();
@@ -2899,25 +2911,25 @@ class _MapInfoChip extends StatelessWidget {
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: maxWidth),
       child: Container(
-        padding: EdgeInsets.symmetric(
+        padding: AppEdgeInsets.symmetric(
           horizontal: horizontalPadding,
           vertical: verticalPadding,
         ),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(999),
+        decoration: AppBoxDecoration(
+          borderRadius: AppBorderRadius.circular(999),
           gradient: accent
               ? const LinearGradient(
-                  colors: [Color(0xFFFFB44D), Color(0xFFFF9800)],
+                  colors: [AppPalette.primarySoft, AppPalette.warmMuted45],
                 )
               : LinearGradient(
                   colors: [
-                    Colors.white.withValues(alpha: 0.05),
-                    Colors.white.withValues(alpha: 0.02),
+                    AppPalette.white.withValues(alpha: 0.05),
+                    AppPalette.white.withValues(alpha: 0.02),
                   ],
                 ),
           border: accent
               ? null
-              : Border.all(color: AppColors.accent.withValues(alpha: 0.12)),
+              : Border.all(color: AppPalette.primary.withValues(alpha: 0.12)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -2930,7 +2942,7 @@ class _MapInfoChip extends StatelessWidget {
                 maxLines: 1,
                 softWrap: false,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: AppTextStyle(
                   color: foreground,
                   fontSize: _mapScaled(context, 13, min: 11.5, max: 13),
                   fontWeight: FontWeight.w700,
@@ -2971,16 +2983,16 @@ class _MapBanner extends StatelessWidget {
         final stacked = constraints.maxWidth < 340 || textScale > 1.08;
 
         return Container(
-          padding: EdgeInsets.fromLTRB(
+          padding: AppEdgeInsets.fromLTRB(
             horizontalPadding,
             topPadding,
             horizontalPadding,
             bottomPadding,
           ),
-          decoration: BoxDecoration(
-            color: const Color(0xD423150B),
-            borderRadius: BorderRadius.circular(radius),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          decoration: AppBoxDecoration(
+            color: AppPalette.warmOverlayInk08,
+            borderRadius: AppBorderRadius.circular(radius),
+            border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
           ),
           child: stacked
               ? Column(
@@ -2990,12 +3002,12 @@ class _MapBanner extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Padding(
-                          padding: EdgeInsets.only(
+                          padding: AppEdgeInsets.only(
                             top: _mapScaled(context, 1, min: 0, max: 1),
                           ),
                           child: Icon(
                             icon,
-                            color: AppColors.accent,
+                            color: AppPalette.primary,
                             size: _mapScaled(context, 18, min: 16, max: 18),
                           ),
                         ),
@@ -3005,8 +3017,8 @@ class _MapBanner extends StatelessWidget {
                         Expanded(
                           child: Text(
                             label,
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
+                            style: AppTextStyle(
+                              color: AppPalette.textPrimary,
                               fontSize: _mapScaled(
                                 context,
                                 14,
@@ -3028,12 +3040,12 @@ class _MapBanner extends StatelessWidget {
                         child: TextButton(
                           onPressed: onActionTap,
                           style: TextButton.styleFrom(
-                            foregroundColor: AppColors.accent,
+                            foregroundColor: AppPalette.primary,
                             minimumSize: Size(
                               0,
                               _mapScaled(context, 36, min: 34, max: 38),
                             ),
-                            padding: EdgeInsets.symmetric(
+                            padding: AppEdgeInsets.symmetric(
                               horizontal: _mapScaled(
                                 context,
                                 10,
@@ -3053,15 +3065,15 @@ class _MapBanner extends StatelessWidget {
                   children: [
                     Icon(
                       icon,
-                      color: AppColors.accent,
+                      color: AppPalette.primary,
                       size: _mapScaled(context, 18, min: 16, max: 18),
                     ),
                     SizedBox(width: _mapScaled(context, 10, min: 8, max: 10)),
                     Expanded(
                       child: Text(
                         label,
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
+                        style: AppTextStyle(
+                          color: AppPalette.textPrimary,
                           fontSize: _mapScaled(context, 14, min: 13, max: 14),
                           fontWeight: FontWeight.w600,
                         ),
@@ -3072,12 +3084,12 @@ class _MapBanner extends StatelessWidget {
                       TextButton(
                         onPressed: onActionTap,
                         style: TextButton.styleFrom(
-                          foregroundColor: AppColors.accent,
+                          foregroundColor: AppPalette.primary,
                           minimumSize: Size(
                             0,
                             _mapScaled(context, 36, min: 34, max: 38),
                           ),
-                          padding: EdgeInsets.symmetric(
+                          padding: AppEdgeInsets.symmetric(
                             horizontal: _mapScaled(
                               context,
                               10,
@@ -3109,18 +3121,18 @@ class _MapEmptyState extends StatelessWidget {
     final circleSize = _mapScaled(context, 60, min: 48, max: 60);
 
     return Container(
-      padding: EdgeInsets.fromLTRB(
+      padding: AppEdgeInsets.fromLTRB(
         _mapScaled(context, 18, min: 14, max: 18),
         _mapScaled(context, 20, min: 16, max: 20),
         _mapScaled(context, 18, min: 14, max: 18),
         _mapScaled(context, 18, min: 14, max: 18),
       ),
-      decoration: BoxDecoration(
-        color: const Color(0xD723160D),
-        borderRadius: BorderRadius.circular(
+      decoration: AppBoxDecoration(
+        color: AppPalette.warmOverlayInk09,
+        borderRadius: AppBorderRadius.circular(
           _mapScaled(context, 24, min: 20, max: 24),
         ),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: AppPalette.white.withValues(alpha: 0.08)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -3128,13 +3140,13 @@ class _MapEmptyState extends StatelessWidget {
           Container(
             width: circleSize,
             height: circleSize,
-            decoration: BoxDecoration(
+            decoration: AppBoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.accent.withValues(alpha: 0.12),
+              color: AppPalette.primary.withValues(alpha: 0.12),
             ),
             child: Icon(
               Icons.travel_explore_rounded,
-              color: AppColors.accent,
+              color: AppPalette.primary,
               size: _mapScaled(context, 28, min: 22, max: 28),
             ),
           ),
@@ -3142,8 +3154,8 @@ class _MapEmptyState extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppColors.textPrimary,
+            style: AppTextStyle(
+              color: AppPalette.textPrimary,
               fontSize: _mapScaled(context, 20, min: 17, max: 20),
               fontWeight: FontWeight.w800,
             ),
@@ -3152,8 +3164,8 @@ class _MapEmptyState extends StatelessWidget {
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xB3FFF0E0),
+            style: AppTextStyle(
+              color: AppPalette.orangeOverlayWash09,
               fontSize: _mapScaled(context, 14, min: 13, max: 14),
               height: 1.45,
             ),
@@ -3192,13 +3204,13 @@ class _RoutePointMarker extends StatelessWidget {
           ? stop.title!.trim()
           : l10n.routeStopSemantic(stop.order),
       child: DecoratedBox(
-        decoration: BoxDecoration(
+        decoration: AppBoxDecoration(
           shape: BoxShape.circle,
-          color: const Color(0xFFFFF7E6),
-          border: Border.all(color: const Color(0xFF3A2108), width: 2),
+          color: AppPalette.amberWash07,
+          border: Border.all(color: AppPalette.warmSurface48, width: 2),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.24),
+              color: AppPalette.black.withValues(alpha: 0.24),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -3209,8 +3221,8 @@ class _RoutePointMarker extends StatelessWidget {
             stop.order.toString(),
             maxLines: 1,
             overflow: TextOverflow.clip,
-            style: TextStyle(
-              color: AppColors.accent,
+            style: AppTextStyle(
+              color: AppPalette.primary,
               fontSize: _mapScaled(context, 13, min: 11, max: 13),
               fontWeight: FontWeight.w900,
             ),
@@ -3229,19 +3241,19 @@ class _UserLocationMarker extends StatelessWidget {
     final dotSize = _mapScaled(context, 16, min: 13, max: 16);
 
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white.withValues(alpha: 0.16),
+        color: AppPalette.white.withValues(alpha: 0.16),
       ),
       child: Center(
         child: Container(
           width: dotSize,
           height: dotSize,
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xFF4BA8FF),
+            color: AppPalette.blueSoft03,
             border: Border.all(
-              color: Colors.white,
+              color: AppPalette.white,
               width: _mapScaled(context, 2, min: 1.5, max: 2),
             ),
           ),
@@ -3271,13 +3283,13 @@ class _PlaceMarker extends StatelessWidget {
       max: selected ? 36 : 32,
     );
     final markerColor = selected
-        ? AppColors.accent
-        : place.accentColor ?? const Color(0xFFF6E5D4);
+        ? AppPalette.primary
+        : place.accentColor ?? AppPalette.orangeLight38;
     final markerForeground = selected
-        ? AppColors.textPrimary
+        ? AppPalette.textPrimary
         : place.accentColor == null
-        ? const Color(0xFF6A3D0B)
-        : Colors.white;
+        ? AppPalette.warmSurfaceHigh14
+        : AppPalette.white;
 
     return GestureDetector(
       onTap: onTap,
@@ -3287,16 +3299,16 @@ class _PlaceMarker extends StatelessWidget {
           Container(
             width: pinSize,
             height: pinSize,
-            decoration: BoxDecoration(
+            decoration: AppBoxDecoration(
               shape: BoxShape.circle,
               color: markerColor,
               border: Border.all(
-                color: selected ? Colors.white : const Color(0xFFFFB44D),
+                color: selected ? AppPalette.white : AppPalette.primarySoft,
                 width: _mapScaled(context, 2, min: 1.5, max: 2),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.18),
+                  color: AppPalette.black.withValues(alpha: 0.18),
                   blurRadius: _mapScaled(context, 14, min: 10, max: 14),
                   offset: Offset(0, _mapScaled(context, 8, min: 5, max: 8)),
                 ),
@@ -3313,7 +3325,7 @@ class _PlaceMarker extends StatelessWidget {
                       place.avatarLabel!,
                       maxLines: 1,
                       overflow: TextOverflow.clip,
-                      style: TextStyle(
+                      style: AppTextStyle(
                         color: markerForeground,
                         fontSize: _mapScaled(context, 12, min: 10, max: 12),
                         fontWeight: FontWeight.w900,
@@ -3324,9 +3336,9 @@ class _PlaceMarker extends StatelessWidget {
           Container(
             width: _mapScaled(context, 3, min: 2.5, max: 3),
             height: _mapScaled(context, 14, min: 10, max: 14),
-            decoration: BoxDecoration(
-              color: selected ? AppColors.accent : const Color(0xFFFFB44D),
-              borderRadius: BorderRadius.circular(999),
+            decoration: AppBoxDecoration(
+              color: selected ? AppPalette.primary : AppPalette.primarySoft,
+              borderRadius: AppBorderRadius.circular(999),
             ),
           ),
         ],
@@ -3401,37 +3413,40 @@ class _PlacePreviewCard extends StatelessWidget {
           );
 
           return Material(
-            color: Colors.transparent,
+            color: AppPalette.transparent,
             child: InkWell(
               onTap: onTap,
-              borderRadius: BorderRadius.circular(radius),
+              borderRadius: AppBorderRadius.circular(radius),
               child: Ink(
-                padding: EdgeInsets.fromLTRB(
+                padding: AppEdgeInsets.fromLTRB(
                   _mapScaled(context, 14, min: 11, max: 14),
                   topPadding,
                   _mapScaled(context, 14, min: 11, max: 14),
                   bottomPadding,
                 ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(radius),
+                decoration: AppBoxDecoration(
+                  borderRadius: AppBorderRadius.circular(radius),
                   gradient: selected
                       ? const LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [Color(0xFFFFB44D), Color(0xFFFF9800)],
+                          colors: [
+                            AppPalette.primarySoft,
+                            AppPalette.warmMuted45,
+                          ],
                         )
                       : LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            Colors.white.withValues(alpha: 0.05),
-                            Colors.white.withValues(alpha: 0.02),
+                            AppPalette.white.withValues(alpha: 0.05),
+                            AppPalette.white.withValues(alpha: 0.02),
                           ],
                         ),
                   border: Border.all(
                     color: selected
-                        ? Colors.transparent
-                        : AppColors.accent.withValues(alpha: 0.12),
+                        ? AppPalette.transparent
+                        : AppPalette.primary.withValues(alpha: 0.12),
                   ),
                 ),
                 child: Column(
@@ -3442,17 +3457,17 @@ class _PlacePreviewCard extends StatelessWidget {
                         Container(
                           width: iconBadgeSize,
                           height: iconBadgeSize,
-                          decoration: BoxDecoration(
+                          decoration: AppBoxDecoration(
                             shape: BoxShape.circle,
                             color: selected
-                                ? Colors.white.withValues(alpha: 0.18)
-                                : AppColors.accent.withValues(alpha: 0.12),
+                                ? AppPalette.white.withValues(alpha: 0.18)
+                                : AppPalette.primary.withValues(alpha: 0.12),
                           ),
                           child: Icon(
                             place.icon,
                             color: selected
-                                ? AppColors.textPrimary
-                                : AppColors.accent,
+                                ? AppPalette.textPrimary
+                                : AppPalette.primary,
                             size: _mapScaled(context, 18, min: 15, max: 18),
                           ),
                         ),
@@ -3467,12 +3482,12 @@ class _PlacePreviewCard extends StatelessWidget {
                               maxLines: 1,
                               softWrap: false,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
+                              style: AppTextStyle(
                                 color: selected
-                                    ? AppColors.textPrimary.withValues(
+                                    ? AppPalette.textPrimary.withValues(
                                         alpha: 0.78,
                                       )
-                                    : const Color(0xB3FFF0E0),
+                                    : AppPalette.orangeOverlayWash09,
                                 fontSize: _mapScaled(
                                   context,
                                   12,
@@ -3492,8 +3507,8 @@ class _PlacePreviewCard extends StatelessWidget {
                       maxLines: compactCard || !showCategory ? 1 : 2,
                       softWrap: !compactCard,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
+                      style: AppTextStyle(
+                        color: AppPalette.textPrimary,
                         fontSize: _mapScaled(
                           context,
                           compactCard ? 14 : 15,
@@ -3511,10 +3526,10 @@ class _PlacePreviewCard extends StatelessWidget {
                         maxLines: 1,
                         softWrap: false,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: AppTextStyle(
                           color: selected
-                              ? AppColors.textPrimary.withValues(alpha: 0.72)
-                              : const Color(0xA8FFF0E0),
+                              ? AppPalette.textPrimary.withValues(alpha: 0.72)
+                              : AppPalette.orangeOverlayWash07,
                           fontSize: _mapScaled(context, 13, min: 12, max: 13),
                           fontWeight: FontWeight.w500,
                         ),
@@ -3540,18 +3555,18 @@ class _MapHintCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.fromLTRB(
+      padding: AppEdgeInsets.fromLTRB(
         _mapScaled(context, 18, min: 14, max: 18),
         _mapScaled(context, 16, min: 12, max: 16),
         _mapScaled(context, 18, min: 14, max: 18),
         _mapScaled(context, 16, min: 12, max: 16),
       ),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(
+      decoration: AppBoxDecoration(
+        color: AppPalette.white.withValues(alpha: 0.05),
+        borderRadius: AppBorderRadius.circular(
           _mapScaled(context, 24, min: 20, max: 24),
         ),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.10)),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.10)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3559,13 +3574,13 @@ class _MapHintCard extends StatelessWidget {
           Container(
             width: _mapScaled(context, 40, min: 34, max: 40),
             height: _mapScaled(context, 40, min: 34, max: 40),
-            decoration: BoxDecoration(
+            decoration: AppBoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.accent.withValues(alpha: 0.12),
+              color: AppPalette.primary.withValues(alpha: 0.12),
             ),
             child: Icon(
               Icons.touch_app_rounded,
-              color: AppColors.accent,
+              color: AppPalette.primary,
               size: _mapScaled(context, 18, min: 15, max: 18),
             ),
           ),
@@ -3573,8 +3588,8 @@ class _MapHintCard extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: TextStyle(
-                color: AppColors.textPrimary,
+              style: AppTextStyle(
+                color: AppPalette.textPrimary,
                 fontSize: _mapScaled(context, 14, min: 13, max: 14),
                 fontWeight: FontWeight.w600,
               ),
@@ -3609,37 +3624,37 @@ class _SelectedPlaceCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.fromLTRB(
+      padding: AppEdgeInsets.fromLTRB(
         _mapScaled(context, 18, min: 14, max: 18),
         _mapScaled(context, 18, min: 14, max: 18),
         _mapScaled(context, 18, min: 14, max: 18),
         _mapScaled(context, 18, min: 14, max: 18),
       ),
-      decoration: BoxDecoration(
+      decoration: AppBoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.white.withValues(alpha: 0.08),
-            Colors.white.withValues(alpha: 0.03),
+            AppPalette.white.withValues(alpha: 0.08),
+            AppPalette.white.withValues(alpha: 0.03),
           ],
         ),
-        borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.14)),
+        borderRadius: AppBorderRadius.circular(radius),
+        border: Border.all(color: AppPalette.primary.withValues(alpha: 0.14)),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final button = FilledButton.tonal(
             onPressed: onActionTap,
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.accent.withValues(alpha: 0.18),
-              foregroundColor: AppColors.accent,
+              backgroundColor: AppPalette.primary.withValues(alpha: 0.18),
+              foregroundColor: AppPalette.primary,
               minimumSize: Size(0, buttonHeight),
-              padding: EdgeInsets.symmetric(
+              padding: AppEdgeInsets.symmetric(
                 horizontal: _mapScaled(context, 16, min: 12, max: 16),
               ),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(
+                borderRadius: AppBorderRadius.circular(
                   _mapScaled(context, 18, min: 16, max: 18),
                 ),
               ),
@@ -3673,11 +3688,10 @@ class _SelectedPlaceCard extends StatelessWidget {
                   Container(
                     width: avatarSize,
                     height: avatarSize,
-                    decoration: BoxDecoration(
+                    decoration: AppBoxDecoration(
                       shape: BoxShape.circle,
-                      color: (place.accentColor ?? AppColors.accent).withValues(
-                        alpha: 0.16,
-                      ),
+                      color: (place.accentColor ?? AppPalette.primary)
+                          .withValues(alpha: 0.16),
                     ),
                     child: _SelectedPlaceAvatar(place: place),
                   ),
@@ -3692,8 +3706,8 @@ class _SelectedPlaceCard extends StatelessWidget {
                           maxLines: 2,
                           softWrap: true,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: AppColors.textPrimary,
+                          style: AppTextStyle(
+                            color: AppPalette.textPrimary,
                             fontSize: _mapScaled(context, 16, min: 14, max: 16),
                             fontWeight: FontWeight.w800,
                             height: 1.12,
@@ -3743,8 +3757,8 @@ class _SelectedPlaceMeta extends StatelessWidget {
           maxLines: 1,
           softWrap: false,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: const Color(0xB3FFF0E0),
+          style: AppTextStyle(
+            color: AppPalette.orangeOverlayWash09,
             fontSize: _mapScaled(context, 13, min: 12, max: 13),
             fontWeight: FontWeight.w600,
           ),
@@ -3756,8 +3770,8 @@ class _SelectedPlaceMeta extends StatelessWidget {
             maxLines: 1,
             softWrap: false,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: const Color(0x99FFF0E0),
+            style: AppTextStyle(
+              color: AppPalette.orangeOverlayWash05,
               fontSize: _mapScaled(context, 12, min: 11, max: 12),
               fontWeight: FontWeight.w500,
             ),
@@ -3781,8 +3795,8 @@ class _SelectedPlaceAvatar extends StatelessWidget {
           place.avatarLabel!,
           maxLines: 1,
           overflow: TextOverflow.clip,
-          style: TextStyle(
-            color: place.accentColor ?? AppColors.accent,
+          style: AppTextStyle(
+            color: place.accentColor ?? AppPalette.primary,
             fontSize: _mapScaled(context, 16, min: 14, max: 16),
             fontWeight: FontWeight.w900,
           ),
@@ -3792,7 +3806,7 @@ class _SelectedPlaceAvatar extends StatelessWidget {
 
     return Icon(
       place.icon,
-      color: place.accentColor ?? AppColors.accent,
+      color: place.accentColor ?? AppPalette.primary,
       size: _mapScaled(context, 22, min: 18, max: 22),
     );
   }

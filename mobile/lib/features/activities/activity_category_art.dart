@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:inflap/core/ui/app_design_system.dart';
 
 import 'models/activity_list_item_vm.dart';
 
@@ -57,7 +58,7 @@ class ActivityDecorativeCoverFallback extends StatelessWidget {
         final bottomInset = shortestSide * 0.1;
 
         return DecoratedBox(
-          decoration: BoxDecoration(
+          decoration: AppBoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -73,9 +74,9 @@ class ActivityDecorativeCoverFallback extends StatelessWidget {
                 child: Container(
                   width: largeCircle,
                   height: largeCircle,
-                  decoration: BoxDecoration(
+                  decoration: AppBoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.12),
+                    color: AppPalette.white.withValues(alpha: 0.12),
                   ),
                 ),
               ),
@@ -85,9 +86,9 @@ class ActivityDecorativeCoverFallback extends StatelessWidget {
                 child: Container(
                   width: smallCircle,
                   height: smallCircle,
-                  decoration: BoxDecoration(
+                  decoration: AppBoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.black.withValues(alpha: 0.14),
+                    color: AppPalette.black.withValues(alpha: 0.14),
                   ),
                 ),
               ),
@@ -97,7 +98,7 @@ class ActivityDecorativeCoverFallback extends StatelessWidget {
                 child: Icon(
                   spec.icon,
                   size: iconSize,
-                  color: Colors.white.withValues(alpha: 0.22),
+                  color: AppPalette.white.withValues(alpha: 0.22),
                 ),
               ),
               PositionedDirectional(
@@ -108,7 +109,7 @@ class ActivityDecorativeCoverFallback extends StatelessWidget {
                   child: Icon(
                     Icons.arrow_outward_rounded,
                     size: arrowSize,
-                    color: Colors.white.withValues(alpha: 0.18),
+                    color: AppPalette.white.withValues(alpha: 0.18),
                   ),
                 ),
               ),
@@ -125,7 +126,7 @@ ActivityCardArtSpec activityCategoryVisual(String rawSlug) {
   if (slug.contains('wellness') || slug.contains('health')) {
     return const ActivityCardArtSpec(
       icon: Icons.spa_rounded,
-      colors: [Color(0xFF295E54), Color(0xFF74D2AE)],
+      colors: [AppPalette.tealSurfaceHigh06, AppPalette.tealSoft04],
     );
   }
   if (slug.contains('nature') ||
@@ -133,13 +134,13 @@ ActivityCardArtSpec activityCategoryVisual(String rawSlug) {
       slug.contains('hiking')) {
     return const ActivityCardArtSpec(
       icon: Icons.forest_rounded,
-      colors: [Color(0xFF2A4B2B), Color(0xFF78C36A)],
+      colors: [AppPalette.greenSurfaceHigh13, AppPalette.greenSoft03],
     );
   }
   if (slug.contains('food')) {
     return const ActivityCardArtSpec(
       icon: Icons.restaurant_rounded,
-      colors: [Color(0xFF66371A), Color(0xFFFFA657)],
+      colors: [AppPalette.warmSurfaceHigh12, AppPalette.orangeSoft44],
     );
   }
   if (slug.contains('culture') ||
@@ -147,13 +148,13 @@ ActivityCardArtSpec activityCategoryVisual(String rawSlug) {
       slug.contains('history')) {
     return const ActivityCardArtSpec(
       icon: Icons.palette_outlined,
-      colors: [Color(0xFF5A3055), Color(0xFFCB84BA)],
+      colors: [AppPalette.pinkSurfaceHigh02, AppPalette.pinkSoft02],
     );
   }
   if (slug.contains('sport') || slug.contains('adventure')) {
     return const ActivityCardArtSpec(
       icon: Icons.kayaking_rounded,
-      colors: [Color(0xFF5F3D1F), Color(0xFFE69B4B)],
+      colors: [AppPalette.warmSurfaceHigh11, AppPalette.orangeSoft34],
     );
   }
   if (slug.contains('workshop') ||
@@ -161,19 +162,19 @@ ActivityCardArtSpec activityCategoryVisual(String rawSlug) {
       slug.contains('education')) {
     return const ActivityCardArtSpec(
       icon: Icons.auto_stories_rounded,
-      colors: [Color(0xFF443A73), Color(0xFF9A89E2)],
+      colors: [AppPalette.blueSurfaceHigh30, AppPalette.blueSoft15],
     );
   }
   if (slug.contains('night') || slug.contains('social')) {
     return const ActivityCardArtSpec(
       icon: Icons.celebration_rounded,
-      colors: [Color(0xFF5A2348), Color(0xFFE07AB8)],
+      colors: [AppPalette.pinkSurfaceHigh01, AppPalette.pinkSoft04],
     );
   }
 
   return const ActivityCardArtSpec(
     icon: Icons.travel_explore_rounded,
-    colors: [Color(0xFF52301B), Color(0xFFCB8B50)],
+    colors: [AppPalette.warmSurface90, AppPalette.orangeMuted05],
   );
 }
 
@@ -182,13 +183,13 @@ ActivityCardArtSpec activityCardArtForItem(ActivityListItemVm item) {
   if (item.format.toUpperCase() == 'ONLINE') {
     return const ActivityCardArtSpec(
       icon: Icons.videocam_rounded,
-      colors: [Color(0xFF1F4D8A), Color(0xFF67A8F5)],
+      colors: [AppPalette.blueSurfaceHigh18, AppPalette.blueSoft07],
     );
   }
   if (item.format.toUpperCase() == 'HYBRID') {
     return const ActivityCardArtSpec(
       icon: Icons.devices_rounded,
-      colors: [Color(0xFF5E3E86), Color(0xFFB08CF6)],
+      colors: [AppPalette.violetMuted01, AppPalette.violetLight02],
     );
   }
   return fromCategory;
